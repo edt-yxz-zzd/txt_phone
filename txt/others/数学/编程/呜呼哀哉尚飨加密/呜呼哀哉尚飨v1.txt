@@ -1,0 +1,157 @@
+呜呼哀哉尚飨
+whazsx.py
+
+
+
+==============
+简单版
+明文：他妈的
+加密方选择：
+	协议：呜呼哀哉尚飨
+	密码提示：一蓑/烟雨/任平生
+密码：哀烟雨哉
+假设：$X$=呜呼哀哉尚飨.加密<哀烟雨哉>(他妈的)
+密文：呜呼一蓑$X$任平生尚飨
+解密方识别：
+	#此处需人工识别或自动引用搜索结果
+	呜呼，一蓑，任平生，尚飨
+	=>协议：呜呼哀哉尚飨
+	=>密码提示：一蓑/烟雨/任平生
+	他妈的=呜呼哀哉尚飨.解密<哀烟雨哉>($X$)
+
+def 呜呼哀哉尚飨.gen_byte_mask(key::bytes, L):
+	global _hash_, _n_, _k0_
+	k = _k0_
+	for i in range(_n_):
+		k = _hash_(k+key)
+	ks = []; sz = 0
+	for i in range(L):
+		i = str(i).encode('utf8')
+		k = _hash_(k+key+i)
+		ks.append(k)
+		sz += len(k)
+		if sz >= L:
+			kk = b''.join(ks)
+			kk = kk[:L]
+			break
+	else:
+		raise logic-error
+	return kk
+def 呜呼哀哉尚飨.read_prefix_ex(it):
+	global _random_bytes_arg_
+	read till (prefix[-2]-prefix[-1])%256 < _random_bytes_arg_
+def 呜呼哀哉尚飨.mk_random_prefix():
+def 呜呼哀哉尚飨.加密<key>(txt):
+	global _zh_char256_
+	bs = 呜呼哀哉尚飨.mk_random_prefix()
+	key = key.encode('utf8')
+	txt = txt.encode('utf8')
+	L1 = len(txt)
+	L2 = len(bs)+len(txt)
+	kk1 = 呜呼哀哉尚飨.gen_byte_mask(bs, L1)
+	kk2 = 呜呼哀哉尚飨.gen_byte_mask(key, L2)
+	txt = kk1 xor txt
+	mmm = kk2 xor (bs+txt)
+	mmm = ''.join(_zh_char256_[b] for b in mmm)
+	return mmm
+def 呜呼哀哉尚飨.解密<key>(mmm):
+	global _zh_char2idx_
+	mmm = bytes(_zh_char2idx_[ch] for ch in mmm)
+	L2 = len(mmm)
+	key = key.encode('utf8')
+	kk2 = 呜呼哀哉尚飨.gen_byte_mask(key, L2)
+	bs = kk2 xor mmm
+	bs,txt = 呜呼哀哉尚飨.read_prefix_ex(bs)
+	txt = bytes(txt)
+	L1 = len(txt)
+	kk1 = 呜呼哀哉尚飨.gen_byte_mask(bs, L1)
+	txt = kk1 xor txt
+	txt = txt.decode('utf8')
+	return txt
+
+
+
+
+
+
+
+
+
+==============
+#太复杂不好
+呜呼哀哉尚飨
+=====per protocol
+gen :: gen_args_t -> uint -> finite|nonperiod_inf[int]
+	#eg: (b,c,d)->a -> [a!=0][盛金>0]连分数(实根(poly(a,b,c,d)))
+hash4ls :: finite[int] -> digest_word
+hash4k :: digest_word->digest_word
+pred :: digest_word -> bool
+	#eg: digest_word&bit_mask==0
+n,a,b :: uint
+f,h
+=====per user
+gen_args :: gen_args_t
+sz :: pint
+	#used as version, sz++ when long time pass
+=====per key
+key :: pint
+---
+k = (hash4k^(n+sz))(key)
+g = min {i>k| (gen gen_args i) is inf long}
+	#choose (gen_args,key) s.t. g exists
+ls = gen gen_args g
+idx = min {i::uint| pred(hash4ls([sz,k]++ls[i:i+sz]++[sz,k]))}
+i = k%(a*idx+b) + idx
+ls_ = ls[i:]
+=====per encrypt
+r = random()
+r2_ls = [random(0,+oo)...]
+txt :: str
+=====encrypt
+for r2 in r2_ls:
+	dat = f<k,ls_,r,r2>([r2,txt])
+	if decrypt success: break
+mmm = h(r,dat)
+=====decrypt
+(r,dat) = h_(mmm)
+for x in [0..]:
+	[y,txt] = f_<k,ls_,r,x>(dat)
+	if x==y:
+		r2 := x
+		break
+
+
+
+
+===
+===
+===
+===
+===
+mmm = h(r,dat)
+h
+	eg:
+		r :: radix<bbb>[digit]
+		dat :: radix<bbb+1>[digit]
+		o1 = put(r++[bbb],1+len(r++dat))
+		o2 = put(dat,len(r))
+		write o2 into o1
+		def put(dat,len):
+			out = [none]*len
+			i0 = init_offset(len)
+			out[i0]=dat[0]
+			i1 s.t. out[i1] is 从i0往后第out[i0]个空位
+			...
+			return out
+dat = f<k,ls_,r,r2>([r2,txt])
+f
+	eg:
+		bs = bytes([???,txt,r2])
+		v = ???
+		for b,u in zip(bs,ls_):
+			v = hash([v,u,k,r,r2])[0]
+			yield v xor b
+
+
+
+

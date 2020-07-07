@@ -1,0 +1,434 @@
+irr poly finite field
+irreducible polynomial over finite field
+
+
+
+[@p,n][p::prime][n>=1][q:=p^n]
+[FF(p,n):=GF(p^n)]
+[FF(p,0):={0}]
+[@x<-FF(p,n). [x^p^n==x]]
+[@a<-FF(p,n). [x^p-a == (x-a^p^(n-1))^p]]
+
+#flat_idx
+[@m][m>=n][FF(p,n)<:FF(p,m)]:
+	[@x][x<-FF(p,n)]:
+		[x^p^n==x]
+		[x^p^m==x]
+		[(x^p^n-x)\\\(x^p^m-x)]
+		[(x^(p^n-1)-1)\\\(x^(p^m-1)-1)]
+		[(p^n-1)\\\(p^m-1)]
+		[n\\\m]
+	[n\\\m]
+	[flat_idx p n d =[def]= (p^(n*d)-1)///(p^n-1) =sum~ p^(n*i) {i<-[0..d-1]}]
+	[d:=m///n]
+	[s:=flat_idx p n d]
+	[@x][x<-FF(p,m)]:
+		[x^p^m==x]
+		*[x!=0]:
+			[x^(p^m-1)==1]
+			[(x^s)^(p^n-1)==1]
+			[x^s<-FF(p,n)]
+		*[x==0]:
+			[x^s<-FF(p,n)]
+		[x^s<-FF(p,n)]
+		[x^(flat_idx p n (m///n))<-FF(p,n)]
+
+
+
+
+# irr, min_poly
+[@f][f(x) <- FF(p,n)[x]][d>=1]:
+	[irr p (n*d) f =[def]= [f(x)!=0][@g,h<-FF(p,n*d)[x]. [deg g < deg f][deg h < deg f] -> [g*h != f]]]
+	[f(x)!=0]:
+		[not[irr p (n*deg f) f]]
+[@a][a <- FF(p,n*d)]:
+	[min_poly_deg p n a =[def]= min {deg f | [f(x)<-FF(p,n)[x]][f(x)!=0][f(a)==0]}]
+	[min_poly p n a =[def]= the one {f | [f(x)<-FF(p,n)[x]][f(x)!=0][f(a)==0][def f == min_poly_deg p n a][LC(f)==1]}]
+	[irr p n (min_poly p n a)]
+
+
+
+#phi, miu
+[@m,ps,es][m == len ps == len es][@i<-[0..m-1]. [ps[i]::prime][es[i]>=1]][@i,j<-[0..m-1]. [[i!=j]-->>[ps[i]!=ps[j]]]]:
+	[@k][k == II~ ps[i]^es[i] {i<-[0..m-1]}]:
+		[phi k =[def]= len {i<-[0..k-1] | [gcd(i,k)==1]}
+			= k*II~ 1-1/ps[i] {i<-[0..m-1]}
+		]
+		[miu k =[def]= [es!=[1]*m]0 + [es==[1]*m](-1)^(sum es)]
+
+
+
+#num_new_elems_of
+#num_primitive_roots_of
+#num_irr_monic_polys_of
+#num_ffprimitive_monic_polys_of
+[num_new_elems_of p n =[def]= len {a<-FF(p,n) | [not [?i<-[1..n-1]. [a<-FF(p,i)]]]}]
+[num_primitive_roots_of p n =[def]= len {a<-FF(p,n) | [FF(p,n)\\{0} == {a^i | i<-[0..]}]}]
+[num_irr_monic_polys_of p n d =[def]= len {f(x)<-FF(p,n)[x] | [deg f == d][irr p n f][monic f]}]
+[num_ffprimitive_monic_polys_of p n d =[def]= len {f(x)<-FF(p,n)[x] | [deg f == d][is_ffprimitive_poly p n f][monic f]}]
+	#is_ffprimitive_poly: see below
+
+
+
+[num_primitive_roots_of p n == phi(p^n-1)]
+[num_ffprimitive_monic_polys_of p n d
+	== (num_primitive_roots_of p (n*d))///d
+	== phi(p^(n*d)-1)///d
+]
+
+[num_irr_monic_polys_of p n d
+	== sum~ miu(d///i)*(p^n)^i {i\\\d}///d
+	== [pp:=II~ b {b::prime | [b\\\d]}]:sum~ miu(i)*(p^n)^(d///i) {i\\\pp}///d
+]
+	#num_irr_monic_polys_of 2 1 6 = (2^6 - 2^3 - 2^2 + 2^1)/6 = 54/6 = 9
+
+
+
+[num_new_elems_of p 1 == p]
+[b::prime][e>=1]:
+	[num_new_elems_of p (b^e) == p^(b^e) -p^(b^(e-1))]
+==>>
+[num_new_elems_of p n == n *num_irr_monic_polys_of p 1 n]
+[num_new_elems_of p n > num_primitive_roots_of p n]
+
+
+
+[@f][f(x)<-FF(p,n)[x]][d:=deg f]:
+	[irr p n f]:
+		[d>=1]
+		[d>=2]==>>[f(0)!=0]
+		[FF(p,n)[x]%f(x) ~=~ FF(p,n*d)]
+		[g(x):=x][g(x)<-FF(p,n)[x]%f(x)]:
+			[g(x) <- roots_of(f(x))]
+			[FF(p,n*d) is split_field of f(x)]
+			[roots_of(f(x)) == {g(x)^(p^n)^i | i<-[0..d-1]} <= FF(p,n*d)]
+
+			[g(x)^p^(n*d) =[%f(x)]= g(x)]
+			[f(x) \\\ (g(x)^p^(n*d) -g(x))]
+			[f(0)!=0]<==>[f(x)!=g(x)]
+			[f(0)!=0]:
+				[f(x) \\\ (g(x)^(p^(n*d)-1) -1)]
+				[poly_order f := min {i>=1 | [f(x) \\\ (g(x)^i-1)]}]
+				[maynot [poly_order f == p^(n*d)-1]]
+				[maynot [g(x) <- primitive_roots_of(FF(p,n)[x]%f(x))]]
+					#eg: [g(x)<-FF(p,k)] ==>> [n*d == lcm(n,k)][d==k///gcd(n,k)]
+					#[d<=k<=n*d]
+					eg:[k=n*d]... eg[n*d==1][g(x)=x=a][not[a <- primitive_roots_of(ZZ%p)]]
+				[
+		[@r][f r == 0]:
+			[{r^i | i<-[0..d-1]} linear independence over FF(p,n)]
+			[maynot [roots_of(f)=={r^(p^n)^i | i<-[0..d-1]} linear independence over FF(p,n)]]
+
+
+#poly_order
+#is_ffprimitive_poly
+[@f][f(x)<-FF(p,n)[x]][f(0)!=0]:
+	[poly_order f =[def]= min {i<-[1..] | [f(x) \\\ (x^i-1)]}]
+	#existence see above
+
+	[@m][m>=n][n\\\m]:
+		[is_ffprimitive_poly p m f =[def]= [irr p m f][poly_order f == (p^(n*deg f)-1)]]
+		#used for LFSR
+
+	[irr p n f]:
+		[poly_order f == min {i<-[1..(p^(n*deg f)-1)] | [f(x) \\\ (x^i-1)]}]
+		[poly_order f == order<FF(p,n)[x]%f(x)> x]
+		[is_ffprimitive_poly p n f == [x <- primitive_roots_of(FF(p,n)[x]%f(x))]]
+
+
+???[how to find a ffprimitive_poly]???
+	f(x) := find a irr_poly
+	ff := FF(p,n)[x]%f(x)
+	g(x) := find a primitive_root of ff
+	h(x) := find out the min_poly of g(x)
+	h(x) is ffprimitive_poly
+
+
+???[how to find out the min_poly of elem z(x)]???
+	ff := FF(p,n)[x]%f(x)
+	d:=deg f
+	assume the min_poly is h(x)=x^d+g(x)
+	deg g < d
+	cs := (coeffs_of h(x))[:d]
+	h(z(x))%f(x)==0
+	g(z(x)) =[%f(x)]= -z(x)^d
+
+	vs = [z(x)^i%f(x) | i<- [0..d-1]]
+	inner_mul(cs, vs) == g(z(x))%f(x) == -z(x)^d%f(x)
+	cs := solve<cs> [inner_mul(cs, vs) == -z(x)^d%f(x)]
+
+???[how to find a irr_poly]???
+???[how to find a primitive_root]???
+
+
+
+
+
+
+
+[@F,K][F<=K<:field]:
+	[f <- field_automorphism<K>]:
+	[Aut(K/F) = field_automorphism_over<K/F>
+		=[def]= {f <- field_automorphism<K> | [@a<-F. [f(a)==a]]}
+	]
+
+
+[AutFF p n d
+	=[def]= Aut(FF(p,n*d)/FF(p,n))
+	= {(^(p^n)^i) | i<-[0..d-1]}
+]
+
+
+#normal basis of F over K
+[normal_basis_of_over p n d =[def]= {s<-basis_of_over<FF(p,n*d)/FF(p,n)> | [@a<-s. [s=={f(a) | f<-(AutFF p n d)}]]}]
+
+
+[@a][a<-FF(p,n)]:
+	[is_quadratic_residue p n a
+		=[def]= [?c<-FF(p,n). [c^2==a]]
+		= [a==0]or[p==2]or[a^((p^n-1)///2)==1]
+	]
+
+
+
+
+[@f][f(x)!=0]:
+	[reciprocal_poly_of f(x) =[def]= f(1/x)*x^(deg f)]
+
+[reciprocal_poly_of (f(x)*g(x)) == reciprocal_poly_of f(x) * reciprocal_poly_of g(x)]
+
+
+[@f][f(0)!=0]:
+	[reciprocal_poly_of^2 f == f]
+	[deg (reciprocal_poly_of f) == deg f]
+	[irr p n f]==>>[irr p n $ reciprocal_poly_of f]
+
+
+
+[n>=1]:
+	[w := sum~ 1 {b::prime | [b\\\n]}]
+
+	[sum~ miu(d) {d\\\n} == [n==1]]
+		proof:
+			[m := II~ b {b::prime | [b\\\n]}]
+			[lhs<n> == lhs<m>
+				== sum~ (-1)^i*choose<w>(i) {i<-[0..w]}
+				== (1+ -1)^w == [w==0] == [n==1]
+			]
+	
+	[@n<-[1..]. [f(n) == sum~ g(d) {d\\\n}]]:
+		<==>[@n<-[1..]. [g(n) == sum~ miu(d)*f(n///d) {d\\\n}]]
+			proof:
+				[sum~ miu(d)*f(n///d) {d\\\n}
+					== sum~ miu(d)*sum~ g(n///d///e) {e\\\(n///d)} {d\\\n}
+					== sum~ miu(d)*g(n///(d*e)) {(d,e) | (d*e)\\\n}
+					== sum~ sum~ miu(d) {d\\\de} *g(n///de) {de | de\\\n}
+					== sum~ [de==1] *g(n///de) {de | de\\\n}
+					== g(n)
+				]
+
+
+	[sum~ phi(d) {d\\\n} == n]
+		proof:
+			*[w==0]:
+				[n==1]
+				[phi(1)==1]
+			*[w>=1][@_w<-[1..w-1]. done]:
+				[?b][b::prime. [b\\\n]]
+				[?e][e>=1][b^e\\\n][not b^(e+1)\\\n]
+				*[b^2\\\n]:
+					[lhs<w,n> == sum~ phi(d) {d\\\n}
+						== sum~ sum~ phi(d*b^i) {i<-[0..e]} {d\\\(n///b^e)}
+						== sum~ phi(d) +sum~ phi(d*b^i) {i<-[1..e]} {d\\\(n///b^e)}
+						== sum~ phi(d)*(1 +sum~ (b-1)*b^(i-1) {i<-[1..e]}) {d\\\(n///b^e)}
+						== sum~ phi(d)*b^e {d\\\(n///b^e)}
+						== b^e *sum~ phi(d) {d\\\(n///b^e)}
+						== b^e *lhs<w-1,(n///b^e)>
+						== b^e *n///b^e
+						== n
+						== rhs<w,n>
+					]
+			done
+
+	[phi(n) == sum~ miu(d)*(n///d) {d\\\n}]
+		proof:
+			!![sum~ phi(d) {d\\\n} == n]
+			!![@n<-[1..]. [f(n) == sum~ g(d) {d\\\n}]]<==>[@n<-[1..]. [g(n) == sum~ miu(d)*f(n///d) {d\\\n}]]
+
+
+	[(num_irr_monic_polys_of p n d)*d == sum~ miu(d///i)*(p^n)^i {i\\\d}]
+	[(p^n)^d == sum~ (num_irr_monic_polys_of p n i)*i {i\\\d}]
+
+
+
+ff3:
+[@a][a<-FF(p,n)][f(x):=x^p-x+a]:
+	#see err ff5
+
+	[@c][c<-[0..p-1]]:
+		[f(x+c)==(x+c)^p-(x+c)+a
+			== (x^p-x+a)+(c^p-c)
+			== f(x)
+		]
+
+	[@r][f(r)==0]:
+		[@c<-[0..p-1]. [f(r+c)==f(r)==0]]
+		ff2:
+		[roots_of(f)=={r+c | c<-[0..p-1]}]
+
+	ff1:
+	[irr p n f]<==>[@c<-FF(p,n). [f(c)!=0]]
+		proof:
+			*[<<==][@c<-FF(p,n). [f(c)!=0]]:
+				[?gs][@g<-gs. [irr p n g]][f==II gs]
+				[@g][g<-gs]
+				[FF(p,n)[x]%g(x) is split_field of f(x)]
+				[ff := /-\~ FF(p,n)[x]%g(x) {g<-gs}]
+				[ff is split_field of f(x)]
+				[roots_of(f) <= ff]
+				[?d][ff ~=~ FF(p,n*d)]
+				[d\\\deg(g)]
+				[d\\\sum~ deg(g) {g<-gs}]
+				[d\\\p]
+				[d<-{1,p}]
+				*[d==1]:
+					[FF(p,n) is split_field of f(x)]
+					_L
+				*[d==p]:
+					[p\\\deg(g)]
+					[len gs ==1][deg(g)==p]
+					[g==f]
+					[irr p n f]
+				[irr p n f]
+			*[==>>][irr p n f]:
+				[@c][c<-FF(p,n)][f(c)==0]:
+					[(x-c)\\\f(x)]
+					[deg(f)==1<2<=p==deg(f)]
+					_L
+				[@c<-FF(p,n). [f(c)!=0]]
+			done
+[g(x):=x^p-x]:
+	err ff4:
+	#bug ver2 [image<FF(p,n*p)> g == FF(p,n)]
+		err proof:
+				[@a][a<-FF(p,n)][h(x):=g(x)-a]:
+					*[irr p n h]:
+						[roots_of(h)<=FF(p,n*p)]
+					*[not $ irr p n h]:
+						!!ff1
+						[{}!=roots_of(h)/-\FF(p,n)]
+						!![n>=1]
+						[{0..p-1}<=FF(p,n)]
+						!!ff2
+						[roots_of(h)<=FF(p,n)]
+						[roots_of(h)<=FF(p,n*p)]
+					[roots_of(h)<=FF(p,n*p)]
+				[image<FF(p,n*p)> g >= FF(p,n)]
+				!!ff2
+				[len(image<FF(p,n*p)> g) == len(FF(p,n*p))///p == p^(n*p-1) >= p^n == FF(p,n)]
+				not [image<FF(p,n*p)> g == FF(p,n)]
+			fail !!! done
+	#bug ver1:[image<FF(p,n)> g == FF(p,n-1)]
+		err proof:
+			*[n==1]:
+				[image<FF(p,1)> g == {0} == FF(p,0)]
+			*[n>=2]:
+				[@a][a<-FF(p,n-1)][h(x):=g(x)-a]:
+					*[irr p (n-1) h]:
+						[roots_of(h)<=FF(p,n)]
+					*[not $ irr p (n-1) h]:
+						!!ff1
+						[{}!=roots_of(h)/-\FF(p,n-1)]
+						!![n-1>=1]
+						[{0..p-1}<=FF(p,n-1)]
+						!!ff2
+						[roots_of(h)<=FF(p,n-1)]
+						[roots_of(h)<=FF(p,n)]
+					[roots_of(h)<=FF(p,n)]
+				[image<FF(p,n)> g >= FF(p,n-1)]
+				!!ff2
+				[len(image<FF(p,n)> g) == len(FF(p,n))///p == p^(n-1)]
+				[image<FF(p,n)> g == FF(p,n-1)]
+			done
+err ff5:
+err [@a][a<-FF(p,n)\\FF(p,n-1)][f(x):=x^p-x+a]==>>[irr p n f]
+	err proof:
+		!!ff4:
+		[image<FF(p,n)> (f(x)-a) == FF(p,n-1)]
+		[image<FF(p,n)> f == {c+a | c<-FF(p,n-1)}]
+		[{}==image<FF(p,n)> f /-\ FF(p,n-1)]
+		[not $ 0 <- image<FF(p,n)> f]
+		!!ff1
+		[irr p n f]
+		done
+err [@a][a<-FF(p,n)\\FF(p,n-1)]:
+	err [mk_ff_pm p n a xs
+		=[def]= [ys:=[a]++xs]:FF(p,n)[*xs]%{[ys[i]^p=ys[i]+ys[i-1]] | i<- [1..len xs]}
+		~=~ FF(p,n*p^len(xs))
+	]
+]
+
+
+
+
+
+[merge_poly op f0 f1 =[def]= II~ (x-op(x0,x1)) {(x0,x1) | [f0(x0)==0==f1(x1)]}]
+
+[merge_poly (*) f0 f1
+	== II~ II~ x0*(x/x0-x1) {x1 | [f1(x1)==0]} {x0 | [f0(x0)==0]}
+	== II~ x0^deg(f1)*f1(x/x0)/LC(f1) {x0 | [f0(x0)==0]}
+]
+
+[merge_poly (+) f0 f1
+	== II~ II~ ((x-x0)-x1) {x1 | [f1(x1)==0]} {x0 | [f0(x0)==0]}
+	== II~ f1(x-x0)/LC(f1) {x0 | [f0(x0)==0]}
+]
+
+[irr p n f0][irr p n f1][gcd(deg f0, deg f2)==1]:
+	[irr p n $ merge_poly (*) f0 f1]
+	[irr p n $ merge_poly (+) f0 f1]
+
+
+
+
+[@f][f(x)<-FF(p,n)[x]]:
+	#[T1(p,f(x)) := f(x^/p)^p]
+	[T1(p,f) =[def]= (^p) . f . (^/p)]
+	[T(p,n,i,f) =[def]= (T^(n*i))(p,f)]
+	[T p n i == T p 1 (n*i)]
+	[T p n i . T p n j == T p n (i+j)]
+[irr p n f] ==>> [irr p n $ T1 p f]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

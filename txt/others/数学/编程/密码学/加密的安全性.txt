@@ -1,0 +1,188 @@
+加密的安全性
+
+
+xxx 计数型乘性熵
+二进制加性熵 = bit # xxx = log2 计数型乘性熵
+	= sum~ -P(X)*log2 P(X) {X}
+
+
+block_bijection
+	bijection vm lm := [uint%vm]{lm} <-> [uint%vm]{lm}
+	fb :: bijection vm lm
+
+	see:APN permutation
+		[f(x) is APN permutation]
+			=[def]= [f(x) is APN][f(x) is bijection]
+		[f(x) is APN]
+			=[def]= [@a. @b. [[f(x+a)-f(x)==b] has at most 2 solutions]]
+		
+		e.g.
+			t = GF(2^(2*k+1))
+			fb :: t <-> t
+			fb.f = (^3)  #note GF.(^3) is diff (^3%2^(2*k+1))
+			fb.b = (^((2^(2*k+2)-1)///3))
+			
+			???[(^3) is bijection]???
+			proof2:
+				...<==>[((2^(2*k+2)-1)///3)*3%(2^(2*k+1)-1)==1]
+				
+				[(2^(2*k+2)-1)%3==(4^(k+1)-1)%3==0]
+				...<==>[(2^(2*k+2)-1)%(2^(2*k+1)-1)==1]
+				
+				[(2^(2*k+2)-1)==2*(2^(2*k+1)-1)+1]
+				done
+				
+			proof1:
+				[x^3 == a^3]
+				<==>[(x-a)(x^2+a*x+a^2)==0]
+				<==>[x==a][(x^2+a*x+a^2)==0]
+				
+				*[x!=a][a!=0]:
+					...
+					<==>[(x^2+a*x+a^2)==0]
+					<==>[(x/a)^2+(x/a)+1)==0]
+					
+					[h y := y^2+y+1]
+					[GF(2)[z]%h(z) ~=~ GF(2^2) not in t]
+					[(x/a)^2+(x/a)+1)!=0]
+					_L
+				*[x!=a][a==0]
+					[x^3 == a^3 ==0]
+					[x==0==a]
+					_L
+				*[x==a]
+				
+				...<==>[x==a]
+				i.e. [x^3=b] has at most one solution
+				==>> [(^3) is bijection]
+				done
+			???[(^3) is APN]???
+			proof:
+				[b==(x+a)^3-x^3 == a*x^2+a^2*x+a^3] has at most 2 solutions
+				done
+
+	#######outdate:
+	bijection vm lm := [uint%vm]{lm} <-> [uint%vm]{lm}
+	fb :: bijection vm lm
+
+	fff1: each digit affect each output digit at prob 1/2
+		#shift shouldnot pass this test
+		[fff1 fb] =[def]= [fff1_half fb.f][fff1_half fb.b]
+		add_at d j us = us[:j]++[(us[j]+d)%vm]++us[j+1:]
+		fff1_half g := [@ji,jo<-[0..lm-1]. @miji<-[0..vm-1]. @di<- [1..vm-1]. @do<-[0..vm-1]. [vm^(lm-2) == len {mi::[uint%vm]{lm} | [miji==mi[ji]][mid:=add_at di ji mi][mo:=g mi][mod:=g mid][mod[jo]==(mo[jo]+do)%vm]}]]
+	==>> [lm>=2]
+	fff1_build<2> :: @fb1 :: bijection vm lm1. @fb2 :: bijection vm lm2. [fff1 fb1][fff1 fb2]-> bijection vm (lm1+lm2)
+	fff1_build<2> fb1 fb2 = fb where
+		require:
+			#xxx [gcd(lm1, vm)==1]
+			#xxx [gcd(lm2, vm)==1]
+			[mx:=[;1,lm1;lm2,1]]
+			[mx^-1%vm exists]
+		possible conf:
+			[vm=2][lm1=lm2=odd*2*2^k]
+		recommand:
+			[mx==I]
+			<==>[lm<i>%vm ==0]
+			<==>[f/b transform are the same]
+		fb.f mi = mo where
+			mo1 = fb1.f mi[:lm1]
+			mo2 = fb2.f mi[lm1:]
+			s1 = sum mo1 %vm
+			s2 = sum mo2 %vm
+			add_mod a b = (a+b)%vm
+			mo = map (add_mod s2) mo1 ++ map (add_mod s1) mo2
+		fb.b mo = mi where
+			t1 = sum mo[:lm1] %vm
+			t2 = sum mo[lm1:] %vm
+			[;s1;s2] = mx^-1 *[;t1;t2]
+			...
+	fff1_build<3> f1 f2 f3:
+		mx = [;1, lm1, lm1; lm2, 1, lm2; lm3, lm3, 1]
+		possible conf:
+			[vm=2][lm1=lm2=lm3=2*3^k]
+
+
+	see: search_perm_for_crypt__ver2.py
+		n=4:
+		perm<4>[0]=(13, 11, 3, 10, 15, 6, 14, 8, 9, 0, 4, 2, 7, 1, 12, 5) #flags_lens=('-0+0~1', (11, 9, 11))@@0@fi=0@li=0;i^o=11@[1, 2, 3, 8, 9, 10, 11, 12, 13, 14, 15];i-o=9@[2, 3, 5, 6, 8, 9, 10, 12, 15];i+o=11@[1, 3, 4, 5, 9, 10, 11, 12, 13, 14, 15];cycle_lens=(16,)@0@((0, 13, 1, 11, 2, 3, 10, 4, 15, 5, 6, 14, 12, 7, 8, 9),);foyc=0
+
+
+
+
+
+block cipher
+	f<key> plain_block = cipher_block
+	f<k> :: [uint%vm]{lm} <-> [uint%vm]{lm}
+		bijection
+		perm
+		total f<k> = (vm^lm)!
+	f :: [uint%vk]{lk} -> ([uint%vm]{lm} <-> [uint%vm]{lm})
+		total k = vk^lk
+	
+	sometimes use (k' = f k [0]*lm) as key to avoid k be found
+		see secret_key to middle_key
+
+
+
+
+
+secret_key to middle_key
+	sometimes use (k' = f k) as key to avoid k be found
+	known f
+	f :: uint%vi -> uint%vo
+
+	cls<k> = {k'' | f k'' == f k}
+	if len cls<k> == 1:
+		k' ==>> k
+	
+	safe k {@b_force k} <= log2 (total k) = log2 vi
+	safe k {@known k'} <= log2 $ len cls<k>
+	
+	
+	im_f = image f = {f k | @k}
+	[total k' == len im_f <= vo]
+	safe k' {@b_force k'} <= log2 (len im_f)
+		#try k' to verify k'
+	safe k' {@b_force k} <= log2 (total k / len cls<k>)
+		#try k to verify k'
+	
+	[safe k {@known k'}
+	>= safe k' {@b_force k'}
+	== safe k' {@b_force k}
+	]:
+		<==>
+		[log2 $ len cls<k>
+		>= log2 (len im_f)
+		== log2 (total k / len cls<k>)
+		]
+		<==>
+		[(len cls<k>)^2
+		>= (len im_f)*(len cls<k>)
+		== total k
+		]
+		<==>
+		[(len im_f)*(len cls<k>)
+		== total k
+		][(len im_f)
+		<= (len cls<k>)
+		]
+		<==>
+		[(len cls<k>) == sqrt (total k)]
+	recommand f s.t.
+		[vi == vo^2][len cls<k> ==vo]
+	
+	if [f == flip block_cipher.e [0]*lm]:
+		recommand:
+			[vk^lk == vm^(2*lm)][len cls<k> ==vm^lm]
+			[vk==vm][lk == 2*lm][len cls<k> ==vm^lm]
+			# that is possible
+			# eg. [mo==xor [mi, k[:lm], k[lm:]]]
+			#but this method's eqiv key has len only lm
+			#cls<k> indeed map anything all the same, no only 0.
+
+
+
+
+
+
+

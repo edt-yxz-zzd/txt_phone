@@ -1,0 +1,263 @@
+How to Use the wget Linux Command to Download Web Pages and Files
+Download directly from the Linux command line
+by Juergen Haas
+Updated on April 17, 2020
+reviewed by Ryan Perian
+
+    Tweet
+    Share
+    Email
+
+The wget utility downloads web pages, files, and images from the web using the Linux command line. You can use a single wget command to download from a site or set up an input file to download multiple files across multiple sites. According to the manual page, wget can be used even when the user has logged out of the system. To do this, use the nohup command.
+Features of the wget Command
+
+You can download entire websites using wget, and convert the links to point to local sources so that you can view a website offline. The wget utility also retries a download when the connection drops and resumes from where it left off, if possible, when the connection returns.
+
+Other features of wget are as follows:
+
+    Download files using HTTP, HTTPS, and FTP.
+    Resume downloads.
+    Convert absolute links in downloaded web pages to relative URLs so that websites can be viewed offline.
+    Supports HTTP proxies and cookies.
+    Supports persistent HTTP connections.
+    Can run in the background even when you aren't logged on.
+    Works on Linux and Windows.
+
+How to Download a Website Using wget
+
+For this guide, you will learn how to download this Linux blog:
+
+wget www.everydaylinuxuser.com
+
+Before you begin, create a folder on your machine using the mkdir command, and then move into the folder using the cd command.
+
+For example:
+
+mkdir everydaylinuxuser
+cd everydaylinuxuser
+wget www.everydaylinuxuser.com
+
+The result is a single index.html file that contains the content pulled from Google. The images and stylesheets are held on Google.
+Linux wget
+
+To download the full site and all the pages, use the following command:
+
+wget -r www.everydaylinuxuser.com
+
+This downloads the pages recursively up to a maximum of 5 levels deep. Five levels deep might not be enough to get everything from the site. Use the -l switch to set the number of levels you wish to go to, as follows:
+
+wget -r -l10 www.everydaylinuxuser.com
+
+If you want infinite recursion, use the following:
+
+wget -r -l inf www.everydaylinuxuser.com
+
+You can also replace the inf with 0, which means the same thing.
+
+There is one more problem. You might get all the pages locally, but the links in the pages point to the original place. It isn't possible to click locally between the links on the pages.
+Linux wget file download
+
+To get around this problem, use the -k switch to convert the links on the pages to point to the locally downloaded equivalent, as follows:
+
+wget -r -k www.everydaylinuxuser.com
+
+If you want to get a complete mirror of a website, use the following switch, which takes away the necessity for using the -r, -k, and -l switches.
+
+wget -m www.everydaylinuxuser.com
+
+If you have a website, you can make a complete backup using this one simple command.
+Run wget as a Background Command
+
+You can get wget to run as a background command leaving you able to get on with your work in the terminal window while the files download. Use the following command:
+
+wget -b www.everydaylinuxuser.com
+
+Linux wget background process
+
+You can combine switches. To run the wget command in the background while mirroring the site, use the following command:
+
+wget -b -m www.everydaylinuxuser.com
+
+You can simplify this further, as follows:
+
+wget -bm www.everydaylinuxuser.com
+
+Logging
+
+If you run the wget command in the background, you don't see any of the normal messages that it sends to the screen. To send those messages to a log file so that you can check on progress at any time, use the tail command.
+
+To output information from the wget command to a log file, use the following command:
+
+wget -o /path/to/mylogfile www.everydaylinuxuser.com
+
+The reverse is to require no logging at all and no output to the screen. To omit all output, use the following command:
+
+wget -q www.everydaylinuxuser.com
+
+Download From Multiple Sites
+
+You can set up an input file to download from many different sites. Open a file using your favorite editor or the cat command and list the sites or links to download from on each line of the file. Save the file, and then run the following wget command:
+
+wget -i /path/to/inputfile
+
+Apart from backing up your website or finding something to download to read offline, it is unlikely that you will want to download an entire website. You are more likely to download a single URL with images or download files such as zip files, ISO files, or image files.
+
+With that in mind, you don't have to type the following into the input file as it is time consuming:
+
+    http://www.myfileserver.com/file1.zip
+    http://www.myfileserver.com/file2.zip
+    http://www.myfileserver.com/file3.zip
+
+If you know the base URL is the same, specify the following in the input file:
+
+    file1.zip
+    file2.zip
+    file3.zip
+
+You can then provide the base URL as part of the wget command, as follows:
+
+wget -B http://www.myfileserver.com -i /path/to/inputfile
+
+Retry Options
+
+If you set up a queue of files to download in an input file and you leave your computer running to download the files, the input file may become stuck while you're away and retry to download the content. You can specify the number of retries using the following switch:
+
+wget -t 10 -i /path/to/inputfile
+
+Use the above command in conjunction with the -T switch to specify a timeout in seconds, as follows:
+
+wget -t 10 -T 10 -i /path/to/inputfile
+
+The above command will retry 10 times and will connect for 10 seconds for each link in the file.
+
+It is also inconvenient when you download 75% of a 4-gigabyte file on a slow broadband connection only for the connection to drop. To use wget to retry from where it stopped downloading, use the following command:
+
+wget -c www.myfileserver.com/file1.zip
+
+If you hammer a server, the host might not like it and might block or kill your requests. You can specify a wait period to specify how long to wait between each retrieval, as follows:
+
+wget -w 60 -i /path/to/inputfile
+
+The above command waits 60 seconds between each download. This is useful if you download many files from a single source.
+
+Some web hosts might spot the frequency and block you. You can make the wait period random to make it look like you aren't using a program, as follows:
+
+wget --random-wait -i /path/to/inputfile
+
+Protect Download Limits
+
+Many internet service providers apply download limits for broadband usage, especially for those who live outside of a city. You may want to add a quota so that you don't go over your download limit. You can do that in the following way:
+
+wget -q 100m -i /path/to/inputfile
+
+The -q command won't work with a single file. If you download a file that is 2 gigabytes in size, using -q 1000m doesn't stop the file from downloading.
+
+The quota is only applied when recursively downloading from a site or when using an input file.
+Get Through Security
+
+Some sites require you to log in to access the content you wish to download. Use the following switches to specify the username and password.
+
+wget --user=yourusername --password=yourpassword
+
+On a multi-user system, when someone runs the ps command, they can see your username and password.
+Other Download Options
+
+By default, the -r switch recursively downloads the content and creates directories as it goes. To get all the files to download to a single folder, use the following switch:
+
+wget -nd -r
+
+The opposite of this is to force the creation of directories which can be achieved using the following command:
+
+wget -x -r
+
+How to Download Certain File Types
+
+If you want to download recursively from a site, but you only want to download a specific file type such as an MP3 or an image such as a PNG, use the following syntax:
+
+wget -A "*.mp3" -r
+
+The reverse of this is to ignore certain files. Perhaps you don't want to download executables. In this case, use the following syntax:
+
+wget -R "*.exe" -r
+
+Cliget
+
+There is a Firefox add-on called cliget. To add this to Firefox:
+
+    Visit https://addons.mozilla.org/en-US/firefox/addon/cliget/ and click the add to Firefox button.
+
+    Click the install button when it appears and then restart Firefox.
+
+    To use cliget, visit a page or file you wish to download and right-click. A context menu appears called cliget, and there are options to copy to wget and copy to curl.
+
+    Click the copy to wget option, open a terminal window, then right-click and choose paste. The appropriate wget command is pasted into the window.
+
+This saves you from having to type the command yourself.
+Summary
+
+The wget command has a number of options and switches. To read the manual page for wget, type the following in a terminal window:
+
+man wget
+
+More from Lifewire
+
+    Command terminal icon
+    15 Linux Terminal Commands That Will Rock Your World
+    Using wget in the Linux command line
+    How to Download a File From the Linux Command Line
+
+    Hand turns a cube and changes the word "offline" to "online" (or vice versa)
+    How to Download a Website for Offline Reading
+    Wave Shaped Paper Stripes
+    Example Uses of the Linux Curl Command
+
+    Linux logo with penguin head
+    How to View the End of a File in Linux with the 'Tail' Command
+    Linux Sort Command
+    How to Sort Data in a File Using Linux
+    Data files, illustration
+    Using the ls Command to List Files in Linux
+    The Linux Zip Command
+    Practical Examples of the zip Command
+    Penguin holding a pile of books
+    Example Uses of the Linux Host Command
+    The Linux grep Command
+    Example Uses of the Linux grep Command
+    Hard drives
+    Find How Much Disk Space a File or Folder Uses in Linux
+    Vector illustration in flat style of a computer screen with multiple windows open and a red window prompting for a password in front.
+    Use .htaccess to Password-Protect Your Web Pages and Files
+    Illustration of a person using a Linux computer
+    How to Create Symbolic Links Using the ln Command
+    Person unzipping files via the command line
+    The Linux 'unzip' Command
+    Illustration of a computer with an X on the screen
+    How to Kill Processes Using Linux
+    Screenshot of Ubuntu Linux desktop
+    10 Essential Linux Commands for Navigating Your File System
+
+Lifewire
+Is Your Inbox Out of Control?
+Believe it or not, our free, daily newsletter can help you use tech better and declutter your inbox. Sign up now!
+One-Tap Sign Up
+Follow Us
+
+    Facebook
+
+    News
+    Best Products
+    Mobile Phones
+    Computers
+
+    About Us
+    Advertise
+    Privacy Policy
+    Cookie Policy
+    Careers
+    Editorial Guidelines
+    Contact
+    Terms of Use
+    California Privacy Notice
+
+TRUSTe
+Lifewire is part of the Dotdash publishing family.

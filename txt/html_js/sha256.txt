@@ -1,0 +1,85 @@
+sha256
+
+w=32
+m=2**w-1
+0<=x<2**w
+SHR n x = x>>>n
+ROTR n x = ((x>>>n)|(x<<(w-n)))&m
+ROTL n x = ROTR (w-n) x = 
+
+ch(x,y,z)=(x&y)^((~x)&z)
+maj(x,y,z)=(x&y)^(x&z)^(y&z)
+sg0(x)= ROTR(2,x) ^ ROTR(13,x) ^ ROTR(22,x)
+sg1(x)= ROTR(6,x) ^ ROTR(11,x) ^ ROTR(25,x)
+d0(x)= ROTR(7,x) ^ ROTR(18,x) ^ SHR(3,x)
+d1(x)= ROTR(17,x) ^ ROTR(19,x) ^ SHR(10,x)
+
+k :: [uint32]
+len k = 64
+kk[i] = m&((primes[i]^/3)*2**32)
+	= m&((primes[i]*2**96)^/3)
+	= m&(floor3th(primes[i]*2**96))
+
+kk[0]==0x428a2f98
+
+
+padding
+	n bit:
+		n = len bits
+		n < 2**64
+		nz = (512-n-1-64)%512
+		#?*512==n+1+nz+64
+		bits = bits+[1]+[0]*nz+n.to_bits(big_endian, 64)
+block
+	block=512bit=16word
+	word=32bit
+	msg[i][j]= i block => j word
+		0<=j<16
+
+#init_hash
+hh0 :: [uint32]
+len hh0 = 8
+hh0[i] = m&((primes[i]^/2)*2**32)
+	= m&((primes[i]*2**64)^/2)
+	= m&(floor2th(primes[i]*2**64))
+
+
+ww :: [uint32]
+len ww = 64
+vv :: [uint32]
+len vv = 8
+a..h = vv
+hh :: [uint32]
+len hh = 8
+t1
+t2
+
+
+
+
+hh:=hh0
+foreach block mm:
+	# ww:=
+		for i <- [0..15]:
+			ww[i]:=mm[i]
+		for i <- [16..63]:
+			ww[i]:=d1(ww[i-2])+ww[i-7] + d0(ww[i-15])+ww[i-16]
+			
+	a..h:=hh
+	for i in [0..63]:
+		t1=h+sg1(e)+ch(e,f,g)+kk[i]+ww[i]
+		t2=sg0(a)+maj(a,b,c)
+		h=g
+		g=f
+		f=e
+		e=d+t1
+		d=c
+		c=b
+		b=a
+		a=t1+t2
+	hh = hh .+. a..h
+
+output hh
+
+
+

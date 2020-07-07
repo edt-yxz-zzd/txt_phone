@@ -1,0 +1,101 @@
+
+show media type
+
+
+
+mediainfo --Inform="Video;%Codec%" xxx
+
+ffprobe -v error -select_streams v:0 -show_entries stream=codec_name -of default=noprint_wrappers=1:nokey=1 xxx
+
+ffprobe video.mkv 2>&1 >/dev/null |grep Stream.*Video | sed -e 's/.*Video: //' -e 's/[, ].*//'
+
+
+ffprobe 桥边姑娘\[伴奏\].mp3
+    ...
+    ...
+    Stream #0:0: Audio: mp3, 44100 Hz, stereo, fltp, 64 kb/s
+    Metadata:
+      encoder         : Lavc58.54
+
+ffprobe 桥边姑娘\[伴奏\].mp3 2>&1 >/dev/null |grep Stream.*Audio | sed -e 's/.*Audio: //' -e 's/[, ].*//'
+mp3
+
+
+
+
+ffprobe 桥边姑娘\[伴奏\].mp3
+    encoder : Lavc58.54
+ffprobe 桥边姑娘\[女\].mp3
+    encoder : Lavc58.35
+ffprobe 桥边姑娘\[张茜\].mp3
+    encoder : LAME3.99r
+ffprobe 桥边姑娘\[海伦\].m4a
+    m4a not mp3
+ffprobe 桥边姑娘\[非洲鼓版\]\[海伦\].mp3
+    encoder : LAME3.99r
+
+
+
+
+=======
+
+
+https://stackoverflow.com/questions/2869281/how-to-determine-video-codec-of-a-file-with-ffmpeg
+
+mediainfo
+
+mediainfo --Inform="Video;%Codec%" video.mkv
+
+will in my case return:
+
+V_MPEG4/ISO/AVC
+
+Answer made possible thanks to How to find duration of a video file using mediainfo in seconds or other formats?
+ffprobe (ffmpeg) easy way
+
+Assuming your video has one video stream only:
+
+ffprobe -v error -select_streams v:0 -show_entries stream=codec_name \
+  -of default=noprint_wrappers=1:nokey=1 video.mkv
+
+Will in my case return:
+
+h264
+
+Answer made possible thanks to How to get video duration in seconds?
+ffprobe (ffmpeg) dirty way
+
+This method is easier to understand but messy.
+
+To get the codec information without playing back the file, use ffprobe.
+
+$ ffprobe video.mkv
+[...]
+Input #0, matroska,webm, from 'video.mkv':
+  Metadata:
+    ENCODER         : Lavf56.25.101
+  Duration: 00:28:05.15, start: 0.000000, bitrate: 4353 kb/s
+    Stream #0:0: Video: h264 (High 4:4:4 Predictive), yuv444p, 1280x960, SAR 1:1 DAR 4:3, 29.97 fps, 29.97 tbr, 1k tbn, 59.94 tbc (default)
+    Metadata:
+      ENCODER         : Lavc56.26.100 libx264
+    Stream #0:1: Audio: vorbis, 48000 Hz, stereo, fltp (default)
+    Metadata:
+      ENCODER         : Lavc56.26.100 libvorbis
+
+To extract the video codec information - since ffmpeg sends information to stderr - pipe and grep it:
+
+$ ffprobe video.mkv 2>&1 >/dev/null | grep Stream.*Video
+    Stream #0:0: Video: h264 (High 4:4:4 Predictive), yuv444p, 1280x960, SAR 1:1 DAR 4:3, 29.97 fps, 29.97 tbr, 1k tbn, 59.94 tbc (default)
+
+To reduce the output even further, introduce sed:
+
+$ ffprobe video.mkv 2>&1 >/dev/null |grep Stream.*Video | sed -e 's/.*Video: //' -e 's/[, ].*//'
+h264
+
+
+
+
+
+
+
+

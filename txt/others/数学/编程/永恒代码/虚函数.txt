@@ -1,0 +1,48 @@
+虚函数
+
+虚函数 递归约束 成员与基类
+
+递归
+	def f(self,...):
+		self.g(...)
+	def f(self, other...):
+		other.g(self,...)
+
+
+调用基类函数
+	只强调即时调用的版本，并不对其内部递归调用的版本作任何要求
+	py.super
+		动态类体系，与java.super不同，只有最外层派生类确定后才能知道super是那个版本
+		super for mixins, sit on top of others unknown when def
+	
+	虚调用
+		调用最外层
+		self.f()
+	实调用
+		指定版本
+		C.f(self)
+调用成员函数
+	阻止溢出，与派生类切断联系
+	like py.UserDict
+	self.wrapped_underlying_worker_impl_obj.f()
+	实现上可以给出wrapped_self
+		as_most_derived_cls
+		assert isinstance(self, as_most_derived_cls)
+		wrapped_self := wrap_as(self, as_most_derived_cls)
+		assert type(wrapped_self) is as_most_derived_cls
+	这更体现了大指针的优点：
+		(data_ptr, as_most_derived_cls)
+			内建类体系
+			C++继承多个非空带虚函数基类、纯虚基类(数据浮动)、带虚函数的非引用成员时，对象要保存多个虚函数表指针
+			使用大指针的话，静态类型切换时，可同时更换两指针，基类及非引用成员的虚函数表指针无须保存在对象数据中，而是保存在派生类虚函数表中，静态类型切换动态提取指针。(除非是等大混合类型数组，然而每个对象也只需一个虚函数表指针)
+		(data_ptr, class_ops...)
+			like Haskell
+			外挂类体系
+递归约束
+	如果只有〖接口〗和〖接口的直接实现类〗，没有继承，则由于只有单层，并不存在递归困难，类作者可完全掌控
+	哪怕是单继承，由于虚函数的调用依赖并没有在接口中声明，派生类的作者未必清楚调用路径，编译器也无法自动检查
+	〖递归约束〗描述了虚函数可以调用那些函数及版本、还有禁止的。
+
+
+
+

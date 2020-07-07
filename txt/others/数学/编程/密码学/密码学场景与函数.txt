@@ -1,0 +1,933 @@
+密码学场景与函数
+
+
+
+===========场景=========
+#静态广播通信
+文件完整性签名
+	*非对称密钥
+	*共享对称密钥
+
+文件加密
+	*口令保存与校验
+		？mine？
+			sign_up:
+				==>>id==>>
+				<<==(f,n)<<==[n:=??][n>=2]
+				[pwd:=??]==>>r=(f^n)(pwd)==>>[salt:=??][save (id: f,n,salt,rr=add<salt>(r))]
+			sign_in:
+				==>>id==>>
+				<<==(f,n,h)<<==[read (id: f,n,salt,rr)]
+				[pwd:=??]==>>(s=(f^(n-1))(pwd),t=(h^(n+1))(pwd))==>>[verify add<salt>(f(s))==rr][salt2:=??][save (id: h,n+1,salt2,tt=add<salt2>(t))]
+			f,h的选择，如：f<z>(x) := HMAC<??++x>(??++z)
+			why?
+				见下面〖临时对话的对称密钥建立〗
+				某次对话的内容可能暴露，故口令不能直接传送
+				本方法不能防御即时篡改：将(s,t)改为(s,t2)
+	*用户数据加密保存
+	*本地文件系统加密
+	*网络文件系统加密
+	*压缩文件内部加密
+
+
+#动态交互通信
+用户与服务器通信
+	不对称运算量
+		限制DDOS
+		问？
+			验证码(图像识别、图灵测试)
+			(a,b) ==>> (s,t,g,c,d){g==gcd(a,b), g*c==a,g*d==b,s*a+t*b==g>0}
+			(m,phi(m),e,c=x^e%m,gcd(c,m)==1) ==>> x=c^(e^-1%phi(m))%m
+			(m,g,order<%m>(g)==phi(m),c==g^x%m) ==>> x=log<%m,g>(c)
+			
+			factor int/poly
+			hash with leading 0s
+				(iprefix, oprefix) ==>> ?isuffix. [hash(iprefix++isuffix).startswith(oprefix)]
+				
+			NP
+	身份确认(长期密钥)
+		*非对称密钥
+			长期密钥=(我私钥，我公钥，他公钥)
+		*共享对称密钥
+			长期密钥=长期共享对称密钥
+			？mine？
+				==>>time++random==>>
+				<<==HMAC<共享对称密钥>(time++random)<<==
+			
+	临时对话的对称密钥建立
+		#阻止重发(一方临时私钥暴露情况下)：加盐+[临时共享秘密:=密钥生成函数(长期共享秘密++临时共享合成秘密)]+临时共享秘密确认
+		*身份确认的情形
+			*按〖确认谁的身份〗分类
+				*单向(服务器身份)
+				*双向
+			*按实现方法分类
+				*无需身份确认的情形+签名
+				*直接加密传送对称密钥
+				*MQV
+		*无需身份确认的情形
+			*Anonymous Diffie–Hellman
+				Anonymous DH can be taken down with a man-in-the-middle attack.
+				Diffie–Hellman key agreement
+				[@p][prime p,p//2]
+				$ time openssl dhparam 2048
+			*直接交换公钥+身份确认的情形+将来当面校验公钥
+				之前是否存在中间人？
+				是否要否认之前的对话？
+	消息加密(临时对话密钥)
+	口令验证(用户身份)
+
+
+
+
+
+===========函数=========
+see below:
+	[PRP < PRF < MAC < UH]
+
+伪随机
+	pseudorandom number generator (PRNG)
+真随机
+	random number generator (RNG)
+加盐
+	随机串
+	初始向量IV
+	NONCE(only once)
+		A nonce is a number used only once.
+		It is the same for all blocks in a single message, but no two messages should use the same nonce.
+		Avoiding Predictability with Nonces 
+			in order to be secure, encryption schemes must be unpredictable and return different ciphertexts when called repeatedly to encrypt the same plaintext—otherwise, an attacker can determine whether the same plaintext was encrypted twice.
+	绝对时刻
+	计数
+		通信中：(我的计数,你的计数,本次对话计数)
+		用户计数若无持续性(如换软/硬件)，则随机初始化
+		软/硬件的计数也可加入
+加密
+	*按输入输出长度对比分类
+		*严格等长加密
+		*平均等长加密
+		*平均增长加密(加盐)
+	*按输入长度分类
+		*输入限长加密
+			*输入定长加密
+			*输入限长变长加密
+		*输入长度无限制变长加密
+			*定长加密+模式
+			*数据流加密
+散列
+	*无要求散列
+	*不同安全级别散列
+		collision resistance and preimage resistance
+		*随机
+			*密钥生成函数
+				key derivation function (KDF)
+				由口令、共享秘密生成密钥
+square-and-multiply
+	==>> trapdoor for 非对称加密
+	比暴力运算快得多
+	timing attack
+	power-analysis attack
+Chinese remainder theorem
+	fasten g^e%(x*y)
+	Bellcore Attack on hardware
+		x := (xp * q*(q^-1%p) + xq * p*(p^-1%q))  %(p*q)
+		attack hardware, s.t. xq changed
+		x_ := (xp * q*(q^-1%p) + xq_ * p*(p^-1%q))  %(p*q)
+		[x-x_ == (xq - xq_) * p*(p^-1%q)  %(p*q)  %(p*q)]
+		[! (xq - xq_)\\\q]:
+			[p == gcd(x-x_, p*q)]
+
+
+
+MQV
+	长期：我私(x)，双方半公开信息(m,g,X,Y)，他私(y)
+		X==g^x%m
+		Y==g^y%m
+	临时：我私(a)，双方半公开信息(A,B)，他私(b)
+		A==g^a%m
+		B==g^b%m
+	[{1,m-1}/\{g,X,Y,A,B}=={}]
+	[order<%m>(g)>=m//2][DH safe prime m]
+	==>>
+	临时共享合成秘密
+		=g^((a+x*A)*(b+y*B))%m
+		=[他]=(A*X^A)^(b+y*B)%m
+		=[我]=(B*Y^B)^(a+x*A)%m
+		
+临时共享秘密确认
+	key confirmation
+	我==>>hash(我公钥++他公钥++临时共享秘密)==>>他
+	我<<==hash(他公钥++我公钥++临时共享秘密)<<==他
+
+forward secrecy
+	a key agreement is said to provide forward secrecy if previous sessions aren’t compromised when the present session is compromised. In the data leak model, only temporary secrets are compromised, whereas in the breach model, long-term secrets are exposed.
+	当双方长期密钥、某些对话的临时共享秘密、临时密钥暴露之后，其他对话依旧安全。
+为何要给每一次对话建立临时共享秘密？
+为何不能直接加密传送临时共享秘密？
+为何不能单方面指定临时共享秘密？
+为何临时密钥要由长期密钥与临时共享秘密共同生成？
+为何要确认临时密钥？
+
+为何要给每一次对话建立临时共享秘密？
+	否则一破全破
+为何不能直接加密传送临时共享秘密？
+	长期密钥会过时，有泄露的可能，全破
+为何不能单方面指定临时共享秘密？
+	可能针对加密系统的弱点设计参数
+为何临时密钥要由长期密钥与临时共享秘密共同生成？
+	不使用临时共享秘密：
+		长期密钥会过时，有泄露的可能，全破
+	不使用长期密钥：
+		在建立临时共享秘密的过程中，重发消息，对方身份难定
+为何要确认临时密钥？
+	在建立临时共享秘密的过程中，重发消息，对方并不知道临时密钥
+
+
+
+
+
+
+Serious Cryptography A Practical Introduction to Modern Encryption
+	by Jean-Philippe
+
+symmetric-key cryptography
+	*block cipher
+	*stream cipher
+	*keyed hash function
+	*authenticated cipher
+	see below:
+		[block_cipher=?=PRP < PRF < MAC == keyed_hash < UH]
+
+
+block_cipher
+	* substitution–permutation network (SPN)
+		substitution=confusion
+		permutation=diffusion
+	
+		At a high level, confusion is about depth whereas diffusion is about breadth. 
+		In the design of a block cipher, confusion and diffusion take the form of substitution and permutation operations, which substitution–permutation networks (SPNs)
+
+	* Feistel construction
+		F :: PRF
+		L,R := input
+		for round_key in ...:
+			L, R := R, L xor F<round_key>(R)
+		
+		recur!!!
+			block_cipher can be impl by Feistel construction
+			Feistel construction requires PRF
+			PRF can be impl by block_cipher
+			basic case:
+				1bit =>[key]=> 1bit
+				key choose one from the only 2! permutations of 1bit
+				
+				+2! = 2 >= 2^1
+					key for 1bit msg can be 1bit
+				3! = 6 >= 2^2
+				+4! = 24 >= 2^4
+					key for 2bit msg can be 4bit
+				5! = 120 >= 2^6
+				6! = 720 >= 2^9
+				7! = 5040 >= 2^12
+				+8! = 40320 >= 2^15
+					key for 3bit msg can be 15bit
+		
+		derived_key<rnd_at,n> :: bit{2^n} -> [bit{2^(n-1)}]{rnd_at(n-1)}
+		rnd_at :: int{>=0} -> int{>=2}
+			why [output>=2]??
+				if [output==1]:
+					half bits were not encrypted
+		def recur_Feistel<rnd_at, derived_key, n, key>(msg):
+			#[rnd_at(?)===2]:
+			#   O(n*2^n) i.e. O(N*log2(N))
+			#   derived_key<>(key) := [key[:/2], key[/2:]]
+			assert [bit_len(msg)==2^n==bit_len(key)>=1]
+			if n==0:
+				return key xor msg
+			
+			F<round_key> := recur_Feistel<rnd_at, derived_key, n-1, round_key>
+			L, R := msg
+			for round_key in derived_key<rnd_at, n>(key):
+				L, R := R, L xor F<round_key>(R)
+			return L++R
+			T(0) := T0
+			T(n) := k*2^n + (w*2^n+T(n-1))*rnd_at(n-1)
+			[T(n)
+				= k*2^n + (w*2^n+T(n-1))*rnd_at(n-1)
+				= 2^n*(k +w*rnd_at(n-1)) +T(n-1)*rnd_at(n-1)
+				= 2^n*(k +w*rnd_at(n-1))
+				+ 2^(n-1)*(k +w*rnd_at(n-2))*rnd_at(n-1)
+				+ 2^(n-2)*(k +w*rnd_at(n-3))*rnd_at(n-2)*rnd_at(n-1)
+				+ ...
+				+ 2^1*(k +w*rnd_at(0)) *rnd_at(1)*...*rnd_at(n-2)*rnd_at(n-1)
+				+ T0*rnd_at(0)*...*rnd_at(n-2)*rnd_at(n-1)
+				= T0*II rnd_at(i) {i<-[0..n-1]}
+				+ sum 2^(j+1)*(k +w*rnd_at(j)) *II rnd_at(i) {i<-[j+1..n-1]} {j<-[0..n-1]}
+			]
+			
+			[rnd_at(i)==v>=2]:
+				[T(n)
+					= T0*II rnd_at(i) {i<-[0..n-1]}
+					+ sum 2^(j+1)*(k +w*rnd_at(j)) *II rnd_at(i) {i<-[j+1..n-1]} {j<-[0..n-1]}
+					= T0*v^n
+					+ 2*(k+w*v)*v^(n-1) *sum (2/v)^j {j<-[0..n-1]}
+					= T0*v^n
+					+ 2*(k+w*v)*v^(n-1) *([v==2]n +[v!=2]((2/v)^n-1)/(2/v-1))
+					= ([v==2]O(n*2^n) +[v==1]O(2^n) +[v>2]O(v^n))
+					= ([v==2]O(n*2^n) +[v==1]O(2^n) +[v>2]O((2^n)^log2(v)))
+				]
+			[rnd_at(i)==floor_log2(i+1+v)+u][v,u>=0][v+u>=1]:
+				[T(n)
+					= T0*II rnd_at(i) {i<-[0..n-1]}
+					+ sum 2^(j+1)*(k +w*rnd_at(j)) *II rnd_at(i) {i<-[j+1..n-1]} {j<-[0..n-1]}
+					= T0*II floor_log2(i+1+v)+u {i<-[0..n-1]}
+					+ sum 2^(j+1)*(k +w*(floor_log2(j+1+v)+u)) *II floor_log2(i+1+v)+u {i<-[j+1..n-1]} {j<-[0..n-1]}
+					let [o:=floor_log2(n+v)]
+					<= T0*II o+u {i<-[0..n-1]}
+					+ sum 2^(j+1)*(k +w*(log2(j+1+v)+u)) *II o+u {i<-[j+1..n-1]} {j<-[0..n-1]}
+						= [case [rnd_at(i)==o+u]]
+					= ???
+				]
+			[rnd_at(i)==i+1]:
+				[T(n)
+					= T0*II rnd_at(i) {i<-[0..n-1]}
+					+ sum 2^(j+1)*(k +w*rnd_at(j)) *II rnd_at(i) {i<-[j+1..n-1]} {j<-[0..n-1]}
+					= T0*II (i+1) {i<-[0..n-1]}
+					+ sum 2^(j+1)*(k +w*(j+1)) *II (i+1) {i<-[j+1..n-1]} {j<-[0..n-1]}
+					= T0*n!
+					+ sum 2^(j+1)*(k +w*(j+1)) *n!///(j+1)! {j<-[0..n-1]}
+					= O(n!)
+				]
+			[rnd_at(i)==2^i]:
+				[T(n)
+					= T0*II rnd_at(i) {i<-[0..n-1]}
+					+ sum 2^(j+1)*(k +w*rnd_at(j)) *II rnd_at(i) {i<-[j+1..n-1]} {j<-[0..n-1]}
+					= T0*2^sum i {i<-[0..n-1]}
+					+ sum 2^(j+1)*(k +w*2^j) *2^sum i {i<-[j+1..n-1]} {j<-[0..n-1]}
+					= T0*2^((n-1)*n///2)
+					+ sum 2^(j+1)*(k +w*2^j) *2^((n-1-j)*(n+j)///2) {j<-[0..n-1]}
+					= T0*2^((n-1)*n///2)
+					+ sum (k +w*2^j) *2^(j+1+(n-1-j)*(n+j)///2) {j<-[0..n-1]}
+					= T0*2^((n-1)*n///2)
+					+ sum (k +w*2^j) *2^(1+(n-j)*(n+j-1)///2) {j<-[0..n-1]}
+					= T0*2^((n-1)*n///2)
+					+ sum (k +w*2^j) *2^(1+(n^2-j^2-n+j)///2) {j<-[0..n-1]}
+					<= T0*2^((n-1)*n///2)
+					+ sum (k +w*2^j) *2^(1+(n^2-n)/2+j/2) {j<-[0..n-1]}
+						= T0*2^((n-1)*n///2)
+						+ sum k     *2^(1+(n^2-n)/2+j/2) {j<-[0..n-1]}
+						+ sum w*2^j *2^(1+(n^2-n)/2+j/2) {j<-[0..n-1]}
+						= T0*2^((n-1)*n///2)
+						+ k *2^(1+(n^2-n)/2) *sum (2^/2)^j {j<-[0..n-1]}
+						+ w *2^(1+(n^2-n)/2) *sum (8^/2)^j {j<-[0..n-1]}
+						= T0*2^((n-1)*n///2)
+						+ k *2^(1+(n^2-n)/2) * ((2^/2)^n -1)/((2^/2) -1)
+						+ w *2^(1+(n^2-n)/2) * ((8^/2)^n -1)/((8^/2) -1)
+						= O(2^((n^2-n)/2) * (8^/2)^n)
+					= O(2^(n^2/2+n))
+				]
+
+
+
+Cryptographic vs. Non-Cryptographic PRNGs
+	both: uniform distribution
+	but: unpredictable vs predictable
+	
+	There are both cryptographic and non-cryptographic PRNGs. Non-crypto PRNGs are designed to produce uniform distributions for applications such as scientific simulations or video games. However, you should never use non-crypto PRNGs in crypto applications, because they’re insecure—they’re only concerned with the quality of the bits’ probability distribution and not with their predictability. Crypto PRNGs, on the other hand, are unpredictable, because they’re also concerned with the strength of the underlying used to deliver well-distributed bits.
+
+
+
+ciphertext stealing 
+	* Plaintexts can be of any bit length, not just bytes.
+	* Ciphertexts are exactly the same length as plaintexts.
+	* Ciphertext stealing is not vulnerable to padding oracle attacks, powerful attacks that sometimes work against CBC with padding.
+
+	msg
+		= [bk...]++[incomplete_bk]
+		= bks++[incomplete_bk]
+	IV as pre_encrypted_bk
+	
+	
+	pre_encrypted_bk := IV
+	ds := [pre_encrypted_bk]
+	for bk in bks:
+		d := block_encrypt<key>(ds[-1] xor bk)
+		ds.append(d)
+	#stealing
+	pre_encrypted_bk = ds.pop()
+	h := pre_encrypted_bk[:len(incomplete_bk)]
+	t := pre_encrypted_bk[len(incomplete_bk):]
+	
+	d := block_encrypt<key>((h xor incomplete_bk)++t)
+	ds.append(d)
+	ds.append(h)
+	send ds (ds include IV)
+
+CTR mode
+	#block cipher become stream cipher???
+	nonce, ctr := ???
+	mk_mask(nonce, ctr) := block_encrypt<key>(nonce, ctr) ++mk_mask(nonce, ctr+1)
+	cipher_text := mk_mask(nonce, ctr) xor plain_text
+	send (nonce, ctr, cipher_text)
+
+	无法阻止有意义的篡改
+stream cipher
+	pros:
+		neednot a diff decrypt algo, hardware
+		fast
+	cons:
+		无法阻止有意义的篡改，需要MAC/AEAD/数字签名
+			see below: permutation-based AEAD
+		
+
+digital signature
+	sig := sign<key>(hash(msg))
+
+
+iterative hashing
+	Length-Extension Attack
+		avoid:
+			？mine？
+				#count down,up
+				m := len(bks)
+				for i,bk in enum(bks):
+					bk := (bk,i,m-i)
+					...
+				
+	* Compression-Based Hash Functions: The Merkle–Damgard Construction
+		compression function
+		transforms an input to a smaller output
+		Merkle–Damgard construction
+		=======
+		bks := chop(pad_with_len(msg))
+		h := IV
+		for bk in bks:
+			h := compress(h, bk)
+		ret h
+		=======
+		If a compression function is preimage and collision resistant, then a hash function built on it using the M–D construction will also be preimage and collision resistant.
+	* Permutation-Based Hash Functions: Sponge Functions
+		permutation
+		transforms an input to an output of the same size, such that any two different inputs give two different outputs
+		sponge construction
+		=======
+		bks := chop(pad(msg))
+		ost,ist := st0
+		#absorbing phase
+		for bk in bks:
+			ost := ost xor bk
+			ost,ist := permutation(ost,ist)
+		#squeezing phase
+		def f():
+			while 1:
+				ost,ist := permutation(ost,ist)
+				yield ost
+		h := b"".join(f())[:n]
+		ret h
+		=======
+		To be secure, the permutation P should behave like a random permutation, without statistical bias and without a mathematical structure that would allow an attacker to predict outputs.
+		
+		c = sponge_capacity = bit_len(ist)
+		o = bit_len(ost) = bit_len(bk)
+		n = bit_len(h)
+		sponge_security_level = c/2
+		bit_len(st) = o+c = o+2*sponge_security_level
+		collision_complexity = 2^min(n/2,c/2)
+		second_preimage_complexity = 2^min(n,c/2)
+		let n==o==c:
+			bit_len(st)
+				=2*c
+				=4*sponge_security_level
+
+compression function
+	Davies–Meyer Construction
+		compress(h, bk) := h xor block_encrypt<bk>(h)
+		[@bk. ;?h. [compress(h, bk)==h]]
+			proof:
+				!![compress(h, bk)==h]
+				[block_encrypt<bk>(h)==0]
+				[h==block_decrypt<bk>(0)]
+	others:
+		compress(h, bk) := bk xor block_encrypt<bk>(h)
+		compress(h, bk) := h xor bk xor block_encrypt<bk>(h xor bk)
+
+
+警告：
+	MAC会泄露数据，故：
+		*用于公开数据
+			MAC只是双方身份证明，保证数据未被篡改
+			不考虑数据泄露问题
+			密文属于公开数据
+				stream cipher的密文特别容易被篡改
+				正是MAC的用武之地
+		*用于秘密数据，则必须加密MAC
+		===
+		encryption provides confidentiality
+		digital signature is used to prevent forgeries
+		it’s okay for a signature scheme to leak information on the message signed
+			, because the message is not secret.
+
+
+keyed hashing
+	keyed hashing forms the basis of two types of important cryptographic algorithms:
+		* message authentication code (MAC)
+			* authenticate a message
+			* protect message integrity
+			
+			authentication_tag := MAC<key>(msg)
+			send (msg, authentication_tag)
+			
+			Replay Attack
+				avoid:
+					authentication_tag := MAC<key>(i, msg)
+					send (i, msg, authentication_tag)
+			
+			[MAC is considered secure if tags can’t be forged—that is, if the MAC’s outputs can’t be guessed]
+			Secure communication systems often combine a cipher and a MAC to protect a message’s confidentiality, integrity, and authenticity.
+				cipher ==>> confidentiality
+				hash ==>> integrity
+				MAC ==>> authenticity
+		* pseudorandom function (PRF)
+			* produce random-looking hash-sized values
+			PRF<key>(msg)
+			A PRF is a function that uses a secret key to return PRF<key>(msg), such that the output looks random.
+				Because the key is secret, the output values are unpredictable to an attacker.
+			[PRF should be indistinguishability from a random function]
+				vs [MAC is considered secure if tags can’t be forged—that is, if the MAC’s outputs can’t be guessed]
+				PRFs and MACs are both keyed hashes
+				but PRFs are fundamentally stronger than MACs, largely because MACs have weaker security requirements.
+				see [PRP < PRF < MAC < UH]
+
+			Unlike MACs, PRFs are not meant to be used on their own but as part of a cryptographic algorithm or protocol.
+				e.g.
+					* Feistel construction
+						PRFs can be used to create block ciphers within the Feistel construction
+					* key derivation scheme
+						key derivation schemes use PRFs to generate cryptographic keys from a master key or a password
+					* identification scheme
+						random challenge
+						identification schemes use PRFs to generate a response from a random challenge
+						assume shared secret
+						[x:=??]==>>x==>>[y:=??]
+						[verify r==PRF<secret>(x)]<<==(r,y)<<==[r:=PRF<secret>(x)]
+						[s:=PRF<secret>(y)]==>>s==>>[verify s==PRF<secret>(y)]
+	* hash-based keyed hash construction
+		* insecure MAC construction
+			* secret prefix MAC construction
+				hash(key++msg)
+			* secret suffix MAC construction
+				hash(msg++key)
+		* sandwich MAC construction
+			hash(key++msg++key)
+			？mine？
+				hash([1]*len(key)++[0]++key++msg++key++[0]++[1]*len(key))
+		* HMAC
+			hash-based MAC (HMAC)
+			HMAC<key>(msg) := hash(f1(key, hash(f0(key, msg))))
+				f0/f1 are invertible
+			
+			[hash is collision resistant] ==>> [HMAC :: PRF]
+			[hash’s compression function :: PRF] ==>> [HMAC :: PRF]
+	* cipher-based keyed hash construction
+		* insecure MAC construction
+			* CBC-MAC
+				CBC_MAC<key>(msg) := CBC<block_cipher, key>(msg)[-1] #last bk
+				break:
+					#where is padding??
+					tag0 := CBC_MAC<key>(msg0)
+					tag1 := CBC_MAC<key>(msg1)
+					assert tag1 == CBC_MAC<key>(pad(msg0)++[tag0 xor msg1[0]]++msg1[1:])
+					let msg1:=msg0
+					assert tag0 == CBC_MAC<key>(pad(msg0)++[tag0 xor msg0[0]]++msg0[1:])
+		* CMAC
+			cipher-based MAC (CMAC)
+			CMAC<key>(msg)
+			vs CBC_MAC:
+				treat the last bk special
+			m0,m1 := f(key)
+			if len(msg)\\len(bk):
+				bks := chop(msg)
+				bks[-1] := . xor m0
+			else
+				bks := chop(pad(msg))
+				bks[-1] := . xor m1
+			...
+			？mine？
+				* 0
+					key_last := f(key)
+					[key_last != key]
+					bks := chop(pad(msg))
+					key for bks[:-1]
+					key_last for bks[-1]
+				* 1
+					m := len(bks)
+					f<i,m-i>(key) for bks[i]
+					[@key. @i,j,k. [k!=1]->[f<i,1>(key)!=f<j,k>(key)]]
+					[@key. @i,j,k. [j!=0]->[f<0,i>(key)!=f<j,k>(key)]]
+					f<i,m-i>(key) := ([[i==0],[m-i==1]] xor key[:2])++g<i,m-i>(key[2:])
+				* 2
+					f<i,0>(key) for bks[i]
+					f<i,1>(key) for bks[-1]
+					[@key. @i. f<i,1>(key)!=f<i,0>(key)]
+			
+	* Wegman–Carter MAC construction
+		#UH/PRF-based keyed hash construction
+		#to go from single-message security to multi-message security using UH
+		Wegman_Carter_MAC<k,nonce; key>(msg) := PRF<k>(nonce) xor UH<key>(msg)
+			e.g. Poly1305
+			PRF<k>(nonce) act as stream cipher
+				[len(PRF<k>(nonce)) == len(UH<key>(msg))]
+				nonce used once per k
+					i.e. (k,nonce) itself is a nonce again.
+				can use a block cipher :: PRP < PRF
+			why use PRF to impl MAC if [PRF < MAC]?
+				*input size
+					input of PRF is small: nonce
+					input of MAC/UH is large: msg
+				* speed
+					UH is faster than PRF
+	* SipHash :: PRF
+		#like sponge construction
+		SipHash<key0,key1>(msg)
+		========
+		[n == len(h) == len(bk) == len(o/ist0/1)]
+		(ost0,ost1,ist0,ist1) := init_st
+		ost0 := . xor key0
+		ost1 := . xor key1
+		ist0 := . xor key0
+		ist1 := . xor key1
+		
+		pre_bk := [0]*n
+		post_bk := [0xff]*n
+		xx := ?? # 2
+		yy := ?? # 2*xx
+		bks := chop(pad(msg))
+		for bk in bks:
+			ost0 := . xor pre_bk
+			ost1 := . xor bk
+			pre_bk := bk
+			(ost0,ost1,ist0,ist1) := (permutation^xx)(ost0,ost1,ist0,ist1)
+		
+		ost0 := . xor pre_bk
+		ost1 := . xor post_bk
+		(ost0,ost1,ist0,ist1) := (permutation^yy)(ost0,ost1,ist0,ist1)
+		h := xor(ost0,ost1,ist0,ist1)
+		========
+		permutation:
+			#use invertible ops only
+			+=   #nonlinear, & occur
+			<<<= # rot, not shift
+			xor=
+	======
+	Timing Attacks on MAC Verification 
+		Side-channel attacks target the implementation of a cryptographic algorithm rather than the algorithm itself.
+			timing attacks use an algorithm’s execution time to determine secret information, such as keys, plaintext, and secret random values.
+		variable-time string comparison induces vulnerabilities not only in MAC verification, but also in many other cryptographic and security functionalities.
+			constant-time implementation
+		MACs can be vulnerable to timing attacks when a remote system verifies tags in a period of time that depends on the tag’s value
+			, thereby allowing an attacker to determine the correct message tag by trying many incorrect ones to determine the one that takes the longest amount of time to complete.
+
+
+cryptographic hash
+	#unpredictability, random oracle
+	collision resistance
+		<: second-preimage resistance
+			<: preimage resistance
+
+
+[PRP < PRF < MAC < UH]
+[block_cipher=?=PRP < PRF < MAC == keyed_hash < UH]
+	see below:
+		Why not sign by PSS(msg)=OAEP(Hash(msg))?
+pseudorandom permutation (PRP) < pseudorandom function (PRF) < message authentication code (MAC) < universal hash function (UH)
+	fff<key>(msg)
+	
+	PRP is injection
+		PRF neednot
+	output of PRP, PRF should be indistinguishability from a random function
+		MAC,UH don’t need to be pseudo-random
+		f<key>(msg) := MAC<key>(msg)*2++[0]*8
+			==>> [f :: MAC][not f::PRF]
+
+	output of MAC can’t be guessed
+	keyed hash:
+		collision resistance
+		preimage resistance
+	PRP, PRF, MAC as keyed hash have to be collision resistant
+		UH don’t have to be collision resistant
+	
+	UH requires:
+		[@msg0,msg1. [probability([UH<key>(msg0)==UH<key>(msg1)] | key) < 2^(-??) < 2^(-64)]]
+		??preimage resistance??
+			I think UH should be preimage resistance
+			when hash only once, polynomial-evaluation hash is preimage resistance
+	
+	
+
+
+universal hash function (UH)
+	UH<key>(msg)
+	UH don’t have to be collision resistant
+	UH don’t need to be pseudo-random
+	[@msg0,msg1. [probability(UH<key>(msg0)==UH<key>(msg1)|key) < 2^(-??) < 2^(-64)]]
+		there simply should be no pair (M1, M2) that gives the same hash for many different keys.
+	UH is only able to securely authenticate one message
+
+	[polynomial-evaluation hash :: UH]
+		#easy to find collision
+		#pp=order<%p>(key)
+		#bks_ = xor~ bks[i*pp:(i+1)*pp] {i}
+		#bks_ and bks have same result
+		bks := chop(pad(msg))
+		p := ??
+		*0:
+			h := h0
+			w := 1
+			for bk in bks:
+				#bug:h := (h+bk*key)%p
+				w := w*key%p
+				h := (h+bk*w)%p
+				
+		*1:
+			h := 0
+			h_1 := ??
+			for bk in bks++[h_1]:
+				h := (h*key+bk)%p
+				
+				
+
+
+
+
+
+
+authenticated encryption (AE)
+	(cipher_text, tag) := AE<key>(msg)
+	* AE using MAC
+		[k0!=k1]
+		insecurce:
+			Encrypt_and_MAC<k0,k1>(msg) := (encrypt<k0>(msg), MAC<k1>(msg))
+				least secure since MAC leak info of msg
+				* the goal of using MACs is simply to make tags unforgeable
+				* tags aren’t necessarily random looking
+		MAC_then_Encrypt<k0,k1>(msg)
+			:= encrypt<k0>(msg++MAC<k1>(msg))
+			or := (encrypt<k0>(msg), encrypt<k0>(MAC<k1>(msg)))
+		Encrypt_then_MAC<k0,k1>(msg) := (c:=encrypt<k0>(msg), MAC<k1>(c))
+			better than MAC_then_Encrypt/Encrypt_and_MAC
+			* the receiver only needs to compute a MAC in order to detect corrupt messages, meaning that there is no need to decrypt a corrupt ciphertext.
+			* attackers can’t send pairs of C and T to the receiver to decrypt unless they have broken the MAC, which makes it harder for attackers to transmit malicious data to the recipient.
+		
+		？mine？
+			MAC_then_Encrypt_then_MAC<k0,k1,k2>(msg)
+				#MAC_then_Encrypt + Encrypt_then_MAC
+				tag0 := MAC<k0>(msg)
+				cipher_text := encrypt<k1>(tag0++msg)
+					如果只能遍历msg一次，则 msg++tag0
+				tag2 := MAC<k2>(cipher_text)
+				send (cipher_text, tag2)
+
+
+authenticated encryption with associated data (AEAD)
+	(cipher_text, associated_data, tag) := AE<key>(plain_text, associated_data)
+		#associated_data leave unchanged
+		#  but protected by tag
+	(cipher_text, associated_data, tag, nonce) := AE<key>(plain_text, associated_data, nonce)
+		nonce vs associated_data
+			为何不把nonce当作associated_data的成员？
+				不只是为了强调唯一性
+				nonce必须出现最早，比plain_text, associated_data都早
+				plain_text, associated_data两者之间甚至可以交替出现
+	robustness misuse resistance
+		#repeated nonce
+		misuse-resistant authenticated ciphers to weigh the impact of a repeated nonce and attempt to determine whether conf i dentiality, authenticity, or both would be compromised in the face of such an attack, as well as what information about the encrypted data would likely be leaked.
+
+	streamable
+		An authenticated cipher is streamable (also called an online cipher) when it can process a message block-by-block and discard any already-processed blocks.
+		In contrast, nonstreamable ciphers must store the entire message, typically because they need to make two consecutive passes over the data:
+			one from the start to the end
+			, and the other from the end to the start of the data obtained from the first pass. 
+		Due to potentially high memory requirements, some applications won’t work with nonstreamable ciphers.
+	是否支持密文明文交替出现？
+		([(need_decrypt, may_ciphertext)], tag, nonce) := AE<key>([(need_encrypt, plaintext)], nonce)
+
+
+	
+	OCB(offset codebook) authenticated cipher
+		(mmm, assoc, tag, nonce) := OCB<key>(msg, assoc, nonce)
+			but like Encrypt_and_MAC, cannot verify before decrypt
+		mmm := ""
+		acc := 0
+		for i,bk in enum(iter_bks(msg)):
+			o := offset0<key>(i, nonce)
+			mmm ++= encrypt<key>(bk xor o) xor o
+			acc xor= bk
+		else:
+			i += 1
+			o := offset0<key>(i, nonce)
+			tag0 := encrypt<key>(acc xor o)
+		
+		tag1 := 0
+		for i,bk in enum(iter_bks(assoc)):
+			o := offset1<key>(i, nonce)
+			tag1 xor= encrypt<key>(bk xor o)
+		tag = tag0 xor tag1
+		ret
+	
+	SIV (Synthetic IV) authenticated cipher mode
+		(mmm, tag, nonce) := SIV<k0,k1>(msg, nonce)
+			#2pass
+			#nonstreamable
+		tag := PRF<k0>(nonce++msg)
+		mmm := encrypt<k1>(msg, nonce=tag)
+
+	permutation-based AEAD
+		== stream cipher + permutation-based hash
+		st := mk_st0<key>(nonce)
+		(ost, ist) := st
+		(ost, ist) := permutation(ost, ist)
+		for bk in chop(pad(msg)):
+			ost xor= bk       #permutation-based hash
+			cipher_bk := ost
+			yield cipher_bk   #stream cipher
+			(ost, ist) := permutation(ost, ist)
+		tag := ost
+		yield tag           #permutation-based hash
+
+
+carry-less multiplication (CLMUL)
+	== ZZ%2[X].mul
+	binary polynomial multiplication
+
+
+
+
+
+===============
+===============
+===============
+===============
+Nondeterministic Polynomial Time (NP)
+	verify solution in P
+	NP-complete := hardest NP problem
+	example of non-NP:
+		verify no solution to NP-complete problem
+factoring a 1024-bit number
+	2^70 basic operations
+factoring a 2048-bit number
+	2^90 basic operations
+
+discrete Logarithm problem (DLP)
+	DLP<g%m>(x) s.t. [g^DLP<g%m>(x) =[%m]= x]
+	
+	[m is prime]:
+		[(m-1)\\\order<%m>(g^i)]
+		choose m, s.t.[prime (m-1)///2]
+	？mine？
+		what about finite field?
+		[?p][prime (2^p-1)]
+		[pp := 2^p-1]
+		[G:=GF<2^p>]
+		[pp == order(mul_group(G))]
+		[@g][g<-G][1!=g!=0]
+		[order g==pp]
+		[@k][k<-[1..pp-1]]
+		[order g^k==pp]
+		better than above m
+
+如何避免指数太小或太大？
+	对抗暴力遍历@i<-[1..]. calc g^i,g^-i
+	？mine？
+		显然不能使用设置固定上下限的方法
+		*使用非平坦随机数产生器
+		*自己过滤以产生非平坦效果
+			*区间套 或 中位数
+				随机产生(2k+1)个数，选中位数
+			*0前缀缩短
+				假设需要输出n比特
+				bs := 产生k*n比特
+				m := (bs++[1]).index(1)
+				i := m*(k-1)//k
+				ret bs[i:i+n]
+
+
+模M情况下，如果[M!=2^n][必须以bit或byte保存或传送]怎么办？
+	随机填充
+	留有余地：
+		即填充结果的数值比M小
+		但空间足够保存M
+
+	RSA-OAEP
+	Optimal Asymmetric Encryption Padding (OAEP)
+		RSA-OAEP<M,key,r,hh,m>(msg):=
+			[len(msg)<=m]
+			[(2^8)^(r+len(hh)+1+m)<M<(2^8)^(1+r+len(hh)+1+m)]
+				#留有余地
+			rr := random_bytes(r)
+				#随机填充 salt
+			tt := hh++[0]*(m-len(msg))++[1]++msg
+			t := len(tt)
+			tt xor= hash0<t;r>(rr)
+			rr xor= hash1<r;t>(tt)
+			txt := [0]++rr++tt
+				#留有余地
+			mmm := RSA<M,key>(txt)
+			ret mmm
+			#[256==1+r+t==(1+r+len(hh)+1+m)]
+			#[32==r==len(hh)]
+			#==>>[m==256-66==190byte]
+	Full Domain Hash Signatures
+		Full Domain Hash (FDH)
+			FDH<M,key>(msg) := RSA<M,key>(hash(msg))
+		??it say PSS more secure than FDH since salt
+			but I donot think so, salt introduces too many valid sig, big bug!!!!
+	RSA Probabilistic Signature Scheme (PSS)
+		#vs RSA-OAEP<M,key,r,hh,m>(msg)
+		#	Why not sign by PSS(msg)=OAEP(Hash(msg))?
+		#		Although similar to PSS, OAEP has only been proven secure for encryption, not for signature.
+		RSA-PSS<M,key,k,r,h,tt>(msg):=
+			[len(tt)==1]
+			[(2^8)^(k+1+r+h)<M<(2^8)^(k+1+r+h+1)]
+				#留有余地
+			hh0 := hash<h>(msg)
+			rr := random_bytes(r)
+				#随机填充 salt
+			
+			hh1 := hash<h;8+h+r>([0]*8++hh0++rr)
+			ll := ([0]*k++[1]++rr) xor hash<k+1+r;h>(hh1)
+			txt := ll++hh1++tt
+				#k+1+r+h+1
+				#留有余地 tt固定
+			x := txt%M
+				#maybe [txt>=M] if [k==0]
+				#[txt<M*2^8]
+				#[(q,x):=txt/%M]
+				#[0 <= q < 2^8]
+				#[M*q+x == txt]
+				#[(M[-1]*q+x[-1])%2^8 == txt[-1] == tt[0]]
+				#[M[-1]*q =[%2^8]= tt[0]-x[-1]]
+				#[q =[%2^8]= (tt[0]-x[-1])*M[-1]^-1]
+			sig := RSA<M,key>(x)
+			ret sig
+			#[256==k+1+r+h+1]
+			#[32==r==h]
+			#==>>[k==190]
+
+
+arbitrarily large hash values
+	？mine？
+		very_long_hash(msg) :=
+			h := hash(msg)
+			for r in PRNG(msg):
+				h += 1
+				yield hash(r++h)
+
+
+美国所选的椭圆曲线正好说明它不值得信任
+	P-256’s b parameter := SHA1(c49d3608 86e70493 6a6678e1 139d26b7 819f7e90)
+	*1
+		b 必是仔细选择的后门
+	*2
+		SHA1 存在后门以求preimage
+
+
+

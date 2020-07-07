@@ -1,0 +1,146 @@
+radix_encode
+
+
+f<x> :: radix -> x -> [uint%radix]
+
+
+[x=uint]
+	[radix>1]:
+		sum~ radix^i {i=0..}
+[x=pint]
+	pint->uint
+[x=int]
+	int->uint
+
+
+
+[x=[uint]]
+	[radix>2]:
+		g1 = f<uint> (radix-1)
+		* [len x == 0]:
+			[]
+		* [len x == 1]:
+			g1 (x[0]+1)
+		* [len x > 1]:
+			[radix-1].join(map g1 x)
+
+assume [radix>2]
+[x={uint}]
+	{uint}->[uint]
+	{uint}
+	=> sorted[...a,b...]{a<b}
+	=> [uint] by (b-a-1)
+[x=(uint,uint)]
+	(uint,uint)->[uint]
+	g2 = f<uint> radix
+	* (0,0)
+		[]
+	* (uint,0)
+		g1 x[0]
+	* (uint,pint)
+		g1 x[0] + [radix-1] + g2 (x[1]-1)
+
+[x=[uint]{len<m}][m>=2]
+	* [len x == 0]:
+		[]
+	* [len x == 1]:
+		g1 (x[0]+1)
+	* [2 <= len x < m-1]:
+		[radix-1].join(map g1 x)
+	* [len x == m-1]:
+		[radix-1].join(map g1 x[:-1]) + [radix-1] + g2 x[-1]
+[x=[uint]{len>=n}][n>=1]
+	* [len x == n]:
+		y1 :: [uint]
+			* [y1 == []]
+			* [y1[-1] > 0][y1+[0]*? == x]
+		=> x2 = [] if not y1 else y1[:-1] + [y1[-1]-1]
+	* [len x > n]:
+		=> x2 = x
+	[radix-1].join(map g1 x2)
+[x=[uint]{n<=len<m}][1<=n<m]
+	g3 = f<[uint]{len>=n}> radix
+	* [n < len x == m-1]:
+		[radix-1].join(map g1 x[:-1]) + [radix-1] + g2 x[-1]
+	* [n <= len x < m-1]:
+		g3 x
+	* [n == len x == m-1]:
+		* [len x2 < n]:
+			[radix-1].join(map g1 x2)
+		* [len x2 == n]:
+			[radix-1].join(map g1 x2[:-1]) + [radix-1] + g2 x2[-1]
+
+# (:) ==>> gcd==1, ordered
+[x=(pint:pint)]
+	(pint:pint) -> [uint]{len>=1}
+	a/b
+	=> [u] or [u; p..., q]{u>=0,p>0,q>1}
+	=> [uint]{len>=1} by (p-1),(q-2)
+[x=(uint:uint)]
+	(1:0),(0:1),(pint:pint)
+	* (1:0)
+		[]
+	* (0:1)
+		[0]
+	* (pint:pint)
+		=> [uint]{len>=1}
+		=> [u] or [uint]{len>=2}
+		=> [p]{p>1} or [uint]{len>=2}
+[x=(pint:pint:pint)]
+	(pint:pint:pint) -> ((pint:pint), (pint:pint))
+	(a:b:c)
+	=> ((a/g:b/g),(g=gcd(a,b):c))
+
+
+[x={uint:uint}] #mapping
+	sorted as {uint}
+	{uint:uint} -> ({uint}, [uint])
+[x=perm] # permutation
+	sum~ i! {i<-[0..]}
+[x={uint<->uint}] #bimapping
+	{uint<->uint} -> (uint, uint)
+	{uint<->uint}
+	=> ({uint}, {uint}, uint%(len!))
+	=> (len, uint%(len!), [uint]{len=2*len})
+	=> (len, w, m)
+	=> (len, (len!)*m+w)
+	=> (uint, uint)
+
+
+
+
+
+
+
+sym<radix> = uint%radix
+bool, int, [byte], [char]
+	=> uint
+regex
+	= char
+	| (concat<n> regex<0> ... regex<n-1>)
+	| (alt<n> regex<0> ... regex<n-1>)
+	| (repeat<n,m|oo> regex)
+data
+	= sym<radix>
+	| (tuple<n> data0 data1 ... data<n-1>)
+	| (union<n> data0 data1 ... data<n-1>)
+	| (array<n,m|oo> data)
+
+sum_expand :: len:uint -> i:int -> {[uint]{len=len,sum=i}}
+
+
+fn :: data:type -> len:uint -> total:uint
+fn sym<radix> 1 = radix
+fn sym<radix> _ = 0
+fn (union<n>, *ts) ww = sum~ fn t (ww-3) {t<-ts}
+	# 3 for "(", ")", "tag:union"
+fn (tuple<n>, *ts) ww = sum~ mul~ fn t w {(t,w)<-zip ts ws} {ws<-sum_expand n (ww-3-n)}
+	# n for ","*n
+fn (array<n,m_oo> data) ww = sum~ fn (tuple<n>, *([data]*i)) ww {i<-[n..min(m_oo, ww)-1]}
+
+
+
+[x=data]
+	sum~ fn data ww {ww<-[0..]}
+
+

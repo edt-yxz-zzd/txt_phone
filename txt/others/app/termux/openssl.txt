@@ -1,0 +1,71 @@
+openssl
+
+
+$ pkg install openssl-tool
+$ openssl
+OpenSSL> help
+$ openssl dhparam -text -outform pem 33
+$ openssl dhparam -help
+
+
+
+
+=======================================
+random
+	$ openssl rand 16 -hex
+	$ openssl rand <number of bytes> -out <output file>
+RSA
+	8192 bit RSA to ensure 128 bit security
+	$ openssl genrsa 8192
+	Generating RSA private key, 8192 bit long modulus
+	
+
+Diffie–Hellman key agreement
+	[@p][prime p,p//2]
+		Such a safe prime guarantees that the group doesn’t have small subgroups that would make DH easier to break.
+		@i<-[2..p-2]. [order<%p>(i)<-{p-1,p//2}]
+	DH will deliver the same security level as RSA for a given modulus size.
+	$ time openssl dhparam 8192
+	1000 time slower than "openssl genrsa"
+	
+
+key wrapping
+	#i.e. save encrypted private key & plain public key
+	To test key wrapping, run the OpenSSL command shown here with the argument -aes128 to tell OpenSSL to encrypt the key with the cipher AES-128 (AES with a 128-bit key):
+		$ openssl genrsa -aes128 4096 
+		Generating RSA private key, 4096 bit long modulus 
+		e is 65537 (0x10001) 
+		Enter pass phrase:
+
+
+$ openssl speed rsa512 rsa1024 rsa2048 rsa4096
+$ openssl speed ecdsap256 rsa4096
+
+
+
+
+$ openssl s_client -connect www.google.com:443 
+CONNECTED(00000003) 
+--snip-- 
+--- 
+Certificate chain 
+u 0 s:/C=US/ST=California/L=Mountain View/O=Google Inc/CN=www.google.com 
+i:/C=US/O=Google Inc/CN=Google Internet Authority G2 
+v 1 s:/C=US/O=Google Inc/CN=Google Internet Authority G2 
+i:/C=US/O=GeoTrust Inc./CN=GeoTrust Global CA 
+w 2 s:/C=US/O=GeoTrust Inc./CN=GeoTrust Global CA 
+i:/C=US/O=Equifax/OU=Equifax Secure Certificate Authority
+...
+
+$ openssl x509 –text –noout 
+-----BEGIN CERTIFICATE----- 
+--snip-- paste here?????
+-----END CERTIFICATE----- 
+Certificate: 
+Data: 
+Version: 3 (0x2) 
+Serial Number: 5200243873191028410 (0x482afa4026f3e6ba) 
+Signature Algorithm: sha256WithRSAEncryption
+...
+
+

@@ -1,0 +1,108 @@
+最小加法链
+
+[n>=1]:
+	[addsets =[def]= {s::{pint} | [1<-s][@u<-s. [u!=1] -> [?i<-s. [u-i<-s]]]}]
+	[addsets_of n =[def]= {s<-addsets | [n<-s]}]
+	[min_add n =[def]= -1+min {len s | s<-addsets_of n}]
+		#why -1? see upper_bound::factor below
+	[min_addsets_of n =[def]= {s<-addsets_of n | len s == 1+min_add n}]
+	[inv_min_add m =[def]= (min_add^-1) m = {n | min_add n ==m}]
+	[adders_of s n =[def]= {u<-s | [n-u<-s]}]
+	[arr<s> a b =[def]= [adders_of s b == {a,b-a}]]
+	[union_min_addsets_of n =[def]= \-/~~ min_addsets_of n]]
+
+
+[@s][s<-addsets]:
+	[1<-s]
+	[len s >=2]<==>[2<-s]
+	[len s >=3]<==>[{}!=s/-\{3,4}]
+
+	#buttomup
+	[[s!={1}] -> [s\\{max s} <-addsets]]
+
+
+
+[@n][n>=1]:
+	[@s][s <- min_addsets_of n]
+	[ls:=sort s]
+
+	[n>=2]<==>[len s >=2]<==>[2<-s]
+
+	#popped
+	[max s == n]
+
+	#required
+	[@u<-s. [u!=n] -> [?v<-s. [arr<s> u v]]]
+	[n>=2]:
+		[len s >=2][2<-s]
+		[_2:=ls[-2]]
+		[arr<s> _2 n]
+		[arr<s> (n-_2) n]
+		[n-_2 <- \-/~~ min_addsets_of _2]:
+			#eg: [n==2*_2]or[n-_2<=2]
+			[min_add _2 == min_add n -1]
+			[s\\{n} <- min_addsets_of _2]
+			
+		[n>=3]:
+			[_3 := ls[-3]]
+			[n-_2 < _3]:
+				[arr<s> _3 _2]
+
+
+
+[@m][m>=0]:
+	[ns:=inv_min_add m]
+	[2^m == max ns]
+	[{2^(m-1)+2^i | i<-[0..m-1]} <= ns]
+
+
+
+
+[@k. [0<=k] -> [min_add (2^k) == k]]
+[@i,k. [0<=i<=k] -> [min_add (2^k+2^i) == k+1]]
+#lower_bound
+[@n][n>=1]:
+	[min_add n >= ceil(log2 n)]
+#upper_bound
+[@n][n>=1]:
+	[@u<-[(n+1)//2..n-1]. [n-u<-union_min_addsets_of u] -> [min_add n <= 1+min_add u]]
+	[@u. [n==2*u] -> [min_add n <= 1+min_add u]]
+	[n>=4]==>>[min_add n <= 1+min_add (n-2)]
+	[n>=2]==>>[min_add n <= 1+min_add (n-1)]
+	[min_add n < n]
+
+	#radix 2
+	[n2:=(repr<%2> n)]
+	[min_add n <= -1 +((log2 n)//1) +n2.count(1)]
+	[min_add n <= -2 +len n2 +n2.count(1)]
+
+	#fibonacci
+	[nf:=(repr<%2> n)]
+	[min_add n <= -2 +len nf +nf.count(1)]
+		
+
+	#factor
+	[@u,v::pint. [n==u*v] -> [min_add n <= (min_add u)+(min_add v)]]
+
+	#add
+	[@u,v::pint. [n==u+v] -> [min_add n <= 1+(min_add u)+(min_add v)]]
+
+
+
+maynot correct
+1:0:1
+2:1:1,2
+3:2:1,2,3
+4:2:1,2,4
+5:3:..,3,5;..,4,5
+6:3:..,3,6;..,4,6
+7:4:..3,4,7;..5,7;..6,7
+8:3:..4,8
+9:4:..4,5,9;..3,6,9;..8,9
+10:4:..5,10;..4,6,10;..8,10
+11:5:.5,6,11;...4,7,11;..3,4,8,11;..9,11;..10,11
+12:4:..6,12;..8,12
+13:5:..6,7,13;..5,8,13;..4..9,13;..3,5,10,13;..12,13
+14:5:..7,14;..6,8,14;..5,9,14;..4..10,14;..112,14;
+
+

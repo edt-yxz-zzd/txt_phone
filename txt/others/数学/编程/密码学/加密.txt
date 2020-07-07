@@ -1,0 +1,1319 @@
+加密
+
+
+离散对数
+	p,p1 :: odd_prime
+	p == 2*p1+1
+	
+	uint repr as radix p
+	u mod p^k
+	k > 0
+	
+	u^phi(p^k) === 1 mod p^k
+	phi(p^k) = (p-1)*p^(k-1)
+		= 2*p1*p^(k-1)
+	s = {d | d `divs` phi(p^k)}
+	|s| == 4*k
+	
+	[4*k / p^k < 4/p]
+	[|s| / p^k < 1/2^b]:
+		[2^(b+2) < p]
+		[2^(b+1) < p1]
+	
+	c = u^e mod p^k
+	e*d === 1 mod phi(p^k)
+	(u^e)^d === u mod p^k
+	fixed u. there are at most x <- {phi(p^k)/d | d<-s}, s.t. 0<x<=phi(p^k), u^x===x
+=>
+	(u,b) ==>> (p,e,k,c)
+	xxx 避免『单纯xor的结果容易被篡改』的缺陷
+
+线性变换
+	w :: bytes
+	w ==>> u
+	n=(2^8)^len(w)
+	i === 1/(1+2^8*(u+b)) mod (2^8*n)
+	r === a*(i//2^8)+c mod n
+	===see below for p
+=>
+	(w,a,b,c) ==>> r
+	(w,a,b,c,q) ==>> r
+	避免『单纯xor的结果容易被篡改』的缺陷
+	线性变换 . reverse . 线性变换
+	线性变换 . perm . 线性变换
+
+
+
+	================
+	w,a,b,c,r :: [u]{n}
+	d,i :: [u]{n+1}
+	q,iq :: u
+	p :: uint{>=2} #need not prime
+	u = uint%p
+	n = len w >= 0
+	gcd(q,p)==1
+	[n>0]==>> gcd(a[-1],p)==1
+	(p,n) ==>> (a,b,c,q)
+
+	w <=[p,n]=> r
+	(w,a,b,c,q) ==>> r
+		d = (a*w+b)%p^n ++ [q]
+		i = d^-1%p^(n+1)
+		r = (i//p + c)%p^n
+	(r,a,b,c,q) ==>> w
+		[r==[]]==>> w=[]
+		iq = q^-1%p
+		i = (r-c)%p^n ++ [iq]
+		d = i^-1%p^(n+1)
+		w = (d//p - b)*a^-1%p^n
+
+	=====inv<p>=====
+	input:
+		lhs :: [u]{n}
+			u = uint%p
+			p :: uint{>=2} #need not prime
+			len lhs == n > 0
+			gcd(lhs[-1],p)==1
+	output:
+		rhs = lhs^-1%p^n
+			lhs*rhs%p^n == 1
+	routine:
+		n = nh+nl
+		# ?//p^nl, ?%p^nl
+		lhs_h, lhs_l
+		rhs_h, rhs_l
+
+		lhs_w = lhs%p^nh
+		
+		let m = max(nh,nl)
+		recur:
+			if nl < nh:
+				im = (lhs_w^-1)%p^nh
+			else:
+				im = (lhs_l^-1)%p^nl
+		
+		lhs_l*rhs_l%p^nl == 1
+		rhs_l = im%p^nl
+		
+		lhs*rhs%p^n == 1
+		lhs*(rhs_h*p^nl + rhs_l)%p^n == 1
+		lhs*(rhs_h*p^nl)%p^n == (1 - lhs*rhs_l)%p^n
+		(lhs*rhs_h%p^nh)*p^nl == (1 - lhs*rhs_l)%p^n
+		(lhs_w*rhs_h%p^nh)*p^nl == (1 - lhs*rhs_l)%p^n
+		(-lhs_w*rhs_h%p^nh)*p^nl == (lhs*rhs_l-1)%p^n
+		(-lhs_w*rhs_h%p^nh) == (lhs*rhs_l//p^nl)%p^nh
+		rhs_h = -(im%p^nh)*(lhs*rhs_l //p^nl)%p^nh
+		rhs = rhs_h*p^nl + rhs_l
+		
+	p :: uint{>=2} #need not prime
+	n >= 1
+	a = uint%p
+	def inv<p>(
+		us :: [a]{n}{us[-1]!=0}
+		):
+		assert us
+		assert us[-1]%p
+		lhs = us
+		n = len us
+		if n==1:
+			return [us[0]^-1%p]
+		nh = n//2
+		nl = n-nh
+		assert 0<nh<=nl<n==nh+nl
+		lhs_l = lhs[-nl:]
+		lhs_h = lhs[:-nl]
+		im = inv<p>(lhs_l)
+		rhs_l = im
+		# -(im%p^nh)*(lhs*rhs_l //p^nl)%p^nh
+		rhs_h = mul_big(
+			neg_big(im[-nh:])
+			,mul_big(lhs,rhs_l)[-n:-nl]
+			)[-nh:]
+		rhs = rhs_h ++ rhs_l
+		assert len lhs == len rhs
+		return rhs
+
+
+平方变换
+	p = 3
+	k = 1
+	r = 2
+	c = r^2p = 1
+	x%p^n => (x++[r])%p^(n+1) => (x++[r])^2%p^(n+1) => (x++[r])^2%p^(n+1)//p
+	00 => 001 => 001 => 00
+	01 => 011 => 121 => 12
+	02 => 021 => 211 => 21
+	10 => 101 => 201 => 20
+	11 => 111 => 021 => 02
+	12 => 121 => 111 => 11
+	20 => 201 => 101 => 10
+	21 => 211 => 221 => 22
+	22 => 221 => 011 => 01
+	##
+	[p = 2z+1 >1][0<=r<p^k][gcd(r,p)==1]
+		w <=[p,k,r]=> m
+		w ==[p,k,r]=> m
+			n = len w
+			x = w++(r%p^k)
+			c = x^2%p^(n+k)
+			m = b[:-k]
+		w <=[p,k,r]== m
+			n = len w
+			c = m++(r^2%p^k)
+			solve (x^2===c)%p^(n+k) with (x===r)%p^k
+			w = x[:-k]
+	[p^k = 2^(i+1)*(2z+1) >1
+		][0<=r<p^k][gcd(r,p)==1
+		][c=r^2%p^k
+		][0<=hhh<p][(?^2===hhh*p^k+1)%p^(k+1) has no root]
+		w <=[p,k,r,hhh]=> m
+		n = len w = len m > 0
+		q = p/2
+			#[0..q-1],[q..2q-1]
+			#2*y===2*(y+q) %p
+		([y]++c)*(hhh*p^k+1)//p^k%p
+			== ((y+hhh*c)*p^k + c)//p^k%p
+			== ((y+hhh*c) + c//p^k)%p
+			== (y+hhh*c)%p
+			== (y+hhh*c[-1]%p)%p
+			== (y+aaa)%p
+			where
+				aaa = hhh*c[-1]%p
+		ir = r^-1%p^(1+k)
+		solve (([x]++r)^2===[y]++c)%p^(1+k)
+			[%p^(1+k)]:
+				2*x*r*p^k + r^2 === y*p^k + c
+				2*x*r*p^k  === y*p^k + c-r^2
+			[%p]:
+				2*x*r  === y - (r^2-c)//p^k
+				2*x === ir[-1]*(y - (r^2-c)//p^k)
+				2*x === ir[-1]*y - bbb
+				[success]<==> [rhs even]
+					<==> [y%2==r^2//p^k%2]
+					<==> [y%2==ccc]
+				x0 = (ir[-1]*y - bbb)/2
+				x1 = x0+q
+				0 <= x0 < q <= x1 < p
+				x = x0 +? q
+				where
+					bbb = ir[-1]*((r^2-c)//p^k%p)%p
+					ccc = r^2//p^k%2
+		later[k>=2][0<=r[0]<q] solve (([x]++(r+?p^k/2))^2===[y]++c)%p^(1+k)
+			ccc_ex = (r+?p^k/2)^2//p^k%2
+				= (r^2+?(r+p^k/4)*p^k)//p^k%2
+				= (r^2//p^k+?(r+p^k/4))%2
+				= (r^2//p^k%2+?(r+p^k/4)%2)%2
+				= (ccc_old +? (1+p^k/4)%2)%2
+				= ...
+				*[p%4==2][k==2]:
+					<==>[p^k/4%2==1]
+					... = (ccc_old +? (1+1)%2)%2
+						= ccc_old
+					#low_part without msb ==>> high_part lsb
+					#use high_part lsb to save low_part msb
+				* [p%4==0]+[k>=3]:
+					<==>[p^k/4%2==0]
+					... = (ccc_old +? (1+0)%2)%2
+						= (ccc_old +? 1)%2)%2
+					#high_part lsb ==>> low_part msb
+					#use high_part lsb to calc low_part msb
+			#finally: use output lsb to save input msb
+		w ==[p,r]=> m
+			msb = [w[0]>=q]
+			x = w++(r%p^k)
+			b = x^2%p^(n+k)
+			*[msb==1]:
+				y = b[-(1+k)]
+				*ver1
+					#b[-(1+k):] *%= [hhh]++c
+					y = (y+aaa)%p
+				*ver2
+					y = y//2*2+(1-ccc) #= y xor 1
+				b[-(1+k)] = y
+			m = b[:-k]
+		w <=[p,r]== m
+			y = m[-1]
+			msb = [y%2!=ccc]
+			* [msb==1]:
+				*ver2
+					y = y//2*2+ccc #= y xor 1
+				*ver1
+					y = (y-aaa)%p
+				m[-1] = y
+				
+			solve (([x]++r)^2===m++c)%p^(1+k)
+			ms = x[0]
+			assert ms < q
+			*[msb==1]:
+				ms += q
+				x[0] = ms
+			w = x
+			#w = x[:-k]
+
+	########
+	#p - neednot prime
+	[p :: odd][p>2][gcd(r,p)==1][c==r^2%p]:
+		[?r. (r^2 === c) %p^n]:
+			???(x^2 === c) %p^(2*n)???
+			r_ := r%p^n
+			x == y*p^n+r_
+			[%p^(2*n)]:
+				x^2 === 2*r_*y*p^n + r_^2 === c
+				2*r_*y*p^n === c-r_^2
+			[%p^n]:
+				2*r_*y === (c-r_^2)//p^n
+				2*y === r_^-1*(c-r_^2)//p^n
+				*[p odd]:
+					y === (2*r_)^-1*(c-r_^2)//p^n
+					y := (2*r_)^-1%p^n*(c-r_^2)//p^n
+				*[p even]:
+					2*y === r_^-1*(c-r_^2)//p^n
+					y === (r_^-1*(c-r_^2)//p^n)/2+[0/1]p^n/2
+					msb =[def]= [input>=p^n/2]
+						== [input[0]>=p/2]
+					since for fixed r_, there are exactly 2 roots
+							see below: hhh
+					####
+					[gcd(r_,p)==1]
+					[r_ odd]
+					(c-r_^2) vs (c-(r_+p^n/2)^2)
+					v0 = c-r_^2
+					v1 = c-(r_+p^n/2)^2
+						= (c-r_^2) -p^(2*n)/4 -r_*p^n
+						= v0 -p^(2*n)/4 -r_*p^n
+						= ...
+					*[p^n/2 even]:
+						... = v0 -p^n/4*p^n -r_*p^n
+						*[p^n/4 even]:
+							[v0//p^n %2 != v1//p^n %2]
+							[n>2]or[n==2][p%4==0]or[n==1][p%8==0]
+								#err: can used to determine msb
+							see below: hhh
+						*[p^n/4 odd]:
+							[v0//p^n %2 == v1//p^n %2]
+							*[p/2 odd][n==2]
+							*[p/4 odd][n==1]
+					*[p^n/2 odd]:
+						[p/2 odd][n==1]
+						let z s.t. [p=2(2*z+1)>=2][z>=0]
+						... = v0 -(2*z+1)^2 -r_*p^n
+							= v0 -(2*z+1)^2 -r_*p
+							= v0 -(2*z+1)-z*p -r_*p
+						[v0%p==0][v1%p=p/2!=0]
+						(v0-v1)%p == p/2
+						(v0-v1)//p == r_+z
+						(v0-v1)//p%2 == (r_+z)%2 = 1-z%2
+						(y*p+r_)^2%p^2//p
+							= (2*r_*y*p+r_^2)%p^2//p
+							= (2*r_*y+r_^2//p)%p
+						(x*p+r_+p/2)^2%p^2//p
+							= (2*r_*x+(r_+p/2)^2//p)%p
+						(r_+p/2)^2//p - r_^2//p
+							= (r_^2+p*r_+p^2/4)//p - r_^2//p
+							= r_ + (r_^2+p^2/4)//p - r_^2//p
+							= r_ + (r_^2+p/2*(2z+1))//p - r_^2//p
+							= r_ + (r_^2+p/2+p*z)//p - r_^2//p
+							= r_+z + (r_^2+p/2)//p - r_^2//p
+							= r_+z + [r_^2%p +p/2 >=p]
+							= r_+z + [c >= p/2]
+						(y*p+r_)^2%p^2//p == (x*p+r_+p/2)^2%p^2//p
+						rhs-lhs =
+							= (2*r_*x+(r_+p/2)^2//p)%p
+							- (2*r_*y+r_^2//p)%p
+							= (2*r_*(x-y)+(r_+z + [c >= p/2]))%p
+							= 0
+						2*(y-x)%p = r_^-1*(r_+z + [c >= p/2])%p
+							=[def]= kkk
+						*[kkk odd]
+							<==> [(z + [c >= p/2]) even]
+							==>> no such (x,y)
+							eg:[z=2][r_=1][p=10][c=1<5]
+							msb==1 ==>> r_ := r_+p/2
+						*[kkk even]
+							eg:[z=0][r_=1][p=2][c=1>=1]
+							let zzz=kkk/2
+							#zzz+p/2
+							y = (x+zzz +[0/1]p/2)%p
+							each has 2 roots
+							hence there p/2's high hhh, s.t. (hhh*p+1 = x^2)%p^2 has no root x
+							let hhh be one
+							nnn = (hhh*p+1) %p^2
+							msb==1 ==>> output[-2:]*=nnn
+			x := y*p^n+r_
+		[%p^n]:
+			@r. [r^2 === c] -> [(-r)^2 === c]
+			[r===-r]
+				<==> [2*r===0]
+				<==> [2===0*r^-1===0]
+				<==> [p=2][n=1]
+			[r !=== -r]:
+				[c != 0]
+				nc = (-c)%p
+				[c%p + nc == p]
+				rc = r*p+c = r++[c]
+				~r = [p-1-a for a in r] = p^n-1-r
+				nrc = -rc = ~r++[nc]
+
+		[p odd prime] ==>> [@n>0. ((x^2 === c) %p^n) has 2 solutions]
+		[p==2] ==>> [@n>0. ((x^2 === c) %p^n) has 1 solutions]
+		[p==4] ==>> [@n>0. ((x^2 === c) %p^n) has 2 solutions]
+		[p==2^?>=8] ==>> [@n>0. ((x^2 === c) %p^n) has 4 solutions]
+			#+-r, +-r+p^n/2
+
+
+多项式变换
+	#vivi 平方变换
+	f(x) = sum a[i]*x^i {i<-[0..e]}
+	e >= 2
+	s :: uint{>=2}
+	k :: uint{>=1}
+	r :: (uint%s^k) # neednot {gcd(r,s)==1}
+
+	f(x*s^k+r)%s^(2*k)
+		= (ddd*x*s^k+f(r))%s^(2*k)
+		# (a[],r,s,k)==>>ddd = ddd(r)%s^k
+		# a[] ==>> ddd(rr)%s^k
+		=== m++c
+		==>> x = ddd^-1%s^k*(m - f(r)//s^k)%s^k
+
+	[gcd(ddd,s)==1][c=f(r)%s^k]:
+		w <=[s,k,r,f]=> m
+		len w == len m == n > 0
+		w ==[s,k,r,f]=> m
+			m = f(w*s^k+r)%s^(n+k)//s^k
+		w <=[s,k,r,f]== m
+			solve (f(x++r)===m++c)%s^(n+k)
+			w = x
+		######
+	######
+	e=2
+	f(x) = x^2 + 19*x + 1
+	ddd(rr) = 2*rr+19
+	s = 7
+	k = 1
+	r = 5
+	ddd = ddd(r)%s^k = 1
+	c = f(r)%s^k = 121%7 = 2
+	######
+	e=3
+	f(x) = x^3 + 12*x +3
+	ddd(rr) = 3*rr^2+12
+	s = 16
+	k = 1
+	r = 9
+	ddd = ddd(r)%s^k = 15
+	c = f(r)%s^k = 8
+
+
+
+
+
+key-derive
+	key = kdf(t, password)
+=>
+	(password,t) ==>> key
+	避免『口令太弱暴力破解耗时少』的问题
+
+
+加盐
+	r <- random
+	c = 加密(k, r, u)
+=>
+	(k,u) ==>> (c,r)
+	避免产生相同加密文本
+
+
+自结尾前缀
+	0 <= a < n=2^8
+	* [^a]* a
+		sum (n-1)^i {i}
+	* .* a b
+		0 <= (a-b)%n < m
+		sum n*(n-m)^i*m {i}
+		
+		
+
+
+
+口令
+	usr_name~(su,ss, hs<ss> . hu<su> $ psw)
+	??[hso<ut,st> . his<ss,su> === hto<ss,su> . hit<ut,st>]??
+	
+	sign_up
+		usr(usr_name,psw,salt_u)
+		usr --[sign_up0:(usr_name,salt_u)]-> site
+		usr <-[sign_up1:(salt_s)]-- site
+		usr --[sign_up2:(usr_name, sh=his<salt_s,salt_u> h(psw))]-> site
+		
+		site[usr_name] = (salt_u, salt_s, sh=his<salt_s,salt_u> h(psw))
+	sign_in
+		usr --[sign_in0:(usr_name,salt_ut)]-> site
+		usr <-[sign_in1:(salt_st)]-- site
+		usr --[sign_in2:(usr_name, th=hit<salt_ut,salt_st> h(psw))]-> site
+		verify:
+			hso<salt_ut,salt_st> sh === hto<salt_s,salt_u> th
+		
+		    /--> his<su,ss> --> sh --> hso<ut,st> -->\
+		h(psw)                                       =?=
+		    \--> hit<ut,st> --> th --> hto<su,ss> -->/
+		
+
+perm # bijection
+	conclusion:
+		1. perm s.t. fff1,fff3
+		2. [n==3][?a,b<-GF(2^n)%g(x). ?lfsr::LFSR<n>.
+				?perm. [perm.f == ulinear<a,b>.b . lfsr.f][fff1&fff2]
+				]
+				where
+					linear<a,b>.f c = a*c+b
+					linear<a,b>.b c = a^-1*(c-b)
+					linear<a,b> :: GF(2^n)%g(x) <-> GF(2^n)%g(x)
+					perm :: uint%2^n <-> uint%2^n
+					uint2gf :: GF(2^n)%g(x) -> uint%2^n
+					gf2uint :: uint%2^n -> GF(2^n)%g(x)
+					
+					lfsr :: uint%2^n <-> uint%2^n
+					ulinear<a,b> :: uint%2^n <-> uint%2^n
+					ulinear<a,b>.f = gf2uint . linear<a,b>.f . uint2gf
+					[(ulinear<a,b>.f $ perm.f i) == (lfsr.f i)]
+					[perm.f i == (ulinear<a,b>.b $ lfsr.f i)]
+					[perm.f == ulinear<a,b>.b . lfsr.f]
+					
+					
+	#####
+	u = uint%2
+	n :: uint{>=1}
+	w = [u]{n}
+	perm :: w <-> w
+	
+	fb :: @i<-[0..n-1]. w -> w
+	fb i m = m[:i]++[1-m[i]]++m[i+1:]
+	
+	fff1=
+	@{i,j}<={0..n-1}. [2^(n-1)
+			== len {m::w | (perm.f $ fb i m)[j]==(perm.f m)[j]}
+			== len {m::w | (perm.b $ fb i m)[j]==(perm.b m)[j]}
+			]
+			#allow i==j
+			#n>=2: half fff1 ==>> total eqns: n^2+n=n(n+1) for n*2^n varables
+			#[n(n+1)<=n*2^n] ==>> [n+1<=2^n][n>=0]
+			
+	
+	fff2=
+	@i<-{0..n-1}. @m::w. [n/2 == count 0 (xor m $ perm.f m)]
+		# 2\\\n
+		#bad
+		
+	fff3=
+	@i<-{0..n-1}. [2^n == len {xor m $ perm.f m | m::w}]
+		# fff2&fff3 ==>> 2^n <= choose<n> n/2 ==>> _L
+		# ?m. [perm.f m == m]
+		# @w. ?m. [perm.f m == xor w m]
+	fff4=
+	@{i,j}<={0..n-1}. [i!=j] -> [2^(n-1)
+			== len {m::w | n/2 == (count 0 $ xor (perm.f m) (perm.f $ fb i $ fb j m))}
+			== len {m::w | n/2 == (count 0 $ xor (perm.b m) (perm.b $ fb i $ fb j m))}
+			]
+	#######
+	n=1
+	*v0
+		0->0/1
+		1->1/0
+		==>> !fff1
+	n=2
+	*v1
+		00 -> 01/10
+		01 -> 00
+		10 -> 11
+		11 -> 10
+		=> !fff1, fff2, 
+	*v2
+		#w -> m
+		00 -> 01/10 <<== fff2
+		01 -> 00/11 <<== fff2
+		[i=0,j=0/1] ==>> [w[i]==0]==>>[m[j]==0/1]
+			==>> !fff1
+	*v3
+		perm.f = flip
+		00 -> 11
+		01 -> 10
+		10 -> 01
+		11 -> 00
+		=> !fff1, !fff2
+	*v4
+		00 -> xa=xa
+		01 -> yb=yb
+		10 -> cd=yb
+		11 -> ef=xa
+		=> !fff1
+		fff1==>>
+		2^n/4=sum...
+		1=x+y
+		1=a+b
+		
+		1=x+c
+		1=a+d
+		
+		2=xyce=abdf
+		#1=c+e
+		#1=d+f
+		
+		#1=y+e
+		#1=b+f
+		==>>
+			c=y=1-x
+			e=x
+			d=b=1-a
+			f=a
+			fail
+
+	n=3
+	*v5
+		000 -> abc
+		001 -> def
+		010 -> ghi
+		011 -> jkm
+		100 -> npq
+		101 -> rst
+		110 -> uvw
+		111 -> xyz
+		
+		fff1==>>
+		2^n/4=sum...
+		2=adgj=behk=cfim
+		2=adnr=beps=cfqt
+		2=agnu=bhpv=ciqw
+		4=adgjnrux=behkpsvy=cfimqtwz
+		
+		j=2-adg
+		k=2-beh
+		m=2-cfi
+		r=2-adn
+		s=2-bep
+		t=2-cfq
+		u=2-agn
+		v=2-bhp
+		w=2-ciq
+		x=4-adgjnru
+			=4-(adg+(2-adg)+n+(2-adn)+(2-agn))
+			=aadgn-2
+		y=4-behkpsv
+			=4-(beh+2-beh+p+2-bep+2-bhp)
+			=bbehp-2
+		z=4-cfimqtw
+			=4-(cfi+2-cfi+q+2-cfq+2-ciq)
+			=ccfiq-2
+		$ python search_perm_for_crypt.py
+			n=3 ==>> (5, 2, 3, 4, 6, 1, 0, 7)
+			            (0, 1, 2, 3, 4, 5, 6, 7)
+			perm<3>[30]=(5, 2, 0, 7, 6, 1, 3, 4)
+			perm<3>[31]=(1, 2, 6, 5, 7, 4, 0, 3)
+perm<3>[112]=(7, 2, 1, 4, 0, 5, 6, 3) #fs=-1+0~1@40;lens=(4, 4, 4)@0;i^o=4@[0, 3, 4, 7];i-o=4@[0, 1, 4, 7];i+o=4@[2, 3, 4, 7]
+perm<3>[113]=(4, 2, 1, 7, 3, 5, 6, 0) #fs=-1+0~1@41;lens=(4, 4, 4)@1;i^o=4@[0, 3, 4, 7];i-o=4@[0, 1, 4, 7];i+o=4@[2, 3, 4, 7]
+perm<3>[134]=(7, 1, 2, 4, 0, 6, 5, 3) #fs=-1+0~1@42;lens=(4, 4, 4)@6;i^o=4@[0, 3, 4, 7];i-o=4@[0, 1, 4, 7];i+o=4@[2, 3, 4, 7]
+perm<3>[135]=(4, 1, 2, 7, 3, 6, 5, 0) #fs=-1+0~1@43;lens=(4, 4, 4)@7;i^o=4@[0, 3, 4, 7];i-o=4@[0, 1, 4, 7];i+o=4@[2, 3, 4, 7]
+perm<3>[114]=(3, 6, 5, 0, 4, 1, 2, 7) #fs=-1+1~1@52;lens=(4, 4, 4)@2;i^o=4@[0, 3, 4, 7];i-o=4@[0, 3, 4, 5];i+o=4@[0, 3, 6, 7]
+perm<3>[115]=(3, 5, 6, 0, 4, 2, 1, 7) #fs=-1+1~1@53;lens=(4, 4, 4)@3;i^o=4@[0, 3, 4, 7];i-o=4@[0, 3, 4, 5];i+o=4@[0, 3, 6, 7]
+perm<3>[132]=(0, 6, 5, 3, 7, 1, 2, 4) #fs=-1+1~1@66;lens=(4, 4, 4)@4;i^o=4@[0, 3, 4, 7];i-o=4@[0, 3, 4, 5];i+o=4@[0, 3, 6, 7]
+perm<3>[133]=(0, 5, 6, 3, 7, 2, 1, 4) #fs=-1+1~1@67;lens=(4, 4, 4)@5;i^o=4@[0, 3, 4, 7];i-o=4@[0, 3, 4, 5];i+o=4@[0, 3, 6, 7]
+
+perm<3>[30]=(5, 2, 0, 7, 6, 1, 3, 4) #fs=-0+0~0@0;lens=(4, 5, 5)@0;i^o=4@[2, 3, 4, 5];i-o=5@[2, 3, 4, 6, 7];i+o=5@[1, 2, 3, 5, 6]
+perm<3>[62]=(2, 5, 1, 6, 7, 0, 4, 3) #fs=-0+0~0@1;lens=(4, 5, 5)@2;i^o=4@[2, 3, 4, 5];i-o=5@[1, 2, 4, 5, 6];i+o=5@[1, 2, 3, 5, 6]
+perm<3>[90]=(2, 5, 7, 0, 1, 6, 4, 3) #fs=-0+0~0@2;lens=(4, 5, 5)@12;i^o=4@[2, 3, 4, 5];i-o=5@[2, 3, 4, 6, 7];i+o=5@[1, 2, 3, 5, 6]
+perm<3>[103]=(3, 4, 0, 7, 6, 1, 5, 2) #fs=-0+0~0@3;lens=(4, 5, 5)@15;i^o=4@[2, 3, 4, 5];i-o=5@[1, 2, 4, 5, 6];i+o=5@[1, 2, 3, 5, 6]
+
+
+
+########n=3,fff1,fff3
+cycle_lens = [1,7]
+             2  1  1  2  2  1  1  2
+             7  6  5  4  3  2  1  0
+                1           5
+perm<3>[13]=(3, 6, 4, 1, 0, 5, 7, 2) #flags_lens=('-1+0~1', (8, 7, 7))@@0@fi=6@li=1;i^o=8@[0, 1, 2, 3, 4, 5, 6, 7];i-o=7@[0, 2, 3, 4, 5, 6, 7];i+o=7@[1, 2, 3, 4, 5, 6, 7]
+perm<3>[14]=(7, 2, 4, 1, 0, 5, 3, 6) #flags_lens=('-1+0~1', (8, 7, 7))@@1@fi=7@li=2;i^o=8@[0, 1, 2, 3, 4, 5, 6, 7];i-o=7@[0, 1, 2, 3, 4, 6, 7];i+o=7@[1, 2, 3, 4, 5, 6, 7]
+perm<3>[20]=(4, 2, 7, 1, 3, 5, 0, 6) #flags_lens=('-1+0~1', (8, 7, 7))@@2@fi=8@li=8;i^o=8@[0, 1, 2, 3, 4, 5, 6, 7];i-o=7@[0, 1, 2, 3, 4, 6, 7];i+o=7@[1, 2, 3, 4, 5, 6, 7]
+perm<3>[34]=(6, 3, 1, 4, 0, 5, 7, 2) #flags_lens=('-1+0~1', (8, 7, 7))@@3@fi=12@li=17;i^o=8@[0, 1, 2, 3, 4, 5, 6, 7];i-o=7@[0, 1, 2, 4, 5, 6, 7];i+o=7@[1, 2, 3, 4, 5, 6, 7]
+perm<3>[38]=(4, 3, 1, 6, 2, 5, 7, 0) #flags_lens=('-1+0~1', (8, 7, 7))@@4@fi=13@li=21;i^o=8@[0, 1, 2, 3, 4, 5, 6, 7];i-o=7@[0, 1, 2, 4, 5, 6, 7];i+o=7@[1, 2, 3, 4, 5, 6, 7]
+perm<3>[39]=(4, 3, 7, 0, 2, 5, 1, 6) #flags_lens=('-1+0~1', (8, 7, 7))@@5@fi=14@li=22;i^o=8@[0, 1, 2, 3, 4, 5, 6, 7];i-o=7@[0, 1, 2, 3, 4, 5, 6];i+o=7@[1, 2, 3, 4, 5, 6, 7]
+perm<3>[89]=(6, 1, 3, 4, 0, 7, 5, 2) #flags_lens=('-1+0~1', (8, 7, 7))@@6@fi=27@li=36;i^o=8@[0, 1, 2, 3, 4, 5, 6, 7];i-o=7@[0, 1, 2, 4, 5, 6, 7];i+o=7@[1, 2, 3, 4, 5, 6, 7]
+perm<3>[91]=(4, 1, 3, 6, 2, 7, 5, 0) #flags_lens=('-1+0~1', (8, 7, 7))@@7@fi=28@li=37;i^o=8@[0, 1, 2, 3, 4, 5, 6, 7];i-o=7@[0, 1, 2, 4, 5, 6, 7];i+o=7@[1, 2, 3, 4, 5, 6, 7]
+perm<3>[93]=(4, 1, 3, 6, 7, 2, 0, 5) #flags_lens=('-1+0~1', (8, 7, 7))@@8@fi=29@li=38;i^o=8@[0, 1, 2, 3, 4, 5, 6, 7];i-o=7@[0, 2, 3, 4, 5, 6, 7];i+o=7@[1, 2, 3, 4, 5, 6, 7]
+perm<3>[101]=(7, 1, 4, 2, 0, 6, 3, 5) #flags_lens=('-1+0~1', (8, 7, 7))@@9@fi=32@li=39;i^o=8@[0, 1, 2, 3, 4, 5, 6, 7];i-o=7@[0, 1, 2, 3, 4, 6, 7];i+o=7@[1, 2, 3, 4, 5, 6, 7]
+perm<3>[102]=(6, 1, 5, 2, 0, 7, 3, 4) #flags_lens=('-1+0~1', (8, 7, 7))@@10@fi=33@li=40;i^o=8@[0, 1, 2, 3, 4, 5, 6, 7];i-o=7@[0, 1, 2, 3, 4, 5, 6];i+o=7@[1, 2, 3, 4, 5, 6, 7]
+perm<3>[106]=(4, 1, 7, 2, 3, 6, 0, 5) #flags_lens=('-1+0~1', (8, 7, 7))@@11@fi=36@li=41;i^o=8@[0, 1, 2, 3, 4, 5, 6, 7];i-o=7@[0, 1, 2, 3, 4, 6, 7];i+o=7@[1, 2, 3, 4, 5, 6, 7]
+  flip 1bit: 4  3  3 fail
+  LFSR:      0->0 fail
+  a*z+b==>>LFSR:success!!!!
+  	p[0]*a+b==0
+  	p[3]*a+b==7
+  	p[7]*a+b==6
+  	==>>
+  	GF(2^3)%(x^3+x+1)
+  	(+)=(-)=xor; (a*b)=2^(log2 a + log2 b)
+  	(p[3]-p[0])*a==7
+  	(p[7]-p[0])*a==6
+  	(p[7]-p[0])*7==6*(p[3]-p[0])
+  	(p[7]-p[0])==(6/7=2^6=5)*(p[3]-p[0])
+  	a=7/(p3 xor p0)
+  	b=p0*a
+  	(z,5z)=
+  		1234567 z
+  		0132645 log2 z
+  		6021534 log2 z -1
+  		5142736 5z=z/2=2^log2 z -1
+  		z,5z
+  		1,5
+  		2,1
+  		3,4
+  		4,2
+  		5,7
+  		6,3
+  		7,6
+  		
+  		
+  	p[0]      =374644644764
+  	p[3]      =111460466222
+  	p[7]      =266206205545
+  	p3 xor p0 =265224222546=z
+  	p7 xor p0 =112442441221=5z
+  	...        oxxxxoxxoxox
+  	...        012345678901
+  	...        0    5  8 0
+  	...        13   39 93102
+		perm<3>[13]=(3, 6, 4, 1, 0, 5, 7, 2)
+		perm<3>[39]=(4, 3, 7, 0, 2, 5, 1, 6)
+		perm<3>[93]=(4, 1, 3, 6, 7, 2, 0, 5)
+		perm<3>[102]=(6, 1, 5, 2, 0, 7, 3, 4)
+		p013 = 36410572
+		p039 = 43702516
+		p093 = 41367205
+		p102 = 61520734
+		a=7/(p3 xor p0)
+		... = 7/2424 = 6363
+		...=6/(p7 xor p0)
+		... = 6/1212 = 6363
+  	b=p0*a
+  	... =3446*6363=1751
+  	?*?
+  	5z =5142736
+  	6z =6715324
+  	z  =1234567
+  	3z =3657412
+  	p013 = 36410572
+  	..*6 = 12560347
+  	.xor1= 03471256 LFSR 13765241
+		p039 = 43702516
+  	..*3 = 75206431
+  	.xor7= 02571346 LFSR 12537641
+		p093 = 41367205
+  	..*6 = 56124703
+  	.xor5= 03471256 LFSR --
+		p102 = 61520734
+  	..*3 = 13460257
+  	.xor1= 02571346 LFSR --
+
+i      = 1 2 3 4 5 6 7 ::GF(2^3)
+log2 i = 0 1 3 2 6 4 5 %7
+1/i    = 1 5 6 7 2 3 4 ::GF(2^3)
+-i = i
+
+
+
+perm<3>[13]=(3, 6, 4, 1, 0, 5, 7, 2)
+
+3 6 4 1 0 5 7 2 =
+6 3 1 4 5 0 2 7 xor5
+6 1 7 4 3 0 2 5 -5 +3
+
+
+
+0 1 2 3 4 5 6 7
+3 6 4 1 0 5 7 2 =
+000
+011
+001
+110
+111
+010
+100
+000
+
+0 1 2 3 4 5 6 7
+6 3 1 4 5 0 2 7 xor5
+000
+110
+010
+001
+011
+100
+101
+000
+
+
+0 1 2 3 4 5 6 7
+6 1 7 4 3 0 2 5 -5 +3
+000
+110
+010
+111
+101
+000
+(3<->4)(1)
+
+
+#B-M aglo
+3 6 4 1 0 5 7 2 =
+GF(2^3)
+%(x^3+x+1)
+x^3 = x+1
+(+)=(-)=xor
+(a*b)=2^(log2 a + log2 b)
+0
+1,7
+2 3 4 5 6
+2 = x
+2^2 = x*x = 4
+2^3 = 4*2 = xxx = x+1 = 3
+2^4 = 3*2 = xx+x = 6
+2^5 = 6*2 = xxx+xx = xx+x+1 = 7
+2^6 = 7*2 = xxx+xx+x = xx+1 = 5
+2^7 = 5*2 = xxx+x = 1
+
+i      = 1 2 3 4 5 6 7 ::GF(2^3)
+log2 i = 0 1 3 2 6 4 5 %7
+1/i    = 1 5 6 7 2 3 4 ::GF(2^3)
+-i = i
+
+
+3 6 4 1 0 5 7 2 =
+	e=1*3=3
+(1);
+	e=1*6=6
+(1+2z)=(1)-(6/3)*(1)*z^1;
+	e=1*4+2*6 = 4 xor 7 = 3
+(1+2z+z^2)=(1+2z) - (3/3)*(1)*z^2
+	e=1*1+2*4+1*6 = xor 1 3 6 = 4
+(1+7z+0z3)=(1+2z+z^2) - (5=4/3)*(1+2z)*z=(1+2z+z^2+5z+z^2)=(1+7z+0z3)
+	e=1*0+7*1=7
+(1+4z+6z2+3z3)=(1+7z+0z3)-(3=7/4)(1+2z+z^2)*z=(1+7z+0z3)-(3z+6z2+3z3)=(1+4z+6z2+3z3)
+	e=1*5+4*0+6*1+3*4=xor 5 0 6 7 = 4
+(1+2z+2z2+3z3+0z4)=(1+4z+6z2+3z3)-(6=4/7)(1+7z+0z3)*z=(1+4z+6z2+3z3)-(6z+4z2+0z4)=(1+2z+2z2+3z3+0z4)
+	e=12230*75014 = xor 71030 = 5
+(1+4z+7z2+z3+z4)=(1+2z+2z2+3z3+0z4)-(6=5/4)(1+4z+6z2+3z3)z
+	= (1+2z+2z2+3z3+0z4)-(6z+5z2+2z3+z4)
+	= (1+4z+7z2+z3+z4)
+	e=14711*27501 = xor 21601 = 4
+(1+7z+z2+7z3+4z4+0z5)=(1+4z+7z2+z3+z4)-(3=4/5)z(1+2z+2z2+3z3+0z4)
+	=(1+4z+7z2+z3+z4)-(3z+6z2+6z3+5z4+0z5)
+	=(1+7z+z2+7z3+4z4+0z5)
+	#171740*275014 = xor 235040 = 0
+	
+end perm<3>[13]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+NIST.FIPS.180-4 (2015)[Secure Hash Standard]
+http://dx.doi.org/10.6028/NIST.FIPS.180-4
+2015
+
+serious Cryptography -- a practical introduction to Modern encryption
+by Jean-Philippe Aumasson
+2018
+
+collision attack
+Birthday Attack - The Rho Method
+	input:
+		h<n> :: [a] -> [a]{len=n}
+	output:
+		a,b :: [a]
+			a != b
+			h<n> a == h<n> b
+	
+	
+	def rho(
+		h<n> :: [a] -> [a]{len=n}
+		):
+		_f<n> :: [a]{len=n} -> [a]
+		s :: [a]{len=n}
+		m = None
+		while m is None:
+			_f<n> <- random
+			s <- random
+			f<n> s = s ++ _f<n> s
+			m = _rho(h<n>, f<n>, s)
+		s,t = m
+		return s,t
+	def _rho(
+		h<n> :: [a] -> [a]{len=n}
+		, f<n> :: [a]{len=n} -> [a]{len>=n}
+		, s :: [a]{len=n}
+		):
+		g = h<n> . f<n>
+			# [s, ...g^i s...]
+			# == init + cycle period
+			# li = len init
+			# lp = len period
+			# 2*i - k*period = i >= li >= 0
+			# i >= period > 0
+			# i = k*period >= li
+			# k >= 1
+			# k = max [1,(li+period-1)//period]
+			# success ==>> li!=0
+			# li==0 ==>> i==period
+			# k==1 <==> i==period ==>> 0<=li<=period
+			# k>1 ==>> (k-1)*period+1 <= li <= k*period
+			# li>0 ==>> (k-1)*period+1 <= li <= k*period==i
+			#
+		t0 = s0 = s
+		i = 0
+		while 1:
+			++i
+			s1 = g s0
+			t1 = g (g t0)
+			if s1==t1:
+				#s1 == g^i s
+				#t1 == g^(2*i) s
+				s1_ = f<n> s0
+				t1_ = f<n> (g t0)
+				if s1_ != t1_:
+					return s1_,t1_
+				break
+				[s1_ == t1_]
+				[s0==t0] <==> [i==1]
+			s0,t0 = s1,t1
+		
+		if s1==s:
+			return #fail@li==0
+		
+		t1 = s1 # ==g^i s = g^(li+(i-li)%period) s
+		s1 = s
+		for w in [0..i]:
+			#s1 == g^w s
+			#t1 == g^(w+i) s
+			if s1==t1:break
+			s0,t0 = s1,t1
+			s1,t1 = g s1, g t1
+		li = w
+		assert li>0
+		assert s0!=t0
+		assert g s0 == g t0
+		s1_ = f<n> s0
+		t1_ = f<n> t0
+		if s1_ != t1_:
+			return s1_,t1_
+		return #fail@f<n> s0==f<n> t0
+
+
+
+Permutation-Based Hash Functions: Sponge Functions
+	h=sponge :: [a] -> [a]{n}
+	st :: [a]{s}
+	bk=msg_block :: [a]{m}
+	msg :: [a]
+	pad :: [a] -> [[a]{m}]
+	perm :: [a]{s} -> [a]{s} #permutation,bijection
+	#add_mod :: a -> a -> a
+	adds_mod :: [a]{s} -> [a]{m} -> [a]{s}
+	const:
+		st0 :: [a]{s}
+		
+	s = m+c
+	c = internal state capacity
+	m = message block len
+	collision attack <= 2^min(n/2,c/2)
+		let c >= n
+		let c==n ??
+		LFSR n output (prev [0]*n) can guess n internal state
+		let s>=2*n
+			ie: c>=2*n-m
+	solve s eqns for s vars:
+		solve<xs; hash> [perm (xs[:m]++[0]*(s-m))==(hash++xs[m:s]]
+		assume linear system
+			solved at s or s^2 step
+		should be non-linear system
+			
+	def sponge(msg):
+		bks = pad msg
+		st = st0
+		for bk in bks:
+			#st[:m] ^= bk #xor
+			#st[:m] = [*map(add_mod, st[:m], bk)]
+			#st[:m] = adds_mod(st[:m], bk)
+			st = adds_mod(st, bk)
+			st = perm st
+		ls = []
+		for _ in [1..ceil(n/m)]:
+			st = perm st
+			ls.extend(st[:m])
+		return ls[:n]
+	
+	#custom
+	p :: uint{>=2} #need not prime
+	a = uint%p
+	#add_mod a b = (a+b)%p
+	adds_mod st bk = add_big(st, bk++[0]*c)%p^s
+		<==> st[:m] := add_big(st[:m],bk)%p^m
+	perm = 线性变换 . idx_perm . 线性变换 . reverse . 线性变换 (. rotate1 . 线性变换)^(2*s) . 平方变换 ...
+	pad msg = cut $ msg + [1] + [0]*(m-1-(len msg)%m)
+	st0 = [0]*s
+	s = 16*n
+	n = m
+	* 1
+		n/2*log2 p >= 64KiB == 2^19 bit = 52_4288 bit
+		st ~ 2MiB
+		hash hex ~ 256KiB
+	* 2
+		n/2*log2 p >= 1KiB == 2^13 bit = 8192 bit
+		st ~ 32KiB
+		hash hex ~ 4KiB
+
+	start and end sign
+		st0 serve as start_sign
+		perm after eof serve as end_sign
+		or use start and end bit like blake2
+		avoid h(?+msg) or h(msg+?)
+	down_counter #len-begin_idx_of_bk
+		since hash value are expected to be verified
+			, the input should be regenerateable
+			, len(input) should be known before hash
+		st' = perm<msg_bk, down_counter>(st)
+	2pass-hash
+		!start bit #phase_st
+		<< msg
+		!middle_bit
+		down_counter #size
+		<< msg
+		!end bit
+		
+MAC
+	HMAC hash key msg = hash(xor key opad ++ hash(key key ipad ++ msg))
+	
+	myMAC hash key msg = hash(prefix (len key) ++ key ++ prefix (len msg) ++ msg ++ key ++ reverse (prefix (len key)))
+	err:
+		myMACv2 hash key msg = hash(prefix (len key) ++ key ++ hash(msg ++ key ++ reverse (prefix (len key))))
+			#replace msg=>msg2 with hash(msg)==hash(msg2)
+	myMACv3 hash key msg = hash(prefix (len key) ++ key ++ myMAC hash key msg)
+	
+	myMACv4 hash key msg = hash(prefix (len key) ++ key ++ msg ++ key)
+	myMACv5 hash key msg = myMACv4 hash key $ myMACv4 hash key msg
+
+
+RSA-OAEP
+	e*d%phi(n)==1
+	====
+	p=plain_text
+	gcd(p,n)==1
+	p<-[0..n]
+	RSA<n,e>(p) = p^e%n
+	====
+	k=symmetric_key
+	clogp n =[def]= min{i | [n < II prime[j] {j<-[0..i]}]}
+	k<-[0..-1+2^floor_log2(n/prime[clogp(n)])] ????
+	#p=padding<n>(k)
+	RSA_OAEP<n,e>(k) = RSA<n,e>(padding<n>(k))
+	
+	num_bytes_of n = min {m | n < 2^(8*m)}
+		# n repr as m bytes
+	
+	hash<ol,il> :: [Char]{il} -> [Char]{ol}
+	padding<rl,h,n>(k) = f(r)
+		where
+			nb = num_bytes_of n
+			kb = num_bytes_of k
+			hl = len(h)
+			assert 1+rl+hl+1+kb<=nb
+			assert rl==hl
+			
+			do{
+				r := random<rl>()
+			}while gcd(f(r),n)!=1;
+			
+			
+			f(r) = i
+				where
+					pad=[0]*(nb-(1+rl+hl+1+kb))++[1]
+					t = h++pad++to_bytes(k)
+					tx=t xor hash<nb-1-rl, rl>(r)
+					rx=r xor hash<r1, nb-1-rl>(tx)
+					i = from_bytes([0]++rx++tx)
+					assert i<n
+
+
+
+
+
+
+myBlockCipher1
+	s = other parameters #eg nonce/IV
+	m=2*n bits IO
+	k=(k0,k1)
+	
+	bk := input
+	r = total_round<s,n>(k)
+	for i <- [0..r-1]:
+		cut = pick<s,n>(r,i,k)
+		[cut <- [0..n-1]]
+		v0 = 2*cut+1
+		v1 = m-v0
+		
+		fb0 = get_APN_perm<s,v0>(r,i,k0)
+		fb1 = get_APN_perm<s,v1>(r,i,k1)
+		
+		u0 = fb0.f(bk[:v0])
+		u1 = fb1.f(bk[v0:])
+		
+		bk := merge<s>(r,i,k,u0,u1)
+
+
+myBlockCipher2
+	m=2*n bits IO
+		<- fibonacci[0,3..]
+		#0,1,1,2,3,5,8,13,21,34,55,89,144,...
+		= odd0+odd1
+	k key
+	
+	bk := input
+	ws = [odd0,odd1]
+	fbs = [fb0<odd0>,fb1<odd1>]
+	for b <- bits of k:
+		bk := fbs[b].f(bk[:ws[b]])
+					++fbs[b+1].f(bk[ws[b]:])
+		bk := bk[ws[1-b]:]++bk[:ws[1-b]]
+	#########
+		fibonacci
+		0,1,2,3,4,5,6,7, 8, 9, 10,11,12,..
+		0,1,1,2,3,5,8,13,21,34,55,89,144,...
+		
+		f[n]=f[n-1]+f[n-2]=2*f[n-2]+f[n-3]=3*f[n-3]+2*f[n-4]
+			=f[i+1]*f[n-i]+f[i]*f[n-i-1]
+		
+		
+		
+		fibonacci[0,3..]
+		f[n]=f[n-1]+f[n-2]
+		f[n-3]=f[n-1]-f[n-2]
+		==>>
+		f[n-1]=(f[n]+f[n-3])/2
+		f[n-2]=(f[n]-f[n-3])/2
+		==>>
+		f[n-4]=(f[n-3]+f[n-6])/2
+		f[n-5]=(f[n-3]-f[n-6])/2
+		
+		f[n]=f[5]*f[n-4]+f[4]*f[n-5]
+			= f[5]*(f[n-3]+f[n-6])/2+f[4]*(f[n-3]-f[n-6])/2
+			= (f[5]+f[4])/2*f[n-3]+(f[5]-f[4])/2*f[n-6]
+			= f[6]/2*f[n-3]+f[3]/2*f[n-6]
+			= f[6]/2*f[n-3]+f[3]/2*f[n-6]
+			= 4*f[n-3]+f[n-6]
+		???f[j]*f[n]=f[i+j]*f[n-i]+(-1)^(j+1)*f[i]*f[n-i-j]???
+		proof:
+			x^2=x+1
+			w=sqrt5
+			a=(1-w)/2
+			b=(1+w)/2
+			a+b=1
+			a*b=-1
+			1/a=-b
+			a/b=-a^2=-(a+1)
+			b/a=-(b+1)
+			
+			f[n]=k0*a^n+k1*b^n
+			f[0]=k0+k1=0
+			f[1]=k0*a+k1*b=1
+			k0*(a-b)==1
+			k0=-1/w
+			k1=-k0=1/w
+			
+			f[n]=(-a^n+b^n)/w
+			f[n]=(-1)^(n+1)*f[-n]
+			
+			f[j]*f[n]=
+				=(-a^j+b^j)/w*(-a^n+b^n)/w
+				=(-a^j+b^j)*(-a^n+b^n)/5
+				=(a^(j+n)-ajbn-anbj+b^(j+n))/5
+			5*f[j]*f[n]=
+				=a^(j+n)-ajbn-anbj+b^(j+n)
+			5*f[i+j]*f[n-i]=
+				=a^(j+n)-aijbni-anibij+b^(j+n)
+				=a^(j+n)-a^(2i+j-n)*(-1)^(n-i)-a^(n-2i-j)(-1)^(i+j)+b^(j+n)
+			5*f[i]*f[n-i-j]=
+				=a^(-j+n)-aibnij-anijbi+b^(-j+n)
+				=a^(-j+n)-a^(2i+j-n)(-1)^(n-i-j)-a^(n-2i-j)(-1)^i+b^(-j+n)
+				
+			5*f[i+j]*f[n-i]+5*(-1)^(j+1)*f[i]*f[n-i-j]=
+				=[j=2k]: -a^(-j+n)-b^(-j+n) +a^(j+n)+b^(j+n)
+				+[j=2k+1]:a^(-j+n)+b^(-j+n) +a^(j+n)+b^(j+n)
+				
+				=[j=2k]: -anbj(-1)^(-j)-ajbn(-1)^(-j) +a^(j+n)+b^(j+n)
+				+[j=2k+1]:anbj(-1)^(-j)+ajbn(-1)^(-j) +a^(j+n)+b^(j+n)
+				
+				=[j=2k]:  -anbj-ajbn +a^(j+n)+b^(j+n)
+				+[j=2k+1]:-anbj-ajbn +a^(j+n)+b^(j+n)
+				
+				=-anbj-ajbn +a^(j+n)+b^(j+n)
+				=5*f[j]*f[n]
+			done
+			
+		
+		
+		[f[i]*f[x-i]-f[j]*f[x-j]=(-1)^(x-i+1)*f[i+j-x]*f[i-j]]
+			#[f[x-n=j-i]*f[n]-f[j]*f[x-j=n-i]=(-1)^(x-n+1=j-i+1)*f[n+j-x=i]*f[n-j]]
+			[x=0]:
+				[f[i]*f[-i]-f[j]*f[-j]=(-1)^(-i+1)*f[i+j]*f[i-j]]
+			
+		[f[j-i]*f[n]=f[j]*f[n-i]+(-1)^(j-i+1)*f[i]*f[n-j]]
+			#n,n-i,n-j,j,i,j-i
+			#let [n>j][n-i=j]...
+				#f[4i]=?f[2i]f[i]
+				[j=2*i]:
+					[f[i]*f[n]=f[2i]*f[n-i]+(-1)^(i+1)*f[i]*f[n-2i]]
+					[n=2j=4i]:
+						[f[i]*f[4i]=f[2i]*f[3i]+(-1)^(i+1)*f[i]*f[2i]]
+						[f[i]*f[3i]=f[2i]*f[2i]+(-1)^(i+1)*f[i]*f[i]]
+						
+						[f[i]^2*f[4i]
+							=f[2i]*f[i]*f[3i]+(-1)^(i+1)*f[i]^2*f[2i]
+							=f[2i]*(f[2i]^2+(-1)^(i+1)*f[i]^2)+(-1)^(i+1)*f[i]^2*f[2i]
+							=f[2i]^3+2*(-1)^(i+1)*f[2i]*f[i]^2
+						]
+						
+						[f[4i]/f[2i]=(f[2i]/f[i])^2 +2*(-1)^(i+1)]
+				
+				#f[3i]=?f[2i]f[i]
+				[n=3i][j=2i]:
+					[f[i]*f[3i]=f[2i]^2+(-1)^(i+1)*f[i]^2]
+					[f[3i]/f[i]=(f[2i]/f[i])^2 +(-1)^(i+1)]
+					
+					[f[2]/f[i]=sqrt(f[3i]/f[i] +(-1)^i)]
+					[f[4i]/f[2i]
+						=(f[2i]/f[i])^2 +2*(-1)^(i+1)
+						=f[3i]/f[i] +(-1)^i +2*(-1)^(i+1)
+						=f[3i]/f[i] +(-1)^(i+1)
+					]
+					[f[4i]/f[i]
+						=f[2]/f[i]*(f[3i]/f[i] +(-1)^(i+1))
+						=sqrt(f[3i]/f[i] +(-1)^i) *(f[3i]/f[i] +(-1)^(i+1))
+					]
+					
+				#f[9i]=?f[3i]f[i]
+				[f[3i]*f[9i]=f[6i]^2+(-1)^(i+1)*f[3i]^2]
+				[f[2i]*f[6i]=f[3i]*f[5i] -f[i]*f[3i]]
+				[f[2i]*f[5i]=f[3i]*f[4i] -f[i]*f[2i]]
+				
+				[f[5i]
+					=f[3i]*(f[4i]/f[2i]) -f[i]
+					=f[3i]*(f[3i]/f[i] +(-1)^(i+1)) -f[i]
+					=f[3i]^2/f[i] +(-1)^(i+1)*f[3i] -f[i]
+				]
+				
+				[f[6i]
+					=(f[5i]-f[i])*f[3i]/f[2i]
+					=(f[3i]^2/f[i] +(-1)^(i+1)*f[3i] -2*f[i])*f[3i]/f[2i]
+					=((f[3i]/f[i])^2 +(-1)^(i+1)*f[3i]/f[i] -2)*f[3i]/(f[2i]/f[i])
+					=((f[3i]/f[i])^2 +(-1)^(i+1)*f[3i]/f[i] -2)*f[3i]/sqrt(f[3i]/f[i] +(-1)^i)
+					=(f[3i]/f[i] -2*(-1)^i)*(f[3i]/f[i] +(-1)^i)*f[3i]/sqrt(f[3i]/f[i] +(-1)^i)
+					=(f[3i]/f[i] -2*(-1)^i)*sqrt(f[3i]/f[i] +(-1)^i)*f[3i]
+				]
+				
+				[f[3i]*f[9i]
+					=f[6i]^2+(-1)^(i+1)*f[3i]^2
+					=(f[3i]/f[i] -2*(-1)^i)^2*(f[3i]/f[i] +(-1)^i)*f[3i]^2 +(-1)^(i+1)*f[3i]^2
+				]
+				
+				[f[9i]/f[3i]
+					=(f[3i]/f[i] -2*(-1)^i)^2*(f[3i]/f[i] +(-1)^i) -(-1)^i
+					=[z:=f[3i]/f[i]]:
+						(z -2*(-1)^i)^2*(z +(-1)^i) -(-1)^i
+					= (z -2*(-1)^i)*(z^2 -z*(-1)^i -2) -(-1)^i
+					= z^3 -3*(-1)^i*z^2 +3*(-1)^i
+				]
+				
+		
+		[f[n] = 4*f[n-3]+f[n-6]]
+		[i=6*2^k][k>=0][f[4i]/f[2i]=(f[2i]/f[i])^2 -2]
+		==>>
+			i=            6,  12, 24
+			f[i]=         8, 144,
+			f[2i]/f[i]=   18,322,
+
+
+myBlockCipher3
+	m=2*n bits IO
+		<- fibonacci[0,6..]
+		#0,1,1,2,3,5,8,13,21,34,55,89,144,...
+		= odd0+odd1
+	k key
+		= mix(usr_key, nonce)
+		[ver2]= hash(nonce++usr_key)++usr_key
+		[xxx][ver1]= zip(extend<L>(nonce), extend<L>(usr_key))
+			where L=max(len(nonce), len(usr_key))
+			#too easy to break
+			#if (fix plain_text,nonce++): can guess middle state
+	
+		stream mode:
+			k[i] := ?(k[i-1], cipher_text[i-1], plain_text[i-1])
+				[xxx][ver1]= k[i-1] xor plain_text[i-1]
+				[ver2]=k[i-1] #not change
+			cipher_text[i] = encrypt<k>(cipher_text[i-1] xor plain_text[i-1])
+	
+	bk := input
+	ws = [odd0,odd1]
+	fbs = [fb0<odd0>,fb1<odd1>]
+	gs = [g021, g120]
+		#g021 :: [bit]{odd0}->[bit]{odd1}
+		#g120 :: [bit]{odd1}->[bit]{odd0}
+	for i,b <- enum(bits of k):
+		up2down = bool(i&2) xor b
+		_021 = bool(i&1)
+		w = ws[up2down xor _021]
+		g = gs[1-_021]
+		bks = [bk[:w], bk[w:]]
+		bks[up2down] xor= g(bks[1-up2down])
+		bk := bks[0]++bks[1]
+		
+		bk := fbs[b].f(bk[:ws[b]])
+					++fbs[b+1].f(bk[ws[b]:])
+		bk := bk[ws[1-b]:]++bk[:ws[1-b]]
+	#########
+[8\\\fibonacci[6*i]]
+6:8
+12:144    #18 B
+18:2584   #323 B
+24:46368  #5796 B
+30:832040
+36:14930352
+
+5:5
+6:8
+11:89
+12:144
+17:1597
+18:2584
+23:28657
+24:46368
+29:514229
+30:832040
+35:9227465
+36:14930352

@@ -1,0 +1,121 @@
+LFSR primitive
+
+
+feedback polynomial
+	#right_shift >>
+	bit = GF(2) = uint%2
+	c :: [bit]{n+1}
+	c[0]=c[n]=1
+	f(x) = sum c[i]*x^i {i<-[0..n]}
+	
+	word = [bit]{n}
+	st :: word
+	next_bit :: word -> bit
+	next_bit st = sum~ c[i]*st[i-1] {i<-[1..n]}
+	next_st :: word -> (word, bit)
+	next_st st = ([next_bit st]++st[:-1], st[-1])
+
+
+[f(0) != 0]:
+	order f =[def]= min {e::uint | [e>0][f(x)\\\(x^e-1)]}
+
+[%2]:
+	[deg f = n>=1]:
+		[LFSR.period==2^n-1]
+			<==>[feedback polynomial f(x) is primitive polynomial]
+			<==>[order f == 2^n-1]
+			<==>[GF(2^n)\\{0} ~=~ gen<(x+0)>%f(x)]
+			<==>[x^(2^n-1)%f(x) == 1][@p::prime. [p\\\(2^n-1)]-->>[x^((2^n-1)///p) %f(x) != 1]]
+
+[%GF(q)][q=p^m][p prime][m>=1][n>=1]:
+	[phi(q^n-1)/n == len {f :: poly[%GF(q)] | [f primitive][deg f = n>=1]}]
+
+
+
+
+
+
+LFSR primitive irreducible
+
+LFSR Linear Feedback Shift Register
+	The period is maximal if and only if that polynomial is primitive.
+Berlekamp–Massey algorithm
+
+
+
+
+
+https://webhome.cs.uvic.ca/~cos/inf/neck/PolyInfo.html
+
+Information on Primitive and Irreducible Polynomials
+
+For now, COS only generates polynomials over GF(2), GF(3), GF(4) and GF(5).
+
+For GF(2), the coefficients are either 0 or 1 and the rules for multiplication and addition are 0 = 0+0 = 1+1 = 0*0 = 0*1 = 1*0 and 1 = 0+1 = 1+0 = 1*1.
+
+A polynomial over GF(2) is irreducible if it cannot be factored into non-trivial polynomials. For example, x2+x+1 is irreducible, but x2+1 is not, since x2+1 = (x+1)(x+1).
+
+The order of a polynomial f(x) for which f(0) is not 0 is the smallest integer e for which f(x) divides xe+1. A polynomial over GF(2) is primitive if it has order 2n-1. For example, x2+x+1 has order 3 = 22-1 since (x2+x+1)(x+1) = x3+1. Thus x2+x+1 is primitive.
+
+The number of degree n irreducible polynomials over GF(q) is
+Lq(n)   =   	
+1
+n
+	  	
+__
+\
+/   
+d | n
+	µ(n/d) q d ,
+where µ(m) is the Möbius function: 0 if m is not the product of distinct primes, +1 if it is the product of an even number of distinct primes, and -1 otherwise. For example, L2(6) = (26 - 23 - 22 + 2)/6 = 54/6 = 9 counts irreducible polynomials of degree 6 over GF(2). The number Lq(n) also counts the number of aperiodic necklaces of length n over the alphabet 0,1,...,q-1.
+
+The number, Lq(n), of irreducible polynomials over GF(2) for n=1,2,...,15 is 2, 1, 2, 3, 6, 9, 18, 30, 56, 99, 186, 335, 630, 1161, 2182. This is sequence Anum=A001037"> A001037(M0116) in
+
+The number of degree n primitive polynomials over GF(q) is Ø(qn -1)/n, where Ø(m) is Euler's totient function, the number of numbers less than m and relatively prime to m. For example, Ø(63) = |{2,4,5,8,...,62}| = 36 and thus the number of primitive polynomials of degree 6 over GF(2) is 36/6 = 6.
+
+The number of primitive polynomials over GF(2) for n=1,2,...,15 is 1, 1, 2, 2, 6, 6, 18, 16, 48, 60, 176, 144, 630, 756, 1800. This is sequence Anum=A011260"> A011260(M0107) in
+
+Below we show the output of COS for n=6 and irreducible polynomials. Primitive polynomials are output in blue. The meanings of the different output options should be obvious.
+
+Output
+String
+	Coefficients
+	Polynomials
+1 0 0 0 0 1 1 	6, 1, 0 	x6 + x1 + 1
+1 0 1 0 1 1 1 	6, 4, 2, 1, 0 	x6 + x4 + x2 + x1 + 1
+1 1 0 0 1 1 1 	6, 5, 2, 1, 0 	x6 + x5 + x2 + x1 + 1
+1 0 0 1 0 0 1 	6, 3, 0 	x6 + x3 + 1
+1 1 0 1 1 0 1 	6, 5, 3, 2, 0 	x6 + x5 + x3 + x2 + 1
+1 0 1 1 0 1 1 	6, 4, 3, 1, 0 	x6 + x4 + x3 + x1 + 1
+1 1 1 0 1 0 1 	6, 5, 4, 2, 0 	x6 + x5 + x4 + x2 + 1
+1 1 1 0 0 1 1 	6, 5, 4, 1, 0 	x6 + x5 + x4 + x1 + 1
+1 1 0 0 0 0 1 	6, 5, 0 	x6 + x5 + 1
+
+Using our program we have computed some tables that may be of interest. The density of a polynomial is the number of non-zero terms. The index of a polynomial is the sum of the exponents of the non-zero terms.
+
+    Table of the number of irreducible polynomials of given degree and density.
+    Table of the number of primitive polynomials of given degree and density.
+    A table of the number of irreducible polynomials of the form xn+xk+....
+    A table of the number of primitive polynomials of the form xn+xk+....
+    A table of the number of irreducible polynomials of given index. WARNING: file size is 150K; be patient.
+    A table of the number of primitive polynomials of given index. WARNING: file size is 150K; be patient.
+    A page about the number of elements of GF(2n) with give trace and subtrace.
+    A page about the number of irreducible polynomials over GF(2) with give trace and subtrace. 
+
+Links
+
+    Florent Chabaud has a page on Galois fields that contains extensive lists of irreducible polynomials over GF(2) and GF(3), particularly trinomials and polynomials of low "subdegree". This site also includes Malcolm Greig's extensive list of one primitive polynomial over GF(pn) for many primes p and numbers n > 1.
+    Here's a table of irreducible polynomials over GF(2), taken from Peterson's book on error-correcting codes.
+    Phil Koopman has a page on Maximal Length LFSR Feedback Terms. These are equivalent to primitive polynomials over GF(2). He has exhaustive lists for n = 2,3,...,32 and provides the first 100 (in lexicographic order) for n = 2,3,...,39. 
+
+References
+
+    R. Marsh, Tables of irreducible polynomials of GF(2) through degree 19, U.S. Dept. of Commerce, Washington DC, 1957.
+    N. Zierler and J. Brillhart, On primitive trinomials, Information and Control, 13 (1968) 541-544. On primitive trinomials (II), Information and Control, 14 (1969) 566-569. Lists all primitive trinomials of degree <= 1000. 
+
+Programs available:
+
+    Primitive and irreducible polynomials over GF(2): Pascal program . C program . 
+
+
+

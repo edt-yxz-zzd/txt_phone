@@ -1,0 +1,448 @@
+eq_impl
+
+
+a = [f=0]
+a' = [f/=0]
+
+a1&a2 = [a]
+a1|a2 = [fg=0] = a1a2 = {a}
+a1'&a2' = [fg/=0] = (a1a2)' = {a}'
+a1'|a2' = (a1&a2)' = [a]' = {a'}
+
+[]=tt
+{}=ff
+
+a=>b
+<==> a'|b
+
+a&b => c|d
+<==> [] => (a&b)' | (c|d)
+<==> [] => a'|b'|c|d
+<==> [] => {a',b',c,d}
+<==> [a,b] => {c,d}
+<==> [a,b,c',d'] => {}
+
+a|b => c
+<==> (a|b)' | c
+<==> (a'&b') | c
+<==> (a'|c)&(b'|c)
+<==> [a=>c][b=>c]
+<==> [ab => c]
+
+a => b&c
+<==> a' | (b&c)
+<==> (a'|b)&(a'|c)
+<==> [a=>b][a=>c]
+<==> [a => ((1-zb)(1-tc))']
+<==> [a, (1-zb)(1-tc)] => {}
+real:
+	b&c <==> [bb+cc]
+
+[a] => {}
+<==> [] => {a'}
+<==> a'
+
+[a,b'] => {}
+<==> [a] => {b}
+<==> [a,1-zb] => {}
+
+
+
+
+[a..., b'...] => {c...,d'...}
+<==> [a..., d..., b'...] => {c...}
+<==> [a..., d...] => {b..., c...}
+
+<==> [a..., d..., b'..., c'...] => {}
+<==> [a..., d..., (1-zb)..., (1-tc)...] => {}
+
+如何在代数闭域上判断 [[a,...] => {b,...}] ?
+	1. GroebnerBasis
+	2. RittWuMethod #考虑 零点集，更快
+
+	example:
+		example1:
+			[(x-1)^2] => {x-1}
+		example2:
+			sym_lt(w,x)
+			[w, w+(x-1)^2] => {x-1}
+	1. GroebnerBasis
+		convert to [[a,...,b',...] => {}]
+		HS = {a,...,1-zb,...}
+		[HS => {}]
+			= [reducedGroebnerBasis(HS) == {1}]
+		======
+		extend: [HS, G'] => {C}
+		HS_G = {a,...,1-zb,...}
+		gb_z = GroebnerBasis(HS_G) with rank z... high
+		gb = gb_z remove z... # since highest
+		err: xxxxx orig_problem <==> [all (\c->c%gb==0) C] xxxxxx
+
+	2. RittWuMethod
+		HS = [a,...]
+		C = (II b...)
+		zeros(HS)
+			= \/~zeros(CS_/J_) {CS_}
+		[HS => C]
+			= /\~ [prems(C, CS_)==0] {CS_}
+		#####
+		let
+			CS is a charateristic_set of HS
+			J = II poly_init(p) {p<-CS}
+			zeros(CS/J) = zeros(CS) - zeros(J)
+			zeros(CS/J) <= zeros(HS) <= zeros(CS)
+				@[{} == premss(HS, CS)][KK[xs] is UFD]
+				@[set(CS) <= Ideal<HS>]
+
+		zeros(HS)
+			= zeros(CS/J) \/ (zeros(HS)/\zeros(J))
+			= zeros(CS/J) \/ (zeros(HS)/\(\/~zeros(poly_init(p))){p<-CS})
+			= zeros(CS/J) \/ (\/~(zeros(HS)/\zeros(poly_init(p))){p<-CS})
+			= zeros(CS/J) \/ (\/~zeros(HS\/{poly_init(p)}){p<-CS})
+			= \/~zeros(CS_/J_) {CS_}
+		[HS => C]
+			= [zeros(HS) <= zeros(C)]
+			= [\/~zeros(CS_/J_) {CS_} <= zeros(C)]
+			= /\~ [zeros(CS_/J_) <= zeros(C)] {CS_}
+			#bug: error to get below
+			#  example2
+			= /\~ [prems(C, CS_)==0] {CS_}
+		[prems(C, CS)==0] ==>> [CS => J*C]
+		[prems(C, CS)==0] <</== [CS => J*C]
+			@example1
+		======
+		extend: [HS, G'] => {C}
+		zeros(HS/G) =
+			= \/~ zeros(CS/(J\/G)) {CS;;J=poly_inits(CS)}
+			#why G in lhs vs C in rhs
+			= \/~ zeros(CS/(J\/G)) {CS;;prems(G,CS)!=0}
+				#[prems(C, CS)==0] ==>> [CS => C]
+				# 充分不必要
+			# factor over KK, CS[i]%CS[:i]
+			# where KK come into
+			= \/~ \/~ zeros(i_CS/(i_J\/G)) {i_CS<-factor(CS);irreducable(i_CS)} {CS}
+			# G erase many CS many times
+			= \/~ \/~ zeros(i_CS/(i_J\/G)) {i_CS<-factor(CS);irreducable(i_CS);prems(G,i_CS)!=0} {CS}
+			# G can be omit when CS irreducable, prems(G,CS)!=0
+			= \/~ zeros(i_CS/(i_J)) {irreducable(i_CS)}
+				#[prems(C, i_CS)==0] <==> [i_CS => C]
+				# 充分必要
+
+
+KK is UFD
+xs :: {Symbol}
+[KK[xs] is UFD]
+n = len xs
+sym_lt :: __lt__<Symbol>
+	sym_lt ~ xs
+cls2x<sym_lt,xs> = [1]+sorted<sym_lt>(xs)
+x2cls<sym_lt,xs> = {x:cls for cls,x in enm(cls2x)}
+
+def deg<KK,xs>(x, poly)->NN\_/{-oo}
+def coeff<KK,xs>(x,d, poly)->poly
+
+def cls<KK,sym_lt,xs>(poly :: KK[xs]):
+	if poly==0:
+		ret 0
+	ret max(x2cls<sym_lt,xs>[x] for x in xs if deg<KK,xs>(x,poly))
+def cdeg<KK,sym_lt,xs>(poly :: KK[xs]):
+	cl = cls<KK,sym_lt,xs>(poly)
+	if cl==0:
+		ret 0
+	x = cls2x<sym_lt,xs>[cl]
+	ret deg<KK,xs>(x,poly)
+def poly_type<KK,sym_lt,xs>(poly :: KK[xs]):
+	cl = cls<KK,sym_lt,xs>(poly)
+	cd = cdeg<KK,sym_lt,xs>(poly)
+	ret cl, cd
+def poly_lt<KK,sym_lt,xs>(lhs_poly,rhs_poly :: KK[xs]):
+	ret (
+		poly_type<KK,sym_lt,xs>(lhs_poly)
+		< poly_type<KK,sym_lt,xs>(rhs_poly)
+		)
+def poly_init<KK,sym_lt,xs>(poly :: KK[xs]):
+	# 初式 initial polynomial
+	cl,cd = poly_type<KK,sym_lt,xs>(poly)
+	if cl==0:
+		ret ???
+	x = cls2x<sym_lt,xs>[cl]
+	ret coeff<KK,xs>(x,cd, poly)
+def pdivmod<KK,sym_lt,xs>(lhs_poly,rhs_poly :: KK[xs]):
+	ip = poly_init<KK,sym_lt,xs>(rhs_poly)
+	ret head [(e,r,q)|e<-NN, r,q :: KK[xs], ip^e*lhs_poly==r+q*rhs_poly]
+def prem<KK,sym_lt,xs>(lhs_poly,rhs_poly :: KK[xs]):
+	e,r,q = pdivmod<KK,sym_lt,xs>(lhs_poly, rhs_poly)
+	ret r
+
+def prems<KK,sym_lt,xs>(lhs_poly :: KK[xs], rhs_AS :: AscendingSet):
+	r = lhs_poly
+	#NOTE: rvd!!!!!!!
+	for p in rvd(rhs_AS):
+		r = prem<KK,sym_lt,xs>(r, p)
+	ret r
+def premss<KK,sym_lt,xs>(lhs_polys :: {KK[xs]}, rhs_AS :: AscendingSet):
+	#NOTE: remove 0!!!!!!!
+	ret {r|p<-lhs_polys, r=prems<KK,sym_lt,xs>(r, rhs_AS), r!=0}
+
+AS<KK,sym_lt,xs> :: [KK[xs]]
+	AscendingSet 升列
+	1 <= len AS <= max(1,n)
+	AS[0] != 0 # cls may 0!
+	[2 <= len AS]:
+		[0 < cls<KK,sym_lt,xs>(AS[0]) < ...]
+		#??? AS[i] == prems<KK,sym_lt,xs>(AS[i],  AS[:i])
+		# neednot!!!! but below:
+		0 != prems<KK,sym_lt,xs>(poly_init(AS[i]),  AS[:i])
+
+
+!?,"':;()-/@_
+
+NNoo = NN\_/{oo}
+def AS_type<KK,sym_lt,xs>(AS :: [KK[xs]]) -> NNoo^(n+1):
+	ret [head_ oo [cdeg(poly) for poly in AS if cl==cls(poly)] for cl in [0..n]]
+def AS_lt<KK,sym_lt,xs>(lhs_AS,rhs_AS :: [KK[xs]]):
+	ret (
+		AS_type<KK,sym_lt,xs>(lhs_AS)
+		< AS_type<KK,sym_lt,xs>(rhs_AS)
+		)
+
+PS<KK,sym_lt,xs> :: {KK[xs]}
+	有限非空集合<非零多项式>
+	0 < len PS < oo
+	not 0 <- PS
+	AscendingSet(PS) = {AS <- AscendingSet | set(AS) <= PS}
+BS<KK,sym_lt,xs,PS> :: [KK[xs]]
+	BasicSet 基本列
+	是 有限非空集 中的极小升列
+	BSS = {BS | s=AscendingSet(PS<KK,sym_lt,xs>), BS<-s, not ?c<-s. AS_lt(c,BS)}
+	BS <- BSS
+CS<KK,sym_lt,xs,Ideal<PS>> :: [KK[xs]]
+	CharateristicSet 特征列
+	是 理想 中的极小升列
+	CSS = {CS | s=AscendingSet(Ideal<PS<KK,sym_lt,xs>>), CS<-s, not ?c<-s. AS_lt(c,CS)}
+	CS <- CSS
+	CSS == {CS | s=AscendingSet(Ideal<PS<KK,sym_lt,xs>>), CS<-s, @c<-s. [prems(c,CS)==0]}
+
+def mk_a_BS<KK,sym_lt,xs>(PS :: {KK[xs]}):
+	ls = [(poly_type(p), p)|p<-PS]
+	ls.sort(key=fst)
+
+	pt,p0 = ls[0]
+	if pt == (0,0):
+		BS = [p0]
+	else:
+		BS = []
+		c = 0
+		for (cl,cd),p in ls:
+			if c < cl:
+				BS += [p]
+				c = cl
+	ret BS<KK,sym_lt,xs,PS>
+def mk_a_CS<KK,sym_lt,xs>(PS :: {KK[xs]}):
+	PS0 = PS
+	PS, RS = {}, PS
+	while RS:
+		PS = PS\_/RS
+		BS = mk_a_BS<KK,sym_lt,xs>(PS)
+		RS = premss(PS\\BS, BS)
+	CS = BS
+		#??? AS[i] == prems<KK,sym_lt,xs>(AS[i],  AS[:i])
+		#if required, we can do it here
+	ret CS<KK,sym_lt,xs,Ideal<PS0>>
+
+
+
+IIinit<KK,sym_lt,xs,PS> :: {KK[xs]}
+	#== Foo
+	IIinit = {p | ps = list(PS), idc::[[1..n]], p=II poly_init(ps[i]) {i<-idc}}
+	#bug:
+	# premss(IIinit<CS>, CS) == IIinit<CS>
+		#??? AS[i] == prems<KK,sym_lt,xs>(AS[i],  AS[:i])
+		#assume CS[i] == prems<KK,sym_lt,xs>(CS[i],  CS[:i])
+	@p<-CS. prems(poly_init(p), CS) == poly_init(p)
+zerof<KK,sym_lt,xs> :: Ideal<KK,xs> -> {KK[xs]} -> Ideal<KK,xs>
+	#zerof I Foo == I:Foo
+	#add zero factors to I, assume ps nonzero
+	zerof I ps = {q :: KK[xs] | p<-ps, p*q <- I}
+
+	zerof Ideal<AS> IIinit<AS> == {p :: KK[xs] | prems(p, AS)==0}
+	{} == premss(zerof Ideal<AS> IIinit<AS>, AS)
+
+	Ideal<AS> <= zerof Ideal<AS> IIinit<AS>
+		@[premss(Ideal<AS>, AS)=={}]
+
+	Ideal<CS<I>> <= I <= zerof Ideal<CS<I>> IIinit<CS<I>>
+		@[CS<I> <= I]
+		@[premss(I, CS<I>)=={}]
+			@CS def
+	[I is PrimeIdeal] = [I is Ideal][@p,q. [p*q <- I][not p <- I] => [q <- I]]
+	[I is PrimeIdeal][{0}==I/\KK]:
+		{} == I/\IIinit<CS<I>>
+			proof
+			if[ii <- I/\IIinit<CS<I>>]:
+					[ii != 0]
+						@[ii <- IIinit<CS<I>>]
+					[not ii <- KK]
+						@[ii != 0]
+						@[{0}==I/\KK][ii <- I]
+				**[?p<-CS. [pp:=poly_init(p)][pp\ii][pp<-I]]
+					# "**" unpack let-def: p,pp
+					@[not ii <- KK]
+					@[I is PrimeIdeal]
+				[pp != 0]
+					@[ii != 0]
+				[prems(pp, CS<I>) == pp!=0]
+					@[@p<-CS. prems(poly_init(p), CS) == poly_init(p)]
+				[prems(p, CS<I>)==0]
+					@[premss(I, CS<I>)=={}]
+						@CS def
+				_L
+		I == zerof Ideal<CS<I>> IIinit<CS<I>>
+			proof
+			[p <- zerof Ideal<CS<I>> IIinit<CS<I>>]:
+				**[?ii <- IIinit<CS<I>>. ii*p <- Ideal<CS<I>>]
+					@zerof def
+				[ii*p <- Ideal<CS<I>> <= I]
+					@[Ideal<CS<I>> <= I <= zerof Ideal<CS<I>> IIinit<CS<I>>]
+				[ii </- I]
+					@[{} == I/\IIinit<CS<I>>]
+				[p <- I]
+					@[I is PrimeIdeal]
+			[zerof Ideal<CS<I>> IIinit<CS<I>> <= I]
+			[I == zerof Ideal<CS<I>> IIinit<CS<I>>]
+				@[Ideal<CS<I>> <= I <= zerof Ideal<CS<I>> IIinit<CS<I>>]
+
+
+
+example3:
+	sym_lt(x,y)
+	PS = {x^2+y^2-1, xy}
+	CS = [x^3-x, xy]
+	zeros(PS) = {(0,+-1),(+-1,0)}
+	zeros(CS) = {(0,y),(+-1,0)}
+
+
+
+
+def tdeg<KK,xs>(poly)->NN\_/{-oo}
+	#全次数
+	ret sum [deg<KK,xs>(x,poly) | x <- xs]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+def lt<KK,ord,xs>(poly :: [KK[xs]], default=nnn):
+	# leading term
+	# 领项
+	# sometimes as lm, leading monomial
+	if poly==0:
+		ret default
+	...
+def lpp<KK,ord,xs>(poly :: [KK[xs]], default=nnn):
+	# leading power product
+	# 领式
+	# sometimes as lm, leading monomial
+	if poly==0:
+		ret default
+	tm = lt<KK,ord,xs>(poly)
+	ret tm/tm.coeff()
+def lc<KK,ord,xs>(poly :: [KK[xs]]):
+	# leading coefficient
+	# 领系数
+	if poly==0:
+		ret 0
+	tm = lt<KK,ord,xs>(poly)
+	ret tm.coeff()
+
+
+
+
+
+
+
+
+
+
+
+real:
+	?(k...)<-cc**nk. @(s...)<-rr**ns. [det(m(k...;s...))=0 => (s...)=(0...)]
+	###(a...)=(det.real, det.imag)
+	###(b...)=(s...)
+	###t,z<-rr
+	[a...] => [b...] # not{b...}
+	<==> [a...] => {sum(bb...)}
+	<==> [a...,sum(bb...)'] => {}
+	<==> @z<-rr. [[a...,1-z*sum(bb...)] => {}]
+	<==> @(z,a...,b...). ?t. [0=1-t*sum(aa...+(1-z*sum(bb...))**2)]
+	<==> ??(k...)??. @(z,s...). ?t. [0=1-t*sum(aa...+(1-z*sum(bb...))**2)]
+	<==> ?????????
+can [problem: find k s.t. @x. f(k;x)=0 => g(k;x)=0]
+	convert to [problem: find k s.t. @x. h(x;k)=0]
+
+
+complex_system vs real_single_poly:
+	problem: ???[a..., b'...] => {c..., d'...}???
+	case:
+		???[...] => {(a&b&c'&d'),...}???
+			<==> ???[...,(a&b&c'&d')'] => {...}???
+			<==> ???[...,(a'|b'|c|d)] => {...}???
+			recur
+		???[...,(a|b|c'|d'),...] => {}???
+			<==> ???[...,a*b*(1-_*c)*(1-_*d),...] => {}???
+			recur
+		???[a,b,...] => {}???
+			[complex]:
+				<==> ???[system[a,b,...] has no complex solutions]???
+			[real]:
+				<==> ???[(aa+bb+...)] => {}???
+				<==> ???[poly(aa+bb+...) has no real solutions]???
+				since the coeffs may contain indetermine paramters
+					,what resultant and ineq to predict no "real" solutions?
+					#[1vars, deg=2] ==>> [c2/=0][c1^2-4c2c0<0]+[c2=0]([c1/=0]+[c0=0])
+
+
+
+
+
+how to factor?
+	i.e. (ab) -> {a,b}?
+
+[a,b real]:
+	[aa+bb=0] => {a=0}??
+	factor:
+		[{a+ib,a-ib}] => {a}
+		[[a+ib]=>{a}][[a-ib]=>{a}]
+
+
+
+
+
+

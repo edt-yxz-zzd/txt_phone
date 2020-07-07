@@ -1,0 +1,1803 @@
+呜呼哀哉尚飨加密.js.html
+
+<pre>
+&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+	&lt;head&gt;
+		&lt;meta charset="UTF-8"&gt;
+		&lt;title&gt;呜呼哀哉尚飨加密&lt;/title&gt;
+	&lt;/head&gt;
+	&lt;script language="JavaScript"&gt;
+		/*
+			ascii = string char_code&lt;0x100
+			bs = bytes = Uint8Array
+				uint8s
+			hex = string [0-9a-fA-F]*
+			
+			uint = Number | BigInt
+			uintN8s
+			
+			
+			//////
+			(-1)%7==-1; (-6)%7==6
+			[p&gt;0][x&lt;0]==&gt;&gt;[x%p&lt;=0]
+			x/p float_true_div
+			1*1n error
+			//////
+			[] != []
+			[4][-1] undefined
+			//////
+			(this.f) is unbound
+			this.f(...) is bound call
+				eg:
+					map(this.f, it);    #error
+					var f= this.f; f(); #error
+		*/
+	
+		//;alert("clear")
+		//;alert("clear"^"12235")
+		//;alert((3^1)===2)
+		//;alert('/ 3　'.split().length==1)
+		//;alert('/ 3　'.split('\\\s').length==1)//==['/','3'])
+		//;[].push(1);alert('')
+		//;alert('TODO:js_粘贴板 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx')
+		;1n
+		;alert('js init')
+		;
+		;function copy1(){
+			;;;alert("copy")
+			;copy_paste("输出", "copy")
+			
+		;}
+		;function paste1(){
+			;;;alert("paste")
+			;copy_paste("输入", "paste")
+			
+		;}
+		;function copy_paste(id, cmd){
+			;var contentHolder = document.getElementById(id);
+			;var range = document.createRange()
+			;var selection = window.getSelection()
+			;selection.removeAllRanges()
+			;range.selectNodeContents(contentHolder)
+			//;alert([contentHolder, selection, range])
+			;selection.addRange(range)
+			;document.execCommand(cmd)
+			//;selection.removeAllRanges()
+			//;;;alert("cmd done")
+		;}
+		;function clear1(){
+			;;;alert("clear")
+			;var input_id="输入"
+			;var output_id="输出"
+			;
+			;set_value(input_id, '')
+			;set_value(output_id, '')
+			;
+		;}
+		//;alert("0"?99:67)
+		;function calc(){
+			;alert("calc start")
+			;var k0_id="初始散列值"
+			;var n_id="费力指数"
+			;var key_id="密码提示"
+			;var input_id="输入"
+			;var output_id="输出"
+			;var radio_name4method="计算方法"
+			;var radio_name4k0_fmt="初始散列值格式"
+			;var key=get_value(key_id)
+			;var txt=get_value(input_id)
+			;var n=get_value(n_id)
+			;n= n? str2int(n) : -1
+			;var method=get_radio_value(radio_name4method)
+			;method = str2int(method)
+			;var k0_fmt=get_radio_value(radio_name4k0_fmt)
+			;var k0= get_value(k0_id)
+			;if (k0_fmt==='hex'){
+				;k0= hex_ops.hex2bytes(k0)
+			;}else if (k0_fmt==='utf8'){
+				;k0= bytes_encode('utf-8', k0)
+			;}else if (k0_fmt==='ascii_ex'){
+				;k0= new Uint8Array(str2uints(eval(k0)))
+			;}else {
+				;;;alert("@calc:k0:logic error")
+			;}
+			;
+			;set_value(output_id, '')
+			;
+			;var [ver, rs, out]=whazsx_cipher(k0, n, method, key, txt)
+			;
+			;set_value(output_id, out)
+			;
+			;alert("calc end")
+		;}
+		;function swap(id1, id2){
+			;alert("swap")
+			;var v1=get_value(id1)
+			;var v2=get_value(id2)
+			;set_value(id1, v2)
+			;set_value(id2, v1)
+			;
+		;}
+		;
+		;function checked_id(id){
+			//;alert('@checked_id')
+			;var t=document.getElementById(id)
+			;checked_(t)
+		;}
+		;function checked_(that){
+			//;alert('@checked_')
+			;that.checked= true
+		;}
+		;function get_radio_value(name){
+			;var radios = document.getElementsByName(name)
+			;
+			;for(var i=0;i&lt;radios.length;i++){
+				;if (radios[i].checked == true){
+					;return radios[i].value
+					;
+				;}
+				;
+			;}
+			;;;alert(`radios named [${name}] have not checked`)
+			;
+		;}
+		;function get_value(id){
+			;var t=document.getElementById(id)
+			;return t.value
+			;
+		;}
+		;function set_value(id, v){
+			;var t=document.getElementById(id)
+			;t.value = v
+			;
+		;}
+		//;alert([4][-1])//undefined
+		;function whazsx_cipher(k0, n, method, key, txt){
+			;
+			//;whazsx._n=n
+			//;var whazsx = mk_whazsx_v1(whazsx_defaults._k0, whazsx_defaults._n, whazsx_defaults._may_rs)
+			//;var whazsx = mk_whazsx_v1(whazsx_defaults._k0, n, whazsx_defaults._may_rs)
+			;var ls= [mk_whazsx_v1, mk_whazsx_v2]
+			;var mk= method? ls[method-1] : ls[len(ls)-1]
+			;var kkk= whazsx_defaults._k0
+			;var nnn= whazsx_defaults._n
+			;var rrr= whazsx_defaults._may_rs
+			;
+			;n = n&gt;=1 ? n : nnn
+			;k0 = len(k0) ? k0 : kkk
+			;
+			;var t=document.getElementById('费力指数当前值')
+			;t.innerHTML= n
+			;alert(`费力指数=${n}\n初始散列值="${uints2str(k0)}"\n初始散列值=[${k0}]`)
+			;
+			;var whazsx = mk(k0, n, rrr)
+			;
+			;if (method){
+				;return whazsx.whazsx_encrypt(key, txt)
+				;
+			;}else {
+				;return whazsx.whazsx_decrypt(key, txt)
+				;
+			;}
+			;
+			;
+			;if (!(typeof n === 'number'  &amp;&amp; n&gt;0)){
+				;;;alert(`费力指数必须是正整数：typeof n=${typeof n}, n=${n}`)
+			;}else {
+				;;;alert(`whazsx_cipher: unknown method===${method}`)
+				;
+			;}
+		;}
+;
+
+;if (0){
+	;var ls=[]
+	;ls.push(4)
+	;ls= [...ls, ...ls, ...ls]
+	;var s= 'g'
+	;s= `${s}${s}${s}`
+	;s= ''.concat(s,s,...ls)
+	;var i=1n
+	;i&lt;&lt;=6n
+	;i**=6n
+;}
+
+;if (0){
+	;alert(null===null)//
+	;alert([]==[])//false
+	;alert(new Uint8Array()==new Uint8Array())//false
+	
+	;var 头
+	;var [a,b]=[1,2]; alert([a,b])
+	;[a,b] = [6,7]; alert([a,b])
+;}
+
+
+
+// __iter__
+;function* take(n, it){
+	;if (n&lt;=(n^n)) {return;}
+	;for (let x of it){
+		;yield x
+		;if (!--n){
+			;break
+		;}
+	;}
+;}
+
+;function* range(beg, end){
+	;for (var i=beg; i&lt;end; ++i){
+		;yield i
+	;}
+;}
+
+;function* map(f, it){
+	;for (let x of it){
+		;yield f(x)
+	;}
+;}
+
+
+
+;function* repeat(ls){
+	;while (1){yield* ls;}
+;}
+
+;function min2(x, y){
+	;return y&lt;x? y:x
+;}
+;function min1s(x0, it){
+	;for (let y of it){
+		;if (y&lt;x0){x0=y;}
+	;}
+	;return x0
+;}
+
+;function and_(it){
+	;for (let b of it){
+		if (!b){return false;}
+	;}
+	;return true
+;}
+;function all(f, it){
+	;return and_(map(f, it))
+;}
+;function or_(it){
+	;for (let b of it){
+		if (b){return true;}
+	;}
+	;return false
+;}
+;function any(f, it){
+	;return or_(map(f, it))
+;}
+//__iter_end__
+
+
+
+// __array__
+;function len(ls){
+	;return ls.length
+;}
+;function mk_array(it){
+	;return [...it]
+;}
+;function mk_array_repeat(len, ls){
+	;return [...take(len, repeat(ls))]
+;}
+//;alert(mk_array_repeat(3,[678,123]))//==[678,123,678]
+
+;function array2reverse_dict(ls){
+	;var d= {}
+	;for (var i=0; i&lt;ls.length; ++i){
+		;d[ls[i]]= i
+	;}
+	;return d
+;}
+
+
+;function ncopy(n, to_arr, to_beg, from_arr, from_beg){
+	;if (n&lt;0){n=0;}
+	;
+	;n= min1s(n, [to_arr.length-to_beg, from_arr.length-from_beg])
+	;while (n--&gt;0){
+		;to_arr[to_beg++]= from_arr[from_beg++]
+	;}
+;}
+
+;function ls_eq(ls0, ls1){
+	if (ls0.length !== ls1.length){
+		;return false
+	;}else{
+		;return all(i=&gt;ls0[i]===ls1[i], range(0, ls1.length))
+	;}
+;}
+//;alert(ls_eq([3,'hj'], [3,'hj']))
+//__array_end__
+
+
+
+
+
+
+// __str__
+;function mk_str_repeat(len, s){
+	;var r= len%s.length
+	;var q= (len-r)/s.length
+	;return ''.concat(...take(q, repeat([s])), s.slice(0, r))
+;}
+//;alert(5/3)//not 1!!!!!
+//;alert(mk_str_repeat(8,'as3'))//=='as3as3as'
+;function uints2str(us){
+	;return String.fromCodePoint(...us)
+;}
+
+;function char2uint(ch){
+	;return ch.codePointAt(0)
+;}
+;function str2uints(s){
+	;return [...map(char2uint, s)]
+;}
+//;alert(str2uints("3457"))
+
+;function has_space(s){
+	;var t= s.replace(/\s/, '')
+	;return t.length &lt; s.length
+	;
+;}
+
+
+
+
+// __ascii__
+
+;function bytes2ascii(us){
+	;return uints2str(us)
+;}
+;function ascii2bytes(s){
+	;var bs= new Uint8Array(map(char2uint, s))
+	;return bs
+;}
+//;alert(bytes2ascii(new Uint8Array([44,56,78,255,0,189])))
+//;alert(ascii2bytes("46cj\n\0\xff\xab"))
+
+
+;function mk_ascii(beg, end){
+	//;return new Uint8Array(range(beg, end))
+	;return uints2str(range(beg, end))
+;}
+
+
+;function ascii_encode(encoding, txt){
+	//;alert(`0@ascii_encode(${encoding}, ${txt})`)
+	;var bs = bytes_encode(encoding, txt);
+	//;alert(`1@ascii_encode(${encoding}, ${txt}):bs=${bs}`)
+	;return uints2str(bs)
+	;
+;}
+;function ascii_decode(encoding, ascii){
+	;var bs = new Uint8Array(str2uints(ascii));
+	;var txt = bytes_decode(encoding, bs);
+	;return txt
+	;
+;}
+
+
+
+
+
+
+// __bytes__
+;if(0){
+	;var bs= new Uint8Array([5,6,7,8,9])
+	;alert(bs)
+	//;bs.set(bs.subarray(1,3), -3)//error
+	;bs.set(bs.subarray(1,3), 2)
+	;alert(bs)//[5,6,6,7,9]
+	// .slice copy
+	// .subarray view
+;}
+;function bytes_concat(ls){
+	;var n= 0
+	;for (let bs of ls){
+		;n+= bs.length
+	;}
+	;var s= new Uint8Array(n)
+	;n= 0
+	;for (let bs of ls){
+		;s.set(bs, n)
+		;n+= bs.length
+	;}
+	;return s
+;}
+
+;function* bytes2iter_uintN8s__bigendian(nbyte, bs){
+	;if (nbyte&lt;=0 || bs.length%nbyte){
+		;;;alert(`@bytes2iter_uintN8s__bigendian(nbyte, bs):bs.length%nbyte=${bs.length}%${nbyte}!=0`)
+	;}else{
+		;var j=0
+		;for (var i=0; i&lt;bs.length; i=j){
+			;j+= nbyte
+			;var hex= hex_ops.uint8s2hex(bs.subarray(i,j))
+			;var u= hex_ops.hex2small_uint__bigendian(hex)
+			;yield u
+		;}
+	;}
+;}
+;function uintN8s2bytes__bigendian(nbyte, it){
+	;const N2= 2*nbyte
+	;var f= function (u){
+		//uN8 :: N*8 bit = N2*u4
+		;return uint_as_hex__bigendian(N2, u)
+	;}
+	;var hex= ''.concat(...map(f, it))
+	;var bs= hex_ops.hex2bytes(hex)
+	;return bs
+;}
+
+;function xor_bytes(bs, mask){
+	;var bs= new Uint8Array(_xor_bytes(bs, mask))
+	;return bs
+;}
+;function* _xor_bytes(bs, mask){
+	;if (bs.length !== mask.length){
+		;;;alert(`bs.length==${bs.length}!=mask.length==${mask.length}`)
+	;}else{
+		;for (var i=0; i&lt;bs.length; ++i){
+			;var a= (bs[i])
+			;var b= (mask[i])
+			;yield (a^b)
+		;}
+	;};
+	;
+;}
+
+
+
+
+;function bytes_encode(encoding, txt){
+	//;alert(`0@bytes_encode(${encoding}, ${txt})`)
+	;var bs = new TextEncoder(encoding).encode(txt);
+	//;alert(`1@bytes_encode(${encoding}, ${txt}):bs=${bs}`)
+	;return bs
+	;
+;}
+;function bytes_decode(encoding, bs){
+	;var txt = new TextDecoder(encoding).decode(bs);
+	;return txt
+	;
+;}
+
+
+// uBigInt2bytes__bigendian(L:int, u:uBigInt)
+// bytes2uBigInt__bigendian(bs)
+;function _mk_1s_bs(L){
+	;var s= new Uint8Array(L)
+	;s.fill(1)
+	;return s
+;}
+//;alert(_mk_1s_bs(6))
+
+;function bytes2uint__bb(bs){
+	//bigendian, bijection, uBigInt
+	;var u = _bytes2uint__bb(bs)
+	;var bs_ = _uint2bytes__bb(u)
+	;if (ls_eq(bs_, bs)){
+		;return u
+	;}else{
+		;;;alert(`@bytes2uint__bb:error`)
+	;}
+;}
+;function _bytes2uint__bb(bs){
+	;var bs0 = _mk_1s_bs(len(bs))
+	;var offset = bytes2uBigInt__bigendian(bs0)
+	;var diff = bytes2uBigInt__bigendian(bs)
+	;return offset+diff
+;}
+;function uint2bytes__bb(u){
+	//bigendian, bijection, uBigInt
+	;u= BigInt(u)
+	;var bs = _uint2bytes__bb(u)
+	;var u_ = _bytes2uint__bb(bs)
+	;if (u_ === u){
+		;return bs
+	;}else{
+		;;;alert(`@uint2bytes__bb:error:${u}-&gt;[${bs}]-&gt;${u_}`)
+	;}
+;}
+;function _uint2bytes__bb(u){
+	;if (u &lt; 0) {
+		;;;alert("@_uint2bytes__bb:u&lt;0")
+	;}else{
+		;var bs = uBigInt2bytes__bigendian(-1, u)
+		;var L = len(bs)
+		;var bs0 = _mk_1s_bs(L)
+		;var offset = bytes2uBigInt__bigendian(bs0)
+		;if (u &lt; offset){
+			;offset &gt;&gt;= 8n
+			;L -= 1
+		;}
+		;
+		;var diff = u-offset
+		;var bs = uBigInt2bytes__bigendian(L, diff)
+		;return bs
+	;}
+;}
+
+
+//__bytes_end__
+
+
+
+
+
+// __hex__
+;function _hex2ascii(hex) {
+	;return uints2str(this.hex2iter_uint8s(hex))
+;}
+;function _hex2bytes(hex) {
+	;return new Uint8Array(this.hex2iter_uint8s(hex))
+;}
+
+
+;function _hex2uint4s(hex){
+	;hex= hex.toLowerCase()
+	;var us= Array.from(hex, (x,i)=&gt;this.low_xdigit2uint[x])
+	;return us
+;}
+
+
+;function* _hex2iter_uint8s(hex) {
+	;if (hex.length&amp;1){
+		;;;alert(`odd hex.length===${hex.length}`)
+	;}else{
+		;var ls=this.hex2uint4s(hex)
+		;for (var i=0; i&lt;hex.length; i+=2){
+			;var a=ls[i]
+			;var b=ls[i+1]
+			;yield (a&lt;&lt;4)|b
+		;}
+	;}
+;}
+
+
+;function _uint8s2hex(it){
+	//;alert(`0@_uint8s2hex`)
+	;var s= ''.concat(...map(this.uint8_to_hex, it))
+	//;alert(`1@_uint8s2hex`)
+	;return s
+;}
+;function _uint8_to_hex(u){
+	//;alert(`0@_uint8_to_hex(${u}):${typeof u}`)
+	;const mask= 0x0f
+	//;alert(`1@_uint8_to_hex(${u})`)
+	;var d= u&amp;mask
+	//;alert(`2@_uint8_to_hex(${u}, ${d})`)
+	//;alert(hex_ops.low_xdigits)
+	//;alert(this.low_xdigits)//undefined!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	//map(this.uint8_to_hex, it))
+	//unbound method
+	
+
+	;var low_xdigits= hex_ops.low_xdigits
+	;var s= low_xdigits[d]
+	//;alert(`3@_uint8_to_hex(${u})`)
+	;u &gt;&gt;&gt;= 4
+	//;alert(`4@_uint8_to_hex(${u})`)
+	;d= u&amp;mask
+	//;alert(`5@_uint8_to_hex(${u})`)
+	;s= low_xdigits[d]+s
+	//;alert(`6@_uint8_to_hex(${u}, ${s})`)
+	;return s
+;}
+;function _fix_len_of_hex__bigendian(len, hex){
+	;if (len&lt;0){
+		;;;alert('@_fix_len_of_hex__bigendian:len&lt;0')
+		;return
+	;}
+	;if (hex.length&lt;len){
+		;var prefix= mk_str_repeat(len-hex.length, '0')
+		;hex= prefix+hex
+	;}else if (hex.length&gt;len){
+		//bug: ;hex= hex.slice(0, len)
+		;hex= hex.slice(hex.length-len, hex.length)
+	;}else {
+		;
+	;}
+	;return hex
+;}
+;function _hex2small_uint__bigendian(hex){
+	;return str2int(`0x${hex}`)
+	//;return parseInt(hex, 16)
+;}
+//;alert(_hex2small_uint__bigendian("fff")===0xfff)
+
+;function _hex2uBigInt__bigendian(hex){
+	;return BigInt(`0x${hex}`)
+;}
+//;alert(0xfffn===0xfffn)
+//;alert(_hex2uBigInt__bigendian("fff")===0xfffn)
+
+;_low_xdigits= '0123456789abcdef'
+;_low_xdigit2uint= array2reverse_dict(_low_xdigits)
+;var hex_ops=
+	{low_xdigits: _low_xdigits
+	,low_xdigit2uint: _low_xdigit2uint
+	,hex2uint4s: _hex2uint4s
+	,hex2iter_uint8s: _hex2iter_uint8s
+	,hex2ascii: _hex2ascii
+	,hex2bytes: _hex2bytes
+	,fix_len_of_hex__bigendian: _fix_len_of_hex__bigendian
+	,uint8_to_hex: _uint8_to_hex
+	,uint8s2hex: _uint8s2hex
+	,hex2small_uint__bigendian: _hex2small_uint__bigendian
+	,hex2uBigInt__bigendian: _hex2uBigInt__bigendian
+	};
+//;alert(hex_ops.hex2uint4s('a4f'))
+//__hex_end__
+
+
+
+//__random__
+;function mk_random_uint(bound){
+	;return Math.floor(Math.random() * Math.floor(bound))
+	;return 1
+;}
+;function* iter_random_uints(bound, len){
+	;for (var i=0; i&lt;len; ++i){
+		;yield mk_random_uint(bound)
+	;}
+;}
+;function mk_random_bytes(len){
+	;return new Uint8Array(iter_random_uints(256, len))
+;}
+
+//__int__
+;function str2int(s){
+	;var f= Number(s)
+	;var n= Math.floor(f)
+	;if (f!==n){
+		;;;alert(`@str2int:${s}`)
+	;}else{
+		;return n
+	;}
+	//;return parseInt(s)
+;}
+//;alert(str2int("0xff")===0xff)
+;function BigInt_asUint32(u){
+	;return Number(BigInt.asUintN(32,u))
+	;return str2int(BigInt.asUintN(32,u).toString())
+;}
+//;alert(BigInt_asUint32((1n&lt;&lt;32n) +1n)-1)//0
+
+;function uint_as_hex__bigendian(len, n){
+	//Number or BigInt
+	;var hex= n.toString(16)
+	;if (len &lt; 0){
+		;len = hex.length
+		;if (len&amp;1){++len;}
+	;}
+	;hex= hex_ops.fix_len_of_hex__bigendian(len, hex)
+	;return hex
+;}
+;function uint_as_bytes__bigendian(len, n){
+	//Number or BigInt
+	;var hex= uint_as_hex__bigendian(2*len, n)
+	;var bs= hex_ops.hex2bytes(hex)
+	;return bs
+;}
+
+
+// uBigInt2bytes__bigendian(L:int, u:uBigInt)
+// bytes2uBigInt__bigendian(bs)
+//;alert(parseInt('0x0011n'))
+//fail: ;alert(BigInt('ff',16))
+;var uBigInt2bytes__bigendian
+	= uint_as_bytes__bigendian
+;function bytes2uBigInt__bigendian(bs){
+	;if (!len(bs)){
+		;return 0n;
+	;}
+	;var hex= hex_ops.uint8s2hex(bs)
+	//bug: ;return parseInt(`0x${hex}n`)
+	;return hex_ops.hex2uBigInt__bigendian(hex)
+;}
+if (0){
+	;alert(uBigInt2bytes__bigendian(-1, 0x1020n))//[16,32]
+	;alert(uBigInt2bytes__bigendian(-1, 0x081020n))//[8,16,32]
+	;alert(uBigInt2bytes__bigendian(1, 0x081020n))//[32]
+	;alert(bytes2uBigInt__bigendian([])===0n)
+	;alert(bytes2uBigInt__bigendian([0,1,4])===260n)
+;}
+;if (0){
+	;alert('uint2bytes__bb?')
+	;for (let i in range(0, 5000)){
+		;uint2bytes__bb(i)
+	;}
+	;alert('uint2bytes__bb!')
+	;alert('bytes2uint__bb?')
+	;bytes2uint__bb([])
+	;bytes2uint__bb([0,0,0])
+	;for (let i in range(0, 0x100)){
+		;bytes2uint__bb([i])
+	;}
+	;for (let i in range(0, 0x100)){
+		;for (let j in range(0, 0x100)){
+			;bytes2uint__bb([i,j])
+		;}
+	;}
+	;alert('bytes2uint__bb!')
+;}
+
+
+;`
+xxxxxxxxxx
+BigInt_asUint32
+uint_as_bytes__bigendian
+hex_ops
+	hex2bytes
+	uint8s2hex
+	fix_len_of_hex__bigendian
+`
+//__int_end__
+
+
+
+
+//__math__
+;function* iter_primes(){
+	;var ps= []
+	;for (var i=2n; ; ++i){
+		;var is_p= 1
+		;for (let p of ps){
+			;if (i%p){
+			;}else{
+				//not prime
+				;is_p= 0
+				;break
+			;}
+		;}
+		;if (is_p){
+			;ps.push(i)
+			;yield i
+		;}
+	;}
+;}
+
+;function bsearch(f, i, j){
+	//f=lt/le
+	;var d= j-i
+	;var _1= (i^i);++_1
+	;while (d&gt;_1){
+		//;alert(`@bsearch:ijd=(${i}, ${j}, ${d})`)
+		;d&gt;&gt;= _1 // not &gt;&gt;&gt;; 1n
+		;m= i+d
+		;if (f(m)){
+			;i= m;d= j-i
+		;}else{
+			;j= m
+		;}
+	;}
+	;return i
+;}
+
+;function floor_nth_root_of_uint(nth, u){
+	;var le= function (m){
+		;return (m**nth)&lt;=u
+	;}
+	;return bsearch(le, u^u, ++u)
+;}
+
+;function k_prime_nth_root_w_frac_bits(k, nth, w){
+	;k= BigInt(k)
+	;nth= BigInt(nth)
+	;w= BigInt(w)
+	;var mask= (1n&lt;&lt;w)-1n
+	;var shf= (w*nth)
+	;var f= function (u){
+		;u &lt;&lt;= shf
+		;u= mask&amp;floor_nth_root_of_uint(nth, u)
+		;return u
+	;}
+	;return [...map(f, take(k, iter_primes()))]
+;}
+
+
+//;alert([...take(5, iter_primes())])
+//;alert()
+//;alert(1n&lt;&lt;96) error
+//;alert(1n&lt;&lt;96n)
+//;alert(floor_nth_root_of_uint(3n,2n&lt;&lt;96n))
+//;alert(k_prime_nth_root_w_frac_bits(64,3,32))
+//==&gt;&gt;[0]==1116352408==0x428a2f98
+//;BigInt.asUintN
+//;alert(BigInt.asUintN(32,1n))
+//;alert(typeof BigInt.asUintN(32,1n)=='bigint')
+//;alert(new Uint32Array([0,1]))
+//;alert([0+"1", typeof (0+"1")=='string'])
+
+//__math_end__
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//__whazsx__
+;function handle_key_hint(key_hint){
+	;var s = key_hint.trim()
+	;if (has_space(s)){
+		;;;alert(`key_hint contains spaces: ${s}`)
+	;}else{
+		;var ls= s.split('/')
+		if (ls.length!=3){
+			;;;alert(`key_hint should contain 2 '/' exactly`)
+		;}else{
+			;return {
+				init:ls[0]
+				,mid:ls[1]
+				,tail:ls[2]
+			}
+			;
+		;}
+		;
+	;}
+	;
+;}
+
+
+
+// ///////this.
+;function _0handle_key_hint(key_hint){
+	;var xkey_hint= handle_key_hint(key_hint)
+	;xkey_hint.key= `哀${xkey_hint.mid}哉`
+	;xkey_hint.hh = `呜呼${xkey_hint.init}`
+	;xkey_hint.tt = `${xkey_hint.tail}尚飨`
+	//;alert(`@_0handle_key_hint(${key_hint}):key=${xkey_hint.key}`)
+	;return xkey_hint
+	;
+;}
+
+;`
+		头, 密码, 尾 = 呜呼哀哉尚飨.handle_key_hint(密码提示)
+		版本号 = 呜呼哀哉尚飨._version_()
+		随机串, 载荷 = 呜呼哀哉尚飨.加密(密码, 明文)
+		密文 = f'{头}{载荷}{尾}'
+		if (版本号, 随机串, 明文) != 呜呼哀哉尚飨.呜呼哀哉尚飨解密(密码提示, 密文): raise eee
+		return 版本号, 随机串, 密文
+`
+;function whazsx_encrypt(key_hint, txt){
+	//;alert('0@whazsx_encrypt')
+	;var xkey_hint= _0handle_key_hint(key_hint)
+	;var ver= this._ver
+	//;alert('1@whazsx_encrypt')
+	;var [rs, payload]= this.encrypt(xkey_hint.key, txt)
+	;
+	//;alert('2@whazsx_encrypt')
+	;var mmm = `${xkey_hint.hh}${payload}${xkey_hint.tt}`
+	//;alert(`2.1@whazsx_encrypt:rs=${rs};payload=${payload};mmm=${mmm};txt=${txt};ver=${ver};`)
+	;var [ver_, rs_, txt_]= this.whazsx_decrypt(key_hint, mmm)
+	//;alert(`3@whazsx_encrypt:[ver_, rs_, txt_]=[${ver_}, ${rs_}, ${txt_}]`)
+	//bug: ;if (!ls_eq([ver, rs, txt], [ver_, rs_, txt_]))
+	//     since rs is bytes ie obj
+	;if (!(ls_eq(rs,rs_)&amp;&amp;ls_eq([ver, txt], [ver_, txt_]))){
+		;;;alert(`whazsx_encrypt logic error`)
+	;}else{
+		//;alert('4@whazsx_encrypt')
+		;return [ver, rs, mmm]
+	;}
+;}
+
+;`
+
+		头, 密码, 尾 = 呜呼哀哉尚飨.handle_key_hint(密码提示)
+		密文 = remove_spaces(密文)
+		if len(密文) &lt; len(头)+len(尾): raise eee
+		if not 密文.startswith(头): raise eee
+		if not 密文.endswith(尾): raise eee
+		载荷 = 密文[len(头):-len(尾)]
+		版本号, 随机串, 明文 = 呜呼哀哉尚飨.解密(密码, 载荷)
+		return 版本号, 随机串, 明文
+
+`
+
+;function whazsx_decrypt(key_hint, mmm){
+	//;alert('0@whazsx_decrypt')
+	;mmm= mmm.replace(/\s/g, '')
+	//;alert('1@whazsx_decrypt')
+	;var xkey_hint= _0handle_key_hint(key_hint)
+	;var hh = xkey_hint.hh
+	;var tt = xkey_hint.tt
+	;
+	//;alert('2@whazsx_decrypt')
+	;if (mmm.length &lt; hh.length+tt.length){
+		;;;alert(`密文太短`)
+	;}else if (!mmm.startsWith(hh)){
+		;;;alert(`密文开头不是${hh}`)
+	;}else if (!mmm.endsWith(tt)){
+		;;;alert(`密文结尾不是${tt}`)
+	;}else{
+		//;alert('3@whazsx_decrypt')
+		;var payload = mmm.slice(hh.length, -tt.length)
+		//;alert('4@whazsx_decrypt')
+		;var [ver, rs, txt]= this.decrypt(xkey_hint.key, payload)
+		//;alert('5@whazsx_decrypt')
+		;return [ver, rs, txt]
+	;}
+;}
+
+
+
+
+
+;function encrypt_v1(key, txt){
+	//;alert(`0@encrypt_v1(${key}, ${txt})`)
+	;key= bytes_encode(this._encoding, key)
+	//;alert('1@encrypt_v1')
+	;var bs0= bytes_encode(this._encoding, txt)
+	//;alert('2@encrypt_v1')
+	;var [rs, bs1]= this.salt_encrypt(key, bs0)
+	//;alert('3@encrypt_v1')
+	;var mmm= this.bytes2hanzi_str(bs1)
+	//;alert(`4@encrypt_v1:rs=${rs};mmm=${mmm}`)
+	//bug: ;return rs, mmm
+	;return [rs, mmm]
+;}
+;function decrypt_v1(key, mmm){
+	//;alert(`0@decrypt_v1(${key}, ${mmm})`)
+	;key= bytes_encode(this._encoding, key)
+	;var bs1= this.hanzi_str2bytes(mmm)
+	;var [rs, bs0]= this.salt_decrypt(key, bs1)
+	;var txt= bytes_decode(this._encoding, bs0)
+	;var ver= 1
+	;return [ver, rs, txt]
+;}
+
+
+
+
+
+
+;`
+	def 加密(呜呜呼哀哉尚飨, key, txt):
+		cls1 = 呜呼哀哉尚飨
+		rs, mmm = cls1.加密(呜呜呼哀哉尚飨, key, txt)
+		_n_ = 呜呜呼哀哉尚飨._n_()
+		_k0_ = 呜呜呼哀哉尚飨._k0_()
+		bs0 = _k0_
+		bs1 = uint2bytes__bb(_n_-1)
+		hh = 呜呜呼哀哉尚飨.bytes2zh_str(bs0)
+		tt = 呜呜呼哀哉尚飨.bytes2hanzi_str(bs1)
+		mmm = '哉'.join([hh, mmm, tt])
+		return rs, mmm
+`
+//bytes2uint__bb;uint2bytes__bb;
+//.decrypt_v1;.encrypt_v1
+//.bytes2zh_str;.zh_str2bytes;
+//  &lt;&lt;==.bytes2hanzi_str;.hanzi_str2bytes
+//.get_init_args_v2;.get_init_args_v1;
+;function encrypt_v2(key, txt){
+	//;alert(`0@encrypt_v2(${key}, ${txt})`)
+	;var [rs, mmm]= this.encrypt_v1(key, txt)
+	//;alert(`1@encrypt_v2(${key}, ${txt})`)
+	;var n= this._n
+	;var k0= this._k0
+	;var bs0 = k0
+	//;alert(`2@encrypt_v2(${key}, ${txt})`)
+	;var bs1 = uint2bytes__bb(n-1)
+	//;alert(`3@encrypt_v2(${key}, ${txt})`)
+	;var hh = this.bytes2hanzi_str(bs0)
+	;var tt = this.bytes2hanzi_str(bs1)
+	;var mmm = `${hh}哉${mmm}哉${tt}`
+	//;alert(`--@encrypt_v2(${key}, ${txt})`)
+	;return [rs, mmm]
+;}
+
+;`
+	def 解密(呜呜呼哀哉尚飨, key, mmm0):
+		ls = mmm0.split('哉')
+		L = len(ls)
+		if L==1:
+			#bug:return super().解密(key, mmm0)
+			#    since mk_hashed_key changed
+			#bug:kw = 呜呜呼哀哉尚飨.get_init_args()
+			cls1 = 呜呼哀哉尚飨
+			kw = cls1.get_init_args(呜呜呼哀哉尚飨)
+			ver1 = cls1(**kw)
+			return ver1.解密(key, mmm0)
+		elif L==3:
+			hh, mmm1, tt = ls
+			bs0 = 呜呜呼哀哉尚飨.zh_str2bytes(hh)
+			bs1 = 呜呜呼哀哉尚飨.zh_str2bytes(tt)
+			k0 = bs0
+			n = bytes2uint__bb(bs1)+1
+			#bug:
+			#	sf = 呜呜呼哀哉尚飨.ireplace(_k0=k0, _n=n)
+			#	return sf.解密(key, mmm1)
+			if (k0==呜呜呼哀哉尚飨._k0_()
+					and n==呜呜呼哀哉尚飨._n_()
+					):
+				cls1 = 呜呼哀哉尚飨
+				ver, rs, txt = cls1.解密(呜呜呼哀哉尚飨, key, mmm1)
+				assert ver == 1
+				ver = __class__._version_()
+				return ver, rs, txt
+			else:
+				#bug:
+				#   cls = type(呜呜呼哀哉尚飨)
+				#   kw = 呜呜呼哀哉尚飨.get_init_args()
+				cls = __class__
+				kw = cls.get_init_args(呜呜呼哀哉尚飨)
+				kw.update(_k0=k0, _n=n)
+				ver2 = cls(**kw)
+				return ver2.解密(key, mmm0)
+		else:
+			raise eee
+
+
+`
+
+//;alert(`@decrypt_v2: ${Number(1n)}`)
+;function decrypt_v2(key, mmm0){
+		//;alert(`0@decrypt_v2(${key}, ${mmm0})`)
+		;var ls = mmm0.split('哉')
+		;var L = len(ls)
+		;if (L==1){
+			;var kw= this.get_init_args_v1()
+			;var ver1 = mk_whazsx_v1(...kw)
+			;return ver1.decrypt(key, mmm0)
+		;}else if (L==3){
+			;var [hh, mmm1, tt] = ls
+			;var bs0 = this.hanzi_str2bytes(hh)
+			;var bs1 = this.hanzi_str2bytes(tt)
+			;var k0 = bs0
+			;var n = Number(bytes2uint__bb(bs1))+1
+			//bug: ;if ((k0==this._k0) &amp;&amp; (n==this._n))
+			;if (ls_eq(k0,this._k0) &amp;&amp; (n==this._n)){
+				;var [_, rs, txt] = this.decrypt_v1(key, mmm1)
+				;var ver = 2
+				;return [ver, rs, txt]
+			;}else{
+				;var ver2 = mk_whazsx_v2(k0, n, null)
+				;return ver2.decrypt(key, mmm0)
+			;}
+		;}else{
+			;;;alert("not version 1 or 2")
+		;}
+;}
+
+
+
+
+
+
+
+
+
+
+
+
+
+;function salt_encrypt(key, bs1){
+		//;alert('0@salt_encrypt')
+		;var rs= this.gen_prefix()
+		//;alert('1@salt_encrypt')
+		;var bs2= this.symmetry_cipher(rs, bs1)
+		//;alert('2@salt_encrypt')
+		;var bs3= bytes_concat([rs, bs2])
+		//;alert('3@salt_encrypt')
+		;var bs4= this.symmetry_cipher(key, bs3)
+		;
+		//;alert('4@salt_encrypt')
+		;return [rs, bs4]
+		;
+	;}
+
+;function salt_decrypt(key, bs4){
+		;var bs3= this.symmetry_cipher(key, bs4)
+		;var plen= this.len_prefix(bs3)
+		;var rs= bs3.slice(0, plen)
+		;var bs2= bs3.slice(plen, bs3.length)
+		;var bs1= this.symmetry_cipher(rs, bs2)
+		;return [rs, bs1]
+		;
+	;}
+
+;function symmetry_cipher(key, bs){
+	//;alert(`0@symmetry_cipher(key:${typeof key}, bs:${typeof bs})`)
+	;var mask= this.mk_mask(key, bs.length)
+	//;alert('1@symmetry_cipher')
+	;var mmm= xor_bytes(bs, mask)
+	//;alert('2@symmetry_cipher')
+	;return mmm
+;}
+
+
+
+
+
+;`
+	def mk_hashed_key_v2(呜呜呼哀哉尚飨, key:bytes):
+		#global _hash_, _n_, _k0_
+		_hash_ = 呜呜呼哀哉尚飨._hash_
+		n = _n_ = 呜呜呼哀哉尚飨._n_()
+		_k0_ = 呜呜呼哀哉尚飨._k0_()
+		#key = key.encode('utf8')
+		k = _k0_
+		for i in range(n, n+n):
+			i = str(i).encode('utf8')
+			k = _hash_(i+key+k+key+i)
+		return k
+`
+;function mk_hashed_key_v2(key){
+	//;alert(`0@mk_hashed_key_v2(key=${key})`)
+	;var k= this._k0
+	;var n= this._n
+	;for (let i of range(n,n+n)){
+		;var ii = bytes_encode(this._encoding, i.toString())
+		;k = this._hash(bytes_concat([ii,key,k,key,ii]))
+	;}
+	//;alert(`--@mk_hashed_key_v2(key=${key})`)
+	;return k
+;}
+
+
+;function mk_hashed_key_v1(key){
+	//;alert(`0@mk_hashed_key_v1(key=${key})`)
+	;var k= this._k0
+	;for (var i=0; i&lt;this._n; ++i){
+		;k = this._hash(bytes_concat([k, key]))
+	;}
+	;return k
+;}
+;function mk_mask(key, len){
+	//;alert(`0@mk_mask(key=${key}, len=${len})`)
+	;var k= this.mk_hashed_key(key)
+	//;alert(`1@mk_mask(key:${typeof key}, len:${typeof len}, k:${typeof k})`)
+	//;alert('2@mk_mask')
+	;var ks = [];var sz = 0
+	;for (var i=0; i&lt;len; ++i){
+		;var ii = bytes_encode(this._encoding, i.toString())
+		//;alert([i, 'xxxx', hex_ops.uint8s2hex(ii), "xxxxxx", i.toString()])
+		;k = this._hash(bytes_concat([k, key,ii]))
+		;ks.push(k)
+		;sz += k.length
+		;if (sz &gt;= len){
+			;break
+		;}
+		;
+	;}
+	;
+	//;alert('3@mk_mask')
+	;var kk = bytes_concat(ks)
+	;kk = kk.slice(0,len)
+	;return kk
+	;
+	;
+;}
+
+
+
+
+//;alert([(-9)%5, (-6)%5, (-4)%5, (-1)%5, 1%5, 4%5])
+;function is_end_of_prefix(left, right){
+	//bug:(left-right)%256  may &lt;0
+	//;var diff= ((256+left-right)%256)
+	;var diff= ((left-right)&amp;0xff)
+	//;alert([left, right, diff, this._diff_bound, diff &lt; this._diff_bound])
+	;return diff &lt; this._diff_bound
+	;
+;}
+;function len_prefix(bs){
+	;var f= (x=&gt;x) //char2uint
+	;var left= f(bs[0])
+	;for (var i=1; i&lt;bs.length; ++i){
+		;right= f(bs[i])
+		;if (this.is_end_of_prefix(left, right)){
+			;++i
+			;break
+		;}
+		;left= right
+	;}
+	;
+	;return i // if break has++, else end
+	;
+;}
+;function gen_prefix(){
+	;if (this._may_rs !== null){
+		;return this._may_rs
+	;}
+	;var len= 2
+	;var bs= new Uint8Array()
+	;var i= len
+	;while (i===len){
+		;bs= bytes_concat([bs, mk_random_bytes(len)])
+		;len= bs.length
+		;i= this.len_prefix(bs)
+	;}
+	;
+	;return bs.slice(0,i)
+	;
+;}
+
+
+
+
+;function bytes2hanzi_str(bs){
+	;return ''.concat(..._bytes2hanzi_str(this._zh_char256, bs))
+;}
+;function* _bytes2hanzi_str(_zh_char256, bs){
+	//;alert(`0@_bytes2hanzi_str(${bs})`)
+	;for (let u of bs){
+		;yield _zh_char256[u]
+	;}
+;}
+
+;function hanzi_str2bytes(s){
+	;return new Uint8Array(_hanzi_str2uint(this._zh_char2idx, s))
+;}
+
+;function* _hanzi_str2uint(_zh_char2idx, s){
+	;for (let hz of s){
+		;yield _zh_char2idx[hz]
+	;}
+;}
+
+
+_zh_char256 = "竺笙翊釉宸潼徇礁僖臾泗瑾羲渥拷壕脯壑瑛孺熄瑚琶斡渤爰甄恁苔芍嗔偈褥痰裨舷磐勺簪蟠橡嫦逋珀佃夙濠肪枷剔薇椿蹙茄涓溥衢茸翌窒穹蛾卞衾陟琵菁雉猝曙酵邯懋眸曷瀑焙悸蛭珂揆瑁喙陂淙舫斫麝燮桔愆庠跛黍佚癖蹇曦湍蒜磬珥橙娑怏暹瓢逡嵋跏燧昴疵爻麒橄寤幄胛淞滓狎窈湫帑芹拌荻嬖盂碇燔倨皿瘠蚌祉淅洵楹秧咫筮蚣瞑攫悌跣趺褶灸樟魃倬翡傀殄岬菽俳槁蒿羸侏裟暝袈痘俑稔畛粕翕濂甑蜈葺柑楔椽匐樗嵬溟噫蔗琥匍碣嗾纛禳醵艮戡萸瓠雎槿侑枋肄暾慝梏楮檎汐豌蕨逑桎枳楸慊螟佶畦稗酊圄菖揄孱疥蓍蹉痍枸枇茯廛猊酩荏擘苒眄茱痂篁腱膈筌埴醍柝酎莪疝茴堀檗疳蒡嚆"
+_zh_char2idx = array2reverse_dict(_zh_char256)
+
+
+
+//;alert([6788,String.fromCodePoint(0x38,0x30)])
+//;alert(_zh_char2idx.toString())
+
+;var whazsx_defaults=
+	{_n:1&lt;&lt;16
+	,_may_rs:null
+	,_k0:new Uint8Array(range(0,256))
+	};
+;function mk_whazsx_v2(k0, n, may_rs){
+	;var whazsx= mk_whazsx_v1(k0, n, may_rs)
+	;whazsx._ver= 2
+	;whazsx.mk_hashed_key= mk_hashed_key_v2
+	;whazsx.encrypt= encrypt_v2
+	;whazsx.decrypt= decrypt_v2
+	;whazsx.encrypt_v2= encrypt_v2
+	;whazsx.decrypt_v2= decrypt_v2
+	;return whazsx
+;}
+//;var [k0, n, may_rs]= this.get_init_args_v1()
+;function get_init_args_v1(){
+	;return [this._k0, this._n, this._may_rs]
+;}
+;function mk_whazsx_v1(k0, n, may_rs){
+;var whazsx=
+	{_ver:1
+	,_n:n
+	,_may_rs:may_rs
+	,_k0:k0
+	
+	,_diff_bound:8
+	,_hash:bytes_sha256
+	,_encoding:'utf-8'
+	,_zh_char256:_zh_char256
+	,_zh_char2idx:_zh_char2idx
+	
+	,encrypt_v1:encrypt_v1
+	,decrypt_v1:decrypt_v1
+	
+	,get_init_args_v1:get_init_args_v1
+	,bytes2hanzi_str:bytes2hanzi_str
+	,hanzi_str2bytes:hanzi_str2bytes
+	,is_end_of_prefix:is_end_of_prefix//(left, right)
+	,mk_hashed_key:mk_hashed_key_v1
+	,mk_mask:mk_mask//(key, len)
+	,len_prefix:len_prefix//(bs)
+	,gen_prefix:gen_prefix//()
+	,salt_encrypt:salt_encrypt//(key_bs, bs)
+	,salt_decrypt:salt_decrypt//(key_bs, mmm_bs)
+	,symmetry_cipher:symmetry_cipher//(key_bs, bs)
+	,encrypt:encrypt_v1//(key, txt)
+	,decrypt:decrypt_v1//(key, mmm)
+	,whazsx_encrypt:whazsx_encrypt//(key_hint, txt)
+	,whazsx_decrypt:whazsx_decrypt//(key_hint, mmm)
+};
+	;if (n&lt;1){
+		;;;alert(`n=${n}&lt;1`)
+		;return
+	;}else if (may_rs===null){
+	;}else if (may_rs.length&lt;2){
+		;;;alert(`len(rs)=${may_rs.length}&lt;2`)
+		;return
+	;}else {
+		;var rs_= bytes_concat([may_rs, may_rs])
+		;if (whazsx.len_prefix(rs_)!==may_rs.length){
+			;;;alert(`rs=${may_rs} is not good predix: len_prefix(rs+rs)=${whazsx.len_prefix(rs_)}!==${may_rs.length}=rs.length`)
+			;return
+		;}
+	;}
+	
+	;return whazsx
+;}
+;
+
+//__whazsx_end__
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+////////////sha256
+
+
+//__sha256_data__
+
+;function _mk_sha256_data__ls(k,nth){
+	;return new Uint32Array(map(BigInt_asUint32, k_prime_nth_root_w_frac_bits(k,nth,32n)))
+;}
+//;var r= _mk_sha256_data__ls(64,3);alert(r)
+//;alert(new Uint32Array(r))
+
+
+;var _sha256_data=
+	{w:32
+	,m: 0xffFFffFF //(1&lt;&lt;32)-1===0???
+	,mh: 0xffFF0000
+	,ml: 0x0000ffFF
+	,kk: _mk_sha256_data__ls(64,3)
+	,hh0:_mk_sha256_data__ls(8,2)
+	,SHR: function(n, x){return ((x&amp;this.m)&gt;&gt;&gt;n);}
+	,ROTR: function(n, x){
+		//;alert(`@ROTR:this.m=${this.m},this.w=${this.w},this.w_=${this.w_},_sha256_data.w=${_sha256_data.w}`)
+		//bug:;return (  ((x&gt;&gt;&gt;n)|(x&lt;&lt;(this.w-n))) &amp;this.m  )
+		;return (  (((x&amp;this.m)&gt;&gt;&gt;n)|(x&lt;&lt;(this.w-n))) &amp;this.m  )
+		;}
+		//this.w is undefined!!!???????
+	,add: function(x, y){return (x+y)&amp;this.m;}
+
+	,ch: function(x,y,z){return (x&amp;y)^((~x)&amp;z);}
+	,maj: function(x,y,z){return (x&amp;y)^(x&amp;z)^(y&amp;z);}
+	,sg0: function(x){return this.ROTR(2,x) ^ this.ROTR(13,x) ^ this.ROTR(22,x);}
+	,sg1: function(x){return this.ROTR(6,x) ^ this.ROTR(11,x) ^ this.ROTR(25,x);}
+	,d0: function(x){return this.ROTR(7,x) ^ this.ROTR(18,x) ^ this.SHR(3,x);}
+	,d1: function(x){return this.ROTR(17,x) ^ this.ROTR(19,x) ^ this.SHR(10,x);}
+	};
+//;alert(~7==-8)
+//;alert(_sha256_data.SHR(30,0xffFFffFF))
+//;alert(_sha256_data.ROTR(30,0xffFFffFF))
+//;alert(_sha256_data.d0(2))
+//;alert(_sha256_data.d1)
+//;alert(["d1", _sha256_data.d1(57792)])
+
+//__sha256_data_end__
+
+
+
+
+//__sha256__
+;function bytes_sha256(bs) {
+	//;alert(`0@bytes_sha256(${hex_ops.uint8s2hex(bs)})`)
+	;var x= mk_my_sha256()
+	//;alert(`1@bytes_sha256(${hex_ops.uint8s2hex(bs)})`)
+	;x.feed(bs)
+	//;alert(`2@bytes_sha256(${hex_ops.uint8s2hex(bs)})`)
+	;var h= x.digest()
+	//;alert(`3@bytes_sha256(${hex_ops.uint8s2hex(bs)})`)
+	;return h
+;}
+;function ascii_sha256(ascii) {
+	//;alert(`0@ascii_sha256(${typeof(ascii)}@${str2uints(ascii)})`)
+	//ascii2bytes bytes2ascii
+	;var bs= ascii2bytes(ascii)
+	//;alert(`1@ascii_sha256:typeof(bs)=${typeof(bs)}`)
+	;bs= bytes_sha256(bs)
+	//;alert(`2@ascii_sha256:typeof(bs)=${typeof(bs)}`)
+	;ascii= bytes2ascii(bs)
+	;return ascii
+	;return "1111"
+	;return ascii_decode(ascii, "1111")
+	;var hex= _ascii_sha256(ascii)
+	//;alert(`1@ascii_sha256:hex=${hex}`)
+	;var s= hex_ops.hex2ascii(hex)
+	//;alert(`2@ascii_sha256:s=${str2uints(s)}`)
+	;return s
+;}
+
+
+;
+
+
+
+
+// xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+;function _my_sha256_copy(){
+	;var x=
+		{hh: new Uint32Array(this.hh)
+		,tail_bytes: new Uint8Array(this.tail_bytes)
+		,total_bytes:this.total_bytes
+		,copy:this.copy
+		,feed:this.feed
+		,digest:this.digest
+		};
+	;return x
+;}
+
+
+
+;function my_sha256__feed(hh, bk){
+	//bk::block=64byte=16word
+	//hh::hash=32byte=8word
+	//;alert(`0@my_sha256__feed(${bs}):hh=${hh},bk=${bk}`)
+	////////////////////
+	//but u32 repr maybe little endian
+	//;var mm= new Uint32Array(bk.buffer)
+	////////////////////
+	;var mm= new Uint32Array(bytes2iter_uintN8s__bigendian(4, bk))
+	;
+	;const kk= _sha256_data.kk
+	//;const hh= this.hh
+	//;const ww= this.ww
+	//;const vv= this.vv
+	//;const tt= this.tt
+	;const ww= new Uint32Array(64)
+	;const vv= new Uint32Array(8)
+	;const tt= new Uint32Array(2)
+	;const a= 0
+	;const b= 1
+	;const c= 2
+	;const d= 3
+	;const e= 4
+	;const f= 5
+	;const g= 6
+	;const h= 7
+	;const ff= _sha256_data
+	;
+	//;alert(`ww@my_sha256__feed:`)
+	;ww.set(mm, 0)
+	//;alert(`ww.mm@my_sha256__feed:`)
+	;for (let i of range(16,64)){
+		//;ff.d1(ww[i-2])
+		//;alert(`ww[${i}]@my_sha256__feed:`)
+		;ww[i]= ff.d1(ww[i-2])+ww[i-7] + ff.d0(ww[i-15])+ww[i-16]
+	;}
+	;
+	//;alert(`vv@my_sha256__feed:`)
+	;vv.set(hh, 0)
+	;
+	;for (let i of range(0,64)){
+		;tt[0]=vv[h]+ff.sg1(vv[e])+ff.ch(vv[e],vv[f],vv[g])+kk[i]+ww[i]
+		;tt[1]=ff.sg0(vv[a])+ff.maj(vv[a],vv[b],vv[c])
+		;vv[h]=vv[g]
+		;vv[g]=vv[f]
+		;vv[f]=vv[e]
+		;vv[e]=vv[d]+tt[0]
+		;vv[d]=vv[c]
+		;vv[c]=vv[b]
+		;vv[b]=vv[a]
+		;vv[a]=tt[0]+tt[1]
+	;}
+	;
+	;for (let i of range(0,8)){
+		;vv[i] += hh[i]
+	;}
+	//;alert(`--@my_sha256__feed(${bs})`)
+	;return vv
+;}
+
+//;alert([47957,8,8].slice(0,2))
+//;var bs= new Uint32Array([5,8,8])
+//;alert(bs.slice(0,2))
+//;alert(bs+bs)//error str add
+;function _my_sha256_feed(bs){
+	//;alert(`0@_my_sha256_feed(${bs})`)
+	;const n= bs.length
+	;const r= this.tail_bytes.length;
+	;const _feed= my_sha256__feed
+	;var hh= this.hh
+	;var i= 0
+	;var bk= null
+	
+	;this.total_bytes+= BigInt(n)
+	//64==512/8
+	//;alert(`2@_my_sha256_feed`)
+	;if (r+n &lt; 64){
+		;var _ = this.tail_bytes
+		;this.tail_bytes= bytes_concat([this.tail_bytes, bs])
+		//;alert(`--@_my_sha256_feed:old=${_},new_tail_bytes=${this.tail_bytes},bs=${bs}`)
+		//;alert(`--@_my_sha256_feed`)
+		;return
+	;}
+	;
+	//;alert(`3@_my_sha256_feed`)
+	;if (r){
+		//512/8=64
+		;i= 64-r
+		;bk= bytes_concat([this.tail_bytes, bs.slice(0,i)])
+		//;alert(`3.2@_my_sha256_feed:bk={bk},tail_bytes=${this.tail_bytes},bs=${bs}`)
+		;hh= _feed(hh, bk)
+	;}else{
+		;i= 0
+	;}
+	;
+	//;alert(`4@_my_sha256_feed`)
+	;for (var j=0; ; i= j){
+		;j = i+64
+		;bk= bs.slice(i,j)
+		;if (bk.length&lt;64){break;}
+		;hh= _feed(hh, bk)
+	;}
+	;
+	//;alert(`5@_my_sha256_feed`)
+	;this.tail_bytes= bk
+	;this.hh= hh
+;}
+
+
+//;alert([46678].slice(0,6))
+//;alert(3456 .toString(16))
+;function _my_sha256_digest(){
+	//;alert(`0@_my_sha256_digest`)
+	;var t= this.copy()
+	//;alert(`1@_my_sha256_digest`)
+	;var pad= _my_sha256_mk_padding(t.total_bytes)
+	//;alert(`2@_my_sha256_digest:pad=${pad}`)
+	;t.feed(pad)
+	//;alert(`3@_my_sha256_digest`)
+	////////////////////
+	//but u32 repr maybe little endian
+	//;var bs= new Uint8Array(t.hh.buffer)
+	//;return bs
+	////////////////////
+	;return uintN8s2bytes__bigendian(4, t.hh)
+;}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//;var bs= new Uint8Array([4,3])
+//;alert([bs+bs, typeof(bs+bs)])//str!!!!!!!!
+//;alert(bs.concat(bs))//error
+//;alert(new Uint8Array([3,6],[6, 8]))//==[3,6]
+//;alert(new Uint8Array(4n))//error
+//;alert(new Uint8Array(BigInt_asUint32(4n)))
+//;alert([[0,6]*3, 6*[8,9]])//NaN
+;function _my_sha256_mk_padding(total_bytes){
+	//;alert(`0@_my_sha256_mk_padding(total_bytes=${total_bytes})`)
+	;const n= BigInt(total_bytes)
+	// 512/8=64; 64/8=8 ### bit==&gt;&gt;byte
+	//bug:(64n-n-1n-8n)%64n may &lt;0
+	//;var _= 64n+(-n-1n-8n)%64n
+	;var _= (-n-1n-8n)&amp;63n
+	//;alert(`1@_my_sha256_mk_padding(total_bytes=${total_bytes}):num_0s=${_}`)
+	;const num_0s= BigInt_asUint32(_)
+	//;alert(`2@_my_sha256_mk_padding(total_bytes=${total_bytes}):num_0s=${num_0s}`)
+	;
+	;var bs= new Uint8Array(1+num_0s+8)
+	;bs[0]= 0x80 //1&lt;&lt;7
+	;var bsz= uint_as_bytes__bigendian(8, n*8n)//unit:bit not byte
+	//;alert(`@_my_sha256_mk_padding:8n=${n*8n}, bsz=${bsz}`)
+	//;ncopy(8, bs, -8, bsz, 0)
+	;bs.set(bsz, bs.length-8)
+	;return bs
+;}
+
+
+
+/*
+
+padding
+	n bit:
+		n = len bits
+		n &lt; 2**64
+		nz = (512-n-1-64)%512
+		#?*512==n+1+nz+64
+		bits = bits+[1]+[0]*nz+n.to_bits(big_endian, 64)
+*/
+
+;function mk_my_sha256(){
+	;var my_sha256=
+		{hh: _sha256_data.hh0.slice(0,8)//new Uint32Array(8)
+		//,ww: new Uint32Array(64)
+		//,vv: new Uint32Array(8)
+		//,tt: new Uint32Array(2)
+		,tail_bytes: new Uint8Array(0)
+		,total_bytes:0n //0&lt;=total_bytes&lt;2**64
+		
+		,copy:_my_sha256_copy
+		,feed:_my_sha256_feed
+		,digest:_my_sha256_digest
+		};
+	;return my_sha256
+;}
+
+/*
+ww :: [uint32]
+len ww = 64
+vv :: [uint32]
+len vv = 8
+a..h = vv
+hh :: [uint32]
+len hh = 8
+t1
+t2
+*/
+;if (0){
+	;function u2hex(u32){return uint_as_hex__bigendian(8, u32);}
+	;function us2hexs(u32s){return [...map(u2hex, u32s)];}
+	;
+	;var bs= bytes_encode('utf-8', 'abc')
+	//;alert([bs, typeof bs])
+	;var h= bytes_sha256(bs)
+	//;alert(h)
+	;var expected="ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+	;var result=hex_ops.uint8s2hex(h)
+	;alert(`
+		result=${result}
+		expected=${expected}
+		kk=${us2hexs(_sha256_data.kk)}
+		hh0=${us2hexs(_sha256_data.hh0)}
+		`)
+;}
+
+;费力指数默认值= whazsx_defaults._n //1&lt;&lt;16
+//;alert('done')
+//;var _=document.getElementById('费力指数默认值')
+//;alert('done')
+//;_.innerHTML= 费力指数默认值
+
+
+;function test1(){
+	//;var whazsx = mk_whazsx_v1(whazsx_defaults._k0, whazsx_defaults._n, whazsx_defaults._may_rs)
+	;k0= whazsx_defaults._k0
+	;n= 1
+	;rs= bytes_encode('utf-8', '\0\0')
+	;var whazsx = mk_whazsx_v1(k0, n, rs)
+	;var [ver, rs, out]= whazsx.whazsx_encrypt('a/b/c', 'abc')
+	//;alert(`@test1`)
+	;var ans= '呜呼a臾陂桎瑾喙c尚飨'
+	;if (out !== ans){
+		;;alert(`out===${out}!==${ans}===ans`)
+	;}
+;}
+
+;function test2(){
+	//;var whazsx = mk_whazsx_v2(whazsx_defaults._k0, whazsx_defaults._n, whazsx_defaults._may_rs)
+	;k0= bytes_encode('utf-8', 'abc')
+	;n= 10
+	;rs= bytes_encode('utf-8', '\0\0')
+	//;alert(`0@test2`)
+	;var whazsx = mk_whazsx_v2(k0, n, rs)
+	//;alert(`1@test2`)
+	;var [ver, rs, out]= whazsx.whazsx_encrypt('a/b/c', 'abc')
+	//;alert(`2@test2`)
+	;var ans= '呜呼a曦湍蒜哉夙盂橙痍渥哉僖c尚飨'
+	;if (out !== ans){
+		;;;alert(`out===${out}!==${ans}===ans`)
+	;}
+;}
+
+;test1()
+;test2()
+
+
+;alert('js done')
+// __todo__
+	&lt;/script&gt;
+	&lt;body&gt;
+	呜呼哀哉尚飨加密（版本一、版本二）
+	&lt;br/&gt;
+		&lt;br/&gt;『费力指数』：&lt;input type="text", id="费力指数", value="0x10000"&gt;
+							（空或0或负数则用默认值）
+		&lt;br/&gt;『费力指数』当前值：『&lt;label id="费力指数当前值" &gt;0x10000&lt;/label&gt;』
+		&lt;br/&gt;『费力指数』默认值：『&lt;label id="费力指数默认值" &gt;0x10000&lt;/label&gt;』
+		&lt;br/&gt;
+		&lt;br/&gt;『初始散列值』：&lt;input type="text", id="初始散列值", value=""&gt;
+							（空则用默认值）
+		&lt;br/&gt;『初始散列值』格式
+				：
+				&lt;br/&gt;★
+				&lt;input type="radio",  name="初始散列值格式"
+						, value="hex", id="k0_hex"
+						&gt;&lt;label onclick="checked_id('k0_hex')"&gt;十六进制（如：ff、1a2b、89ab12）&lt;/label&gt;
+				&lt;br/&gt;★
+				&lt;input type="radio",  name="初始散列值格式"
+						, value="utf8", id="k0_utf8"
+						&gt;&lt;label onclick="checked_id('k0_utf8')"&gt;utf8编码（如：好的、abc、1234）&lt;/label&gt;
+				&lt;br/&gt;★
+				&lt;input type="radio",  name="初始散列值格式"
+						, value="ascii_ex", id="k0_ascii_ex"
+						, checked=true
+						&gt;&lt;label onclick="checked_id('k0_ascii_ex')"&gt;ascii扩展（如：'\x00'、'\n\t'、"1a\3"）&lt;/label&gt;
+		&lt;!--
+		&lt;br/&gt;★十六进制（如：ff、1a2b、89ab12）
+		&lt;br/&gt;★utf8编码（如：好的、abc、1234）
+		&lt;br/&gt;★ascii扩展（如：'\x00'、'\n\t'、"1a\3"）
+		--&gt;
+		&lt;br/&gt;
+		&lt;br/&gt;『密码提示』：&lt;input type="text", id="密码提示", value=""&gt;
+		&lt;br/&gt;『密码提示』示例：“一蓑/烟雨/任平生”
+		&lt;br/&gt;『密码提示』含且只含2个“/”。中间是密码；两边是提示，会出现在输出。
+		&lt;br/&gt;
+		&lt;br/&gt;
+				&lt;input type="button", value="计算", onclick="calc()"&gt;
+				：
+				&lt;input type="radio",  name="计算方法"
+						, value="0", id="解密零"
+						&gt;&lt;label onclick="checked_id('解密零')"&gt;解密零&lt;/label&gt;
+				&lt;input type="radio",  name="计算方法"
+						, value="1", id="加密一"
+						&gt;&lt;label onclick="checked_id('加密一')"&gt;加密一&lt;/label&gt;
+				&lt;input type="radio",  name="计算方法"
+						, value="2", id="加密二"
+						, checked=true
+						&gt;&lt;label onclick="checked_id('加密二')"&gt;加密二&lt;/label&gt;
+		&lt;br/&gt;『加密一』的参数只能使用默认值（初始散列值，费力指数）。使用其他值加密，则解密时也要用相同参数，仅用于测试。
+		&lt;br/&gt;『加密二』将参数打包在输出里，解密时可自动得知，故参数不必是默认值。
+		&lt;br/&gt;『加密二』最好不要使用默认值：一是加密算法由Javascript实现，速度慢，『费力指数』默认值就显得大，也就是计算时间长，也因此不建议『加密一』。二是『初始散列值』默认值有点大，直接出现在输出里不合适。
+		&lt;br/&gt;
+		&lt;br/&gt;
+				&lt;input type="button", value="交换", onclick="swap('输入','输出')"&gt;
+				&lt;input type="button", value="清空", onclick="clear1()"&gt;
+				&lt;!-- input type="button", value="粘贴", onclick="calc()" &gt;
+		&lt;br/ --&gt;
+		&lt;br/&gt;输入&lt;textarea id="输入", rows="3", cols="20"&gt;&lt;/textarea&gt;
+		&lt;br/&gt;输出&lt;textarea id="输出", rows="3", cols="20"&gt;&lt;/textarea&gt;
+		&lt;br/&gt;
+		&lt;br/&gt;&lt;!-- input type="button", value="复制", onclick="copy1()" --&gt;
+		&lt;br/&gt;
+
+	&lt;/body&gt;
+&lt;/html&gt;
+
+</pre>

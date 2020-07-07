@@ -1,0 +1,134 @@
+yield vs await
+
+
+
+https://stackoverflow.com/questions/36196608/difference-between-async-await-and-es6-yield-with-generators
+
+function async(makeGenerator){
+  return function () {
+    var generator = makeGenerator.apply(this, arguments);
+
+    function handle(result){
+      // result => { done: [Boolean], value: [Object] }
+      if (result.done) return Promise.resolve(result.value);
+
+      return Promise.resolve(result.value).then(function (res){
+        return handle(generator.next(res));
+      }, function (err){
+        return handle(generator.throw(err));
+      });
+    }
+
+    try {
+      return handle(generator.next());
+    } catch (ex) {
+      return Promise.reject(ex);
+    }
+  }
+}
+
+
+
+========
+
+
+yield can be considered to be the building block of await. yield takes the value it's given and passes it to the caller. The caller can then do whatever it wishes with that value (1). Later the caller may give a value back to the generator (via generator.next()) which becomes the result of the yield expression (2), or an error that will appear to be thrown by the yield expression (3).
+
+async-await can be considered to use yield. At (1) the caller (i.e. the async-await driver - similar to the function you posted) will wrap the value in a promise using a similar algorithm to new Promise(r => r(value) (note, not Promise.resolve, but that's not a big deal). It then waits for the promise to resolve. If it fulfills, it passes the fulfilled value back at (2). If it rejects, it throws the rejection reason as an error at (3).
+
+So the utility of async-await is this machinery that uses yield to unwrap the yielded value as a promise and pass its resolved value back, repeating until the function returns its final value.
+
+
+
+========
+
+
+Well, it turns out that there is a very close relationship between async/await and generators. And I believe async/await will always be built on generators. If you look at the way Babel transpiles async/await:
+
+Babel takes this:
+
+this.it('is a test', async function () {
+
+    const foo = await 3;
+    const bar = await new Promise(resolve => resolve('7'));
+    const baz = bar * foo;
+    console.log(baz);
+
+});
+
+and turns it into this
+
+function _asyncToGenerator(fn) {
+    return function () {
+        var gen = fn.apply(this, arguments);
+        return new Promise(function (resolve, reject) {
+            function step(key, arg) {
+                try {
+                    var info = gen[key](arg);
+                    var value = info.value;
+                } catch (error) {
+                    reject(error);
+                    return;
+                }
+                if (info.done) {
+                    resolve(value);
+                } else {
+                    return Promise.resolve(value).then(function (value) {
+                        return step("next", value);
+                    }, function (err) {
+                        return step("throw", err);
+                    });
+                }
+            }
+
+            return step("next");
+        });
+    };
+}
+
+
+this.it('is a test', _asyncToGenerator(function* () {   // << now it's a generator
+
+    const foo = yield 3;    //  <<< now it's yield, not await
+    const bar = yield new Promise(resolve => resolve(7));
+    const baz = bar * foo;
+    console.log(baz);
+
+}));
+
+you do the math.
+
+This makes it look like the async keyword is just that wrapper function, but if that's the case then await just gets turned into yield, there will probably be a bit more to the picture later on when they become native.
+
+You can see more of an explanation for this here: https://www.promisejs.org/generators/
+
+
+=========
+
+Use async/await 99% of the time over generators. Why?
+
+    async/await directly replaces the most common workflow of promise chains allowing code to be declared as if it was synchronous, dramatically simplifying it.
+
+    Generators abstract the use case where you would call a series of async-operations that depend on each other and eventually will be in a "done" state. The most simple example would be paging through results that eventually return the last set but you would only call a page as needed, not immediately in succession.
+
+    async/await is actually an abstraction built on top of generators to make working with promises easier.
+
+See very in-depth Explanation of Async/Await vs. Generators
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

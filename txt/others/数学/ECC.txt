@@ -1,0 +1,362 @@
+ECC
+
+elliptic curve cryptography (ECC)
+
+[F <: field][2!=0]
+[@y<-F. [y==-y]->[y==0]]
+
+a,b :: F
+[!oo <- F]
+[-oo==oo]
+[OO:=(oo,oo)]
+
+ECC<F,a,b> =[def]= {(oo,oo)} \-/ {(x,y)<-F^2 | [y^2 == x^3+a*x+b]}
+
+
+addECC<F,a,b> :: ECC<F,a,b> -> ECC<F,a,b> -> ECC<F,a,b>
+negECC<F,a,b> :: ECC<F,a,b> -> ECC<F,a,b>
+
+
+negECC (x, y) = (x, -y)
+
+addECC (oo,oo) pp = pp
+addECC pp (oo,oo) = pp
+addECC (x,y) (x,-y)
+	| y!=oo = (oo,oo)
+addECC (x,y) (x,y)
+	| 0!=y!=oo =
+		let m=(3*x^2+a)/2/y
+		in  (m^2-2*x, m*(3*x-m^2)-y)
+
+addECC (x0,y0) (x1,y1)
+	| x0!=x1 =
+		let m=(y1-y0)/(x1-x0)
+		in  (m^2-x0-x1, m*(2*x0+x1-m^2)-y0)
+		= (m^2-x0-x1, m*(3*x0+3*x1+x0-x1)/2-m^3-y0)
+		= (m^2-x0-x1, 3/2*m*(x0+x1)+(y0-y1)/2-m^3-y0)
+		= (m^2-x0-x1, 3/2*m*(x0+x1)-(y0+y1)/2-m^3)
+
+to proof:
+	negECC_well_form:
+	[@pp<-ECC. [negECC pp <- ECC]]
+	double_negECC:
+	[negECC . negECC === id]
+
+	addECC_well_form_0:
+	[@(x,y)<-ECC. [{y,-y}=={z|(x,z) <- ECC}]]
+	addECC_well_form:
+	[@pp,qq<-ECC. [addECC pp qq <- ECC]]
+	addECC_commute:
+	[@pp,qq<-ECC. [addECC pp qq == addECC qq pp]]
+	addECC_assoc_0:
+	#bug:[@pp<-ECC. [pp!=negECC pp] -> [negECC pp != addECC pp pp != pp]]
+	[@pp<-ECC. [pp!=negECC pp] -> [addECC pp pp != pp]]
+	addECC_assoc_1:
+	[@pp,qq<-ECC. [qq!=OO] -> [addECC pp qq != pp]]
+	addECC_assoc:
+	[@pp,qq,ww<-ECC. [addECC (addECC pp qq) ww == addECC pp (addECC qq ww)]]
+
+	idECC:
+	[@pp<-ECC. [addECC pp (oo,oo) == pp]]
+	invECC:
+	[@pp<-ECC. [addECC pp (negECC pp) == (oo,oo)]]
+
+negECC_well_form:
+[@pp<-ECC. [negECC pp <- ECC]]
+	proof:
+		[@po<-ECC]:
+			*[pp==(oo,oo)]:
+				[negECC pp == pp <- ECC]
+			*[pp==(x,y)!=(oo,oo)][x,y<-F]:
+				[negECC pp == (x,-y) <- ECC]
+			[negECC pp <- ECC]
+		done!
+double_negECC:
+[negECC . negECC === id]
+	proof:
+		[@po<-ECC]:
+			*[pp==(oo,oo)]:
+				[negECC (negECC pp) == (oo,oo) == pp]
+			*[pp==(x,y)!=(oo,oo)][x,y<-F]:
+				[negECC (negECC pp) == (x,--y) == (x,y) == pp]
+			[negECC (negECC pp) == pp]
+		done!
+
+addECC_well_form_0:
+[@(x,y)<-ECC. [{y,-y}=={z|(x,z) <- ECC}]]
+	proof:
+		[@(x,y)<-ECC]:
+			*[x==oo][y==oo]:
+				[lhs=={oo}=={rhs}]
+			*[x<-F][y<-F]:
+				[@z][[z^2=x^3+a*x+b] has at most 2 solutions]
+				[z^2==y^2]
+				[(z-y)*(z+y)==0]
+				[z<-{y,-y}]
+			[{y,-y}=={z|(x,z) <- ECC}]
+		done!
+addECC_well_form:
+[@pp,qq<-ECC. [addECC pp qq <- ECC]]
+	proof:
+		[@pp,qq<-ECC]:
+			*[pp==OO]:
+				[addECC pp qq == qq <- ECC]
+			*[qq==OO]:
+				[addECC pp qq == pp <- ECC]
+			*[negECC pp==qq!=OO]:
+				[addECC pp qq == OO <- ECC]
+			*[pp==qq==(x,y)!=OO][y!=0]:
+				[m:=(3*x^2+a)/2/y]
+				[(xx, yy):= addECC pp qq == (m^2-2*x, m*(3*x-m^2)-y)]
+				[yy^2
+					== (m*(3*x-m^2)-y)^2
+					== 9*x^2*m^2+m^6 +y^2 -6*x*m^4 -6*x*y*m +2*y*m^3
+					== +m^6 -6*x*m^4 +2*y*m^3 +9*x^2*m^2 -6*x*y*m +y^2
+					== +m^6 -6*x*m^4 +m^2*(3*x^2+a) +9*x^2*m^2 -3*x*(3*x^2+a) +y^2
+					== +m^6 -6*x*m^4 +m^2*(12*x^2+a) -(9*x^3+3*x*a) +(x^3+a*x+b)
+					== +m^6 -6*x*m^4 +m^2*(12*x^2+a) -(8*x^3+2*x*a) +b
+				]
+				[xx^3+a*xx+b
+					== (m^2-2*x)^3 +a*(m^2-2*x) +b
+					== (m^6-6*x*m^4+12*x^2*m^2-8*x^3) +(a*m^2-2*a*x) +b
+					== (m^6-6*x*m^4+12*x^2*m^2-8*x^3) +(a*m^2-2*a*x) +b
+					== yy^2
+				]
+				[addECC pp qq == (xx,yy) <- ECC]
+			*[pp==(x0,y0)!=(x1,y1)==qq][x0!=x1][x0,x1<-F]:
+				[m:=(y1-y0)/(x1-x0)]
+				[(xx,yy):= (m^2-x0-x1, 3/2*m*(x0+x1)-(y0+y1)/2-m^3)]
+				[x01:= x0+x1]
+				[y01:= y0+y1]
+				[y01*m
+					== (y1^2-y0^2)/(x1-x0)
+					== x1^2+x1*x0+x0^2 +a
+					== (3*x01^2 + (x1-x0)^2)/4 +a
+				]
+				[yy^2
+					== (3/2*m*(x0+x1)-(y0+y1)/2-m^3)^2
+					== (3/2*m*x01-y01/2-m^3)^2
+					== +m^6 +9/4*x01^2*m^2 +y01^2/4 -3*x01*m^4 +y01*m^3 -3/2*x01*y01*m
+					== +m^6 -3*x01*m^4 +y01*m^3 +9/4*x01^2*m^2 -3/2*x01*y01*m +y01^2/4
+					== +m^6 -3*x01*m^4 +((3*x01^2 + (x1-x0)^2)/4 +a)*m^2 +9/4*x01^2*m^2 -3/2*x01*((3*x01^2 + (x1-x0)^2)/4 +a) +y01^2/4
+					== +m^6 -3*x01*m^4 +(3*x01^2 +a)*m^2 -3/2*x01*(3/4*x01^2 +a) +y01^2/4 +(y1-y0)^2/4 -3/2*x01*(x1-x0)^2/4
+					== +m^6 -3*x01*m^4 +(3*x01^2 +a)*m^2 -3/2*x01*(3/4*x01^2 +a) +(y1^2+y0^2)/2 -3/8*(x1-x0)*(x1^2-x0^2)
+					== +m^6 -3*x01*m^4 +(3*x01^2 +a)*m^2 -3/2*x01*(3/4*x01^2 +a) +1/8*(4*(y1^2+y0^2) -3*(x1^3+x0^3-x0^2*x1-x0*x1^2))
+					== +m^6 -3*x01*m^4 +(3*x01^2 +a)*m^2 -3/2*x01*(3/4*x01^2 +a) +1/8*(4*(a*x01+2*b) +x01^3)
+					== +m^6 -3*x01*m^4 +(3*x01^2+a)*m^2 -a*x01 -x01^3 +b
+				]
+				[xx^3+a*xx+b
+					== (m^2-x0-x1)^3 +a*(m^2-x0-x1) +b
+					== (m^2-x01)^3 +a*(m^2-x01) +b
+					== (m^6 -3*x01*m^4 +3*x01^2*m^2 -x01^3) +(a*m^2 -a*x01) +b
+					== +m^6 -3*x01*m^4 +(3*x01^2+a)*m^2 -x01^3 -a*x01 +b
+					== yy^2
+				]
+				[addECC pp qq == (xx,yy) <- ECC]
+			[addECC pp qq <- ECC]
+		done!
+addECC_commute:
+[@pp,qq<-ECC. [addECC pp qq == addECC qq pp]]
+	proof:
+		!!addECC def
+		done!
+addECC_assoc_0:
+#bug:[@pp<-ECC. [pp!=negECC pp] -> [negECC pp != addECC pp pp != pp]]
+[@pp<-ECC. [pp!=negECC pp] -> [addECC pp pp != pp]]
+	proof:
+		[@pp<-ECC. [pp!=negECC pp]]:
+			[(x,y):=pp]
+			[0!=y!=oo]
+			!![2!=0]
+			[-y!=y]
+			[m:=(3*x^2+a)/2/y]
+			[(xx, yy):= addECC pp pp == (m^2-2*x, m*(3*x-m^2)-y)]
+			[y^2=x^3+a*x+b!=0]
+			[xx==x]:
+				<==>[m^2-2*x==x]
+				<==>[m^2==3*x]
+				<==>[(3*x^2+a)^2==12*x*y^2]
+				<==>[0==(3*x^2+a)^2 -12*x*y^2
+							==(9*x^4+6*a*x^2+a^2) -12*x*(x^3+a*x+b)
+							==(-3*x^4-6*a*x^2-12*b*x+a^2)
+							==-3*(x^2+a)^2-12*b*x+4*a^2
+						]
+					!![m^2==3*x]
+					[yy==-y!=y]
+				[addECC pp pp != pp]
+		done!
+addECC_assoc_1:
+[@pp,qq<-ECC. [qq!=OO] -> [addECC pp qq != pp]]
+	proof:
+		[@pp,qq<-ECC. [qq!=OO]]:
+			*[pp==OO]:
+				[addECC pp qq == qq != pp==OO]
+			*[pp!=OO]:
+				[(x,y):=qq]
+				[(u,v):=pp]
+				*[u==x][v==-y]:
+					[addECC pp qq == OO != pp]
+				*[u==x][v==y!=-y]:
+					[m:=(3*x^2+a)/2/y]
+					[(xx, yy):= addECC pp pp == (m^2-2*x, m*(3*x-m^2)-y)]
+					[xx==x]:
+						[m^2==3*x]
+						[yy==-y!=y]
+					[addECC pp qq != pp]
+				*[u!=x]:
+					[m:=(y-v)/(x-u)]
+					[xx:=m^2-u-x]
+					[yy:=m*(2*u+x-m^2)-v]
+					[xx==u]:
+						[m^2==2*u+x]
+						[yy==-v]
+						[yy==v]:
+							[v==-v]
+							!![2!=0]
+							[v==0]
+							[u^3+a*u+b==v^2==0]
+							!![m^2==2*u+x]
+							[(y-v)^2==(x-u)^2*(2*u+x)]
+							[y^2
+								==(x^2+u^2-2*u*x)*(2*u+x)
+								== x^3+2*u^3 -3*u^2*x
+							]
+							!![y^2==x^3+a*x+b]
+							[2*u^3 -(a+3*u^2)*x -b==0]
+							!![u^3+a*u+b==0]
+							[2*(-a*u-b) -(a+3*u^2)*x -b==0]
+							[2*a*u+3*b +(a+3*u^2)*x==0]
+							!![u^3+a*u+b==0]
+							[2*a*u+3*b +(a+3*u^2)*u==0]
+							[x==u]or[a+3*u^2==0==2*a*u+3*b]
+							*[x==u]:
+								_L
+							*[a+3*u^2==0==2*a*u+3*b]:
+								*[a==0]:
+									[3==0]or[u==0==b]
+									*[3==0]:
+										[u^3==-b]
+										???
+										F==ZZ%3
+										u==1
+										==>>
+										b==2
+										a==0
+										v==0
+										y^2==x^3+2
+										x==2
+										y==+1 #-1
+										m==+1 #-1
+										xx=1
+										yy=0
+										!!!!!!!!!!!!???????
+									*[3!=0][u==0==b]:
+										???
+								*[a!=0]:
+									!![2!=0]
+									[u==-3*b/(2*a)]
+									[27*b^2==-4*a^3 !=0]
+									[3!=0]
+									[b!=0]
+									???????
+								_L
+							_L
+					?????????????TODO
+
+				[addECC pp qq == qq != pp==OO]
+			[addECC pp qq != pp]
+		done!
+addECC_assoc:
+[@pp,qq,ww<-ECC. [addECC (addECC pp qq) ww == addECC pp (addECC qq ww)]]
+	proof:
+		[@pp,qq,ww<-ECC]:
+			*[OO<-{pp,qq,ww}]:
+				...!!idECC
+			*[not OO<-{pp,qq,ww}]:
+				*[pp==negECC qq]:
+					[lhs == ww]
+					[(x,y):=ww]
+					*[pp==ww]:
+						[rhs == pp == ww == lhs]
+					*[pp!=ww==qq]:
+						[y!=0][-y!=y]
+						[m:=(3*x^2+a)/2/y]
+						[(xx, yy):= addECC ww ww == (m^2-2*x, m*(3*x-m^2)-y)]
+						*[xx==x][yy==y]:
+							!!addECC_assoc_0
+							[addECC ww ww != ww]
+							_L
+						*[xx==x][yy==-y!=y]:
+							[rhs
+								== addECC (x,-y) (xx,yy)
+								== addECC (x,-y) (x,-y)
+								== (m^2-2*x, -m*(3*x-m^2)+y)]
+								== (xx, -yy)
+								== (x,y)
+								== ww
+								== lhs
+							]
+						*[xx!=x]:
+							[mm:=(yy+y)/(xx-x)]
+							!![m==(3*x^2+a)/2/y]
+							!![xx== m^2-2*x]
+							!![yy== m*(3*x-m^2)-y]
+							[4*y^2*(yy+y)^2 - (xx-x)^2*(3*x^2+a)^2
+								== 4*y^2*m^2*(3*x-m^2)^2 - (m^2-3*x)^2*(3*x^2+a)^2
+								== (m^2-3*x)^2*(4*y^2*m^2 - (3*x^2+a)^2)
+								== 0
+							]
+							[mm^2 == m^2]
+							[rhs
+								== addECC (x,-y) (xx,yy)
+								== (mm^2-x-xx, mm*(2*x+xx-mm^2)+y)
+								== (mm^2-x-m^2+2*x, mm*(2*x+m^2-2*x-mm^2)+y)
+								== (mm^2-m^2+x, mm*(m^2-mm^2)+y)
+								== (x,y)
+								== ww
+								== lhs
+							]
+						[rhs == lhs]
+					*[pp!=ww!=qq]:
+						[(u,v):=pp]
+						[qq==(u,-v)]
+						[u!=x]
+						[m:=(y+v)/(x-u)]
+						[xx:=m^2-u-x]
+						[yy:=m*(2*u+x-m^2)+v]
+						[addECC qq ww
+							== addECC (u,-v) (x,y)
+							== (xx,yy)
+						]
+						*[xx==x][yy==-v]:
+						*[xx==x][yy==v]:
+						*[xx!=x]:
+						[rhs
+							== addECC pp 
+						[rhs == lhs]
+						TODO
+							== ()
+						]
+						[rhs
+							== addECC pp (addECC ww ww)
+							== addECC pp (addECC ww ww)
+						]
+					*[pp!=ww!=qq]:
+						[rhs
+							== 
+						]
+			[addECC (addECC pp qq) ww == addECC pp (addECC qq ww)]
+		done!
+
+idECC:
+[@pp<-ECC. [addECC pp (oo,oo) == pp]]
+	proof:
+		!!addECC def
+		done!
+invECC:
+[@pp<-ECC. [addECC pp (negECC pp) == (oo,oo)]]
+	proof:
+		!!addECC def
+		done!
+
+

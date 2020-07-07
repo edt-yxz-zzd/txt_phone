@@ -1,0 +1,129 @@
+recurrence relation mod
+
+# !![...] -- because
+# [var := expr]... -- let var=expr in ...
+# :label: ??solve<input...;output...> {- output_filter -}condition
+# solve<output...> ... # :: expr
+#    <==> any element in {(output...) | ...}
+
+[a\\\b]<=[def]=>[?c. [c*a==b]]
+(%) :: @a::int. @b::int. int{?c. [c==a] if[b==0] else [c<-[0..abs b -1]][b\\\(c-a)]}
+
+recurrence :: [a]{m} -> ([a]{m}->a) -> [a]
+[s:=recurrence init f]:
+	[s[:m] == init]
+	[@n<-[m..]. [s[n]==f s[n-m:n]]]
+
+recurrence_mod<w> :: [a]{m} -> ([a]{m}->a) -> [a]
+[recurrence_mod<w> init f := recurrence (map (%w) init) ((%w) . f)]
+
+is_recurrence_mod<m> :: ([a]{m}->a) -> Bool
+[is_recurrence_mod<m> f] <=[def]=>
+	[@s::[a]{m}. @w. [((%w) . f $ s)==((%w) . f . map (%w) $ s)]]
+	[@init::[a]{m}. @w. [mw := (%w)][s:=recurrence init f][t:=recurrence_mod<w> init f][t==map mw s]]
+
+:qq0:
+??solve<c;(m,a),(n,b)> [gcd m n ==1][@x. [x%(m*n)==c]<-->[x%m==a][x%n==b]]
+:qq1:
+??solve<w,c;(m,a),(n,b)> [@x. [x%w==c]<-->[x%m==a][x%n==b]]
+:qq2:
+??solve<w,x;init, f> {-max w-}[m := len init][is_recurrence_mod<m> f][s:=recurrence init f][@n<-[m..]. [s[n]%w==x]]
+<==>??solve<w,x;init, f> [(w,x) == max<key=fst> {(w,x) | ...}]
+	# idea from
+	#   proof of Lucas-Lehmer primality test
+	# [[n=2*k+1][k>=1] -->> [m[n]%24==7]]
+:qq3:??????
+??solve<w,T;init, f> {-max w then min T-}[m := len init][is_recurrence_mod<m> f][t:=recurrence_mod<w> init f][t[m:]==cycle t[m:m+T]]
+	#<==>[t[m:2*m+T]==(cycle t[m:m+T])[:m+T]]
+	#T->w
+	#but global w??? maynot exist
+
+solve qq0:
+	(m,a),(n,b)
+	output:
+		c
+	begin:
+		!![gcd m n ==1]
+		[(s,t) := solve<s,t> [s*m+t*n==1]]
+		[c := (a*t*n+b*s*m)%(m*n)]
+	:end
+
+solve qq1:
+	input:
+		(m,a)
+		(n,b)
+	output:
+		(w,c)|raise
+			#x%w=c
+	begin:
+		[g := gcd m n]
+		if[a%g != b%g]:
+			raise
+		[w := m*n///g]
+		
+		[@pm,em][len pm == len em]:
+			[muls pm em := mul~ pm[i]^em[i] {i<-[0..len em -1]}]
+		solve<pw,ew,em,en>:
+			[@r,t<-pw. [r!=t] -> [gcd r t == 1]]
+			
+			[len pw == len ew == len em == len en]
+			[w == muls pw ew]
+			[m == muls pw em]
+			[n == muls pw en]
+			[pw == map<2> max em en]
+		
+		[er := [(ew[i] if ew[i]==em[i] else 0) | i<-[0..len ew-1]]]
+		[r1 := muls pw er]
+		[r2 := w///r1]
+		
+		[r1\\\m][r2\\\n]
+		[r1*r2==w][gcd r1 r2 == 1]
+		
+		[t1 := a%r1]
+		[t2 := b%r2]
+		
+		[c := qq0 (r1,t1) (r2,t2)]
+	:end
+
+
+solve qq2:
+	input:
+		init :: [int]
+		f :: [int]{len init} -> int
+	output:
+		w,x :: uint
+	begin:
+		[m := len init]
+		[s:=recurrence init f]
+		
+		if[@n<-[m+1..2*m].[s[n]==s[m]]]:
+			[@n. [n>=m]->[s[n]==s[m]]]
+			return (+oo, s[m])
+		#if[@n. [n>=m]->[abs(s[n])==abs(s[m])]]:
+		#	return (2*abs(s[m]), abs(s[m]))
+		
+		[k := min {k<-[m+1..2*m] | [s[k]!=s[m]]}]
+		[v := abs(s[k]-s[m])]
+		#if[v==1]:
+		#	return (1,0)
+		[fr r := f $ [r]*m]
+		[sp p := map (%p) s]
+		#[test p := [p\\\v][r:=s[m]%p][r==(f $ [r]*m)%p][@x<-s[m+1:2*m+1]. [x%p==r]]]
+			#[r==(f $ [r]*m)%p] can be omitted
+			#
+		[test p := [p\\\v][t:=recurrence_mod<p> init f][t[m+1:2*m+1]==[t[m]]*m]]
+		[ps := {p | p <- [2..v], [prime p][test p]}]
+		
+		[lift p := max {p^e | e<-[0..], [test $ p^e]}]
+		[qs := map lift ps]
+		[w := muls qs]
+		[x := s[m]%w]
+	:end
+
+
+
+
+
+
+
+

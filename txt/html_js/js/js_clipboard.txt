@@ -1,0 +1,140 @@
+js_clipboard
+
+
+
+https://tutorialzine.com/2016/10/quick-tip-accessing-the-clipboard-with-javascript
+
+Quick Tip: Accessing The Clipboard With JavaScript
+October 10th 2016
+JavaScript | Quick Tip
+
+In this article we're going to show you how to use simple vanilla JavaScript snippets to:
+
+    Add text to the clipboard on user action, such as the press of a button.
+    Modify the content of the clipboard when a user copies something.
+
+The APIs we will be using don't require any external libraries, and have almost perfect browser compatibility!
+Copy On Click
+
+An awesome accessibility feature you can add to your website is the ability to copy strings directly via button press. This interaction can be applied to quickly grab URLs, long strings such as SSH keys, terminal commands, hex colors, or any other data that is frequently copy & pasted.
+
+To make this happen we will need to use a cool JavaScript method called execCommand(). It allows us to invoke a number of different events that manipulate editable content such as making text bold/italic, doing undo/redo, and also copy/cut/paste.
+
+document.execCommand('copy');
+
+This works exactly like pressing CTRL/Cmd+C on your keyboard, so in order to copy any text we first need to have it selected. This is possible in JavaScript thanks to the Selection API, which allows us to programatically make a text selection from any HTML element on the page.
+
+var button = document.getElementById("copy-button"),
+    contentHolder = document.getElementById("content-holder");
+
+button.addEventListener("click", function() {
+
+    // We will need a range object and a selection.
+    var range = document.createRange(),
+        selection = window.getSelection();
+
+    // Clear selection from any previous data.
+    selection.removeAllRanges();
+
+    // Make the range select the entire content of the contentHolder paragraph.
+    range.selectNodeContents(contentHolder);
+
+    // Add that range to the selection.
+    selection.addRange(range);
+
+    // Copy the selection to clipboard.
+    document.execCommand('copy');
+
+    // Clear selection if you want to.
+    selection.removeAllRanges();
+
+}, false);
+
+To see the example in action check out the editor below:
+jshtmlcss
+
+In the example above the content we want to copy is simply stored in a paragraph. If the text you need is not on the page, you will need to first write it in an element hidden off-screen.
+Modify Copied Text
+
+Here we will show you how to manipulate content in the clipboard after it's been copied. This can be very useful for escaping code, formatting numbers and dates, or for other text transformations such as uppercase, lowercase, etc.
+
+JavaScript provides us with copy() and paste() events, but they are designed in such a way that the content stored in the clipboard is secure:
+
+    In the copy event handler we cannot read what's stored in clipboard, as there may be personal info which we shouldn't have access to. We can, however, overwrite the clipboard data.
+    In the paste event it's the opposite: we can read the data, but we cannot change it.
+
+Since we want to read and write at the same time, we will need to use the Selection API once more. Here is the solution:
+
+document.addEventListener('copy', function(e){
+
+    // We need to prevent the default copy functionality,
+    // otherwise it would just copy the selection as usual.
+    e.preventDefault();
+
+    // The copy event doesn't give us access to the clipboard data,
+    // so we need to get the user selection via the Selection API.
+    var selection = window.getSelection().toString();
+
+    // Transform the selection in any way we want.
+    // In this example we will escape HTML code.
+    var escaped = escapeHTML(selection);
+
+    // Place the transformed text in the clipboard. 
+    e.clipboardData.setData('text/plain', escaped);
+
+});
+
+You can try the code in the editor below:
+jshtmlcss
+Further Reading
+
+In this quick tip we presented you two useful snippets for working with the clipboard in pure vanilla JavaScript. We used a bunch of hip native APIs, so here they are again if you want to read more about them:
+
+    execCommand - Execute actions such as copy, paste, cut, bold, italic, underline, delete, and many others. - MDN, Can I Use
+    Selection API - Allows developers to make a range selection from any text on the page. - MDN, Can I Use
+    JavaScript Copy Event - An event fired when users press CTRL/Cmd+C or choose "copy" from the right-click menu. - MDN, Can I Use
+
+Also, if you need more control over copy/paste/cut events, you can use a library such as clipobard.js. It has lots of features and provides a nice clean API for managing the clipboard.
+
+
+
+
+
+
+============
+    Clipboard
+    Methods
+        read()
+        readText()
+        write()
+        writeText()
+
+
+Clipboard API
+
+    Web technology for developersWeb APIsClipboard API
+
+On this Page
+
+    Accessing the clipboard
+    Interfaces
+    Specifications
+    Browser compatibility
+    See also
+
+The Clipboard API provides the ability to respond to clipboard commands (cut, copy, and paste) as well as to asynchronously read from and write to the system clipboard. Access to the contents of the clipboard is gated behind the Permissions API; without user permission, reading or altering the clipboard contents is not permitted.
+
+This API is designed to supersede accessing the clipboard using document.execCommand().
+Accessing the clipboard
+
+Instead of creating a Clipboard object through instantiation, you access the system clipboard through the Navigator.clipboard global:
+
+navigator.clipboard.readText().then(
+  clipText => document.querySelector(".editor").innerText += clipText);
+
+This snippet fetches the text from the clipboard and appends it to the first element found with the class editor. Since readText() (and read(), for that matter) returns an empty string if the clipboard isn't text, this code is safe.
+
+
+
+
+
