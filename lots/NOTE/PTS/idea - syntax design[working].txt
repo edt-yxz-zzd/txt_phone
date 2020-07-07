@@ -1,0 +1,149 @@
+
+@x:A. B
+    dependent product
+?x:A. B
+    dependent sum
+
+[x:A] -> B =[def]= @x:A. B
+    [x:A] -> [y:B] -> C = [x:A] -> ([y:B] -> C)
+[x:A] >- B =[def]= ?x:A. B
+    [x:A] >- [y:B] >- C = [x:A] >- ([y:B] >- C)
+(x:A, B) =[def]= ?x:A. B
+    (x:A, y:B x, C x y) = (x:A, (y:B x, C x y))
+    (_:A, B) cannot omit to (A, B) since (A, B) is a term
+(x:A; B) =[def]= ?x:A. B
+    (x:A; y:B x; C x y) = (x:A; (y:B x; C x y))
+    (A; B) = (_:A; B)
+
+A -> B =[def]= @_:A. B
+    arrow
+    A -> B -> C = A -> (B -> C)
+A >- B =[def]= ?_:A. B
+    pair type
+    A >- B >- C = A >- (B >- C)
+xxx??? (A, B) =[def]= ?_:A. B ???xxx
+    # how to construct its term??
+    pair type
+    (A, B, C) = (A, (B, C))
+(A; B) =[def]= ?_:A. B
+    pair type
+    (A; B; C) = (A; (B; C))
+A * B =[def]= ?_:A. B
+    pair type
+    (A * B * C) = (A * (B * C))
+(/\)
+    pair type?
+(\/)
+(|)
+    union type or disjoint union type?
+
+
+\x:A. B
+    lambda expr/abstract
+    \_:A. B
+[x:A] B =[def]= \x:A. B
+    lambda expr
+    [x:A][y:B]C = [x:A]([y:B]C)
+(x=M, N : P x)
+    pair term
+    (M, N) = (_=M, N) = (_=M, N : ???)
+    (x=M, y=N : P x, O : Q x y) = (x=M, (y=N : P x, O : Q x y) : (y:P x, Q x y))
+[x=M] >- [N : P x] =[def]= (x=M, N : P x)
+    pair term
+    [x=M] >- N
+    ([_=M] >- N) != (M >- N) since (M >- N) is a type
+    [x=M] >- [y=N : P x] >- [O : Q x y] = [x=M] >- ([y=N : P x] >- [O : Q x y])
+        [x=M] >- [y=N : P x] >- O
+        [x=M] >- [_=N : P x] >- O
+        [_=M] >- [_=N] >- O
+[x=M][N : P x] =[def]= (x=M, N : P x)
+    pair term
+
+
+(:) vs (::)
+    * decl variable x has type A
+        (quantifier x:A. B)
+            quantifier <- {(@), (?), (\)}
+    * decl term N has type A in dependent sum type
+        (x=M, N : B)
+    * deduce term M has minimum type A
+        [L |- M : A]
+    * assert term M has type A
+        assertion_expr:
+            (M :: A)
+        [L |- M :: A]
+
+associative and precedence
+    [op <- {(::), (~<~), (~=~), (~<=~)}]
+        (A `op` B)
+            assertion expr that return A
+            <==> Haskell.assert (A `op` B) A
+
+    (term :: type :: kind) = (term :: (type :: kind))
+        i.e. (::) is right associative
+    (quantifier x:A. quantifier' y:B. C) = (quantifier x:A. (quantifier' y:B. C))
+        i.e. quantifier is right associative
+    (A B C) = ((A B) C)
+        i.e. application is left associative
+    [x:=M][y:=N]O = [x:=M]([y:=N]O)
+        i.e. let-expr is right associative
+    [op <- {(->), (>-), (*), (::), (~<~), (~=~), (~<=~)}]
+        (A `op` B `op` C) = (A `op` (B `op` C))
+            i.e. most builtins binary operators are right associative
+            diff op are not comparable
+
+
+    (quantifier x:A. B :: type) = ((quantifier x:A. B) :: type)
+        i.e. (::) has lower precedence than quantifier
+    (quantifier x:A. B `op` C) = quantifier x:A. (B `op` C)
+        i.e. quantifier has lower precedence than binary_expr
+    ([x:=M] A `op` B) = ([x:=M] (A `op` B))
+        i.e. let_expr has lower precedence than binary_expr
+    (A B `op` C D) = ((A B) `op` (C D))
+        i.e. binary_expr has lower precedence than application
+
+
+special application
+    type .call
+        (@x:A. B) .call =[def]= \x:A. B
+        (?x:A. B) .call =[def]= \x:A. B
+    pair_term .fst =[def]= fst pair_term
+    pair_term .snd =[def]= snd pair_term
+    pair_type .fst/.snd
+        (?x:A. B) .fst =[def]= A
+        (?_:A. B) .snd =[def]= B
+            # (?x:A. B) .call y
+
+let-expr
+    let x = ... in ...
+    let (x, y) = ... in ...
+
+    [x := M] N
+    [x := M] (N :: A) :: [x := M] A
+
+[=x=] :: [:A:]
+    equivalence class for proof irrelevance
+        see: "idea - proof irrelevance.txt"
+
+macro
+    let eq<k,a,b,A>(k, a::A, b::A) = @P:(A->k). P a -> P b
+        <...> are variables extracted from arguments
+        parameters are templates for extraction
+
+        call eq: eq(*, a, b)
+        A will be the minimum type
+            i.e.
+                [a:A'][b:B'] # A'/B' is minimum
+                    [A'~<=~A][B'~<=~A]
+                    [@X.[A'~<=~X][B'~<=~X] ==>> [A~<=~X]]
+
+    let call<A,B>(@x:A. B) = \x:A. B
+        call<A,B>(?x:A. B) = \x:A. B
+        vs (@x:A. B) .call =[def]= \x:A. B
+            (@x:A. B) .call = call(@x:A. B)
+                                ^^^ touch; no space between "call" and "("
+    "_" has special meaning:
+        f<...>(@_:A.B, ...) = ...
+        <==> f<...>((A * B), ...) = ...
+
+

@@ -1,0 +1,152 @@
+
+0) name conflict! cause deadloop
+    find_std p = do
+        d <- getEA
+        let (d, may_np) = find_std_update_EA p d -- deadloop head!! recursive
+        setEA d
+        return $ fmap snd may_np
+    
+1)
+    class PropertyR v p s | p s -> v where
+    instance PropertyR s SelfP s where
+    instance PropertyR v (SelfP) s => ... where -- correct
+    -- ERROR: instance PropertyR s (SelfP) s => ... where
+    --        
+
+2)
+    class Boxed old new where
+        box :: old -> new
+        default box :: (New box, box old ~ new) => old -> box old
+        box = wrap
+    class New box where
+        wrap :: old -> box old
+    instance New Box1 => Boxed old (Box1 new) -- concrete "Box1"
+    
+    class VStateR s v | s -> v where
+        vgetb :: s -> v
+        default vgetb :: (VStatePR p v, p v ~ s) => p v -> v
+        vgetb = vget
+    class VStateR (p v) v => VStatePR p v | p -> v where
+        vget :: p v -> v
+    instance VStatePR (Box2 n) v => VStateR (Box2 n v) -- concrete "Box2"
+
+    so, for any box1 and box2 we HAVE to COPY the two "instance" clauses
+        stupidly!
+    
+    why can't I write:
+        instance New b1 => Boxed old (b1 new)
+        instance VStatePR (b2 n) v => VStateR (b2 n v)
+        
+        if exists "instance (C ...) => Boxed c (b a)"
+            then we check whether both (New b) and (C ...) are True
+
+3) use "forall"!!
+    -- forall FIX the variable name
+    e0 :: Monad m => m a
+    e0 = undefined
+    e1 :: Monad m => m a
+    e1 = e0 -- correct
+    -- e1 = e0 :: m a -- ERROR: this m is a new m that not in sig of e1
+    -- e2 :: Monad m => m Int
+    -- e2 = e0 :: m Int -- ERROR: see above
+    
+    e3 :: forall m a. Monad m => m a
+    e3 = e0 :: m a -- SUCCESS: this m is the m in sig of e3
+
+
+
+
+
+
+
+
+
+
+
+
+`PMS' is not a (visible) associated type of class `MonadPropertyR'
+==>> require a decl
+    e.g. type XX :: * -> Constaint
+         abc :: a
+
+take care : remove tmp global variables, since they mislead compiler
+    i.e. when "where" mismatched, the pre block using global variables
+
+Could not deduce ... arising from a use of ...
+    1) missing funcional dependences : add "class ... | x w -> y a b where"
+    2) missing instance : add "instance ... where"
+    3) ambiguous : add (... :: ...)
+    4) an instance than covert the function input pattern but the function does not metion the instance context
+    5) use (liftN f) instead of wrap . f . unwrap
+        since liftN f ==>> p a -> p b
+        but wrap . f . unwrap ==>> p a -> pppppppp b !!!
+    6) missing instance context, add instanc ( C a b )=> ... where"
+    7) should not implement in "class"; move to instance since it offer more context
+
+    8) NOTE: think what if "instance" contexts removed
+        they doesnot count when matched, so we cannot assume the context as a filter
+        context is not filter!!!!!!!!!!!!!!!
+       ==>> we have to wrap the type like:
+       instance C a b => D a b c ...
+       ==>> newtype C a b => WrapC a b = WrapC b
+            instance D a (WrapC a b) c ...
+       instance context should be identical as class's
+
+    ??? 9) when defining a function outside class or instance
+        if instance conext more than class context
+            we need to copy intance context into function context
+        
+    10) !!!work!!! 
+        write a short hand function and ":t" to see its signature!
+            and then we can find out what context is missing ...
+
+        want to know the type of x?? 
+            expr (... x ...) ==>> f y = expr(... y ...) ==>> :t f
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+{-
+
+fixed bug: forgot class VState ... | p->v where vget :: p v -> v
+
+toSizeB = vcase -- resp to SelfF
+-- d :: D
+-- self :: VPropertyBox D SelfF D
+self = toSelfP d
+-- ss :: VPropertyBox D (Child SizeF SelfF) v
+ss = toSizeP $ self
+ss' = toSizeB self
+    No instances for (VStateB (VPropertyBox D SizeF) v0,
+                      VStateB (VPropertyBox v SizeF) v0,
+                      VStateB (VPropertyBox D SelfF) v)
+      arising from a use of `toSizeB'
+    In the expression: toSizeB self
+    In an equation for ss': ss' = toSizeB self
+
+
+why cannot deduce v = D and v0 = Int
+    instance ... s SelfF) s)
+    instance ... D SizeF) Int)
+    class VStateB p v -- NO p->v !!!!!!!!!!!!!!
+-}
+
+

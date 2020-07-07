@@ -1,0 +1,153 @@
+CHAPTER 7 Performance
+
+TIP
+    Don¡¯t warp your API to achieve high performance.
+TIP
+    To optimize an API, instrument your code and collect performance data for real world examples. Then target your optimization effort at the actual bottlenecks. 
+    Don¡¯t guess at where the performance hot spots are.
+
+TIP
+    Always prefer passing a non-mutable object as a const reference rather than passing it by value. 
+        It is not necessary for built-in types
+        STL iterators and function objects are designed to be passed by value. 
+    another reason to avoid passing arguments by value and thats the slicing problem (Meyers, 2005)
+        cannot support runtime polymorphism
+
+
+
+7.2.2 Forward Declarations
+    A forward declaration can be used when
+        1. The size of the class is not required. 
+            If you include the class as a member variable or subclass from it, then the compiler will need to know the size of the class.
+        2. You do not reference any member methods of the class. 
+            Doing so would require knowing the method prototype: its argument and return types.
+        3. You do not reference any member variables of the class; 
+            but you already know to never make those public (or protected).
+    One interesting point is that a forward declaration is sufficient if you pass a variable to a method by value or return it by value 
+        (although you should of course prefer a const reference over passing a parameter by value). 
+        You might think that the compiler needs to know the size of the class at this point, 
+        but in actual fact it is only needed by the code that implements the method and any client code that calls it.
+
+        class B;
+        class A
+        {
+        public:
+            void SetObject(B obj);
+            B GetObject() const;
+        };
+
+TIP
+    Only forward declare symbols from your own API.
+    // they may be typedefs
+TIP
+    A header file should #include or forward declare all of its dependencies.
+
+
+
+7.2.3 Redundant #include Guards
+    // bigfile.h
+    #ifndef BIGFILE H
+    #define BIGFILE H
+    // lots and lots of code
+    #endif
+
+    // other.hpp
+    #ifndef BIGFILE H
+    #include "bigfile.h"
+    #endif
+
+    // or : 
+    // bigfile.h
+    #ifndef BIGFILE_IMPL_H
+    #define BIGFILE_IMPL_H
+    #include "bigfile_impl.h" // to save time to parse the actaul entire big file
+    #endif
+
+
+TIP
+    Declare global scope constants with extern or declare constants in classes as static const. 
+    Then define the value of the constant in the .cpp file. 
+    This reduces the size of object files for modules that include your headers. 
+    Even better, hide these constants behind a function call.
+    
+    but the compiler can no longer evaluate the const expression at compile time because the actual value is hidden in the.cpp file.\
+        7.3.1 The New constexpr Keyword
+
+TIP
+    Use constructor initialization lists to avoid the cost of a constructor call for each data member, but declare these in the .cppfile to hide implementation details.
+
+    a few things to be aware of when using initialization lists
+    1. The order of variables in the initialization list must match the order that the variables are specified in the class.
+    2. You cannot specify arrays in an initialization list. However, you can specify a std::vector, which may be a better choice of data structure anyway.
+    3. If you are declaring a derived class, the default constructor for any base classes will be called implicitly. You can use the initialization list to call a non-default constructor instead. If specified, a call to a base class constructor must appear before any member variables.
+    4. If you have declared any of your member variables as references or as const, then you must initialize them via the initialization list (to avoid the default constructor defining their initial, and only, value).
+    
+    C++0x - delegating the implementation of one constructor to another
+
+Processor Memory Performance Gap
+    On modern CPUs, memory latency can be one of the largest performance concerns for a large application.
+        That¡¯s because while processor speeds have been improving at a rate of roughly 55% per year,
+        access times for DRAM have been improving at around 7% per year (Hennessy and Patterson, 2006).
+
+    cache miss
+        the cost to access main memory, has increased from a few CPU cycles 30 years ago to over 400 cycles on modern architectures.
+        The effect of this is that a seemingly elegant and demonstrably correct algorithm can behave poorly in real-world situations due to unanticipated cache behavior (Albrecht, 2009). 
+        As a result, cache-miss optimization has become an extremely important element of performance optimization activities in recent years.
+
+    One key technique is to reduce the size of your objects
+        1. Cluster member variables by type.
+            minimize the amount of memory lost to the padding bytes in struct
+        2. Use bit fields.
+            int tinyInt:4;
+            The downside is that there is normally a performance penalty for using bit field sizes that are not a multiple of 8, 
+            but if memory is your biggest concern then this may be an acceptable cost. 
+        3. Use unions.
+        4. Don¡¯t add virtual methods until you need them.
+        5. Use explicit size-based types.
+            boost/cstdint.hpp
+            uint16_t
+
+
+7.6 DON¡¯T INLINE UNTIL YOU NEED TO
+    cons:
+    1. Exposing implementation details.
+    2. Code embedded in client applications. 
+        inlining breaks binary compatibility.
+    3. Code bloat.
+        This larger code size can negatively impact performance by causing more disk access and virtual-memory page faults.
+    4. Debugging complications. 
+        Many debuggers have problems dealing with inlined code. 
+        This is perfectly understandable: its difficult to put a breakpoint in a function that doesnt actually exist!
+        The common way to circumvent these problems is to turn off inlining for debug code.
+    
+        As Donald Knuth famously stated: Premature optimization is the root of all evil (Knuth, 1974).
+    
+    pros:
+    1. Performance.
+        Using getter/setter methods to wrap access to member variables can cause a performance impact in your code if those methods are called many times a second. 
+            Inlining can recover those performance losses while still allowing you to keep the getter/setter methods. 
+        However, it should be pointed out that marking a function as inline may not necessarily give you performance gains.
+            For one, this is simply a hint to the compiler that can be ignored.
+                Some situations where the request is likely to be ignored are using loops in the function, calling another inline function, or recursion. 
+            Even when the compiler does inline the method, the resulting code could be larger or smaller, and it could be faster or slower, depending on the original ize of the method, your CPUs instruction cache, and your virtual memory system (Cline et al., 1998). 
+        Inlining tends to work best for small, simple, frequently called functions.
+    
+    2. Templates. 
+        You may also be using templates in your header and so are forced to inline the template implementation.
+            you can sometimes use explicit template instantiation to avoid this.
+
+TIP
+    Avoid using inlined code in your public headers until you have proven that your code is causing a performance problem and confirmed that inlining will fix that problem.
+
+
+7.7 COPY ON WRITE
+    related to the Flyweight design pattern
+    Most STL string implementations used copy on write so that passing them by value is fairly inexpensive (Stroustrup, 2000).
+
+    One popular way is to declare a class template that lets you create pointers to objects managed with copy-on-write semantics in the same way that you would create a shared or weak pointer template. 
+    The class normally contains a standard shared pointer, to track the reference count of the underlying object, and provides a private Detach() method for operations that modify the object and hence require detaching from the shared object and creating a new copy.
+
+TIP
+    Adopt an iterator model for traversing simple linear data structures. 
+    If you have a linked list or tree data structure, then consider using array references if iteration performance is critical.
+

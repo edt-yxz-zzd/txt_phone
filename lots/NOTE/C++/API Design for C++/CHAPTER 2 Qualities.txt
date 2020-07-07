@@ -1,0 +1,99 @@
+CHAPTER 2 Qualities
+[page32] CHAPTER 2 Qualities::2.2.4 Hide Implementation Methods
+    TIP
+        Never return non const pointers or references to private data members. This breaks encapsulation.
+    // so what is a pointer or reference?
+    // it can be a handler integer(fp, ip, socket...), a mapping key(database key), file path(tmp file path)...
+    
+[page37] 2.3 Minimally complete::Non-Virtual Interface idiom (NVI)
+    In fact, Herb Sutter states that you should prefer to make virtual functions private and only con-sider making them protected if derived classes need to invoke the virtual function¡¯s base implemen-tation (Sutter, 2001). As a result, Sutter suggests that interfaces should be non-virtual and they should use the Template Method design pattern where appropriate.
+
+
+[page39] 2.3.3 Convenience APIs
+    TIP
+        Add convenience APIs as separate modules or libraries that sit on top of your minimal core API
+[page41] 2.4.2 Difficult to Misuse
+    TIP
+        Prefer enums to booleans to improve code readability.
+[page42] 2.4.2 Difficult to Misuse
+    TIP
+        Avoid functions with multiple parameters of the same type.
+[page43] 2.4.3 Consistent
+    TIP
+        Use consistent function naming and parameter ordering.
+[page45] 2.4.4 Orthogonal
+    TIP
+        An orthogonal API means that functions do not have side effects
+TIP
+    Return a dynamically allocated object using a smart pointer if the client is responsible for deallocating it.
+TIP
+    Think of resource allocation and deallocation as object construction and destruction.
+TIP
+    Never put platform specific #if or #ifdef statements into your public APIs. It exposes implementation details and makes your API appear different on different platforms.
+TIP
+    Good APIs exhibit loose coupling and high cohesion.
+TIP
+    Use a forward declaration for a class unless you actually need to #include its full definition.
+TIP
+    Prefer using non-member non-friend functions instead of member functions to reduce coupling.
+TIP
+    Data redundancy can sometimes be justified to reduce coupling between classes.
+TIP
+    Manager classes can reduce coupling by encapsulating several lower level classes.
+
+2.5.5 Callbacks, Observers, and Notifications
+    The final technique that I¡¯ll present to reduce coupling within an API relates to the problem of notifying other classes when some event occurs.
+
+    a number of general issues to be aware of when using any of these schemes
+        ? Reentrancy. 
+            When writing an API that calls out to unknown user code, you have to consider that this code may call back into your API. 
+                In fact, the client may not even realize that this is happening. 
+                For example, if you are processing a queue of objects and you issue a callback as you process each individual object, it is possible that the callback will attempt to modify the state of the queue by adding or removing objects. 
+            At a minimum, your API should guard against this behavior with a coding error. 
+                However, a more elegant solution would be to allow this reentrant behavior and implement your code such that it maintains a consistent state.
+        ? Lifetime management. 
+            Clients should have a clean way to disconnect from your API, that is, to declare that they are no longer interested in receiving updates. 
+            This is particularly important when the client object is deleted because further attempts to send messages to it could cause a crash.
+            Similarly, your API may wish to guard against duplicate registrations to avoid calling the same client code multiple times for the same event.
+        ? Event ordering. 
+            The sequence of callbacks or notifications should be clear to the user of your API.
+                For example, the CocoaAPI does a good job of making it clear whether a notification is sent before or after an event by using names such as willChange and didChange. 
+                However, the Qt toolkit is less specific about this: a changed signal is sometimes sent before the object in question is actually updated.
+
+Callbacks // for plain C programs
+    callbacks particularly useful to allow low-level code to execute high-level code that it cannot have a link dependency on. 
+    As such, callbacks are a popular technique to break cyclic dependencies in large projects.
+    It is also sometimes useful to supply a closure with the callback function.
+        // void* data just like "this"
+Observers // object-oriented solution
+    an object maintains a list of its dependent objects (observers) and notifies them by calling one of their methods.
+Notifications
+    Callbacks and observers tend to be created for a particular task, and the mechanism to use them is normally defined within the objects that need to perform the actual callback. 
+    An alternative solution is to build a centralized mechanism to send notifications, or events, between unconnected parts of the system. 
+        The sender does not need to know about the receiver beforehand, which lets us reduce coupling between the sender and the receiver. 
+        There are several kinds of notification schemes, but one particularly popular one is signals and slots.
+            Signals can be thought of simply as callbacks with multiple targets (slots). 
+            All of the slots for a signal are called when that signal is invoked, or ¡°emitted.¡±
+                class MySlot
+                {
+                public:
+                    void operator()() const
+                    {
+                        std::cout<<"MySlot called!"<<std::endl;
+                    }
+                };
+                // Create an instance of our MySlot class
+                MySlot slot;
+                // Create a signal with no arguments and a void return value
+                boost::signal<void ()>signal;
+                // Connect our slot to this signal
+                signal.connect(slot);
+                // Emit the signal and thereby call all of the slots
+                signal();
+
+
+
+
+
+
+

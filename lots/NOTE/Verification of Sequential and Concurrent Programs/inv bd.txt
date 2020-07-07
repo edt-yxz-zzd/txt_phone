@@ -1,0 +1,87 @@
+inv - loop invariant
+bd - bound function
+
+fresh variable
+
+
+[page 114]
+{inv: p} {bd: t} while B do S od
+==>>
+    1) {p} while B do S od {?}
+    2) {p /\ B} S {p}
+    3) p -->> t >= 0
+    4) {p /\ B /\ t=z} S {t<z} where z is a fresh variable
+
+
+
+{r} while B do S od {q}
+==>>
+# "INT" means "t" is an integer variable
+# "/\" == "logic_and" == C.&&
+{r} # r -->> p
+{p} # p -->> INT t>=0
+{p /\ INT t>=0}
+while B do
+    {B /\ p /\ INT t>=0}
+    # I use "[;...]" as a invisible stmt
+    #   and "NEW" means "z" is fresh variable
+    [;NEW z:= t]
+    {B /\ p /\ INT t>=0 /\ z=t}
+    S
+    {B /\ p /\ INT t>=0 /\ z>t}
+od
+{~B /\ p /\ INT t>=0} # "~" == "not" == C.!
+{~B /\ p} # ~B /\ p -->> q
+{q}
+
+
+example:
+    {r}        while B do S od          {q}
+    {INT N>=0} x := sum a[i] {i=0..N-1} {x=sum(a[0:N])}
+    {INT k>=0} x := sum a[i] {i=0..k-1} {x=sum(a[0:k])}
+    
+    {INT N>=0}
+        k:=0; x:=0;
+        {inv: INT 0<=k<=N /\ x=sum(a[0:k])}
+        while B do S od
+        {~B /\ x=sum(a[0:k])} # ==>> B = k/=N
+    {x=sum(a[0:N])}
+
+    {INT N>=0}
+        k:=0; x:=0;
+        {inv: INT 0<=k<=N /\ x=sum(a[0:k])}
+        while k/=N do S od
+        {k=N /\ x=sum(a[0:k])}
+    {x=sum(a[0:N])}
+
+    {INT N>=0}
+        k:=0; x:=0;
+        {inv: INT 0<=k<=N /\ x=sum(a[0:k])}
+        {bd: t}
+        while k/=N do
+            {INT 0<=k<N /\ x=sum(a[0:k])}
+            [;k'=k]
+            S # here k:=k+1
+            {INT 0<=k'+1<=N /\ x=sum(a[0:k'+1]) /\ k=k'+1}
+            {INT 0<=k<=N /\ x=sum(a[0:k])}
+        od
+        {k=N /\ x=sum(a[0:k])}
+    {x=sum(a[0:N])}
+
+    {INT N>=0}
+        k:=0; x:=0;
+        {inv: INT 0<=k<=N /\ x=sum(a[0:k])}
+        {bd: N-k} # set "t"
+        while k/=N do
+            {INT 0<=k<N /\ x=sum(a[0:k])}
+            x:=x+a[k];
+            k:=k+1;
+            {INT 0<=k<=N /\ x=sum(a[0:k])}
+        od
+    {x=sum(a[0:N])}
+
+
+
+
+
+

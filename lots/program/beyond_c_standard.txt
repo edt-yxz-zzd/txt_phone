@@ -1,0 +1,127 @@
+
+language
+    portability over platforms // new features or optional parts may not be supported
+    stability over time // since standard was changed from time to time
+    natural meaning // exactly, readable, natural, widely accepted
+                    // is_proble_prime: integer -> yes, uncertain, no
+                    // floor_div: (nonnegative-integer, positive-integer) -> floor(n/p)
+
+concept
+    data-processing system(DPS):
+        input => DP => output
+        [input0 ] --\ [input1] --\ [DP] --\ [output1] --\ [output0]
+        [storage] --/ [      ] --/ [  ] --/ [       ] --/ [storage]
+
+    signal sampling
+        // digital signal processing (DSP)
+        data is accessible in some special time
+        an input data x is actually a sequence: x[0], x[1], ... x[n]...
+    
+    data-structure
+        object
+            physical form of data // may be changed when n grows
+        value
+            mathematic form of data constant // refers to data[k] for a fixed k
+
+    assert-statement
+    function // algorithm
+        return(no exit, no exception)
+        atomic operation // atomic, linearizable, indivisible or uninterruptible
+        state // none(determine), global, local, random(physical)
+        about-object // construct, update(assigment), destruct
+        sub2super(value-of-subtype)->supertype
+        subfunction(subtype...)->subtype
+            // type ::= (E,F,A)
+            // supertype ~ subtype
+            // use less stardard features, discard more stardard guarantees
+            // such as signal, variant-length array, base2-int
+
+
+
+
+unit in machine:
+    minimum unit             -> bit                         // <- information
+    minimum addressable unit -> byte                        // <- internal momery
+    minimum unit that can hold the character set -> char    // <- coding
+    minimum addressable unit that can hold the character set -> c-char // c-byte <- C language
+    unit that cpu would handle once a time -> word                     // c-int <- C
+    unit that represents an address of data memory -> c-object-pointer
+    unit that represents an address of code memory -> c-function-pointer
+    minimum uint that read from or write to external memory -> fs-block
+    unit used as an index of array -> size_t
+    unit used as difference of pointers both in same array -> ptrdiff_t
+
+    
+    
+
+integer:
+    in mathematic, let's call it a int_math_t type.
+    for any integer-type int_finite_t in computer, the set of its elements SET(int_finite_t) is always a subset of Z and card(SET(int_finite_t)) in N+.
+    usually, int_finite_t always has a range, such that, for any i,j in INT_SET, any k in Z and i <= k <= j, k in SET(int_finite_t).
+        NOTE, in nature of int_finite_t object, it can not hold a value out-of-range.
+            assign a illegal value to a int_limited_t object is an error.
+            any +,-,*,div,mod,neg can overflow.
+    we call int_finite_t int_limited_t if exist MIN(int_finite_t) and MAX(int_finite_t) such that SET(MIN(int_finite_t) and MAX(int_finite_t)) == {i in Z: MIN(int_finite_t) <= i <= MAX(int_finite_t)}
+    in C, buildin-integer-type is always int_limited_t
+    signed_int and unsigned_int are both buildin-type in C with width as word.
+        signed_int should be called as int_limited_symmetry_t, since it forces that for any i in SET(signed_int), (-i) in the set too.
+            but indeed, MIN(signed_int) may not be -MAX(signed_int). 
+            this fact should be avoided.
+            suppose MIN(signed_int) <= 0 <= MAX(signed_int):
+            we can use int_limited_symmetry_t, and assume its limit is [-max, max] where max == MIN(signed_int) + MAX(signed_int) >= 0 ? -MIN(signed_int) : MAX(signed_int)
+            axiom: neg(i) should not overflow for i is a int_limited_symmetry_t
+        unsigned_int should fall in to two type: uint_modX_t, uint_limited_t
+            for uint_limited_t, MIN(uint_limited_t) == 0, MAX(uint_limited_t) == card(SET(unsigned_int))-1
+                compare, uint_floor_divide, uint_modulo
+            for uint_modX_t, X == MAX(uint_limited_t)+1
+                modulo_add, modulo_subtract, modulo_multiply
+            coversion between them:
+                uint_limited_to_modX, uint_modX_to_limited
+            no error but when div 0.
+            
+        don't assume integer base 2
+        don't use bit operator
+        use compare instead of bool-cast and not-operator
+
+        
+        detect error before it occurs:
+            for unsigned_int:
+                div, mod
+                    -> uint_limited_t -> divisor is not 0
+                overflow when +,-,*:
+                    + -> uint_limited_t -> MAX - lhs >= rhs
+                    - -> uint_limited_t -> lhs >= rhs
+                    * -> uint_limited_t -> lhs == 0 or MAX / lhs >= rhs
+            for signed_int:
+                surppose 0 < MAX(int_limited_symmetry_t) <= floor_divide(MAX(uint_limited_t),2)
+                coversion:
+                def uint_modX_to_int_limited_symmetry(x):
+                    u = uint_modX_to_limited(x)
+                    int_max_in_uint = int_limited_symmetry_to_uint_limited(MAX(int_limited_symmetry_t))
+                    int_min_in_uint = (MAX(uint_limited_t) - int_max_in_uint) + 1
+                    if u <= int_max_in_uint:
+                        return uint_to_int(u)
+                    else if u >= int_min_in_uint:
+                        return -uint_to_int((MAX(uint_limited_t) - u) + 1)
+                    else error!!
+                def int_limited_symmetry_to_uint_modX(x):
+                    if x >= 0:
+                        return int_to_uint(x)
+                    else:
+                        return (MAX(uint_limited_t) - int_to_uint(-x)) + 1
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    

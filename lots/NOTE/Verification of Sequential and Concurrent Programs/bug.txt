@@ -1,0 +1,52 @@
+bug? - no ; donot forgot the first outline!:
+[page 278] 8 Parallel Programs with Shared Variables
+    {x = 0} x := x + 2 {x = 0 กล x = 2}
+    {true} x := 0 {x = 0 กล x = 2}
+    {x = 0 กฤ (x = 0 กล x = 2)} x := x + 2 {x = 0 กล x = 2}
+    
+    {pre(R) กฤ r} R {r}? what if x = 2??
+    {x = 0} x := x + 2 {x = 0 กล x = 2}
+    {true} x := 2 {x = 0 กล x = 2}
+    {x = 0 กฤ (x = 0 กล x = 2)} x := x + 2 {x = 0 กล x = 2}
+    {true กฤ (x = 0 กล x = 2)} x := 2 {x = 0 กล x = 2}
+    xxxx ==>> {x = 0} [x := x + 2 || x := 2] {x = 0 กล x = 2}?? xxxx
+    --        {x = 0} [x := x + 2 || x := 2] {x = 4 กล x = 2}
+
+
+    proof:
+    {x = 0} x := x + 2 {x = 0 กล x = 2}
+    {true} x := 0 {x = 0 กล x = 2}
+    {x = 0 กฤ true} x := x + 2 {true}
+    {x = 0 กฤ (x = 0 กล x = 2)} x := x + 2 {x = 0 กล x = 2}
+    {true กฤ x = 0} x := 0 {x = 0} ------ !!!!!!!!!!!!!
+    {true กฤ (x = 0 กล x = 2)} x := 0 {x = 0 กล x = 2}
+
+
+
+
+bug??
+    [x := x +1; x := x +1 || x := 0]
+    {x = 0}x := x + 1;{x = 0 กล x = 1}x := x + 1{true}
+    {true} x := 0 {x = 0 กล x = 1 กล x = 2}
+    To establish their interference freedom seven interference freedom checks need to be made.
+    -- 7 not 5???? why???????
+
+
+
+
+
+
+not bug:
+RULE 24: DISJOINT PARALLELISM
+    {p[i]} S[i] {q[i]} for i in [1..n] |- {/\ p[i] {i=1..n}} [S[1] || ... || S[n]] {/\ q[i] {i=1..n}}
+    where free(p[i], q[i]) /-\ change(S[j]) = {} for i =/= j
+
+what if?
+    S1 :: x := 0; return1 := x
+    S2 :: x := 1; return2 := x
+    {true} S1 {return1 == 0}
+    {true} S2 {return2 == 1}
+    xxx {true} [S1 || S2] {{return1, return2} in {...}}
+    error:
+        [S1 || S2] requires change(S1) /-\ var(S2) == {}
+

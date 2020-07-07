@@ -1,0 +1,91 @@
+
+https://en.wikipedia.org/wiki/Formal_verification
+https://en.wikipedia.org/wiki/Dependent_type#Comparison_of_languages_with_dependent_types
+https://en.wikipedia.org/wiki/Proof_assistant#Comparison
+
+Coq
+lean
+    https://leanprover.github.io/
+    https://leanprover.github.io/theorem_proving_in_lean/dependent_type_theory.html#introducing-definitions
+    def - global definition
+        def f := ...
+    let - local definition
+        (let f := ... in ...)
+    variable - declaration to be insert into definition
+        ![X : *](optional):
+            variable (X:*)
+            def f := fun x:X, x
+            def g := fun X:*, X
+        ==>>
+            def f := fun X:*, fun x:X, x     # X is used by f
+            def g := fun X:*, X              # X is not used by g
+        insert the declared variables as bound variables
+            in definitions that refer to them.
+            used explicitly or implicitly
+        !for g, it is hard to see whether omit X is a good ideas
+        !e.g.
+            [R : *][a : R][b : R]:
+                def true := a
+                def false := b
+                # omit is bad idea here
+    section - scope of variable
+    namespace - scope of definition
+        open <namespace>
+            !like [from <namespace> import *] in python
+            !only well maintained namespaces can be open at same time without confliction
+            !package author may declare conflict-free law for modules in the package
+universe u
+    Type u : Type (u+1)
+    Type u === Sort (u+1)
+    Prop === Sort 0
+        impredicative Prop
+        predicative (Type u)
+        @x:X:U. (Y:Prop) : Prop
+        vs @x:X:U. (Y:V) : Sort (max U V) where V != Prop
+constant var : type
+    axiom === constant
+fun var:type, body
+    theorem === lemma === fun
+show type, from obj
+    ?? assert [obj : type] ?? and return obj ??
+have var : type, from obj, body
+    ?? let var : type := obj in body ??
+    === (fun var:type, body) obj
+#suffices to show
+suffices var:type, from body, obj
+    === have var:type, from obj, body
+example obj : type
+example (var:type)... : type := obj
+    ! assert [obj : type]
+    !like def but without name
+implicit argument
+    1. "_"
+        id1 :: II(R:*), R->R
+        id1 _ a
+            # if "_" can be inferred from the context
+    2. "{}"
+        id2 :: II{R:*}, R->R
+               ^^   ^^
+        id2 a
+        # type @id2 == type id1
+        #
+        # declared variable is bound variable
+        #   so, [variable {R:*}] is OK
+
+
+# rw - rewrite tactics
+example (x y : NN) :
+  (x + y) * (x + y) = x * x + y * x + x * y + y * y :=
+calc
+  (x + y) * (x + y) = (x + y) * x + (x + y) * y  : by rw mul_add
+    ... = x * x + y * x + (x + y) * y            : by rw add_mul
+    ... = x * x + y * x + (x * y + y * y)        : by rw add_mul
+    ... = x * x + y * x + x * y + y * y          : by rw <-add_assoc
+example (x y : NN) :
+  (x + y) * (x + y) = x * x + y * x + x * y + y * y :=
+    by rw [mul_add, add_mul, add_mul, <-add_assoc]
+
+example (x y : NN) :
+  (x + y) * (x + y) = x * x + y * x + x * y + y * y :=
+    by simp [mul_add, add_mul]
+

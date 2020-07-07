@@ -1,0 +1,85 @@
+
+
+Mx matrix_muls(Mx... mxs); // dymanic programming to find out how to set "()"
+
+1) static type
+    class ToMulResult<T...> {
+        // typedef void Result;
+    };
+    class ToMulResult<> {
+        // typedef void Result;
+    };
+    class ToMulResult<Mx<R, C> > {
+        typedef Mx<R, C> Result;
+    };
+    class ToMulResult<Mx<R, m>, Mx<m, n>, T...> {
+        typedef Mx<R, ToMulResult<Mx<m, n>, T...>::Result::NumColumns> Result;
+    };
+    
+    class isMulResult<R, C, T...> {
+        typedef False Result;
+    };
+    class isMulResult<C, C > {
+        typedef True Result;
+        // muls() == Mx<C,C>::identity();
+    };
+    class isMulResult<R, C, Mx<R, m>, T... > {
+        typedef isMulResult<m, C, T... >::Result Result;
+    };
+    
+    template <Result, T...>
+    Result matrix_muls(T...);
+    
+    template <ToMulResult<T...>::Result, T...>
+    matrix_muls(T...) -> ToMulResult<T...>::Result;
+    
+    template <Mx<R, C> >
+    matrix_muls() -> Mx<R, C> {return Mx<R, C>::identity();}
+    
+
+
+2) precondition
+    // more flexible condition / static state
+    
+    @pre:
+        is_mul_chain :: [Mx] -> bool
+        is_mul_chain [] = False
+        is_mul_chain [mx] = True
+        is_mul_chain a:(b:_)@tail = a.num_columns == b.num_rows && is_mul_chain tail
+        
+        assert is_mul_chain mxs;
+    
+    @post:
+        immutable mxs
+        
+        product_size :: [Mx] -> (int, int)
+        product_size [] = undefined
+        product_size mxs = (mxs[0].num_rows, mxs[-1].num_columns)
+        
+        assert @result.size == product_size mxs
+    Mx precondition_matrix_muls(Mx... mxs);
+
+3) dynamic check
+    // application user input instead of library user
+    def dynamic_check_matrix_muls(mxs):
+        if not is_mul_chain(mxs):
+            raise ValueError
+        
+        new_mxs = deepcopy(mxs)
+        result = precondition_matrix_muls(new_mxs)
+        
+        assert new_mxs == mxs
+        assert result.size == product_size new_mxs
+        return result
+
+
+
+
+
+
+
+
+
+
+
+

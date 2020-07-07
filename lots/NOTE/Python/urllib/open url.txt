@@ -1,0 +1,50 @@
+
+input:
+    url :: String
+
+1. urlopen
+    import urllib.request
+    with urllib.request.urlopen(url) as response:
+        url_info = response.info()
+        url_data = response.read()
+
+2. UserAgent&Referer
+    import urllib.request
+    import urllib.parse
+    def get_scheme_authority(url):
+        '''
+        URI = scheme:[//authority]path[?query][#fragment]
+
+        authority
+            authority = [userinfo@]host[:port]
+
+        query
+            key1=value1&key2=value2
+            key1=value1;key2=value2
+
+
+        ParseResult(scheme='http', netloc='www.cwi.nl:80', path='/%7Eguido/Python.html',
+                    params='', query='', fragment='')
+        '''
+        r = urllib.parse.urlparse(url)
+        parts = [r.scheme, r.netloc, '/', '', '', '']
+        scheme_authority = urllib.parse.urlunparse(parts)
+        return scheme_authority
+
+    opener = urllib.request.build_opener()
+
+    #('User-Agent','Mozilla/5.0 (Linux; Android 4.4.4; en-us; Nexus 5 Build/JOP40D)
+    #('Referer', 'http://www.python.org/')
+    #   Referer = where the url be contained
+    #   user click the url in the Referer page
+    #
+    UserAgent = r'Mozilla/5.0 (Linux; Android 4.4.4; en-us; Nexus 5 Build/JOP40D)'
+    Referer = get_scheme_authority(url)
+    assert type(UserAgent) is str is type(Referer)
+
+    opener.addheaders = [('User-Agent', UserAgent), ('Referer', Referer)]
+
+    with opener.open(url) as response:
+        ...
+
+

@@ -1,0 +1,92 @@
+https://en.wikipedia.org/wiki/Earley_parser
+The Earley parser executes in
+    * cubic time in the general case O(n^3)
+    * quadratic time for unambiguous grammars O(n^2)
+    * linear time for all LR(k) grammars
+    where n is the length of the parsed string
+It performs particularly well when the rules are written left-recursively.
+    -- left-recursively is better!!
+it may suffer problems with certain nullable grammars.
+    -- nullable ???
+
+
+xsymbol = nonterminal | terminal
+production = (lhs_nonterminal, [xsymbol])
+state = (production, dot_idx, terminal_position_at_production_begin)
+    terminal_position_at_production_begin - the begin position of this production
+    production.xsymbols[:dot_idx] have been recognized
+
+terminal_position2states :: [{state}]
+    terminal_position at production[dot_idx:] begin
+    @pstn.
+        @state <- terminal_position2states[pstn].
+            assert state.terminal_position_at_production_begin <= pstn
+actions:
+    assume:
+        current terminal_position is pstn
+        current input terminal is T
+        state.may_dot_symbol = None | state.production.xsymbols[.dot_idx]
+    * prediction
+        # downward
+        states = terminal_position2states[pstn]
+        for state in states:
+            if .may_dot_symbol is nonterminal:
+                .add((production<.may_dot_symbol>, 0, pstn))
+    * scanning
+        # forward by terminal
+        states = terminal_position2states[pstn]
+        next_states = terminal_position2states[pstn+1]
+        for state in states:
+            if .may_dot_symbol is terminal T:
+                next_states.add(state.irepace(dot_idx=state.dot_idx+1))
+    * completion
+        # upward to nonterminal
+        states = terminal_position2states[pstn]
+        for state in states:
+            if .may_dot_symbol is None:
+                begin = .terminal_position_at_production_begin
+                states_up = terminal_position2states[begin]
+                for state_up in states_up:
+                    if state_up.may_dot_symbol is state.production.lhs_nonterminal:
+                        states.add(state_up.irepace(dot_idx+=1))
+
+
+DECLARE ARRAY S;
+
+function INIT(words)
+    S <- CREATE-ARRAY(LENGTH(words) + 1)
+    for k <- from 0 to LENGTH(words) do
+        S[k] <- EMPTY-ORDERED-SET
+
+function EARLEY-PARSE(words, grammar)
+    INIT(words)
+    ADD-TO-SET((gamma -> * S, 0), S[0])
+    for k <- from 0 to LENGTH(words) do
+        for each state in S[k] do  // S[k] can expand during this loop
+            if not FINISHED(state) then
+                if NEXT-ELEMENT-OF(state) is a nonterminal then
+                    PREDICTOR(state, k, grammar)         // non-terminal
+                else do
+                    SCANNER(state, k, words)             // terminal
+            else do
+                COMPLETER(state, k)
+        end
+    end
+    return chart // return S??
+
+procedure PREDICTOR((A -> alpha * B beta, j), k, grammar)
+    for each (B -> gamma) in GRAMMAR-RULES-FOR(B, grammar) do
+        ADD-TO-SET((B -> * gamma, k), S[k])
+    end
+
+procedure SCANNER((A -> alpha * a beta, j), k, words)
+    if a == PARTS-OF-SPEECH(words[k]) then
+        ADD-TO-SET((A -> alpha a *  beta, j), S[k+1])
+    end
+
+procedure COMPLETER((B -> gamma * , x), k)
+    for each (A -> alpha * B beta, j) in S[x] do
+        ADD-TO-SET((A -> alpha B *  beta, j), S[k])
+    end
+
+

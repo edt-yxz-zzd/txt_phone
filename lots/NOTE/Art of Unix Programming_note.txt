@@ -1,0 +1,130 @@
+The Art of Unix Programming
+Eric Steven Raymond
+
+--------------------------------------------------
+Chapter 9. Generation
+Ad-hoc Code Generation
+Case Study: Generating Code for the ascii Displays
+
+scare me:
+Dec Hex    Dec Hex    Dec Hex  Dec Hex  Dec Hex  Dec Hex   Dec Hex   Dec Hex
+  0 00 NUL  16 10 DLE  32 20    48 30 0  64 40 @  80 50 P   96 60 `  112 70 p
+  1 01 SOH  17 11 DC1  33 21 !  49 31 1  65 41 A  81 51 Q   97 61 a  113 71 q
+  2 02 STX  18 12 DC2  34 22 "  50 32 2  66 42 B  82 52 R   98 62 b  114 72 r
+  3 03 ETX  19 13 DC3  35 23 #  51 33 3  67 43 C  83 53 S   99 63 c  115 73 s
+  4 04 EOT  20 14 DC4  36 24 $  52 34 4  68 44 D  84 54 T  100 64 d  116 74 t
+  5 05 ENQ  21 15 NAK  37 25 %  53 35 5  69 45 E  85 55 U  101 65 e  117 75 u
+  6 06 ACK  22 16 SYN  38 26 &  54 36 6  70 46 F  86 56 V  102 66 f  118 76 v
+  7 07 BEL  23 17 ETB  39 27 '  55 37 7  71 47 G  87 57 W  103 67 g  119 77 w
+  8 08 BS   24 18 CAN  40 28 (  56 38 8  72 48 H  88 58 X  104 68 h  120 78 x
+  9 09 HT   25 19 EM   41 29 )  57 39 9  73 49 I  89 59 Y  105 69 i  121 79 y
+ 10 0A LF   26 1A SUB  42 2A *  58 3A :  74 4A J  90 5A Z  106 6A j  122 7A z
+ 11 0B VT   27 1B ESC  43 2B +  59 3B ;  75 4B K  91 5B [  107 6B k  123 7B {
+ 12 0C FF   28 1C FS   44 2C ,  60 3C <  76 4C L  92 5C \  108 6C l  124 7C |
+ 13 0D CR   29 1D GS   45 2D -  61 3D =  77 4D M  93 5D ]  109 6D m  125 7D }
+ 14 0E SO   30 1E RS   46 2E .  62 3E >  78 4E N  94 5E ^  110 6E n  126 7E ~
+ 15 0F SI   31 1F US   47 2F /  63 3F ?  79 4F O  95 5F _  111 6F o  127 7F DEL
+This screen is carefully designed to fit in 23 rows and 79 columns, so that it will fit in a 24¡Á80 terminal window.
+
+
+
+
+
+------------------------------------------------------------------------
+Chapter 10. Configuration
+How to Choose among the Methods
+
+An alternative way of dealing with such situations, which doesn't clutter up either the code or the manual much, is to have a ¡°set option variable¡± option, such as the -O option of sendmail, which lets you specify an option name and value, and sets that name to that value as if such a setting had been given in a configuration file. A more powerful variant of this is what ssh does with its -o option: the argument to -o is treated as if it were a line appended to the configuration file, with the full config-file syntax available. Either of these approaches gives people with unusual requirements a way to override configuration from the command line, without requiring you to provide a separate option for each bit of configuration that might be overridden.
+-- Henry Spencer
+
+
+
+---------------------------------------------------------------------
+Chapter 11. Interfaces
+Transparency, Expressiveness, and Configurability
+The downside of this attitude (which is a close cousin to ¡°mechanism, not policy¡±) is a tendency to assume that when the highly configurable and expressive interface is done, the job is finished... even if the result is almost impossible for anyone else to use without lengthy study. The flip side of configurability is an urgent need for good defaults and an easy way to set everything to the default. The flip side of expressivity is a need for guidance ¡ª be it in the program or the documentation ¡ª on where to get started and how to achieve the most commonly-desired results.
+-- Henry Spencer
+
+Mac or Windows programmers fear scaring away the many to serve the advanced needs of the few.
+// but who says cheaper 90% over painful 100%?
+
+
+-----
+Applying Unix Interface-Design Patterns
+The Polyvalent-Program Pattern
+
+A polyvalent program has the following traits:
+    The program's application-domain logic lives in a library with a documented API, which can be linked to other programs. The program's interface logic to the rest of the world is a thin layer over the library. Or perhaps there are several layers with different UI styles, any of which the library can be linked to.
+    One UI mode is a cantrip, compiler-like or CLI pattern that executes its interactive commands in batch mode.
+    One UI mode is a GUI, either linked directly to the core library or acting as as a separate process driving the CLI interface.
+    One UI mode is a scripting interface using a modern general-purpose scripting language like Perl, Python, or Tcl.
+    Optional extra: One UI mode is a roguelike interface using curses(3).
+
+Figure 11.4. Caller/callee relationships in a polyvalent program.
+    GUI ---------------------V
+    CUI ------------------> library
+    scripting interface -----^
+Notably, the GIMP actually fulfills this pattern.
+
+
+
+--------------------------------------------------------
+Chapter 13. Complexity
+The Right Size of Software
+
+Small, sharp tools in the Unix style have trouble sharing data, unless they live inside a framework that makes communication among them easy. Emacs is such a framework, and unified management of shared context is what the optional complexity of Emacs is buying. The practical impact of unified management of shared context is that the user is not burdened with low-level naming and resource-management issues.
+In old-school Unix, the only framework was pipelines, redirection, and the shell; the integration was done with scripts, and the shared context was (essentially) the file system itself. But that was not the end of evolution.
+Frameworks become homes to ecologies of tools ¡ª the shell to shellscripts, Emacs to Lisp modes, and desktop environments to flocks of GUIs communicating both via drag and drop and by more esoteric means such as object brokers.
+// framework should share something behind: DOM for JS; file/usr for Unix; PyObject for python; txt for Emacs;
+
+
+
+-------------------------------------------------------------------
+Chapter 15. Tools
+make: Automating Your Recipes
+
+Makefile.in = automake(Makefile.am) // or using makedepend // dependency derivation
+configure = autoconf(configure.in, Makefile.in) // no built-in dependency derivation
+Makefile = configure() // a shell script
+make(Makefile)
+./configure; make; make install;
+
+
+-------------------------------------------------------------------
+Chapter 18. Documentation
+Best Practices for Writing Unix Documentation
+
+When you write documentation for people within the Unix culture, don't dumb it down. If you write as if for idiots, you will be written off as an idiot yourself. Dumbing documentation down is very different from making it accessible; the former is lazy and omits important things, whereas the latter requires careful thought and ruthless editing.
+
+
+
+-----------------------------------------------------------------
+Chapter 19. Open Source
+The Logic of Licenses: How to Pick One
+
+If you want to make no restrictions at all, you should put your software in the public domain. An appropriate way to do this would be to include something like the following text at the head of each file:
+Placed in public domain by J. Random Hacker, 2003.  Share and enjoy!
+If you do this, you are surrendering your copyright. Anyone can do anything they like with any part of the text. It doesn't get any freer than this.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,141 @@
+
+C struct ==>> any possible
+C++ class ==>> s.t. invariant
+
+what about a subset of possible data??
+e.g. prime integer; partial-invariable (structure-invariable container);
+e.g. "T" is a subset of "const T"; sqare is a subset of rectangle
+subset type has more methods
+subset type changes after mutable method
+subset type can reduce to superset type implicitly
+subset type use the same data struct as superset type
+
+
+1)
+    T* p = f(); // nullable T*
+    if (p == null_ptr) >sink
+    {
+        ...
+    }
+    
+    // now (not_nullable T*) p
+2) 
+    void g(T* p):postcondition [(not_nullable T*) p] // i.e. a sink if !p
+    {
+        if (!p)
+        {
+            return ; // ERROR [null p]
+            throw ...; // fine; sink
+        }
+        return ; // fine; postcondition satisfied
+    }
+
+3)
+    void h(not_nullable T* p); <==> void h(T* p):precondition [(not_nullable T*) p];
+    T* p = f();
+    h(p); // ERROR
+    if (p){h(p);} // well
+
+
+4) long term constaint
+    void f(T* begin, T* end):precondition [not NULL begin][not NULL end] [SAME_ARRAY begin end] [begin <= end];
+
+why?
+    beans, component, ... // event (e.g. valueChange)
+    yet, we can define interface but how to plugin-in/pull-out on runtime like hardware??
+    
+    if we pull out chip from board, tagged types of board and chip are changed
+
+class Rollback:
+    // e.g. we have mutli-objects (e.g. an array or a loop) to update
+    //      the tagged types are protected by rollback operations
+    Rollback(pre_rollback)
+    recovery()nothrows, callonce.
+
+
+data flow constaint
+    e.g.
+        (a, b, c) = (a::..., b::..., c::...) | ...
+        
+call flow constaint
+    e.g. 
+        must run on some thread
+        must 
+
+e.g.
+    // Initial|Unintial <==> Exist
+    // Dereferable<T, {...}> ==>> {Readable, NonNullPtr<T, {...}>, Initial}
+    //    Note: Readable ==xx==>> ToBytes
+    //          we can provide more accurate control
+    // Freeable|Deleteable ==>> {OwnedRef, Initial}
+    // Deleteable ==>> Ptr<T, {Destructable, ...}> ==>> Destructable
+    //      Nonexist -> Uninitial -> Initial -> Destructable
+    // Readable ==>> {Initial}
+    // Writeable ==>> {Exist}
+    // RW <==> {Readable, Writeable}
+    {Deleteable, RW, Dereferable<T, {RW, ...}>} T* ptr = new ...;
+    return ; // Error : Don't know how to discard {Deleteable}
+    
+    // void free(void* const& p) # NOTE "Uninitial" T
+    //      where p :: {Freeable, Ptr<?, {Uninitial...}>, ...>} => 
+    //          drop {Initial, NonNullPtr<T, {...}>} // hence drop {Freeable, Dereferable<...>}
+    //          add {Unitial, NonNullPtr<T, {Nonexist}>}
+    free(ptr); // Error no "Freeable", and not "Ptr<?, {Uninitial,...}>"
+    // delete p
+    //      where p :: {Deleteable, ....>} => 
+    //          drop {OwnedRef, Initial, NonNullPtr<T, {...}>} // hence drop {Deleteable, Dereferable<...>}
+    //          add {Unintial, NonNullPtr<T, {Nonexist}>}
+    delete ptr; // Correct
+        // (p -> ...) where p :: {Dereferable<T, {Readable, ...}>, ...}
+        // p -> ... += ... where p :: {Dereferable<T, {Writeable, ...}>, ...}
+        ptr -> ...; // Error no "Dereferable<T, {Readable, ...}>"
+    
+    class C{
+        T* ptr where ptr :: {Deleteable|Freeable, Destructable, RW, Dereferable<T, {RW, ...}>};
+        AllocType from where from in {New, Alloc};
+        where (from, ptr) = (New, ?::{Deleteable, RW, Dereferable<T, {RW, ...}>};)
+                          | (Alloc, ?::{Freeable, Destructable, RW, Dereferable<T, {RW, ...}>};)
+        
+        // Note:
+        //      p :: Owned->Not Owned ==>> C(p) is a sink
+        //      
+        C(T* const& p) this 
+            where p :: {Deleteable, Dereferable<T, {RW, ...}>, ...} =>
+                    drop {OwnedRef, Initial, NonNullPtr<T, {...}>}
+                    add {Unintial, NonNullPtr<T, {Nonexist}>}
+                  this :: {Dereferable<C, {Uninital, PartialReadableWhenInitial, Writeable}>}
+                        -> {Dereferable<C, {Destructable, RW}>}
+        {
+            // initialization...
+            ptr = p;
+            from = New;
+            // now "Initial" C
+            // "Initial" C, PartialReadableWhenInitial ==>> Readable C
+            // ==>> RW C
+            
+            // constructor has the privilage to mark the Initial T be Destructable T
+            //    when every class invarients hold.
+            //    if we open this privilage, then the only loss was we can control any object's construct
+            // now Destructable C
+        }
+        
+        C(T* p) this 
+            where like above but p :: {Freeable, Destructable, ...}
+        {
+            // initialization...
+            ptr = p;
+            from = Alloc;
+        }
+        
+        ~C() this
+            where this :: {Owned, NonNull, Initial, Ptr<C>, Read, Write}
+                        -> {Owned, NonNull, Uninitial, Ptr<Uninitial<C>>, Read, Write}
+        {
+            case (from, ptr) of
+            New, ptr::{Owned, New, Ptr<T>} -> {delete ptr;}
+            Alloc, ptr::{Owned, Alloc, Ptr<T>} -> {free(ptr);}
+        }
+    }
+
+
+

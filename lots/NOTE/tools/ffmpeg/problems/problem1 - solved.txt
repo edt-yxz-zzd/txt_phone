@@ -1,0 +1,79 @@
+## see: "problem1 - ffmpeg_output.txt"
+Unable to parse option value "-1" as pixel format
+
+## hint in above output
+[mov,mp4,m4a,3gp,3g2,mj2 @ 003abfe0] stream 0, timescale not set
+[mov,mp4,m4a,3gp,3g2,mj2 @ 003abfe0] max_analyze_duration 5000000 reached at 5000000 microseconds
+[mov,mp4,m4a,3gp,3g2,mj2 @ 003abfe0] Could not find codec parameters for stream 0 (Video: none (hev1 / 0x31766568), 1920x1072, 1621 kb/s): unknown codec
+Consider increasing the value for the 'analyzeduration' and 'probesize' options
+
+
+#####################################################################
+############################ first try: increase 'analyzeduration'/'probesize'
+#####################################################################
+
+##########
+https://superuser.com/questions/1181422/unable-to-parse-option-value-1-as-pixel-format-when-transcoding-mp4-to-mp4-us
+    >ffmpeg -i scripts/1.mp4 -pix_fmt yuv420p -crf 18 scripts/good.mp4
+    ...
+    Could not find codec parameters for stream 0 (Video: h264 (avc1 / 0x31637661), none, 540x960, 950 kb/s): unspecified pixel format
+    Consider increasing the value for the 'analyzeduration' and 'probesize' options
+    ...
+    ==>>
+    It's not complaining about the output pixel format. It can't find the input pixel format.
+    Add "-probesize 100M -analyzeduration 100M" before "-i scripts/1.mp4"
+
+
+#################
+https://ffmpeg.org/ffmpeg-formats.html
+
+probesize :: integer (input)
+    Set probing size in bytes, i.e. the size of the data to analyze to get stream information. A higher value will enable detecting more information in case it is dispersed into the stream, but will increase latency. Must be an integer not lesser than 32. It is 5000000 by default.
+analyzeduration :: integer (input)
+    Specify how many microseconds are analyzed to probe the input. A higher value will enable detecting more accurate information, but will increase latency. It defaults to 5,000,000 microseconds = 5 seconds.
+    1 microsecond == 10^-6 second
+
+ffmpeg -i input.mp4 output.flv
+==[try1]=>>
+    ffmpeg -probesize 100M -analyzeduration 100M -i input.mp4 output.flv
+        [mov,mp4,m4a,3gp,3g2,mj2 @ 024fde80] max_analyze_duration 100000000 reached at 100000000 microseconds
+==[try2]=>>
+    #
+    #ffmpeg -analyzeduration 2147483647 -probesize 2147483647 -i /path/to/video.mp4
+    #   where 2147483647 is max_int
+    #
+    #input.mp4
+    #    Duration : 45 min 0 s
+    #    == 45*60*10**6 == 2700M > max_int == 2147483647 == 2147_483_647 ~=~ 2147M
+    #
+    ffmpeg -probesize 2700M -analyzeduration 2700M -i input.mp4 output.flv
+        # too large
+        # 2700M > max_int == 2147483647 == 2147_483_647 ~=~ 2147M
+    ffmpeg -probesize 2147483647 -analyzeduration 2147483647 -i input.mp4 output.flv
+        # fail too!!!
+
+#####################################################################
+############################ second try: codec??
+#####################################################################
+[mov,mp4,m4a,3gp,3g2,mj2 @ 003abfe0] Could not find codec parameters for stream 0 (Video: none (hev1 / 0x31766568), 1920x1072, 1621 kb/s): unknown codec
+#### it seems that ffmpeg donot recognize hev1
+#C:\Program Files (x86)\K-Lite Codec Pack\Tools\mediainfo.exe
+    Video
+    ID                          : 1
+    Format                      : HEVC
+    Format/Info                 : High Efficiency Video Coding
+    Format profile              : Main@L5@Main
+    Codec ID                    : hev1
+    Codec ID/Info               : High Efficiency Video Coding
+#where ffmpeg
+    C:\Program Files\ImageMagick-6.8.9-Q8\ffmpeg.exe
+    C:\Program Files\ImageMagick-6.8.9-Q16\ffmpeg.exe
+ffmpeg -codec hevc -i input.mp4 output.flv
+    Unknown decoder 'hevc'
+
+
+https://ffmpeg.org/download.html#build-windows
+    update "ffmpeg version N-50911-g9efcfbe" to "ffmpeg version N-92246-gc2ac3b8e6a"
+ffmpeg -i input.mp4 output.flv
+    # success!!
+

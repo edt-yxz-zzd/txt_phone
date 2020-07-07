@@ -1,0 +1,2160 @@
+
+
+number as function
+x(y) = x*y = mul(x,y) = y(x) = x y = y x
+
+---------------------------
+sum expr {[condition]...}
+= sum {[condition]...}(expr)
+= sum {[condition]...}: expr // until end of line
+= sum condition...: expr // until end of line
+
+n = sum 1 {[i=0..n-1]}
+
+sum expr {i=a..b} = sum expr {i=a->b+1} 
+= sum expr {i in [a:b]} = = sum expr {i in [a:b+1)}
+NOTE: a..a-2 = empty set but a->a-2 means -1*sum ... {a-2->a}
+
+
+sum expr {i}
+integrate expr {x}
+integrate expr {x=a->b}
+
+T f x = f(x+1)-f(x)
+D f x = D f(x) {x}
+D f = D \x:f(x) == D**1 f
+D f x = (D f) (x) = D \z:f(z) x = D f(z) {z=x}
+D**k(f)(x) = D**k f(x) {x}**k
+
+-----------------------------
+f(x) integer/real/complex x
+f[i] integer i
+-----------------------------
+[.z**n]f(z) = coeff of z**n in f(z) = [.n] f(z) {z} = [.] f(z) {z**n}
+{.x} = x - floor(x)
+[codition] = 1 if codition else 0
+    sum [codition]?expr:0 {index range} = sum [codition]*expr {index range}
+    II [codition]?expr:1 {index range} = exp sum [codition]*ln expr {index range}
+lg x = log x/log 2
+ln x = log x/log e
+-----------------------------
+
+
+
+chapter 1
+f(n) ?
+reduce the problem to small n'
+solve the recurrent problem
+
+example:
+    if m = 2:
+        JOSEPHUS(2n) = 2 JOSEPHUS(n) - 1
+        JOSEPHUS(2n+1) = 2 JOSEPHUS(n) + 1
+    ...
+
+a important recurrent form:
+    f(b) = Q[b] for b in [0..B-1]
+    f(B*n+b) = F[b](f(n)) for b in [0..B-1]
+    note n = (b[k]b[k-1]...b[0])_B, B is a radix
+
+a method to calc coefficients of linear recurrent: page 14
+    f(b) = Q[b] for b in [0..B-1]
+    f(B*n+b) = F[b](f(n), c[i] for i in [0..K]) for b in [0..B-1]
+    
+    and f(n) has a closed-form: f(n) = sum c[i]A[i](n) {[i=0..K]}
+    
+    how to calc A[i]?
+    1) assume c[i] = [i=u] ==>> A[u]
+    or 2) assume ~f(n) = T(n) ==>> ~c[i] by ~f(B*n+b)=F[b](~f, ~c[i]) 
+          ==>> R(~c[i], A[i] for i in [0..K]) = 0
+
+
+
+
+
+
+
+---------------------------
+chapter 2
+f(n) for n >= 0
+a(n), b(n), c(n) for n >= 1
+f(0) = f0
+a(n)f(n) = b(n)f(n-1) + c(n) for n >= 1
+
+s(n)a(n)f(n) = s(n)b(n)f(n-1) + s(n)c(n) for n >= 1
+s(n) for n >= 1
+let s(n)b(n) = s(n-1)a(n-1) ==>> s(n) = a(n-1)/b(n) * s(n-1) for n >= 2
+    ==>> s(n) = II a(i-1)/b(i) {i=2..n} s(1)
+    ==>> s(0)? a(0)? s(0) = s(1)b(1)/a(0)
+S(n) = s(n)a(n) = s(1)a(1) * II a(i)/b(i) {i=2..n} for n >= 2 ==>> for n >= 1
+S(0) = s(0)a(0) = s(1)b(1)
+S(n) = s(1)b(1) * II a(i)/b(i) {i=1..n} for n >= 0
+S(n)f(n) = S(n-1)f(n-1) + s(n)c(n) for n >= 1
+    = S(0)f(0) + sum s(i)c(i) {i=1..n}
+
+H = harmonic
+H[n] = sum i=1..n: 1/i
+~P[n] = some a permutation of [1..n]
+~P[n](i) = ?
+
+sum H[i] {i=0..n-1} = n (H[n]-1)
+
+
+
+
+
+--------------------------------------------------
+
+
+2.6 FINITE AND INFINITE CALCULUS : page 47
+D f(x) = (f(x+h)-f(x))/h
+T f(x) = f(x+1) - f(x)
+
+{.x} = x mod 1 = x - floor(x) //fractional part
+sum g(x) tx = sum g(y) {[1\(x-y)][y<=x]}
+sum g(x) t{x = a->b} = sum g(x) {[1\(x-a)][a<=x<b]} for [1\(b-a)] and [a <= b]
+sum g(x) t{x = b->a} = - sum g(x) {x = a->b}
+// tx or dx means direction/sign
+
+g(x) = T f(x) <==> f(x) = C({.x}) + sum g(x) tx 
+==>> sum g(x) {x=a..b-1} = sum g(x) t{x=a->b} = f(b) - f(a)
+
+
+
+falling factorial powers | rising factorial powers
+factorial(n) = n! = n(n-1)..1 = II i {i=1..n}
+integer m >= 0:
+    fall(x, m) = x(x-1)..(x-(m-1)) = II x-i {i=0..m-1}
+    rise(x, m) = x(x+1)..(x+(m-1)) = II x+i {i=0..m-1}
+integer m > 0:
+    fall(x, -m) = 1/(x+1)/(x+2)/../(x+m) = 1/II x+i {i=1..m} = 1/rise(x+1,m)
+fall(x, 0) = 1 = rise(x, 0)
+fall(n, n) = n! = rise(1, n)
+
+T fall(x, m) = m fall(x, m-1) for m >= 1 or m < 0 or m = 0
+sum fall(x, m) t{x=0->n} = fall(n, m+1)/(m+1) for nonnegative-integer m, n
+sum fall(x, m) t{x=a->b} = (fall(b, m+1)-fall(a, m+1))/(m+1) where m != -1
+
+fall(x+y, m) = sum C(m,i)fall(x, i)fall(y, m-i) {i=0..m}
+fall(x, m) = fall(x, inf)/fall(x-m, inf)
+fall(x, m+n) = fall(x, m)fall(x-m,n)
+
+
+T c**x = (c-1)c**x
+
+there's no corresponding chain rule of nite calculus
+E = shift operator
+E f(x) = f(x+1)
+T fg = f Tg + Tf Eg
+
+
+------------------------------------
+converge absolutely
+sum c[i] {i in K} = sum real(c[i]) {i in K} + i*sum imag(c[i]) {i in K}
+sum r[i] {i in K} = sum [r[i]>0]r[i] {i in K} - sum -[r[i]<0]r[i] {i in K} for real r[i]
+
+let conditional convergence be undefined
+------------------------------------
+
+
+chapter 3
+
+floor(x) = greatest integer <= x
+ceil(x) = least integer >= x
+foc = floor or ceil
+fractional_part(x) = x - floor(x) = {.x}
+integer_part(x) = floor(x)
+x = floor(x) + {.x}
+
+
+[integer x] = [floor(x)=x] = [ceil(x)=x]
+[not integer x] = ceil(x) - floor(x)
+x-1 < floor(x) <= x <= ceil(x) < x+1
+    floor(x) = n <==> x-1 < n <= x < n+1
+    ceil(x) = n <==> n-1 < x <= n < x+1
+floor(-x) = -ceil(x); ceil(-x) = -floor(x)
+foc(x+n) = foc(x) + n
+floor(x+y) = floor(x) + floor(y) + floor({.x}+{.y})
+    = floor(x) + floor(y) + [0 or 1]
+
+
+redundant
+    floor(x) < n  <==> x < n
+    n < ceil(x)   <==> n < x
+    ceil(x) <= n  <==> x <= n
+    n <= floor(x) <==> n <= x
+
+
+lg(x) = log(x)/log(2)
+ln(x) = log(x)/log(e)
+bit_length(n):
+    bit_length(0) = 0
+    bit_length(n) = m+1 for 2**m <= n < 2**(m+1)
+2**m <= n < 2**(m+1) ==>> bit_length(n) = m+1 = 1 + floor lg n = ceil lg (n+1)
+
+
+foc sqrt foc r = foc sqrt r
+    m = floor sqrt floor r
+    m <= sqrt floor r < m+1
+    m**2 <= floor r < (m+1) ** 2
+    m**2 <= r < (m+1) ** 2
+    m <= sqrt r < m+1
+    m = floor sqrt r
+f(x) be any continuous, monotonically increasing function and [[integer f(x)] -->> [integer x]]
+foc f foc x = foc f x
+    m = floor f floor x
+    [integer x] ==>> m = floor f x
+    [not integer x] ==>> floor(x) < x
+        [increasing f] ==>> f floor x < f x
+        let k = floor f x
+        ==>> [floor f floor x <= k]
+        [floor f floor x < k] [integer k] ==>> [f floor x < k]
+            ==>> [f floor x < k = floor f x <= f(x)]
+            [continuous f] ==>> exist y : [f floor x < k = f(y) <= f(x)]
+            [increasing f] ==>> floor x < y <= x
+            [[integer f(x)] -->> [integer x]] [k=f y] [integer k] ==>> [integer y]
+            [not integer x] [floor x < y <= x] ==>> [not integer y]
+        ==>> [floor f floor x = k]
+        ==>> [floor f floor x = floor f x]
+
+    f(x): 
+        sqrt(x)
+        (x+n)/m
+        
+
+---------------------------------------
+interval
+x in [a..b] ==>> a <= x <= b
+x in (a..b) ==>> a < x < b
+n in [a:b] ==>> [integer n] [ceil a <= n <= floor b]
+n in (a:b) ==>> [integer n] [floor a < n < ceil b]
+n in [a:b) ==>> [integer n] [ceil a <= n < ceil b]
+n in (a:b] ==>> [integer n] [floor a < n <= floor b]
+|[a:b)| = ceil b - ceil a
+
+
+
+
+x mod y = x - y * floor (x/y), where y != 0
+x mod 1 = x - floor x = {.x}
+x mod -1 = x - -1 * floor -x = x - ceil x = -{.-x} = -(-x mod 1)
+x mod -y = x - -y * floor (x/-y) = -(-x - y * floor (-x/y)) = -(-x mod y)
+0 <= (x mod y)/y < 1
+
+
+x mod 0 = x
+c(x mod y) = cx mod cy, note when c = -1
+
+
+
+[integer n] ==>> n = floor(n/2) + ceil(n/2)
+n = q*m + r = floor(n/m) m + (n mod m) = floor(n/m) * (m - r) + ceil(n/m) * r
+n = sum floor ((n+i)/m) {i=0..m-1} = sum ceil ((n-i)/m) {i=0..m-1}
+floor (m*x) = sum floor (x + i/m) {i=0..m-1}
+
+
+sum floor ((x+kn)/m) {k=0..m-1} where [integer m,n] [m>0]
+= sum floor ((x+floor(kn/m)m+(kn mod m))/m) {k=0..m-1}
+= sum floor((x+(kn mod m))/m) + floor(kn/m) {k=0..m-1}
+= sum floor((x+(kn mod m))/m) + kn/m - (kn mod m)/m {k=0..m-1}
+= sum floor((x+(kn mod m))/m) {k=0..m-1}
+  + sum kn/m {k=0..m-1}
+  - sum (kn mod m)/m {k=0..m-1}
+  
+    sum kn/m {k=0..m-1} = n/m * sum k {k=0..m-1} = n/m * m(m-1)/2 = n(m-1)/2
+    
+    let d = gcd(n,m), n = d*t, m = d*s
+    sum (kn mod m)/m {k=0..m-1} = sum d(kt mod s)/m {k=0..m-1}
+    = sum kt mod s {k=0..m-1} / s = d * sum kt mod s {k=0..s-1} / s
+    = d * sum k {k=0..s-1} / s = d*s(s-1)/2/s = d(s-1)/2 = (m-d)/2
+
+    sum floor((x+(kn mod m))/m) {k=0..m-1}
+    = sum floor((x+d(kt mod s))/d/s) {k=0..m-1}
+    = sum floor((x/d+(kt mod s))/s) {k=0..m-1}
+    = d * sum floor((x/d+(kt mod s))/s) {k=0..s-1}
+    = d * sum floor((x/d+k)/s) {k=0..s-1}
+    = d*floor(x/d)
+==>> sum floor ((x+kn)/m) {k=0..m-1} = d*floor(x/d) + n(m-1)/2 - (m-d)/2
+    = d*floor(x/d) + (n-1)(m-1)/2 + (d-1)/2
+    = sum floor ((x+km)/n) {k=0..n-1} where [integer m,n] [m,n > 0]
+    
+--------------------------------------------
+
+
+
+chapter 4
+
+x divides y : [x\y] <==> [x > 0] [integer m] [mx = y]
+assert [! -1\y]
+[y multiple of x] <==> [integer m] [mx=y]
+
+gcd = greatest common divisor
+gcd(x,y) = max {z | z\x, z\y} > 0, where (x,y) != (0,0)
+lcm = least common multiple
+lcm(x,y) = min {z | x\z, y\z} > 0, where x,y > 0
+
+0 <= m <= n, n > 0
+    gcd(0, n) = n, n > 0
+    gcd(m, n) = gcd(n mod m, m), 0 < m <= n
+undefined = gcd(0,0)
+
+
+
+sum a[i] {i\n} = sum a[n/i] {i\n} = sum sum [n=ik]a[i] {i>0}{integer k}
+sum sum a[i,j] {j\i}{i\n} = sum sum a[i,j] {j\i\n}{j\n} = sum sum a[kj,j] {kj\n}{j\n} = sum sum a[kj,j] {k\(n/j)}{j\n}
+
+
+----------------------------------------
+~=~ : is asymptotic to
+P[n] = nth prime ~=~ n*ln(n)
+prime_pi(x) = pie(x) = number of primes not exceeding x ~=~ x/ln(x)
+    D x ln x {x} = 1+ln x
+    D**2 x ln x {x}**2 = 1/x
+    D**k x ln x {x}**k = II -i {i=1..k-2} / x**(k-1) for k >= 2
+        = (-1)**k * (k-2)! / x**(k-1) for k>=2
+    f(x) = x ln x = sum D**i(f)(1)/i! (x-1)**i {int i >= 0}
+        = 0 + (x-1) + sum (-1)**i * (i-2)!/i! (x-1)**i {int i >= 2}
+        = -(1-x) + sum (1-x)**i/i/(i-1) {i >= 2}
+    D**i f(x+1) {x}**i = D**i(f)(x+1)
+    f(x+1) = sum D**i(f)(1+1)/i! (x-1)**i {int i >= 0}
+        = 2ln2 + (1+ln2)(x-1) + sum (-1)**i*(i-2)!/2**(i-1)/i! (x-1)**i {int i >= 2}
+        = 2ln2 - (1+ln2)(1-x) + sum (1-x)**i/i/(i-1)/2**(i-1) {i >= 2}
+    f(x+1) - f(x) = 2ln2 - ln2(1-x) + sum (1-x)**i/i/(i-1)(1/2**(i-1)-1) {i >= 2}
+    T P[n] = P[n+1]-P[n] ~=~ (n+1)*ln(n+1) - n*ln(n)
+    = n(ln(n+1)-ln n) + ln(n+1) = n integrate 1/x {x=n->n+1} + ln(n+1) <= 1+ln(n+1)
+    ? prime_gap(n) = P[n+1]-P[n] <= ? about 1+ln(n+1) = O(ln n)
+    prime_gap(n)/P[n] = ?
+    next_prime(x) = -x + min inv(pie)(pie(x)+1)
+    g(x) = next_prime(x)/x <= g(min inv pie pie(x)) = -1 + (min inv pie (pie(x)+1))/(min inv pie pie(x))
+
+[x >= 67] ==>> x/(ln x - 1/2) < pie(x) < x/(ln x - 3/2)
+[n >= 20] ==>> n(ln n + lnln n - 3/2) < P[n] < n(ln n + lnln n - 1/2)
+
+----------------------------------------
+
+n!**2 = II i(n+1-i) {i=1..n} 
+    >= II n {i=1..n} = n**n
+    <= II (n+1)**2/4 {i=1..n} = ((n+1)/2)**(2n)
+n**(n/2) <= n! <= ((n+1)/2)**n
+n! ~=~ sqrt(2*pi*n)(n/e)**n //Stirling's approximation
+
+exponent_of(p, n) = k where [p**k\n][! p**(k+1)\n]
+                  = sum [p**i\n] {integer i >= 1}
+
+exponent_of(p, n!) = sum floor(n/p**i) {integer i >= 1}
+                   < floor sum n/p**i {i>=1} = floor (n/(p-1))
+II p**(1/(p-1)) {prime p} = 2**sum lg p /(p-1) < 2**sum 1/(p-1) < 2**Hn(inf) = inf
+
+
+[x**k > log x] for x>0, B>=3/2, k>=1
+    [log x = lnx/lnB][f(x) = x**k-log x = x**k - 1/k log x**k]
+    [f'(x) = k*x**(k-1)-1/x/ln B = 1/x(k*x**k-1/lnB)]
+    [f'(x) = 0] ==>> [x**k = 1/k/lnB] ==>> [x0 = 1/(klnB)**(1/k)]
+    [f(x0) = 1/k/lnB - 1/k * log (1/k/lnB) = 1/k/lnB(1+lnB log(klnB)) = 1/k/lnB(1+ln(klnB))] ==>> [klnB > 0]
+    [min f(x) {x>0} = f(x0) >= 0] 
+        ==>> [klnB > 0][1+ln(klnB) >= 0]
+        ==>> [klnB>=1/e] 
+        ==>> [B>1][k>=1/e/lnB] or [B<1][k<=1/e/lnB]
+        <<== [k >= 1 >= 1/e/lnB]
+        <<== [B>1][lnB>=1/e]
+        <<== [B>e**(1/e)] <<== [B>=3/2]
+
+[f(x)=b**(x-t) - x >= 0] for x>=0, b>1, t<=1
+    <<== [min f(x) {x>=0} >= 0]
+    <<== [f(0)=b**-t >= 0] [f'(x)=b**(x-t)lnb - 1 >= 0 for x>=0]
+        or [f'(a)=0][a>=0][f(a)>=0]
+    <<== [b>0][(x-t)lnb - lnlnb >= 0] or [b>0][a=t+lnlnb/lnb][f(a)>=0]
+    <<== [b>0][lnb>0][x>=t+lnlnb/lnb] or [b>0][f(a)=lnb-a>=0]
+    <<== [b>1][x>=t+1] or [b>0][t<=lnb-lnlnb/lnb]
+    <<== [b>1][t<=-1] or [b>0][y=lnb>0][t<=y-lny/y] #since y**2 > lny for y>0
+    <<== [b>1][y=lnb][t<=y-lny/y]
+    <<== [b>1][t <= min y-lny/y {real y>0}]
+        g(y) = y-lny/y; g'(y) = 1+(lny-1)/y**2
+        g'(z)=0 ==>> z**2 = 1-lnz ==>> z**2+lnz = 1 ==>> z=1
+        g(z) = (z**2-lnz)/z = 1/z = 1
+    <<== [b>1][t<=1]
+==>> p <= 2**(p-1)
+
+
+----------------------------------------
+
+relatively prime: m _L n <==> gcd(m, n) = 1 ==>> [integer m,n]
+
+
+Stern-Brocot tree : 
+    m'/n' = (m1+m2)/(n1+n2)
+    m1/n1 < m'/n' < m2/n2
+    m2n1 - m1n2 = 1
+    
+    0/1                                   1/0
+    0/1             1/1                   1/0
+    0/1     1/2     1/1     2/1           1/0
+    0/1 1/3 1/2 2/3 1/1 3/2 2/1 3/1       1/0
+
+    1/1 = '' = (0; 1) = 0 + 1/1
+    2/3 = 'LR' = (0; 1, 1, 1) = 0 + 1/(1+1/(1+1/1..)
+    3/2 = 'RL' = (1; 1, 1) = 1/(1+1/(1+1/1..)
+    4+1/(2+1/(3+1/(5+1/1..) = (4;2,3,5,1) = 195/44 = 'RRRRLLRRRLLLLL'
+Farey series of order N >= 1: 
+    all reduced fractions between 0 and 1 whose denominators are N or less,
+    arranged in increasing order
+    Farey(3) = (0/1 1/3 1/2 2/3 1/1)
+
+
+----------------------------------------
+a is congruent to b modulo m
+[a == b (mod m)] <==> [a mod m = b mod m] <==> [(a-b) multiple of m]
+
+[a == b][c == d](mod m) ==>>
+    a = k1*m+r1, c = k2*m+r2, integer k1,k2
+    ac = m(k1k2m + k1r2 + k2r1) + r1r2 = mk+r1r2
+    [ac==r1r2] <<== [integer k] <<== ????????
+    
+    [integer b,c] ==>> [ac-bd = (a-b)c+b(c-d) ==0] ==>> [ac==bd]
+[a==b][integer a,b,n][n>=0] ==>> [a**n==b**n]
+
+
+[integer a,b,m,d][(m,d)!=(0,0)] ==>> "ad==bd (mod m) <--> a==b (mod m/gcd(d,m))"
+
+[integer d][a==b (mod md)] ==>> [a==b (mod m)]
+[integer m,n > 0] ==>> "[a==b (mod m)][a==b (mod n)] <--> [a==b (mod lcm(m,n))]"
+
+
+
+
+
+
+
+
+residue number system
+Res(x) = (x mod m[1],..., x mod m[r]), [m[i] _L m[j]] if [i!=j]
+M[i] mod m[i] = 1, M[i] mod II m[j] {[j=1..r][j!=i]} = 0
+x == sum Res(x)[i]*M[i] {i=1..r} (mod II m[i] {i=1..r})
+
+
+
+(p-1)! == -1 (mod p) <==> [prime p]
+
+
+
+
+--------------------------
+4.9
+
+__next_all__:
+    m = sum [d\m]phi(d)
+    [m=1] = sum [d\m]mu(d)
+    g(x) = sum [d>0]f(x/d) <==> f(x) = sum [d>0]mu(d)g(x/d) for real x
+    g(m) = sum [d\m]f(d) <==> f(m) = sum [d\m]mu(d)g(m/d)
+        ==>> [multiplicative g] = [multiplicative f]
+
+    phi(m) = m II [prime p][p\m](1-1/p)
+    mu(m) = [not p**2\m](-1)**r if m = II [i=0..r][prime p[i]]p[i]
+    phi(m) = sum [d\m]mu(d)m/d
+--------------------------
+phi = Euler's totient function = number of relatively prime to m in [0..m-1]
+phi(m) = m II (1-1/p for prime p if p\m) for any positive integer m
+       = m II [prime p][p\m](1-1/p) for m > 0
+0/12, 1/12...11/12 = 0/1, 1/12, 1/6... -> 0/1; 1/2; 1/3, 2/3;... 
+    ==>> m = sum (phi(d) for integer d if d\m) 
+           = sum [d\m]phi(d)
+
+
+
+
+mu = Mobius function
+mu(m) for m > 0
+sum [d\m]mu(d) = [m=1]
+    [prime p] ==>> sum [i=0..k]mu(p**i) = [p**k=1] = [k=0]
+    ==>> mu(1) = 1, mu(p) = -1, mu(p**i) = 0 if i > 1
+
+g(x) = sum [d>0]f(x/d) <==> f(x) = sum [d>0]mu(d)g(x/d) for real x
+    g(x) = sum [d>0]f(x/d) ==>> 
+        sum [d>0]mu(d)g(x/d) = sum [d>0]mu(d)sum [k>0]f(x/(kd)) 
+        = sum [k>0][d>0]mu(d)f(x/d/k)
+        = sum [D>0]f(x/D)sum [d\D]mu(d)
+        = sum [D>0]f(x/D)[1=D]
+        = f(x)
+    f(x) = sum [d>0]mu(d)g(x/d) ==>>
+        sum [d>0]f(x/d) = sum [d>0]sum [k>0]mu(k)g(x/d/k)
+        = sum [d>0][k>0]mu(k)g(x/d/k)
+        = sum [D>0]g(x/D)sum [d\D]mu(d) 
+        = sum [D>0]g(x/D)[1=D] 
+        = g(x)
+g(m) = sum [d\m]f(d) <==> f(m) = sum [d\m]mu(d)g(m/d)
+    g(m) = sum [d\m]f(d) ==>> 
+        sum [d\m]mu(d)g(m/d) = sum [kd\m]mu(d)f(k) 
+        = sum [k\m]f(k)sum [d\m/k]mu(d)
+        = sum [k\m]f(k)[1=m/k]
+        = f(m)
+    f(m) = sum [d\m]mu(d)g(m/d) ==>>
+        sum [d\m]f(d) = sum [kd\m]mu(k)g(m/(kd)) 
+        = sum [kd\m]g(m/(kd))sum [k\kd]mu(k) 
+        = sum [kd\m]g(m/(kd))[1=kd] 
+        = g(m)
+
+
+
+
+multiplicative:
+    A function f(m) of positive integers is called multiplicative if 
+    f(1) = 1
+    f(m1 m2) = f(m1)f(m2) whenever m1 \T m2
+    
+if g(m) = sum [d\m]f(d), then [multiplicative g] = [multiplicative f]
+    g(m) = sum [d\m]f(d) ==>> g(1) = f(1)
+    [multiplicative g] ==>> 1 = g(1) = f(1) ==>>
+        let ab=m and [a \T b]:
+        g(ab) = sum [cd\ab]f(cd)
+        by induction:
+        = sum [c\a][d\b]f(c)f(d) - f(ab) + f(a)f(b)
+        = sum [c\a]f(c) * sum [d\b]f(d) - f(ab) + f(a)f(b)
+        = g(a)g(b) - f(ab) + f(a)f(b)
+        ==>> f(ab) = f(a)f(b)
+    [multiplicative f] ==>>
+        g(ab) = sum [cd\ab]f(cd) = g(a)g(b) - f(ab) + f(a)f(b) = g(a)g(b)
+
+note that 
+    "m     = sum [d\m]phi(d) and id    is multiplicative"
+    "[m=1] = sum [d\m]mu(d)  and [m=1] is multiplicative"
+    so, phi and mu are multiplicative
+[multiplicative mu] ==>> mu(m) = [not p**2\m](-1)**r if m = II [i=0..r][prime p[i]]p[i]
+
+
+
+
+
+
+
+
+
+
+----------------------------------------
+N(L,C) = number of possible circle necklaces of length L, number of colors C
+
+C**L <= L*N(L,C)
+    = sum sum [(c[1],...,c[L])=(c[k],...,c[L],c[1],...,c[k-1])] {k=1..L} {(c[1],...,c[L]) in colors**L}
+    = sum sum [(c[1],...,c[L])=(c[k],...,c[L],c[1],...,c[k-1])] {(c[1],...,c[L]) in colors**L} {k=1..L}
+    = sum C**gcd(L,k-1) {k=1..L}
+    = sum C**gcd(L, T) {T=0..L-1}
+    = sum C**d sum [d=gcd(L,T)] {T=0..L-1} {d\L}
+    = sum C**d * phi(L/d) {d\L}
+N(L,C) = 1/L * sum phi(L/d) C**d {d\L}
+
+
+
+
+
+
+
+----------------------------------------
+
+chapter 5
+
+C(n,k) = binomial_coefficient(n,k) = n choose k
+= n!/k!/(n-k)! where [integer n,k][0<=k<=n]
+
+C(z, k) = [k>=0]fall(z,k)/k!, for integer k
+    = a kth-degree polynomial about x when k >= 0
+    [complex z]
+
+symmetry:
+    C(n, k) = C(n, n-k) for [integer n,k] [n >= 0]
+    C(-1, k) = (-1)**k != 0 = C(-1, -1-k) for [integer k >= 0]
+move things in and out:
+    C(x, k) = x/k C(x-1, k-1) for [integer k][k!=0]
+    k C(x,k) = x C(x-1, k-1) for [integer k]
+    (x-k) C(x,k) = (fall(x,k+1)/k! when integer x,k >= 0) 
+        = x C(x-1,k) for [integer k] //polynomial argument
+
+
+addition formula:// works nicely with mathematical induction
+    C(x,k) = C(x-1,k-1) + C(x-1, k) for [integer k] // Pascal's triangle
+    1) = sum C(x-i, k-1) {i=1..K} + C(x-K, k)
+        ==>> C(n+1, k+1) = sum C(n+1-i, k+1-1) {i=1..K} + C(n+1-K, k+1)
+                = sum C(n+1-i, k) {i=1..n+1} 
+                = sum C(i, k) {i=0..n} for [integer n,k >= 0]
+    2) = sum C(x-i-1, k-i) {i=0..K-1} + C(x-K, k-K) 
+        = sum C(x-i-1, k-i) {i=0..k}
+        = sum C(x-k-1 + i,i) {i=0..k}
+        ==>> sum C(x+i, i) {i=0..k} = C(x+k+1,k) for [integer k]
+    
+    1) summation on the upper index:
+    C(n+1, k+1) = sum C(i, k) {i=0..n} for [integer n,k >= 0]
+        C(i, k) : selected (i+1), the max; choose k numbers from [1..i]
+    2) C(x+k+1,k) = sum C(x+i, i) {i=0..k} for [integer k]
+        assume [integer x] 
+        C(x+i, i) : selected [x+k+2-(k-i)..x+k+1], the (k-i) max's;
+            and not selected (x+k+1-(k-i))
+            choose i numbers from [1..x+k-(k-i)] = [1..x+i]
+
+upper negation:
+    C(-x, k) = [k>=0]fall(-x,k)/k! = [k>=0]rise(-x-(k-1),k)/k! 
+        = [k>=0](-1)**k * fall(x+(k-1),k)/k!
+        = (-1)**k * C(x+(k-1), k) for [1\k]
+    C(x, k) = (-1)**k * C((k-1)-x, k) for [1\k]
+        = (-1)**(2k) * C((k-1)-((k-1)-x), k)
+    (-1)**m C(-n-1, m) = C(n+m, m) = C(m+n, n) = (-1)**n C(-m-1, n) for [integer m,n >= 0]
+
+    sum C(x,i)(-1)**i {[1\i][i<=m]} = sum C(i-1-x, i) {i=0..m}
+        = C((-1-x)+m+1, m) = C(m-x, m) = C(x-1, m)(-1)**m for [integer m]
+        0 = (-1 + 1)**n = sum C(n, i)(-1)**i {i=0..n} for [1\n][n>=1]
+            = sum C(n, i)(-1)**i {i=0..m} for [1\n][1\m][m>=n>=1]
+        1 = sum ... if n == 0
+        ==>> sum C(x, i)(-1)**i {i=0..m} = K II (x-i) {i=1..m} for [integer m >= 1] and 1 = K II (0-i){i=1..m} ==>> K = (-1)**m/m!
+        sum C(x, i)(-1)**i {i=0..m} = (-1)**m II (x-i) {i=1..m}/m! = (-1)**m C(x-1, m)
+        ==>> II (x-i) {i=1..m} = m!*sum C(x, i)(-1)**(m-i) {i=0..m}
+        ==>> sum C(x, i)(-1)**i {i=0..m} = (-1)**m C(x-1,m) = C(m-x,m)
+    
+    --------
+    (1+1)**n = sum C(n, i) {i=0..n} for [1\n][n>=1]
+        = sum C(n, i) {i=0..m} for [1\n][1\m][m>=n>=1]
+    ==>> 2**x = poly(x, m) for x in [1..m][integer x]
+    ??????????????
+    poly(x) = sum C(x, i) {i=0..m} for [integer m >=0]
+        = 1/m! * sum (-1)**k * fall(2k, k) * C(m, 2k) * rise(x+1-k, m-k) {1\k, k>=0}
+        = sum (-1)**k * fall(2k, k) /k!/(m-k)! * rise(x+1-k, m-k) {k=0..m//2}
+        = sum (-1)**k * C(2k, k) * C(x+1-k+(m-k)-1, m-k) {k=0..m//2}
+        = sum (-1)**k * C(2k, k) * C(x+m-2k, m-k) {k=0..m//2}
+
+    -------
+    (1+z)**n = sum C(n, i)z**i {i=0..n} for [1\n][n>=1]
+        = sum C(n, i)z**i {i=0..m} for [1\n][1\m][m>=n>=1]
+    ==>> t**x = (1+z)**x = poly(x, m) for x in [0:m+1)
+    poly(x, m) = sum C(x, i)z**i {i=0..m}
+    [.x**k]poly(x, m) = sum [.x**k]C(x, i)z**i {i=0..m}
+        = sum [.x**k]fall(x, i)z**i/i! {i=0..m}
+        = sum ([k==i] + [k<i] sum II -a[d] {[d=1..i-k]} {[integer 0<=a[1]<...<a[i-k]<i]}) z**i/i!{i=0..m}
+        = z**k/k! + sum sum II -a[d] {[d=1..D]} {[integer 0<=a[1]<...<a[D]<D+k]} z**(D+k)/(D+k)!{D=1..m-k}
+        = z**k/k! + sum sum z**(D+k)/(D+k)! II -a[d] {[d=1..D]} {[integer 0<=a[1]<...<a[D]<D+k]} {D=1..m-k}
+        = z**k/k! + sum sum z**(D+k)/(D+k)! II -a[d] {[d=1..D]} {D=1..m-k} {[integer 0<=a[1]<...<a[D]<m]}
+
+
+
+
+T C(x, k) = C(x+1,k) - C(x,k) = C(x,k-1)
+sum C(x, k) t{x} = sum T C(x, k+1) t{x} = C(x, k+1) + C({.x})
+    ==>> sum fall(x,k) t{x} = k! sum C(x,k) t{x} = k! C(x,k+1) + C({.x}) 
+            = fall(x,k+1)/(k+1) + C({.x})
+
+binomial theorem
+    (x+y)**n = sum C(n,i)x**i * y**(n-i) {i=0..n} for [integer n >= 0]
+    def 0**0 = 1
+    z**0 = 1 for [complex z]
+    (x+y)**z = sum C(z,i)x**i * y**(z-i) {1\i} for [|x/y|<1] or [integer z >= 0]
+    (1+z)**t = sum C(t,i) z**i {1\i} for [complex z][|z|<1]
+Taylor
+    f(z) = sum D(f(z0),i)/i! * (z-z0)**i {[1\i][i>=0]}
+
+    sum C(x,i)(x/2-i) {i<=m} = C(r,m+1)(m+1)/2, for [int m]
+    no closed form even for int x: 
+        sum C(x,i) {i<=m} , 
+        sum C(x,i)*i {i<=m}
+
+
+sum C(m+z,i) x**i y**(m-i) {i<=m} = sum C(-z,i) (-x)**i (x+y)**(m-i) {i<=m} = S(m), for [int m]
+    [z=0] ==>> sum C(m,i) x**i y**(m-i) {i<=m} = (x+y)**m
+    [z=-m..0] ==>> 
+        left = sum C(m+z,i) x**i y**(m+z-i) y**(-z) {i=0..m+z} 
+        = y**(-z)(x+y)**(m+z) = (-x+x+y)**(-z) (x+y)**(m+z) 
+        = sum C(-z,i) (-x)**i (x+y)**(-z-i) (x+y)**(m+z) {i<=m} 
+        = right
+    S(m) = [m=0] for m <= 0
+    S(m) = (x+y)S(m-1) + C(-r,m)(-x)**m, for [int m]
+    
+    [x=-1][y=1] ==>> sum C(m+z,i) (-1)**i {i<=m} = C(-z,m)
+    [x=y=1][z=m+1] ==>> sum C(2m+1,i) {i<=m} = sum C(-(m+1),i) (-1)**i 2**(m-i) {i<=m}
+        sum C(2m+1,i) {1\i}/2 = sum C(m+i,i) 2**(m-i) {i<=m}
+        2**(2m) = 2**m sum C(m+i,i) 2**(-i) {i<=m}
+        2**m = sum C(m+i,i) 2**(-i) {i<=m}
+
+
+product
+    C(x, m)C(m, k) = C(x,k)C(x-k,m-k) for [int m,k]
+        if int x ==>> numbers of ways of divide x into [x-m|m-k|k]
+trinomial theorem
+    (x+y+z)**n = sum x**a y**b z**c (a+b+c)!/(a!b!c!) {int a,b,c;a+b+c=n} for int n
+        = sum x**a y**b z**c C(a+b+c,b+c)C(b+c,c) {int a,b,c;a+b+c=n}
+
+multinomial coefficients:
+    C[a[1]|a[2]|...|a[n]] = C(a[1]+...+a[n]; a[1],...,a[n]) 
+    = C(a[1]+...+a[n], a[2]+...+a[n])*C(a[2]+...+a[n], a[3]+...+a[n])*...*C(a[n-1]+a[n], a[n])
+    C(m+n,m) = C[n|m] for int n,m
+
+
+
+// create a double sum for which we can interchange the order of summation and then simplify
+both lower indices change
+    Vandermonde's convolution
+    sum C(x,a)C(y,b){int a,b; a+b=n} = C(x+y,n) for int n
+    sum C(m,a)C(y,b){int a,b; a-b=k} = (when m>=0:sum C(m,m-a)C(y,b){int m-a,b; (m-a)-b=k}) = C(m+y,m-k) for [int m,k][m>=0]
+        [m=-1][k=1] ==>> left = C(-1,1)C(y,0)+C(-1,2)C(y,1)+... != 0 = C(-1+y, -1-1) = right
+        
+both upper indices change
+    sum C(k_th-1, k-1)C(n-k_th, m-k) {k_th=1..n} = C(n,m), 
+    for [int n,m,k][k-1, m-k, n >= 0]==>>[1<=k<=m][n>=0]
+        choose m numbers from [1..n]: a[1] < a[2] <... < a[m] ==>> n>=0, m>=1
+        let k_th = a[k] ==>> 1<=k<=m, 1<=k_th<=n
+        choose (k-1) numbers from [1..k_th-1]
+        choose (m-k) numbers from [k_th+1..n]
+        
+        
+
+one lower index and other upper index vary
+1) sum C(n,i)C(x-i, k)(-1)**i {1\i} = C(x-n, k-n) for [n>=0][int n,k]
+2) sum C(x,i)C(n-i, k)(-1)**i {i<=n} = C(n-x, n-k) for [k>=0][int n,k]
+
+    sum C(n,i)C(x-i, k)(-1)**i {1\i} = C(x-n, k-n) for [n>=0][int n,k]
+        [k<n] ==>> 0 = sum C(n,i)C(x-i, k)(-1)**i {1\i}
+        [k=n] ==>> 1 = sum C(n,i)C(x-i, n)(-1)**i {1\i}
+    sum C(n,i)C(x+i, k)(-1)**i {1\i} = (-1)**n C(x, k-n) for [n>=0][int n,k]
+        left = sum C(n,n-i)C(x+n-i, k)(-1)**(n-i) {1\i}
+        = (-1)**n sum C(n,i)C((x+n)-i, k)(-1)**i {1\i}
+        = (-1)**n C(x, k-n)
+        
+        [k<n] ==>> 0 = sum C(n,i)C(x+i, k)(-1)**i {1\i}
+        [k=n] ==>> (-1)**n = sum C(n,i)C(x+i, n)(-1)**i {1\i}
+    
+        org: sum C(n, m+i)C(x+m+i, k)(-1)**i {1\i} = (-1)**(n+m) C(x, k-n) [n>=0][int n,m,k]
+            left = sum C(n, i)C(x+i, k)(-1)**(i-m) {1\i}
+    
+    sum C(x,i)C(n-i, m)(-1)**i {i<=n} = C(n-x, n-m) for [m>=0][int n,m]
+        org: sum C(n-i, m)C(x,i-k)(-1)**i {i<=n} = (-1)**(n+m) C(x-m-1, n-m-k) for [int n,m,k>=0]
+        sum C(n-k-i, m)C(x,i)(-1)**(i+k) {i<=n-k} = (-1)**(n+m) C(x-m-1, n-m-k)
+        sum C(n-k-i, m)C(x,i)(-1)**i {i<=n-k} = (-1)**(n-k+m) C(x-m-1, n-m-k)
+        sum C(n-i, m)C(x,i)(-1)**i {i<=n} = (-1)**(n+m) C(x-m-1, n-m) for [int n,m][m>=0]
+            = (-1)**(n-m) C(x-m-1, n-m) = C(n-x, n-m)
+        sum C(x,i)C(n-i, m)(-1)**i {i<=n} = C(n-x, n-m) for [m>=0][int n,m]
+        sum C(x,i)C(n-i, k)(-1)**i {i<=n} = C(n-x, n-k) for [k>=0][int n,k]
+            [k=0] ==>> sum C(x,i)(-1)**i {i<=n} = C(n-x, n) for [int n]
+            [k=n] ==>> 1 = sum C(x,i)C(n-i, n)(-1)**i {i<=n} = C(x,0)C(n-0,n)
+            [k>n] ==>> 0 = 0
+        
+
+
+
+
+
+-------------------------------------
+
+duplication formula // 1/2
+
+fall(x, k) fall(x-1/2, k) = fall(2x, 2k) / 2**(2k), for [int k][k>=0]
+    div k!k! ==>> C(x,k)C(x-1/2,k) = C(2x,2k)C(2k,k)/2**(2k) for [int k]
+    [x=k] ==>> (-1)**k C(-1/2,k) = C(k-1/2,k) = C(2k,k)/2**(2k) for [int k]
+    
+    C(2k,k) = (-4)**k C(-1/2,k) // remove upper 2k
+    ==>> sum C(2m,m)C(2n,n) {m+n=k} = 4*k
+    
+
+
+
+-------------------------------------
+
+High-order differences  // C(n,i)(-1)**i
+
+T f x = f (x+1) - f x = E f x - f x = (E-1) f x
+T.T f x = T f (x+1) - T f x = f (x+2) - f(x+1) - (f (x+1) - f x)
+    = f (x+2) - 2 f (x+1) + f x
+T**n f x = (-1)**n sum C(n,i)(-1)**i f (x+i) {i}
+T**n = (E-1)**n = sum C(n,i) E**i (-1)**(n-i) {i}
+E**n = E.E...E; E**n f x = f (x+n)
+
+
+1/x = fall(x-1, -1)
+    T**n ==>> (-1)**n sum C(n,i)(-1)**i 1/(x+i) {i} = II(-i){i=1..n} fall(x-1, -(n+1))
+        ==>> sum C(n,i)(-1)**i 1/(x+i) {i} = n! 1/fall(x+n, n+1) = 1/(n+1)/C(x+n,n+1)
+        where x not in [-n..0]
+    
+
+
+if f is a polynomial of degree d, T f is of (d-1)
+    T**d f x = CONSTANT; T**(>d) f x = 0
+    Newton series of f(x):
+        f x = sum c[i]C(x, i) {i=0..d}
+        T C(x,k) = C(x,k-1) ==>> T f x = sum c[i]C(x, i-1) {i=0..d} = sum c[i+1]C(x, i) {i=0..d-1}
+        T**n f 0 = [0<=n<=d]c[n]
+        f x = sum (T**i f 0)C(x, i) {i=0..d}
+        f x = sum (T**i f 0)/i! fall(x, i) {i=0..d} 
+        // fall(x,i) ~ x**i; T**i f 0 ~ D**i f 0
+        
+        to calc c[i], we needs f([0..d])
+
+        c[n] = T**n f 0 = (-1)**n sum C(n,i)(-1)**i f (0+i) {i}
+            = (-1)**n sum C(n,i)(-1)**i sum c[k]C(i, k) {k=0..d} {i}
+            = (-1)**n sum sum C(n,i)(-1)**i c[k]C(i, k) {i} {k=0..d}
+            = (-1)**n sum c[k] sum C(n,i)(-1)**i C(i, k) {i} {k=0..d}
+            ==>> 1 = (-1)**n sum C(n,i)(-1)**i C(i,n) {i} // here k=n
+                0 = sum C(n,i)(-1)**i C(i, k) {i} for [k!=n][k=0..d]
+                    true for [k>n]
+                    [k=0..n-1] ==>> right = (-1)**n C(0,k-n<0)=0 since sum C(n,i)C(x+i, k)(-1)**i {1\i} = (-1)**n C(x, k-n) for [n>=0][int n,k]
+
+
+f(x) = C(a*x+b, d) 
+    ==>> a**d/d! = [.x**d]f(x) = Newton_series(f,d)/d! 
+    ==>> a**d = T**d f 0 = (-1)**d sum C(d,i)(-1)**i f (0+i) {i}
+    ==>> (-a)**d = sum C(d,i)(-1)**i C(a*i+b, d) {i} [int d >= 0]
+
+
+infinite Newton series
+    f n = sum (T**i f 0)C(n, i) {int i >= 0} for [int n >= 0] // interpolate to real may be wrong
+    f z0+n = sum (T**i f z0)/i! fall(n, i) {int i >= 0} for [int n >= 0][complex z0]
+    may or may not converge
+    
+    f (x) = (1+z0)**x where [|z0|<1][complex z0]
+        T**n f x = z0**n f x
+        f a+k = sum (T**i f a)/i! fall(k, i) {int i >= 0}
+            = (f a) sum z0**i/i! fall(k, i) {int i >= 0}
+        (f a+k)/(f a) = (1+z0)**k = sum z0**i/i! fall(k, i) {int i >= 0} for [int k >= 0]
+        converge for complex k
+
+------
+use Newton series to generalize the factorial function // James Stirling
+    since factorial function define above nonnegative integers...
+    Newton series of factorial(n) ==>> not converge unless [int x >= 0]
+    Newton series of ln(factorial(n)) ==>> converge for [real x>-1]
+    
+
+------
+
+inversion formula 
+
+
+[int n >= 0] ==>>
+    g n = (-1)**n T**n f 0 <==> f n = (-1)**n T**n g 0
+    g n = sum C(n,i)(-1)**i f(i) {i} <==> f n = sum C(n,i)(-1)**i g(i) {i}
+    g n = (-1)**n T**n f 0 = sum C(n,i)(-1)**i f(0+i) {i} for [int n>=0]
+    f n = sum (T**i f 0)C(n, i) {i} = sum C(n, i) (-1)**i g (i) for [int n>=0]
+
+[int n] ==>> // well, after all, only n>=0
+    F f n = sum C(n,i)(-1)**i f(i) {i} 
+        = sum C(n,i)(-1)**i f(i) {i>=0}
+
+    F f -1 = sum C(-1,i)(-1)**i f(i) {i} = sum [i>=0]f(i) {i}
+    F f -2 = sum [i>=0](i+1)f(i) {i}
+    [n>0] ==>> F f -n = sum C(n+i-1,i) f(i) {i>=0} 
+        = sum C(n+i-1,n-1) f(i) {i>=0}
+    
+    F f n ~ f (i>=0) // f need not define above negatives
+    // we donot care F f (i<0), too
+    
+    prove F.F = 1 // F.F f n = f n, for n >= 0
+    [int n>=0] ==>> f n =?= sum C(n,i)(-1)**i sum C(i,j)(-1)**j f(j) {j} {i}
+    right = sum f(j) (-1)**j sum C(n,i)C(i,j) (-1)**i {i} {j}
+    sum C(n,i)C(i,j) (-1)**i {i} = sum C(n,j)C(n-j,i-j) (-1)**i {i}
+        = (when int n>=j for symmetry or int n and j>n>=0 for C(n,j)=0) 
+            (that is int n>=0)C(n,j) sum C(n-j,i) (-1)**(i+j) {i}
+        = C(n,j) (-1)**j sum C(n-j,i) (-1)**i {i}
+        = C(n,j) (-1)**j [n-j=0]
+    right = sum f(j) (-1)**j C(n,j) (-1)**j [n-j=0] {j}
+        = f(n)C(n,n) = f(n) = left
+
+
+    S f n = (-1)**n f n
+    S.S = 1
+    
+    G f n = F.S f n = sum C(n,i)f(i) {i}, for n>=0  // Newton series
+    H f n = S.F f n = sum C(n,i)(-1)**(n-i) f(i) {i}, for n>=0  // H f n = T**n f 0
+    H.G = S.F.F.S = 1
+    G.H = F.S.S.F = 1
+
+
+derangement = permutation which moves every item
+subfactorial[n] = numbers of all derangements of n objects, int n>=0
+subfactorial[0] = 1
+subfactorial[1] = 0
+subfactorial[2] = 1
+subfactorial[3] = 2
+
+n! = sum C(n,i)subfactorial[i] {i} // subfactorial is Newton series of n!  !!!!!
+factorial = G.subfactorial
+==>> subfactorial = H.factorial
+    subfactorial[n] = sum C(n,i)(-1)**(n-i) i! {i>=0}
+        = sum fall(n,i)(-1)**(n-i) {i>=0}
+        = n! sum 1/(n-i)! (-1)**(n-i) {i>=0, n-i>=0}
+        = n! sum (-1)**i / i! {i=0..n}
+    [n>=0] ==>> subfactorial[n+1] = sum fall(n+1,i)(-1)**(n+1-i) {i>=0}
+        = sum (n+1)fall(n,i-1)(-1)**(n-(i-1)) {i>0} + (-1)**(n+1)
+        = (n+1)subfactorial[n] + (-1)**(n+1)
+    subfactorial[n] =  n subfactorial[n-1] + (-1)**n, for n>=1
+
+
+subfactorial[n] = n! sum (-1)**i / i! {i=0..n}
+    = n! sum (-1)**i / i! {i>=0} - n! sum (-1)**i / i! {i>n}
+    = n!/e + (-1)**n (1/(n+1) - 1/(n+1)/(n+2) + ...)
+    = n!/e + (-1)**n * (t which 1/(n+2) < t < 1/(n+1))
+    = n!/e + 1/2   +   (-1)**n * t - 1/2
+    // [n>=1] ==>> -1/2 < (-1)**n * t < 1/3 ==>> -1<tail<-1/6
+    = floor(n!/e + 1/2) + [n=0]
+subfactorial[n]/n! ~=~ 1/e = 0.36787944117144233 ~=~ 36.8%
+
+
+
+----------------------------------------
+
+generating function
+power series 
+
+A z = sum a[i]z**i {i>=0}
+[.z**i]A z = a[i]
+
+convolution
+    C z = A z * B z
+    c[n] = [.z**n]C z = sum a[i]b[n-i] {i=0..n}
+
+    let A z = (1+z)**x, B z = (1+z)**y
+        C(x+y, n) = c[n] = sum C(x, i)C(y, n-i) {i=0..n}
+    let A z = (1+z)**x, B z = (1-z)**x
+        C z = (1-z**2)**x
+        [even n]C(x,n/2)(-1)**(n/2) = sum C(x,i)C(x,n-i)(-1)**i {i=0..n}
+
+the upper index varies:
+    1/(1-z)**n = sum C((n-1)+i,(n-1))z**i {i>=0} for [int n]
+    1/(1-z)**x = sum C(-x, i) 1**(-x-i) * (-z)**i {i} for [|z|<1][real x]
+        = sum C((x-1)+i, i) z**i {i}
+    1/sqrt(1-4z) = 1/(1-4z)**(1/2) = sum C(i-1/2, i) (4z)**i {i}
+        = sum C(2i,i) z**i {i}
+
+---
+e**z = sum 1/i! z**i {i>=0}
+let D z = sum subfactorial(i)/i! z**i {i>=0}
+[.z**n]D(z)*e**z = sum subfactorial(i)/i! * 1/(n-i)! {i=0..n}
+    = 1/n! sum subfactorial(i) C(n,i) {i=0..n}
+    = 1
+==>> D(z)*e**z = 1/(1-z) ==>> D(z) = 1/(1-z)/e**z
+
+
+---
+generalized binomial series B t z
+    B t z = B(t,z) = B(t)(z) = sum fall(t*i, i-1)/i! z**i {i>=0}
+    = (if 0 != t*i-(i-1)) sum C(t*i, i)/(t*i-(i-1)) z**i {i>=0}
+    = (if 0 != (t-1)*i+1) sum C(t*i, i)/((t-1)*i+1) z**i {i>=0}
+    = (if 0 != (t-1)*i+1) sum C(t*i, i)/((t-1)*i+1) z**i {i>=0}
+    = 1/(0t+1) * z**0/0! + 1 * z**1/1! + (2t) * z**2/2! 
+    + (3t)(3t-1) * z**3/3! + (4t)(4t-1)(4t-2) * z**4/4!
+    + (5t)(5t-1)(5t-2)(5t-3) * z**5/5! + ...
+    = 1 + z + t z**2 + ...
+generalized exponential series E t z 
+    E t z = sum (t*i + 1)**(i-1)/i! z**i {i>=0}
+    = (0t+1)**(0-1) * z**0/0! + (1t+1)**(1-1) * z**1/1!
+    + (2t+1)**(2-1) * z**2/2! + (3t+1)**(3-1) * z**3/3! + ...
+    = 1 + z + (2t+1) z**2/2! + (3t+1)**2 * z**3/3! + ...
+    
+B 0 z = 1+z
+E 0 z = e**z
+
+B 1 z = 1+z+z**2+... = sum z**i {i>=0} = 1/(1-z)
+E 1 z = sum (i+1)**(i-1)/i! z**i {i>=0} = <1,1,3/2,16/6,125/24,...>
+    E 1 z = e**(z E 1 z)
+    E 1 . ln z = z ** (E 1 . ln z) = z**z**z**...
+
+B 2 z = sum C(2i, i)/(i+1) z**i {i>=0}  // C(2i, i)/(i+1) = Catalan_number[i]
+    = sum Catalan_number[i] z**i {i>=0}
+    = (1-sqrt(1-4z)) / (2z)
+    = sum C(2i+1, i)/(2i+1) z**i {i>=0}
+    (B 2 z)**x = sum C(2i+x, i) x/(2i+x) z**i {i>=0}
+    1/(B 2 z) = (B 2 z)**(-1) = sum -C(2i-1, i)/(2i-1) z**i {i>=0}
+        = 1 - z (B 2 z) = (1+sqrt(1-4z)) / 2
+        = 2z/(1-sqrt(1-4z)) = 2z(1+sqrt(1-4z))/(1-(1-4z)) 
+        = (1+sqrt(1-4z)) / 2
+
+    D z(B 2 z) {z} = sum C(2i, i) z**i {i>=0} = 1/sqrt(1-4z)
+        = D -sqrt(1-4z)/2 {z} = -1/2 * 1/2 / sqrt(1-4z) (-4) = 1/sqrt(1-4z)
+    
+B -1 z = sum C(-i, i)/(-2i+1) z**i {i>=0}
+    = sum C(2i-1, i)/(1-2i) (-z)**i {i>=0}
+    = 1 + sum -Catalan_number[i-1] (-z)**i {i>=1} = 1 + z(B 2 -z)
+    = (1+sqrt(1+4z)) / 2
+    = 1/(B 2 -z)
+    = sum C(1-i, i)/(1-i) z**i {i>=0}
+    (B -1 z)**x = sum C(x-i, i) x/(x-i) z**i {i>=0}
+    
+
+(B t z)**(1-t) - (B t z)**(-t) = z = (E t z)**(-t) ln(E t z)
+    (B t z) - z * (B t z)**t = 1
+    ln(E t z) = z * (E t z)**t
+
+
+-----------------------------
+hypergeometric series
+
+F [a1,...,am] [b1,...,bn] z = F(a1,...,am;b1,...,bn;z)
+    = sum II rise(a[i], k) {i=1..m} / II rise(b[i], k) {i=1..n} z**k/k! {k>=0}
+    = sum II fall(-a[i], k) {i=1..m} / II fall(-b[i], k) {i=1..n} (-1)**((m+n)*k) z**k/k! {k>=0}
+    for [complex b[i] but nonpositive integer]
+    upper parameters: [a1,...,am]
+    lower parameters: [b1,...,bn]
+    argument: z
+    
+    def G [a1,...,am] [b1,...,bn] z = sum II fall(a[i], k) {i=1..m} / II fall(b[i], k) {i=1..n} z**k/k! {k>=0}
+    ==>> F [...a[i]...] [...b[i]...] z = G [...-a[i]...] [...-b[i]...] (z(-1)**(m+n))
+    
+cancel/insert two identical parameters
+    F [...,a,b,c,...] [...,a',b,c',...] = F [...,a,c,...] [...,a',c',...]
+permutation
+    F [...,a,b,...] [...] = F [...,b,a,...] [...]
+    F [...] [...,a,b,...] = F [...] [...,b,a,...]
+differentation
+    let A = II a[i] {i=1..m} / II b[i] {i=1..n}
+    A = [.] F [a1,...,am] [b1,...,bn] z {z}
+    D F [a1,...,am] [b1,...,bn] z {z} 
+        = A * F [a1+1,...,am+1] [b1+1,...,bn+1] z
+
+
+    V f z = z D f z {z}
+    (V+x) f z = V f z + x * f z
+    (V+a1) F [a1,...] [...] = a1 F [a1+1,...] [...]
+    (V+b1-1) F [...] [b1,...] = (b1-1) F [...] [b1-1,...]
+
+    D II (V+b[i]-1) {i=1..n} F [...][...] = II (V+a[i]) {i=1..m} F [...][...]
+    [left - right = 0] is one type of differential equation
+    so, hypergeometrics solve this type:
+        z**(n-1)(u[n]-v[n]z) D**n F +...+ z**0(u[1]-v[1]z) D F + (-v[0]) F = 0
+
+F [...] [...] 0 = 1
+F [] [] z = e**z
+F [1] [] z = 1/(1-z)   // geometric series
+F [x] [] z = sum C(x+i-1, i)z**i {i>=0} 
+    = sum C(-x, i) (-z)**i {i>=0} 
+    = 1/(1-z)**x 
+    = (F [1] [] z)**x
+F [] [1] z = sum z**i/i!/i! {i>=0} = I 0 sqrt(4z)
+    // I 0 = modified Bessel function of order 0
+
+M = confluent hypergeometric series
+M a b z = F [a] [b] z
+
+ignore convergence of F if using z simply as a formal symbol
+    formal infinite sums of the form sum a[i] z**i {i>=0} form a field, 
+    if the coefficients a[i]s lie in a field
+    
+    We can add, subtract, multiply, divide, differentiate, 
+    and do functional composition on such formal sums 
+    without worrying about convergence; 
+    any identities we derive will still be formally true
+
+    whenever we replace z by a particular numerical value, 
+    we do have to be sure that the infinite sum is well defined
+
+
+F (a,b; c; z)
+    D ln (1+z) {z} = 1/(1+z) = sum (-z)**i {i>=0}
+    ln (1+z) = sum -(-z)**(i+1)/(i+1) {i>=0}
+        = sum -(-z)**i/i {i>=1}
+        
+        = sum z(-z)**i/(i+1) {i>=0}
+        = z sum (-z)**i/i! i!i!/(i+1)! {i>=0}
+        = z F(1,1; 2; -z)
+    F(1,1; 2; z) = ln (1-z) / -z
+
+F [a1,...,am] [b1,...,bm] z = sum c[k] z**k/k! {k>=0}
+c[k+1] z**(k+1)/(k+1)! / (c[k] z**k/k!) = c[k+1]/c[k] z/(k+1)
+    = II (k+a[i]) {i=1..m} / II (k+b[i]) {i=1..n} * z/(k+1)
+    = rational function of k
+
+sum t[k] {k>=0} = ?
+    if t[k+1]/t[k] is a rational function of k = P(k)/Q(k) * A,
+    let P(k) = II (k-a[i]) {i=1..m}
+    let Q(k) = II (k-b[i]) {i=1..n}
+
+    R[k] = t[k+1]/t[k] = P(k)(k+1)/Q(k) * A /(k+1)
+    sum t[k] {k>=0} = t[0] * F(1,-a1,...,-am; -b1,...,-bn; A)
+    = t[0](1+t[1]/t[0](1+...)) = t[0](1+R[0](1+R[1](1+R[2](1+...))))
+
+    sum t[k] {k<=n} = sum t[n-k] {k>=0} = ...
+
+
+----------
+
+generalize n!
+
+
+All of these approaches lead to the same generalized factorial function
+n! = inf for [int n < 0]
+z!  != 0 for [complex z]
+
+
+1) 1/z! = lim C(n+z,n) / n**z {int n->inf}
+    [int z < 0] ==>> right = 0
+    [int z >= 0] ==>> C(n+z,n) / n**z = (n+z)(n-1+z)...(1+z)/n!/n**z
+        = (1+z/n)(1+z/(n-1))...(1+z/1)/n**z
+        ??????????
+        
+        = C(n+z, z) / n**z = 1/z! * fall(n+z,z)/n**z -> 1/z!
+
+2) z! = integrate x**z e**(-x) {x=0->inf} for [Re(z) > -1]
+    and z! = (z+1)!/(z+1) for [Re(z) <= -1][not negative integer z]
+
+3) Stirling's interpolation of ln z!
+    Newton series of ln(factorial(n)) ==>> converge for [Re(x)>-1]
+    
+    ln n! = sum ln i {i=1..n}
+    L(n) = T ln n! {n} = ln (n+1) for [int n>=0]
+    T**(n+1) ln m! {m}**(n+1) = T**n ln (1+i) {i}**n
+        = sum C(n,i)(-1)*(n-i)L(m+i) {i=0..n}
+        
+    a[0] = ln 0! = 0
+    a[1] = L(0) = 0
+    a[n+1] = T**n L 0 = sum C(n,i)(-1)*(n-i)L(i) {i=0..n}
+    ln x! = sum C(x, i) a[i] {i>=0}
+
+
+----
+Gamma function
+factorial = E gamma
+
+G (z+1) = z!   != 0
+    G z = (z-1)!
+    z = z! / (z-1)! = G(z+1) / G(z)
+(-z)! G z = pi / sin (pi z)
+    (-z)! = pi / sin (pi z) / G z = pi / sin (pi z) / (z-1)!
+    (-z-1)! = (-(z+1))! = pi / sin (pi (z+1)) / z! = - pi / sin (pi z) / z!
+    -z = (-z)!/(-z-1)! = - z!/(z-1)!
+    
+    sin (pi z) = Im (e**(I*pi*z))
+
+
+[int n>0]
+    lim z!/(z-1)! {z->-n} = lim z {z->-n} = -n
+    but lim z!/(2z)! {z->-n} = (-n-1)(-n-2)...(-n-n) != (-n)(-n-1)...(-n-(n-1))
+
+
+
+fall(z, w) = z!/(z-w)!
+rise(z, w) = G (z+w) / G(z) = (z-1+w)! / (z-1)! = fall(z-1+w, w)
+
+to avoid inf/inf, lower index first:
+C(z, w) = lim lim x!/y!/(x-y)! {y->w}{x->z}
+
+
+----
+F(z,-n; w; 1) = rise(c-a, n) / rise(c, n), for [int n>=0][]
+
+
+
+----------------------------------------
+hypergeometric transformation
+
+search database... // computer
+
+----------------------------------------
+summable in hypergeometric terms // Gosper's algorithm
+partial sums: 
+    sf(k) = sum II f i {i=0..\k} = ? for [rational function f]
+
+
+Kth k f z = z**k [.z**k](f z)
+let f = F [a1,...,am] [b1,...,bn]
+let g = F [A1,...,Am] [B1,...,Bn]
+if sum Kth k f z {k=0..\K} == c(Kth \K g Z) + C ==>> summable in hypergeometric terms
+exists ? [A1,...,Am] [B1,...,Bn] Z c C
+
+[hypergeometric term t[k]] if t[k+1]/t[k] = rational function of k != 0
+    1) t[k+1]/t[k] = p(k+1)/p(k) q(k)/r(k+1) 
+        for [[(k+a)\q(k)][(k+b)\r(k)]-->>[not int (a-b) > 0]]
+            
+        def highest_coeff f = [.k**deg(f)]f(k)
+        let highest_coeff r = highest_coeff p = 1
+        let aq = highest_coeff q = ???
+        
+    2) t[k] = T S(k) = S(k+1) - S(k)
+        sum t[i] {i=0..\k-1} = S(k) - S(0) = c(Kth \k g Z) + C
+            0 = S(0) - S(0) = c+C ==>> c = -C
+            let S(0) = c = -C
+            S(k) = S(0)(Kth \k g Z)
+            S(k+1)/S(k) is rational function of k
+        
+        let S(k) = s(k) r(k)/p(k) t[k], 
+            S(k+1) = s(k+1) r(k+1)/p(k+1) t[k+1] = s(k+1) q(k)/p(k) t[k]
+            t[k] = s(k+1) q(k)/p(k) t[k] - s(k) r(k)/p(k) t[k]
+            p(k) = s(k+1) q(k) - s(k) r(k)  ----------- 
+            s(k) must be a polynomial
+            s != 0
+        
+        let Q = q-r, R = q+r, d = degree(s) = ?
+            2p(k) = Q(k)(s(k+1) + s(k)) + R(k)(s(k+1) - s(k))
+            deg((E+1)s) = d > d-1 = deg((E-1)s) if deg 0 = -1
+                s != 0 ==>> deg(s) != -1 ==>> d >= 0
+            [deg(Q)>=deg(R)] ==>> deg(p) = deg(2p) = deg(Q)+deg((E+1)s)
+                d = deg(p) - deg(Q) >= deg(p) - deg(R) >= 0
+            [deg(Q)<deg(R)] ==>> 
+                deg(p) <= deg(R) + deg((E-1)s) = deg(R) + (d-1)
+                d >= deg(p) - deg(R) + 1 = min_d
+                
+                let n = deg R
+                let aq = [.z**(n-1)]Q(z) // may be 0
+                let ar = [.z**n]R(z) != 0, as = [.z**d]s(z) != 0
+                let [.z**(n+d-1)](2p) = 2 aq as + ar as d
+                [2 aq as + ar as d != 0] ==>> d = min_d
+                [... = 0] ==>> d = -2 aq / ar > min_d
+                
+            that is :
+            let x = -2 aq / ar, min_d = deg(p) - deg(R) + 1
+            [deg(Q)>=deg(R)]
+                [deg(Q)>deg(p)] ==>> fail...
+                [deg(p)>=deg(Q)] ==>> d = deg(p) - deg(Q)
+            [deg(Q)<deg(R)]
+                d = x or min_d, [int d >= 0]
+
+
+
+generalize Gosper's algorithm  //Marko Petkovsek
+    t[k] = T S(k) = S(k+1) - S(k)
+    generaize to:
+    t[k] = sum A(i,k)S(k+i) {i=0..L}, for [polynomials A(i,\k)]
+    
+
+skip '5.8 MECHANICAL SUMMATION' ------------------- to be continued
+Gosper-Zeilberger algorithm // Zeilberger's extension of Gosper's algorithm   // Doron Zeilberger
+    S[n] = sum t(n,k) {1\k}, for [int n >= 0]   // 
+    
+    try to find out [int L >= 0][polynomials b[i]s for i=0..L]:
+        b[L](n) != 0 for [int n >= 0]
+        0 = sum S[n+i]b[i](n) {i=0..L}
+        so, S[n+L] = -sum S[n+i]b[i](n) {i=0..L-1} / b[L](n) for [int n >= 0]
+    
+    <==> 0 = sum sum t(n,k) {1\k} b[i](n) {i=0..L}
+    <==> 0 = sum sum t(n,k) b[i](n) {i=0..L} {1\k}
+    let tx(n,k) = sum t(n,k) b[i](n) {i=0..L} for [1\k] [int n >= 0]
+        0 = sum tx(n,k) {1\k} ??????????????????
+        def Tx(n, k) = sum tx(n,i) {i < \k}
+        Tx(n, k+1) - Tx(n,k) = tx(n,k) = sum t(n,k) b[i](n) {i=0..L}
+    let tx(n,k) be indefinitely summable in hypergeometric terms with respect to k
+        [exists sum tx(n,k) {1\k}] ==>> lim tx(n,k) {int k->inf} = 0
+
+when Gosper-Zeilberger algorithm is guaranteed to succeed?
+    def g [a a' x] n k = II (a[i]*n + a'[i]*k + x[i])! {i=1..I}, len(a) = I
+    def h [a a' x] [b b' y] n k = (g [a a' x] n k) / (g [b b' y] n k), len(a) = I, len(b) = J
+    proper term : t(n,k) = f(n,k) w**n z**k (h [a a' x] [b b' y] n k) 
+        where f(n,k) is a polynomial in n and k
+            w != 0 != z
+            a a' b b' are integer tuples
+            x y are complex tuples
+
+
+
+----------------------------------------
+
+
+
+chapter 6
+
+Stirling numbers
+Stirling[n,k] - first kind = the number of ways to arrange n objects into k nonempty cycles
+    Every permutation is equivalent to a set of cycles.
+        permutation = II (cycle arrangements)
+        (1 2 3 4 -> 3 2 1 4) = (2)(4)(1 3)
+        n! = sum Stirling[n,k] {1\k} for [int n >= 0]
+    
+    n cycle k
+    Stirling[n>=0, k<0] = Stirling[n>=0, k>n] = 0
+    Stirling[0,0] = 1
+    Stirling[n>0, 0] = 0
+    
+    Stirling[n,k] = Stirling[n-1,k-1] + (n-1)*Stirling[n-1,k]
+    Stirling[n>=1,1] = n!/n = (n-1)!
+    Stirling[n>=1,2] = sum C(n,i) i!/i * (n-i)!/(n-i) {i=1..n-1}/2
+        = sum n/i C(n-1,i-1) (i-1)! (n-i-1)! {i=1..n-1}/2
+        
+        = (n-1)!/(n-1) + (n-1)*Stirling[n-1,k]
+        = (n-1)! (1/(n-1) + 1/(n-2) + ...)
+        = (n-1)! H(n-1)
+    
+    ??? Stirling[prime p>=5,2] == 0 (mod p**2) != 0 (mod p**3)
+        <==> H(p-1) == 0 (mod p**2) != 0 (mod p**3)
+        let inv2(p, i) == 1/i (mod p**2) for [not p\i]
+        <<== f(p,k)=sum inv2(p, p*k+i) {i=1..p-1} == 0 (mod p**2) != 0 (mod p**3)
+            for [int k][prime p > 4]
+        a*b==1 (mod p**2)
+            (a+y*p)(b+k*p) == 1 ==>> (b+k*p)*y*p == -a*k*p
+            y == -a*k/(b+k*p) (mod p NOT p**2) == -k*a**2
+                x**phi(p**2) == 1 ==>> 1/x == x**(p(p-1)-1) = x**(p**2-p-1)
+                1/(b+k*p) == (b+k*p)**(p**2-p-1) 
+                    == 1/b + C(p**2-p-1, 1)*1/b**2*k*p
+                    == a + a**2 (p**2-p-1) k*p == a - a**2 k*p == a+y*p
+                y == -k*a**2 (mod p)
+            inv2(p, b+k*p) - inv2(p, b) == -k*p inv2(p, b)**2 (mod p**2)
+        f(p,k+m) - f(p,k) == -m*p sum inv2(p, p*k+i)**2 {i=1..p-1}
+            == -(f(p,k-m) - f(p,k)) == f(p,k) - f(p,k-m)
+        f(p,k+i*p) = f(p,k)
+        f(p,k) == A*p*k + B (mod p**2)
+        B == f(p,0); 
+        A == (f(p,k+1) - f(p,k))/p == -sum inv2(p, p*k+i)**2 {i=1..p-1}
+            == -sum inv2(p, i**2) {i=1..p-1} == ??
+        
+        
+        let inv2(p, i) = r1(p,i)*p+r0(p,i) and inv(p, i)i == 1 (mod p**2)
+        r0(p,i)*i == 1 (mod p)
+        sum r0(p,i) {..} = p(p-1)/2
+        sum inv2(p,i) {i=1..p-1} = p sum r1(p,i) {i=1..p-1} 
+Stirling{n,k} - second kind = the number of ways to partition a set of n things into k nonempty subsets
+    n subset k
+    Stirling{n>=0, k<0} = Stirling{n>=0, k>n} = 0
+    Stirling{0,0} = 1
+    Stirling{n>0, 0} = 0
+    
+    Stirling{n>0,k} = Stirling{n-1,k-1} + k*Stirling{n-1,k}
+    Stirling{n>=1,1} = 1
+    Stirling{n>=1,2} = (2**n - 2)/2! = 2**n/2 - 1
+
+Stirling[n,k] >= Stirling{n,k}, for [int n, k >= 0]
+Stirling[n,n] = Stirling{n,n} = 1
+Stirling[n,n-1] = Stirling{n,n-1} = C(n,2)
+Stirling[n,0] = Stirling{n,0} = [n=0]
+Stirling[0,k] = Stirling{0,k} = [k=0]
+
+
+fall(x, i) = rise(-x,i) (-1)**i
+represent ordinary powers by falling/rising powers
+    x**n = sum fall(x, i) Stirling{n,i} {1\i}
+        // x**0 = Stirling{0,0} fall(x,0)
+        = x * x**(n-1)
+        = x sum fall(x, i) Stirling{n-1,i} {i=0..n-1}
+        = sum (fall(x, i+1) + i fall(x,i)) Stirling{n-1,i} {i=0..n-1}
+        = sum fall(x, i) Stirling{n-1,i-1} {i=1..n} + sum i fall(x,i) Stirling{n-1,i} {i=0..n-1}
+        = sum fall(x, i) (Stirling{n-1,i-1} + i Stirling{n-1,i}) {i=0..n} - 0 - 0
+        = right
+
+    x**n = sum rise(-x,i) (-1)**i Stirling{n,i} {1\i}
+        (-x)**n = sum rise(x,i) (-1)**i Stirling{n,i} {i=0..n}
+        x**n = sum rise(x,i) (-1)**(n-i) Stirling{n,i} {i=0..n}
+    
+represent rising/falling powers by ordinary powers
+    rise(x,n) = sum x**i Stirling[n,i] {1\i}
+        n! = rise(1,n) = sum Stirling[n,i] {i=0..n}
+
+    fall(x,n) = rise(-x,n) (-1)**n 
+        = (-1)**n sum (-x)**i Stirling[n,i] {i=0..n}
+        = sum x**i (-1)**(n-i) Stirling[n,i] {1\i}
+
+
+-------
+Inversion formulas
+[m=n] = sum Stirling[n,i] Stirling{i,m} (-1)**(m-i) {1\i}
+[m=n] = sum Stirling{n,i} Stirling[i,m] (-1)**(m-i) {1\i} for [int m,n]
+    x**n = sum fall(x, i) Stirling{n,i} {i=1\i}
+        = sum sum x**j (-1)**(i-j) Stirling[i,j] {1\j} Stirling{n,i} {1\i}
+        = sum x**j sum (-1)**(i-j) Stirling[i,j] Stirling{n,i}  {i=j..n} {j=0..n}
+        = sum x**j sum (-1)**(i-j) Stirling[i,j] Stirling{n,i}  {1\i} {1\j}
+        = sum x**j [j=n] {1\j}
+
+
+
+
+
+----------------------------------------
+
+extend to negative integer
+Stirling[n,m] = Stirling{-m, -n} for [int m,n]
+
+
+
+
+
+----------------------------------------
+
+
+
+Eulerian numbers
+Eulerian<n,k> = the number of permutations of [1..n] that have k ascents (at most n-1 ascents)
+Eulerian<n>=1,k> = Eulerian<n,(n-1)-k>
+Eulerian<0,k> = [k=0]
+Eulerian<n,k> = Eulerian<n-1,k-1> + Eulerian<n-1,k>*(k+1) + Eulerian<n-1,k-1>*((n-1-1)-(k-1))
+    = Eulerian<n-1,k-1>*(n-k) + Eulerian<n-1,k>*(k+1)
+
+
+represent ordinary powers by binomial coefficients
+    Worpitzky's identity
+    x**n = sum Eulerian<n,i> C(x+i,n) {1\i}, for [int n>=0]
+
+sum Stirling{n, j} j! z**(n-j) {1\j} = sum Eulerian<n,i> (1+z)**i {1\i}
+    sum Stirling{n, j} j! z**(n-j) {j=0..n} = sum Eulerian<n,i> (1+z)**i {i=0..n}
+
+Eulerian<n,k> = sum C(n+1,i)(k+1-i)**n (-1)**i {i=0..k}
+    Eulerian<n,0> = 1**n
+    Eulerian<n,1> = 2**n - (n+1) 1**n
+    Eulerian<n,2> = 3**n - (n+1) 2**n + C(n+1,2) 1**n
+
+
+----------------------------------------
+second-order Eulerian numbers
+
+If we form permutations of the multiset {1,1,2,2,...,n,n} 
+    with the special property that all numbers between 
+    the two occurrences of m are greater than m, for m=1..n, 
+    then Eulerian<<n,k>> is the number of such permutations 
+    that have k ascents. (2n-2+1 places for (n,n))
+
+
+Eulerian<<n,k>> = Eulerian<<n-1,k-1>> (2n-1-k) + Eulerian<<n-1,k>> (k+1)
+sum Eulerian<<n,i>> {1\i} = (2*1-1)(2*2-1)...(2n-1) = (2n)!/n!/2**n = C(2n,n)n!/2**n
+
+represent Stirling numbers by binomial coefficients
+Stirling[x, x-n] = sum Eulerian<<n,i>> C(x+i, 2n) {1\i}, for [int n >= 0]
+Stirling{x, x-n} = sum Eulerian<<n,i>> C(x+n-1-i, 2n) {1\i}, for [int n >= 0]
+
+Stirling polynomials
+Stirling_polynomial(n, x) = Stirling[x, x-n]/fall(x, n+1) for [int n > 0]
+degree(Stirling_polynomial n) = n-1
+// Stirling_polynomial(0, x) = 1/x is not polynomial
+
+[.x**(n-1)]Stirling_polynomial(n, x) = 1/2**n/n!
+
+
+# extend to n < 0
+let Eulerian<<n,k>> = 0 for [int n,k][k<0]
+    Eulerian<n,k> = Eulerian<n-1,k-1>*(n-k) + Eulerian<n-1,k>*(k+1)
+    Eulerian<<n,k>> = Eulerian<<n-1,k-1>> (2n-1-k) + Eulerian<<n-1,k>> (k+1)
+Eulerian<<n,0>> = Eulerian<n,0> = 1 for [int n] 
+Eulerian<<n,1>> = 2 Eulerian<n,1> = 2**(n+1) - 2(n+1)
+    Eulerian<<n,1>> = Eulerian<<n-1,0>> (2n-2) + Eulerian<<n-1,1>> 2
+        = Eulerian<n-1,0> (2n-2) + 2 Eulerian<n-1,1> 2
+        = 2 Eulerian<n,1>
+
+S k x n = sum i**k x**i {i=0->n} = ??
+
+
+    poly(d,x,i) = sum c(d,x,k)i**k {k=0..d}, \x:c(d,x,d) != 0
+    dff \i:(poly(d,x,i) x**i) i # = poly(d-1,x,i) x**(i-1) ??
+    = poly(d,x,i+1) x**(i+1) - poly(d,x,i) x**i
+    = x**i (poly(d,x,i+1)x - poly(d,x,i))
+    
+        poly(d,x,i+1) = sum c(d,x,k) (i+1)**k {k=0..d}
+            = sum c(d,x,k) sum C(k,j)i**j {j=0..k} {k=0..d}
+            = sum sum c(d,x,k) C(k,j) {k=j..d} i**j {j=0..d}
+            = sum sum c(d,x,m) C(m,k) {m=k..d} i**k {k=0..d}
+    = x**i sum (sum c(d,x,m) C(m,k) {m=k..d}x - c(d,x,k)) i**k {k=0..d}
+        [k=d]: 0 = sum c(d,x,m) C(m,k) {m=d..d}x - c(d,x,d)
+            c(d,x,d) C(d,d) x = c(d,x,d) impossible unless x=1
+
+    S 0 x n = sum x**i {i=0->n} = (x**n - 1)/(x-1)
+    S 1 x n = sum i x**i {i=0->n} = 
+    S k z n = sum sum fall(i,j) Stirling{k,j} {j} z**i {i=0->n} 
+        = sum sum fall(i,j) z**i {i=0->n} Stirling{k,j} {j}
+    sum fall(i,j) z**i {i=0->n} 
+        = sum fall(i,j) sum fall(z,m) Stirling{i,m} {m} {i=0->n}
+        = sum sum fall(i,j) Stirling{i,m} {i=0->n} fall(z,m) {m}
+
+Eulerian<<n,2>> = Eulerian<<n-1,1>> (2n-3) + Eulerian<<n-1,2>> 3
+    = (2**n - 2n)(2n-3) + 3 Eulerian<<n-1,2>>
+
+skip...
+
+----------------------------------------
+6.3 HARMONIC NUMBERS
+
+H = harmonic
+H[n] = sum 1/i {i=1..n}
+
+lg n = log n / log 2
+UP(n) = floor(lg n) + 1 = n.bit_length()
+UP(n)/2 < H[n] <= UP(n) for n >= 1
+
+
+ln (n+1) = integrate 1/x {x=1->n+1} <= sum 1/i {i=1..n} = H[n]
+ln n = integrate 1/x {x=1->n} >= sum 1/i {i=2..n} = H[n]-1 for n >= 1
+ln n < ln (n+1) <= H[n] <= 1 + ln n, for n >= 1
+ln n < H[n] < 1 + ln n, for n >= 2
+floor H[n] = floor.ln (n+1) + [0 or 1], for n >= 0
+
+----------------------------------------
+Riemann's zeta function
+H[1, n] = H[n]
+H[x, n] = sum 1/i**x {i=1..n}
+Riemann_zeta(x) = sum 1/i**x {i>=1} = H[x, inf], for x > 1
+
+
+ln k - ln (k-1) = ln (k/(k-1)) = sum 1/i/k**i {i>=1}
+ln n - ln 1 = sum ln (k/(k-1)) {k=2..n}
+    = sum sum 1/i/k**i {k=2..n} {i>=1}
+    = sum (H[i, n]-1)/i {i>=1}
+    = sum (H[i, n]-1)/i {i>=2} + H[n]-1
+H[n] - ln n = 1 - sum (H[i, n]-1)/i {i>=2}
+    Euler_constant = lim left {n->inf} 
+        = 1 - sum (Riemann_zeta(i)-1)/i {i>=2}
+        = 0.5772156649...
+H[n] = ln n + Euler_constant + 1/(2n) - 1/(12n**2) + err[n]/(120n**4) 
+    where 0 < err[n] < 1, for n >= 1
+
+f x = ln (1+x); f' 0 = :
+    1/(1+x); -1/(1+x)**2; (-1)(-2)/(1+x)**3; ...
+    1; -1; ... (d-1)! (-1)**(d-1)
+ln (1+x) = 0 + sum (d-1)! (-1)**(d-1) x**d/d! {d>=1}
+    = sum (-1)**(d-1) x**d/d {d>=1}
+    = x - sum (-x)**d/d {d>=2}
+    
+ln (k+1) - ln k = ln (1+1/k) = 1/k - sum (-1/k)**d/d {d>=2}
+ln (n+1) - ln 1 = sum ... {k=1..n}
+    = H[n] - sum sum (-1/k)**d/d {d>=2} {k=1..n}
+H[n] - ln(n+1) = sum sum (-1/k)**d {k=1..n}/d {d>=2}
+    = sum sum (-1/k)**d {k=1..n}/d {d>=2}
+    = sum H?H[d,n]/d {d>=2}
+    where H?H[x,n] = sum (-1/k)**x {k=1..n}
+----------------------------------------
+6.4 HARMONIC SUMMATION
+
+sum H[i] {i=0..n} = (n+1) H[n+1] - (n+1)
+sum i H[i] {i=0..n} = n(n+1)/2 (H[n+1] - 1/2)
+sum i**m H[i] {i=0..n} = ?
+    sum C(i,m) H[i] {i=0..n} = C(n+1, m+1) (H[n+1] - 1/(m+1)) , for [int m >= 0]
+    sum 1/i H[i] {i=1..n} = sum 1/i/j {1<=j<=i<=n} = (H[n]**2 + H[2,n])/2
+
+sum C(n,i) (-1)**i 1/-i {i>=1} = H[n]
+    left = sum C(n-1,i-1) ... {i>=1} + sum C(n-1,i) ... {i>=1}
+        = sum C(n-1,i) (-1)**i 1/(i+1) {i>=0} + S(n-1)
+        = -sum C(n,i+1) (-1)**(i+1) {i>=0} / n + S(n-1)
+        = 1 / n + S(n-1)
+U(n,x,y) = sum C(n,i) (-1)**i 1/-i (x+i*y)**n {i>=1} for [int n >= 0]
+    D U n x y {y} = n*x**(n-1)
+    U(n,x,y) = U(n,x,0) + n*x**(n-1) * y
+        = (H[n]x + n*y) x**(n-1)
+    
+
+
+----------------------------------------
+6.5 BERNOULLI NUMBERS
+B = Bernoulli
+
+S(d, n) = sum i**d {i=0..n-1} = H[-d, n-1]
+    = n/(d+1) sum C(d+1, i) B[i] n**(d-i) {i=0..d}
+    = 1/(d+1) (sum C(d+1, i) B[i] n**(d+1-i) {1\i} - B[d+1])
+    = K sum C(d+1, i) B[i] n**(d+1-i) {1\i} + C
+    = 1/(d+1) sum C(d+1, i) (B[i] - [i=d+1]B[d+1]) n**(d+1-i) {1\i}
+    K = 1/(d+1)
+    C = -B[d+1]/(d+1)
+S(d, 0) = 0
+S(d, 1) = [d=0]
+S(d, 2) = 0**d + 1**d = [d=0] + 1
+S(d, n+1) = S(d, n) + n**d   // 0**0 = 1
+
+
+
+[d=0] = S(d, 1) = 1/(d+1) sum C(d+1, i) B[i] {i=0..d}
+    = sum C(d+1, i) B[i] {i=0..d}
+    = sum C(d+1, i) B[i] {1\i} - B[d+1]
+sum C(d+1, i) B[i] {1\i} = B[d+1] + [d=0]
+sum C(d, i) B[i] {1\i} = B[d] + [d-1=0], for [int d >= 1]
+
+
+what if ES(d, n) = S(d,n+1) = sum i**d {i=0..n}
+    ?exist XB[i]?= K' sum C(d+1, i) XB[i] n**(d+1-i) {1\i} + C'
+    
+    
+    = S(d, n) + n**d
+    = K sum C(d+1, i) B[i] n**(d+1-i) {1\i} + C
+    = 1/(d+1) sum (C(d+1, i) B[i] + (d+1)[i=1]) n**(d+1-i) {1\i} + C
+    = 1/(d+1) sum C(d+1, i) (B[i] + [i=1]) n**(d+1-i) {1\i} + C
+
+    
+    YES!!! 
+    XB[i] = B[i] + [i=1]
+    K' = K = 1/(d+1)
+    C' = C = -B[d+1]/(d+1)
+    
+    [d=0] ==>> ES(d, n) = n+1 
+        = 1/1 sum C(1, i) (B[i] + [i=1]) n**(1-i) {1\i} -B[1]/1
+        = B[0]n + B[1]+1 - B[1]
+        = n + 1
+    
+    [d=1] ==>> ES(d, n) = n(n+1)/2
+        = 1/2 sum C(2, i) (B[i] + [i=1]) n**(2-i) {1\i} -B[2]/2
+        = (B[0]n**2 + 2(B[1]+1)n + B[2])/2 - 0
+        = (n**2 + 2/2 n)/2
+
+
+
+fB z = sum B[i] z**i/i! {i>=0} = z/(e**z-1)
+    sinh z = (e**z - e**-z)/2
+    cosh z = (e**z + e**-z)/2
+    coth z = cosh z / sinh z     //hyperbolic cotangent
+    1/(e**z-1) + 1/2 = (e**z+1)/(e**z-1)/2 = coth (z/2) / 2
+    fB2 z = z/2 + fB z = coth (z/2) z/2
+    [fB2 (-z) = fB2 z] ==>> B[2n+1] = 0 for [int n >= 1]
+    
+    z coth z = fB2 (2z) = z + fB (2z) = z + sum B[i] (2z)**i/i! {i>=0}
+        = sum B[2i] (2z)**(2i)/(2i)! {i>=0}
+        = sum 4**i B[2i] z**(2i)/(2i)! {i>=0}
+
+sin  z = z**1/1! - z**3/3! + z**5/5! - z**7/7! + ... = -i sinh (i*z)
+sinh z = z**1/1! + z**3/3! + z**5/5! + z**7/7! + ... = -i sin  (i*z)
+cos  z = z**0/0! - z**2/2! + z**4/4! - z**6/6! + ... = cosh (i*z)
+cosh z = z**0/0! + z**2/2! + z**4/4! + z**6/6! + ... = cos  (i*z)
+
+cot z = cos z / sin z = cosh (i*z) / (-i sinh (i*z)) = i coth (i*z)
+    z cot z = i*z coth (i*z) = fB2 (2i*z) 
+        = sum 4**i B[2i] (I*z)**(2i)/(2i)! {i>=0}
+        = sum (-4)**i B[2i] z**(2i)/(2i)! {i>=0}
+
+    z cot z = 1 - 2 sum H[2i, inf] (z/pi)**(2i) {i>=1}
+    [i>=1] ==>> H[2i, inf] = (-4)**i B[2i] pi**(2i)/(2i)! /-2
+        = (-1)**(i-1) B[2i] (2pi)**2i/(2i)!/2 > 0
+        B[2i] = (-1)**(i-1) H[2i, inf] 2*(2i)!/(2pi)**2i
+        ==>> B[4i] < 0; B[4i-2] > 0;
+            |B[2i]|/H[2i, inf] = 2*(2i)!/(2pi)**2i
+
+
+tan z = sin z / cos z = sum (-1)**(i-1) 4**i (4**i-1)/(2i) B[2i] z**(2i-1)/(2i-1)! {i>=1}
+    = sum T(2i-1) z**(2i-1)/(2i-1)! {i>=1}
+    = sum T(i) z**i/i! {i>=0}
+    T = tangent number
+    T(2i) = 0
+    T(2i-1) = (-1)**(i-1) 4**i (4**i-1)/(2i) B[2i], for [int i >= 1]
+    
+    T(0) = 0
+    T(i) = (-1)**((i-1)/2) 2**(i+1) (2**(i+1)-1)/(i+1) B[i+1], for [int i >= 1] 
+    
+    T(i) is nonnegative integer for i >= 0
+    
+    Tan z x = (sin z + x cos z) / (cos z - x sin z) = N(z,x)/D(z,x)
+    tan z = Tan z 0
+    Tan z x = sum T(i, x) z**i/i! {i>=0}
+    T(i) = T(i, 0)
+    D Tan z x {x} = 1/D(z,x)**2
+    D Tan z x {z} = (1+x**2)/D(z,x)**2 = (1+x**2) D Tan z x {x}
+    T(i+1, x) = (1+x**2) D T(i, x) {x}; T(0, x) = x
+    // a simple way to calculate Bernoulli numbers, 
+    // via tangent numbers, using only simple operations on integers
+
+
+
+S(d, n) = (-1)**(d+1) S(d, 1-n), for [int d >= 1]
+    [d=0] ==>>
+        left = S(0,n) = n
+        right = (-1)**(0+1) S(0, 1-n) = -(1-n) = n-1 != left
+S(d, -n) = (-1)**(d+1) S(d, 1-(-n)), for [int d >= 1]
+    S(d, 1+n) = S(d, n) + n**d
+    S(d, 1+n)(d+1) = sum C(d+1, i) B[i] n**(d+1-i) {1\i} - B[d+1] + (d+1) n**d
+        = sum C(d+1, i) (B[i] + [i=1] - [i=d+1]B[d+1]) n**(d+1-i) {1\i}
+        S(0,1+n)(0+1) = sum C(1, i) (B[i] + [i=1]) n**(1-i) {1\i} - B[1]
+            = B[0]n + (B[1]+1) - B[1]
+
+    S(d, -n)(d+1) = sum C(d+1, i) B[i] (-n)**(d+1-i) {1\i} - B[d+1]
+        = (-1)**(d+1) sum C(d+1, i) (B[i] - [i=d+1]B[d+1]) (-1)**i n**(d+1-i) {1\i}
+        S(0,-n)(0+1) = sum C(1, i) B[i] (-n)**(1-i) {1\i} - B[1]
+            = -B[0]n + B[1] - B[1]
+    [S(d, -n)(d+1) (-1)**(d+1) = S(d, 1+n)(d+1)] <==>
+        [(B[i] - [i=d+1]B[d+1]) (-1)**i = B[i] + [i=1] - [i=d+1]B[d+1], for i>=0]
+        [B[2i] = B[2i] for i>=0] 
+            and [-B[2i+1] + [2i+1=d+1]B[d+1] = B[2i+1] - [2i+1=d+1]B[d+1] for i>=1] 
+            and [-B[1] + [1=d+1]B[d+1] = B[1]+1 - [1=d+1]B[d+1]]
+        // [B[2i+1]=0 for i>=1][B[1] = -1/2] ==>> 
+        [[d=2i]B[d+1]=0 for i>=1] and [[d=0]B[d+1]=0]
+        [[d=0]B[d+1]=0]
+        [not d=0] or [B[1]=0]
+        [not d=0]
+
+
+        
+    
+
+
+
+
+
+
+
+skip...
+----------------------------------------
+[.x**(n-1)]Stirling_polynomial(n, x) = 1/2**n/n!
+[.x**0]Stirling_polynomial(n, x) = Stirling_polynomial(n, 0)
+    = B[n]/n!/-n
+Stirling_polynomial(n, 0) 2**n n! = B[n] 2**n/-n ------------ not integer
+
+----------------------------------------
+6.6 FIBONACCI NUMBERS
+
+F[-1] = 1; F[0] = 0; F[1] = 1
+F[n] = F[n-2] + F[n-1] = F[1]F[n-2] + F[2]F[n-1]
+
+F[n+1]F[n-1] - F[n]**2 = (-1)**n   // continued fraction
+F[-n] = -(-1)**n F[n]
+F[n+m+1] = F[n]F[m] + F[n+1]F[m+1]
+F[k*n] = F[n]F[(k-1)n-1] + F[n+1]F[(k-1)n] 
+    = F[n] sum F[i*n-1] F[n+1]**(k-1-i) {i=0..k-1}
+    F[n] | F[k*n]
+
+gcd(F[n], F[m]) = F[gcd(n,m)]
+    F[n] = F[m]F[n-1-m] + F[m+1]F[n-m]
+    gcd(F[m+1], F[m]) = 1
+    gcd(F[n], F[m]) = gcd(F[n-m], F[m]) = gcd(F[n mod m], F[m]) = F[gcd(n,m)]
+
+[F[n] = 0 (mod F[m])]
+    <==> |F[m]| = gcd(F[n], F[m]) = F[gcd(n,m)]
+    <==> [|m|!=2][n==0 mod m] or [|m|=2][1\n]
+
+let f(m) = min {n>0| F[n] = 0 (mod m)} if m != 0 else 0
+    [|m|\F[n]] <==> [f(m)\n]
+        if hold
+            [|k*m|\F[f(k*m)] ==>> [|m|\F[f(k*m)] ==>> [f(m)\f(k*m)]
+            let n = II p[i]**e[i] {i=1..r}
+            [f(p[i]**e[i])\f(n)] ==>> f(n) = C*lcm(f(p[i]**e[i]) for i=[1..r])
+            ==>> f(n) = lcm(f(p[i]**e[i]) for i=[1..r])
+            f(p**k) = ?
+    
+    map f [0..9] = [0,  1, 3, 4,  6, 5, 12,  8, 6, 12]
+    f(-m) = f(m) >= 0
+    f(F[m]) <= |m|
+    F[f(m)] = 0 (mod m)
+    [0 < r < f(m)] ==>> F[r] != 0 (mod m)
+    f(k*m) = u f(m)
+    
+    upper bound of f(p) for prime p?  ==>> [f(p)\p-(p|5)]
+        A = [1 1; 1 0]
+        A**2 = [2 1; 1 1] = A+I
+        I = A(A-I); 1/A = A-I = [0 1; 1 -1;]
+        
+        P[n] = [F[n+1], F[n]]^T
+        P[0] = [1 0]'; P[n+1] = A*P[n] 
+        P[n] = A**n * P[0]
+        A**n = [P[n],P[n-1]] = [F[n+1], F[n]; F[n], F[n-1];]
+        F[n] = (G**n - (-1/G)**n)/sqrt(5) 
+            where G = (1+sqrt(5))/2, -1/G = 1-G = (1-sqrt(5))/2
+            F[n] = sum C(n,i)(r**i-(-r)**i) {i=0..n}/2**n/r
+                = sum 2 C(n,i)r**i {i=1,3..n}/2**n/r
+                = sum C(n,2i+1)r**(2i) {1\i}/2**(n-1)
+                = sum C(n,2i+1) 5**i {1\i}/2**(n-1)
+        [prime p>2] ==>> 
+            F[p] = sum C(p,2i+1) 5**i {1\i}/2**(p-1)
+                = (sum C(p,2i+1) 5**i {i=0..p//2-1} + C(p,p)5**(p//2))/2**(p-1)
+                == 5**(p//2) * (-p//2)**(p-1) (mod p)
+                == 5**(p//2) * 1
+                // if p != 5 else 0
+                == (5|p) = (p|5) (-1)**((p-1)/2 * (5-1)/2) 
+                == (p|5) (mod p)
+                == (-1)**[p mod 5 = 2 or 3]
+                == [-1 or 1]
+            F[p+1] = sum C(p+1,2i+1) 5**i {1\i}/2**p
+                = (sum C(p+1,2i+1) 5**i {i=1..p//2-1} + C(p+1,1)+C(p+1,p)5**(p//2))/2**p
+                == (1+5**(p//2)) * (-p//2)**p (mod p)
+                == (1 + F[p]) * (-p//2)
+                == [0 or 2](-p//2) 
+                == [0 or 1]
+            F[p-1] = F[p+1] - F[p] == [1 or 0] (mod p)
+            
+            [p=5] ==>> F[p] == 0 (mod p)
+            [(p|5) = 1] ==>>
+                A**p == [1, 1; 1 0;] = A (mod p)
+                A**(p-1) == I
+            [p!=2][(p|5) = -1] ==>> [p mod 5 = 2 or 3]
+                A**p == [0, -1; -1, 1;] = -1/A (mod p)
+                A**(p+1) == -I
+            [p=2] ==>>
+                A**(p+1) == I == -I (mod 2)
+            
+            [A**n == k*I (mod p)] ==>>
+                P[n] = A**n * P[0] == x * P[0] (mod p)
+                F[n] == 0 (mod p)
+                [f(p)\n]
+            if (p|p) = 0:
+                A**(p-(p|5)) == k*I (mod p)
+                [f(p)\p-(p|5)]
+                
+        prove [not p**2\F[f(p)]]
+        <<== [not p**2\F[p-(p|5)]][p!=5][p>2]  // check by hand for p=2,5
+        <<== [not p**2\F[p**2-1]][p!=5][p>2]
+        F[p**2-1] = F[p**2+1] - F[p**2]
+        F[p**2] (mod p**2) = 
+        
+        
+        (p-1)! == -1 (mod p)
+        (p-1)! (mod p**2) == ??
+        fall(p*k-1, p-1) = fall(p*k, p)/p/k 
+            = sum (p*k)**i (-1)**(p-i) Stirling[p,i] {i=0..p}/p/k 
+            == sum (p*k)**i (-1)**(p-i) Stirling[p,i] {i=1..2}/p/k  # (since p>2)
+            == Stirling[p,1] - p*k Stirling[p,2]
+            == (p-1)! - k p! H(p-1) (mod p**2)
+            // may be: H(p-1) (mod p**2) == 0 + [p=2] + 2p[p=3]
+            // p == 5: 1+13+17+19==0 (mod 25)
+            // but 
+            //     H(p-1) (mod p) == sum i {i=1..p-1} == p(p-1)/2 == [p=2]
+            //     p H(p-1) (mod p**2) == 0 for p>2
+            == (p-1)! (mod p**2)
+            
+            
+        [0<k<p] ==>> C(p**2,p*k) (mod p**2) == p/k C(p**2-1, p*k-1)
+            == p/k II (p**2-i)/i {i=1..p*k-1}
+            == p/k II (p**2-i)/i {i=1..p*k and not p\i} II (p**2-p*i)/p*i {i=1..k-1}
+            == p/k (-1)**((p-1)k) II (p-i)/i {i=1..k}
+            == p/k C(p-1,k-1)
+            == C(p,k) holds for k=0,p
+        
+        5**(p//2) == (p|5) = s (mod p)
+        5**(p//2) (mod p**2) == S5*p+s
+        5**(p*i+p//2) == 5**((2i+1) (p//2) + i) 
+            == 5**i(S5*p+s)**(2i+1)
+            == 5**i((2i+1)*S5*p + s)
+        F[p**2] (mod p**2) = sum C(p**2,2i+1) 5**i {1\i}/2**(p**2-1)
+        == sum C(p**2,p(2i+1)) 5**(p*i+p//2) {i=0..p//2}/2**(p**2-1)
+        == sum C(p,2i+1) 5**(p*i+p//2) {i=0..p//2}/2**(p**2-1)
+        == sum C(p,2i+1) (5**p)**i {i=0..p//2} 5**(p//2)/2**(p**2-1)
+        == sum C(p,2i+1) (sqrt(5)**p)**(2i+1) {i=0..p//2}/sqrt(5)/2**(p**2-1)
+        // sum C(n, 2i+1) y**(2i+1) {1\i} = T
+        // let S = sum C(n, 2i) y**2i {1\i}
+        // S+T = (1+y)**n; S-T=(1-y)**n;
+        // T = ((1+y)**n - (1-y)**n)/2
+        // y**2 == 5**p (mod p**2)
+        // y = sqrt(5)**p, n=p
+        == ((1+y)**n - (1-y)**n)/2/sqrt(5)/2**(p**2-1)
+        == ((1+sqrt(5)**p)**p - (1-sqrt(5)**p)**p)/sqrt(5)*(p**2//2+1)**(p**2)
+
+        C(p**2+1,p(2i+1)) = C(p**2,p(2i+1))(p**2+1)/(p**2+1-p(2i+1))
+            == C(p,2i+1)/(1-p(2i+1)) 
+            == -C(p,2i+1)/(p*2i+p-1)
+        C(p**2+1,p*2i+1) = (p**2+1)/(p*2i+1)C(p**2,p*2i)
+            == C(p,2i)/(p*2i+1)
+        
+        F[p**2+1] (mod p**2) = sum C(p**2+1,2i+1) 5**i {1\i}/2**(p**2)
+        == sum C(p**2+1,p(2i+1)) 5**(p*i+p//2) {1\i}/2**(p**2)
+            + sum C(p**2+1,p*2i+1) 5**(p*i) {1\i}/2**(p**2)
+        == -sum C(p,2i+1)/(p*2i+p-1) 5**(p*i+p//2) {1\i}/2**(p**2)
+            + sum C(p,2i)/(p*2i+1) 5**(p*i) {1\i}/2**(p**2)
+        == -sum C(p,2i+1)/(p*2i+p-1) 5**(p*i)sqrt(5)**p {1\i}/sqrt(5)**p 5**(p//2)/2**(p**2)
+            + sum C(p,2i)/(p*2i+1) 5**(p*i) {1\i}/2**(p**2)
+        == -sum C(p,2i+1)/(p*2i+p-1) 5**(p*i)sqrt(5)**p {1\i}/sqrt(5)/2**(p**2)
+            + sum C(p,2i)/(p*2i+1) 5**(p*i) {1\i}/2**(p**2)
+        
+        S(n,a,b,y) = sum C(n,2i)/(a*2i+b) y**(2i) {1\i}
+        T(n,a,b,y) = sum C(n,2i+1)/(a*(2i+1)+b) y**(2i+1) {1\i}
+        (S+T) = sum C(n,i)/(a*i+b) y**i {1\i}
+        t[i+1]/t[i] = C(n,i+1)/(a*(i+1)+b) y / (C(n,i)/(a*i+b))
+            = y(a*i+b)/(a*(i+1)+b) (n-i)!i!/(n-i-1)!/(i+1)!
+            = y(i+b/a)/((i+1)+b/a) (n-i)/(i+1)
+            = (-y)(i+b/a)/((i+1)+b/a) (i-n)/(i+1)
+        t[0] = 1/b
+        (S+T) = 1/b F [b/a, -n] [1+b/a] (-y)
+        (S-T) = 1/b F [b/a, -n] [1+b/a] (y)
+        S = (F [b/a, -n] [1+b/a] (-y) + F [b/a, -n] [1+b/a] (y))/(2b)
+        T = (F [b/a, -n] [1+b/a] (-y) - F [b/a, -n] [1+b/a] (y))/(2b)
+        [n=a=p][y**2=5**p][b=p-1] ==>> T = ?
+        [n=a=p][y**2=5**p][b=1] ==>> S = ?
+        F[p**2+1] (mod p**2) = (S(p,p,1,sqrt(5)**p)-T(p,p,p-1,sqrt(5)**p)/sqrt(5))*(p**2//2+1)**(p**2)
+        
+        F[p**2-1] (mod p**2) = (S(p,p,1,sqrt(5)**p)-T(p,p,p-1,sqrt(5)**p)/sqrt(5))*(p**2//2+1)**(p**2) - ((1+sqrt(5)**p)**p - (1-sqrt(5)**p)**p)/sqrt(5)*(p**2//2+1)**(p**2)
+        [p**2\F[p**2-1]] <==> (S(p,p,1,sqrt(5)**p)-T(p,p,p-1,sqrt(5)**p)/sqrt(5)) - ((1+sqrt(5)**p)**p - (1-sqrt(5)**p)**p)/sqrt(5) == 0 (mod p**2)
+        
+        [TO DO]
+
+        
+            
+        
+        ------- error:
+        field p:
+        (A-I)**p = A**p + (-1)**p*I = A**p-I (mod p)
+        (A-I)**p = 1/A**p (mod p)
+        A**(2p)-A**p-I = 0 (mod p)
+        x = (1+/-sqrt(5))/2
+        error !!!!!! [p>2][exist z: z**2==5 (mod p)] ==>> (A**p-x1*I)(A**p-x2*I)=0(mod p)
+            ==>> P[p] = A**p * P[0] = x*P[0] ==>> F[p] = 0 (mod p)
+            ==>> [f(p)\p] ==>> f(p) = 1 or p
+            ==>> f(p) = p
+            [p>2][exist z: z**2==5 (mod p)] ==>> [p>=5]
+            ==>> p=5 or (5|p) = (p|5) (-1)**((p-1)/2 * (5-1)/2) = (p|5)
+            error !!!!!! ==>> p = 0 or 1 or 4 (mod 5)
+            ie: 
+                p=11, sqrt(5)=4, 1/2=6, x=(1+/-4)*6=-3 or 4
+                (A**11+3I)(A**11-4I) = A**22-A**11-I = O (mod 11)
+                but A**11 = A and (A+3I)(A-4I) = O (mod 11)
+                NOT A=-3I or 4I !!!!!!!
+
+    
+    prove [|m|\F[n]] <==> [f(m)\n]
+    let r = n mod f(m), n = r+k*f(m), f(m) > 1
+        0 <= r < f(m), 0 < f(m)-1 < f(m)
+        F[n] = F[r+k*f(m)] = F[r-1]F[k*f(m)] + F[r]F[k*f(m)+1]
+        (mod F[f(m)]): F[n] == F[r]F[k*f(m)-1] == F[r]F[f(m)-1]F[(k-1)*f(m)-1]
+            == F[r]F[f(m)-1]**k F[-1] = F[r]F[f(m)-1]**k
+        
+        F[f(m)-1] != 0 (mod m)
+        F[n] = F[r]F[f(m)-1]**k + u F[f(m)] = F[r]F[f(m)-1]**k + u*v*m
+        F[n] == F[r] * w (mod m) where w != 0 (mod m)
+        [F[n] == 0 (mod m)] <==> [F[r] == 0 (mod m)] <==> [r = 0]
+            <==> [f(m)\n]
+    [f(m)<=1] ==>> [|m| <= 1], hold!!
+    [F[n] = 0 (mod m)]<==> [n = 0 mod f(m)]
+         <==> [|m|\F[n]] <==> [f(m)\n]
+    
+let min_Fdiv_idx = f
+    M = |m|
+    f(F[m]**0) = 1
+    f(F[m]**1) = 1 if [M=2] else M
+    f(F[m]**2) = 1 if [M=2] else M*F[M]
+    ???? f(F[m]**E) = M*F[M]**(E-1)/d1(m), for [E>=3]
+        where d1(m) = 2**[3 == m mod 6]
+    
+    f(II p[i]**e[i] {i=1..r}) = lcm(f(p[i]**e[i]) for i=[1..r])
+    ?? f(p**k) = f(p)*p**(k-1-[p=2][k>2]) for [prime p][int k>0] 
+        and [not p\F[f(p**k)]/p**k]
+        let fp(k) = f(p**k)/f(p) =?= p**(k-1) for [prime p > 2][int k>0]
+        
+    f(p) = ??
+        f(p) > 1 since [not p\F[1]] ==>> 
+            [p\F[n]] <==> [f(p)\n] ==>> [not f(p)\(n-1)]
+        
+        [k=1] ==>> f(p**1) = f(p) = w; 
+            [not p\F[f(p)]/p] ??????????
+            
+        [k>=1 hold to (k+1)] ==>> f(p**(k+1)) = u f(p**k)
+            ?? u = p
+            f = f(p**k) = w p**(k-1)
+            F[f] = R*p**k, [not p\R]
+            p**(k+1) == 0 (mod F[f]**2)
+            
+            
+        
+
+            F[i*f] (mod F[f]**2) == i F[f-1]**(i-1) F[f]  // see next section
+            F[i*m+1] == F[m+1]**i (mod F[m]**2)
+            F[i*m-1] == F[i*m+1] == F[m-1]**i (mod F[m])
+            F[f-1] = F[w p**(k-1) -1]
+                == F[w-1]**(p**(k-1)) (mod F[w]=F[f(p)]=x p)
+                == F[w-1]**(p**(k-1)) (mod p)
+                == F[w-1] != 0 (mod p)
+            
+            
+            W = F[w-1]
+            F[p*f] (mod p*F[f]) == p * 1 * F[f] == 0
+            [0<i<p] ==>> F[i*f] (mod p*F[f]) == i W**(i-1) F[f]
+                [not p\F[f]/p**k] ==>>
+                    F[i*f] (mod p**(k+1)) == i W**(i-1) F[f] != 0
+            ==>> f(p**(k+1)) = p*f = p*f(p**k)
+            
+            ?? [not p\F[p*f]/p**(k+1)]
+                [k>=2] ==>> [2k>=k+2] ==>> [p**(k+2)\F[f]**2] ==>> 
+                    F[p*f] (mod p**(k+2)) == p*1*F[f] = p*R*p**k = R*p**(k+1) != 0
+                [k=1] ==>> [not p**3\F[f(p)]**2=(R*p)**2]
+                    ???
+            [TO DO]
+            prove [not p**2\F[f(p)]] and [p>2][not p**3\F[p*f(p)]]
+            
+            
+    
+
+
+Matijasevich's lemma
+    F[n] = 0 (mod F[m]**2) <==> n = 0 (mod m*F[m]), for [|m| != 2] or n = 0 (mod 1)
+        <==> n == 0 (mod (|m|-[|m|=2])*F[m])
+        <==> n == 0 (mod |m*F[m]| - [|m|=2])
+    
+    left ==>> [n = 0 (mod m)]
+    let n = k*m
+    F[i*m+1] = F[m]F[(i-1)m] + F[m+1]F[(i-1)m+1]
+        == 0 + F[m+1]F[(i-1)m+1] (mod F[m]**2)
+        == F[m+1]**i F[1] 
+        == F[m+1]**i (mod F[m]**2)
+    F[i*m-1] = F[i*m+1] - F[i*m] == F[i*m+1] (mod F[m])
+    
+    F[i*m] = F[m]F[(i-1)m-1] + F[m+1]F[(i-1)m]
+        // F[2m] == F[m](F[m+1] + F[m+1]) = F[m] * 2F[m+1]
+        == F[m] F[(i-1)m+1] + F[m+1] F[m] * (i-1) * F[m+1]**(i-2)) (mod F[m]**2)
+        == F[m] F[m+1]**(i-1) (1 + (i-1))
+        == F[m] * i * F[m+1]**(i-1)
+
+    [0 == F[k*m] == F[m] * k * F[m+1]**(k-1) (mod F[m]**2)]
+        [0=F[m]] or [0=k (mod F[m])] or [0=F[m+1]**(k-1) (mod F[m])]
+        [m=0] or [0=k (mod F[m])] or [|F[m]| = 1]
+        [|m| <= 2] or [k=0 (mod F[m])]
+
+----------
+Fibonacci number system
+every nonnegative integer has a unique representation of the form
+n = F[a[0]] + F[a[1]] + ... + F[a[k]] = sum F[a[i]] {i=0..k}
+    [int n,k>=0] [a[i+1] >= a[i]+2] [a[0]=0]
+
+    inc 1 ==>>
+        [a[1] == 2] ==>> a[1:1] = 1
+        else ==>> a[1:1] = 2
+        then carry if exist i [a[i+1]==a[i]]
+    a[k] <<== F[a[k]] <= n < F[a[k]+1]
+
+FS(B) = (b[k],b[k-1],...,b[0])_F = sum b[i]F[2+i+count(B[(k+1)-i:])] {i=0..k}
+
+---------
+f z = sum F[i]z**i {i>=0}
+f(z) - z f(z) - z**2 f(z) = z
+f z = z / (1-z-z**2)
+
+G = golden_ratio = (1+sqrt(5))/2 = 1.61803...
+(2G-1)**2 = 5 ==>> 4G**2 - 4G = 4 ==>> G**2-G-1=0, G**2=G+1
+G, 1-G=-1/G are roots of G**2-G-1
+1/G, 1/(1-G)=-G are roots of (1/z**2-1/z-1) (1-z-z**2)
+1/{G,-1/G} = -{G,-1/G} = {G-1, -G}
+
+F[n] = (G**n - (-1/G)**n)/sqrt(5)
+    = floor(G**n/sqrt(5) + 1/2)
+    = round(G**n/sqrt(5)) for [int n>=0]
+F[n+1] = G*F[n] + (-1/G)**n
+----------------------------------------
+s(n) = sum F[i] {i=0..n} = sum F[i] {i=0->n+1}
+    = sum F[i-2] + F[i-1] {i=0..n}
+    = sum F[i] {i=-2..n-2} + sum F[i] {i=-1..n-1}
+    = F[-2] + F[-1] + s(n-2) + F[-1] + s(n-1) , for n>=2
+    = 1 + s(n-2) + s(n-1)
+s(0) = 0
+s(1) = 1
+s(n)+1 = s(n-2)+1 + s(n-1)+1, for n>=2
+s(0)+1 = 1 = F[2]; s(1)+1 = 2 = F[3]
+s(n)+1 = F[n+2]
+s(n) = F[n+2]-1, for n >= 0
+s(-1) = F[1]-1 = 0 = sum()
+s(-2) = F[0]-1 = -1 = -sum(F[-1])
+s(-3) = F[-1]-1 = 0 = -sum(F[-1]+F[-2])
+s(-n) = -sum F[i] {i=-(n-1)..-1} 
+    = -sum F[i] {i=-(n-1)->0} 
+    = sum F[i] {i=0->-(n-1)} 
+    = sum F[i] {i=0->-n+1}, for n > 0
+    
+s(n) = sum F[i] {i=0->n+1} = F[n+2]-1, for [int n]
+t(n) = sum F[i] {i=0->n} = s(n-1) = F[n+1]-1 [int n]
+D F[n] {n} = F[n+1] - F[n] = F[n-1]
+D**k F[i] {i}**k (n) = F[n-k] for [int k>=0]
+
+D a**x {x} = a**x ln a =?= a**(x-1)
+    ==>> ln a = 1/a ==>> 1 < a < e
+    a**a = e = lim (1+1/n)**n {n->inf}
+    a ~=~ 1.76322... = scipy.optimize.newton_krylov(lambda x: pow(x,x)-math.e, 2)
+    1/a ~=~ 0.56714...
+
+
+
+----------------------------------------
+6.7 CONTINUANTS
+continuant polynomial  // for continued fraction
+K 0 [] = 1
+K 1 [x1] = x1
+K n X = K (n-2) X[:n-2] + X[-1](K (n-1) X[:n-1])), for len(X) == n >= 2
+
+K 4 = .... + _.. + ._. + .._ + __
+K n ([z]*n) = sum C(n-i,i) z**i {i=0..n//2}
+F[n+1] = K n ([1]*n) = sum C(n-i,i) {i=0..n//2}
+
+K n X = K n reversed(X)
+K (n+m) X = (K (n-1) X[:n-1])(K (m-1) X[n+1:]) + (K n X[:n])(K m X[n:])
+    = terms(no 'X[n]X[n+1]') + terms(contains 'X[n]X[n+1]')
+    for [int n,m >= 1]
+
+(K (m+n+k) X)(K k X[m:m+k]) 
+    = (K (m+k) X[:m+k])(K (n+k) X[m:m+n+k]) 
+        + (-1)**k (K (m-1) X[:m-1])(K (n-1) X[m+k+1:m+n+k])
+
+----------------------------------------
+[a0;a1,...,an] = K [a0,...,an] / K A[1:]
+
+K [a1,...,an+y] = K A + y(K A[:-1]) = y (K (A+[1/y]))
+    = y(K [a1,...,an,1/y])
+    K [a1,...,an+1] = K [a1,...,an, 1]
+
+skip
+----------------------------------------
+
+chapter 7
+
+
+number of partitions of n
+    1/II (1-z**i) {i>=1}
+
+G(z) = sum g[i]z**i{i>=0} = <g[i]>, g[-n] = 0 for [n > 0]
+    closed form for G(z)
+    closed form for g[i]
+
+z**n G(z) = <g[i-n]>
+zG'(z) = <i g[i]>
+G(z)F(z) = convolution(<g[i]>, <f[i]>)
+
+
+
+
+-----
+exponential generating function 
+egf <g[i]> = <g[i]/i!>
+gf <g[i]> = <g[i]>
+
+binomial convolution
+egf <g[i]> * egf <h[i]> = egf <sum C(i,j)g[j]h[i-j] {j}>
+
+
+kernel functions
+to generate a sequence from a series
+[sum g[i] K(i,z) {i>=0} = 0] -->> [g[i]=0, for i>=0]
+choices of K(i,z):
+    z**i
+    z**i/i!
+    fall(z,i)
+    C(z,i)
+
+    1/i**z if i>0 else 0
+
+Dirichlet generating function
+dgf <g[i] for [i>=1]> z = sum g[i] / i**z {i>0}
+
+Riemann's zeta function
+zeta(z) = dgf <1,...> z
+
+
+dgf <g[i]> * dgf <h[i]> = dgf <sum g[j]h[i/j] {j\i}> 
+dgf <Mu[i]> z * zeta(z) = dgf <sum Mu[j] * 1 {j\i}> z 
+    = dgf <[i=1]> z = \z:1 z = 1
+dgf <Mu[i]> z = 1/zeta(z)
+
+Dirichlet generating functions are particularly valuable 
+when the sequence <g[i]> is a multiplicative function
+g[m*n] = g[m]g[n], for [m _L n] ==>>
+    dgf <g[i]> z = II 1 + sum g[p**k]/p**(k*z) {k>0} {prime p}
+
+    zeta(z) = II 1/(1-p**-z) {prime p}
+    dgf <Mu[i]> z = II (1-p**-z) {prime p}
+    dgf <phi(i)> z = II 1 + sum p**k(1-1/p)/p**(k*z) {k>0} {prime p}
+        = II 1 + (1-1/p) sum 1/(p**k)**(z-1) {k>0} {prime p}
+        = II 1 + (1-1/p) 1/p**(z-1)/(1-1/p**(z-1)) {k>0} {prime p}
+        = II 1 + (p-1)/(p**z-p) {k>0} {prime p}
+
+
+
+
+----------------------------------------
+----------------------------------------
+----------------------------------------
+----------------------------------------
+----------------------------------------
+----------------------------------------
+----------------------------------------
+----------------------------------------
+----------------------------------------
+----------------------------------------
+----------------------------------------
+----------------------------------------
+----------------------------------------
+----------------------------------------
+----------------------------------------
+----------------------------------------
+----------------------------------------
+----------------------------------------
+----------------------------------------
+----------------------------------------
+----------------------------------------
+----------------------------------------
+----------------------------------------
+----------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

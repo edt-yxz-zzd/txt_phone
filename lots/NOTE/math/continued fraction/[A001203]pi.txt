@@ -1,0 +1,264 @@
+Simple continued fraction expansion of Pi.
+A001203
+https://oeis.org/A001203
+
+
+continued_fraction_of(pi) = [3; 7, 15, 1, 292, 1, 1, 1, 2, 1, 3, 1, 14, 2, 1, 1, 2, 2, 2, 2, 1, 84, 2, 1, 1, 15, 3, 13, 1, 4, 2, 6, 6, 99, 1, 2, 2, 6, 3, 5, 1, 1, 6, 8, 1, 7, 1, 2, 3, 7, 1, 2, 1, 1, 12, 1, 1, 1, 3, 1, 1, 8, 1, 1, 2, 1, 6, 1, 1, 5, 2, 2, 3, 1, 2, 4, 4, 16, 1, 161, 45, 1, 22, 1, 2, 2, 1, 4, 1, 2, 24, 1, 2, 1, 3, 1, 2, 1]
+
+Decimal expansion of Pi (or, digits of Pi).
+https://oeis.org/A000796
+[3, 1, 4, 1, 5, 9, 2, 6, 5, 3, 5, 8, 9, 7, 9, 3, 2, 3, 8, 4, 6, 2, 6, 4, 3, 3, 8, 3, 2, 7, 9, 5, 0, 2, 8, 8, 4, 1, 9, 7, 1, 6, 9, 3, 9, 9, 3, 7, 5, 1, 0, 5, 8, 2, 0, 9, 7, 4, 9, 4, 4, 5, 9, 2, 3, 0, 7, 8, 1, 6, 4, 0, 6, 2, 8, 6, 2, 0, 8, 9, 9, 8, 6, 2, 8, 0, 3, 4, 8, 2, 5, 3, 4, 2, 1, 1, 7, 0, 6, 7, 9, 8, 2, 1, 4...]
+
+
+"Pi Unleashed (2001).djvu"
+    [page 223] 16. pi formula collection
+    [page 77] 6. spigot algorithm
+        http://www.cut-the-knot.org/Curriculum/Algorithms/SpigotForPi.shtml
+
+https://math.stackexchange.com/questions/716944/how-to-find-continued-fraction-of-pi
+    pi = SUM 2^(k+1)*(k!)^2 / (2*k+1)! {k <- 0..}
+
+https://en.wikipedia.org/wiki/Pi#Spigot_algorithms
+    # This formula can produce any individual hexadecimal digit of pi without calculating all the preceding digits.
+    pi = SUM 1/16^k * (4/(8*k+1) - 2/(8*k+4) - 1/(8*k+5) - 1/(8*k+6)) {k <- 0..}
+
+    "On the Rapid Computation of Various Polylogarithmic Constants.pdf"
+        http://crd-legacy.lbl.gov/~dhbailey/dhbpapers/digits.pdf
+        pi = SUM (-1/4)^k * (2/(4*k+1) + 2/(4*k+2) + 1/(4*k+3)) {k <- 0..}
+
+
+https://en.wikipedia.org/wiki/Chudnovsky_algorithm
+    #The time complexity of the algorithm is O(n*log(n)^3)
+    #"[pi] Pi Unleashed (2001)[good].djvu" :: [page 230] :: (16.89)
+    (640320)^(3/2) / (12*pi)
+    = 426880 * sqrt(10005) / pi
+    = SUM (6*k)!*(545140134*k+13591409) / ((3*k)! * (k!)^3 * (-262537412640768000)^k) {k <- 0..}
+
+    = C/pi
+    = SUM M[k] * L[k] / X[k] {k <- 0..}
+    where
+        C = 426880 * sqrt(10005) = (640320)^(3/2) / 12
+        X[k] = (-262537412640768000)^k = (-640320)^(3*k)
+        L[k] = (545140134*k+13591409)
+        M[k] = (6*k)! / ((3*k)! * (k!)^3)
+
+        X[k+1] = X[k] * (-262537412640768000)
+            X[0] = 1
+        L[k+1] = L[k] + 545140134
+            L[0] = 13591409
+        K[k+1] = K[k] + 12
+            K[0] = 6
+        M[k+1] = M[k] * (K[k]^3 - 16*K[k]) / (k+1)^3
+            M[0] = 1
+
+        640320^3 = 262537412640768000
+        640320 = 2^6 * 3 * 5 * 23 * 29
+        545140134 = 163 * 127 * 19 * 11 * 7 * 3^2 * 2
+        13591409 = 13 * 1045493
+
+https://en.wikipedia.org/wiki/Chudnovsky_algorithm
+########## Python implementation:
+
+from decimal import Decimal as Dec, getcontext as gc
+
+def PI(maxK=70, prec=1008, disp=1007): # parameter defaults chosen to gain 1000+ digits within a few seconds
+    gc().prec = prec
+    K, M, L, X, S = 6, 1, 13591409, 1, 13591409
+    for k in range(1, maxK+1):
+        M = (K**3 - 16*K) * M // k**3 
+        L += 545140134
+        X *= -262537412640768000
+        S += Dec(M * L) / X
+        K += 12
+    pi = 426880 * Dec(10005).sqrt() / S
+    pi = Dec(str(pi)[:disp]) # drop few digits of precision for accuracy
+    print("PI(maxK=%d iterations, gc().prec=%d, disp=%d digits) =\n%s" % (maxK, prec, disp, pi))
+    return pi
+
+Pi = PI()
+print("\nFor greater precision and more digits (takes a few extra seconds) - Try")
+PI(317,4501,4500)
+PI(353,5022,5020)
+
+
+http://www.numberworld.org/misc_runs/pi-5t/details.html#program
+Formulas used for computation
+    * For the main computation, the following formula was used:
+        * Chudnovsky Formula:
+            C/pi = SUM M[k] * L[k] / X[k] {k <- 0..}
+    * Verification was done using the following two BBP formulas:
+        * Plouffe's Formula:
+            pi = SUM 1/16^k * (4/(8*k+1) - 2/(8*k+4) - 1/(8*k+5) - 1/(8*k+6)) {k <- 0..}
+        * Bellard's Formula:
+            pi = 1/2^6 * SUM 1/(-1024)^k * (256/(10*k+1) + 1/(10*k+9) - 64/(10*k+3) - 32/(4*k+1) - 4/(10*k+5) - 4/(10*k+7) - 1/(4*k+3)) {k <- 0..}
+
+
+
+"Pi Unleashed (2001).djvu"
+    [page 77] 6. spigot algorithm
+https://github.com/henrytill/spigot
+https://www.cs.ox.ac.uk/jeremy.gibbons/publications/spigot.pdf
+    "Unbounded Spigot Algorithms for the Digits of Pi (2006)(Gibbons).pdf"
+        good!
+http://www.cut-the-knot.org/Curriculum/Algorithms/SpigotForPi.shtml
+    Rabinowitz and Wagon's spigot algorithm
+    # Each term shrinks the range by a factor of about a half, so more than three terms are required on average for every digit of the output.
+    #
+    pi = SUM 2^(k+1) * (k!)^2 / (2*k+1)! {k <- 0..}
+        ==>>
+            pi/2 = SUM k! / (2*k+1)!! {k <- 0..}
+                = 1 + 1/3 + (1*2)/(3*5) + (1*2*3)/(3*5*7) + ...
+                = 1 + 1/3 + 1/3*2/5 + 1/3*2/5*3/7 + ...
+                = 1 + 1/3*(1 + 2/5*(1 + 3/7*(1 + ...)))
+            pi = 2 + 1/3*(2 + 2/5*(2 + 3/7*(2 + ...)))
+                ^^^      ^^^      ^^^      ^^^
+        vs:
+            pi = 3.14159...
+                = 3 + 1/10*(1 + 1/10*(4 + 1/10*(1 + 1/10*(5 + 1/10*(9 + ...)))))
+                 ^^^       ^^^       ^^^       ^^^       ^^^       ^^^
+                = [3; 1,4,1,5,9...] of fixed-radix base [; 1/10, 1/10, 1/10, 1/10, 1/10...]
+                = [2; 2,2,2,2...] of mixed-radix base [; 1/3,2/5,3/7...]
+                # NOTE: 1 === [0; 9,9,9,9,9...] of fixed-radix base [; 1/10, 1/10, 1/10, 1/10, 1/10...]
+
+
+Spigot Algorithm for pi
+def Rabinowitz_and_Wagon_spigot_algorithm(num_decimal_digits_of_pi):
+    n = num_decimal_digits_of_pi
+    L = 1 + 10*n//3
+    A = [2] * L
+        # for n decimal digits # n = 3 = len(3.14)
+        # NOTE: not all correct digits of pi
+        #   but: abs(result<n> - pi) <= 5*10^(-n)
+        #
+    head_digit = None # p
+    num_nines_after_head_digit = None # nines
+    new_base = 10
+    num_output_digits = 0
+
+    #Iteration: repeat until n decimal places have been output.
+    while num_output_digits < n:
+    * Multiply with the new base.
+        for i in range(L):
+            A[i] *= 10
+    * Normalise.
+        #for i in range(L, 0, -1):
+        for i in reversed(range(1, L)):
+            q, r = divmod(A[i], 2*i+1)
+            A[i] = r
+            A[i-1] += q*i
+
+    * Calculation of the next provisional digit of pi.
+        q, r = divmod(A[0], 10)
+        A[0] = r
+    * Correct the old provisional digits.
+        assert 0 <= q <= 11
+        if q < 9:
+            #output
+            if head_digit is None:
+                assert num_nines_after_head_digit is None
+            else:
+                yield head_digit
+                yield from [9]*num_nines_after_head_digit
+                num_output_digits += 1 + num_nines_after_head_digit
+            head_digit = q
+            num_nines_after_head_digit = 0
+        elif q == 9:
+            num_nines_after_head_digit += 1
+            if num_nines_after_head_digit + num_output_digits >= n:
+                raise Exception('too many 9s!')
+        elif q == 10:
+            head_digit += 1
+            yield head_digit
+            yield from [0]*num_nines_after_head_digit # 0 not 9
+            num_output_digits += 1 + num_nines_after_head_digit
+            head_digit = 0
+            num_nines_after_head_digit = 0
+        else:
+            raise logic-error
+
+
+Lambert's expression
+    # yields two decimal digits for every three terms
+    #   more efficient than Rabinowitz and Wagon's spigot algorithm
+    pi = 4/(1+1^2/(3+2^2/(5+3^2/(7+...))))
+    let Lambert_expression(k) = (2*k-1) + k^2/Lambert_expression(k+1) # k >= 1
+    pi === 4/Lambert_expression(1)
+    ???Lambert_expression(k) <- range[2*k-1, 2*k-1+k/2]
+Gosper's series
+    # yielding more than one decimal digit for each term
+    #   more efficient than Lambert's expression
+    pi = 3 + (1*1)/(3*4*5) * (8 + (2*3)/(3*7*8) * (...(5*k-2) + (k*(2*k-1))/(3*(3*k+1)*(3*k+2)) * (...)))
+        # k <- [1..]
+    let Gosper_series(k) = (5*k-2) + (k*(2*k-1))/(3*(3*k+1)*(3*k+2)) * Gosper_series(k+1) # k >= 1
+    pi === Gosper_series(1)
+    ???Gosper_series(k) <- [27/5 * k - 12/5, 27/5 * k - (6/5)^3]
+streaming algorithm # a framework
+    Rabinowitz and Wagon's spigot algorithm is bounded
+    let's turn it into streaming algorithm:
+        infinite series of linear fractional transformations
+        # proof see below
+
+    # Rabinowitz and Wagon's spigot algorithm
+    pi = 2 + 1/3*(2 + 2/5*(2 + 3/7*(2 + ...)))
+        = (2 + 1/3*) (2 + 2/5*) (2 + 3/7*) ...
+        = II (2 + k/(2*k+1)*) {k <- 1..}
+        = II matrix[k, 4*k+2; 0, 2*k+1] {k <- 1..}
+        how to repr pi as decimal digits?
+            init st = I
+            current partial_pi is remain    # after subtract floor and lshift
+            current state is st             # state is a matrix
+            #current output position is n   # n>=0; the n-th digit of pi
+            current matrix index k          # k>=1; k in above matrix
+            does current state st yield a decimal digit?
+            fact: st(3) <= digit <= st(4)
+            if floor(st(3)) == floor(st(4)):
+                digit = floor(st(3))
+                yield digit
+                # update state by 10*(remain-digit)
+                st = matrix[10, 10*digit; 0, 1]*st
+            else:
+                # unknown yet; require more
+                st *= matrix[k, 4*k+2; 0, 2*k+1]
+                k += 1
+    # Rabinowitz_and_Wagon_spigot
+    pi = 2 + 1/3*(2 + 2/5*(2 + 3/7*(2 + ...)))
+        = (2 + 1/3*) (2 + 2/5*) (2 + 3/7*) ...
+        = II (2 + k/(2*k+1)*) {k <- 1..}
+        = II matrix[k, 4*k+2; 0, 2*k+1] {k <- 1..}
+        #pi === 1*Rabinowitz_and_Wagon_spigot(1)
+        #Rabinowitz_and_Wagon_spigot(k) <- range[3,4]
+        fact: st(3) <= digit <= st(3)
+    # Lambert_expression
+    pi = 4/(1+1^2/(3+2^2/(5+3^2/(7+...))))
+        = 4/( (1+1^2/) (3+2^2/) (5+3^2/) ... )
+        = 4 / II (2*k-1 + k^2/) {k <- 1...}
+        = matrix[0, 4; 1, 0] * II matrix[2*k-1, k^2; 1, 0] {k <- 1..}
+        #pi === 4/Lambert_expression(1)
+        #Lambert_expression(k) <- range[2*k-1, 2*k-1+k/2]
+        fact: st(2*k-1) <= digit <= st(2*k-1+k/2)
+    # Gosper_series
+    pi = 3 + (1*1)/(3*4*5) * (8 + (2*3)/(3*7*8) * (...(5*k-2) + (k*(2*k-1))/(3*(3*k+1)*(3*k+2)) * (...)))
+        = (3 + (1*1)/(3*4*5) *) (8 + (2*3)/(3*7*8) *) ... ((5*k-2) + (k*(2*k-1))/(3*(3*k+1)*(3*k+2)) *) ...
+        = II ((5*k-2) + (k*(2*k-1))/(3*(3*k+1)*(3*k+2)) *) {k <- 1..}
+        = II matrix[(k*(2*k-1), 3*(3*k+1)*(3*k+2)*(5*k-2); 0, 3*(3*k+1)*(3*k+2)] {k <- 1..}
+        #pi === Gosper_series(1)
+        #Gosper_series(k) <- [27/5 * k - 12/5, 27/5 * k - (6/5)^3]
+        fact: st(27/5 * k - 12/5) <= digit <= st(27/5 * k - (6/5)^3)
+
+
+???[matrix[q, r; s, t] . matrix[Q, R; S, T] == matrix[q, r; s, t] * matrix[Q, R; S, T]???
+    # matrix === linear fractional transformation
+    # hence I = [1,0; 0,1]
+proof:
+    matrix[q, r; s, t](X) = (q*X+r) / (s*X+t)
+    matrix[Q, R; S, T](x) = (Q*x+R) / (S*x+T)
+    matrix[q, r; s, t](matrix[Q, R; S, T](x))
+        = (q*X+r) / (s*X+t) where X = (Q*x+R) / (S*x+T)
+        = (q*(Q*x+R) / (S*x+T)+r) / (s*(Q*x+R) / (S*x+T)+t)
+        = (q*(Q*x+R) + (S*x+T)*r) / (s*(Q*x+R) + (S*x+T)*t)
+        = ((q*Q+S*r)*x + (q*R+T*r)) / ((s*Q+S*t)*x + (s*R+T*t))
+        = matrix[q*Q+S*r, q*R+T*r; s*Q+S*t, s*R+T*t](x)
+        = (matrix[q, r; s, t]*matrix[Q, R; S, T])(x)
+    i.e.
+        matrix[q, r; s, t] . matrix[Q, R; S, T] == matrix[q, r; s, t] * matrix[Q, R; S, T]
+

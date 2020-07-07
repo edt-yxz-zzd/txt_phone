@@ -1,0 +1,131 @@
+The meaning of a single- and a double-underscore before an object name in Python
+http://stackoverflow.com/questions/1301346/the-meaning-of-a-single-and-a-double-underscore-before-an-object-name-in-python
+
+I want to clear this up once and for all. Can someone please explain the exact meaning of having leading underscores before an object's name in Python? Also explain the difference between a single and a double leading underscore. Also, does that meaning stay the same whether the object in question is a variable, a function, a method, etcetera?
+
+
+
+1) sometimes _() is an alias for a localization function
+2) from module import *, _foo will be exclude, if __all__ not contains it
+3) _foo is semiprivate (just for convention) 
+    or is intended to be overridden by subclasses
+4) __foo__ is typically reserved for builtin methods or variables
+5) __foo is considered superprivate and 
+    gets namemangled to prevent accidental access: 
+    instance._ClassName__foo instead of instance.__foo
+
+
+
+
+
+
+
+
+
+#######################################################
+
+
+
+Single Underscore
+
+    Variables in a class with a leading underscore are simply to indicate to other programmers that the variable should be private. However, nothing special is done with the variable itself.
+    It's also worth mentioning that if you prefix a name with an underscore, it will be excluded when using "from module import *"
+
+Double Underscore (Name Mangling)
+
+    From the Python docs:
+    
+        Any identifier of the form __spam (at least two leading underscores, at most one trailing underscore) is textually replaced with _classname__spam, where classname is the current class name with leading underscore(s) stripped. This mangling is done without regard to the syntactic position of the identifier, so it can be used to define class-private instance and class variables, methods, variables stored in globals, and even variables stored in instances. private to this class on instances of other classes.
+        
+        And a warning from the same page:
+        
+        Name mangling is intended to give classes an easy way to define private instance variables and methods, without having to worry about instance variables defined by derived classes, or mucking with instance variables by code outside the class. Note that the mangling rules are designed mostly to avoid accidents; it still is possible for a determined soul to access or modify a variable that is considered private.
+    
+    Example
+        
+        >>> class MyClass():
+        ...     def __init__(self):
+        ...             self.__superprivate = "Hello"
+        ...             self._semiprivate = ", world!"
+        ...
+        >>> mc = MyClass()
+        >>> print mc.__superprivate
+        Traceback (most recent call last):
+          File "<stdin>", line 1, in <module>
+        AttributeError: myClass instance has no attribute '__superprivate'
+        >>> print mc._semiprivate
+        , world!
+        >>> print mc.__dict__
+        {'_MyClass__superprivate': 'Hello', '_semiprivate': ', world!'}
+
+
+
+#######################################################
+
+Excellent answers so far but some tidbits are missing. A single leading underscore isn't exactly JUST a convention: if you use from foobar import *, and module foobar does not define an __all__ list, the names imported from the module do NOT include those with a leading underscore. Let's say it's MOSTLY a convention, since this case is a pretty obscure corner;-).
+
+The leading-underscore convention is widely used not just for PRIVATE names, but also for what C++ would call PROTECTED ones -- for example, names of methods that are fully intended to be overridden by subclasses (even ones that HAVE to be overridden since in the base class they raise NotImplementedError!-) are often single-leaading-underscore names to indicate to code using instances of that class (or subclasses) that said methods are not meant to be called directly.
+
+For example, to make a thread-safe queue with a different queueing discipline than FIFO, one imports Queue, subclasses Queue.Queue, and overrides such methods as _get and _put; "client code" never calls those ("hook") methods, but rather the ("organizing") public methods such as put and get (this is known as the Template Method design pattern -- see e.g. here for an interesting presentation based on a video of a talk of mine on the subject, with the addition of synopses of the transcript).
+
+
+#######################################################
+
+__foo__: this is just a convention, a way for the Python system to use names that won't conflict with user names.
+
+_foo: this is just a convention, a way for the programmer to indicate that the variable is private (whatever that means in Python).
+
+__foo: this has real meaning: the interpreter replaces this name with _classname__foo as a way to ensure that the name will not overlap with a similar name in another class.
+
+No other form of underscores have meaning in the Python world.
+
+There's no difference between class, variable, global, etc in these conventions.
+
+
+
+
+########################################################
+
+Sometimes you have what appears to be a tuple with a leading underscore as in
+
+def foo(bar):
+    return _('my_' + bar)
+In this case, what's going on is that _() is an alias for a localization function that operates on text to put it into the proper language, etc. based on the locale. For example, Sphinx does this, and you'll find among the imports
+
+from sphinx.locale import l_, _
+and in sphinx.locale, _() is assigned as an alias of some localization function.
+
+
+
+
+########################################################
+
+._variable is semiprivate and meant just for convention
+
+.__variable is considered superprivate and gets namemangled to prevent accidental access
+
+.__variable__ is typically reserved for builtin methods or variables
+
+You can still access .__superprivate variables if you desperately want to. The double underscores just namemangles, or renames, the variable to something like instance._className__superprivate
+
+Example:
+
+class Test(object):
+    def __init__(self):
+        self.__a = 'a'
+        self._b = 'b'
+
+>>> t = Test()
+>>> t._b
+'b'
+t._b is accessible because it is only hidden by convention
+
+>>> t.__a
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+AttributeError: 'Test' object has no attribute '__a'
+t.__a isn't found because it no longer exists due to namemangling
+
+>>> t._Test__a
+'a'
+By accessing instance._className__variable instead of just the superprivate name, you can access the hidden value

@@ -1,0 +1,125 @@
+
+{-
+    def class BoolLike b
+        def not/and/or
+        
+    def data Bool
+    def instancee BoolLike Bool
+    def data DeduceBool
+    def instancee BoolLike DeduceBool
+    proof DeduceBool ~=~ Bool
+    
+    
+    def type System p
+    def class BoolLike p => PropositionClass p
+        def deduce
+    
+    def data DeduceBoolPair
+    def type EvalBool
+    def eval
+    constraints evalbool_not/or/and 
+        ==>> def evalbool_not/or/and
+    def instance BoolLike EvalBool
+    
+-}
+
+class BoolLike b where
+    not :: b->b
+    or :: b->b->b
+    and :: b->b->b
+    
+    not . not == id
+    ?? not (x `or` y) == (not x) `and` (not y)
+    or = flip . or
+    and = flip . and
+    (x `or` y) `or` z = x `or` (y `or` z)
+    (x `and` y) `and` z = x `and` (y `and` z)
+
+data Bool = T | F
+    bool_not
+    bool_or
+    bool_and
+
+data DeduceBool = DT | DF
+
+data Proposition = Axiom EvalBool 
+                 | Proposition_not Proposition 
+                 | Proposition_or Proposition Proposition
+                 | Proposition_and Proposition Proposition
+
+type System p = Map p EvalBool -- axiom is proposition
+class BoolLike p => PropositionClass p where
+    -- proposition_not . proposition_not = id
+    proposition_not :: p -> p
+    
+    -- proposition_or = flip . proposition_or
+    proposition_or :: p -> p -> p
+    -- proposition_and = flip . proposition_and
+    proposition_and :: p -> p -> p
+    -- proposition_not (proposition_or p q) = proposition_and (proposition_not p) (proposition_not q)
+
+    deduce :: PropositionClass p => System p -> p -> DeduceBool
+    
+    -- s |--> p -- whether p can be deduced from s in finite steps
+    deduce s p = DT if s |--> p else DF
+    deduce s (proposition_or p q) = DT if s |--> p or s |--> q else DF
+    ==>> deduce s (proposition_or p q) == deducebool_or (deduce s p) (deduce s q)
+    deduce s (proposition_and p q) = DT if s |--> p and s |--> q else DF
+    ==>> deduce s (proposition_and p q) == deducebool_and (deduce s p) (deduce s q)
+    
+    -- NOTE: deduce s (proposition_not p) =!= deducebool_not (deduce s p)
+    -- that is why we introduce EvalBool/BoolPair/DeduceBoolPair
+
+type DeduceBoolPair = (DeduceBool, DeduceBool)
+TF = (DT, DT)
+TU = (DT, DF)
+UU = (DF, DF)
+UF = (DF, DT)
+
+deducebool2bool DT = T
+deducebool2bool DF = F
+
+type EvalBool = DeduceBoolPair
+-- data EvalBool = TF | TU | UF | UU
+
+eval :: PropositionClass p => System p -> p -> EvalBool
+eval s p = (deduce s p, deduce s (proposition_not p))
+    evalbool_not (eval s p) == eval s (proposition_not p)
+    evalbool_or (eval s p) (eval s q) == eval s (proposition_or p q)
+    evalbool_and (eval s p) (eval s q) == eval s (proposition_and p q)
+
+    
+eval s (proposition_not p)
+    -- deduce s (proposition_not p), deduce s (proposition_not (proposition_not p))
+    -- deduce s (proposition_not p), deduce s p
+    = case eval s p of
+    (a, b) -> (b, a)
+
+==>> evalbool_not (a, b) = (b, a)
+
+
+eval s (proposition_or p q)
+    -- deduce s (proposition_or p q), deduce s (proposition_not $ proposition_or p q)
+    -- deduce s (proposition_or p q), deduce s (proposition_and (proposition_not p) (proposition_not q))
+    -- deducebool_or (deduce s p) (deduce s q), deducebool_and (deduce s (proposition_not p)) (deduce s (proposition_not q))
+    = case (eval s p, eval s q) of
+    ((a,b), (x,y)) -> (deducebool_or a x, deducebool_and b y)
+    
+==>> evalbool_or ((a,b), (x,y)) = (deducebool_or a x, deducebool_and b y)
+
+
+eval s (proposition_and p q)
+    -- deduce s (proposition_and p q), deduce s (proposition_not $ proposition_and p q)
+    -- deduce s (proposition_and p q), deduce s (proposition_or (proposition_not p) (proposition_not q))
+    -- deducebool_and (deduce s p) (deduce s q), deducebool_or (deduce s (proposition_not p)) (deduce s (proposition_not q))
+    = case (eval s p, eval s q) of
+    ((a,b), (x,y)) -> (deducebool_and a x, deducebool_or b y)
+    
+==>> evalbool_and ((a,b), (x,y)) = (deducebool_and a x, deducebool_or b y)
+
+==>> (EvalBool, evalbool_not/or/and) s.t BoolLike requirements
+instance BoolLike EvalBool where
+    not = evalbool_not
+    or = evalbool_or
+    and = evalbool_and
+    

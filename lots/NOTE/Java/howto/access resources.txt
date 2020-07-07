@@ -1,0 +1,65 @@
+access resources
+
+see:
+    example/pkgResourceAccessor/ResourceAccessor.java
+xxx.jar/
+    global/
+        test.txt
+    ns/
+        local/
+            test.txt
+        MyClass.class
+        MyClass.java
+            ///////////////////// 1
+            String relative_path = "local/test.txt";
+            String absolute_path = "/global/test.txt";
+            if (null != MyClass.class.getResourceAsStream(relative_path))
+                ...;
+            if (null != MyClass.class.getResourceAsStream(absolute_path))
+                ...;
+
+            ///////////////////// 2
+            String root_relative_path1 = "ns/local/test.txt";
+            String root_relative_path2 = "global/test.txt";
+            ClassLoader loader = Thread.currentThread().getContextClassLoader();
+            if (null != loader.getResourceAsStream(relative_path))
+                ...;
+            if (null != loader.getResourceAsStream(absolute_path))
+                ...;
+
+https://docs.oracle.com/javase/8/docs/technotes/guides/lang/resources.html
+    1. the only seperator is "/"
+
+    2. Class::resolveName
+        class"xxx.yyy.MyClass" + relative_path"resources/image.png"
+            ==>> "/xxx/yyy/resources/image.png"
+
+https://docs.oracle.com/javase/8/docs/technotes/guides/lang/resources.html
+1. local relative
+    // may not work when jar is used as a plugin.
+    // getResourceAsStream instead of getResource
+    InputStream in = getClass().getResourceAsStream("/file.txt");
+    if (in == null) return;
+    BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+
+    /*
+    use getResourceAsStream instead of getResource
+    //bad: resources in jar and filesystem have different relative path!!!
+        File file = new File(getClass().getResource("/file.txt").toURI());
+        BufferredReader reader = new BufferedReader(new FileReader(file));
+    The URI is not hierarchical occurs because the URI for a resource within a jar file is going to look something like this: file:/example.jar!/file.txt. You cannot read the entries within a jar (a zip file) like it was a plain old File.
+    */
+2. global # from root
+    InputStream in = Thread.currentThread().getContextClassLoader().getResourceAsStream("file.txt")
+    if (in == null) return;
+
+
+Java programs can use two mechanisms to access resources:
+    1. Applet
+        // Applets use Applet.getCodeBase() to get the base URL for the applet code and then extend the base URL with a relative path to load the desired resource, for example with Applet.getAudioClip(url).
+        Applet.getCodeBase()
+    2. Application
+        Applications use "well known locations" such as System.getProperty("user.home") or System.getProperty("java.home"), then add "/lib/resource", and open that file.
+
+
+

@@ -1,0 +1,64 @@
+Beautiful Code
+Beautiful Concurrency
+
+
+Haskell threads spawned by forkIO are extremely lightweight: they occupy a few hundred bytes of memory, and it is perfectly reasonable for a single program to spawn thousands of them.
+
+Haskell supportsuser-defined control structures. ... my tutorial ¡°Tackling the awkward squad.¡±
+
+// thread local buffer of variables
+// commit all changes at once when atomical action finish
+// disallow side-effects in atomical action.
+// validate buffer with global variables before commit, if fail (modified since current atomic action) then re-excute action
+When atomically actis performed, a thread-local transaction log is allocated, initially empty. Then the actionactis performed, without taking any locks at all. While performing act, each call to write TVar writes the address of theTVarand its new value into the log; it does not write to theTVaritself. Each call toreadTVarfirst searches the log (in case theTVarwas written by an earlier call towriteTVar); if no such record is found, the value is read from theTVaritself, and theTVarand value read are recorded in the log. In the meantime, other threads might be running their own atomic blocks, reading and writingTVars like crazy.
+When the action act is finished, the implementation first validates the log and, if validation is successful,commits the log. The validation step examines eachreadTVarrecorded in the log and checks that the value in the log matches the value currently in the realTVar. If so, validation succeeds, and the commit step takes all the writes recorded in the log and writes them into the realTVars.
+These steps are performed truly indivisibly: the implementation disables interrupts, or uses locks or compare-and-swap instructions¡ªwhatever is necessary to ensure that validation and commit are perceived by other threads as completely indivisible. All of this is handled by the implementation, however, and the programmer does not need to know or care how it is done.
+What if validation fails? Then the transaction has had an inconsistent view of memory. So, we abort the transaction, reinitialize the log, and runactall over again. This process is calledre-execution. Because none ofact¡¯s writes have been committed to memory, it is per-fectly safe to run it again. However, notice that it is crucial thatactcontains no effects other thanreads and writes on TVars.
+... Fortunately, the type system prevents us from running IO actions inside STM actions, so the above fragment would be rejected by the type checker. This is another big advantage of distinguishing the types of IO and STM actions.
+
+
+
+
+
+TABLE 24-1.The key operations of STM Haskell
+Operation       Type signature
+atomically      STM a -> IO a
+retry           STM a
+orElse          STM a -> STM a -> STM a
+newTVar         a -> STM (TVar a)
+readTVar        TVar a -> STM a
+writeTVar       TVar a -> a -> STM ()
+
+
+
+The Santa Claus Problem
+I want to show you a complete, runnable concurrent program using STM. A well-known example is the so-called Santa Claus problem, originally attributed to Trono:
+Santa repeatedly sleeps until wakened by either all of his nine reindeer, back from their holidays, or by a group of three of his ten elves. If awakened by the reindeer, he harnesses each of them to his sleigh, delivers toys with them and finally unharnesses them (allowing them to go off on holiday). If awakened by a group of elves, he shows each of the group into his study, consults with them on toy R&D and finally shows them each out (allowing them to go back to work). Santa should give priority to the reindeer in the case that there is both a group of elves and a group of reindeer waiting.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,111 @@
+
+
+:[x:X][P:X->*][s:Sort#][R:s]
+    # in input side
+    # 1) subset
+    handle_subset : P -> R
+    # 2) nonempty_subset/constraint/guarded
+    handle_nonempty_subset : (?x:X. P x) -> R
+    <==> handle_with_constraint : @x:X. P x -> R
+    # 3) equivalence classes
+    handle_one_equivalence_class
+        <==> handle_nonempty_subset
+    handle_equivalence_classes : ???????
+
+(?x:X. P x) -> R
+    # special case of below:
+@x:X. @p:P x. R x p
+@x:X. @p:P x. (?r: R x p. Q x p r)
+    # problem: r should not depend on p!!!
+@x:X. (?r:R x. @p: P x -> Q x p r)
+    # now, r does not depend on p
+    # problem: @x. @y. @z. (?r:R. P x -> Q y -> S z -> T r)
+    #           x and P x are seperated
+
+
+(?x:X. P x)
+    <==> ?^{>=1} x:X. P x
+(@x:X. P x)
+    <==> @^{>=1} x:X. P x
+Unique X P
+    <==> ?^{==1} x:X. P x
+    <==> ?^{>=1} x:X. P x /\ ?^{<=1} x:X. P x
+    <==> (?x. P x) /\ (@x:X. @y:Y. P x -> P y -> (x==y))
+    <==> (?x. P x) /\ (?x:X. @y:X. P y -> (x == y))
+    <==> ?x. (P x /\ @y:X. P y -> (x == y))
+@X.@P:X->*. @p:Unique X P. (r:X)
+    # problem: r should not depend on p!!!
+@X:s. @p:(?P:X->*. Unique X P). X
+    ==>> ???? @X:s. (?r:X. @p:(?P:X->*. Unique X P). ()) ## ERROR
+    since r indeed depends on P, though not p!!!
+@X:s. @p:(?P:X->*. Unique X P). X
+
+The X P = (x:X, P x; Unique X P)
+    # the unique proof is a ghost
+    # but the property (P x) is not.
+
+####### ghost
+# (data; ghost) or (data; ghosts_DAG)
+(x=expr:X ; P x) : (x:X; P x)
+(\;(x:X; p: P x). (f x : T x p)) : (@;(x:X; p: P x). T x p)
+    p not in FREE(f)
+# input only: (data; ghosts_DAG; happens_DAG)
+# when apply: (f:((d;g)->(r;gr); arr_g)) (a:(d; ga))
+#           ==>> (f:((d;g)->(r;gr); arr_g'{h'->h''})) (a':(d;g';h')) : (r;gr; h'')
+            ==>> ~ : (r;gr')
+(x=expr:X ; p=P x; {{}=> a= exprA x p:A x p, {a}=>b=exprB x p a:B x p a})
+    : (x:X; p:P x; {{}=>a:A x p, {a}=>b:B x p a})
+# ERROR: f : (data; ghosts_DAG; happens_DAG) -> (data; ghosts_DAG)
+# f : ((data; ghosts_DAG) -> data; arrow_ghosts_DAG)
+(\;(x:X; p: P x; {...}). f x) : (@;(x:X; p: P x; {...}). R x p a b
+    p not in FREE(f)
+    a,b,... not in FREE(f,T)
+    R x p a b = (T x p; {{b}=>b=...}) # 'a' may or may not present
+
+
+
+
+######### DAG
+# DAG = keyword_only # no positional, keyword_positional
+DAG kind = '{' (DAG_elems kind)? '}'
+DAG_elems kind = (DAG_elem kind) (',' (DAG_elem kind))*
+DAG_elem kind = DAG_from? (DAG_constraint kind)
+DAG_from = '{' DAG_names? '}' '=>'
+DAG_constraint TERM = DAG_assign
+DAG_constraint TYPE = DAG_type
+DAG_assign = DAG_name '=' term ':' type
+DAG_type = DAG_name ':' type
+DAG_names = DAG_name (',' DAG_name)*
+
+
+
+########### equivalence classes
+handle_equivalence_classes
+BinR = \s:Sort#. \X:s. (X->X->* : s)
+is = \s:Sort#. \X:s. X->X->*  # arbitrary equivalence classes, so is (===)
+
+Reflex = \s:Sort#. \X:s. \eq:BinR s X. @x:X. eq x x
+Sym = \s:Sort#. \X:s. \eq:BinR s X. @x,y:X. eq x y => eq y x
+Trans = \s:Sort#. \X:s. \eq:BinR s X. @x,y,z:X. eq x y => eq y z => eq x z
+IsEqR = \s:Sort#. \X:s. \eq:BinR s X. Reflex X eq /\ Sym X eq /\ Trans X eq
+EqR_Is = \s:Sort#. \X:s. EqR X (is X)
+EqR = \s:Sort#. \X:s. (eq:BinR s X; Reflex X eq /\ Sym X eq /\ Trans X eq)
+
+X:Sort#
+EqX : X->X->*
+isEqX : EqR X EqX
+Y:Sort#
+EqY : Y->Y->*
+isEqY : EqR Y EqY
+(f: @x:X. Y; @x:X.@x':X. @p:EqX x x'. EqY (f x) (f x'))
+
+EqCls = \s:Sort#. \X:s. \EqX:EqR s X. (@z:X. (x:X; EqX.0 x z) : *)
+ERROR: f : EqCls s X EqX -> EqCls s' Y EqY
+f : @x:X. (y:Y; @z:X. EqX.0 x z => EqY.0 y (f z))
+EqClsMap : \s,s':Sort#. \X:s. \Y:s'. \EqX:EqR s X.\EqY:EqR s' Y.
+    @x:X. (y:Y; @z:X. EqX.0 x z => EqY.0 y (f z)) : *
+f : EqClsMap s s' X Y EqX EqY
+EqClsMapEq = \s\s'\X\Y\EqX\EqY. EqCls * (EqClsMap s s' X Y EqX EqY) (\f. \g. @x:X. EqY (f x).0 (g x).0)
+EqClsT = (s:Sort#, X:s, EqX:EqR s X, x:X; z:X, EqX.0 x z)
+
+

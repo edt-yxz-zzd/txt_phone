@@ -1,0 +1,930 @@
+\documentstyle[11pt]{article}
+\renewcommand{\baselinestretch}{1.3}
+\newcommand{\itemspace}{\hspace{8pt}}   
+\newcommand{\hfhf}{\left(\frac{1}{2},\frac{1}{2}\right)}
+\newcommand{\overp}{\overline{P}}
+\def\thefigure{\arabic{section}.\arabic{subsection}.\arabic{figure}[p]}
+
+\def\mod{{\rm mod}}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%
+%%%      Welcome to the macros of Ilan Vardi!
+%%%
+%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%
+%%%%%%      1 in margins produced by this 
+%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\setlength{\textwidth}{6.5in}                                
+\setlength{\textheight}{8.9in}                               
+\setlength{\topmargin}{0pt}                          
+\setlength{\oddsidemargin}{0pt}                          
+\setlength{\evensidemargin}{0pt}                         
+\setlength{\headheight}{0pt}                             
+\setlength{\headsep}{0pt}    
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%
+%%%      TeX's eqalign macros....
+%%%
+\catcode`@=11
+\newskip\@centering \@centering=0pt plus 1000pt minus 1000pt
+\def\openup{\afterassignment\@penup\dimen@=}
+\def\@penup{\advance\lineskip\dimen@
+  \advance\baselineskip\dimen@
+  \advance\lineskiplimit\dimen@}
+\def\eqalign#1{\null\,\vcenter{\openup\jot\m@th
+  \ialign{\strut\hfil$\displaystyle{##}$&$\displaystyle{{}##}$\hfil
+      \crcr#1\crcr}}\,}
+\newif\ifdt@p
+\def\displ@y{\global\dt@ptrue\openup\jot\m@th
+  \everycr{\noalign{\ifdt@p \global\dt@pfalse
+      \vskip-\lineskiplimit \vskip\normallineskiplimit
+      \else \penalty\interdisplaylinepenalty \fi}}}
+\def\@lign{\tabskip\z@skip\everycr{}} % restore inside \displ@y
+\def\displaylines#1{\displ@y
+  \halign{\hbox to\displaywidth{$\@lign\hfil\displaystyle##\hfil$}\crcr
+    #1\crcr}}
+\def\eqalignno#1{\displ@y \tabskip\@centering
+  \halign to\displaywidth{\hfil$\@lign\displaystyle{##}$\tabskip\z@skip
+    &$\@lign\displaystyle{{}##}$\hfil\tabskip\@centering
+    &\llap{$\@lign##$}\tabskip\z@skip\crcr
+    #1\crcr}}
+\def\leqalignno#1{\displ@y \tabskip\@centering
+  \halign to\displaywidth{\hfil$\@lign\displaystyle{##}$\tabskip\z@skip
+    &$\@lign\displaystyle{{}##}$\hfil\tabskip\@centering
+    &\kern-\displaywidth\rlap{$\@lign##$}\tabskip\displaywidth\crcr
+   #1\crcr}}
+\catcode`@=12
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%   boxed text
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newlength{\boxedparwidth}
+ \setlength{\boxedparwidth}{.92 \textwidth}
+
+\newenvironment{boxedtext}
+{\begin{center}
+ \begin{tabular}{|@{\hspace{.15 in}}c@{\hspace{.15 in}}|}
+  \hline \\ \begin{minipage}[t]{\boxedparwidth}
+    \setlength{\parindent}{.25 in}}
+    {\end{minipage} \\ \\ \hline \end{tabular} \end{center}}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\def\calc{{\cal C}}
+
+\begin{document}
+\begin{center}
+{\LARGE Code and pseudo code}
+
+
+\medskip
+{\Large Ilan Vardi}
+
+\medskip
+Appeared in The Mathematica Journal {\bf 6} Issue 2 (1996), 66--71.
+
+\end{center}
+
+
+
+
+
+
+\bigskip
+It is quite common that mathematical results rely on explicit
+descriptions of algorithms. These are often written in what is called
+``pseudo code'' usually based on a computer language like Pascal or C
+\cite{Gonnet} \cite{Sedgewick} \cite{SedgewickC}.  
+The question addressed here is
+how to check that pseudo code is correct, in other words, how do you
+get a ``pseudo compiler'' to check your pseudo code? I propose that a
+way to do this is to use a high level language such as {\sl
+Mathematica\/} to write a real implementation. The high level and
+built--in mathematical capabilities of such a language allow you to
+write pseudo code that is essentially a transcription of the computer
+code, and so hopefully free of ``pseudo bugs.''
+
+\medskip\noindent
+{\bf Acknowledgments.} I would like to thank Henry Cejtin and Igor Rivin
+for helpful comments. 
+
+\subsection*{1. A simple example}
+
+Consider the problem of adding and multiplying positive integers by
+using their decimal expansions, i.e., describe algorithms that given
+two strings of digits representing two integers, return the strings of
+digits corresponding to the sum and product of the numbers.
+
+The input will be sequences of digits $[d_n,\ldots,d_0]$.
+Concatenation $x\star y$ of sequences will be used along with the
+unusual convention that $[0]\star x$ returns $x$.
+This condition corresponds to the usual convention that omits
+leading zeroes in decimal expansions.
+
+\medskip\noindent
+\begin{boxedtext}
+\noindent
+{\bf Addition algorithm:} Given as input two sequences of
+digits $[a_m,\ldots,a_0]$ and $[b_n,\ldots,b_0]$ return a sequence
+$a\oplus b$:
+
+\medskip\noindent
+{\bf intialize} $k\Leftarrow 0$
+
+\smallskip\noindent
+{\bf for} $i=0,1,\ldots, \max(m,n)$ {\bf do}
+
+\smallskip
+$k \Leftarrow a_i + b_i + \lfloor k/10\rfloor$. If $i > m$, replace
+$a_i$ with $0$ and if $i> n$, replace $b_i$ with $0$
+
+\smallskip
+$c_i \Leftarrow k\; {\rm mod}\; 10$
+
+\smallskip\noindent
+{\bf return} $[\lfloor k/10 \rfloor]\star [c_{\max(m,n)},\ldots,c_0]$
+\end{boxedtext}
+
+\medskip\noindent 
+\begin{boxedtext}
+\noindent
+{\bf Multiplication algorithm:} Given as input two sequences of
+digits $[a_m,\ldots,a_0]$ and $[b_n,\ldots,b_0]$ return a sequence 
+$a\otimes b$:
+
+\smallskip\noindent
+{\bf initialize} $c \Leftarrow [\;]$ 
+
+\noindent
+{\bf for} $i=0,1,\ldots,m$ and $j=0,1,\ldots,n$ 
+{\bf do}
+$
+c \Leftarrow c \oplus 
+([\lfloor a_i b_j/10\rfloor]\star [a_ib_j\;{\rm mod}\; 10,
+\,\overbrace{0,0,\ldots,0}^{i+j}\,]) 
+$
+
+\smallskip\noindent
+{\bf return} $c$
+\end{boxedtext}
+
+
+\medskip\noindent
+The {\sl Mathematica\/} implementation starts by defining
+the $\star$ operator
+
+{\sl 
+\begin{verbatim}
+x_~join~y_:= If[x == {0}, y, x~Join~y]
+\end{verbatim}
+}
+
+\noindent
+The {\sl Mathematica\/} statement
+
+\smallskip
+{\tt If[{\sl condition}, {\sl statement1}, {\sl statement2}]}
+
+\smallskip\noindent
+means the same as 
+
+\smallskip
+{\bf if} {\sl condition} {\bf then} 
+{\sl statement1} {\bf else} {\sl statement2}
+
+\smallskip\noindent
+The infix notation \verb+x~join~y+, meaning the 
+same as \verb+join[x, y]+, has been used in order to make the 
+program look more like the mathematical description of the algorithm.
+
+The next thing is to write functions that take a list 
+$[d_k,\ldots,d_0]$ and return the last element $d_0$, and the list
+without its last element, i.e., $[d_k,\ldots,d_1]$. 
+
+{\small
+\begin{verbatim}
+last[x_]:= {Last[x]}
+
+drop[x_]:= Drop[x, -1]
+\end{verbatim}
+}
+
+\noindent
+The addition and multiplication programs are then
+
+\begin{boxedtext}
+\noindent
+{\small
+\begin{verbatim}
+a_~plus~b_:= 
+Block[{c = {}, i, k = 0},
+       Do[k = If[i > Length[a], 0, a[[-i]]] + If[i > Length[b], 0, b[[-i]]] +
+              Floor[k/10];
+          PrependTo[c, Mod[k, 10]],
+          {i, 1, Max[Length[a], Length[b]]}];
+       Return[{Floor[k/10]}~join~c]
+      ]
+\end{verbatim}
+}
+\end{boxedtext}
+
+\medskip
+\begin{boxedtext}
+\noindent
+{\small 
+\begin{verbatim}
+a_~times~b_:= 
+Block[{c = {}, i, j, k},
+      Do[k = a[[-i]] b[[-j]]; 
+         c = c~plus~({Floor[k/10]}~join~Prepend[Table[0,{i+j-2}], Mod[k,10]]),
+         {i, 1, Length[a]}, {j, 1, Length[b]}];
+      Return[c]
+     ] 
+\end{verbatim}
+}
+\end{boxedtext} 
+
+\medskip\noindent
+Note that {\sl Mathematica\/} has a somewhat idiosyncratic syntax, for
+example, the fact that arrays can be accessed from the right using
+negative indices, or expressions like 
+
+\begin{verbatim}
+Quotient[#, 10]~join~Mod[#,10]& [last[a] last[b]], 
+\end{verbatim}
+
+\noindent
+used below. On the other hand, the control structure of the program is
+identical to the high one in the high level description and once you
+get used to the peculiarities of the language, the high level
+description can be directly transcribed from the program.
+
+An even better example is to use a recursive
+algorithm
+
+\medskip\noindent
+\begin{boxedtext}
+\noindent
+{\bf Addition algorithm:} Given as input two sequences of
+digits $a = [a_m,\ldots,a_0]$ and $b=[b_n,\ldots,b_0]$,
+return a sequence $a\oplus b$:
+
+\begin{description}
+
+\item[{\bf if}]
+$a=[\;]$ or $b=[\;]$ {\bf then} $a\star b$
+
+\item[{\bf else}]
+$
+(([a_m,\ldots,a_1]\oplus [\lfloor (a_0+b_0)/10\rfloor])\oplus 
+ [b_n, \ldots,b_1]) \star [(a_0+b_0)\;{\rm mod}\; 10]
+$
+\end{description}
+\end{boxedtext}
+
+\medskip\noindent
+\begin{boxedtext}
+\noindent
+{\bf Multiplication algorithm:} Given as input two sequences of
+digits $a = [a_m,\ldots,a_0]$ and $a = [b_n,\ldots,b_0]$ return 
+a sequence $a\otimes b$: 
+
+\begin{description}
+
+\item[{\bf if}] $n = 0$ {\bf then}
+
+\begin{description}
+
+\item[{\bf if}] $m=0$ {\bf then} 
+$[\lfloor a_0 b_0/10\rfloor]\star [a_0 b_0\;{\rm mod}\; 10]$
+
+\item[{\bf else}] $b\otimes a$
+
+\end{description} 
+
+\item[{\bf else}] 
+$((a\otimes [b_n,\ldots,b_1])\star [0]) \oplus (a\otimes [b_0])$
+
+\end{description}
+\end{boxedtext}
+
+\smallskip\noindent
+The  {\bf return} command has been omitted from the description
+as it is assumed that the algorithm returns the last evaluation.
+This is true of the {\sl Mathematica\/} language, so 
+the {\tt Return[]} statements will be omitted from the programs as well.
+The {\sl Mathematica\/} implementation is 
+
+\begin{boxedtext}
+\noindent {\small
+\begin{verbatim}
+a_~plus~b_:= 
+If[Length[a] Length[b] == 0, 
+   a~join~b,
+   Block[{sum = Quotient[#, 10]~join~Mod[#,10]& [last[a] + last[b]]}, 
+         ((drop[a]~plus~drop[sum])~plus~drop[b])~join~last[sum]
+   ]    ] 
+\end{verbatim}
+}
+\end{boxedtext}
+
+\noindent
+where \verb+Quotient[a, b]+ means $\lfloor a/b\rfloor$. 
+
+\medskip\noindent
+\begin{boxedtext}
+{\small
+\begin{verbatim}
+a_~times~b_:= 
+If[Length[b]==1, 
+   If[Length[a] == 1, 
+      Quotient[#, 10]~join~Mod[#,10]& [last[a] last[b]], 
+      b~times~a], 
+   ((a~times~drop[b])~join~{0})~plus~(a~times~last[b])
+  ]     
+\end{verbatim}
+}
+\end{boxedtext}
+
+\smallskip\noindent
+In this case, one can argue that a better choice of computer
+language would be Lisp or Scheme since the programs relied
+on list operations and recursions, the basic paradigms of these languages.
+
+
+\subsection*{2. Using a lower level language}
+
+I recently asked an undergraduate class to solve the problem of the
+previous section, and then to implement their algorithm.  It turns out
+that all of them managed to write correct programs in C or Pascal, but
+that none of them wrote correct high level descriptions. 
+
+The students had a harder time writing the high level description
+because they wrote low level programs. The following C implementation
+does in fact follow the first two algorithms of Section~1 closely, but
+this is hidden by code dealing with input, output, and memory
+allocation.  Of course, this program will run at least $1,000$ times
+faster than the {\sl Mathematica\/} program, but it's clear that speed
+is not the point of this exercise. The data structure is an array {\tt
+a[]} where {\tt a[0]} denotes the length of {\tt a[]}.  The main
+control structure is
+
+\begin{boxedtext}
+\noindent
+{\small
+\begin{verbatim}
+#include <stdio.h>
+
+int *plus(int *num_a, int *num_b);
+int *times(int *tnum_a, int *tnum_b); 
+
+main()
+{int x[1001], y[1001], *z, s;                           /* up to 1000 digits */
+ for(x[0] = 1; (x[x[0]]=getchar()-'0') >= 0; x[0]++);        /* first number */
+ for(y[0] = 1; (y[y[0]]=getchar()-'0') >= 0; y[0]++);       /* second number */
+ z = ((x[x[0]] + '0') == '+')?plus(x, y):times(x, y);     /* add or multiply */
+ for(s = 1; s < z[0]; s++) putchar(z[s]+'0');                /* print answer */
+}
+\end{verbatim}
+}
+\end{boxedtext}
+
+\noindent
+The addition program first finds the longest input string and allocates
+memory accordingly
+
+\begin{boxedtext}
+\noindent
+{\small
+\begin{verbatim}
+int *plus(int *p_a, int *p_b) 
+{int *a, *b, *c, size_a, size_b, k;
+ size_a = (a = (p_a[0] > p_b[0])?p_b:p_a)[0]; 
+ size_b = (b = (p_a[0] > p_b[0])?p_a:p_b)[0];
+ (c = (int *) calloc(size_b+1, sizeof(int)))[0] = size_b + 1;
+ k = 0;
+ while(size_b > 1) c[size_b] = (k=(--size_a?a[size_a]:0)+b[--size_b]+ k/10)%10;
+ c[1] = (k/10)?1:--(c++[0]);                               /* last digit */  
+ return(c); 
+}
+\end{verbatim}
+}
+\end{boxedtext}
+
+\noindent
+The multiplication program uses the fact that the memory allocated by
+{\tt calloc} is initialized to zero. Right shifts simply consist of
+incrementing the array length.
+
+\begin{boxedtext}
+\noindent
+{\small
+\begin{verbatim}
+int *times(int *t_a, int *t_b) 
+{int *c, *temp, j, size_a, size_b, k; 
+ (c = (int *) calloc(1, sizeof(int)))[0] = 2;                   /* c = 0 */
+ temp = (int *) calloc(2001, sizeof(int));  
+ for(size_a = t_a[0]-1; size_a; size_a--){
+     temp[0] = t_a[0] - size_a + 1;
+     for(size_b = t_b[0]-1; size_b; size_b--){
+         temp[1] = (k = t_a[size_a] * t_b[size_b])/10;
+         temp[2] = k%10;        
+         temp[0]++;                                           /* left shift */ 
+         c = plus(c, temp);
+     }
+    }
+ if(!c[1]) c[1] = --(c++[0]);                  /* remove leading zero */
+ return(c);
+}
+\end{verbatim}
+}
+\end{boxedtext}
+
+\subsection*{3. A non trivial example}
+
+Writing an algorithm to do addition and multiplication does not
+require the programming language to have any mathematical features and,
+as noted above, using Lisp or Scheme would be a good way to go.  I
+will now give a more complicated example where such things as
+built--in matrix multiplication will be required, so that using a
+computer algebra system like Macsyma, Maple or {\sl Mathematica\/}  
+is advantageous.
+
+Recall that a 
+continued fraction is a generalization of compound fractions like
+$\frac{14}{11}=1 \frac{3}{11}$
+$$
+\eqalign{
+\frac{14}{11} &= 1\frac{3}{11} = 1 + \frac{1}{11/3}
+ = 1 + \frac{1}{3\frac{2}{3}}
+=  1 + \frac{1}{3 + \displaystyle \frac{1}{3/2}}
+=
+1 + \frac{1}{3 + \displaystyle \frac{1}{1\frac{1}{2}}}
+\cr\noalign{\vskip 5pt}
+&= 1 + \frac{1}{3 + \displaystyle\frac{1}{1 + \displaystyle 
+   \frac{1}{2}}}\,.
+\cr
+}
+$$
+In general, every rational number $p/q$ can be written in the 
+form
+$$
+\frac{p}{q} = a_0 + \frac{1}{a_1 + 
+     \displaystyle\frac{1}
+       {a_2  + {\mbox{$\;$} \atop {\displaystyle \ddots \qquad \atop 
+        \displaystyle \qquad  +\frac{1}{a_r}}}
+}}
+$$
+where the  $a_i$, $i>0$, are positive integers and for ease of notation
+this is usually written as
+$$
+\frac{p}{q} = [a_0, a_1,\ldots, a_r ]\,.
+$$ 
+
+\bigskip
+Consider the problem of adding and multiplying the sequence of digits
+of two continued fraction expansions.  
+Even multiplying a continued fraction
+by 2 is already a time consuming task 
+based on ``Hurwitz rules'' \cite[Exercise~4.5.3.14]{Knuth}, so 
+the general problem
+was declared to be
+hopeless by Khinchin, the renowned expert in the field
+\cite{Khinchin2}, who wrote:
+``There is, however, another and yet more significant
+practical demand that the aparatus of continued fractions does not
+satisfy at all. Knowing the representations of several numbers, we
+would like to be able, with relative ease, to find the representations
+of the simpler functions of these numbers (especially, their sum and
+product). In brief, for an apparatus to be suitable from a practical
+standpoint, it must admit sufficiently simple rules for arithmetical
+operations; otherwise, it cannot serve as a tool for calculation.  We
+know how convenient systematic fractions are in this respect.  On the
+other hand, for continued fractions there are no practically
+applicable rules for arithmetical operations; even the problem of
+finding the continued fraction for a sum from the continued fraction
+representing the addends is exceedingly complicated, and unworkable in
+computational practice.''
+
+The problem was  solved in a little known paper of Marshall Hall
+\cite{Hall}, but an actual description of the addition and multiplication
+algorithm was not given until the work of R.W.~Gosper  \cite{BGS}
+\cite{Gosper} \cite[Exercise~4.5.3.15]{Knuth} \cite[p.~78]{Levy}
+based on three ideas. The first idea is that a computation like 
+$3x$, where $x$ is given as a continued fraction, will rapidly lead
+to more complicated forms. For example, computing $3\cdot \frac{14}{11}$
+$$
+3 \, [1,3,1,2]
+=
+3\, \left(1 + \frac{1}{[3, 1, 2]}\right)
+=
+\frac{3 \, [3, 1, 2] + 1}{[3, 1, 2]}
+$$ 
+and so forth. Gosper's idea was not to try to simplify these forms,
+but to analyze the worst that
+can happen. It's not hard to see that you always get 
+a linear fractional form
+$$
+\frac{ax+b}{cx+d}\,,
+\leqno(*)
+$$
+where $a,b,c,d$ are 
+integers, and $x$ is given as a continued fraction.
+
+Gosper's second idea was to consider the $x$ as a {\sl formal\/}
+symbol which could input continued fraction digits into $(*)$. 
+In other words, think of $x$ not as representing a rational number,
+but as a symbolic quantity that transforms as
+$$
+x\mapsto q +\frac{1}{x} \,,
+\leqno(**)
+$$
+where $q$ represents the next continued fraction digit. It remains
+to see how $(*)$ transforms under $(**)$. A simple computation 
+shows that
+$$
+\frac{ax+b}{cx+d} \mapsto \frac{aqx + b x + a}{cq x + dx + c}\,.
+$$
+So if the form $(*)$ is represented by a matrix 
+${a\; b\choose c\; d}$, then the transformation law corresponding
+to inputting a digit is
+$$
+\pmatrix{a&b\cr c&d }\mapsto 
+\pmatrix{aq+b& a \cr cq + d& c} 
+=\pmatrix{a& b\cr c & d}\, \pmatrix{q& 1\cr 1& 0}\,.
+$$
+
+\medskip
+The third idea is to realize that you can output continued fraction
+coefficients without having complete knowledge of $x$. Gosper's 
+original example was 
+$$
+\frac{70 x + 29}{12 x + 5}
+$$
+If  $x>0$, then 
+$$
+\frac{29}{5} \le \frac{70 x + 29}{12 x + 5} < \frac{70}{12}\,.
+$$
+This means that 
+$$
+\frac{70 x + 29}{12 x + 5} 
+=
+5 + \frac{10 x + 4}{12x + 5}\,.
+$$
+Similarly, 
+$$
+\frac{12}{10} \le \frac{12 x + 5}{10 x + 4} < \frac{5}{4}
+$$
+so 
+$$
+\frac{12 x + 5}{10 x + 4} =
+1 + \frac{2 x + 1}{10 x+ 4}\,,
+$$
+and
+$$
+\frac{10x + 4}{2 x + 1} = 4 + \frac{2x}{2x+1}\,.
+$$
+This means that for {\sl any\/} $x>0$ you get a continued fraction 
+expansion
+$$
+\frac{70 x + 29}{12 x + 5}
+=
+5 + \frac{1}{\displaystyle 1 + 
+\frac{1}{\displaystyle 4 + \frac{1}{\displaystyle (2x+1)/x}}}
+$$
+In other words, you are able to output 3 continued fraction coefficients
+of the form $(10x+25)/(2x+1)$ without knowing too much about $x$. 
+(Note that you cannot output a fourth coefficient since 
+$(2x+1)/x \mapsto 2 + 1/x$ does not give the correct coefficient
+unless $x>1$.) 
+
+In the case when $x$ represents a sequence of continued fraction 
+coefficients, the situation is even better because the coefficients
+are greater or equal to one. Now, since one is assuming that there
+is a continuing sequence of continued fraction coefficients, the 
+further assumption that $x> 1$ can be made, so 
+being able to output a continued fraction
+corresponds to checking that for some integer $n$ 
+$$
+n\le \frac{a}{c} \le \frac{a+b}{c+d}< n+1\,,
+$$
+in other words, that
+$$
+\left\lfloor \frac{a}{c} \right\rfloor 
+=
+\left\lfloor \frac{a+b}{c+d}\right\rfloor\,,
+$$
+and when this happens the output will be the common value
+$q = \lfloor a/c\rfloor$. The point is that is always happens, given
+a sufficient number of digits of $x$. 
+
+It remains to see what happens to the form after this has been output.
+This is 
+$$ 
+\frac{1}{\displaystyle \frac{ax+b}{cx +d} - q}
+=
+\frac{c x + d}{a x - cq x + b - dq}\,,
+$$
+and the corresponding matrix transformation is
+$$
+\pmatrix{a&b\cr c& d}\mapsto \pmatrix{c & d\cr a-cq& b - dq}
+= \pmatrix{0& 1\cr 1 & -q}\,  \pmatrix{a& b \cr c & d} \,.
+$$ 
+
+\medskip\noindent
+
+
+All these steps can be combined into an algorithm but first an
+algorithm to compute the continued fraction of a rational number must
+be written. This essentially follows the
+$\frac{14}{11}$ example (ordinary concatenation $[0]\star
+[x_0,\ldots,x_r] = [0,x_0,\ldots,x_r]$ will be used from now on).
+
+\medskip\noindent
+\begin{boxedtext}
+\noindent
+{\bf Algorithm to compute the continued fraction expansion of a 
+rational number:} Given a rational number $q$, return a sequence
+$f(q)$:
+
+\smallskip\noindent
+{\bf if} $q=1/0$ {\bf then} $[\;]$
+{\bf else} $[\lfloor q\rfloor]\star f(1/(q-\lfloor q\rfloor))$
+\end{boxedtext}
+
+ 
+\bigskip\noindent
+\begin{boxedtext}
+\noindent
+{\bf Algorithm to compute the continued fraction expansion of
+$(ax+b)/(cx+d)$:} Given a matrix ${a\; b\choose c \; d}$ and the
+continued fraction expansion $x = [x_0, \ldots, x_r]$, 
+return the sequence $f({a\; b\choose c\; d}, x)$:
+
+\begin{description}
+\item[{\bf if}] $r=0$ {\bf then}  $f((a\, x_0+b)/(c \, x_0 + d))$.
+
+\item[{\bf else}] 
+
+\begin{description}
+
+\item[{\bf if}] 
+$a,b,c,d>0$ and 
+$\left \lfloor \frac{a}{c} \right \rfloor =
+\left \lfloor \frac{a+b}{c+d} \right \rfloor 
+$ {\bf then}
+$[\lfloor a/c\rfloor]\star  
+ f\left({0\;\;\;\;\;\;\;\;\; 1 \choose 1\;\; -\lfloor a/c\rfloor }
+  {a\; b\choose c\; d}, x\right)$ (Output a digit.)
+
+\item[{\bf else}] 
+$f\left({a\; b\choose c\; d} \, 
+ {x_0 \; 1\choose 1\; \; 0}, [x_1,\ldots,x_r]\right)$ \quad (Input a digit.)
+\end{description} 
+
+\end{description}
+\end{boxedtext}
+
+\smallskip\noindent
+In {\sl Mathematica\/} these algorithms are 
+
+\medskip\noindent
+\begin{boxedtext}
+\noindent
+{\small
+\begin{verbatim}
+ContinuedFraction[q_]:= 
+If[q == 1/0,{},{Floor[q]}~Join~ContinuedFraction[1/(q-Floor[q])]
+
+ContinuedFraction[matrix_, x_]:= 
+If[Length[x] == 1, 
+   ContinuedFraction[Divide @@ (matrix . {First[x], 1})], 
+   Block[{q = Positive[Min[matrix]] && Quotient @@ (matrix . {{1, 1}, {0, 1}})},
+         If[q && Min[q] == Max[q],
+            {#}~Join~ContinuedFraction[{{0, 1}, {1, -#}} . matrix, x]& [First[q]],  
+            ContinuedFraction[matrix . {{First[x], 1}, {1, 0}}, Rest[x]]  
+   ]    ]  ]
+\end{verbatim}
+}
+\end{boxedtext}
+
+\smallskip\noindent
+Since division by zero has been allowed the line
+
+{\small
+\begin{verbatim}
+Off[Power::infy]
+\end{verbatim}
+}
+
+\noindent
+is useful in order to avoid annoying warning messages. 
+
+Note the similarity in the control structure of the program and the
+pseudo code. It should be clear that it was essentially a
+transcription of the computer program.
+
+\bigskip
+Finally, the algorithms for addition and multiplication can be 
+described. 
+Just as before computing  $x+y$ or 
+$xy$ leads to more complicated expressions. 
+The worst expression you get is a ``bilinear fractional form'' 
+$$
+\frac{a xy + b x + c y + d}{e xy + f x + g y + h}\,.
+\leqno(***)
+$$
+Treating $x$ and $y$ as formal variables, this can be represented
+by an ordered pair of matrices (or tensor)
+$$
+\left(\pmatrix{a& b\cr c & d}, \pmatrix{e& f\cr g & h }\right)\,.
+$$
+Letting $y \mapsto q + 1/y$ in $(***)$ gives a transformation for the
+tensor
+$$
+\left(\pmatrix{a& b\cr c & d}, \pmatrix{e& f\cr g & h }\right)
+\mapsto 
+\left(\pmatrix{a& b\cr c & d}, \pmatrix{e& f\cr g & h }\right)\, 
+\pmatrix{q & 1\cr 1 & 0}\,,
+$$
+where ordinary matrix multiplication is used on each component. 
+Similarly, letting $x\mapsto q + 1/x$ in $(***)$ corresponds to 
+$$
+\left(\pmatrix{a& b\cr c & d}, \pmatrix{e& f\cr g & h }\right)
+\mapsto 
+\pmatrix{q & 1\cr 1 & 0}\,
+\left(\pmatrix{a& b\cr c & d}, \pmatrix{e& f\cr g & h }\right)\,. 
+$$
+Just as before, one uses an Euclidean algorithm to output coefficients,
+but this time there won't be a guarantee that intermediate values 
+will be greater than one. A tricky part of the algorithm is
+to decide whether to choose $x$ or $y$ to input the next digit. 
+A direct solution to this is to alternate between them and
+this requires a componentwise transpose
+$$
+\left(\pmatrix{a& b\cr c & d}, \pmatrix{e& f\cr g & h }\right)^T
+=
+\left(\pmatrix{a& c\cr b & d}, \pmatrix{e& g\cr f & h }\right)\,,
+$$
+corresponding to switching $x$ and $y$ in $(***)$. 
+
+
+\medskip\noindent
+\begin{boxedtext}
+\noindent
+{\bf Algorithm to compute the continued fraction of 
+ $(a xy + b x + c y + d)/(e xy + f x + g y + h)$:}
+Given as input a tensor 
+$\left({a\; b\choose c \; d}, {e\; f\choose g \; h }\right)$
+and continued fraction expansions 
+$x = [x_0,\ldots,x_r]$, $y=[y_0,\ldots,y_s]$, return a sequence
+$f\left(\left({a\; b\choose c \; d}, {e\; f\choose g \; h }\right),x,y\right)$:
+
+\begin{description}
+
+\item[{\bf if}]
+$s = 0$ {\bf then} 
+$f\left(\left({a\; b\choose c \; d}, {e\; f\choose g \; h }\right)\, 
+   {y_0 \choose 1}, x\right)$. 
+
+\item[{\bf else}]
+
+\begin{description}
+
+\item[{\bf if}]
+ $a,b,c,d,e,f,g,h > 0$ and 
+$\lfloor a/e\rfloor= \lfloor b/f\rfloor= 
+ \lfloor c/g\rfloor =\lfloor d/h\rfloor$ {\bf then} 
+$$
+\textstyle 
+[\lfloor a/e\rfloor]\star 
+f\left({0\;\;\;\;\;\;\;\;\; \; 1\choose 1 \;\; -\lfloor a/e\rfloor } \, 
+ \left({a \; b\choose c \; d}, {e \; f\choose g \; h}\right), 
+        x, y\right) \qquad\mbox{(Output a digit.)}
+$$ 
+
+\item[{\bf else}]
+$f\left(
+\left\{\left({a \; b\choose c \; d}, {e \; f\choose g \; h}\right)
+\, {y_0\;  1\choose 1\;\;\, 0}\right\}^T,
+      [y_1, \ldots,y_s], x\right)$ \quad (Input a digit and switch $x,y$.)
+\end{description}
+\end{description}
+\end{boxedtext}
+
+\medskip\noindent
+This algorithm allows one to add and multiply continued fractions
+according to the rules
+$$
+x\oplus y  = \textstyle 
+f\left(\left({0 \; 1\choose 1\; 0}, {0 \; 0 \choose 0 \; 1}\right), x,y
+   \right)\,,\qquad
+x\otimes y  = \textstyle 
+f\left(\left({1 \; 0\choose 0\; 0}, {0 \; 0 \choose 0 \; 1}\right), x,y
+   \right)\,.
+$$
+
+\medskip\noindent
+The program is simplified by the fact that ordinary {\sl
+Mathematica\/} matrix multiplication for generalized matrices behaves
+in the same way as the componentwise matrix multiplication defined
+above.
+
+\medskip\noindent
+\begin{boxedtext}
+\noindent
+{\small
+\begin{verbatim}
+ContinuedFraction[tensor_, x_, y_]:= 
+If[Length[y] == 1, 
+   ContinuedFraction[tensor.{First[y], 1}, x],
+   Block[{q = Positive[Min[tensor]] && Quotient @@ tensor},
+          If[q && Min[q] == Max[q], 
+             {#}~Join~ContinuedFraction[{{0, 1},{1, -#}}.tensor, x, y]& [q[[1,1]]],
+              ContinuedFraction[Transpose /@ (tensor.{{First[y], 1},{1,0}}), 
+                                Rest[y], x]]
+   ]       ]
+
+ContinuedFractionPlus[x_, y_]:= 
+ContinuedFraction[{{{0,1},{1,0}},{{0,0},{0,1}}}, x, y]
+
+ContinuedFractionTimes[x_, y_]:= 
+ContinuedFraction[{{{1,0},{0,0}},{{0,0},{0,1}}}, x, y]
+\end{verbatim}
+}
+\end{boxedtext}
+
+\medskip\noindent
+{\bf Remark 1:} Subtraction and division can be also be computed 
+in this way by using the formulas
+$$
+x\ominus y  = \textstyle 
+f\left(\left({0\;\;\; 1\choose -1\; 0}, {0 \; 0 \choose 0 \; 1}\right), x,y
+   \right)\,,\qquad
+x\oslash y  = \textstyle 
+f\left(\left({0 \; 1\choose 0\; 0}, {0 \; 0 \choose 1 \; 0}\right), x,y
+   \right)\,.
+$$
+
+\medskip\noindent
+{\bf Remark 2:} The real advantage of Gosper's method is that it allows
+you to add and multiply numbers with known continued fraction
+expansions, for example, $e = [2,1,2,1,1,4,1,1,6,\ldots]$ and 
+$\phi = \frac{\sqrt{5}+1}{2} = [1,1,1,\ldots]$. The above algorithms
+are easily modified to compute quantities like
+$e+\phi$ where the digit input would be the functions
+$$
+e(n) = \cases{2 & if $n=0$ \cr 2(n+1)/3 & if $n\equiv 2 \; ({\rm mod}\; 3)$\cr
+              1 & otherwise,}\, 
+\qquad  {\rm and }\qquad 
+\phi(n) = 1\,. 
+$$
+ 
+
+\medskip\noindent
+{\bf Remark 3:} There are problems with continued fraction 
+ arithmetic. For example, 
+the computation $[1,2,2,2,\ldots]\otimes [1,2,2,2,\ldots]$ 
+corresponding to  $\sqrt{2}\times \sqrt{2}$, will not return a single
+correct continued fraction coefficient or return $[2,a]$, where $a$
+is a large integer, depending on whether one uses an odd or even 
+length input. This is slightly different from the decimal case.
+
+\begin{thebibliography}{xxxxx}
+
+\bibitem{BGS}
+M. Beeler, R.W. Gosper, and R. Schroeppel, {\sl  HAKMEM,} 
+ A.I. Lab Memo \# 239, M.I.T. 1972. 
+
+\bibitem{Gonnet}
+G.H. Gonnet and R. Baeza--Yates, {\sl Handbook of Algorithms and 
+Data Structures,} Second Edition, Addison--Wesley 1991. 
+
+\bibitem{Gosper}
+R.W. Gosper, {\sl Continued Fraction Arithmetic,} preprint 1976.
+
+\bibitem{Hall}
+M. Hall, Jr., {\sl On the sum and product of continued fractions,}
+Annals of Math. {\bf 48} (1947), 966--993.
+
+\bibitem{Khinchin2}
+A. Ya. Khinchin, {\sl Continued Fractions,} University of Chicago Press,
+Chicago 1964.
+
+\bibitem{Knuth}
+D.E. Knuth, {\sl The Art of Computer Programming, Vol. 2, Seminumerical
+Algorithms,} Addison--Wesley 1981.
+
+\bibitem{Levy}
+S. Levy, {\sl Hackers: heroes of the computer revolution,} Doubleday, 1984.
+
+\bibitem{Sedgewick}
+R. Sedgewick, {\sl Algorithms,} Second Edition, Addison--Wesley 1988.
+
+\bibitem{SedgewickC}
+R. Sedgewick, {\sl Algorithms in C}, Addison--Wesley 1990.
+
+\end{thebibliography}
+
+\end{document}

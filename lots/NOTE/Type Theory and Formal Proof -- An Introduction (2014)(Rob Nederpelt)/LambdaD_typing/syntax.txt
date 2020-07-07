@@ -1,0 +1,101 @@
+
+(id -: T, _ -: T, T, T) ;; may or maynot have id
+    </ id = t, t, t, t />
+    ;; len >= 2
+    (id -: T, _ -: T, [A = T], A, A) ;; let-in
+(T | T | T) ;; id is Natural; shiftable
+    </ 2 = t /> :: (T | T | T)
+    </ T | T | 2 = t />
+    ;; len >= 2
+{a -: T, b -: T} ;; should have id
+    {/ a = t, b = t /}
+    ;; len >= 0
+    {a -: T, [P = X], b -: P a}
+{a -: T | b -: T} ;; should have id
+    {/ a = t /} :: {a -: T | b -: T}
+    {/ a = t | b -: T}
+    ;; len >= 2
+    ;; len == 1 <==> record
+{a -: T, b -: T} :: {a -: T | b -: T}
+    ;; two paths!!
+    {a -: T, b -: T} -> {a -: T} -> {a -: T | b -: T}
+    {a -: T, b -: T} -> {b -: T} -> {a -: T | b -: T}
+
+
+List$m A = (Empty | Cons A (List$n A) (n < m))
+List$0 A = Empty
+List$m A = Cons A (List$n A) (n < m)
+(n < m) => List$m A = Cons A (List$n A)
+
+
+file = exports imports decl_def_func
+exports =
+imports =
+decl_def_func = func
+func = func_head func_body
+func_head = '\' head ','
+func_body = term
+head = decl_def ('where' where_body)? | local_typing+
+local_typing = '[' id+ ':' type ']'
+    ;; [a b : T] === [a : T][b : T]
+where_body = decl_def_func
+decl_def = decl | def
+decl = idx+ ':' type
+def = idx+ (':' type)? '=' def_body
+    ;; let ... in
+idx = id_ ('[' id* ']')? ('{' id* '}')?
+    ;; \ f [a b] g [c] : T, ...
+    ;;  === \ f : @ a : type_of a, @ b : type_of b, T,
+    ;;      \ g : @ c : type_of c, T, ...
+    ;; \ g [c] {d} : Sort = T, ...
+    ;;  === \ g = \ c : type_of c, @ d : type_of d, T, ...
+id =
+id_ = '_' | id
+type = 'Sort' | type_id | type_head type_body | type '::' type
+    | '(' (((idx '-:')? type ',')* type)/'|'+ ')'
+    ;; | '(' ((idx '-:')? type ',')+ type ')'
+    ;; | '(' (type '|')+ type ')'
+    | (('(' idx '-:' type ')' | type) '->')+ type
+    | '{' ((idx '-:' type)/','*)/'|'+ '}'
+def_body = term
+type_id =
+type_head = ('@' | '?' | '??' | '?+' | '?1') head ','
+type_body = type
+term = term '::' type | '(' term ')' | term_id | type | func
+    | '</' ((idx ':' type '=')? term ',')+ term '/>'
+    | 'fst' term
+    | 'snd' term
+    | 'swap_pair' term
+    | 'left' type type term
+    | 'right' type type term
+    | 'swap_either' term
+    | '(' '{/' nat '=' term '/}' :: type ')'    ;; {/ 2 = c /} :: (A|B|C)
+    | term '.' nat                              ;; </ a, b, c /> .3 :: C
+    | '(' '{/' (id '=' term)/','* '/}' :: type ')'
+    | term '.' id
+nat =
+
+
+
+
+
+
+
+
+
+
+;;;;;;;;;;;;;;;;;;; cast
+(\ a : A, s, \ a : A, t) => \ a : A, (s, t)
+    P x /\ Q x <=> (P /-\ Q) x
+    ? x : A, P x /\ Q x === Any A (P /-\ Q)
+        => Any A P
+        ??? => Any A Q ;; swap and then cast
+(a..., b) => (a...) ;; fst
+[b => b']
+    Error: ==>> (a..., b, c...) => (a..., b', c...)
+    ==>> (a..., b) => (a..., b')
+Error: (a..., (b1,b2), c...) => (a..., b1, b2, c...)
+(a..., (b1,b2)) => (a..., b1, b2)
+{a..., b=t, c...} => {a..., c...}
+a -> b -> R => (a,b)->R
+

@@ -1,0 +1,108 @@
+
+1   int    int_concept
+value belongs to set 'int', set 'int' belongs to set 'int_concept'
+
+
+
+concept:
+    is a set of types, the basic most concept is typename.
+    // tpl<T> C:typename{bool b=false;};  // concept C is an empty set.
+    // struct t1; tpl<>C<t1>{bool b=true;}; // now C = {t1} // so C is a variable.
+    when defining a concept, we might specify that it is a subset of intersection of some basic concepts.
+    // tpl<T> C1:C,B1,B2..{bool b=false;};
+    after defining a new type, we can say it belongs to a concept by giving a map, one concept by one.
+    // tpl<>C1<t1>{bool b=true; using c1_tpl_method_relate_concept=?; using c1_method_relate_type=?; using c1_method=?;}
+    when defining a new function, we can use the concept methods in function body.
+    // tpl<C1 T,typename t,...>function(){T x; x.C1::method(...);}
+    // <C1 T,...> implement in C++:
+    //      tpl<bool,T>check{}; // no t
+    //      tpl<T>check<true>{typedef T t;};
+    //      <C1 T,...> -> <T,MapT2C1=check<C1<T>::b,C1<T>>,..>
+    overload by sub-concept, 
+    // tpl<{C1,C2} T> = <C1 U C2 T>
+    //      tpl<bool,T1,T2>select{}; // no t
+    //      tpl<T1,T2>select<true>{typedef T1 t;};
+    //      tpl<T1,T2>select<false>{typedef T2 t;};
+    //      tpl<T2>select<true,void>{};
+    //      <C1 U C2 T> -> <T,MapT2C1orC2=select<C1<T>::b,C1<T>,select<!C2<T>::b,void,C2<T>>>>
+    // if {Ci} includes some base and sub-concept, or cross-concept, then to make a good deduce order is important.
+
+
+
+
+
+
+
+
+
+
+
+意图：
+    定义与实现
+    名字是什么？它的拼写即是一个协议。
+    别名是什么？如上，只是作了一个中间转换，形参。
+    // tpl<T> class t{ class a; public: using b=a;};
+    定义 名：输入->输出 // def t: T -> b // 注意 a 没有出现！
+    输入的都是外部其它定义的别名，即形参。 // T
+    输出的是内部定义的别名，也是形参。     // b
+    注意定义有全局与局部之分，即外部可见与不可见之分，T与a都是局部定义，而t<T>/t<T>::b都是全局定义
+    
+    当定义了某个名字A之后（即确定了A的实现）
+    定义B：使用与A相同的实现——B是A的不同名实现
+    定义C：是A的别名——与A并无不同。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+temple<T> struct E{};  // E<int> 是空类。
+但在加入temple<> struct E<int>{int};之后，E<int>改变了!
+所以它是变量，但只能初始化一次。
+在同一次编译中，看起来没问题；但是在代码增长后，就会改变？
+对象定义：
+    内容决定的对象 vs 名字决定的对象
+    名字类似于指针变量，指向某一个对象
+    内容是最具体的无名对象
+    当两个名字所指的内容对象一致时，只是‘偶然’
+    但是别名类似于引用，只是一个名字的缩写。
+    用同一内容但不同名字的对象代换推导时，结果必须不同名。
+    用引于同名的别名代换时，结果同名。
+    同一内容不同名对象于下层可使用同一实现？
+
+确定期：
+    编译期：名、部分名定义、推导特化定义、变量类型+大小+对齐、静态关系（类继承）、静态状态（是否已初始化）、地址符号（call/goto/return所用的label）
+    链接期：相对地址
+    加载期：绝对地址
+    运行期：变量值
+
+
+
+
+
+
+
+
+
+对于一份代码，有以下相容空间：
+    视空间：当前能立即看到的内容——立即定义与可变定义（源代码） # 可变定义类似于模板，
+    推导空间：编译时推导出来的中间特化内容——特化定义（目标代码）
+    视生成空间：视空间的生成空间，注意它的有限性——任意特化定义（将没用到的关系r定义为非关系r）
+    完全空间：兼容推导空间的完全空间，不唯一，注意它的无限性(即有无限多可能的新元素、新关系)（某一前向兼容目标代码的序列极限）
+当代码增长时，新增内容必须兼容推导空间，新的推导空间是原推导空间与某个完全空间的中间层。
+但新增内容不必与原视生成空间兼容！新关系的加入将导致特化内容发生变化。由于新关系必须兼容
+在以下情况中：
+    1)视空间出现关系check<T>::is_int=false的泛定义
+    2)推导空间没有特化check<char>（也就是视空间中未特化且推导空间中未使用）

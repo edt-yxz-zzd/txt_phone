@@ -1,0 +1,137 @@
+source:
+    (0) 3.3.2. Customizing attribute access
+        object.__getattribute__(self, name) 
+    (1) 3.3.9. Special method lookup
+    (2) Descriptor HowTo Guide :: Invoking Descriptors
+
+keys:
+    (0) 3.3.2. Customizing attribute access
+        # bypass
+        __getattribute__
+            This method may still be bypassed
+                when looking up special methods
+                as the result of implicit invocation
+                via language syntax or built-in functions.
+                See Special method lookup.
+    (1) 3.3.9. Special method lookup
+        >>> c.__len__()                 # Explicit lookup via instance
+            Class getattribute invoked
+        >>> type(c).__len__(c)          # Explicit lookup via type
+            Metaclass getattribute invoked
+        >>> len(c)                      # Implicit lookup
+            no getattribute invoked
+
+    (2) Descriptor HowTo Guide :: Invoking Descriptors
+        * descriptors are invoked by the __getattribute__() method
+        * overriding __getattribute__() prevents automatic descriptor calls
+        * object.__getattribute__() and type.__getattribute__() make different calls to __get__().
+        * data descriptors always override instance dictionaries.
+        * non-data descriptors may be overridden by instance dictionaries.
+
+
+assume there is a implicit_lookup_dict for classes
+    get_implicit_lookup_dict(cls)
+        mro, __iter__, __name__, __class__ ... are in this dict
+    let x.@.f = get_implicit_lookup_dict(x)['f']
+
+    # construct the implicit_lookup_dict for each class
+    def object.__new__(cls):
+        self = ...new...
+        d = get_implicit_lookup_dict(self)
+        d['__class__'] = cls
+        return self
+
+    def 1. type.__new__(cls, obj):
+        # type(obj)
+        return get_implicit_lookup_dict(obj).@.__class__
+        # what happen if the __class__ in type ?? will call type.__init__??
+    def 2. type.__new__(cls, name, bases, namespace, **kwargs):
+        # type(name, bases, namespace, **kwargs)
+        self = object.__new__(cls)
+        mro = type(self).@.mro(self)
+        d = get_implicit_lookup_dict(self)
+        d['__name__'] = name
+        for base in mro[:0:-1]: # reversed and exclude self
+            b = get_implicit_lookup_dict(base)
+            d.update(b)
+        return self
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+################ old
+
+len(obj) is not obj.__len__() # since __len__ may in __dict__
+    def is_special_name(name):
+        return '__' == name[:2] == name[-2:]
+    def call_method(obj, name, ...):
+        if is_special_name(name):
+            return getattr(type(obj), name)(obj, ...)
+        return getattr(obj, name)(...)
+
+y = x.name 
+<==> y = getattr(x, 'name')
+x.name = y
+<==> setattr(x, 'name', y)
+del x.name 
+<==> delattr(x, 'name')
+
+
+For objects, the machinery is in object.__getattribute__() which transforms b.x into type(b).__dict__['x'].__get__(b, type(b)). 
+The implementation works through a precedence chain that gives data descriptors priority over instance variables, instance variables priority over non-data descriptors, and assigns lowest priority to __getattr__() if provided.
+For classes, the machinery is in type.__getattribute__() which transforms B.x into B.__dict__['x'].__get__(None, B). In pure Python, it looks like:
+
+
+
+def getattr(obj, name):
+    if obj is type:
+        try:
+            return the builtin-funcs[name]
+        except KeyError:
+            raise AttributeError()
+    try:
+        return getattr(type(obj), '__getattribute__', 
+                        default_getattribute)(x, name)
+    except AttributeError:
+        return getattr(type(obj), '__getattr__')(x, name)
+
+def default_getattribute(obj, name):
+    if obj is not class:
+        x = type(obj).__dict__.get(name, None)
+        if x is a descriptor: # I think '__dict__' is a descriptor
+            descriptor = x
+            return descriptor.__get__(obj, type(obj))
+    else:
+        cls = obj
+        x = cls.__dict__.get(name, None)
+        if x is a descriptor:
+            descriptor = x
+            return descriptor.__get__(None, cls)
+    if name == '__dict__':
+        return get_slot(obj, '__dict__')
+    dict = get_slot(obj, '__dict__', {}) # __dict__ not in __dict__
+    if name in dict:
+        return dict[name]
+    elif name is a attr of supertypes of type(obj):
+        r = that type attr
+        if isfunction(r):
+            r = bind(r, x)
+        return r
+    raise AttributeError()
+    
+
+
+    

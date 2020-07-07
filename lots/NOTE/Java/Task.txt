@@ -1,0 +1,75 @@
+
+
+why no javafx.on_idle??
+    so I can load resources in background!
+
+
+    javafx.concurrent.Task<V>::updateValue(Object)
+        // Updates are coalesced to prevent saturation of the FX event queue. This means you can call it as frequently as you like from the background thread but only the most recent set is ultimately set.
+    javafx.concurrent.Service<V>::createTask()
+    javafx.application.Platform.runLater 
+        // any modifications of the scene graph occur on the FX Application Thread.
+    
+    see last example of javafx.concurrent.Task::A Task Which Takes Parameters
+
+
+shared state
+    Platform.runLater 
+    
+    modify the Customer object from the FX Application Thread rather than from the background thread.
+    never update shared state from any thread other than the FX Application Thread.
+
+A Simple Loop With Progress Notification And Blocking Calls
+    try {
+         Thread.sleep(100);
+     } catch (InterruptedException interrupted)
+
+
+
+
+
+
+import java.util.function.Supplier;
+import java.util.function.Consumer;
+import javafx.concurrent.Task;
+import javafx.application.Platform;
+
+
+/** background compute and fx GUI update.
+    non-reusable
+*/
+class LaterUpdateTask<V> extends Task<V>{
+    /** background compute and fx GUI update.
+        
+        @param compute  run on background thread
+        @param update   run on javafx GUI thread, using Platform.runLater by default
+    */
+    public LaterUpdateTask(
+        Supplier<? extends V> compute, 
+        Consumer<? super LaterUpdateTask<? extends V> > update){
+        this.compute = compute;
+        this.update = update;
+    }
+    protected V call() throws Exception {
+        final V result = compute.get();
+        updateValue(result);
+        runLater(update);
+        return result;
+    }
+    protected void runLater(Consumer<? super LaterUpdateTask<? extends V> > update){
+        Platform.runLater(() -> {
+            if (isCancelled()) return; // ==>> non-reusable
+            update.accept(this);
+        });
+    }
+    
+    private final Supplier<? extends V> compute;
+    private final Consumer<? super LaterUpdateTask<? extends V> > update;
+}
+
+
+
+
+
+
+

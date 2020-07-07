@@ -1,0 +1,59 @@
+term : type
+    ;; all
+    [assumes |- term :: Term]
+        assumes |- term : #` term
+
+    ;; term_id
+    [assumes |- type :: Type][term_id not in assumes]
+        assumes, term_id : type |- term_id : type
+        assumes, term_id : type |- term_id <: term_id
+        [assumes |- type :: ##` set]
+            assumes, term_id : type |- term_id :: set
+
+
+    ;; #`
+    [assumes |- term : type : sort]
+        assumes |- #` term : sort
+
+    ;; term
+    [assumes, id `op3` cls |- term : type]
+        assumes |- (\id `op3` cls, term) : (id `op3_` cls) -> type
+    {-
+    [assumes |- term1 `op3` cls][assumes, id `op3` cls |- term2 : type]
+        assumes |- </ term1 `op3` cls, term2 /> : (id `op3_` cls, type)
+    -}
+
+    ;; type
+    [assumes |- sort :: Sort][assumes, id `op2` cls |- type : sort]
+        assumes |- (id `op2_` cls) -> type : sort
+    [assumes, id :: cls |- type : sort :: Sort]
+        assumes |- (id -:: cls) -> type : @@ id :: cls, sort
+
+    ;; sort
+    {-
+    [assumes, term_id :: cls |- sort :: Sort]
+        assumes |- (@@ term_id :: cls, sort) : #` (@@ term_id :: cls, sort)
+    -}
+
+    ;; app
+    [assumes |- f : (id `op3_` cls) -> type][assumes |- a `op3` cls]
+        assumes |- f a : type[id := a]
+
+    ;; fst/snd
+    [assumes |- p : (id : cls, type)]
+        assumes |- fst p : cls
+    [assumes |- p : (id <: cls, type)][assumes |- cls : t]
+        assumes |- fst p : t
+
+    [assumes |- p : (id `op3_` cls, type)]
+        assumes |- snd p : type[id := fst p]
+
+    ;; cast
+    [assumes |- term : type <: super]
+        assumes |- cast super term : super
+
+
+    ;; env
+    ;; 'defined_term_id
+    ;; ?defined_term_id
+

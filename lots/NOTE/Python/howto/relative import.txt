@@ -1,0 +1,45 @@
+
+question:
+    script/
+        script1.py
+        test_script1.py
+
+how can I relative import script1 inside test_script1??
+
+assume:
+    work/
+        script/
+            __init__.py
+            script1.py
+            test_script1.py
+then:
+    ????> cd work
+    work> py -m script.test_script1
+NOTE:
+    1. __init__.py
+    2. "-m" after "py"
+    3. "script.test_script1" instead of "script/test_script1.py"
+    4. working directory can be where, but SHOULD:
+        1) enough leading packages
+            test_script1 contains "from .script1 import ..."
+            then we need "py -m script.test_script1"
+            if test_script1 contains "from ..script1 import ..."
+            then we need "py -m work.script.test_script1"
+        2) the top level package is already accessible (e.g. "script")
+            that is why I use "cd work"
+
+
+I expect:
+    work/
+        __root__.py
+        script/
+            __init__.py
+            script1.py
+            test_script1.py
+
+    use __root__ as a fence, relative import will search up until __root__.py
+    we can directly call "py  work/script/test_script1.py"
+
+https://stackoverflow.com/questions/72852/how-to-do-relative-imports-in-python#
+nn_ns.app.runpy_script_as_module.py
+    or pym.bat

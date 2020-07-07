@@ -1,0 +1,36 @@
+
+problem:
+    INSERT error:
+        raise sqlite3.Error
+        or without return error code
+            # simply can be detected, even with "total_changes"!!!!!!!
+https://bugs.python.org/issue16379
+    SQLite error code not exposed to python
+
+1. return of execute
+    try:
+        assert cursor.execute(...) is cursor
+    except sqlite3.Error:
+        ...
+
+2. total_changes
+    * SELECT
+        cursor.execute('SELECT ...', ...)
+        # connection.total_changes not changes
+        iter(cursor) -> Iter Row
+        cursor.fetchone() -> (None|Row)
+        cursor.fetchall() -> [Row]
+    * INSERT
+        cursor.execute('INSERT ...', ...)
+        # connection.total_changes += 1
+        #   I try:
+        #       total_changes = ...
+        #       db[PK] = 1
+        #       assert total_changes' == total_changes+1
+        #       db[PK] = 2
+        #       assert total_changes'' == total_changes' + 1
+        #
+        #       assert db[PK] == 1 # NOTE: no sqlite3.Error raise!!!!!
+
+
+

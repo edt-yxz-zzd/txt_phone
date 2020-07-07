@@ -1,0 +1,101 @@
+
+"几何定理机器证明的基本原理（初等几何部分）（吴文俊）.pdf"
+[page 189-191]
+
+# 部分定义见："Ritt-Wu's Decomposition Algorithm (1990)_note.txt"
+main :: [Symbol] -> Set Poly -> Poly -> (Bool, Set Poly)
+def main(xs, H, conclusion) -> (success, nondegenerate_condition):
+    '''
+    this = main
+    case this xs H conclusion of
+    (True, nondegenerate_condition) ->
+        [H==...0][nondegenerate_condition!=...0]==>>[conclusion==0]
+    (False, nondegenerate_condition) ->
+        [H==...0][nondegenerate_condition!=...0]==>>[conclusion!=0]
+    '''
+    nondegenerate_condition = {}
+    pairs = [(None, H)] # [(new_poly, new_H)] # new_H = old_H \-/ {new_poly}
+    org_H = H
+    global_dimension = None
+    while pairs:
+        # step1
+        (last, H) = pairs.pop()
+
+        # 4.3节整序定理
+        (asc, H') = a_characteristic_set_of_ex(xs, H)
+        if not is_well_chain(asc):
+            ??? by logic: should be "continue"
+            if by_text:
+                # hypothesis error: [org_H==...0]==>>[1==0]
+                return (False, ????)?????
+            else: # by_logic
+                continue
+
+        well_asc = asc; del asc
+
+        QuasiAscendingChain xs fs = to_QuasiAscendingChain well_asc
+        # dim H = dim asc = len xs - len fs
+        dimension = len xs - len fs
+
+        if global_dimension is None:
+            # init global_dimension
+            global_dimension = dimension
+
+        # by text, be "elif"
+        # but by logic, should be "if"
+        elif?/if? dimension < global_dimension and ??:
+            nondegenerate_condition.add(last)
+            continue
+        elif dimension == global_dimension:
+            Is = map (polynomial_initial_of xs) fs
+            nondegenerate_condition.update(Is)
+
+        # step2
+        r = pseudo_remainder_of__ASC(conclusion, well_asc)
+        if is_zero_polynomial(r):
+            continue
+            ???why not add initials to nondegenerate_condition???
+                # see about "elif?/if?"
+
+        # step3
+        # 4.2节是否可约
+        if is_irreducible_chain(well_asc):
+            # not imply: [org_H==...0][nondegenerate_condition!=...0]==>>[conclusion!=0]
+            return (False, nondegenerate_condition)
+
+        # 4.5节分解
+        '''
+        "几何定理机器证明的基本原理（初等几何部分）（吴文俊）.pdf"
+        [page 177-178]
+
+        (asc, H') = a_characteristic_set_of_ex xs H
+        assume is_well_chain asc
+        well_asc = asc
+        QuasiAscendingChain xs fs = to_QuasiAscendingChain well_asc
+        assume fs is reducible
+        find out k, s.t. fs[:k] is irreducible, but fs[:k+1] is reducible
+
+        IIIk1 * (IIfactors - Dk*fs[k]) = SUM: qs[i]*fs[i] :{i<-0..k-1}
+        IIIk1 * IIfactors = SUM: qs[i]*fs[i] :{i<-0..k} # k not k-1
+        where
+            # NOTE: (k-1) and k as max i
+            len factors >= 2 # hence reducible
+            IIfactors = II: factor {factor<-factors}
+            Is = map (polynomial_initial_of xs) fs
+            IIIk1 = II: Is[i]^e[i] :{i<-0..k-1} # k-1 not k
+            qs[k] = IIIk1*Dk
+        zeros_of xs H
+        == zeros_of xs H'
+        == zeros_of xs fs
+        == \-/: zeros_of xs (fs\-/{Is[i]}) :{i<-0..k-1} ###### k-1 not all i
+           \-/ \-/: zeros_of xs (fs\-/{factor]}) :{factor<-factors}
+
+        '''
+        (k, factors) = factor_reducible_well_asc well_asc
+        nondegenerate_condition.update(Is[k])
+        for initial in Is[:k]: # not include Is[k], Is[k:]...
+            pairs.append((initial, H'\-/{initial}))
+        for factor in factors:
+            pairs.append((factor, H'\-/{factor}))
+    # end of while
+    return (True, Just nondegenerate_condition)

@@ -1,0 +1,39 @@
+see: "Markov.txt"
+
+prediction[S,E](t,k,e) = PD(S[t+k] | e[1..t]) where k>0
+    evaluate actions
+    Prediction is useful for evaluating possible courses of action based on their expected outcomes.
+    prediction_ex[S,d,E](t,k,e) = PD(S[t+k-d+1..t+k] | e[1..t]) where k>0
+
+
+let prediction_ex[S,d,E](t,0,e) = filtering_ex[S,d,E](t,e)
+prediction_ex[S,d,E](t,k,e)
+    = sum`` stationary_transition_Markov_model[S,d]
+            * prediction_ex[S,d,E](t,k-1,e)
+        ``{S[t+k-d]}
+        where k>0
+
+    proof:
+    ?prediction_ex[S,d,E](t,k,e)
+        given prediction_ex[S,d,E](t,k-1,e) #allow k-1==0
+
+    ?PD(S[t+k-d+1..t+k] | e[1..t])            #prediction_ex[S,d,E](t,k,e)
+        given PD(S[t+k-d..t+k-1] | e[1..t])
+        where k>0
+    PD(S[t+k-d+1..t+k] | e[1..t])
+        = PD(S[t+k-d+1..t+k], e[1..t]) / Pr(e[1..t])
+        = PD(S[t+k], S[t+k-d+1..t+k-1], e[1..t]) / Pr(e[1..t])
+        = sum`` PD(S[t+k], S[t+k-d..t+k-1], e[1..t]) ``{S[t+k-d]} / Pr(e[1..t])
+        = sum`` PD(S[t+k] | S[t+k-d..t+k-1], e[1..t]) * PD(S[t+k-d..t+k-1], e[1..t]) ``{S[t+k-d]} / Pr(e[1..t])
+        =[transition_Markov_assumption]= sum`` PD(S[t+k] | S[t+k-d..t+k-1]) * PD(S[t+k-d..t+k-1], e[1..t]) ``{S[t+k-d]} / Pr(e[1..t])
+        =[stationary_process_assumption]= sum`` stationary_transition_Markov_model[S,d] * PD(S[t+k-d..t+k-1], e[1..t]) ``{S[t+k-d]} / Pr(e[1..t])
+        = sum`` stationary_transition_Markov_model[S,d] * PD(S[t+k-d..t+k-1] | e[1..t]) *. Pr(e[1..t]) ``{S[t+k-d]} / Pr(e[1..t])
+        = sum`` stationary_transition_Markov_model[S,d] * PD(S[t+k-d..t+k-1] | e[1..t]) ``{S[t+k-d]}
+
+
+see:
+    "Markov stationary distribution.txt"
+    for
+        stationary distribution
+        mixing time
+

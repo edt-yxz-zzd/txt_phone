@@ -1,0 +1,169 @@
+
+https://en.wikipedia.org/wiki/Natural_deduction
+[x prop]
+    -- x is a proposition
+[x prop][x true]
+    -- proposition x is true
+[m proof]
+    -- m is a proof
+[m : x]
+    -- m is a proof of "proposition x is true"
+    -- variable m is of type x
+    -- m is a proof variable of type "proposition x is true"
+    -- progrom m has type x
+
+antecedents/hypotheses      turnstile           succedent
+premises                                        conclusion
+L, [m:x]...                     |-              [n:y]
+
+propositions:
+    conjunction:    A /\ B
+    disjunction:    A \/ B
+    negation:       ~A
+    implication:    A -> B
+    logical constants:
+        truth:      ()
+        falsehood:  _L
+
+
+    formation rules:
+        how to make up propositions, i.e. def is_prop():...
+        "" ==>> "[() prop]"
+        "" ==>> "[_L prop]"
+        "[x prop][y prop]" ==>> "[x/\y prop]"
+        "[x prop][y prop]" ==>> "[x\/y prop]"
+        "[x prop][y prop]" ==>> "[x->y prop]"
+        "[x prop]" ==>> "[~x prop]"
+    inference rules:
+        introduction rules:
+            Inference rules that introduce a logical connective in the conclusion are known as introduction rules.
+            I_()
+            I_/\
+            I_\/_1
+            I_\/_2
+
+        elimination rules:
+            Dual to introduction rules are elimination rules to describe how to deconstruct information about a compound proposition into information about its constituents.
+            E_/\_1
+            E_/\_2
+            -- E_\/ see below
+
+        hypothetical derivation:
+            reasoning from assumptions
+            <antecedent derivations>  ==>>  <succedent judgment>
+
+            -- implication introduction
+            I_->    -- "A |- B" ==>> "A -> B"
+            -- implication elimination
+            E_->    -- "{A->B, A} |- B"
+
+            -- disjunction elimination
+            E_\/    -- "A\/B; A|-C; B|-C" ==>> "C"
+            E__L    -- "_L |- any"
+            I_~     -- "A |- any" ==>> "~A"
+            E_~     -- "A, ~A |- any"
+
+    local consistency / local reducibility
+        which says that any derivation containing an introduction of a connective followed immediately by its elimination can be turned into an equivalent derivation without this detour.
+        It is a check on the strength of elimination rules: they must not be so strong that they include knowledge not already contained in its premises.
+    local completeness
+        Dually, local completeness says that the elimination rules are strong enough to decompose a connective into the forms suitable for its introduction rule.
+
+rules:
+    -- hypothesis, free variable
+    ""  ==>> "[m:x] |- [m:x]"
+
+    -- conjunction: x /\ y, pair, product
+    "L |- [m:x]; L |- [n:y]" ==>> "L |- [(m,n) : x /\ y]"
+        -- if m is a proof of [x true] and n is a proof of [y true]
+        -- then (m,n) make up a proof of [x /\ y true]
+
+    -- elimination, projection
+    "L |- [m : x /\ y]" ==>> "L |- [fst m : x]"
+    "L |- [m : x /\ y]" ==>> "L |- [snd m : y]"
+
+    -- implication: x -> y, abstraction
+    "L, [m:x] |- [n:y]" ==>> "L |- \m->n :: x->y"
+
+    -- Substitution theorem
+    "L |- [m:x]; L, [u:x] |- [n:y]" ==>> "L |- [[m/u]n : y]"
+                                        or "L |- [n[u:=m] : y]"
+The difference between logic and type theory is primarily a shift of focus from the types (propositions) to the programs (proofs).
+    Type theory is chiefly interested in the convertibility or reducibility of programs. For every type, there are canonical programs of that type which are irreducible; these are known as canonical forms or values. If every program can be reduced to a canonical form, then the type theory is said to be normalising (or weakly normalising). If the canonical form is unique, then the theory is said to be strongly normalising.
+    Normalisability is a rare feature of most non-trivial type theories, which is a big departure from the logical world. (Recall that almost every logical derivation has an equivalent normal derivation.)
+    To sketch the reason: in type theories that admit recursive definitions, it is possible to write programs that never reduce to a value; such looping programs can generally be given any type. In particular, the looping program has type _L, although there is no logical proof of "_L true".
+    For this reason, the propositions as types; proofs as programs paradigm only works in one direction, if at all: interpreting a type theory as a logic generally gives an inconsistent logic.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+https://en.wikipedia.org/wiki/Curry%E2%80%93Howard_correspondence
+formulas                        types
+universal quantification        generalised product type (Π type)
+    forall x in {fst, snd}.         Pair a b = Pair {fst::a, snd::b}
+existential quantification      generalised sum type (Σ type)
+    exists x in {Left, Right}.      Either a b = Left a | Right b
+implication                     function type
+    x -> y                          :: x -> y
+conjunction                     product type
+    x /\ y                          :: (x, y)
+disjunction                     sum type
+    x \/ y                          :: Either x y
+true formula                    unit type
+    True                            :: ()
+false formula                   bottom type
+    False                           :: _L  -- type that has no objects
+
+
+
+Logic side                          Programming side
+Hilbert-style deduction system      type system for combinatory logic
+natural deduction                   type system for lambda calculus
+
+
+    hypotheses                          free variables
+        assume [x prop][x true]
+        x                                   x :: x
+    implication elimination             application
+        (modus ponens)
+        {x->y, x} |- y                      (x2y x) :: y where x2y :: x->y
+    implication introduction            abstraction?????
+        {x->y, y->z} |- x->z                \x->y  ?????
+        not?? {y} |- x->y
+                                            not composition??
+                                            (.) :: (x->y) -> (y->z) -> (x->z)
+
+
+
+
+
+
+
+β-reduction
+    beta-reduction
+    (\x->e) e'  --->>>  e[x:=e']
+η-conversion
+    eta-conversion
+    f   <<<--->>>   \x->f x where x not in free(f)
+
+
+
+
+

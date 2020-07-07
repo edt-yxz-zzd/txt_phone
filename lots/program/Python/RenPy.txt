@@ -1,0 +1,75 @@
+
+我试着用Ren'Py写了一个只有两句对白的故事，然后运行。
+发现无法显示中文。
+
+由于一开始建项目时，可选语言就没有中文，所以比较消极地寻找解决办法。
+最后突破不是‘语言’的设置，也不是在字符串前加u，而是字体。顺手把options.rpy里的一些设定也修改了一下。
+options.rpy：字体、标题、设定的背景
+mm_root = imagepath+'契约标题.png',
+gm_root = imagepath+"设定界面.png",
+config.main_menu_music = musicpath+"Happily Ever After.ogg"
+style.default.font = "unifont-5.1.20080907.ttf"
+
+播放音乐，wma不行，要转ogg。音乐名似乎不能用中文或日文。
+
+看tutorial后，从中复制代码。比如StarField和Ball。
+为了让starfield更动态，尝试了很多，最后还是取消过程随机，通过压缩在x轴上的出生分布以及增加一个水平加速度，让画面更有紧迫感。y轴先是向上再向下，以避免单调的直线运动。
+至今不清楚hide starfield或换scene之后，starfield是否销毁。好像每个Sprite都可以destroy。
+
+从漫画中抠画来填ball，因为alpha是必须的，所以抛弃了mspaint，试着用GIMP。一开始还挺不习惯的，比如粘贴之后要选to new layer，单击层以使其处于编辑状态，魔选外部+del+反选+涂黑边界+魔选内部再反选+擦除外部噪点，ctrl+选择其实是减操作，画笔是可以修改的，保存一定是xcf而png要用export to。
+图片命名保持内外一致。
+
+
+
+增加mindfield，自己画了牛头、断臂、猪等以显示两人心中所想的不同，但效果实在是个雷点。
+后来干脆把英雄法师王者恶搞了。
+
+取消了白天的飞尘，因为starfield用多了也很无趣。所以只保留前后表示宇宙与星空这两处。
+考虑是否加云彩。
+
+通过使用punch与减速以强调重点。
+
+把背景图片double一下，移动用MoveTransition，但是多个图片很麻烦，不知是否有model与view的区分。
+移动、变形经常被打断；说话速度调慢后，auto居然会在对白未完全显示时跳过。
+
+
+文本编辑器使用utf8编码，编辑过程中发现，依然有些空白字符有问题。
+运行过程中出现非ASCII的错，大多是图片没找到。原因是（估计），image tag 有多段，如“督尼 正常”，当无法找到这个tag，解释器寻找下一语法匹配，并认为关键字只能是ascii，所以产生了风牛马不相及的错误信息。
+python中不能使用中文变量名，很奇怪，不知是不是由于用的是py2。
+因为是py2所以/是整数除啊！！！
+
+拆分文件：随便拆，随便放？但python显然不行吧。
+发现原来有两种init：'init python:', 'init:'
+
+
+用outline style表示督尼所想还有咒语，并突出之。
+用im.FactorScale来放大督尼变形，场面震撼，我想这就是原作的意思。所以我又做了magicdoor，也就是次元门，以增强震撼效果，并且与下一页联系起来，只露出督尼半身。
+
+用ALT来实现死亡场景。灵魂的不稳定，领主的诞生。使用'image tag as '以实现尸体与灵魂同时出现。
+变形中pause可能被用户打断，出现小身的领主，所以要增加一个放大。
+at Transform 不会被打断，但是pic_move与left/right/center等不能正常工作，要自定义。
+the xpos property can be an int, float, or absolute. The behavior is undefined when an interpolation has old and new property values of different types.
+ 
+ 
+字体颜色，除了临时的{color=}{/color}外，有Character(what_color=)，因为一开始老是把#fff当成黑色，所以一直不知怎么调字体色彩。
+对话头像Character(image=,show_side_image=Image(,xalign=0.0, yalign=0.7))，image不知有什么用。
+对话对齐，只知道将xfill去掉，但这样window缩水很难看。于是只能把window也去掉
+督尼字体是白色，而泰是黑色，魔鬼法令也是黑色，黑色是高级魔鬼的特权啊233。
+
+最后，又做了《契约》《背叛》的漫画浏览vbox。
+本来还想加个生命游戏，不过，不知道怎么控制像素，也不知怎么修改image，Sprite又太慢、
+
+注意保存问题，像是函数之类的成员数据无法保存。用继承覆写函数。
+
+
+options.rpy
+config.developer = False
+config.windows_icon = imagepath+'第二份契约 icon.ico' 有的项目行有的不行
+
+left truecenter 等都是transpform
+transform left:
+    align (0., 1.)
+所以show 动画 at truecenter后，动画顶层移动将被取消
+
+
+

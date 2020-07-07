@@ -1,0 +1,44 @@
+Chapter 3 Concurrent Objects
+3.8 The Java Memory Model
+[page 62]
+double-checked locking, a once-common programming idiom that falls victim to Java's lack of sequential consistency.
+
+public static Singleton getInstance() {
+    if(instance == null){
+        synchronized(Singleton.class){
+            if(instance == null)
+                instance = new Singleton();
+        }
+    }
+    return instance;
+}
+
+
+thread A:
+    new Singleton(); // on private working memory
+    instance = ...; // update private working memory and global shared memory
+    // pause here, we switch to B
+thread B:
+    instance != null
+    return instance; // NOTE: that object not updated to global shared memory yet
+
+
+
+
+....
+    If all accesses to a particular field are protected by the same lock, then reads-writes to that field are linearizable. 
+        Specifically, when a thread releases a lock, modified fields in working memory are written back to shared memory, performing modifications while holding the lock accessible to other threads.
+        When a thread acquires the lock, it invalidates its working memory to ensure fields are reread from shared memory. 
+    Together, these conditions ensure that reads-writes to the fields of any object protected by a single lock are linearizable.
+
+    // acquire lock ==>> invalidate working memory, reread from shared memory
+    // releases lock ==>> write modified working memory to shared memory
+
+
+
+
+
+
+
+
+

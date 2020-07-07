@@ -1,0 +1,49 @@
+
+1) sizeof ? >= 0 // 信息的存储需要空间
+2) alignof ? >= 1 // 硬件要求特定数据类型的地址有对齐要求
+    for any integer, address = n*(alignof T) is an address of T
+    => gcd{any address of T} = alignof T
+3) if .h is a member of T, for any address of T pt, addressof pt->h = pt + offsetof .h in T 
+4) struct ~ sizeof T >= sum sizeof ? {T's members}// 内部成员信息正交、信息守恒、复合体内部成员的对齐将造成成员之间的间隙，存在空间浪费
+5) struct ~ constant : sizeof, alignof, offsetof // 在定义之后是固定的
+6) contiguous and layout order is the same as writing
+    sizeof struct_0 {A,B,C} = sizeof struct_0 {struct_0{A,B},C} // struct为了调整大小可能改变次序
+    // struct_0{A,B} != struct_0{B,A}, but struct{A,B} == struct{B,A}
+    // if ? is some padding bytes in struct,
+    //    struct_0 T1{A a,A?,A b} struct_0 T2{T c,T d} 
+    //    offsetof d in T2 >= offsetof c + sizeof T
+    //    but struct{T c,T d} can be {c.a,d.a,c.b,d.c}
+    //    or struct{T c,A d} can be {c.a, d ,c.b}
+    def struct_1{...} = arg min sizeof ? { struct_0{...}} // 成员空间不重叠，只是通过调整顺序减少对齐造成的空隙
+
+7) def alignof T = lcm{alignof type of T's members}
+        for any address of T pt, for any type H of member in T
+        alignof H | addressof pt->h              <= 2)
+        alignof H | addressof pt + offsetof h    <= 3)
+        alignof H | addressof pt_ + offsetof h   <= 3)
+        alignof H | addressof pt_ - addressof pt <= sub
+        alignof H | (any n_ - any n)*alignof T   <= 2)
+        alignof H | alignof T                    
+        lcm{alignof type of T's members} | alignof T
+        any T's address is of its members too.
+
+        
+5) for struct_0 T{H,B}, def sizeof T = min // note non-C, since I don't assume Ta|Ts
+    let Ts,Hs,Bs = sizeof T,H,B;
+    let Ta,Ha,Ba = alignof T,H,B
+    let    Ho,Bo = offsetof H,B in T
+    then 
+    by 6) 0 <= Ho <= Ho + Hs <= Bo <= Bo + Bs <= Ts 
+    by 2) 1 <= Ta,Ha,Ba
+    let p1 = Ho, p2 = Bo - (Ho + Hs), p3 = Ts - (Bo + Bs)
+    so sizeof T = p1 + Hs + p2 + Bs + p3
+    to min sizeof T, let p3 = 0
+    7) => p1 = 0
+    p2 = (Ba - Hs%Ba)%Ba
+
+
+
+
+
+
+    

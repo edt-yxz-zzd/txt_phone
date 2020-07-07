@@ -1,0 +1,71 @@
+
+HttpResponseRedirect/redirect vs RedirectView.as_view
+permanent redirect vs temporary redirect
+HttpResponseRedirect vs redirect()
+
+
+
+
+
+
+
+##################################################
+HttpResponseRedirect/redirect() vs RedirectView.as_view()
+    * HttpResponseRedirect/redirect():
+        -> response
+    * RedirectView.as_view():
+        -> view
+        -> (request -> response)
+        # view = request -> response
+
+
+##################################################
+permanent redirect vs temporary redirect
+    https://stackoverflow.com/questions/19073353/django-whats-the-difference-between-a-temporary-redirect-and-a-permanent-redir
+    * permanent redirect:
+        Permanent redirects are for when resource URLs change.
+        Just adding a note to Brandon's post concerning your question what is the difference between both. The major difference between temporary and permanent redirects is how third parties see it. If Google sees a permanent redirect it would probably think that the old site is gone and would update all hits to directly access the new URL. Some people say that Google favors permanent redirects as temporary redirects are often used by spammers.
+
+    * temporary redirect
+        A case for temporary redirects are e.g. internal rewritings of URLs on your own site that link to a download mirror/static file server. In this case the redirecting site will probably stay the same while the other server address might change (e.g. host static content wherever it is cheapest). Using permanent redirects might introduce problems (think about podcast players on your phone that remember such redirects and won't recognize it when you move your static file server).
+
+class HttpResponseRedirect
+    status_code = 302
+class HttpResponsePermanentRedirect
+    status_code = 301
+
+
+##################################################
+# 301 permanent redirect:
+    response = django.shortcuts.redirect(url, permanent=True)
+    response = django.http.HttpResponsePermanentRedirect(url)
+
+
+HttpResponseRedirect vs redirect()
+    https://stackoverflow.com/questions/13304149/what-the-difference-between-using-django-redirect-and-httpresponseredirect
+
+    * HttpResponseRedirect:
+        the first argument can only be a url.
+
+    * redirect(to, permanent=False, *args, **kwargs):
+        # to :: URL | Model | View
+
+        redirect() which will ultimately return a HttpResponseRedirect
+        can accept a model, view, or url as it's "to" argument.
+        So it is a little more flexible in what it can "redirect" to.
+
+
+# There are two ways to return a 301 permanent redirect:
+  * 1
+    https://docs.djangoproject.com/en/1.5/topics/http/shortcuts/#redirect
+    from django.shortcuts import redirect
+    def my_view(request):
+        # some code here
+        return redirect('/some/url/', permanent=True)
+  * 2
+    https://docs.djangoproject.com/en/1.5/ref/request-response/#django.http.HttpResponsePermanentRedirect
+    from django.http import HttpResponsePermanentRedirect
+    def my_view(request):
+        # some code here
+        return HttpResponsePermanentRedirect('/some/url')
+

@@ -1,0 +1,65 @@
+<S, sigma> -> <S', sigma'>
+sigma :: name -> value
+-- name may be address
+-- sigma is the global state
+
+
+
+
+<x:=1, sigma> -> <EMPTY, sigma[x:=1]>
+
+sigma[x:=1] = calc sigma "x" 1
+
+we can treat it as a function
+    calc :: (name->value) -> name -> val -> (name->value)
+    calc f name val = \name' -> if name' == name then val else f name
+we can treat it as a global dict
+    sigma[x:=1] ::= sigma["x"] = 1
+    calc :: (Map name value) -> name -> val -> (Map name value)
+    calc m name val = M.insert name val m
+    def calc(m, name, val):
+        m' = copy(m)
+        m'[name] = val
+        return m'
+we can treat it as a global record
+    calc :: record -> name -> val -> record
+    calc r name val = r {name=val}
+we can treat it as a global object
+    calc :: object -> name -> val -> object
+    calc o name val = copy(o).setattr(name, val)
+
+
+obj_val is a dict like sigma, or say sigma is a obj_val
+obj_val has the same op as sigma
+    obj_val[name:=val]  ::=  obj_val{name=val}
+
+
+<this.x:=1, sigma> -> <Empty, sigma?>
+name = Ptr val
+this :: Ptr (Ptr val)
+this :: Ptr name
+-- since we need to update val of name, we really have to know the name
+
+
+obj_name = sigma(this)
+obj_val = sigma(obj_name) = sigma(sigma(this))
+obj_val' = obj_val {x=1}
+sigma? = sigma {obj_name=obj_val'}
+    = sigma {sigma(this)=obj_val {x=1}}
+    = sigma {sigma(this)=sigma(sigma(this)) {x=1}}
+    = sigma [sigma(this):=sigma(sigma(this)) [x:=1]]
+
+
+-- ival_name is an attribute
+ival_name <==> this.ival_name
+s.u[ival_name:=t] <==> s.u[this.ival_name:=t]
+this.ival_name[this.ival_name:=t] = t  -- setattr(name, t); then getattr
+s.ival_name[this.ival_name:=t] = s[this.ival_name:=t].ival_name
+simple_val_name.ival_name[this.ival_name:=t] = simple_val_name.ival_name if simple_val_name =/= this
+simple_val_name.ival_name[this.ival_name:=t] = if simple_val_name.ival_name == this then t else simple_val_name.ival_name
+
+
+
+
+
+

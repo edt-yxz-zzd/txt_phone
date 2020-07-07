@@ -1,0 +1,269 @@
+
+[FXML]
+    The markup language that JavaFX uses to describe layouts
+    
+    // NOTE: should not begin with space "^<\?xml .*>$"
+
+    <?xml version="1.0" encoding="UTF-8"?>
+    <?import java.lang.*?>
+    <?import java.util.*?>
+    <?import javafx.scene.control.*?>
+    <?import javafx.scene.layout.*?>
+    <?import javafx.geometry.Insets?>
+    
+    <GridPane hgap="10" vgap="10">
+        <padding>
+            <Insets top="10" right="10" bottom="10" left="10"/>
+        </padding>
+        
+        <children>
+            <Label text="User name:" GridPane.columnIndex="0" GridPane.rowIndex="0" GridPane.halignment="RIGHT" />
+            <Label text="Password: " GridPane.columnIndex="0" GridPane.rowIndex="1" GridPane.halignment="RIGHT" />
+            <TextField GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+            <PasswordField GridPane.columnIndex="1" GridPane.rowIndex="1" />
+            <HBox GridPane.columnIndex="0" GridPane.rowIndex="2" GridPane.columnSpan="2" alignment="CENTER" spacing="10">
+                <children>
+                    <Button text="Ok" />
+                    <Button text="Cancel" />
+                </children>
+            </HBox>
+        </children>
+    </GridPane>
+
+explain
+    <?import ...?>
+        "processing instructions" for importing Java packages. 
+        (In general, XML processing instructions are an "escape hatch" for application-specific processing of XML documents.)
+    
+    [constructor and simple property]
+        <GridPane hgap="10" vgap="10">
+            means "construct a GridPane and then set the hgap and vgap properties."
+    
+        <TextField GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+            means that the static methods 
+                GridPane.setColumnIndex(thisTextField, 1)
+                GridPane.setRowIndex(thisTextField, 0)
+            will be called.
+
+
+    [complex property]
+        <padding>
+            <Insets top="10" right="10" bottom="10" left="10"/>
+        </padding>
+            padding property has type Insets
+    [list property]
+        <HBox ...>
+            <children>
+                <Button text="Ok" />
+                <Button text="Cancel" />
+            </children>
+        </HBox>
+            children is a list property
+
+
+load FXML file
+    public void start(Stage stage) {
+        try {
+            Parent root = FXMLLoader.load(getClass().getResource("dialog.fxml"));
+            stage.setScene(new Scene(root));
+            stage.show();
+        } catch (IOException ex) {
+            ex.printStackTrace();
+            System.exit(0);
+        }
+    }
+
+    NOTE:
+        Class<?> cls = obj.getClass(); // obj e.g. this
+        cls.getResource("/.*") ==>> File("/.*")
+        cls.getResource("[^/].*") ==>> File(pkg_path_of(cls) + "/" + "[^/].*")
+        but should not beyond the CLASSPATH that leads to cls
+
+
+establishing a connection between FXML and Java
+    [id]
+        in FXML:
+            <TextField id="username" ... />
+        in Java:
+            TextField username = (TextField) root.lookup("#username");
+
+
+    [@FXML]
+        in FXML:
+            // NOTE: root:{xmlns:fx, fx:controller} and child:{fx:id}
+            // root element
+            <GridPane xmlns:fx="http://javafx.com/fxml" hgap="10" vgap="10" fx:controller="XxxController">
+            
+            // others ...
+            <TextField fx:id="username" GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+            <PasswordField fx:id="password" GridPane.columnIndex="1" GridPane.rowIndex="1" /> 
+            <Button fx:id="okButton" text="Ok" />
+        in Java:
+            // NOTE: Initializable and @FXML
+            public class XxxController implements Initializable {
+                @FXML private TextField username;
+                @FXML private PasswordField password; 
+                @FXML private Button okButton;
+                
+                @Override
+                public void initialize(URL url, ResourceBundle rb) {
+                    ...
+                }
+            }
+
+        NOTE: 
+            If your controller doesn't have a default constructor 
+                (perhaps, because it is being initialized with a reference to a business service), 
+                you can set it programmatically:
+                
+            FXMLLoader loader = new FXMLLoader(getClass().getResource(...));
+            loader.setController(new Controller(service));
+            Parent root = (Parent) loader.load();
+        
+        CAUTION:
+            FXMLLoader loader = new FXMLLoader();
+            loader.setController(...);
+            // Error -- calls static method
+            Parent root = (Parent) loader.load(getClass().getResource(...));
+
+initialization in the FXML file
+    The syntax is documented at 
+        http://docs.oracle.com/javafx/2/api/javafx/fxml/doc-files/introduction_to_fxml.html.
+        file:///D:/software/programming/Java/javafx-8u25-apidocs/api/index.html
+
+NOTE: 
+    It is also possible to add scripts in JavaScript or another scripting language to an FXML file.We will discuss this briefly in Chapter 7.
+
+
+bind
+    %introduction_to_fxml::Expression Binding
+    
+    <TextField fx:id="usr"/>
+    <TextField fx:id="psw"/>
+    <Label text="${usr.text}"/>
+    <Botton disable="${usr.text=='' || psw.text==''}"/>
+
+event
+    %introduction_to_fxml::Event Handlers
+action event
+    requires : .setOnEvent()
+    
+    1)
+        <?language javascript?>
+        ...
+            <Button text="Click Me!"
+             onAction="java.lang.System.out.println('You clicked me!');"/>
+        ...
+    2)
+        <RootElement fx:controller="com.foo.MyController"
+            xmlns:fx="http://javafx.com/fxml">
+            ...
+                <Button text="Click Me!" onAction="#handleButtonAction"/>
+            ...
+        </RootElement>
+        
+        // in Java
+        package com.foo;
+
+        public class MyController {
+            public void handleButtonAction(ActionEvent event) {
+                System.out.println("You clicked me!");
+            }
+        }
+
+    3)
+        <RootElement xmlns:fx="http://javafx.com/fxml">
+            ...
+                <XXX fx:id="xxx" ... />
+            ...
+                <Button text="Click Me!" onAction="$xxx.onActionHandler"/>
+            ...
+        </RootElement>
+        
+        // in Java
+        public class XXX {
+            @FXML
+            public EventHandler onActionHandler = new EventHandler<>() { ... }
+        }
+
+change event
+    1) onChange
+        <VBox fx:controller="com.foo.MyController"
+            xmlns:fx="http://javafx.com/fxml">
+            <children onChange="#handleChildrenChange"/>
+        </VBox>
+
+        // in Java
+        package com.foo;
+        import javafx.collections.ListChangeListener.Change;
+        public class MyController {
+            public void handleChildrenChange(ListChangeListener.Change c) {
+                System.out.println("Children changed!");
+            }
+        }
+    2) on<propertyName>Change
+        <VBox fx:controller="com.foo.MyController"
+        xmlns:fx="http://javafx.com/fxml" onParentChange="#handleParentChange"/>
+        
+        public class MyController {
+            public void handleParentChange(ObservableValue value, Parent oldValue, Parent newValue) {
+                System.out.println("Parent changed!");
+            }
+        }
+
+
+
+
+Nested Controllers
+    main_window_content.fxml
+    <VBox fx:controller="com.foo.MainController">
+       <fx:include fx:id="dialog" source="dialog.fxml"/>
+       ...
+    </VBox>
+    
+    MainController.java
+    public class MainController extends Controller {
+        @FXML private Window dialog;
+        @FXML private DialogController dialogController;
+        ...
+    }
+    
+    when the controller's initialize() method is called, 
+        the dialog field will contain the root element loaded from the "dialog.fxml" include, 
+        and the dialogController field will contain the include's controller. 
+    The main controller can then invoke methods on the included controller, 
+        to populate and show the dialog, for example.
+
+
+
+
+
+
+Custom Components
+    customize:
+        root element
+        document's controller
+
+    <fx:root type="javafx.scene.layout.VBox" xmlns:fx=...> ... </fx:root>
+        vs <VBox xmlns:fx=... fx:controller="com.foo.MainController"> ... </VBox>
+    
+        fx:root extends type="javafx.scene.layout.VBox"
+        in Java
+            FXML Loader.setRoot
+            FXML Loader.setController
+            FXML Loader.load
+                .getRoot
+                .getController
+
+
+            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("custom_control.fxml"));
+            fxmlLoader.setRoot(...);
+            fxmlLoader.setController(...);
+            try{
+                Parent root = fxmlLoader.load();
+                ...
+            }
+            ...
+
+
+

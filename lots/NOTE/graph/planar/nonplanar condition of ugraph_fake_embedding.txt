@@ -1,0 +1,120 @@
+nonplanar condition of ugraph_fake_embedding
+
+# all are simple path
+# middle path may be empty
+# middle path is not circle
+(simple_nonempty_maycircle_path
+,simple_mayempty_noncircle_path
+,simple_nonempty_maycircle_path
+)
+
+    * (simple_nonempty_noncircle_path, simple_nonempty_noncircle_path, simple_nonempty_noncircle_path)
+        # all are simple, nonempty, noncircle, path
+        # min graph = the_three_nonparallel_nonloops
+    * (simple_nonempty_circle, empty_path, simple_nonempty_circle)
+        # circle may be self_loop
+        # min graph = the_two_nonparallel_loops
+
+
+
+all(end_vertex != begin_vertex if not circle & not empty for path in 3-paths)
+3-paths have common begin_vertex
+3-paths have common end_vertex
+3-paths have distinguish middle vertices
+    i.e. not cross/interset
+
+local embedding:
+    case-1:
+        3-simple_nonempty_noncircle_paths embedding-direction around begin_vertex/end_vertex are the same
+    case-2:
+        exist h1,h2. 3-circle-or-empty-paths embedding the four hedge as
+            [h1, h2, h1.reversal, h2.reversal] in clockwise
+
+
+
+[ver2]
+how to find out nonplanar_condition of ugraph_fake_embedding?
+    use dfs
+    treat the whole dfs-tree as the only new super_vertex
+    treat all back_hedge/rback_hedge as super_hedge of super_loop
+    detect whether the new super_ugraph_fake_embedding is planar?
+
+    detail:
+        dfs:
+            iter children tree_hedge/back_hedge by counterclockwise from the parent tree_hedge/rtree_hedge
+
+            # number back_hedge/rback_hedge by postorder
+            hedge2maybe_postorder
+                # back_hedge/rback_hedge -> postorder
+                # tree_hedge/rtree_hedge -> None
+            postorder2hedge
+                # postorder -> back_hedge/rback_hedge
+
+            hedge2maybe_ancestor_hedges_of_another_hedge
+                # rback_hedge -> back_hedge's ancestor_hedges # left_biased_list
+                # non-rback_hedge -> None
+
+        postorder2paired_postorder
+            <<== postorder2hedge + hedge2another_hedge + hedge2maybe_postorder
+            assert postorder2paired_postorder is a bijection without self-reflect
+
+        use a stack to verify whether postorder2paired_postorder is well-parenthesis
+
+
+
+
+
+[ver1][error]
+                                                 <-\
+                     /-<-[hedgeX]-+-[back]-*-C      |
+        ...Z-*->A-*->B-*->C-*-[back]-+-[hedgeY]->A  |
+                          \-*-[back]-+-[hedgeX]->B  /
+                          \-*-[back]-+-[hedgeZ]->Z /
+                                                  /  direction of dfs visit hedges around vertex
+
+[ver1]how to find out nonplanar_condition of ugraph_fake_embedding?
+    use dfs
+    use low_pt&preorder of hedge version
+        # instead of "vertex version"
+    detected on rback_hedge
+        # see: below "case-2"
+        # "case-1" is wrong case
+
+    2-cases:
+        # since we record only the min low_pt
+        case-1: # the wrong case
+            detected at the end_vertex of 3-paths
+                # C
+            detected on rtree_hedge/back_hedge
+                # when exit tree_hedge
+                # when enter&exit back_hedge
+                #
+                # C-*-[back]-+->A
+                                      <-\
+                      /-*-[back]-+->A   |
+        ...A-*->B-*->C--*-[back]-+->B   /
+                                       /  direction of dfs visit hedges around vertex
+            since we record only the min low_pt:
+                C-[back]->B is the min low_pt
+                and hence some C-[back]->B that is not the min one will be ignored
+                    but it may cause nonplanar
+
+        case-2: # the correct case
+            detected at the begin_vertex of 3-paths
+                # B
+            detected on rback_hedge
+                # when revisit back_hedge hedgeX
+                #
+                # B<-[hedgeX]-+-[back]-*-C
+                #   where preorder[hedgeX] < preorder[hedgeY]
+                #         C-*-[back]-+-[hedgeY]->A
+                                             <-\
+                 /-<-[hedgeX]-+-[back]-*-C      |
+        ...A-*->B-*->C-*-[back]-+-[hedgeY]->A   |
+                     \-*-[back]-+-[hedgeX]->B  /
+                                              /  direction of dfs visit hedges around vertex
+            # min low_pt[C.tree_hedge that lead to hedgeX] may lower than A
+            #   hence can not be detected by case-1 at C
+
+
+

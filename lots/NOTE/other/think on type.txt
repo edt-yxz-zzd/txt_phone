@@ -1,0 +1,162 @@
+
+think on function:
+object :: a
+function :: a->b  -- function is an object, i.e. let c = (a->b)
+
+object is immutable
+how to listDirectory?
+ls :: path -> [path]
+No, must be: ls :: filesystem -> path -> [path]
+if filesystem is immutable, then we done
+but false
+provide with timestamp
+ls :: (time, filesystem) -> path -> [path]
+if we make two calls at same time ==>> parallel
+if not parallel ==>> time growing
+later call should have a bigger time
+next call begin at the time where curr call finish
+ls :: (time, filesystem) -> path -> (time, [path])
+two calls to ls will be:
+let (t2, paths1) = ls (t1, fs) path
+let (t3, paths2) = ls (t2, fs) path
+
+Note that we have to carry the time and filesystem everywhere
+what interest us is [path] not time or fsys
+==>> TimeFsys [path] ==>> TimeMutable a ==>> TM a
+TimeMutable includes (time, filesystem)
+ls :: TM () -> path -> TM [path]
+TM () - means current time and all mutable states now
+
+now = ...??
+tm_paths1 = ls now path
+now' = get_now tm_paths1
+tm_paths2 = ls now' path
+
+get_now :: TM a -> TM ()
+get_value :: TM a -> a
+
+if we simulate a limited fsm, i.e. all mutable states can be represented
+then we done
+but we cannot store "now", if it really represents the real world states
+
+no get_now
+no get_value
+we may say I will calc from "now" on, assume "now" as input
+TM_FromNow a ==>> N
+ls :: path -> N [path]
+N a + N b -- means compute N a and next N b
+(+) :: N a -> N b -> N b
+if we donot want to discard "a":
+==>> (>>) :: N a -> (a -> N b) -> N b
+if we want to modify the result purely
+==>> (>->) :: N a -> (a -> b) -> N b
+
+
+
+
+
+
+
+
+Case == case of == partition of set where view type as set
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+think on type:
+
+data + algo
+pointer + interface
+
+
+
+
+
+
+
+
+
+
+
+
+
+object is just a pointer
+instance/context is a table of functions and static elements, i.e. an interface
+interface master all
+
+
+
+
+"data" type provides the "case of" operations and constructor
+    we can treat it as an interface/class with only one instance
+
+the module static context provides:
+    table of top-level objects of this module and other imported objects
+    table of module static context of qualified imported modules
+    
+    mapping of class of "data" to its only instance (i.e. "data" type)
+    mapping of (class, type) to class instance context
+
+
+class context provides:
+    table of precondition contexts
+    table of elements and methods
+
+type context:
+    set of class instance which this type satisfies
+
+when we call a function:
+    f :: (C a, B a b) T a -> b -> c
+    if b -> a ==>> f :: C a => T a -> (B a b => b -> c)
+    if a -> b ==>> f :: (C a, B a b) T a -> (B[b](a)->c)
+    inputs:
+        module (where f defined) static context // static means implict input
+        C's class instance context and optional B's
+        
+        T type context
+
+
+
+
+
+inefficient type : integer in prime product form
+defect type : Int with bound or uint
+
+
+
+
+
+

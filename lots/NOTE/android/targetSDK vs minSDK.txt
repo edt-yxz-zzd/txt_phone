@@ -1,0 +1,58 @@
+targetSDK vs minSDK
+android:targetSdkVersion vs android:minSdkVersion vs android:maxSdkVersion
+targetSdkVersion = max {API level when feature introduced: feature <- all critical or optional features}
+minSdkVersion = max {API level when feature introduced: feature <- all critical features}
+    # optional feature: "check the feature exists before using it"
+    1. min version <= OS version < target version
+    2. OS version == target version
+    3. target version < OS version
+        (???target level per API??? by "@TargetApi(nn)")
+        f: some an API f that App used
+        w: min level
+        x: target level of f
+        y: whole app target level
+        z: OS level
+        ---------------
+        f for App: required, optional
+        f for OS: prior, obsolete, meaning_changed, same
+        [] ==>> w <= z && w <= y && x <= y ###### ???w <= x???
+        prior ==>> optional && z < x
+        obsolete ==>> x < z && y < z
+        meaning_changed ==>> ???
+        same ==>> ???
+        | some a API target level x | whole app target level y  | OS level z
+
+https://stackoverflow.com/questions/4568267/android-min-sdk-version-vs-target-sdk-version
+In short, here is the purpose to declaring a different targetSDK from the minSDK: It means you are using features from a higher level SDK than your minimum, but you have ensured backwards compatibility. In other words, imagine that you want to use a feature that was only recently introduced, but that isn't critical to your application. You would then set the targetSDK to the version where this new feature was introduced and the minimum to something lower so that everyone could still use your app.
+
+To give an example, let's say you're writing an app that makes extensive use of gesture detection. However, every command that can be recognised by a gesture can also be done by a button or from the menu. In this case, gestures are a 'cool extra' but aren't required. Therefore you would set the target sdk to 7 ("Eclair" when the GestureDetection library was introduced), and the minimumSDK to level 3 ("Cupcake") so that even people with really old phones could use your app. All you'd have to do is make sure that your app checked the version of Android it was running on before trying to use the gesture library, to avoid trying to use it if it didn't exist. (Admittedly this is a dated example since hardly anyone still has a v1.5 phone, but there was a time when maintaining compatibility with v1.5 was really important.)
+
+To give another example, you could use this if you wanted to use a feature from Gingerbread or Honeycomb. Some people will get the updates soon, but many others, particularly with older hardware, might stay stuck with Eclair until they buy a new device. This would let you use some of the cool new features, but without excluding part of your possible market.
+
+There is a really good article from the Android developer's blog about how to use this feature, and in particular, how to design the "check the feature exists before using it" code I mentioned above.
+========
+@TargetApi(11)
+    public void refreshActionBarIfApi11OrHigher() {
+      //If the API is 11 or higher, set up the actionBar and display it
+      if(Build.VERSION.SDK_INT >= 11) {
+        //ActionBar only exists at API level 11 or higher
+        ActionBar actionBar = getActionBar();
+
+        //This should cause onPrepareOptionsMenu() to be called.
+        // In versions of the API prior to 11, this only occurred when the user pressed 
+        // the dedicated menu button, but at level 11 and above, the action bar is 
+        // typically displayed continuously and so you will need to call this
+        // each time the options on your menu change.
+        invalidateOptionsMenu();
+
+        //Show the bar
+        actionBar.show();
+    }
+}
+==============
+The Android doc says, "As Android evolves with each new version, some behaviors and even appearances might change." So, we've looked behavior and appearance change, and how that change is accomplished.
+
+In summary, the Android doc says "This attribute(targetSdkVersion) informs the system that you have tested against the target version and the system should not enable any compatibility behaviors to maintain your app's forward-compatibility with the target version.".
+
+
+

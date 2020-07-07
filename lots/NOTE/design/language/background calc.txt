@@ -1,0 +1,39 @@
+
+type class system
+    type class template # generic form of {-# MINIMAL #-}
+        [template|
+        instance Applicative m where
+            pure = ...
+        instance Monad m where
+            (>>=) = ...
+        |] => [template|
+        instance Functor m where
+            ...
+        instance Applicative m where
+            ...
+        instance Monad m where
+            ...
+        |]
+    forall
+        class Monad (arr @a) => Arrow arr where
+    dependent
+        class C a b c | a c -> b, b c -> a where
+            -- prime key (a c | b c)
+            type C[0,2][1] a c = b
+            type C[1,2][0] b c = a
+            ...
+closed type family
+    partition types # should be a constraint like KnownInteger
+    type family IsList :: * -> Bool where
+        IsList [a] = True
+        IsList a = False
+    class (Known (IsList a)) => Show a {b=IsList a} where
+        show :: a -> String
+    class Show a => ShowList a where
+        show_list :: [a] -> String
+        show_list = ...
+    instance ShowList a => Show [a] True where
+        show = show_list
+
+
+

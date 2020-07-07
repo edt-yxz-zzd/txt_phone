@@ -1,0 +1,258 @@
+
+
+sum H[i] {~i=0->n} = n (H[n]-1), for [NN n]
+sum fall(x, m) {~x=a->b} = (fall(b, m+1)-fall(a, m+1))/(m+1) for m != -1
+    [fall(0,m+1>=1) = 0] ==>> sum fall(x, m) {~x=0->n} = fall(n, m+1)/(m+1) for [NN m][int n]
+
+sum floor ((x+kn)/m) {k=0..m-1}
+    = d*floor(x/d) + (n-1)(m-1)/2 + (d-1)/2
+    for [int m,n][m>0][d=gcd(n,m)]
+
+
+sum mu(d) {d\m} = [m=1]
+g(x) = sum f(x/d) {PZ d} <==> f(x) = sum mu(d)g(x/d){PZ d}, for [real x]
+g(m) = sum f(d) {d\m} <==> f(m) = sum mu(d)g(m/d) {d\m}, for [PZ m]
+    sum phi(d) {d\m} = m
+    phi(m) = sum mu(d)m/d {d\m}
+
+sum C(i, k) {i=0..n} = C(n+1, k+1), for [NN n,k]
+    = sum C(i, k) {i=k..n} = sum C(i, i-k) {i=k..n}
+    = sum C(k+i, i) {i=0..n-k}
+    sum C(k+i, i) {i=0..n} = C(n+k+1, k+1) = C(k+n+1, n)
+    sum C(x+i, i) {i=0..n} = C(x+n+1, n)
+sum C(x,i)(-1)**i {i=0..m} = C(x-1, m)(-1)**m for [int m]
+
+
+(x+y)**z = sum C(z,i)x**i * y**(z-i) {i} for [|x/y|<1][CC z] or [NN z]
+sum C(z,i) {i<=m} = open
+    S m x z = sum C(z,i)x**i {i<=m} = ??
+
+Taylor series
+    f(z) = sum (D**i f z0)/i! * (z-z0)**i {NN i} = 
+
+dff**n f x = (-1)**n sum C(n,i)(-1)**i f (x+i) {i}, for [NN n]
+    dff = shft - ID
+    dff**n = (shft-1)**n = sum C(n,i) shft**i (-1)**(n-i) {i}
+
+Newton series
+    f z = sum (T**i f 0)/i! fall(z, i) {i=0..deg(f)}, for [polynomial f][CC z]
+    f n = sum (T**i f 0)C(n, i) {NN i}, for [NN n] // interpolate to real may be wrong
+
+    NS = Newton_series
+    NSC = Newton_series_coeff
+    NSC f n = dff**n f 0 = sum f(i) C(n,i) (-1)**(n-i) {i}, for [NN n]
+    NS f n = sum f(i) * C(n,i) {i}, for [NN n]
+    NSC . NS = ID
+    
+
+
+
+
+x**n = sum fall(x,i) Stirling{n,i} {i}, for [NN n]
+x**n = sum rise(x,i) (-1)**(n-i) Stirling{n,i} {i}, for [NN n]
+
+rise(x,n) = sum x**i Stirling[n,i] {i}, for [NN n]
+fall(x,n) = sum x**i (-1)**(n-i) Stirling[n,i] {i}, for [NN n]
+
+Stirling[n,m] = Stirling{-m, -n} for [int m,n]
+[m=n]I**(m+n) = sum Stirling[n,i] Stirling{i,m} (-1)**i {i}
+    = sum Stirling{i,-n} Stirling[-m,i] (-1)**i {i}
+    = sum Stirling{n,i} Stirling[i,m] (-1)**i {i} for [int m,n]
+
+x**n = sum Eulerian<n,i> C(x+i,n) {i}, for [NN n]
+    = sum Eulerian<n,i>/n! fall(x+i,n) {i}
+Eulerian<n,k> = sum C(n+1,i)(k+1-i)**n (-1)**i {i=0..k}
+
+
+Stirling[x, x-n] = sum Eulerian<<n,i>> C(x+i, 2n) {i}, for [NN n]
+Stirling{x, x-n} = sum Eulerian<<n,i>> C(x+n-1-i, 2n) {i}, for [NN n]
+
+
+-----------------------------
+
+sum of terms t(x,i): // sum A t(x+i,k){i} or sum B t(x, i) {i}
+    x**i
+    (x+i)**m
+    (1+i*x)**m
+    
+    C(x,i)
+    fall(x,i) = C(x,i)*i! for i>=0
+    rise(x,i) = fall(x+i-1,i)
+    
+    C(x+i, m)
+    fall(x+i, m)
+    rise(x+i, m)
+    
+    
+    Stirling[x,i]
+    Stirling{x,i}
+    
+    Stirling[x,x-i]
+    Stirling{x,x-i}
+    
+    
+
+function:
+    [int n >= 0]
+    x**n
+    (1+z)**x
+    fall(x,n)
+    rise(x,n)
+    
+    [int k>=0]
+    sum i**k {i=0..n-1}
+    sum fall(k+i,k) {i=0..n-1} 
+        = k! sum C(k+i,k) {i=0..n-1} 
+        = k! C(k+n, k+1) 
+        = fall(k+n, k+1)/(k+1)
+    sum rise(i,k) {i=0..n-1} 
+        = sum fall((k-1)+i,k) {i=0..n-1} 
+        = sum fall(k+i,k) {i=-1..n-2}
+        = fall(k+n-1, k+1)/(k+1)
+
+
+expand to x**n/n!:
+    f(x) = sum D**i f(z) {z=x0} (x-x0)**i/i! {i>=0}
+    (1+x)**y = sum C(y,i) x**i {i>=0} = sum fall(y,i) x**i/i! {i>=0}
+    a**x = sum (ln a)**i x**i/i! {i>=0}
+    fall(x,n) = sum Stirling[n,i] (-1)**(n-i) x**i {i>=0}
+    rise(x,n) = sum Stirling[n,i] x**i {i>=0}
+
+
+    [int k>=0]
+    sum i**k {i=0..n} = 
+    sum fall(k+i,k) {i=0..n}
+    sum rise(i,k) {i=0..n}
+
+
+x**n = sum Stirling{n,i} fall(x,i) {i}
+= sum Stirling{n,i} (-1)**(n-i) rise(x,i) {i}
+= sum Eulerian<n,i>/n! fall(x+i,n) {i}
+= sum ?A(m,n,i) (x+i)**m {i=0..m} for m>=n
+A(m) is a mx of size (m+1)*(m+1)
+
+
+[int m>=n>=0]
+x**j = sum A(m,j,i) (x+i)**m {i=0..m}
+Y = [(x+i)**m for i=0..m]
+X = [x**j for j=0..m]
+X = A(m)Y
+Y = B(m)*X
+==>> (x+i)**m = sum B(m,i,j) x**j {j=0..m} ==>> B(m,i,j) = C(m,j) i**(m-j)
+A(m) = 1/B(m)
+
+
+A(m, m, i) = [i=0]
+guess A(m,0,i) = C(m,i)/m! (-1)**(m-i)
+    ==>> m! = sum C(m,i)(-1)**(m-i) (x+i)**m {i=0..m} yeah! correct
+
+
+
+x**(j+1)/(j+1) + D(m,j) = 1/(m+1) sum A(m,j,i) (x+i)**(m+1) {i=0..m}
+D(m,j) = 1/(m+1) sum A(m,j,i) i**(m+1) {i=0..m}
+D(m) = A(m) * [0..m].**(m+1) / (m+1)
+x**(j+1) = -D(m,j)*(j+1) + (j+1)/(m+1) sum A(m,j,i) (x+i)**(m+1) {i=0..m}
+1 = x**0 = sum A(m+1,0,i) (x+i)**(m+1) {i=0..m+1}
+x**(j+1) = -D(m,j)*(j+1)sum A(m+1,0,i) (x+i)**(m+1) {i=0..m+1} + (j+1)/(m+1) sum A(m,j,i) (x+i)**(m+1) {i=0..m}
+    = -D(m,j)*(j+1) A(m+1,0,m+1) (x+m+1)**(m+1) + (j+1)/(m+1) sum (A(m,j,i) - D(m,j)*(m+1)A(m+1,0,i)) (x+i)**(m+1) {i=0..m}
+==>> A(m+1, j+1, i<m+1) = (j+1)/(m+1)(A(m,j,i) - D(m,j)*(m+1)A(m+1,0,i))
+    A(m+1, j+1, m+1) = -D(m,j)*(j+1) A(m+1,0,m+1) = -D(m,j)*(j+1) /(m+1)!
+    D(m,j) = [m/2,...]
+        [[0], 
+        [1/2, 0], 
+        [1, -1/3, 0], 
+        [3/2, -11/12, 1/2, 0], 
+        [2, -7/4, 5/3, -6/5, 0], 
+        [5/2, -17/6, 15/4, -137/30, 4, 0], 
+        [3, -25/6, 7, -58/5, 84/5, -120/7, 0], 
+        [7/2, -23/4, 35/3, -967/40, 469/10, -1089/14, 90, 0], 
+        [4, -91/12, 18, -1069/24, 534/5, -29531/126, 3044/7, -560, 0]]
+
+x**(j-1) = 1/j sum A(m,j,i)m (x+i)**(m-1) {i=0..m}
+    = m/j sum A(m,j,i) (x+i)**(m-1) {i=0..m-1} + m/j A(m,j,m) (x+ma)**(m-1)
+    
+x**j = 1/j sum A(m,j,i)m x(x+i)**(m-1) {i=0..m}
+    = m/j sum A(m,j,i) (x+i-i)(x+i)**(m-1) {i=0..m}
+    = m/j sum A(m,j,i) (-i)(x+i)**(m-1) {i=0..m}
+        + m/j sum A(m,j,i) (x+i)**m {i=0..m}
+    = m/j sum A(m,j,i) (-i)(x+i)**(m-1) {i=0..m}
+        + m/j x**j
+x**(j-1) = sum A(m-1,j,i) (x+i)**(m-1) {i=0..m-1}
+
+
+fall(x,1) = x**1
+fall(x,2) = x(x-1) = x**2 - x = x**2 - ((x+1)**2-(x-1)**2)/4
+    = (x-1)**2/4 + x**2 - (x+1)**2/4
+
+fall(x,3) = 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

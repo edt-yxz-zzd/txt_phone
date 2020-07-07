@@ -1,0 +1,224 @@
+
+OpenClipboard/CloseClipboard/GetClipboardData/EmptyClipboard/SetClipboardData
+    BOOL OpenClipboard(
+      HWND hWndNewOwner
+    );
+    * Parameters
+        hWndNewOwner <- Type: HWND
+            A handle to the window to be associated with the open clipboard. If this parameter is NULL, the open clipboard is associated with the current task.
+    * Return Value
+        Type: BOOL
+
+        If the function succeeds, the return value is nonzero.
+
+        If the function fails, the return value is zero. To get extended error information, call GetLastError.
+
+
+    HANDLE GetClipboardData(
+      UINT uFormat
+    );
+    * Parameters
+        uFormat <- Type: UINT
+            A clipboard format. For a description of the standard clipboard formats, see Standard Clipboard Formats.
+    * Return Value
+        Type: HANDLE
+
+        If the function succeeds, the return value is the handle to a clipboard object in the specified format.
+
+        If the function fails, the return value is NULL. To get extended error information, call GetLastError.
+
+    BOOL EmptyClipboard();
+    * Return Value
+        Type: BOOL
+
+        If the function succeeds, the return value is nonzero.
+
+        If the function fails, the return value is zero. To get extended error information, call GetLastError.
+
+    HANDLE SetClipboardData(
+      UINT   uFormat,
+      HANDLE hMem
+    );
+
+    * Parameters
+        uFormat <- Type: UINT
+            The clipboard format. This parameter can be a registered format or any of the standard clipboard formats. For more information, see Standard Clipboard Formats and Registered Clipboard Formats.
+
+        hMem <- Type: HANDLE
+            A handle to the data in the specified format. This parameter can be NULL, indicating that the window provides data in the specified clipboard format (renders the format) upon request. If a window delays rendering, it must process the WM_RENDERFORMAT and WM_RENDERALLFORMATS messages.
+
+            If SetClipboardData succeeds, the system owns the object identified by the hMem parameter. The application may not write to or free the data once ownership has been transferred to the system, but it can lock and read from the data until the CloseClipboard function is called. (The memory must be unlocked before the Clipboard is closed.) If the hMem parameter identifies a memory object, the object must have been allocated using the function with the GMEM_MOVEABLE flag.
+
+    * Return Value
+        Type: HANDLE
+
+        If the function succeeds, the return value is the handle to the data.
+
+        If the function fails, the return value is NULL. To get extended error information, call GetLastError.
+
+
+
+
+Windows Standard Clipboard Formats
+https://docs.microsoft.com/en-us/windows/desktop/dataxchg/standard-clipboard-formats
+* CF_TEXT=1
+    Text format. Each line ends with a carriage return/linefeed (CR-LF) combination. A null character signals the end of the data. Use this format for ANSI text.
+* CF_UNICODETEXT=13
+    Unicode text format. Each line ends with a carriage return/linefeed (CR-LF) combination. A null character signals the end of the data.
+* CF_LOCALE=16
+    The data is a handle to the locale identifier associated with text in the clipboard. When you close the clipboard, if it contains CF_TEXT data but no CF_LOCALE data, the system automatically sets the CF_LOCALE format to the current input language. You can use the CF_LOCALE format to associate a different locale with the clipboard text.
+    An application that pastes text from the clipboard can retrieve this format to determine which character set was used to generate the text.
+    Note that the clipboard does not support plain text in multiple character sets. To achieve this, use a formatted text data type such as RTF instead.
+    The system uses the code page associated with CF_LOCALE to implicitly convert from CF_TEXT to CF_UNICODETEXT. Therefore, the correct code page table is used for the conversion.
+...
+https://docs.microsoft.com/en-us/windows/desktop/dataxchg/clipboard-operations#memory-and-the-clipboard
+Memory and the Clipboard
+    A memory object that is to be placed on the clipboard should be allocated by using the GlobalAlloc function with the GMEM_MOVEABLE flag.
+    After a memory object is placed on the clipboard, ownership of that memory handle is transferred to the system. When the clipboard is emptied and the memory object has one of the following clipboard formats, the system frees the memory object by calling the specified function:
+    | Function to free object   |   Clipboard format            |
+    |---------------------------+-------------------------------|
+    | GlobalFree                |   CF_TEXT,CF_UNICODETEXT,...  |
+    |..........
+    |..........
+
+https://docs.microsoft.com/en-us/windows/desktop/api/winbase/nf-winbase-globalalloc
+GlobalAlloc
+    DECLSPEC_ALLOCATOR HGLOBAL GlobalAlloc(
+      UINT   uFlags,
+      SIZE_T dwBytes
+    );
+
+    1) uFlags:
+        * GMEM_MOVEABLE=0x0002
+            Allocates movable memory. Memory blocks are never moved in physical memory, but they can be moved within the default heap.
+
+            The return value is a handle to the memory object. To translate the handle into a pointer, use the GlobalLock function.
+
+            This value cannot be combined with GMEM_FIXED.
+        ...
+        ...
+
+        * The following values are obsolete, but are provided for compatibility with 16-bit Windows. They are ignored.
+
+            GMEM_DDESHARE
+            GMEM_DISCARDABLE
+            GMEM_LOWER
+            GMEM_NOCOMPACT
+            GMEM_NODISCARD
+            GMEM_NOT_BANKED
+            GMEM_NOTIFY
+            GMEM_SHARE
+    2) Return Value:
+        If the function succeeds, the return value is a handle to the newly allocated memory object.
+
+        If the function fails, the return value is NULL. To get extended error information, call GetLastError.
+https://docs.microsoft.com/en-us/windows/desktop/api/winbase/nf-winbase-globallock
+    GlobalLock
+        LPVOID GlobalLock(
+          HGLOBAL hMem
+        );
+    Return Value
+        If the function succeeds, the return value is a pointer to the first byte of the memory block.
+
+        If the function fails, the return value is NULL. To get extended error information, call GetLastError.
+GlobalUnlock
+GlobalFree
+GetLastError
+
+
+
+
+https://stackoverflow.com/questions/579687/how-do-i-copy-a-string-to-the-clipboard-on-windows-using-python
+111111111111111111111111111111111
+#################### clipboard_get work! <- global_clipboard
+#################### but clipboard_append dont work! -> local_clipboard
+from tkinter import Tk
+r = Tk()
+r.withdraw()
+#result = r.selection_get(selection = "CLIPBOARD") #Get contents of clipboard
+result = r.clipboard_get() # same as above
+r.clipboard_clear()
+r.clipboard_append('i can has clipboardz?')
+r.update() # now it stays on the clipboard after the window is closed
+r.destroy()
+111111111111111111111111111111111
+
+
+
+
+
+
+22222222222222222222222222222222
+import ctypes
+
+# Get required functions, strcpy..
+strcpy = ctypes.cdll.msvcrt.strcpy
+ocb = ctypes.windll.user32.OpenClipboard    # Basic clipboard functions
+ecb = ctypes.windll.user32.EmptyClipboard
+gcd = ctypes.windll.user32.GetClipboardData
+scd = ctypes.windll.user32.SetClipboardData
+ccb = ctypes.windll.user32.CloseClipboard
+ga = ctypes.windll.kernel32.GlobalAlloc    # Global memory allocation
+gl = ctypes.windll.kernel32.GlobalLock     # Global memory Locking
+gul = ctypes.windll.kernel32.GlobalUnlock
+GMEM_DDESHARE = 0x2000
+
+def Get():
+  ocb(None) # Open Clip, Default task
+  pcontents = gcd(1) # 1 means CF_TEXT.. too lazy to get the token thingy...
+  data = ctypes.c_char_p(pcontents).value
+
+  #gul(pcontents) ?
+  ccb()
+  return data
+
+def Paste(data):
+  ocb(None) # Open Clip, Default task
+  ecb()
+  hCd = ga(GMEM_DDESHARE, len(bytes(data,"ascii")) + 1)
+  pchData = gl(hCd)
+22222222222222222222222222222222
+
+
+
+3333333333333333333333333333333333333333333
+http://coffeeghost.net/2010/10/09/pyperclip-a-cross-platform-clipboard-module-for-python/
+def cygwinGetClipboard():
+    ctypes.cdll.user32.OpenClipboard(0)
+    pcontents = ctypes.cdll.user32.GetClipboardData(1) # 1 is CF_TEXT
+    data = ctypes.c_char_p(pcontents).value
+    #ctypes.cdll.kernel32.GlobalUnlock(pcontents)
+    ctypes.cdll.user32.CloseClipboard()
+    return data
+
+def cygwinSetClipboard(text):
+    text = str(text)
+    GMEM_DDESHARE = 0x2000
+    ctypes.cdll.user32.OpenClipboard(0)
+    ctypes.cdll.user32.EmptyClipboard()
+
+    try:
+        # works on Python 2 (bytes() only takes one argument)
+        hCd = ctypes.cdll.kernel32.GlobalAlloc(GMEM_DDESHARE, len(bytes(text))+1)
+    except TypeError:
+        # works on Python 3 (bytes() requires an encoding)
+        hCd = ctypes.cdll.kernel32.GlobalAlloc(GMEM_DDESHARE, len(bytes(text, 'ascii'))+1)
+    pchData = ctypes.cdll.kernel32.GlobalLock(hCd)
+
+    try:
+        # works on Python 2 (bytes() only takes one argument)
+        ctypes.cdll.msvcrt.strcpy(ctypes.c_char_p(pchData), bytes(text))
+    except TypeError:
+        # works on Python 3 (bytes() requires an encoding)
+        ctypes.cdll.msvcrt.strcpy(ctypes.c_char_p(pchData), bytes(text, 'ascii'))
+    ctypes.cdll.kernel32.GlobalUnlock(hCd)
+    ctypes.cdll.user32.SetClipboardData(1, hCd)
+    ctypes.cdll.user32.CloseClipboard()
+
+...
+elif platform.system()[0:6] == 'CYGWIN':
+    import ctypes
+    getcb = cygwinGetClipboard
+    setcb = cygwinSetClipboard
+...
+3333333333333333333333333333333333333333333

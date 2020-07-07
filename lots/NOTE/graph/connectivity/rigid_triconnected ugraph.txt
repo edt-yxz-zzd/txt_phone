@@ -1,0 +1,192 @@
+
+
+[ugraph G]
+    [G is rigid_triconnected]
+        <==> [G is rigid_biconnected][G.min_vertex_degree>=3][G has no multiedge][G has no separation vertex pair]
+        <==> [G is rigid_connected][G.min_vertex_degree>=3][G has no self_loop][G has no multiedge][G has no cut vertex][G has no separation vertex pair]
+        ==>> [G.num_vertices>=4][G.num_aedges>=3]
+        ==>> [G.num_vertices>=4][G.num_aedges>=6]
+        # vertex_degree >= 3
+        # face_degree >= 3 if planar
+
+[fail]!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+how to detect an separation pair?
+    use dfs
+    use low_two_pt&preorder&depth of vertex version
+        low_two_pt :: Map Vertex (Vertex, Vertex)
+            # (the lowest vertex, the 2nd lowest vertex)
+    to calc low_two_pt:
+        "[graph][biconnected][decomposition][SPQR_tree][2001]A linear time implementation of SPQR-trees[good].pdf"
+        lowpt1[v] = min({v}\-/{u|v-*->-[back]->u}, key=preorder)
+        lowpt2[v] = min({v}\-/({u|v-*->-[back]->u}\-\lowpt1[v]), key=preorder)
+
+
+    dfs_tree.num_child_tree_hedges[the_dfs_root] == 1
+    dfs_tree.num_child_tree_hedges[the_dfs_root_child] == 1
+    the_dfs_root_child_child
+
+    #rback_hedgesX means len(rback_hedges) >= X
+    for any vertex v:
+        low_two_pt[v] are ancestor of v # may be v itself
+
+        if v is the_dfs_root:
+            preorder[low_two_pt[v].fst]
+                == preorder[low_two_pt[v].snd]
+                == preorder[v] == depth[v] == 0
+            low_two_pt[v] = (the_dfs_root, the_dfs_root)
+
+            1 tree_hedge # to the_dfs_root_child
+            rback_hedges2
+
+        elif v is the_dfs_root_child:
+            preorder[low_two_pt[v].fst]
+                < preorder[low_two_pt[v].snd]
+                == preorder[v] == depth[v] == 1
+            low_two_pt[v] = (the_dfs_root, the_dfs_root_child)
+
+            1 rtree_hedge # to parent the_dfs_root
+            1 tree_hedge
+            rback_hedges1
+
+        else:
+            preorder[low_two_pt[v].fst]
+                < preorder[low_two_pt[v].snd]
+                <= preorder[v.parent]
+                < preorder[v] >= depth[v] >= 2
+            # if preorder[low_two_pt[v].fst] == preorder[v.grandpa]
+            #   try to delete v.sibling and v.grandpa
+            preorder[low_two_pt[v].fst] <= preorder[v.grandpa]
+
+            if v is the_dfs_root_child_child:
+                preorder[low_two_pt[v].fst]         # the_dfs_root
+                    == preorder[v.grandpa]
+                    < preorder[low_two_pt[v].snd]   # the_dfs_root_child_child
+                    == preorder[v.parent]
+                    < preorder[v] == depth[v] == 2
+            else:
+                depth[v] >= 3
+
+            ??????????????????
+            rback_hedges may work too!!!!!!!!!!!!!!!!!!!!
+
+
+            1 rtree_hedge # to parent
+            back_hedges0 # to ancestor <= grandpa
+            tree_hedges0
+            rback_hedges0
+                where
+                    len(back_hedges0+tree_hedges0+rback_hedges0) >= 2
+                        # <<== vertex_degree >= 3
+                    len(back_hedges0+tree_hedges0) >= 2
+                        # <<== two distinguish vertices in low_two_pt
+
+            if v has no back_hedge:
+                v has at least two children
+                otherwise delete v.parent, v.child
+
+
+    proof:
+        # by delete any 2 vertices
+
+        1_ delete vertex vv and v where vv is ancestor of v
+            #depth[vv]>=0
+            #depth[v]>=depth[vv]+1
+            see below: 1_1_ 1_2_ 1_3_ 1_4_
+        2_ delete u, v that is neither ancestor of another
+            dfs_tree.num_child_tree_hedges[the_dfs_root_child] == 1
+                ==>> depth[u] >= 3
+                ==>> depth[v] >= 3
+            remaining connect components:
+                * component that contains the_dfs_root
+                * the child trees of u
+                * the child trees of v
+            ...like 1_2_
+
+
+        1_1_ delete the_dfs_root and the_dfs_root_child
+            #depth[vv]==0
+            #depth[v]==depth[vv]+1
+            dfs_tree.num_child_tree_hedges[the_dfs_root_child]==1
+            the only remaining connect component:
+                the child tree of the_dfs_root_child
+
+        1_2_ delete the_dfs_root and v where depth[v]>=2
+            #depth[vv]==0
+            #depth[v]>depth[vv]+1
+            remaining connect components:
+                * component that contains tree_path from the_dfs_root to the v.parent
+                * the child trees of v
+
+            any dfs-child vertex u of v:
+                u has two distinguish vertices in low_two_pt
+                both are not u.parent i.e. v
+                at most one of them is the_dfs_root
+                hence at least one on the remaining tree_path
+
+        1_3_ delete vertex vv and v where vv is parent of v, depth[vv]>=1
+            #depth[vv]>0
+            #depth[v]==depth[vv]+1
+            remaining connect components:
+                * component that contains tree_path from the_dfs_root to the vv.parent
+                * the child trees of vv except the one rooted by v
+                * the child trees of v
+            ...like 1_2_
+
+        1_4_ delete vertex vv and v where vv is ancestor but not parent of v, depth[vv]>=1
+            #depth[vv]>0
+            #depth[v]>depth[vv]+1
+            let vvc = vv.child&v.ancestor
+            depth[vvc] >= 2
+            remaining connect components:
+                * c1=component that contains tree_path from the_dfs_root to the vv.parent
+                * the child trees of vv except the one rooted by vvc
+                * c2=component that contains tree_path from vvc to the v.parent
+                * the child trees of v
+            ...like 1_3_ except whether c2 connect to c1??
+
+            ??[c2 connect to c1]??
+            [depth[vvc] >= 2]
+            ==>> [len(vvc.back_hedges0+vvc.tree_hedges0) >= 2]
+            ==>> [vvc has at least one back_hedge or two tree_hedges]
+            * [vvc has a back_hedge]
+                [no multiedge]
+                ==>> back to one ancestor other than vv
+                ==>> vvc connect to the_dfs_root
+            * [vvc has a tree_hedge other than that lead to v]
+                let a_vvc_child be the child of that tree_hedge
+                #a_vvc_child back to low_two_pt depth <= depth[vvc]
+                #a_vvc_child may back to {vv, vvc}
+                #
+                [depth[vvc] >= 2]
+                ==>> [depth[a_vvc_child] >= 3]
+                ==>> preorder[low_two_pt[a_vvc_child].snd]
+                        < preorder[a_vvc_child.parent]
+                        == preorder[vvc]
+                ==>> a_vvc_child back to low_two_pt depth < depth[vvc]
+                ==>> a_vvc_child back to low_two_pt depth <= depth[vv]
+                ==>> one of low_two_pt connect to the_dfs_root
+                ==>> vvc connect to the_dfs_root
+            ==>> [c2 connect to c1]
+
+
+counterexample for low_two_pt[v].snd == v.parent:
+    the_dfs_root
+        |
+        v
+    the_dfs_root_child vv
+        |
+        v
+    the_dfs_root_child_child vvc
+        | \
+        v  \
+        v   u-u'/u''
+        |\
+        v \
+        v' v''
+
+    u',u'' - vv,vvc
+    v',v'' - the_dfs_root, vv
+    low_two_pt[u].snd = vcc = u.parent
+    when delete vv,v:
+        vvc component is not connected to the_dfs_root
+

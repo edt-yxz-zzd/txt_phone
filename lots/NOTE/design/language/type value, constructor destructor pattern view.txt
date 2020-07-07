@@ -1,0 +1,68 @@
+
+type value, constructor destructor pattern view
+ADT (abstract data type, Haskell.data)
+    value constructor is also used as value destructor (pattern, view)
+    we can let the view be a class, so any value can share same view.
+        indeed is a implicity converter
+        class Bool <= a where
+            view :: a -> Bool
+        if_then_else :: (Bool <= a) => a -> b -> b -> b
+        if_then_else False then else = else
+        if_then_else True then else = else
+        # neednot call view: "case view a of..."
+        #
+        # not:
+        #   if_then_else a b c = if a then b else c
+        #   # neednot call view: "if view a then..."
+        #
+        # why?
+        #   a :: A
+        #   b :: B
+        #   both (A<=B) and (B<=A)
+        #   a + b :: A? or B?
+        #
+
+        class Maybe x <= a | a -> x where
+            view :: a -> Maybe x
+        instance Maybe a <= [a] where
+            view :: [a] -> Maybe a
+            view [] = Nothing
+            view (a:_) = Just a
+        class Iterable x <= a where # | a -> x where
+            view :: a -> [x]
+        instance (x <= a) => Iterable x <= [a] where
+            view [] = []
+            view (a:ls) = (view a:view ls)
+        assert (Iterable (Maybe a) <= [[a]])
+
+    data Omitable a = Data a | _
+    '_' is the only sharable constructor/pattern
+    so "import A (_)" and "import B (_)" at same time donot cause error.
+
+    #############
+    !!!type constructor and pattern!!!
+    normally, "class C a where" ==>> "a" is viewed/destructor by normal type constructor
+    now we have: "class (ViewT <= a) => C a where"
+    closed type family IsString :: Type -> 'Maybe Type
+        IsString [Char] = 'Nothing
+        IsString x = 'Just x
+    class Show a <<== instance ShowInstance (IsString a) where
+        show :: a -> String
+    # instead of "instance Show ... where"
+    instance ShowInstance 'Nothing where
+        show = string_repr
+    # NOTE: where Show and ShowInstance occur
+    instance (Show a) => ShowInstance ('Just [a]) where
+        show = ...
+
+how to hide auxiliary data?
+    SizedList a = Empty | ConEx UInt a (SizedList a)
+    how to export auxiliary_constructor/auxiliary_destructor:
+        SizedList a = Empty | Con a (SizedList a)
+        where
+            Con a Empty = ConEx 1 a Empty
+            Con a ls@(ConEx len _ _) = ConEx (len+1) a ls
+    how to avoid recur:
+        ls :: SizedList Bool
+        ls = Con False ls
+

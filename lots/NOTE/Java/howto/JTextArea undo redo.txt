@@ -1,0 +1,275 @@
+JTextArea undo redo
+
+=====================================
+https://www.java-forums.org/javax-swing/9570-undo-redo-jtextarea.html
+
+import java.awt.BorderLayout;
+import java.awt.GridLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
+import javax.swing.event.UndoableEditEvent;
+import javax.swing.event.UndoableEditListener;
+import javax.swing.undo.CannotRedoException;
+import javax.swing.undo.CannotUndoException;
+import javax.swing.undo.UndoManager;
+
+public class UndoRedoTextArea extends JFrame {
+  protected JTextArea textArea = new JTextArea();
+
+  protected UndoManager undoManager = new UndoManager();
+
+  protected JButton undoButton = new JButton("Undo");
+
+  protected JButton redoButton = new JButton("Redo");
+
+  public UndoRedoTextArea() {
+    super("Undo/Redo Demo");
+
+    undoButton.setEnabled(false);
+    redoButton.setEnabled(false);
+
+    JPanel buttonPanel = new JPanel(new GridLayout());
+    buttonPanel.add(undoButton);
+    buttonPanel.add(redoButton);
+
+    JScrollPane scroller = new JScrollPane(textArea);
+
+    getContentPane().add(buttonPanel, BorderLayout.NORTH);
+    getContentPane().add(scroller, BorderLayout.CENTER);
+
+    textArea.getDocument().addUndoableEditListener(
+        new UndoableEditListener() {
+          public void undoableEditHappened(UndoableEditEvent e) {
+            undoManager.addEdit(e.getEdit());
+            updateButtons();
+          }
+        });
+
+    undoButton.addActionListener(new ActionListener() {
+      public void actionPerformed(ActionEvent e) {
+        try {
+          undoManager.undo();
+        } catch (CannotUndoException cre) {
+          cre.printStackTrace();
+        }
+        updateButtons();
+      }
+    });
+
+    redoButton.addActionListener(new ActionListener() {
+      public void actionPerformed(ActionEvent e) {
+        try {
+          undoManager.redo();
+        } catch (CannotRedoException cre) {
+          cre.printStackTrace();
+        }
+        updateButtons();
+      }
+    });
+
+    setSize(400, 300);
+    setVisible(true);
+  }
+
+  public void updateButtons() {
+    undoButton.setText(undoManager.getUndoPresentationName());
+    redoButton.setText(undoManager.getRedoPresentationName());
+    undoButton.setEnabled(undoManager.canUndo());
+    redoButton.setEnabled(undoManager.canRedo());
+  }
+
+  public static void main(String argv[]) {
+    new UndoRedoTextArea();
+  }
+}
+
+
+
+
+
+
+
+
+
+
+=========================
+https://docs.oracle.com/javase/tutorial/uiswing/components/generaltext.html#undo
+
+///////Part 1: Remembering Undoable Edits
+//manage its list of undoable edits
+protected UndoManager undo = new UndoManager();
+
+//discovers undoable edits and adds them to the undo manager
+protected class MyUndoableEditListener
+          implements UndoableEditListener {
+    public void undoableEditHappened(UndoableEditEvent e) {
+        //Remember the edit and update the menus
+        undo.addEdit(e.getEdit());
+        undoAction.updateUndoState();
+        redoAction.updateRedoState();
+        //undoAction and redoAction attached to the Undo and Redo menu items, respectively.
+    }
+}
+
+//notifies interested listeners whenever an undoable edit occurs
+textArea.getDocument().addUndoableEditListener(new MyUndoableEditListener());
+
+///////Part 2: Implementing the Undo and Redo Commands
+//how to create the menu items and how to implement the two actions
+JMenu menu = new JMenu("Edit");
+undoAction = new UndoAction();
+redoAction = new RedoAction();
+menu.add(undoAction);
+menu.add(redoAction);
+////
+protected class UndoAction extends AbstractAction {
+    public void actionPerformed(ActionEvent e) {
+        try {
+            undo.undo();
+        } catch (CannotUndoException ex) {
+            System.out.println("Unable to undo: " + ex);
+            ex.printStackTrace();
+        }
+        updateUndoState();
+        redoAction.updateRedoState();
+    }
+}
+protected class RedoAction extends AbstractAction {
+    public void actionPerformed(ActionEvent e) {
+        try {
+            undo.redo();
+        } catch (CannotRedoException ex) {
+            System.out.println("Unable to redo: " + ex);
+            ex.printStackTrace();
+        }
+        updateRedoState();
+        undoAction.updateUndoState();
+    }
+}
+/////
+doc.addDocumentListener(new MyDocumentListener());
+
+
+
+protected class MyDocumentListener implements DocumentListener {
+    //However, you should never modify the contents of a text component from within a document listener.
+    public void insertUpdate(DocumentEvent e) {
+        displayEditInfo(e);
+    }
+    public void removeUpdate(DocumentEvent e) {
+        displayEditInfo(e);
+    }
+    public void changedUpdate(DocumentEvent e) {
+        displayEditInfo(e);
+    }
+    private void displayEditInfo(DocumentEvent e) {
+            Document document = (Document)e.getDocument();
+            int changeLength = e.getLength();
+            changeLog.append(e.getType().toString() + ": "
+                + changeLength + " character"
+                + ((changeLength == 1) ? ". " : "s. ")
+                + " Text length = " + document.getLength()
+                + "." + newline);
+    }
+}
+
+//As you can see, this listener updates its text label to reflect the current state of the caret or selection.
+//Create the status area
+CaretListenerLabel caretListenerLabel = new CaretListenerLabel(
+                                                "Caret Status");
+...
+textPane.addCaretListener(caretListenerLabel);
+public void caretUpdate(CaretEvent e) {
+    //Get the location in the text
+    int dot = e.getDot();
+    int mark = e.getMark();
+    if (dot == mark) {  // no selection
+        try {
+            Rectangle caretCoords = textPane.modelToView(dot);
+            //Convert it to view coordinates
+            setText("caret: text position: " + dot +
+                    ", view location = [" +
+                    caretCoords.x + ", " + caretCoords.y + "]" +
+                    newline);
+        } catch (BadLocationException ble) {
+            setText("caret: text position: " + dot + newline);
+        }
+     } else if (dot < mark) {
+        setText("selection from: " + dot + " to " + mark + newline);
+     } else {
+        setText("selection from: " + mark + " to " + dot + newline);
+     }
+}
+...
+...
+
+=========================================================
+https://stackoverflow.com/questions/2547404/using-undo-and-redo-for-jtextarea
+    ///////////////// 1.
+    UndoManager manager = new UndoManager();
+    textArea.getDocument().addUndoableEditListener(manager);
+    JButton undoButton = new JButton(UndoManagerHelper.getUndoAction(manager));
+    JButton redoButton = new JButton(UndoManagerHelper.getRedoAction(manager));
+    ///////////////// 2.
+    JTextArea textArea = new JTextArea();
+    JButton undo = new JButton("Undo");
+    JButton redo = new JButton("Redo");
+    KeyStroke undoKeyStroke = KeyStroke.getKeyStroke(
+            KeyEvent.VK_Z, Event.CTRL_MASK);
+    KeyStroke redoKeyStroke = KeyStroke.getKeyStroke(
+            KeyEvent.VK_Y, Event.CTRL_MASK);
+
+    UndoManager undoManager = new UndoManager();
+
+    Document document = textArea.getDocument();
+    document.addUndoableEditListener(new UndoableEditListener() {
+        @Override
+        public void undoableEditHappened(UndoableEditEvent e) {
+            undoManager.addEdit(e.getEdit());
+        }
+    });
+
+    // Add ActionListeners
+    undo.addActionListener((ActionEvent e) -> {
+        try {
+            undoManager.undo();
+        } catch (CannotUndoException cue) {}
+    });
+    redo.addActionListener((ActionEvent e) -> {
+        try {
+            undoManager.redo();
+        } catch (CannotRedoException cre) {}
+    });
+
+    // Map undo action
+    textArea.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
+            .put(undoKeyStroke, "undoKeyStroke");
+    textArea.getActionMap().put("undoKeyStroke", new AbstractAction() {
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            try {
+                undoManager.undo();
+             } catch (CannotUndoException cue) {}
+        }
+    });
+    // Map redo action
+    textArea.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
+            .put(redoKeyStroke, "redoKeyStroke");
+    textArea.getActionMap().put("redoKeyStroke", new AbstractAction() {
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            try {
+                undoManager.redo();
+             } catch (CannotRedoException cre) {}
+        }
+    });
+
+
+
+

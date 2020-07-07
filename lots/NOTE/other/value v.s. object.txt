@@ -1,0 +1,164 @@
+
+I want to distinguish pure value and objects.
+
+1) value ::= pure scale / struct / record, no addr/ptr/ref
+    e.g. literal constants
+    value has no address.
+    it may be a constant in ROM, a value in register, or present only in compile stage.
+    if we found two values are the same, we can "merge" them.
+    if we can copy/move value anywhere, delete it is nop.
+    value is immutable.
+
+    how to create a value?
+        1) literal constant
+            x :: value = 1
+        2) input of function
+            f :: value -> ...;
+        3) output of function
+            f :: ... -> value;
+        4) value constructor
+    value consist values
+
+2) room ::= addressable value; a memory space holds value representation
+    room occupies memory. we can call room variable.
+    room<(value|frame)>
+    we refer a room by it address.
+    so a room contains two data field:
+        value|frame   -- in memory
+        address -- in concept, held by user, immutable
+    3 basic operations:
+        -- error: mk :: value -> room<value>
+        -- room can not be input/ouput
+        -- mk :: value -> IO reference<room<value>>
+        {-
+        stack, heap :: IO reference<raw_heap_room<UNINIT<AligSize>>>
+        init :: AligSizeOf value ~ AligSize
+             => value -> reference<room<UNINIT<AligSize>>>
+             -> IO reference<room<value>>
+        we may enable type/constraint modified statements in non-pure domain.
+        assume stack is keyword that install a variable/room on stack
+        assume ref is keyword which can use room as input
+        -- ref x :: reference<room<UNINIT<AligSize>>
+        -- stack x :: room<UNINIT<AligSize>> ; on stack
+        stack x :: reference<room<UNINIT<AligSize>>> ; on stack
+        {- or:
+            x :: room<UNINIT<AligSize>> -- mk room on stack
+            -- .x === ref x
+            init .x
+            uninit (ref x)
+        -}
+        init x (value::Value)
+        -- now, we have "x :: room<Value>"; "ref x :: reference<room<Value>>"
+        -- and we cannot return until we uninit x!!
+        -- we can treat func requires xvalue as a uninitializor!
+        uninit x;
+        -- now, again we have "x :: room<UNINIT<AligSize>>"
+        -- we can return and discard the room 
+
+        -}
+        gc :: value -> IO reference<val_gc_room<value>>
+        get :: reference<room<value>> -> IO value
+        set :: value -> reference<room<value>> -> IO ()
+    how to create a room of value?
+        x :: room value
+        or room<value> x;
+    immutable room - the value of room is immutable
+            i.e. immutable room: str/tuple in Python
+    but if value contains a pointer to a mutable room, we can modify that room.
+        immutable_room<pointer<mutable_room<T>>>
+
+    stack_room - on stack
+    heap_room - on heap; requires free
+    auto_room - on heap; counting, auto free; should be DAG
+        *) no recurion about current type
+            how to detect if inherent+downcast?
+        or *) reference fields are all immutable
+    gc_room - on heap; by GC
+    raw_room -- state: uninit; to be init or before discard
+    val_room -- state: init;
+3) object ::= value | room | frame
+    we assume "this" seen by object method is not a pointer!
+        a value will pass the value to its method.
+        a room will pass the address to its method.
+4) reference
+    reference is a value.
+    a reference variable is a room of reference, not a reference.
+    a reference type is reference<room<value>>
+    a reference variable type is room<reference<room<value>>>
+    C stmt: "T& p;" <==> my stmt: "room<reference<T>> p;"
+    note: we have pattern:
+        must:
+            ..<reference<room<..
+            ..<pointer<room<..
+        error:
+            ..<room<room<..
+    why not use "reference<" to stand for "reference<room<"?
+        just to better distinguish value with room.
+5) passby
+    -- cancel: xxx the input/output of function are always values! xxx
+        if output is room
+            then the function is a initializer of room
+    value - always pass by value
+        e.g. char, int, reference<room<T>>
+        def f(value a);
+    room of (value|frame):
+        pass by object:
+            pass the address of room
+            def f(reference<room<value>> a);
+            f(ref a);
+        pass by copy room:
+            mk room on callee's stack and copy
+            def f(copy<room<T>> a);
+            f(copy a);
+
+            -- or:
+            def f(room<T> a);
+            f(a);
+        pass by value:
+            def f(ValueOf<room<T>> a);
+            f(value_of a);
+        {-
+        pass by value:
+            pass the value of room
+            room of pointer/reference
+                i.e. room<pointer<T>> or room<reference<T>>
+        better not to treat them differently.
+        -}
+        
+
+6) frame
+    frame contains (value | room)
+    value of frame:
+        value_of C{...} = ValueOf<C>(_value_of {...})
+        _value_of {x::value, ...} = x, _value_of {...}
+        _value_of {x::room<T>, ...} = ref x, _value_of {...}
+    frame C
+    { x :: value
+    , y :: room<T>
+    };
+    template<> frame ValueOf<C>
+    { x :: value
+    , y :: reference<room<T>>
+    };
+
+
+
+
+---------
+C++14:
+    class expr
+    class glvalue:expr
+    class rvalue:expr
+        rvalue <- glvalue // convert value not reference!
+        complete type
+    class lvalue:glvalue
+    class xvalue:glvalue, rvalue
+        1) assume x is lvalue
+            std::move(x)
+            -- never use x below
+        2) f(..) in g(.., f(..), ..) where g(.., X&&, ..)
+    class prvalue:rvalue
+        1) f(..) where f(..)-> X and X is not Y&
+        2) "3"
+
+

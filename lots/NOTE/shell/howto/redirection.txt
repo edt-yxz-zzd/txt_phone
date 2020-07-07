@@ -1,0 +1,198 @@
+Using command redirection operators
+https://docs.microsoft.com/en-us/previous-versions/windows/it-pro/windows-xp/bb490982(v=technet.10)
+
+
+You can use redirection operators to redirect command input and output streams from the default locations to different locations. The input or output stream location is referred to as a handle
+
+The following table lists operators that you can use to redirect command input and output streams.
+
+Redirection operator	Description
+
+>	Writes the command output to a file or a device, such as a printer, instead of the Command Prompt window.
+
+<	Reads the command input from a file, instead of reading input from the keyboard.
+
+>>	Appends the command output to the end of a file without deleting the information that is already in the file.
+
+>&	Writes the output from one handle to the input of another handle.
+
+<&	Reads the input from one handle and writes it to the output of another handle.
+
+|	Reads the output from one command and writes it to the input of another command. Also known as a pipe.
+
+By default, you send the command input (that is, the STDIN handle) from your keyboard to Cmd.exe, and then Cmd.exe sends the command output (that is, the STDOUT handle) to the Command Prompt window.
+
+The following table lists the available handles.
+
+Handle	Numeric equivalent of handle	Description
+
+STDIN	0	Keyboard input
+
+STDOUT	1	Output to the Command Prompt window
+
+STDERR	2	Error output to the Command Prompt window
+
+UNDEFINED	3-9	These handles are defined individually by the application and are specific to each tool.
+
+The numbers zero through nine (that is, 0-9) represent the first 10 handles. You can use Cmd.exe to run a program and redirect any of the first 10 handles for the program. To specify which handle you want to use, type the number of the handle before the redirection operator. If you do not define a handle, the default < redirection input operator is zero (0) and the default > redirection output operator is one (1). After you type the < or > operator, you must specify where you want to read or write the data. You can specify a file name or another existing handle.
+
+To specify redirection to existing handles, use the ampersand (&) character followed by the handle number that you want to redirect (that is, &handle#). For example, the following command redirects handle 2 (that is, STDERR) into handle 1 (that is, STDOUT):
+
+1<&2
+Duplicating handles
+
+The & redirection operator duplicates output or input from one specified handle to another specified handle. For example, to send dir output to File.txt and send the error output to File.txt, type:
+
+dir>c:\file.txt 2>&1
+
+When you duplicate a handle, you duplicate all characteristics of the original occurrence of the handle. For example, if a handle has write-only access, all duplicates of that handle have write-only access. You cannot duplicate a handle with read-only access into a handle with write-only access.
+Redirecting command input (<)
+
+To redirect command input from the keyboard to a file or device, use the < operator. For example, to get the command input for the sort command from File.txt:
+
+sort<file.txt
+
+The contents of File.txt appear in the Command Prompt window as an alphabetized list.
+
+The < operator opens the specified file name with read-only access. As a result, you cannot write to the file when you use this operator. For example, if you start a program with <&2, all attempts to read handle 0 fail because handle 2 is initially opened with write-only access.
+
+Note
+
+    Zero is the default handle for the < redirection input operator.
+
+Redirecting command output (>)
+
+Almost all commands send output to your Command Prompt window. Even commands that send output to a drive or printer display messages and prompts in the Command Prompt window.
+
+To redirect command output from the Command Prompt window to a file or device, use the > operator. You can use this operator with most commands. For example, to redirect dir output to Dirlist.txt:
+
+dir>dirlist.txt
+
+If Dirlist.txt does not exist, Cmd.exe creates it. If Dirlist.txt exists, Cmd.exe replaces the information in the file with the output from the dir command.
+
+To run the netsh routing dump command and then send the command output to Route.cfg, type:
+
+netsh routing dump>c:\route.cfg
+
+The > operator opens the specified file with write-only access. As a result, you cannot read the file when you use this operator. For example, if you start a program with redirection >&0, all attempts to write handle 1 fail because handle 0 is initially opened with read-only access.
+
+Note
+
+    One is the default handle for the > redirection output operator.
+
+Using the <& operator to redirect input and duplicate
+
+To use the redirection input operator <&, the file you specify must already exist. If the input file exists, Cmd.exe opens it as read-only and sends the characters contained in the file as input to the command as if they were input from the keyboard. If you specify a handle, Cmd.exe duplicates the handle you specify onto the existing handle in the system.
+
+For example, to open File.txt as input read to handle 0 (that is, STDIN), type:
+
+< file.txt
+
+To open File.txt, sort the contents and then send the output to the Command Prompt window (that is, STDOUT), type:
+
+sort< file.txt
+
+To find File.txt, and then redirect handle 1 (that is, STDOUT) and handle 2 (that is, STDERR) to the Search.txt, type:
+
+findfile file.txt>search.txt 2<&1
+
+To duplicate a user-defined handle 3 as input read to handle 0 (that is, STDIN), type:
+
+<&3
+Using the >& operator to redirect output and duplicate
+
+If you redirect output to a file and you specify an existing file name, Cmd.exe opens the file as write-only and overwrites the file's contents. If you specify a handle, Cmd.exe duplicates the file onto the existing handle.
+
+To duplicate a user-defined handle 3 into handle 1, type:
+
+>&3
+
+To redirect all of the output, including handle 2 (that is, STDERR), from the ipconfig command to handle 1 (that is, STDOUT), and then redirect the ouput to Output.log, type:
+
+ipconfig.exe>>output.log 2>&1
+Using the >> redirection operator to append output
+
+To add the output from a command to the end of a file without losing any of the information already in the file, use two consecutive greater than signs (that is, >>). For example, the following command appends the directory list produced by the dir command to the Dirlist.txt file:
+
+dir>>dirlist.txt
+
+To append the output of the netstat command to the end of Tcpinfo.txt, type:
+
+netstat>>tcpinfo.txt
+Using the pipe operator (|)
+
+The pipe operator (|) takes the output (by default, STDOUT) of one command and directs it into the input (by default, STDIN) of another command. For example, the following command sorts a directory:
+
+dir | sort
+
+In this example, both commands start simultaneously, but then the sort command pauses until it receives the dir command's output. The sort command uses the dir command's output as its input, and then sends its output to handle 1 (that is, STDOUT).
+Combining commands with redirection operators
+
+You can create custom commands by combining filter commands with other commands and file names. For example, you can use the following command to store the names of files that contain the string "LOG":
+
+dir /b | find "LOG" > loglist.txt
+
+The dir command's output is sent through the find filter command. File names that contain the string "LOG" are stored as a list of file names (for example, NetshConfig.log, Logdat.svd, and Mylog.bat) in the Loglist.txt file.
+
+To use more than one filter in the same command, separate the filters with a pipe (|). For example, the following command searches every directory on drive C:, finds the file names that include the string "Log", and then displays them in one Command Prompt window at a time:
+
+dir c:\ /s /b | find "LOG" | more
+
+By using a pipe (|), you direct Cmd.exe to send the dir command output through the find filter command. The find command selects only file names that contain the string "LOG." The more command displays the file names that are selected by the find command, one Command Prompt window at a time. For more information about filter commands, see Using filters
+
+==========================
+Using filters
+https://docs.microsoft.com/en-us/previous-versions/windows/it-pro/windows-xp/bb490905%28v%3dtechnet.10%29
+
+Used in conjunction with the command redirection pipe character (|), a command filter is a command within a command that reads the command's input, transforms the input, and then writes the output. Filter commands help you sort, view, and select parts of a command output.
+
+Filter commands divide, rearrange, or extract portions of the information that passes through them. The following table lists filter commands that are available in Windows XP.
+
+Command	Description
+
+more	Displays the contents of a file or the output of a command in one Command Prompt window at a time.
+
+find	Searches through files and command output for the characters you specify.
+
+sort	Alphabetizes files and command output.
+
+To send input from a file to a filter command, use a less than sign (<). If you want the filter command to get input from another command, use a pipe (|).
+Using the more command
+
+The more command displays the contents of a file or the output of a command in one Command Prompt window at a time. For example, to display the contents of a file called List.txt in one Command Prompt window at a time, type:
+
+more < list.txt
+
+One Command Prompt window of information appears, and then the -- More -- prompt appears at the bottom of the Command Prompt window. To continue to the next Command Prompt window, press any key on the keyboard except PAUSE. To stop the command without viewing more information, press CTRL+C.
+
+You can use the more command when you work with a command that produces more than one Command Prompt window of output. For example, suppose you want to view a directory tree on your hard disk. If you have more directories than can be displayed in the Command Prompt window, you can use the tree command with a pipe (|) and the more command as follows:
+
+tree c:\ | more
+
+The first Command Prompt window of output from the tree command appears, followed by the -- More -- prompt. Output pauses until you press any key on the keyboard, except PAUSE.
+Using the find command
+
+The find command searches files for the string or text that you specify. Cmd.exe displays every line that matches the string or text that you specify in the Command Prompt window. You can use the find command either as a filter command or a standard Windows XP command. For more information about using find as a standard command, see Find
+
+To use find as a filter command, you must include a less than sign (<) and the string or text on which you want to search. By default, find searches are case-sensitive. For example, the following command finds occurrences of the string "Pacific Rim" in the file Trade.txt:
+
+find "Pacific Rim" < trade.txt
+
+The output does not include any occurrences of "pacific rim." It includes occurrences of the capitalized "Pacific Rim" only.
+
+To save the output of the find command rather than display it in the Command Prompt window, type a greater than sign (>) and the name of the file where you want to store the output. For example, the following command finds occurrences of "Pacific Rim" in the Trade.txt file and saves them in Nwtrade.txt:
+
+find "Pacific Rim" < trade.txt > nwtrade.txt
+Using the sort command
+
+The sort command alphabetizes a text file or the output of a command. For example, the following command sorts the contents of a file named List.txt and displays the results in the Command Prompt window:
+
+sort < list.txt
+
+In this example, the sort command sorts the lines of the List.txt file into an alphabetical list and displays the results without changing the file. To save the output of the sort command rather than display it, type a greater than sign (>) and a file name. For example, the following command alphabetizes the lines of the List.txt file and stores the results in the Alphlist.txt file:
+
+sort < list.txt > alphlist.txt
+
+To sort the output of a command, type the command, type a pipe (|), and then type sort (that is, command | sort). For example, the following command sorts the lines that include the string "Jones" (that is, the find command output) in alphabetical order:
+
+find "Jones" maillst.txt | sort

@@ -1,0 +1,392 @@
+the real benefit to using atomic operations
+to enforce an ordering is that they can enforce an ordering on nonatomic operations and
+thus avoid the undefined behavior of a data race
+
+
+UNDERSTANDING RELAXED ORDERING
+// read atomic can be buffered
+// write atomic cannot?????? I don't think so. The below model is strange.
+// modification order is guaranteed
+To understand how this works, imagine that each variable is a man in a cubicle with a
+notepad. On his notepad is a list of values. You can phone him and ask him to give you
+a value, or you can tell him to write down a new value. If you tell him to write down a
+new value, he writes it at the bottom of the list. If you ask him for a value, he reads you
+a number from the list. 
+The first time you talk to this man, if you ask him for a value, he may give you any
+value from the list he has on his pad at the time. If you then ask him for another value,
+he may give you the same one again or a value from farther down the list. He¡¯ll never
+give you a value from farther up the list. If you tell him to write down a number and
+then subsequently ask him for a value, he¡¯ll give you either the number you told him
+to write down or a number below that on the list.
+
+ACQUIRE-RELEASE ORDERING
+You can still think about acquire-release ordering in terms of our men with note-pads in their cubicles, but you have to add more to the model. First, imagine that every
+store that¡¯s done is part of some batch of updates, so when you call a man to tell him to
+write down a number, you also tell him which batch this update is part of: ¡°Please write
+down 99, as part of batch 423.¡± For the last store in a batch, you tell this to the man too:
+¡°Please write down 147, which is the last store in batch 423.¡± The man in the cubicle
+will then duly write down this information, along with who gave him the value. This
+models a store-release operation. The next time you tell someone to write down a
+value, you increase the batch number: ¡°Please write down 41, as part of batch 424.¡±
+When you ask for a value, you now have a choice: you can either just ask for a
+value (which is a relaxed load), in which case the man just gives you the number, or
+you can ask for a value and information about whether it¡¯s the last in a batch (which
+models a load-acquire). If you ask for the batch information, and the value wasn¡¯t the
+last in a batch, the man will tell you something like, ¡°The number is 987, which is just
+a ¡®normal¡¯ value,¡± whereas if it wasthe last in a batch, he¡¯ll tell you something like
+¡°The number is 987, which is the last number in batch 956 from Anne.¡± Now, here¡¯s
+where the acquire-release semantics kick in: if you tell the man all the batches you
+know about when you ask for a value, he¡¯ll look down his list for the last value from
+any of the batches you know about and either give you that number or one further
+down the list.
+How does this model acquire-release semantics? Let¡¯s look at our example and see.
+First off, thread ais running write_x_then_yand says to the man in cubicle x, ¡°Please
+write trueas part of batch 1 from thread a,¡± which he duly writes down. Thread a
+then says to the man in cubicle y, ¡°Please write trueas the last write of batch 1 from
+thread  a,¡± which he duly writes down. In the meantime, thread  bis running
+read_y_then_x. Thread bkeeps asking the man in box yfor a value with batch infor-mation until he says ¡°true.¡± He may have to ask many times, but eventually the man
+will say ¡°true.¡± The man in box ydoesn¡¯t justsay ¡°true¡± though; he also says, ¡°This is
+the last write in batch 1 from thread a.¡± 
+Now, thread bgoes on to ask the man in box xfor a value, but this time he says,
+¡°Please can I have a value, and by the way I know about batch 1 from thread a.¡± So now,
+the man from cubicle xhas to look down his list for the last mention of batch 1 from
+thread a. The only mention he has is the value true, which is also the last value on his
+list, so he mustread out that value; otherwise, he¡¯s breaking the rules of the game.
+
+TRANSITIVE SYNCHRONIZATION WITH ACQUIRE-RELEASE ORDERING
+In order to think about transitive ordering, you need at least three threads. The first
+thread modifies some shared variables and does a store-release to one of them. A sec-ond thread then reads the variable subject to the store-release with a load-acquire and
+performs a store-release on a second shared variable. Finally, a third thread does a
+load-acquire on that second shared variable. Provided that the load-acquire opera-tions see the values written by the store-release operations to ensure the synchronizes-with relationships, this third thread can read the values of the other variables stored
+by the first thread, even if the intermediate thread didn¡¯t touch any of them. 
+
+DATA DEPENDENCY WITH ACQUIRE-RELEASE ORDERING AND MEMORY_ORDER_CONSUME
+One important use for this kind of memory ordering is where the atomic opera-tion loads a pointer to some data. By using memory_order_consumeon the load and
+memory_order_releaseon the prior store, you ensure that the pointed-to data is cor-rectly synchronized, without imposing any synchronization requirements on any other
+nondependent data. 
+
+5.3.4 Release sequences and synchronizes-with
+If the store is
+tagged with  memory_order_release,  memory_order_acq_rel, or  memory_order_
+seq_cst, and the load is tagged with memory_order_consume, memory_order_acquire,
+or memory_order_seq_cst, and each operation in the chain loads the value written
+by the previous operation, then the chain of operations constitutes a release sequence
+and the initial store synchronizes-with (for memory_order_acquireor memory_order_
+seq_cst) or is dependency-ordered-before (for memory_order_consume) the final
+load. Any atomic read-modify-write operations in the chain can have anymemory
+ordering (even memory_order_relaxed).
+
+5.3.5 Fences
+An atomic operations library wouldn¡¯t be complete without a set of fences. These are
+operations that enforce memory-ordering constraints without modifying any data and
+are typically combined with atomic operations that use the memory_order_relaxed
+ordering constraints. Fences are global operations and affect the ordering of other
+atomic operations in the thread that executed the fence. Fences are also commonly
+called memory barriers, and they get their name because they put a line in the code that
+certain operations can¡¯t cross. As you may recall from section 5.3.3, relaxed operations
+on separate variables can usually be freely reordered by the compiler or the hardware.
+Fences restrict this freedom and introduce happens-before and synchronizes-with
+relationships that weren¡¯t present before.
+This is the general idea with fences: if an acquire operation sees the result of
+a store that takes place after a release fence, the fence synchronizes-with that acquire
+operation; and if a load that takes place before an acquire fence sees the result of a
+release operation, the release operation synchronizes-with the acquire fence. Of
+course, you can have fences on both sides, as in the example here, in which case if a
+load that takes place before the acquire fence sees a value written by a store that takes
+place after the release fence, the release fence synchronizes-with the acquire fence.
+// that is :
+// writer(){nonatomic-writes...;fence(release); store(relaxed);}
+// reader(){if (...=load(relaxed)){fence(acquire); nonatomic-reads...}}
+Ordering of nonatomic operations through the use of atomic operations is where
+the sequenced-before part of happens-before becomes so important. If a nonatomic
+operation is sequenced-before an atomic operation, and that atomic operation happens-before an operation in another thread, the nonatomic operation also happens-before
+that operation in the other thread.
+
+
+
+
+
+
+
+
+
+
+
+
+
+inter-thread happens-before = dependency-ordered-before + synchronizes-with + sequenced before
+if A < B: it means what modified before A was visiable by B.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+I try to make a model to understand those orderings:
+    1) each thread, all its instructs form a happen-before DAG by dependency. 
+    // here, happen-before is of usual meaning, not std version.
+    // std version orders this DAG in the way exactly the same with source code.
+    // std version is a nonactual ordering.
+    2) caches and blackboard
+    each thread has its private cache.
+    blackboard is a database with a network connected all threads.
+    when a thread flush some data from cache to blackboard, 
+    this data will update the database and swim in the network. 
+    other threads will visit it in different order.
+    that is T1 may receive D1 then D2, but T2 with D2 then D1.
+    but if a thread receive some data and later flush out another, 
+    then the later one will be seen after previous one.
+    
+    let's label each part of cache with a timestamp...
+    if all timestamps are the same, then cache are consistent.
+    divise the cache into dirty part and updated part.
+    what a thread can do:
+        [...auto_fixed...]"sometimes", cache auto perform [partial_dirty2updated]/[partial_updated2updated]
+            therefore, the relaxed stored data will be flush out unordered.
+            relaxed read data are the same.
+        [...atomic_modify...]one-atomic-varible perform atomic modification and update its cache.
+            modify database directly, may or may not swim in network.
+        [buffered_read]read from cache
+            atomic varialbes are buffered when reading!!!!!!!!!!!!!!!
+            except "exchange"/"compare_exchange_strong" but they're modify actions.
+        [buffered_write]modifies its cache
+            now modified part(dirty or updated) become dirty
+            cache become inconsistent
+            only nonatomic variables [atomic ones have additional action: flush; I group this op to [...atomic_modify...]]
+        [partial_dirty2updated]flush partial dirty part of cache to blackboard
+            the flushed part become nondirty that is updated
+        [whole_dirty2updated]flush whole dirty part of cache to blackboard, 
+            now cache is not dirty, that is inconsistent updated.
+            // dirty2updated part and original updated part are inconsistent.
+        [partial_updated2updated]fill partial updated part of cache from blackboard
+            this piece becomes newest, 
+            but immediately becomes updated because of other thread [partial_dirty2updated]
+        [whole_updated2updated]fill whole updated part of cache from blackboard
+            now cache become consistent updated.
+            but immediately becomes inconsistent because of [...auto_fixed...]
+    ordering:
+        relaxed
+            read
+                [buffered_read]
+            write
+                [buffered_write]
+                // above is wrong
+                // it cannot guarantee modification order
+                // [...atomic_modify...]
+            read-modify-write
+                // [buffered_read]+[buffered_write]
+                // above "+" is wrong, since it's not atomic
+                // between them, [...auto_fixed...] may occur.
+                // so, new value may not immediately follows old value
+                // ==>> it can't be atomic
+                // alway unbuffered-atomic:
+                //     Atomic read-modify-write operations shall always read the last value (in the modification order) stored before the write associated with the read-modify-write operation.
+                [...atomic_modify...]
+        release
+            // all previous modified variables (atomic or not) are flushed
+            // they are "all" visitable now (although some of them implicity flushed, and may have been visited)
+            // but there are long times and different paths for other threads to actually visit them.
+            // 
+            write
+                [whole_dirty2updated]
+            read-modify-write 
+                [...atomic_modify...]+[whole_dirty2updated]
+        acquire
+            read
+                [whole_updated2updated]
+            read-modify-write 
+                [whole_updated2updated]+[...atomic_modify...]
+        consume
+            // "partial" stands for those objects related to
+            // atomic variable, (i.e. atomic<T*>->obj)
+            // maybe only the atomic variable updated
+            read
+                [partial_updated2updated] 
+            read-modify-write 
+                [partial_updated2updated]+[...atomic_modify...]
+        acq_rel
+            read-modify-write 
+                [whole_updated2updated]+[...atomic_modify...]+[whole_dirty2updated]
+        seq_cst
+            read/write
+                [whole_updated2updated]+[whole_dirty2updated]
+            read-modify-write
+                [whole_updated2updated]+[...atomic_modify...]+[whole_dirty2updated]
+    
+        compare/exchange
+            write: relaxed < release < acq_rel < seq_cst
+            read:  relaxed < consume < acquire < acq_rel < seq_cst
+            ordering(failure) <= readonly(ordering(success))
+            using ordering(failure) to read
+            if failure: pass
+            else: using ordering(success) to read/write...
+            
+
+
+
+
+
+
+The only requirement is that accesses to a single atomic variable from the same thread can¡¯t be reordered; once a given thread has seen a particular value of an atomic variable, a subsequent read by that thread can¡¯t retrieve an earlier value of the variable. Without any additional synchronization, the modification order of each variable is the only thing shared between threads that are using memory_order_relaxed. 
+
+
+
+
+
+
+
+
+
+NOTE: 
+    CPU handle value in register which never be the object in memory.
+    compile will reorder(or read old cache/flush cache lazy)
+    the read/write operations as in single thread system, 
+    so we should enforce order over them.
+It¡¯s not just that the compiler can reorder the instructions. Even if the threads are running the same bit of code, they can disagree on the order of events because of operations in other threads in the absence of explicit ordering constraints, because the different CPU caches and internal buffers can hold different values for the same memory. It¡¯s so important I¡¯ll say it again: threads don¡¯t have to agree on the order of events.
+example:
+    int a = b;
+    int c = d; // compiler may change the order of these two sequences.
+    // after all, if assign c with the old d value in cache, 
+    // it is equivalent to assign c before a=b;
+    // when a=b happens, do we enforce to flush and update cache???
+std::memory_order_relaxed:
+    No ordering of other memory accesses is ensured whatsoever. This means that it is not possible to synchronize several threads using the atomic variable.
+    // only flush/update tiny cache that is atomic variable itself.
+    //    well, does it really has to flush/update itself,
+    //    compare with consume, it may simply handle shadow of atomic varible!!
+    // other part of cache are still dirty or old.
+    // MORE IMPORTANT: all of them are unordered, 
+    //     imagine comipler reorder the statements if no dependency.
+    Reads and writes to the atomic variable itself are ordered. Once a thread reads a value, a subsequent read by the same thread from the same object can not yield an earlier value.
+    For example, with x and y initially zero,
+    // Thread 1:
+    r1 = y.load(memory_order_relaxed); // dependency from r1
+    x.store(r1, memory_order_relaxed); // so, order holds.
+    // Thread 2:
+    r2 = x.load(memory_order_relaxed); // unorder between these two statements
+    y.store(42, memory_order_relaxed); // since no dependency between them.
+    is allowed to produce r1 == r2 == 42.
+Release-Consume ordering
+    If an atomic store is tagged std::memory_order_release and an atomic load from the same variable is tagged std::memory_order_consume, the operations exhibit the following properties:
+    // flush dirty part of "writer" cache before std::memory_order_release 
+    // but still read old cache data later.
+    // what's more, next write may actually perform before this even it with release too.
+    No writes in the writer thread can be reordered after the atomic store
+    // read only update tiny "reader" cache that is data itself.
+    // dependency enforces related statements to be ordered at later.
+    // unrelated read/writes still be unordered
+    // really? what is the diff wtih std::memory_order_relaxed????
+    No reads or writes dependent on the value received from atomic load can be reordered before the atomic load. "Dependent on" means that the address or value is computed from the value of the atomic variable. This form of synchronization between threads is known as "dependency ordering".
+    The synchronization is established only between the threads releasing and consuming the same atomic variable. Other threads can see different order of memory accesses than either or both of the synchronized threads.
+    The synchronization is transitive. That is, if we have the following situation:
+        Thread A releases atomic variable a.
+        Thread B consumes atomic variable a.
+        Atomic variable b is dependent on a.
+        Thread B releases atomic variable b.
+        Thread C consumes or acquires atomic variable b.
+    Then not only A and B or B and C are synchronized, but A and C also. That is, all writes by the thread A that were launched before the release of a are guaranteed to be completed once thread C observes the store to b.
+    On all mainstream CPUs, other than DEC Alpha, dependency ordering is automatic, no additional CPU instructions are issued for this synchronization mode, only certain compiler optimizations are affected (e.g. the compiler is prohibited from performing speculative loads on the objects that are involved in the dependency chain)
+Release sequence
+    // release + [read-write]*
+    If some atomic is store-released and several other threads perform read-modify-write operations on that atomic, a "release sequence" is formed: all threads that perform the read-modify-writes to the same atomic synchronize with the first thread and each other even if they have no memory_order_release semantics. This makes single producer - multiple consumers situations possible without imposing unnecessary synchronization between individual consumer threads.
+Release-Acquire ordering
+    // strange, so similar with release-consume
+    // only diff at "all writes can be unordered" and "unrelated reads are ordered too"
+    // but since "all reads are ordered", the cache is updated
+    // so "later writes cannot be unordered before this"
+    // but "previos writes can be unordered after this" // not flush dirty part
+    // stronger than release-consume
+    If an atomic store is tagged std::memory_order_release and an atomic load from the same variable is tagged std::memory_order_acquire, the operations exhibit the following properties:
+    // flush dirty part of "writer" cache
+    // but still read old data
+    No writes in the writer thread can be reordered after the atomic store
+    // update all non-dirty part(which are old?) of "reader" cache
+    // but still lazy writes, other threads cannot see the changes.
+    No reads in the reader thread can be reordered before the atomic load.
+    The synchronization is established only between the threads releasing and acquiring the same atomic variable. Other threads can see different order of memory accesses than either or both of the synchronized threads.
+    The synchronization is transitive. That is, if we have the following situation:
+        Thread A releases atomic variable a.
+        Thread B consumes atomic variable a.
+        Thread B releases atomic variable b.
+        Thread C consumes or acquires atomic variable b.
+    Then not only A and B or B and C are synchronized, but A and C also. That is, all writes by the thread A that were launched before the release of a are guaranteed to be completed once thread C observes the store to b.
+    On strongly-ordered systems (x86, SPARC, IBM mainframe), release-acquire ordering is automatic. No additional CPU instructions are issued for this synchronization mode, only certain compiler optimizations are affected (e.g. the compiler is prohibited from moving non-atomic stores past the atomic store-relase or perform non-atomic loads earlier than the atomic load-acquire)
+Sequentially-consistent ordering
+    // strange, what's the difference if we all use release-aquire???????
+    // I think below statements is not exactly.
+    // I think: flush dirty part + update nondirty part at same time...
+    // but... there is std::memory_order_acq_rel, so what diff???????
+    //
+    If an atomic store and an is tagged std::memory_order_seq_cst and an atomic load from the same variable is tagged std::memory_order_seq_cst, then the operations exhibit the following properties:
+        No writes in the writer thread can be reordered after the atomic store
+        No reads in the reader thread can be reordered before the atomic load.
+        The synchronization is established between all atomic operations tagged std::memory_order_seq_cst. All threads using such atomic operation see the same order of memory accesses.
+    Sequential ordering is necessary for many multiple producer-multiple consumer situations where all consumers must observe the actions of all producers occurring in the same order.
+    Total sequential ordering requires a full memory fence CPU instruction on all multi-core systems. This may become a performance bottleneck since it forces all memory accesses to propagate to every thread.
+Relationship with volatile
+    Within a thread of execution, accesses (reads and writes) to all volatile objects are guaranteed to not be reordered relative to each other, but this order is not guaranteed to be observed by another thread, since volatile access does not establish inter-thread synchronization. In addition, volatile accesses are not atomic (concurrent read and write is a data race) and do not order memory (non-volatile memory accesses may be freely reordered around the volatile access). One notable exception is Visual Studio, where every volatile write has release semantics and every volatile read has acquire semantics (MSDN), and thus volatiles may be used for inter-thread synchronization. Standard volatile semantics are not applicable to multithreaded programming, although they are sufficient for e.g. communication with a signal handler (see also std::atomic_signal_fence)
+atomic_signal_fence
+    Establishes memory synchronization ordering of non-atomic and relaxed atomic accesses, as instructed by order, between a thread and a signal handler executed on the same thread. This is equivalent to std::atomic_thread_fence, except no CPU instructions for memory ordering are issued. Only reordering of the instructions by the compiler is suppressed as order instructs. For example, writes cannot be moved past a fence with release semantics and reads cannot be moved ahead of a fence with acquire semantics.
+atomic_thread_fence
+    Establishes memory synchronization ordering of non-atomic and relaxed atomic accesses, as instructed by order, without an associated atomic operation. For example, all non-atomic and relaxed atomic stores that happen before a std::memory_order_release fence in thread A will be synchronized with non-atomic and relaxed atomic loads from the same locations made in thread B after an std::memory_order_acquire fence.
+
+5.3 Synchronizing operations and enforcing ordering
+happens-before and synchronizes-with.
+happens-before is transitive
+The synchronizes-with relationship is something that you can get only between opera-tions on atomic types.
+The happens-before relationship is the basic building block of operation ordering in a program; it specifies which operations see the effects of which other operations.
+single-threaded sequencing rules: all operations in a statement happen before all of the operations in the next statement.
+if operation A in one thread synchronizes-with operation B in another thread, then A inter-thread happens-before B. It¡¯s also a transitive relation
+Inter-thread happens-before also combines with the sequenced-before relation??????????
+SEQUENTIALLY CONSISTENT ORDERING : It also means that operations can¡¯t be reordered; if your code has one operation before another in one thread, that ordering must be seen by all other threads.
+
+
+
+
+
+
+
+
+// If different threads see distinct sequences of values for a single variable, you have a data race and undefined behavior
+// Although all threads must agree on the modification orders of each indi-vidual object in a program, they don¡¯t necessarily have to agree on the relative order of operations on separate objects. 
+5.1.3 Modification orders
+Every object in a C++ program has a defined modification ordercomposed of all the writes to that object from all threads in the program, starting with the object¡¯s initialization. In most cases this order will vary between runs, but in any given execution of the program all threads in the system must agree on the order. If the object in question isn¡¯t one of the atomic types described in section 5.2, you¡¯re responsible for mak-ing certain that there¡¯s sufficient synchronization to ensure that threads agree on the modification order of each variable. If different threads see distinct sequences of values for a single variable, you have a data race and undefined behavior (see section 5.1.2). If you do use atomic operations, the compiler is responsible for ensuring that the necessary synchronization is in place.
+This requirement means that certain kinds of speculative execution aren¡¯t permitted, because once a thread has seen a particular entry in the modification order, sub-sequent reads from that thread must return later values, and subsequent writes from that thread to that object must occur later in the modification order. Also, a read of an object that follows a write to that object in the same thread must either return the value written or another value that occurs later in the modification order of that object. Although all threads must agree on the modification orders of each indi-vidual object in a program, they don¡¯t necessarily have to agree on the relative order of operations on separate objects. See section 5.3.3 for more on the ordering of oper-ations between threads.
+
+
+
+
+
+// nonatomic - half-done
+The flip side of this is that a nonatomic operation might be seen as half-done by another thread. If that operation is a store, the value observed by another thread might be neither the value before the store nor the value stored but something else. If the nonatomic operation is a load, it might retrieve part of the object, have another thread modify the value, and then retrieve the remainder of the object, thus retrieving neither the first value nor the second but some combination of the two. 
+
+Each of the operations on the atomic types has an optional memory-ordering argument that can be used to specify the required memory-ordering semantics. 
+¡ö Store operations, which can have memory_order_relaxed, memory_order_release, or memory_order_seq_cstordering 
+¡ö Load operations, which can have memory_order_relaxed, memory_order_consume, memory_order_acquire,or memory_order_seq_cstordering 
+¡ö Read-modify-write operations, which can have memory_order_relaxed, memory_order_consume, memory_order_acquire, memory_order_release, memory_order_acq_rel,or memory_order_seq_cstordering
+
+
+
+
+
+
+
+
+
+

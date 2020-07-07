@@ -1,0 +1,125 @@
+
+[prime p][integer k][k >= 1]
+    X^p^k - X ;; X^2^1 - X
+    
+    GF(p) === ZZ/(p*ZZ) === FF[p]
+    GF(p^k) === FF[p^k]
+    characteristic(GF(p^k)) = p
+    [x,y in GF(p^k)]
+        x^p^k = x
+        
+        add: x+y
+            (x+y)^p = x^p+p*(...)+y^p = x^p + y^p
+            (x+y)^p^k = x^p^k + y^p^k = x+y
+            (x+y) is a root of (X^p^k - X)
+        mul: x*y
+            (x*y)^p^k = x^p^k * y^p^k = x*y
+            (x*y) is a root of (X^p^k - X)
+        inv: 1/x
+            1/(x^p^k) = 1/x
+            (1/x)^p^k * (x^p^k) = 1
+            (1/x)^p^k = 1/(x^p^k) = 1/x
+            (1/x) is a root of (X^p^k - X)
+
+    [m >= 1][k | m]
+        GF(p^k) is_subfield_of GF(p^m)
+
+
+
+Explicit construction of finite fields
+    prime fields
+        GF(p) ~=~ ZZ/(p*ZZ) ;; [0..p-1] mod p
+    Non-prime fields
+        [d >= 2][f is irreducible polynomial in GF(p)[X] of degree d]
+            GF(p^d) ~=~ GF(p)[X]/f
+
+    def inverse(h, f):
+        # require: [irreducible f][h != 0 mod f]
+        # ensure:  inverse(h, f) * h == 1 mod f
+        # gcd a0 m0 = gcd_ 1 0 a0 0 1 m0
+        #   ;; == (a2g, m2g, gcd) where a2g*a0 + m2g*m0 = gcd
+        # ;; [a2a, m2a; a2m, m2m]*[a0, m0]' == [a, m]'
+        # gcd_ a2a m2a 0 a2m m2m m = (a2m, m2m, m)
+        # gcd_ a2a m2a a a2m m2m m = let (q, r) = divmod m a in
+        #       gcd_ (a2m-q*a2a) (m2m-q*a2m) r a2a m2a a
+        # a == 0 ==>> deg h == 0
+        t = 0;     newt = 1;  
+        r = f;     newr = h;
+        # r    ==    t*h mod f
+        # newr == newt*h mod f
+        while newr != 0:
+            quotient = r `div` newr
+            (r, newr) = (newr, r - quotient * newr)
+            (t, newt) = (newt, t - quotient * newt) 
+        if degree(r) > 0: 
+            raise "Either f is not irreducible or h is a multiple of f"
+        return (1/r) * t
+
+
+Except in the construction of GF(4), there are several possible choices for P, which produce isomorphic results. To simplify the Euclidean division, for P one commonly chooses polynomials of the form
+
+    X^n + a*X + b
+
+which make the needed Euclidean divisions very efficient. However, for some fields, typically in characteristic 2, irreducible polynomials of the form X^n + a*X + b may not exist. In characteristic 2, if the polynomial X^n + X + 1 is reducible, it is recommended to choose X^n + X^k + 1 with the lowest possible k that makes the polynomial irreducible. If all these trinomials are reducible, one chooses "pentanomials" X^n + X^a + X^b + X^c + 1, as polynomials of degree greater than 1, with an even number of terms, are never irreducible in characteristic 2, having 1 as a root.
+
+GF(4)=GF(2)[X]/(X^2+X+1)
+[odd p][nr is a quadratic non-residue modulo p]
+    GF(p^2) = GF(p)[X]/(X^2 - nr)
+    let r^2 = nr
+    any x in GF(p^2): x = a + b*r
+GF(8) and GF(27)
+    X^3 - X - 1
+GF(16)
+    X^4 + X + 1
+GF(64)
+    X^6 + X + 1
+
+
+
+Discrete logarithm
+let q = p^k
+If a is a primitive element in GF(q), then for any non-zero element x in F, there is a unique integer n with 0 ¡Ü n ¡Ü q - 2 such that
+
+    x = a^n.
+
+This integer n is called the discrete logarithm of x to the base a.
+
+While an can be computed very quickly, for example using exponentiation by squaring, there is no known efficient algorithm for computing the inverse operation, the discrete logarithm. This has been used in various cryptographic protocols, see Discrete logarithm for details.
+
+When the nonzero elements of GF(q) are represented by their discrete logarithms, multiplication and division are easy, as they reduce to addition and subtraction modulo q ¨C 1. However, addition amounts to computing the discrete logarithm of a^m + a^n. The identity
+
+    a^m + a^n = a^n(a^(m-n) + 1)
+
+allows one to solve this problem by constructing the table of the discrete logarithms of an + 1, called Zech's logarithms, for n = 0, ..., q - 2 (it is convenient to define the discrete logarithm of zero as being -¡Þ).
+
+Zech's logarithms are useful for large computations, such as linear algebra over medium-sized fields, that is, fields that are sufficiently large for making natural algorithms inefficient, but not too large, as one has to pre-compute a table of the same size as the order of the field.
+
+
+
+
+
+
+
+https://en.wikipedia.org/wiki/Finite_field
+
+The number of elements of a finite field is called its order. A finite field of order q exists if and only if the order q is a prime power p^k (where p is a prime number and k is a positive integer). All fields of a given order are isomorphic. In a field of order p^k, adding p copies of any element always results in zero; that is, the characteristic of the field is p.
+
+In a finite field of order q, the polynomial X^q - X has all q elements of the finite field as roots. The non-zero elements of a finite field form a multiplicative group. This group is cyclic, so all non-zero elements can be expressed as powers of a single element called a primitive element of the field (in general there will be several primitive elements for a given field.)
+
+A field has, by definition, a commutative multiplication operation. A more general algebraic structure that satisfies all the other axioms of a field, but whose multiplication is not required to be commutative, is called a division ring (or sometimes skewfield). According to Wedderburn's little theorem, any finite division ring must be commutative, and hence a finite field. This result shows that the finiteness restriction can have algebraic consequences.
+
+Finite fields are fundamental in a number of areas of mathematics and computer science, including number theory, algebraic geometry, Galois theory, finite geometry, cryptography and coding theory.
+
+
+
+
+
+
+Any finite field extension of a finite field is separable and simple. That is, if E is a finite field and F is a subfield of E, then E is obtained from F by adjoining a single element whose minimal polynomial is separable. To use a jargon, finite fields are perfect.
+
+
+
+
+
+
+

@@ -1,0 +1,87 @@
+substitution
+
+[N/x]M
+
+[term/variable]term
+
+
+# see below for beta/sigma-contraction
+reduction = many0 contraction
+    |>
+conversion = many0 (contraction|reversed-contraction)
+    ~=~
+    "is-convertible-to"
+cumulativity relation
+    (~<=~)
+        # partial order
+        # decidable # require
+        # well-founded # ?require?
+
+    [A ~<~ B] =[def]= [A ~<=~ B][not [A ~=~ B]]
+
+    [A ~=~ B] ==>> [A ~<=~ B]
+    #[A ~<=~ B][B ~<=~ A] ==>> [A ~=~ B]
+    #[A ~<=~ B][B ~<=~ C] ==>> [A ~<=~ C]
+
+    [Prop ~<=~ Universe[0]]
+    [Universe[i] ~<=~ Universe[i+1]]
+        # require: [A ~<=~ B][B ~<=~ C] ==>> [A ~<=~ C]
+        #   for [Prop ~<=~ Universe 1 ~<=~ Universe 3]
+
+    [A1 ~=~ A2][B1 ~<=~ B2] ==>> [@x:A1.B1 ~<=~ @x:A2.B2]
+        # NOTE: [A1 ~=~ A2] not [A1 ~<=~ A2]
+        # OK: [A2 ~<=~ A1][B1 ~<=~ B2] ==>> [@x:A1.B1 ~<=~ @x:A2.B2]
+        #   see: 2.2.5 Conversion and full cumulativity
+        #
+    [A1 ~<=~ A2][B1 ~<=~ B2] ==>> [?x:A1.B1 ~<=~ ?x:A2.B2]
+        # NOTE: [A1 ~<=~ A2] not [A1 ~=~ A2]; diff above
+
+
+
+contraction
+    beta-contraction
+        (\x:X.M) N =[beta]= [N/x]M
+    sigma-contraction
+        fst Pair<A>(M, N) =[sigma]= M
+        snd Pair<A>(M, N) =[sigma]= N
+
+
+    redex/redexes
+    contractum/contractums
+    major term
+        beta-redex
+            (\x:X.M) N
+        contractum of (\x:X.M) N
+            [N/x]M
+        major term of (\x:X.M) N
+            (\x:X.M)
+
+        sigma-redex
+            fst Pair<A>(M, N)
+            snd Pair<A>(M, N)
+        contractum of fst Pair<A>(M, N)
+            M
+        contractum of snd Pair<A>(M, N)
+            N
+        major term of fst Pair<A>(M, N)
+            Pair<A>(M, N)
+        major term of snd Pair<A>(M, N)
+            Pair<A>(M, N)
+
+NOTE:
+    # 3.1 Properties of the Term Calculus
+    donot include:
+        * eta-contraction
+            \x:A. M x =[eta]= M where x not in FV M
+        * pi-contraction
+            Pair<?x:A.B>(fst M, snd M) = M
+    why?
+        # because of (~<=~)
+        [A ~<~ B]
+            \x:A. (\y:B. y) x : A->B =/= \y:B. y : B->B
+            # though (B->B) ~<=~ (A->B) for extended (~<=~)
+
+        [A ~<~ B]
+            Pair<B*B>(fst Pair<A*A>(a,a), snd Pair<A*A>(a,a)) : B*B =/= Pair<A*A>(a,a) : A*A
+            # though (A*A) ~<=~ (B*B)
+

@@ -1,0 +1,35 @@
+
+// decay_t
+auto x = f();
+std::decay_t<decltype(f())> x = f();
+//typename std::decay<decltype(f())>::type x = f();
+
+
+
+// common_type_t
+template <typename T1, typename T2>
+auto max(T1 a, T2 b)
+-> std::decay_t<std::common_type_t<T1,T2> >
+//-> std::decay_t<typename std::common_type<T1, T2>::type>
+{
+    return a < b? b : a;
+}
+
+
+
+
+// my return_type_t
+template <typename... ArgTs> struct return_type;
+template <typename... ArgTs>
+using return_type_t = typename return_type<ArgTs...>::type;
+
+template <>
+struct return_type { typedef void type; };
+template <typename T>
+struct return_type { typedef std::decay_t<T> type; };
+template <typename T1, typename T2, typename... ArgTs>
+struct return_type
+{ typedef std::decay_t<std::common_type_t<T1, T2, ArgTs...> > type; };
+
+
+

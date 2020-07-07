@@ -1,0 +1,285 @@
+3.6 Formal Definitions
+[history] ::= a finite sequence of method invocation and response events
+[subhistory] ::= A subhistory of a history H is a subsequence of the events of H
+method invocation <x.m(a*) A> # <object.method(args) thread>
+method response <x:t(r*) A> # <object:OK(results) thread>; <object:exception(results) thread>
+    where 
+        x - an object, 
+        m - a method name,
+        a* - a sequence of arguments
+        A - a thread
+        t - either Ok or an exception name
+        r* - a sequence of result values
+
+[match]
+    A response matches an invocation if they have the same object and thread.
+[method call in history]
+    a method call in a history H is a pair consisting of an invocation and the next matching response in H.
+    method_call ::= invocation matching_response
+
+[pending invocation]
+    An invocation is pending in H if no matching response follows the invocation. 
+[extension]
+    An extension of H is a history constructed by appending responses to zero or more pending invocations of H. 
+    // "zero or more pending invocations"?? ==>> method calls overlap or embed??
+
+[complete] # complete of history
+    complete(H) ::= the subsequence of H consisting of all matching invocations and responses.
+
+[sequential history]
+    A history H is sequential if 
+        the first event of H is an invocation, 
+        and each invocation, except possibly the last, is immediately followed by a matching response.
+    // can not be empty??
+    
+    sequential history ::= method_call+ | method_call* invocation
+    or sequential history ::= method_call* invocation?
+    
+    // v.s. "concurrent history"
+    //      two method calls overlap, then their order is ambiguous
+[thread subhistory of history] [history at thread]
+    H|A ::= H at A = [event for event in H if event.thread == A]
+    a thread subhistory H|A of a history H is the subsequence of all events in H whose thread names are A.
+[object subhistory of history]
+    H|x ::= [event for event in H if event.object == x]
+
+
+
+
+[equivalent]
+    two histories H and H' are equivalent if for every thread A, H|A = H'|A.
+    equivalent(H, H') ::= all(H|A == H'|A for A in all_threads)
+
+
+
+[well formed history] // for thread
+    A history H is well formed if each thread subhistory is sequential.
+    well_formed(H) ::= all(sequential(H|A) for A in all_threads)
+
+    !! object subhistories need not be sequential. !!
+
+// below are all well formed histories
+
+[sequential specification for object]
+    A sequential specification for an object is just a set of sequential histories for the object.
+
+    
+[legal history] // for object
+    A sequential history H is legal if each object subhistory is legal for that object.
+    // legal object subhistory H|x ::= H|x in sequential_specification(type(x))
+
+[partial order "->" on set] ::= a relation that is irreflexive and transitive
+    not x->x
+    x->y, y->z -->> x->z
+    not allow x->y and y->x
+    allow not x->y and not y->x
+[total order "<" on set] ::= a partial order s.t.
+    x /= y -->> x < y or y < x
+
+Any partial order can be extended to a total order.
+
+
+[precede]
+    a method call m0 precedes a method call m1 in history H if m0 finished before m1 started, 
+        i.e. m0's response event occurs before m1's invocation event.
+    method call m0, m1:
+        precede(m0, m1) = m0.response.time < m1.invocation.time
+
+[precede in history]
+    method call m0, m1 in history H:
+        m0 -[H]-> m1 ::= precede[H](m0, m1)
+
+    "-[H]->" is a partial order
+    // not m0 -[H]-> m1 ==>> m0.response.time >= m1.invocation.time
+    // not m1 -[H]-> m0 ==>> m1.response.time >= m0.invocation.time
+    //    ==>> {m[i].invocation.time} <= {m[i].response.time}
+    //    ==>> history allows method calls overlap
+
+    sequential(H) -->> "-[H]->" is a total order
+    ==>> well_formed(H) -->> "-[H|A]->" is a total order
+    // so, a well-formed history H is in partial order
+    // and H|A, which is sequential, is in a total order extended the order of H??
+    // but H|A and H|B allow different extension??
+
+[precede in object history]
+    m0 -[H|x]-> m1
+
+
+[linearizable]
+    linearizable(H) ::= 
+        [history H]
+        [exist an extension H']
+        [exist a legal sequential history S]
+        [equivalent(complete(H'), S)]
+        [m0 -[H]-> m1 -->> m0 -[S]-> m1]
+
+
+    S - a linearization of H
+
+Linearizability is compositional
+Theorem 3.6.1.
+    // H is well-formed
+    linearizable(H) <==> linearizable(H|x) for x in all_objects
+
+    // really??
+    // H = {<a.get(x) A> -[H]-> <b.put(y) A>; <b.get(y) B> -[H]-> <a.put(x) B>}
+    // H|a = <a.put(x) B>, <a.get(x) A>
+    // H|b = <b.put(y) A>, <b.get(y) B>
+    // a cycle
+    
+    // by definition, history is a "sequence" of events 
+    //                        not a directed graph of method calls!!!!
+
+[nonblocking property]
+    // pending ::= not yet return
+    // total ::= nonblocking
+    a pending invocation of a total method is never required to wait for another pending invocation to complete.
+    i.e. we can append responses (with correct result) to H in any order to extend H while keep linearizability.
+
+
+
+
+
+preemption n. 先买权，先占，先发制人; 优先权;
+consistent
+reconcile vt. 使和好; 和解；使一致, 使和谐 
+private working memory v.s. public shared memory
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,315 @@
+Kind <: Type <: Value <: Term
+    <- <: <*
+        </- </: </* -- not version
+        element <- set
+        subset <: set
+        proper_subset <* set
+
+
+Term
+    = TermNotArr
+    | TermNotArr '->' Term
+TermNotArr
+    = x
+    | 'lazy' | 'unlazy' | 'Lazy'
+    | Sign x ':' Term '.' Constains? Term
+    | Term Term
+    | Term '@[' Term ']'
+    | Term '^[' Term ']'
+    -- ~X. \n:Integer. ^m:Integer. (m < n) => expr
+    -- | '~' x '.' '\' n ':' 'Integer' '.' '^' m '<' n '.' Term
+Constains = '(' Constain* ')' '=>'
+Constain = x op Term | ...
+Sign
+    = '\'
+    | '@' | '?' | '\@'
+    | '^' | '$' | '\^'
+    | '~'
+
+
+Value_App
+    = x | Value_App Value | 'lazy'
+Value_Abs
+    = \x. Value | 'unlazy' | 'Lazy'
+Value
+    = Value_App | Value_Abs | '*'
+
+Typing
+    [x:X <- Env |- x : T]
+    [Env |- lazy : @X. X -> Lazy X]
+    [Env |- unlazy : @X. Lazy X -> X]
+    [Env |- Lazy : * -> *]
+
+    -- (->) : @K. K -> K -> K
+    [Env |- T : K][Env |- S : K] ==>> [Env |- T -> S : K]
+    [Env, x:S |- t : T] ==>> [Env |- (\x:S.t) : S->T]
+    [Env |- t : S -> T][Env |- s : S] ==>> [Env |- t s : T]
+
+    [Env, @X:K |- T : K'] ==>> [Env |- @X:K.T : K']
+    [Env, @X:K |- t : T] ==>> [Env |- (\@X:K.t) : @X:K.T]
+    [Env |- t : @X:K.T][Env |- S : K] ==>> [Env |- t @[S] : T]
+    --[Env |- S : K][Env, X:K |- T : K'] ==>> [Env |- (@X:K.T) @<S : K']
+    [?X.T === @R. (@X.T->R) -> R]
+
+    -- what diff??
+    -- @X can only be used in type or @[]
+    -- ^x can be used in all values/types
+    [Env, ^x:S |- T : K] ==>> [Env |- ^x:S.T : K]
+    [Env, ^x:S |- t : T] ==>> [Env |- (\^x:S.t) : ^x:S.T]
+    [$x.T === @R. (^x.T->R) -> R]
+
+    List$n -- all lists that contains at most n elements
+    List$(n-1) <: List$n
+    -- List$ = ~Ls$. \n:Nat. $m < n. \X. (X -> Ls$m -> R) -> R -> R
+    List$ = ~Ls$. \n:Nat.
+        if n==0
+            then \X. (X -> Bot      -> R) -> R -> R
+            else \X. (X -> Ls$(n-1) -> R) -> R -> R
+
+
+    lazy Term unit --> Term
+    [t --> t'] ==>> [\x. t --> \x. t'][s t -> s t'][t s -> t' s]
+        -- full-beta except lazy
+Evalue
+    []
+
+lazy keyword
+    lazy (Term)
+        lazy t :: Unit -> T
+    or (lazy Value+)
+        (lazy Value)
+        lazy :: V -> Lazy V
+        lazy v :: Lazy V
+        Lazy (A->B) === A -> Lazy B
+        unlazy :: Lazy V -> V
+
+
+List = ~List. ^n:Nat. ^m >= n. \X. (X -> List ^<(m-1) -> R) -> R -> R
+let List$n = List ^<n = ^m >= n. \X. (X -> List$(m-1) -> R) -> R -> R
+    List$(n-1) = ^m >= n-1. \X. (X -> List$(m-1) -> R) -> R -> R
+    List$n <: List$(n-1) -- ERROR
+DoubleList
+    DoubleList$n X = $m. (List$m X -> R) -> (List$(n-m) X -> R) -> R
+CycleList
+    CycleList$n X = ^m. (List$m X -> R) -> (List$(n-m) X -> R) -> R
+Fix X = (X->X)->X
+fix :: Fix X
+fix = \x2x. let rec_x_to_x = \rec_x. x2x (rec_x rec_x) in (rec_x_to_x rec_x_to_x)
+    -- rec_x_to_x == rec_x
+    rec_x_to_x, rec_x :: Rec X
+    Rec X = Rec X -> X = (...->X) -> X
+
+
+Fix X = (Will X->X)->X
+fix = \will_x2x. let rec_x_to_x = \rec_x. will_x2x (lazy (rec_x rec_x)) in (rec_x_to_x rec_x_to_x)
+U:= λzx . x(zzx)andZ:=UU.ProvethatZis a fixed point
+combinator
+
+
+
+
+
+------------------------
+
+\ - lambda
+    f = (\a::typeI. term :: typeO) :: typeI -> typeO
+    f a
+    rec:
+        f = (\~{a$n::typeA, b$n::typeB, ...}. term :: typeO) :: ~{ {{ a$n }} -> typeA, ... } -> typeO
+@ - forall
+    f = (\@X <: typeI. term :: typeO) :: @X <: typeI. typeO
+    f @type
+? - exists
+    o = ?X <: typeI. typeO === @r. (@X <: typeI. typeO -> r) -> r
+    let (?X, o') = o in ...
+^ - dependant type; like @
+    f = (\^a::typeI. term::typeO) :: ^a::typeI. typeO
+    f ^a
+$ - $ for ^ what ? for @
+    o = $a::typeI. typeO === @r. (^a::typeI. typeO -> r) -> r
+    let ($a, o') = o in ...
+~ - 1) rec; 2) any_kind/any_type
+    C t = @k :: ~. \F :: { Nat -> k, Neg -> Top[~] }. ^n :: Nat. t F n
+    Lt F n = (^m :: Integer. m <= n => F m)
+    L = C Lt
+    Rt F n = Lt F (n-1) -> Lt F n
+    R = C Rt
+    Fixt F n = (Lt F (n-1) -> Lt F n) -> Lt F n
+    fix$N :: C Fixt
+
+    -- ~X. expr === let X = expr in X === fix (\X. expr)
+    ~X$n. expr === fix (\X. expr)
+    fix$n :: (^m. X$(m-1) -> X$m | Top -> X$0) -> X$n
+    x$n :: ^m <= n. X$m
+    ~X$n. r = let X$n = 
+
+
+where - === let in
+    "id ... = expr where {...}" === "id ... = let {...} in expr"
+let in - === \a.term
+    let {stmt1; ...} in expr === let stmt1 in let {...} in expr
+    stmt = typed_assign | typed_rec_assigns
+    typed_assign = typed_id; assign;
+    typed_id = "id :: ..."
+    assign = "id = expr where { stmt... }"
+    typed_rec_assigns = typed_rec_ids; rec_assigns;
+    typed_rec_ids "~{ typed_id$n, ...}"
+    rec_assigns = "~{ assign$n, ... }"
+    typed_id$n = "id$n :: ..."
+    assign$n = "id$n = expr where { stmt... }"
+    let fg$n :: ~R$n. { {{ f }} -> R$(n-1) -> F, {{ g }} -> R$(n-1) -> G }
+        fg$n = { f = \fg$(n-1). ...}
+
+    let {typed_id; assign} in expr === (\typed_id. expr) (assign.body)
+    let {typed_rec_ids; rec_assigns} in expr === (\typed_rec_ids. expr) (rec_assigns)
+{ } - record
+    Top[kind] - Top of kind
+    Top :: @k. Top[k]
+    Top[*] = { } = @t::*. (t,*)~{ }
+                 = @t::*. (t,*)~{ t-> Top[*] }
+                 = @t::*. t -> Top[*] -- rec ??
+    Bot -> any_type = { Bot -> any_type } = { } === Top
+
+    { a = type_1, ... } === { {{ 'a' }} -> type_1, ... }
+< > - choice
+    < set_a -> type_1, ... > = @r. { set_a -> (type_1 -> r), ... } -> r
+
+{{ }} - set, type is a set of all its values
+    Bot = {{ }} = @t::*. (t,*)~{ t -> Bot }
+    Bot <: any_type <: Top[*]
+    Bot[kind] has no elements
+        any_type has no elements is Bot:
+            any_type -> Bot === Bot
+            @t. t === Bot
+
+i -> o === Arr -i +o
+a -> b -> c === Arr -a (Arr -b +c)
+    F -a -b +c
+(a -> b) -> c === Arr -(Arr -a +b) +c === forall +a -b +c. (a->b)->c
+    F +a -b +c
+(a -> b) -> (b -> c) === Arr -(Arr -a +b) +(Arr -b +c)
+    === forall +a -+b +c. (a->b)->(b->c)
+    F +a -+b +c
+
+(typeI, kindO)~{ set_a -> type_1, set_b -> type_2, ... } - record type
+    === { set_a -> type_1, set_b -> type_2, ... } :: (typeI -> kindO)
+    where
+        -- all index values are of same type
+        set_x <: typeI
+        -- all field types are of same kind
+        type_x :: kindO
+
+        -- index sets: disjoint
+        set_a /-\ set_b = {{ }}
+        -- index sets: complete
+        (typeI, kindO)~{ set_a -> type_1, set_b -> type_2 }
+            ===  (typeI, kindO)~{ set_a -> type_1, set_b -> type_2
+                                , Bot -> any_type1, Bot -> any_type2
+                                , typeI \-\ set_a \-\ set_b -> Top[kindO] }
+(typeI, kindO)~< set_a -> type_1, set_b -> type_2, ... > - choice type
+    where
+        -- all index values are of same type
+        set_x <: typeI
+        -- all field types are of same kind
+        type_x :: kindO
+
+        -- index sets: disjoint
+        set_a /-\ set_b = {{ }}
+        -- index sets: complete
+        (typeI, kindO)~< set_a -> type_1, set_b -> type_2 >
+            ===  (typeI, kindO)~< set_a -> type_1, set_b -> type_2
+                                , Bot -> any_type1, Bot -> any_type2
+                                , typeI \-\ set_a \-\ set_b -> Bot[kindO] >
+arrow
+    a -> b === (a,*)~{ a->b }
+
+typed_set
+    {{ a, b, c }} <: type
+    where a, b, c :: type
+partition_set
+    {{ a :: typeI | f1 a :: typeO }} === f~>typeO
+        where f :: typeI typeX
+              typeO <: typeX
+type_term = builtins | record | typed_set | partition_set
+          | type_term set_op type_term
+          | @X. type_term
+          | ?X. type_term
+          | \X. type_term
+          | ^v. type_term
+type = type_term without frees
+
+
+
+finite recursive type
+    F +a, G -a, H -+a
+    [a <: b] ==>> [F +a <: F +b][G -b <: G -a]
+    [a <: b][b <: a] ==>> [H -+a <: H -+a]
+    Tree +a, List +a
+    Tree a = Leaf | Tree2 a (Tree a) (Tree a) | Trees a [Tree a]
+    Tree a ~~ rec {Tree a, [Tree a]}
+    data Tree$n a where
+        Leaf :: Tree$0 a
+        Tree2 :: a -> Tree$n a -> Tree$m a -> Tree$(max n m + 1) a
+        Trees :: a -> [Tree$n a] -> Tree$(n+1) a
+    [n <= m] ==>> [Tree$n a <: Tree$m a]
+    data List$n a where
+        NIL :: List$0 a
+        Cons :: a -> List$n a -> List$(n+1) a
+    [n <= m][a <: b] ==>> [List$n a <: List$m b]
+    List$n a = { {{ 'List' }} ->
+                    < {{ 'NIL' }} -> Top
+                    , {{ 'Cons' }} -> (a, List$(n-1) a)
+                    >
+               }
+
+    -- n : upper bound of depth
+    List$n a = @r. (^m. m < n => a -> List$m a -> r) -> (r -> r)
+    List$n a = @r. (a -> List$(n-1) a -> r) -> (r -> r)
+    List$(n-1) <: List$n
+    (a -> List$(n-1) a -> r) <: (a -> List$(n-2) a -> r)
+                             <: (a -> List$0 a -> r)
+                             <: (a -> List$(-1) a -> r) === a -> Top
+                             ==>> List$(-1) === Bot
+                             (List$(-1) a -> a -> r) === Top
+    fold$n :: @r. (a -> r -> r) -> r -> List$n a -> r
+    fold$n @r op r0 ls$n = ls$n @r (\h ts$(n-1). h `op` fold$(n-1) @r op r0 ts$(n-1)) r0
+    unfold$n :: @r. (r -> Maybe (a, r)) -> r -> List$n a
+    unfold$n :: @r. (r -> (@r'. (a -> r -> r') -> r' -> r')) -> r -> List$n a
+    unfold$n @r unpack r0 = if n == 0 then nil else
+        -- cannot be full-reduction nor pass-by-value
+        -- pass-by-name here
+        unpack r0 @(List$n a) (\a rX. cons ^(n-1) a (unfold$(n-1) @r unpack rX)) nil
+    nil :: List$0 a
+    nil :: @r. (a->Top) -> (r->r)
+    nil @r _ = id @r
+    cons$n :: a -> List$n a -> List$(n+1) a
+    cons$n a ls = \@r. \f :: a -> List$n a -> r. \_::r. f a ls
+    split_list :: List$(n+1) a -> Maybe (a, List$n a)
+    split_list ls = ls @(Maybe ...) (\a ls' -> Just (pair a ls)) Nothing
+    length :: List$n a -> Nat
+    length ls = length$n ls
+    rec { length$n :: List$n a -> Nat }
+    length$n ls = ls @Nat (\a ls' -> 1 + length$(n-1) ls') 0
+
+    rec {f, g}
+    f$(n+1) = ... using g$n f$n
+    f$0 = ... without g f
+    f$(-1) :: Bot -- should not called
+
+    read_list :: Read a => String -> $n. List$n a
+    [ls :: $n. List$n a] ==>> [let (?n::Nat, ls'::List$n a) = ls in ...]
+
+half-reversable
+    f :: a -> b
+    injection f ==>>
+        half_inv f :: b -> Maybe a
+    bijection f ==>>
+        inv f :: b -> a
+    (a+) b = c
+        b = (-a) c
+        if Nat ==>> may fail
+
+    g :: a -> Maybe b
+    bijection except Nothing ==>>
+        inv g :: b -> a
+

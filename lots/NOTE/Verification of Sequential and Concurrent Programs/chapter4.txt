@@ -1,0 +1,31 @@
+[page 129]
+    # declarations - new items
+    DECL ::= ProcName :: PROC
+    DECLS ::= DECL (, DECL)*
+    PROC ::= STMT (; STMT)*
+    STMT ::= skip
+    STMT ::= Var := Expr
+    STMT ::= ArrayVar[IntExpr] := Expr
+    # parallel assignment??
+    STMT ::= if BoolExpr then PROC else PROC fi
+    STMT ::= while BoolExpr do PROC od
+    STMT ::= call ProcName
+    BoolExpr ::= ...
+    IntExpr ::= ...
+    Expr ::= BoolExpr | IntExpr | ...
+    @token: Var, ArrayVar, ProcName
+
+[page 136] bug?? RULE 9: RECURSION II
+    why no "{p[i] /\ t=0} P[i] {q[i]}"? (need not, see below; since "|-")
+    why not "{p[i] /\ t(conf[i])<z} P[i] {q[i]} {i=1..n} |- {p[i]/\t(conf)=z} S[i] {q[i]} {i=1..n}"
+        t ==>> t(conf), t(conf[i])
+
+    NOTE:
+        z=0 ==>> "{p[i] /\ t[i](conf)<0} P[i] {q[i]} {i=1..n} |- {p[i]/\t[i](conf')=0} S[i] {q[i]} {i=1..n}"
+        "p[i]-->>t[i]>=0" ==>> "{False} P[i] {q[i]} {i=1..n} |- {p[i]/\t[i](conf')=0} S[i] {q[i]} {i=1..n}"
+        "{False} P {q}" <==> "PartialDeduce[[P]]([[False]]) <= [[q]]"
+        [[False]] = {conf | False(conf)} = {} ==>> PartialDeduce[[P]]([[False]]) = {}
+        ==>> "|= {False} P {q}" i.e. "{False}P{?}" is True
+        ==>> "True |- {p[i]/\t[i](conf')=0} S[i] {q[i]} {i=1..n}"
+        ==>> "|= {p[i]/\t[i](conf')=0} S[i] {q[i]} {i=1..n}"
+        ==>> "|= {p[i]/\t[i]=0} P[i] {q[i]} {i=1..n}"

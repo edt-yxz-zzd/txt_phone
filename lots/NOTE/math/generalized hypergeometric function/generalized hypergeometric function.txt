@@ -1,0 +1,52 @@
+generalized hypergeometric function
+
+
+https://en.wikipedia.org/wiki/Generalized_hypergeometric_function
+concrete math :: 5.5 HYPERGEOMETRIC FUNCTIONS
+
+
+F<m,n><a...; b...> z = SUM II rising_power a[i] k {i<-0..m-1} / II rising_power b[j] k {j<-0..n-1} * z^k/k! {k<-0..}
+    # NOTE: with .../k!
+    len(a...) = m
+    len(b...) = n
+    upper parameters (a...)
+    lower parameters (b...)
+F<m,n><a...; b...> z = G<m,n+1><a...; 1,b...> z
+                            ^^       ^^
+G<m,n><a...; b...> z = SUM II rising_power a[i] k {i<-0..m-1} / II rising_power b[j] k {j<-0..n-1} * z^k {k<-0..}
+    # NOTE: without .../k!
+
+[[S = SUM S[i] {i<-0..}
+][f is rational_function
+][[i>=1] ==>> [S[i] == f(i)*S[i-1]]
+]]:
+    [S == S[0]*(1+f(1)*(1+f(2)*(...)))]
+    [?m,n,a,b,z. S == S[0] * G<m,n><a...;b...> z]
+
+
+
+rising_power ==>> gamma
+    rising_power x k = II (x+i) {i<-0..k-1} = falling_power (x+k-1) k
+    gamma k = rising_power ? ?
+falling_power ==>> factorial
+    falling_power x k = II (x-i) {i<-0..k-1} = rising_power (x-k+1) k
+    factorial k = falling_power k k = rising_power 1 k
+
+factorial z
+    | z is integer && z < 0 = undefined
+    | z.real > -1 = Integral t^z * e^(-t) {t=0->+oo}
+    | otherwise = factorial (z+1) / (z+1)
+        = factorial (z + i) / (z+i)/.../(z+1)
+        = factorial (z + i) / II (z+j) {j<-1..i}
+        = factorial (z + i) / rising_power (z+1) i
+        where i = - floor z.real
+factorial z = gamma (z+1)
+
+gamma z = factorial (z-1)
+falling_power z k = factorial z / factorial (z-k)
+rising_power z k = gamma (z+k) / gamma z
+    rising_power z k
+        = falling_power (z+k-1) k
+        = factorial (z+k-1) / factorial (z+k-1-k)
+        = factorial (z+k-1) / factorial (z-1)
+        = gamma (z+k) / gamma z

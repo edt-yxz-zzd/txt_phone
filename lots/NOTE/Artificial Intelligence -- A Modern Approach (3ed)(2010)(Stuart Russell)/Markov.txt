@@ -1,0 +1,53 @@
+Markov processes or Markov chains
+
+# pre: Pr(s) vs PD(S)
+
+states and observations
+observable evidence variables
+    state and evidence are both record type
+    X[a..b] = X[a:b+1] = {X[i] | a <= i < b+1}
+    E[a..b]
+
+data StateRecord
+data EvidenceRecord
+type S = [StateRecord]
+type E = [EvidenceRecord]
+
+transition and sensor models
+transition_model[S](t) = PD(S[t] | S[0:t])
+    Markov assumption:
+        ?d. @t. transition_model[S](t) == PD(S[t] | S[t-d:t])
+    stationary process assumption:
+        @t1,t2. transition_model[S](t1) == transition_model[S](t2)
+        stationary_transition_Markov_model[S,d] =[def]= transition_model[S](_)
+        stationary_transition_Markov_model_ex[S,d] =[def]= PD(S[t-d+1..t] | S[t-d:t]) for any t
+sensor_model[S,E](t) = PD(E[t] | S[0..t], E[0:t])
+    # sensor model, alias observation model
+    sensor Markov assumption:
+        @t. sensor_model[S,E](t) == PD(E[t] | S[t])
+        sensor_Markov_model[S,E] =[def]= sensor_model[S,E](_)
+prior_probability_distribution[S] = PD(S[0])
+
+Section 15.2. Inference in Temporal Models
+# filtering, alias state_estimation
+filtering[S,E](t,e) = PD(S[t] | e[1..t])
+    ?current state
+    Filtering is what a rational agent does to keep track of the current state so that rational decisions can be made.
+    filtering_ex[S,d,E](t,e) = PD(S[t-d+1..t] | e[1..t])
+prediction[S,E](t,k,e) = PD(S[t+k] | e[1..t]) where k>0
+    evaluate actions
+    Prediction is useful for evaluating possible courses of action based on their expected outcomes.
+    prediction_ex[S,d,E](t,k,e) = PD(S[t+k-d+1..t+k] | e[1..t]) where k>0
+smoothing[S,E](t,k,e) = PD(S[t-k] | e[1..t]) where 0<k<=t
+    ?past state
+    Smoothing provides a better estimate of the state than was available at the time, because it incorporates more evidence.
+    smoothing_ex[S,d,E](t,k,e) = PD(S[t-k-d+1..t-k] | e[1..t]) where 0<k<=t
+most_likely_explanation[S,E](t,e) = argmax Pr(s[1..t] | e[1..t]) {s[1..t]}
+    speech recognition
+
+Learning:
+    The transition and sensor models, if not yet known, can be learned from observations.
+    Just as with static Bayesian networks, dynamic Bayes net learning can be done as a by-product of inference. Inference provides an estimate of what transitions actually occurred and of what states generated the sensor readings, and these estimates can be used to update the models. The updated models provide new estimates, and the process iterates to convergence.
+    The overall process is an instance of the expectation-maximization or EM algorithm. (See Section 20.3.)
+
+    Note that learning requires smoothing, rather than filtering.

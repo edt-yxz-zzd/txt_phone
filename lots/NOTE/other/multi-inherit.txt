@@ -1,0 +1,55 @@
+sum of parts < whole
+    Every finite division ring is a field
+
+Haskell type class is best
+    class (Finite a, DivsionRing a) => Field a where ...
+    
+    but
+    class (B a, C a) => Mixin_If_B_C a where ...
+    class (B a, D a) => Mixin_If_B_D a where ...
+    1) class (Mixin_If_B_C a, D a) => Mixin_If_B_C_D a where ...
+    2) class (C a, Mixin_If_B_D a) => Mixin_If_B_C_D a where ...
+    which one be used??
+    
+
+
+
+C++ virtual base class is what I want!!
+    mixin Mixin_If_Finite_DivisionRing abstract Finite DivsionRing
+    {
+        ... // implement Field parts
+    };
+    
+    but
+    mixin Mixin_If_B_C abstract B C {...}
+    mixin Mixin_If_B_D abstract B D {...}
+    mixin Mixin_If_C_D abstract C D {...}
+    mixin Mixin_If_B_C_D abstract 
+                Mixin_If_B_C 
+                Mixin_If_B_D 
+                Mixin_If_C_D
+           {...}
+      what if Mixin_If_B_C and Mixin_If_B_D both override B::f()??
+
+
+
+C++
+    abstract base class
+        A class containing (or inheriting) one or more pure virtual functions is an abstract base class.
+        class C{virtual int f()=0;};
+    Virtual Base Class
+        class C : public virtual B { /* ... */ };
+
+        If in each path X represents the same virtual base class member, then there is no ambiguity because a single instance of the member is shared.
+            class C1 : virtual B {};
+            class C2 : virtual B {};
+            class D : C1, C2{};
+        If in one path X is a member of the virtual base class member and in another path X is a member of a subsequently derived class, there is also no ambiguitythe specialized derived class instance is given precedence over the shared virtual base class instance.
+            class C1 : virtual B {};
+            class C2 : B {};
+            class D : C1, C2{};
+        If along each inheritance path X represents a different member of a subsequently derived class, then the direct access of the member is ambiguous.
+            class C1 : B {};
+            class C2 : B {};
+            class D : C1, C2{}; // Error
+

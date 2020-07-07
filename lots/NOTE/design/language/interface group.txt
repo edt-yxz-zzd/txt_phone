@@ -1,0 +1,179 @@
+
+interface file ==>> interface group [i.e. a folder contains all version inform of original commit and inc-updates which forms a DAG]
+
+interface means something will never change.
+but with version growing, means there are something changing.
+e.g.
+    class methods:
+        original methods are unchanged
+        but we may add more methods.
+        but final class cannot.
+e.g.
+    constant variable:
+        if we put the literal value in interface file
+            then the value should not be changed in later version.
+        else only the type unchanged, the value may be changed in impl file.(e.g. translated strings)
+
+but we can extend this constraint by explicitly descript what is or not be declared.
+e.g.
+    increase-able:
+        #like class members
+        list of numbers:
+            we may say the length of the list is undetermined, only know it >= N, you can get the first N numbers.
+            later version may increase this list.
+        mapping: like above
+        the entities of the whole interface file/module
+            do we allow it growing?
+            are there black list/filter of entities that cannot be added?
+            are there white list/filter of entities that are allowed to be added?
+    by-constraints:
+        #like type of object
+        value of integer:
+            we may say know it satisfy some properties but dont know its value
+
+
+interface file should not be changed per version.
+    we intro hash to outline it.
+example:
+    name of interface file: xxxxx.intfc
+    interface group may be:
+      [author][asymmetric_cryptography_algo][public_key]/
+        xxxxx/
+            #error: [version][hash_algo][hash][parent-(version,hash_algo,hash)-list].intfc
+            [version]/
+                this.[hash_algo].hash:
+                    # hash by [hash_algo]
+                    [hash]
+                this.intfc:
+                    [version][parent-(version,hash_algo,hash)-list]
+                    ...
+                this.[hash_algo].hash.sign:
+                    default:
+                        #i.e. [author][asymmetric_cryptography_algo][public_key]
+                        # signed by [asymmetric_cryptography_algo]
+                        [sign]
+                    [another_author][asymmetric_cryptography_algo][public_key]:
+                        [sign]
+                    ...
+
+        -------------------
+        impl file that import infc:
+            import xxxxx[version][hash_algo][hash]
+            #error: or import xxxxx-buttom/latest
+            #since in one project there are should be one xxxxx
+            #   otherwise we should define them as diff interface classes.
+            #when we say xxxxx[version][hash_algo][hash]
+            #   we means to import xxxxx-buttom/latest
+            #   and we claim we have seen [version]
+            #   so buttom/latest must at least [version]
+            #   we can use what API exported by [version]
+            #
+            or:
+            import xxxxx saw:
+                [version1][hash_algo1][hash2]
+                [version2][hash_algo2][hash2]
+                ...
+            # xxxxx-buttom/latest := merge of all the given versions
+            #   ???no conflict???
+        To avoid so many [hash_algo][hash] in infc/impl files
+            , we may introduce ".hub" file which is a transparent layer to collect infc files.
+            and it will not intro denpendencies on unused pkg in the hub file.
+            ######
+            yyyy.hub
+                collect xxxxx saw:
+                    [version1][hash_algo1][hash2]
+                    [version2][hash_algo2][hash2]
+                    ...
+            zzzz.infc/impl
+                open yyyy.hub [version][hash_algo][hash]
+                    import xxxxx
+                    import aaaaa
+
+
+
+
+
+domain
+hierarchy inverse/insert
+
+
+domain:
+    class implements most than one interfaces:
+        which method are overrided/called when conflict???
+            obj.(interface::method)
+            why? if the two interfaces are not both final
+            , than one may has a new method which conflict another in later version.
+                # see above what we import are actually buttom/latest
+            # to avoid such situation
+            #   * we may declare they are both version-final by signed hash
+            #       this hash is for interface class itself not interface file
+            #       many interfaces are now conflict-free
+            #   * or declare them are union-conflict-free # pairwise
+            #
+
+        but when the conflict methods can be merged into one method?
+            both interfaces extend a same common interface that defines the method????
+            but normally they dont extend same interface!!!
+
+    to solve problem: merge two interfaces same name method
+        we intro "domain" concept
+        when interface inside a domain, then the domain known method name has defined meaning, and can be merged.
+
+    there are so many math-graph types and new discovery type, that we cannot put them into a class hierarchy, we put them into a domain, in this domain, they perform like duck_type.
+        obj.(domain::method)
+
+    domain defines what are permitted and what are prohibited.
+        e.g. some subtype of graph/ring forbid some properties.
+
+hierarchy inverse/insert
+    when old interface happen be a concept in domain
+        , but the method name is diff with domain
+        , we can use a mapping like haskell::class
+    when we found a super-concept/subset-methods are useful
+        , e.g. semigroup/Monoid to group in math-group_theory-domain
+        , e.g. Arrow/Funtor to Monad in haskell
+        , we can inverse the hierarchy definition order.
+
+    when we found an intermediate concept is useful
+        , we can insert it between two classes.
+
+        anonymous subclass/superclass
+            interface\-/interface ==>> anonymous subclass
+            interface/-\interface ==>> anonymous superclass
+                e.g. integer /-\ integer_mod<N>
+        anonymous ... auto be inserted into class hierarchy
+
+
+impl file can only import interfaces
+    , should not import other impl file (java/python import impl file!!!)
+    .
+
+    but how can we construct an instance?
+        constructor_method is static and non-final, s.t. impl class can override it.
+
+    but how can we declare T<cls>??
+        we use parameterized module(impl file) (i.e. a template module):
+            moduleA.impl
+                import interface T1, T2
+                def moduleA(cls1 <: T1, cls2 <: T2)
+
+
+        and external configuration:
+            main.configuration
+                import module?(...) as ... (cls1)
+                ...
+                import moduleA(cls1, cls2) as A (...)
+
+mergable object <: final object
+    e.g. a parameterized cls is a mergable object
+    e.g. python.str/int object is a mergable object
+    when ==, then merge the 2 instances into 1
+        MergableStr = MergableStr_STR str | MergableStr_PTR MergableStr
+        like unoin-set
+== by what meaning/domain/concept/facet?
+    obj1 :: C1 <: C
+    obj2 :: C2 <: C
+    obj1 =[C]= obj2
+    C.equal(obj1, obj2)
+
+

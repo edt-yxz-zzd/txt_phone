@@ -1,0 +1,77 @@
+
+X#Z === forall a. (Z <: a <: X) => a
+
+
+let Bot === {{ }} -- empty set
+[[i=/=j] -->> [X_i /-\ X_j === Bot]] ==>>
+    -- poly-func
+    {+ X0->Y0, X1->Y1, ... +}
+        = let Xs = {{ X0,X1,... }} in ({{ a :: Xs }} -> a -> (case a of {X0->Y0; X1->Y1;...}))
+        *impl-type = forall a. ((X0->Y0) -> (X1->Y1) -> ... -> a) -> a
+        -- value-constructor: {+ x02y0, x12y1, ... +}
+        *impl-value = \fs2a -> fs2a x02y0 x12y1 ...
+        *value = \Xi -> (impl-value::imple-type) (\x02y0 x12y1 ... -> xi2yi)
+    -- alternatives
+    {| X0->Y0, X1->Y1, ... |}
+        = forall a. {+ X0->(Y0->a), X1->(Y1->a), ... +} -> a
+        -- value-constructor:
+        -- as poly-func: <x=y> = {| x->y |} = \poly -> poly x y
+        -- as type-app:  <x=y> = \poly -> poly [X] (x::X) y
+
+-- concrete set type
+[] ==>> [a :: {{ a, b, c, ...}}]
+-- f :: {{ a::Show }} -> a -> String
+-- f Int 1 = show 1
+
+-- partition type
+[r :: Y][f :: X->Y][Z <: X]==>>[P r f Z <: P r f X <: X]
+
+
+-- norm-func
+let (X -> Y) = {+ X->Y +}
+-- record
+let {a=Y0, b=Y1, ...} = {+ {{ a }}->Y0, {{ b }}->Y1, ...+}
+-- tuple
+let (Y0, Y1, ...) = {0=Y0, 1=Y1, ...}
+-- choices
+let <a=Y0, b=Y1, ...> = {| {{ a }}->Y0, {{ b }}->Y1, ...|}
+
+{-
+Top === Bot??
+    let Bot = (Top->Bot)
+    let Top = (Bot->Top)
+-}
+
+let Top = {+ +} -- not an arrow; not subtype of (Bot->Top)
+let Bot = {{ }}
+        {-
+        = forall x. x
+        = {| |} = forall Y. {+ +}->Y = Top -> (forall Y. Y) = (Top->Bot)
+        = let x = (Top->x) in x
+        -}
+
+----- subtype
+-- perm
+[] ==>> [  {+ a..., X0->Y0, b..., X1->Y1, c... +}
+        <: {+ a..., X1->Y1, b..., X0->Y0, c... +}
+        ] -- same for {| |}
+-- width
+[] ==>> [{+ a..., X0->Y0 +} <: {+ a... +} <: {+ +}]
+[] ==>> [{| |} <: {| a... |} <: {| a..., X0->Y0 |}]
+
+-- depth
+[X<:X0][Y0<:Y] ==>> [{+ a..., X0->Y0 +} <: {+ a..., X->Y +}]
+[X0<:X][Y0<:Y] ==>> [{| a..., X0->Y0 |} <: {| a..., X->Y |}]
+
+-- partition
+[X <: X0\-/X1][Y0<:Y][Y1<:Y
+    ] ==>> [{+ a..., X0->Y0, X1->Y1 +} <: {+ a..., X->Y +}]
+[X0 <: X][X1 <: X][Y0<:Y][Y1<:Y
+    ] ==>> [{| a..., X0->Y0, X1->Y1 |} <: {| a..., X->Y |}]
+-- application
+[{+ a..., X0->Y0 +} <: (X0->Y0)]
+(>>>) :: {+ X0->Y0, X1->Y1,... +} -> {+ Y0->Z0,Y1->Z1,... +} -> {+ X0->Z0, X1->Z1,...+}
+(<*>) :: {+ X0->(Y0->Z0),X1->(Y1->Z1),... +} -> {+ X0->Y0, X1->Y1,... +} -> {+ X0->Z0, X1->Z1,...+}
+liftA :: (X0->(Y0->Z0)) -> {+ X0->(Y0->Z0), X1->ID, ...+}
+    where ID = forall a. a->a
+

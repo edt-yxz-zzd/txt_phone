@@ -1,0 +1,191 @@
+Concise Guide to Databases 
+
+4.2.1 First Normal Form (1NF) page 86-87
+foreign key | variable length record | repeating group | compound primary key | invent primary key
+-- remove repeating group to avoid variable-length-record.
+
+    First, remove repeating groups and create a new table to store these attributes. Include a link to the table you have removed it from in the form of the key item. This will be the foreign key. The main reason for removing repeating groups is to make sure you don¡¯t end up with variable length records.
+    Sometimes you may have to invent one, either for uniquely identifying a record, or because the combination of other attributes is cumbersome. 
+    The repeating group is the attributes of the items which were ordered on the invoice¡ªoften called line items. ...need to include that as part of the primary key. You then end up with a compound key consisting of Invoice ID and Code.
+-- well, I want books index by (book_title, authors, version/date/edition), but it was really cumbersome.
+-- PK (primary key) may be a compound key, but we can invent one to avoid cumbersome.
+-- If the record contains repeating group, what a struct contains a pointer to a variable-length-array, remove it since this is a one-to-many relationship. We reverse the edge direction, now the old PK will be a foreign key in new table. We may use the (old_PK, subitem) as a compound primary key.
+
+4.3 SecondNormal Form (2NF)
+remove data that is only dependent on part of primary key
+every non-key attribute to be dependent on the whole key
+
+4.4 ThirdNormal Form (3NF)
+Remove any data that is dependent on a non-key field and create a new table. This happens when there is more than one candidate key and it would be unique.
+
+-- PK many-to-1 FK/non-key attribute
+
+Candidate Key (uniquely identifies a record) -> Primary Key
+Foreign Key
+
+4.5 Beyond ThirdNormal Form
+    Bryce-Codd Normal Form (BCNF) deals with multiple overlapping candidate keys. In these a combination of attributes may create a candidate key. A different combination may form another. BCNF is not always achievable because it would mean losing the dependencies determined at third normal form.
+    Fourth Normal Form (4NF) is concerned with multivalued dependency. This can occur in a table with three or more attributes when all the attributes in a table are part of the composite key. It may in this case be necessary to decompose the table into 2 or more tables.
+-- What is a Key ? Can't we call a row a Key?
+-- What if the repeating group is part of PK ? If I use 'authors' as part of the PK to identify a book? Otherwise how can we make constraints that (title, authors, date) SHOULD BE unique?
+-- Should PK be some a non-understandable digit ID?
+-- For type-system, all types form a DAG under the is-subclass relationship. How to express this many-to-many R? Using a composite Key? How can I find out all subclasses of a type? Using set-closure algorithm?
+
+
+    Fifth Normal Form (5NF) is again related to multivalued dependency. A table is said to be in the 5NF if and only if every join dependency in it is implied by the candidate keys. Rarely does a 4NF table not be in 5NF.
+    Sixth Normal Form (6NF) relates to temporal databases and is intended to reduce database components into irreducible components. In the example database there is a problem with stock item. If the price of the item changes, the resulting change would be applied to all historical invoices which is clearly incorrect. Likewise, VAT can vary and this will be independent of price. There therefore needs to be extra tables containing historical price data with the item code and the date they were effective. This would also create a join to the invoice table.
+
+-- ? What is BCNF/5NF?
+-- 4NF say no dependency inside composite key. What are meaningless Key!
+-- 6NF say we need time-stamp to review historical information. That is the attribute varies independent with PK but some other factors. Let's call the time-stamp is a constructor of some attributes such as Price.
+
+
+4.7 Use Case Modelling
+-- When I want to purchase a new book, I will ask did I own this book? Search Title. Are there some similar books? Search Tags. Did I read some books written by this author? Search by Authors. 
+-- When I start reading, I want to ask where I left last time? what notes I made? What led me to this book?
+-- When I end reading, I want to update information descripted above.
+
+    weak entity - For a composite key, one part FK be deleted, the whole row will get deleted too. That means it does not have an independent existence. - multivalued attribute - repeating group
+    heavy entities - These are entities where there are many null attributes. This may come about because data in one attribute may mean that another attribute must be null. This often happens where the entity is actually a hierarchy of entities. A decision needs to be made as to whether to keep the heavy entity or map it so it reflects the hierarchy.
+
+    Once entities and their attributes have been identified binary relationships should be identified. 
+    1-to-many - Initially map one-to-many relationships. In this the item at the ¡®many¡¯ end will include the primary key of the entity at the ¡®one¡¯ end as a foreign key.
+    many-to-many - Many-to-many relationships should not be part of a database design. They are usually resolved by creating an associative entity.
+
+1-to-many - tree parent and its child form a star graph
+associative entity - in a graph, many vertex to many vertex; let graph edge be new vertex, now each old vertex with its edges form a new star graph.
+
+PK form a set Domain, FK or attr-value form a set Range, Table is a collection of functions map PK to any field value. function is curried. 
+There three things: Domain-Table, Map-Table (null is not allowed), Key-Composite
+
+    ...Ultimately one or more employees have a null value in this field be-cause they have no manager (they are the top of the organisations hierarchy)...
+Wrong! there are two types of employees, one have manager and the other.
+They should form two table!!! or say, make the employee2manager function be an associative entity: table person(personID PK) table employee2manager(personID PK FK, personID FK)
+
+fan trap - miss some table to work out some attributes.
+chasm trap - without a seperate Domain def, so force each PK to own a attribute which does not really exist.
+
+Domain and Map!!! that is completed!
+
+
+
+4.13 CRUDing
+    Create, Retrieve, Update and Delete data. Update and Delete operations are usually done in conjunction with a Retrieve operation. It is always a good idea to show a user what they are about to either change or delete before they do it and give them the option of aborting the operation if they discover they have the wrong record. 
+
+CREATE TABLE customer
+    (customer_id VARCHAR(6),
+    customer_name VARCHAR (24),
+    customer_street_no NUMBER(3),
+    customer_address VARCHAR (36),
+    customer_postcode VARCHAR(6),
+    date_entered DATE);
+
+CREATE TABLE stock_item
+    (code VARCHAR(13),
+    item_description VARCHAR (24) NOT NULL,
+    price NUMBER (7,2) NOT NULL,
+    vat NUMBER (2) NOT NULL,
+    master_item VARCHAR(15),
+    CONSTRAINT stock_item_pk PRIMARY KEY (code),
+    CONSTRAINT stock_item_fk FOREIGN KEY (master_item) REFERENCES stock_item(code),
+    CONSTRAINT item_description_uk UNIQUE (item_description));
+
+CREATE TABLE invoice
+    (invoice_id NUMBER (8),
+    invoice date DATE NOT NULL,
+    order_date DATE NOT NULL,
+    customer_id VARCHAR(6),
+    CONSTRAINT invoice_id_pk PRIMARY KEY (invoice_id),
+    CONSTRAINT customer_id_fk FOREIGN KEY (customer_id)
+    REFERENCES customer (customer_id));
+
+CREATE TABLE line_item
+    (invoice_id NUMBER (8),
+    code VARCHAR(13),
+    qty NUMBER (4),
+    CONSTRAINT line_item_pk PRIMARY KEY (invoice_id, code),
+    CONSTRAINT invoice_id_fk FOREIGN KEY (invoice_id)
+    REFERENCES invoice (invoice_id),
+    CONSTRAINT code_fk FOREIGN KEY (code)
+    REFERENCES stock_item (code));
+
+
+4.16 Joins
+Equijoin
+SELECT billing_name, invoice_id, invoice_date
+    FROM customer, invoice
+    WHERE customer.customer_id=invoice.customer_id
+    billing_name='Warren Felsky' AND
+    date_entered>'01-JAN-2010';
+
+Inner Join
+SELECT customer_name, invoice_id, invoice_date
+    FROM customer
+    INNER JOIN invoice
+    ON customer.customer_id=invoice.customer_id;
+In Oracle an Equijoin and an Inner Join are equivalent.
+
+Outer Join 
+    Extends the idea of an inner join by including some or all records from the other table in the join which do not meet the join condition. There are three types of outer joins:
+Left Outer Join
+    This will return all records from the table on the ¡®left¡¯ (literally to the left of the LEFT clause) which have no matching records in the table on the right. A null will be displayed instead. 
+SELECT customer_name, invoice_id, invoice_date
+    FROM customer
+    LEFT OUTER JOIN invoice
+    ON customer.customer_id=invoice.customer_id;
+Right Outer Join
+Full Outer Join
+Self Join 
+    There is no specific self join syntax, but aLEFT JOINcan be used.
+SELECT m.item, i.item,
+    FROM stock_item AS m LEFT JOIN stock_item AS i
+    ON m.master_item=i.item
+
+Cartesian Join 
+    In this case every record in one table is matched with every record in the joined table. About the only time this is likely to happen is if an equijoinis being used and the WHERE clause linking the associated primary and foreign keys is left out.
+
+4.17 More ComplexData Retrieval
+    A wildcard is a character that takes the place of one or many other characters. It may be an ?, or in the case Oracle it is % for many characters and _ for a single character. 
+
+SELECT code, item, price
+    FROM stock_item
+    WHERE item LIKE '%Paris%'
+    ORDER BY price DESC;
+    . . . ORDER BY price DESC, item;
+    
+    A further requirement in most systems is to be able to calculate data. This is done on a group of records that are returned.
+    
+SELECT COUNT(invoice_id)
+    FROM invoice
+    GROUP BY customer_id;
+SELECT invoice_id, COUNT (code), SUM (price)
+    FROM invoice JOIN line_item
+    ON invoice.invoice_id=line_item.invoice_id,
+    line_item JOIN stock_item
+    ON line_item.code=stock_item.code
+    GROUP BY invoice_id;
+
+4.18 UPDATE andDELETE
+UPDATE customer
+    SET customer_street_no=6,
+    customer_address='McGregor St, Sheffield'
+    customer_postcode='S11 1OD'
+    WHERE cutomer_id='OS3457';
+
+    It may have the effect of updating more than one row so it is essential you retrieve and ver-ify records before you update them. It is also possible to get an integrity constraint error if you try and update a record with a constraint, for example if you try and update an attribute defined as a foreign key.
+
+DELETE FROM customer
+    WHERE customer_name='Warren Felsky';
+    
+    Two things could go wrong here. If there is more than one warren Felsky, both will be deleted. It would have been better to use the customer_id. Secondly, if Warren Felsky still had any live invoices in the system there would be an integrity constraint error. In other words all invoices associated with Felsky would have to be deleted before the customer record could be removed.
+    The database is not permanently changed until a COMMIT command is issued and up to that point a ROLLBACK command could be issued to return the database to its original state. Most systems do a COMMIT when a user logs off.
+
+
+
+
+
+
+
+
+
+

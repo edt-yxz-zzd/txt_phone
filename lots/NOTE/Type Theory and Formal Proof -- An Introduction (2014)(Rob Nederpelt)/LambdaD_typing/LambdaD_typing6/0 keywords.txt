@@ -1,0 +1,188 @@
+
+
+keywords:
+    ;; ?? any term is a type; each term is infinite high
+    ;; not any term has type, we group them in class UInt#
+    ;; not any term is a type, we group them in class UInt#
+    ;; now we group both in (Down : UInt#, Up : UInt#)
+    ;; t :<> (0#, 0#) ==>> not allow: (a : t), (#` t)
+    ;; t :<> (1#, 0#) ==>> not allow: (b : a : t), (#` t)
+    ;; t :<> (1#, 1#) ==>> not allow: (b : a : t), (#` #` t)
+    UInt# 0# oo#
+        ;; UInt# :# 0# ; no type
+        ;; 0#, oo# :# 1# ; no sort
+        NoType = 0#
+        NoSort = 1#
+    "let" "in"
+    :  --  term : type; cast type term
+    <: --  subterm <: term; subtype <: type
+    :<> -- term :<> (down, up) = [term :< down][term :> up]
+    :< -- term :< down
+    :> -- term :> up
+    ># --  ge; uint >= uint
+        -- ERROR: a ># b = a <: b
+        --      since Depth
+    #` --  type_of; #` term ::= type_of term
+        ;; why type_of is "#`" but not keyword "type_of"
+        ;;      (#`), type_of : term -> term
+        ;;      "#` #` term" but not "type_of (type_of term)"
+    ##` -- succ; ##` n ::= n+1
+    #-` -- prev
+    *` -- *` *` a == a ;; not callable
+        -- #` *` a == #` a; since (*` \# ...) is callable
+        -- a <: *` a; *` a <: *` a; callable <: not callable
+        -- #` \# oo# .., body = * \# oo#.., #` body
+    \#
+    \  @ ? @@
+    -: -<: -:#
+    --:#
+    :<: -- term :<: super = term : type <: super
+    <:[nat] -- term <:[0#] super = term <: super
+            -- term <:[1#] super = term :<: super = #` term <: super
+    ==# -- a ==# b = a <# b <# a
+    ==: -- a ==: b = a <: b <: a
+    -> </ />
+    () ,
+    {} `` -- implict
+    fst snd
+    ::[n] -- cast; #`{n} (a ::[n] T) : T
+    :: -- cast; (a :: T) = cast T a = (a ::[1] T); cast T a : T
+
+
+VarID - variable id set
+
+
+syntax
+    UInt= oo#       -- infinite
+        | 0#        -- 0
+        | ##` UInt  -- succ; ##` oo# = oo#
+        | #-` UInt  -- prev; #-` oo# = oo#; no (#-` 0#)
+        | uint_id
+    Depth = UInt
+    Up = UInt
+    Down = UInt
+    Term    = term_id -- term_id in VarID
+                -- [(id :# oo#) in context] ==>> id : #` id
+                -- [(id <:[n] type) in context]
+                --      ==>> id : #` id; #`{n} id <: type
+            | "let" term_id : Term = Term "in" Term
+            | "let" uint_id <# oo# = UInt "in" Term
+            ;; lambda
+            ;; of = ":<>" | "<:[n]" | ">#"
+            ;; cmp = ">#" | "==#"
+            -- | \# (cmp Depth) term_id of cls, Term
+            | \# Depth term_id :<> (Down, Up), Term
+            | \# Depth uint_id ># Up, Term
+            | \# Depth term_id <:[n] Term, Term
+                -- | \# (cmp Depth) term_id of cls, Term
+                -- #` \# depth id of cls, body ==
+                --      depth <# 1# ==>>
+                --              \# depth-1 id of cls, #` body
+                --      depth ==# 0# ==>> *` #` body
+                --      depth ==# oo#, of==":#", cls="oo#" ==>>
+                --              \# oo# id :# oo#, #` body
+                --
+            -- | \ term_id of cls, Term
+                -- \# 1# term_id of cls, Term
+            -- | </ term_id of cls = Term, Term />
+            ;; arrow-type
+            -- | @ term_id of cls, Term
+                -- (term_id -of cls) -> Term
+                -- \# 0# term_id of cls, Term
+            -- | ? term_id of cls, Term
+            ;; arrow-sort
+            -- | @@ depth term_id of cls, Term
+                -- *` \# depth term_id of cls, Term
+            ;; app
+            | Term Term
+                -- type_of term1 == (cast? \# ...) | (cast? *` ...)
+                --
+                -- type_of
+                -- [#` f == cast? *` x] ==>> #` (f a) == (*` x) | x
+                --      1) [f == cast? \1, cast? \1,...] ==>> #` (f a) == *` x
+                --      2) else ==>> #` (f a) == x
+                -- [#` f == cast? \# ...]{depth_of f /=# 0#}
+                --      ==>> #` (f a) == (#` f) a
+            | fst Term
+            | snd Term
+            -- cast
+            | Term ::[n] Term
+            ;; type_of
+            | #` Term
+            ;; not_callable
+            ;;      term of this type is not callable
+            ;;      but the type itself is callable
+            | *` Term
+                -- (\1, (body :: T)) : *` T
+                -- *` *` t == *` t
+                -- #` *` t == #` t
+
+
+context = [([global]; [local])]
+            -- [(globals; locals)]
+global = global_declaration | definition
+local = local_declaration
+global_declaration = term_id : type
+definition = term_id : type = term | uint_id <# Term = uint
+local_declaration = term_id of cls
+conclusion = uint <# uint | term of2 cls | term => (term :: type)
+basic_conclusion = Term <# Term
+                 | term_id => term
+                 ;; decl_id => decl_id
+basic_conclusion2=
+                 ;; ==>> uint_id <# uint_id
+                 | uint_id <# uint | uint_not_id <# uint_id
+                 | term_id :# uint
+                 | term_id : type
+                 ;; ==>> | decl_term_id <: decl_term_id
+                 | term_id <: term | term_not_id <: term_id
+
+
+
+let of = :# | <:[n]
+let of2 = <:[n] | :
+let lt2 = <:[n] | <#
+
+
+
+Pair:
+    Pair a b = @R, (a -> b -> R) -> R
+    Pair = \a b, @R, (a -> b -> R) -> R
+    Pair = \a b : *, @R : (* or **), (a -> b -> R) -> R
+    Pair' A P = @R, (@a : A, P a -> R) -> R
+    Pair' = \A : *, \P : A -> *, @R : *, (@a : A, P a -> R) -> R
+    Pair' = \A : *, \P : @_ : A, *, @R : *, (@a : A, @ _ : P a, R) -> R
+    Pair' = \A : *, \P : @_ : A, *, @R : *, @a2Pa2R : (@a : A, @ _ : P a, R), R
+        --   2       2               1       1
+    Pair' : @A : *, (A -> *) -> *
+    Pair' : @A : *, @P : (@a2b : A, *), *    :    **
+
+
+    ;; A -> B -> (P -: A -> B) -> R -> ((a -: A) -> P a -> R) -> R
+    Pair = \# 0# A :# Type, \# 0# B :# Sort, \# 0# P : \# 0# _ : A, B,
+                \# R :# Type `[], \ a2b2R : \a,\b,R, R
+
+
+
+Notation:
+    \ a b... , body = \ a, \ b..., body
+    </ a, b, c... /> = </ a, </ b, c... /> />
+    a -> b -> c... = a -> (b -> c...)
+    (a, b, c...) = (a, (b, c...))
+
+    ;; (a, b) = (R -:# 'Type) -> (a -> b -> R) -> R
+    (a :# S, P a) = (R -:# 'Type) -> ((a -:# S) -> P a -> R) -> R
+        ?? a :# S, #` (P a) = @@ R :# 'Type, #` R
+            | : #` @@ R :# 'Type, #` R
+            | :# 'Sort
+    (a `op2` T, P a) = (R -:# 'Type) -> ((a `op2_` T) -> P a -> R) -> R
+        @@ R :# 'Type, #` R
+
+
+    </ id ofC = a, b /> = \R :# 'Type, \ a2b2R : id ofC -> #` b -> R, a2b2R a b
+
+    (a of3_ t) -> b = @ a of2 t, b
+    (a --:# t) -> b = @@ a :# t, b
+    
+
+

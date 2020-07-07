@@ -1,0 +1,174 @@
+
+
+// well, author know it, see 2.7 Bounded Timestamps 
+// @The Art of Multiprocessor Programming::Chapter 2 Mutual Exclusion::[page32] Bakery lock algorithm ~ it will overflow!!
+
+@Real World Haskell::Chapter 12 Barcode Recognition::page 285 Finding Matching Digits:: """zip [ xxx | d <- srl] digits""" is not """[(xxx, n) | d <- srl, n <- digits]"""
+@Combinatorics on Words - Chapter 1(M. Lothaire,1983)::1.4.Formal Series::page11::Proposition 1.4.2. (iii) "...Then PP = XX iff X is a code..." should be "...Then PP = XX* iff X is a code..."
+@Combinatorics on Words - Chapter 1(M. Lothaire,1983)::page16::problem 1.4.2::equality (a.2) should be P_u = X_u + sum X_v*R_{v,u} {v in W}  // _v of X_v is missing // see also concrete_mathematics(2nd)::8.4 FLIPPING COINS::page409::three equations(8.79)
+
+
+
+@现代数学手册(1)·经典数学卷::曲线论::page213::ds=sqrt(RHO^2+(dRHO/dTHETA)^2*dTHETA) ~ should be: ds=sqrt(RHO^2+(dRHO/dTHETA)^2)*dTHETA
+# well I think I'm wrong: @现代数学手册(1)·经典数学卷::曲线论::1.2.7空间曲线的渐伸线与渐缩线::page224::C的切线是D的法线，则D是C的渐伸线。а(D)=s*β(C) ~ should be а(C)=s*β(D)
+@现代数学手册(3)·计算机数学卷::16数学机械化与机械化数学::5.2几何公式的自动推导::p770 例3（连杆问题）x+2n+r=0==>>x is const ~ but n is not const!!
+@现代数学手册(3)·计算机数学卷::第十九篇　并行与分布计算中的模型与算法::[page 839-840]::程序5 一维基2 FFT的Cooley-Tukey 算法::ITERATIVE_FFT(X,Y,n)::let i=(b0b1...); j := (b0...b[m-1],0,b[m+1]...b[r-1]); k := (b0...b[m-1],1,b[m+1]...b[r-1]); R[i] := S[j] + S[k]*w**(b[m]b[m-1]...b0, 0...0) ~ should be i = (b[r-1], ..., b[0])_2 = b[r-1] * 2**(r-1) + ... + b[0] * 2**0; t = r-1-m; j = (b[r-2], ..., b[t], 0, b[t-1], ..., b[0])_2; k = (b[r-2], ..., b[t], 1, b[t-1], ..., b[0])_2; e = (b[r-1], ..., b[t], 0, ..., 0)_2 of len r; R[i] := S[j] + S[k]*w**e;
+
+
+
+
+
+
+
+
+@[1973]Dividing a Graph into Triconnected Components::page33::prove direct part of lemma13::E(S) and E(X) not in same class ~ but they can, (1,a)(1,v)(a,v)(v,b)....
+@[planar graph canon 1999]Linear-time succinct encodings of planar graphs via canonical orderings::Note that the order in which the vertices are visited by the right-most depth-first search is the right-most canonical ordering v1;...;vn that defines T. ~ the up reconstruct order and the down order of right most version are different, we first have the down order and then use the dfs to make the up one. S2 is based on the up one.
+xxxxx my mistake @[Planarity_Testing_2009]The_Left_Right_Planarity_Test::sort adjacency lists ~ sum O(deg(v)*log deg(v)) ~ O(n*log n) > O(n) 
+@Programming_Pearls 2nd::15.2 Long Repeated Strings ~ O(n^2*log n)
+@Learn_You_a_Haskell_for_Great_Good::Copying Files with Bytestrings@page(201~202) if renameFile isnot noexcept
+@SymPy version 0.7.2::expand ~ not that deep indeed
+@搜狗五笔输入法2.0正式版(2.0.1.1198)编译时间: Apr 28 2012 20:25:29 屙 五笔反查拼音错为(ke1)，应为(e1)；但它的拼音输入中两个音都有，但新华字典（1992）中只有后一个。
+@Twisted Network Programming Essentials(2ed)::Chapter 2: Building Basic Clients and Servers::A TCP Quote Server and Client::what sended from the server and that received by the client are not match
+
+
+
+-----@Programming_Pearls 2nd::15.2 Long Repeated Strings
+/* Copyright (C) 1999 Lucent Technologies */
+/* From 'Programming Pearls' by Jon Bentley */
+/* longdup.c -- Print longest string duplicated M times */
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+int pstrcmp(char **p, char **q)
+{   return strcmp(*p, *q); }
+int comlen(char *p, char *q)
+{   int i = 0;
+    while (*p && (*p++ == *q++))
+    i++;
+    return i;
+}
+
+#define M 1
+#define MAXN 5000000
+char c[MAXN], *a[MAXN];
+
+int main()
+{   int i, ch, n = 0, maxi, maxlen = -1;
+    while ((ch = getchar()) != EOF) {
+        a[n] = &c[n];
+        c[n++] = ch;
+    }
+    c[n] = 0;
+    qsort(a, n, sizeof(char *), pstrcmp); // qsort uses O(n*log n) string compare operations each of O(n) charater operation
+    for (i = 0; i < n-M; i++)
+        if (comlen(a[i], a[i+M]) > maxlen) {
+            maxlen = comlen(a[i], a[i+M]);
+            maxi = i;
+        }
+    printf("%.*s\n", maxlen, a[maxi]);
+    return 0;
+}
+
+-----@Learn_You_a_Haskell_for_Great_Good::Copying Files with Bytestrings@page(201~202)
+import System.Environment
+import System.Directory
+import System.IO
+import Control.Exception
+import qualified Data.ByteString.Lazy as B
+main = do
+    (fileName1:fileName2:_) <- getArgs
+    copy fileName1 fileName2
+copy source dest = do
+    contents <- B.readFile source
+    bracketOnError
+        (openTempFile "." "temp")
+        (\(tempName, tempHandle) -> do
+            hClose tempHandle
+            removeFile tempName)
+        (\(tempName, tempHandle) -> do
+            B.hPutStr tempHandle contents
+            hClose tempHandle
+            renameFile tempName dest)
+=====
+if renameFile isnot noexcept, you will run 'hClose tempHandle' twice when renameFile throws an exception.
+
+@page178
+bracket :: IO a -> (a -> IO b) -> (a -> IO c) -> IO c
+Its first parameter is an I/O action that acquires a resource, such as a
+file handle. Its second parameter is a function that releases that resource.
+This function gets called even if an exception has been raised. The third
+parameter is a function that also takes that resource and does something
+with it. The third parameter is where the main stuff happens, like reading
+from a file or writing to it.
+
+
+-----@SymPy version 0.7.2::expand
+import sympy
+from sympy import symbols, Matrix, pprint
+W = symbols('W', integer=True)
+T001 = Matrix([\
+    [W-1,1,0],\
+    [W-1,0,1],\
+    [W-2,0,1]\
+    ])
+T011 = Matrix([\
+    [W-1,1,0],\
+    [W-2,1,1],\
+    [W-2,1,0]\
+    ])
+u = Matrix([[1,0,0]])
+v = Matrix([1,1,1])
+
+def deep_expand(e): 
+    d = e.expand()
+    while(e != d):
+        e, d = d, e.expand()
+    return e
+
+def t(k=8):
+    for i in range(k):
+        a = (u*T001**i*v).expand()
+        b = (u*T011**i*v).expand()
+        a2 = deep_expand(a)
+        b2 = deep_expand(b)
+        if a != b:
+            print(i)
+            if a2 == b2: 
+                print(a2) # a bug in expand I suppose since deep=True
+            break
+=====
+run above file and then t() gives:
+7
+[W**7 - 5*W**4 + 3*W]
+
+
+
+-----@Twisted Network Programming Essentials(2ed)::Chapter 2: Building Basic Clients and Servers::A TCP Quote Server and Client
+$ python quoteserver.py 
+Number of active connections: 2
+> Received: ``You snooze you lose''
+> Sending: ``An apple a day keeps the doctor away.''
+Number of active connections: 2
+> Received: ``The early bird gets the worm''
+> Sending: ``You snooze you lose''
+Number of active connections: 3
+> Received: ``Carpe diem''
+> Sending: ``The early bird gets the worm''
+$ python quoteclient.py
+Received quote: The early bird gets the worm
+Received quote: You snooze you lose
+connection lost: Connection was closed cleanly.
+connection lost: Connection was closed cleanly.
+Received quote: Carpe diem
+connection lost: Connection was closed cleanly.
+=====
+quoteserver -> apple + snooze + bird +   ?
+quoteclient <-   ?   + snooze + bird + carpe
+
+
+
+
+-----@Coq8.6::Tutorial.pdf::1.3. PROPOSITIONAL CALCULUS::[page 16]
+    "Lemma distr_and : A -> B /\ C -> (A -> B) /\ (A -> C)."
+    should be "Lemma distr_and : (A -> B /\ C) -> (A -> B) /\ (A -> C)."
+

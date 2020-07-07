@@ -1,0 +1,44 @@
+
+The Definitive Guide to SQLite(2010)
+    :: CHAPTER 4 Advanced SQL for SQLite
+    :: Foreign Key Constraints
+    [page 100]
+
+
+create table table_name
+    (column_definitionreferences foreign_table(column_name)
+    on {delete|update} integrity_action
+    [not] deferrable [initially {deferred|immediate}, ]
+    ...
+    );
+
+------------------------
+-- two tables: food_types, foods
+--
+CREATE TABLE food_types
+    (id integer primary key
+    ,name text
+    );
+
+create table foods
+    (id integer primary key
+    ,type_id integer references food_types(id)
+                            -- ^^^^^^^^^^^^^^^^^
+        on delete restrict
+        deferrable initially deferred
+    ,name text
+    );
+
+The differences are shown in bold and are easy to understand if taken one at a time.
+    -- type_id integer references food_types(id)
+        The first part of the foreign key instructs SQLite that the type_id column references the id column of the food_types table.
+    -- on delete restrict
+        From there, you move on to the integrity action clause, which does most of the hard work. In this example, you've used the option on "delete restrict". This instructs SQLite to prevent any deletion from the food_types table that would leave a food in the foods table without a parent food id.
+        "restrict" is one of five possible actions you can define. The full set is as follows:
+            * set null
+            * set default
+            * cascade
+            * restrict
+            * no action
+
+

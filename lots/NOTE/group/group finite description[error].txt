@@ -1,0 +1,171 @@
+
+group finite description:
+    GD = < a b c | a*b = c, ... >
+    .generators
+        finite generators: {a, b, c}
+    .relationships
+        finite relationships: {a*b = c, ...}
+    .group
+        the max group
+    .elements
+        =[def]= .group.elements
+
+Group[1] =[def]= Group{elements={1}, (*)=\g0.\g1.1}
+    # = < | >
+
+my definitions:
+  * has_ordered_repr
+    # has_ordered_repr GD ord
+    # has_ordered_repr G
+    #   g = a^i * b^j * c^k
+    #
+    [GD is a group finite description
+    ][ord is an ordering of GD.generators
+    ]:
+        ordered_generators GD ord =[def]= sorted(GD.generators, key=ord)
+        [GD has ordered repr by ord] =[def]=
+            let ogs = ordered_generators GD ord in
+            @g <- GD.elements. ?es <- [SInt].
+                [g == II ogs[i]^es[i] {i<-[0..len(ogs)-1]}]
+
+  * irreducible generators
+    =[def]= without any generator, can not generate the whole group
+  * has_irreducible_generators
+    :: group_description -> bool
+
+    # NOTE:
+    #   Cyclic[6] = < a b | a^2 = 1, b^3 = 1 >
+    #   Cyclic[6] = < c | c^6 = 1 >
+    #   both has irreducible generators
+    #
+
+
+  * pairwise_sorted_relationship
+    & degenerate_relationship
+    & degenerate_exponent_of
+    & non_degenerate_exponent_range_of
+    see below for definitions
+
+!!!!!!!!!!!! error !!!!!!!!!!!!!!!!!
+!!!!!!!!!!!! left-cosets may not be right-cosets
+!!!!!!!!!!!! [S < G][g <- G][g not in S] ==xx==>> [?k. S*g == g^k*S]
+prove [finite group has_ordered_repr]:
+    let G <- finite group
+        GD := select a description with irreducible generators
+        ord := select arbitrary ordering for generators
+
+    [GD.group == G
+    ][has_irreducible_generators GD
+    ]:
+        let ogs := ordered_generators GD ord
+            L := len GD.generators
+            i <- [0..L-1]
+        # irreducible generators
+        [ogs[i] not in Group<ogs[:i]+ogs[i+1:]>.elements]
+        [ogs[i]^1 not in Group<ogs[i+1:]>.elements]
+
+        # finite
+        ?k:PInt. ogs[i]^k == 1 <- Group<ogs[i+1:]>.elements
+        ?k:PInt. ogs[i]^k <- Group<ogs[i+1:]>.elements
+
+        let k:PInt := min k s.t. ogs[i]^k <- Group<ogs[i+1:]>.elements
+
+        # irreducible generators
+        [ogs[i]^k not in ogs[i+1:]]
+
+        # left-cosets of finite group
+        [SUM ogs[i]^j*Group<ogs[i+1:]>.elements {j <- [0..k-1]} == Group<ogs[i:]>.elements]
+
+        @g <- Group<ogs[i:]>.elements.
+        ?e <- SInt.
+        ?g' <- Group<ogs[i+1:]>.elements.
+            [g == ogs[i]^e * g']
+
+        @g <- GD.elements. ?es <- [SInt].
+            [g == II ogs[i]^es[i] {i<-[0..len(ogs)-1]}]
+        [has_ordered_repr GD ord]
+        [has_ordered_repr G]
+
+
+* is its mul op correct?
+    Yes, since [G = Group[1] is a solution]
+* is its mul op complete? how if not?
+    Yes, free group has no relationships
+
+    but for spec groups, maybe incomplete
+        * group which has_ordered_repr:
+            maybe incomplete.
+                # var x
+                #   if x has no degenerate_relationship
+                #   then x here repr x^1 or x^(-1)
+                #   else x repr x^1 only
+                #       since x^(-1) = x^(+?)
+                [a,c is generator][ord(a) < ord(c)]:
+                    c*a = a^i
+                        * (II b^j {b: ord(a) < ord(b) < ord(c)})
+                        * c^k
+                        * (II d^e {d: ord(c) < ord(d)})
+                    # call this relationship: pairwise_sorted_relationship
+                NOTE: Group<a> may be infinite
+
+            * finite group
+                [a is generator]:
+                    a^k = (II b^j {b: ord(a) < ord(b)})
+                    # call this relationship: degenerate_relationship
+                    # call k: degenerate_exponent_of(ord, a)
+                    #   degenerate_exponent_of(ord, a) maybe +oo for infinite group
+                    # non_degenerate_exponent_range_of(ord, a) =[def]= [0..k-1]
+                    #   non_degenerate_exponent_range_of(ord, a) maybe ZZ (i.e. [-oo..+oo]) for infinite group
+
+* is the group description faithful?
+    i.e. [injective]
+    i.e. [[II ogs[i]^es[i]{i} == II ogs[i]^es'[i]{i}]
+            ==>>
+            [@i. ogs[i]^es[i] == ogs[i]^es'[i]]
+         ]
+
+    NO!!
+
+    but for spec groups:
+    * group which has_ordered_repr:
+        see above for definitions of
+            pairwise_sorted_relationship
+            degenerate_relationship
+            degenerate_exponent_of
+            non_degenerate_exponent_range_of
+        update the requirement:
+            [[II ogs[i]^es[i]{i} == II ogs[i]^es'[i]{i}
+             ][@i. [es[i],es'[i] <- non_degenerate_exponent_range_of(ord, ogs[i])]
+             ]
+                ==>>
+                [@i. ogs[i]^es[i] == ogs[i]^es'[i]]
+            ]
+        relationships contains:
+            let L := len GD.generators
+            * all pairwise_sorted_relationships
+                total choose(L, 2)
+            * some degenerate_relationships
+                for finite group: all degenerate_relationships
+                at most L
+
+        # both faithful and correct
+        SHOULD verify all situations that two overlapped places where relationships can be applied:
+            # below var x stands for x^1 or x^(-1)
+            c*b*a
+                # c > b > a
+                = (c*b)*a = (b^i*...) * a
+                = c*(b*a) = c * (a^i*...)
+            b^k*a
+                # b >= a
+                # k = degenerate_exponent_of(ord, b)
+                = (b^k)*a = (c^i*...)*a
+                = b*(b*(...(b*a))) = b*(b*(...(a^i*...)))
+            c*a^k
+                # c >= a
+                # k = degenerate_exponent_of(ord, a)
+                = (((c*a)...)*a)*a = (((a^i*...)...)*a)*a
+                = c*(a^k) = c*(b^i*...)
+
+
+
+

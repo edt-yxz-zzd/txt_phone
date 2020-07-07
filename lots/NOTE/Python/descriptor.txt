@@ -1,0 +1,46 @@
+
+
+
+class owner_class:
+    attr = descriptor(...) # in __dict__ of owner_class, not owner_object
+owner_object :: owner_class
+
+class descriptor:
+    # data descriptor: # property
+    #   define at least one of __set__/__delete__
+    # non-data descriptor: # classmethod, staticmethod
+    #   define just __get__, maybe __set_name__, no __set__, no __delete__
+    def __init__(self):
+        self.name = None
+        self.owner_class = None
+    def __get__(self, owner_object_or_None, owner_class):
+        assert owner_object_or_None is None or \
+                owner_object_or_None in owner_class in type
+        assert owner_class <= self.owner_class
+        raise AttributeError
+    def __set__(self, owner_object, value):
+        pass
+    def __delete__(self, owner_object):
+        pass
+    def __set_name__(self, owner_class, name):
+        # call once when owner_class created
+        self.name = name
+        self.owner_class = owner_class
+        assert getattr(owner_class, name) is self
+
+owner_object.attr ==>>
+    T = type(owner_object)
+    d = T.__dict__['attr']
+        # and go up mro()
+        where d is a descriptor
+    return d.__get__(owner_object, T)
+owner_class.attr ==>>
+    T = owner_class
+    d = T.__dict__['attr']
+        # and go up mro()
+        where d is a descriptor
+    return d.__get__(None, T)
+
+
+inspect.getattr_static(obj, attr, default=None) -> descriptor
+

@@ -1,0 +1,224 @@
+
+
+conclusion:
+    use MetaPathFinder instead of PathFinder/PathEntryFinder
+
+
+
+sys.path_importer_cache.clear()
+PathFinder.invalidate_caches()
+
+
+
+Python  3.6.2 Documentation  The Python Language Reference
+5. The import system
+5.3. Searching
+
+class ModuleSpec
+    loader :: Loader
+    name :: qname
+    submodule_search_locations
+class MFinder
+    # location -> Maybe module_spec
+    find_spec(qname
+        , maybe_parent_pkg_paths
+        , maybe_target_module_to_reload) -> maybe_module_spec
+    # some meta path finders only support top level imports:
+    #   they will return None if maybe_parent_pkg_paths is not None
+
+class MLoader
+    create_module(module_spec) -> module
+    exec_module(module) -> None
+class Importer(MLoader, MFinder)
+
+pkg_paths :: ReIterable<str>
+    # is pkg.__path__
+    # is module_spec.submodule_search_locations if is pkg
+    # where pkg's subpkg/submod to search from
+
+import_path :: [location]
+sys.meta_path :: [finder<metapath>]
+    default sys.meta_path =
+        [ the_builtin_module_finder
+        , the_import_frozen_module_finder
+        , the_path_based_finder # use "path entry finders"
+        ]
+
+
+
+
+import_hooks = meta_hooks | import_path_hooks
+meta_hooks
+    before any other import processing has occurred
+    before:
+        sys.modules cache look up
+        sys.path processing
+        frozen modules
+        built-in modules
+    how?
+        add(sys.meta_path, finder)
+
+import_path_hooks
+    part of sys.path (or package.__path__) processing
+    associated path item is encountered
+    how?
+        add(sys.path_hooks, callable)
+
+
+
+def search(qname): # fully qualified name
+    names = qname.split('.')
+    maybe_parent_pkg = None
+    try:
+        for i in range(1, len(names)):
+            maybe_parent_pkg = _import_cached(names[:i], maybe_parent_pkg)
+            assert maybe_parent_pkg is not None
+    except ModuleNotFoundError:
+        raise
+    return maybe_parent_pkg
+def _import_cached(names, maybe_parent_pkg):
+    qname = '.'.join(names)
+    try:
+        r = sys.modules[qname]
+    except KeyError:
+        return _import_protocol(qname, maybe_parent_pkg)
+    if r is None:
+        raise ModuleNotFoundError
+    return r
+
+def _import_protocol(qname, maybe_parent_pkg):
+    # maybe_parent_pkg_paths = ...
+    maybe_parent_pkg_paths = None
+    if maybe_parent_pkg is not None:
+        parent_pkg = maybe_parent_pkg
+        try:
+            parent_pkg_paths = parent_pkg.__path__
+        except AttributeError:
+            # is a module instead of a pkg
+            raise ModuleNotFoundError
+        maybe_parent_pkg_paths = parent_pkg_paths
+
+    # module_spec = ...
+    maybe_target_module_to_reload = None
+    for finder in sys.meta_path:
+        maybe_module_spec = finder.find_spec(
+                qname, maybe_parent_pkg_paths, maybe_target_module_to_reload)
+        if maybe_module_spec is not None:
+            module_spec = maybe_module_spec
+            break
+    else:
+        raise ModuleNotFoundError
+
+
+    # now: maybe_parent_pkg_paths, module_spec
+    # to load
+    return load(module_spec)
+
+5.4. Loading
+def load(module_spec):
+    module_spec = module_spec
+    if hasattr(module_spec.loader, 'exec_module'):
+        # module_spec.loader.exec_module exists!
+        module = sys.modules[module_spec.name] = make_module(module_spec)
+        try:
+            module_spec.loader.exec_module(module)
+        except BaseException:
+            try:
+                del sys.modules[module_spec.name]
+            except KeyError:
+                pass
+            raise
+    elif module_spec.loader is not None:
+        module = sys.modules[module_spec.name] = module_spec.loader.load_module(module_spec.name)
+        # Set __loader__ and __package__ if missing.
+    elif module_spec.submodule_search_locations is not None:
+        # module_spec.loader is None
+        # namespace package
+        module = ModuleType(module_spec.name)
+        _init_module_attrs(module_spec, module)
+        sys.modules[module_spec.name] = module
+    else:
+        # module_spec.submodule_search_locations is None
+        # module_spec.loader is None
+        # unsupported
+        raise ImportError
+    return module
+def make_module(module_spec):
+    module = None
+    if hasattr(module_spec.loader, 'create_module'):
+        # It is assumed 'exec_module' will also be defined on the loader.
+        module = module_spec.loader.create_module(module_spec)
+    if module is None:
+        module = ModuleType(module_spec.name)
+    # The import-related module attributes get set here:
+    _init_module_attrs(module_spec, module)
+    return module
+
+
+
+############### the_path_based_finder use "path_entry_finder"
+
+find in:
+    sys.path_importer_cache :: {lpath: maybe_path_entry_finder}
+        # None is a fail result
+
+    lpaths = parent_pkg_paths if not toplevel else
+            sys.path :: [lpath] # lpath = (str|bytes)
+
+    sys.path_hooks :: [lpath -> (path_entry_finder | raise ImportError)]
+the_path_based_finder # is a MFinder, and use path_entry_finder
+    def the_path_based_finder.find_spec(qname, maybe_parent_pkg_paths, maybe_target_module_to_reload) -> maybe_module_spec
+        if maybe_parent_pkg_paths is None:
+            lpaths = sys.path
+        else:
+            lpaths = parent_pkg_paths = maybe_parent_pkg_paths
+
+        for lpath in lpaths:
+            maybe_path_entry_finder = get_path_entry_finder(lpath)
+            if maybe_path_entry_finder is None: continue
+            path_entry_finder = maybe_path_entry_finder
+            maybe_module_spec = path_entry_finder.find_spec(qname, maybe_target_module_to_reload)
+            if maybe_module_spec is None: continue
+            module_spec = maybe_module_spec
+            return module_spec
+            break
+        else:
+            return None
+def get_path_entry_finder(lpath):
+    # just using the first hook that says "I can handle this path!"
+    # a hook that actually not returns a useful
+    #   ModuleSpec from its find_spec method
+    #   will prevent later hook to be called
+    # https://stackoverflow.com/questions/41990169/how-to-use-sys-path-hooks-for-customized-loading-of-modules
+    if lpath in sys.path_importer_cache[lpath]:
+        maybe_path_entry_finder = sys.path_importer_cache[lpath]
+        return maybe_path_entry_finder
+    for hook in sys.path_hooks:
+        try:
+            path_entry_finder = hook(lpath)
+        except ImportError:
+            continue
+        maybe_path_entry_finder
+        break
+    else:
+        maybe_path_entry_finder = None
+    sys.path_importer_cache[lpath] = maybe_path_entry_finder
+    return maybe_path_entry_finder
+
+
+def path_finds(lpaths)->maybe_path_entry_finder:
+    for lpath in lpaths:
+        path_find1(lpath)
+def path_find1(lpath)->maybe_path_entry_finder:
+    if lpath in sys.path_importer_cache:
+        return ...
+    lpaths = parent_pkg_paths or sys.path
+    for 
+    store to sys.path_importer_cache
+class PathEntryFinder
+    # not to confuse with MFinder.find_spec
+    find_spec(lpath, maybe_target_module_to_reload) -> maybe_module_spec
+        # lpath is in parent_pkg_paths if parent_pkg_paths is not None else sys.path
+        # lpath = str|bytes
+
+sys.path_importer_cache :: path

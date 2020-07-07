@@ -1,0 +1,62 @@
+
+-- class/module is package!
+
+
+naming
+    avoid collision:
+        everything should be named without confusion.
+    identity by different person/version
+    we should refer to abstract interfaces instead of concrete implement.
+        how to intro/avoid recursion??
+
+package:
+    assume that each package was created by some one which maintain the unique naming inside the package.
+    but there are packages created by different people. hence names collide.
+    each package should come with a __name__.pkg, which contains information to distinguish with others. (e.g. who/when/where/target/how/random_bytes...)
+
+    when a package A refer to another package B, it should copy B's __name__.pkg and rename it to B[XXX].pkg
+    package A's folders:
+        A/ -- or A[YYY]/
+            __name__.pkg
+            __pkg__/
+                B[XXX].pkg
+
+    we should provide path information about packages to compiler:
+        [packages_path], [package_path]
+        compiler will treat all subfolders under packages_path as package_path,
+        each package_path/__name__.pkg should be unique.
+        package_path/__pkg__/B[XXX].pkg will compare with B[.*]?/__name__.pkg under all known package_paths.
+
+package can be implement package or interface package.
+    there are multiple levels of interfaces, implement is the most concrete interface.
+        1) most abstract: {name}. -- exist such such names.
+        2) {name:shape} -- e.g. sizeof/aligmentof for datatype?
+        3) {name:signature} -- e.g. lazy? allow noreturn/exception?
+        4) {name:declarative implement} -- everything other one need to know.
+        5) {name:algorithmic implement}
+
+    there are partial ordering over interfaces.
+    final interfaces donot allow later version, i.e. no names can be add or remove.
+        when refer to a final interface, we can use star import:
+            from pkg import *
+    non-final interfaces allow later version to add new names.
+        can not "from pkg import *"
+        but:
+            "from pkg import (n, m as s)"
+                use "n"/"s" directly
+            "import pkg as B for (n, m, ...)"
+                use "B.n"/"B.m"
+            "import pkg to B for (n, m, ...)"
+                use "B.n"/"B.m";
+                another package may import to B too.
+
+
+package visible:
+    export to another packages/groups/public_domain
+    normal package cannot reexport names from another package, unless export as-if implemented inside self.
+    reexport_group allow to select names from different packages to reexport.
+
+version - package/module
+    B[xxx]from[yyy].interface/implement
+        allow to override/add names base B[yyy].pkg.
+        form a DAG

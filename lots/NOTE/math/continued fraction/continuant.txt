@@ -1,0 +1,128 @@
+continuant
+continued fraction
+convergent
+https://en.wikipedia.org/wiki/Continuant_(mathematics)
+https://en.wikipedia.org/wiki/Continued_fraction#Infinite_continued_fractions_and_convergents
+
+type SimpleContinuedFraction = nonempty[Integer]
+from_simple_continued_fraction :: SimpleContinuedFraction -> Rational
+last_continuant_of :: Num a => nonempty[a] -> [a]
+continuants_of :: Num a => [a] -> [a]
+numerator_continuants_of :: Num a => [a] -> [a]
+denominator_continuants_of :: Num a => [a] -> [a]
+basic_continuants_of :: Num a => a -> a -> [a] -> [a]
+    # [length (XXX_continuants_of ls) == length ls]
+numerator_continuants_of_ex :: Num a => [a] -> [a]
+denominator_continuants_of_ex :: Num a => [a] -> [a]
+    # [length (XXX_continuants_of_ex ls) == 2+length ls]
+
+convergents_of_simple_continued_fraction :: SimpleContinuedFraction -> [Rational]
+
+
+-------------------------------------------------------------
+-------------------------------------------------------------
+-------------------------------------------------------------
+-- from_simple_continued_fraction [] = +oo
+from_simple_continued_fraction [a0] = toRational a0
+from_simple_continued_fraction (a0:ls@(h:_)) = toRational a0 + 1/from_simple_continued_fraction ls
+
+last_continuant_of = last . continuants_of
+continuants_of = numerator_continuants_of
+numerator_continuants_of    = basic_continuants_of 0 1
+denominator_continuants_of  = basic_continuants_of 1 0
+    #[denominator_continuants_of ls =/= 1 : numerator_continuants_of ls]
+    #[a0,a1,a2,...] ==>>
+    #   numerator_continuants =   [a0, a1*a0+1, a2*a1*a0 + a2+a0, ...]
+    #   denominator_continuants = [1,  a1,      a2*a1+1, ...]
+    #       = numerator_continuants (1:tail ls) if length ls >= 1
+basic_continuants_of = f where
+    f r_2 r_1 [] = []
+    f r_2 r_1 (h:ls) = r_0 : f r_1 r_0 ls
+        where r_0 = (h*r_1 + r_2)
+        -- r_0 - result[i-0]
+        -- r_1 - result[i-1]
+        -- r_2 - result[i-2]
+
+numerator_continuants_of_ex ls = 0:1:numerator_continuants_of ls
+denominator_continuants_of_ex ls = 1:0:denominator_continuants_of ls
+
+
+
+[continuants_of ls == continuants_of (reverse ls)]
+[continuants_of ls == determinant(tridiagonal ls)]
+    where
+        L = length ls
+        tridiagonal ls = diagonal ls + lower_1_diagonal ([-1]*(L-1)), upper_1_diagonal([1]*(L-1))
+
+
+[from_simple_continued_fraction ls == last_continuant_of ls/last_continuant_of ls[1:]]
+[matrix[last_continuant_of ls, last_continuant_of ls[:-1]
+       ;last_continuant_of ls[1:], last_continuant_of ls[1:-1]
+       ]
+    == II matrix[a,1; 1,0] {a<-ls}
+]
+    ==>>
+        #[determinant(lhs) == determinant(rhs)]
+        (last_continuant_of ls*last_continuant_of ls[1:-1] - last_continuant_of ls[:-1]*last_continuant_of ls[1:]) == (-1)^(length ls)
+
+
+
+-- best rational approximations
+convergents_of_simple_continued_fraction ls = do
+    (n,d) <- zip (numerator_continuants_of ls) (denominator_continuants_of ls)
+    return $ toRational n / toRational d
+
+[(convergents_of_sqrt_by_Newton_init_floor n)
+    == takes_at [2^k-1 | k <- [0..]] (convergents_of_simple_continued_fraction $ to_simple_continued_fraction sqrt(n))
+] where
+    #Babylonian/Heron/Newton method
+    convergents_of_sqrt_by_Newton_init_floor :: PInt -> [Rational]
+    convergents_of_sqrt_by_Newton_init_floor n = f floor(sqrt(n)) where
+        f x = x : f (1/2*(x+n/x))
+
+
+Fibonacci = [0,1,1,2,3,5,...]
+golden_ratio = from_simple_continued_fraction [1;1,1,1,1,1,...]
+    # = 1.6180339887...
+[golden_ratio == (sqrt(5)+1)/2]
+[i>=0] ==>> [Fibonacci[i] == (golden_ratio^i - (1-golden_ratio)^i)/sqrt(5) > golden_ratio^i/sqrt(5)]
+
+[[from_simple_continued_fraction (ls++[z]) == (N_ex[-2]+N_ex[-1]*z) / (D_ex[-2]+D_ex[-1]*z)
+][D_ex[-2]*N_ex[-1] - D_ex[-1]*N_ex[-2] == (-1)^L
+][[0 <= i < L] ==>> [F[i] == N[i]/D[i]]
+][[0 <= i < L] ==>> [D[i] >= Fibonacci[i+1] > golden_ratio^(i+1)/sqrt(5) > golden_ratio^i/2]
+][[0 <= i < L] ==>> [D[i+1]*D[i] >= Fibonacci[i+2]*Fibonacci[i+1] > golden_ratio^(2*i+3)/5 > golden_ratio^(2*i)*(4/5) > 2^i*(4/5)]
+][[L >= 2] ==>> [F[-1] - F[-2] == (-1)^L/(D[-1]*D[-2])]
+][[0 <= i < j < k < L] ==>> [|F[i]-F[k]| > |F[j]-F[k]|]
+][[0 <= i < j < L] ==>> [|F[j]-F[i]| <= 1/(D[i+1]*D[i])]
+][[0 <= i < j < L][i+2 < L] ==>> [1/((D[i+1]+D[i])*D[i]) <= |F[i+2]-F[i]| <= |F[j]-F[i]|]
+][[0 <= i < L==+oo] ==>> [1/((D[i+1]+D[i])*D[i]) <= |F[+oo]-F[i]| <= 1/(D[i+1]*D[i]) < (5/4)*2^(-i)]
+]]
+    where
+        -- ls :: [Integer]
+        -- [0<i<L] ==>> [ls[i] >= 1]
+        L = length ls
+        -- 0 <= L <= +oo
+        N_ex = numerator_continuants_of_ex ls
+        D_ex = denominator_continuants_of_ex ls
+        -- not always [N_ex[-2] == D_ex[-1]]
+        N = N_ex[2:]
+        D = D_ex[2:]
+        F = convergents_of_simple_continued_fraction ls
+
+        part of proof:
+        ???[|F[i+2] - F[i]| >= 1/((D[i+1]+D[i])*D[i])]???
+            <==> [(D[i+2]-D[i])*(D[i+1]+D[i]) >= D[i+2]*D[i+1]]
+            <==> [D[i+2]*D[i] - D[i]*D[i]-D[i]*D[i+1] >= 0]
+            <==> [D[i+2] - D[i]-D[i+1] >= 0]
+            <==> True
+            where
+                |F[i+2] - F[i]|
+                    = |1/(D[i+2]*D[i+1]) - 1/(D[i+1]*D[i])|
+                    = (D[i+2]-D[i])/(D[i+2]*D[i+1]*D[i])
+                ls[i+2] >= 1
+                D[i+2] = ls[i+2]*D[i+1] + D[i]
+                D[i+2]-D[i] = ls[i+2]*D[i+1] >= D[i+1]
+
+
+

@@ -1,0 +1,60 @@
+
+from Overview_of_the_New_C++(C++0x)
+
+// diff between UCS-2 and UTF-16
+UCS-2 is a 16-bit/character encoding that matches the entries in the Basic Multilingual Plane (BMP) of UTF-16. UTF-16 can use surrogate pairs to represent code points outside the BMP. UCS-2 cannot. UCS-4 and UTF-32 are essentially identical.
+
+
+
+A code point is a specific character/glyph, i.e., a specific member of the Unicode character set. UTF-8 and UTF-16 are multibyte encodings, UCS-n and UTF-32 are fixed-size encodings. All except UCS-2 can represent every code point of the full Unicode character set. UTF-8, UTF-16, and UCS-4/UTF-32 are all defined by ISO 10646 as well as by the Unicode standard. Per the Unicode FAQ ( http://unicode.org/faq/unicode_iso.html ), ¡°Although the character codes and encoding forms are synchronized between Unicode and ISO/IEC 10646, the Unicode Standard imposes additional constraints on implementations to ensure that they treat characters uniformly across platforms and applications. To this end, it supplies an extensive set of functional character specifications, character data, algorithms and substantial background material that is not in ISO/IEC 10646.¡±
+
+
+
+C++98 guarantees only two codecvt facets:
+    ?char ? char (std::codecvt<char, char, std::mbstate_t>)
+    ?Degenerate  no conversion performed.
+    ?wchar_t ? char (std::codecvt<wchar_t, char, std::mbstate_t>) 
+C++0x adds:
+    ?UTF-16 ? UTF-8 (std::codecvt<char16_t, char, std::mbstate_t>)
+    ?UTF-32 ? UTF-8 (std::codecvt<char32_t, char, std::mbstate_t>)
+    ?UTF-8 ? UCS-2, UTF-8 ? UCS-4 (std::codecvt_utf8)
+    ?UTF-16 ? UCS-2, UTF-16 ? UCS-4 (std::codecvt_utf16)
+    ?UTF-8 ? UTF-16 (std::codecvt_utf8_utf16)
+    ?Behaves like std::codecvt<char16_t, char, std::mbstate_t>.
+
+P.J. Plauger, who proposed codecvt_utf8_utf16 for C++0x, explains the two seemingly redundant UTF-16 ? UTF-8 conversion instantiations: ¡°The etymologies of the two are different. There should be no behavioral difference.¡±
+
+
+
+Conversions Among Encodings
+    C++98 supports only IO-based conversions.
+    ?Designed for multibyte external strings ? wide internal strings.
+    ?Requires changing locale associated with stream. 
+New in C++0x:
+    ?std::wbuffer_convert does IO-based encoding conversions w/o 
+    changing stream locale.
+    ?std::wstring_convert does in-memory encoding conversions.
+    ?E.g., std::u16string/std::u32string ? std::string.
+Changing the locale associated with a stream is accomplished via the imbue member function, which is a part of several standard iostream classes, e.g., ios_base.
+Among the esoteric details are that the existence of protected destructors mean that none of the the standard code_cvt facets work with std::wbuffer_convert and std::wstring_convert. Instead, users must derive classes from the standard facets and add public destructors. More information on this issue (and others) is in the comp.std.c++ thread at http://tinyurl.com/ykup5qe. 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

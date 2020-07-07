@@ -1,0 +1,204 @@
+
+windows registry access[winreg]
+
+
+OpenKeyEx vs CreateKeyEx
+    OpenKeyEx never create new key, even access=winreg.KEY_WRITE
+    CreateKeyEx always create new key if not exist, even access= winreg.KEY_READ
+
+
+
+
+
+######## see: seed.windows.winreg_helper instead
+
+std lib winreg:
+    # constants
+    winreg.HKEY_* :: HKEY_CONSTANT # HKEY_* constants
+    winreg.KEY_* :: KEY_CONSTANT # Access Rights
+    winreg.REG_* :: REG_CONSTANT # Value Types
+
+    # variables
+    hkey :: Handle
+    key :: HandleEx
+    sub_key :: MaybeRelativeRegPath
+    access :: KEY_CONSTANT
+    no_ext_fname :: NoExtFilePath
+
+    # types
+    WindowsError
+    HKEY_CONSTANT
+    KEY_CONSTANT
+    REG_CONSTANT
+
+    Handle = PyHKEY
+        bool(hkey) ::= has not been closed or detached
+
+        Handle.Close(self)
+        Handle.Detach(self) -> int
+
+        with CreateKeyEx/OpenKey(...) as hkey:
+            ...
+
+    HandleEx = HKEY_CONSTANT | Handle
+    MaybeRelativeRegPath = None | RelativeRegPath
+            RelativeRegPath = String
+            RelativeRegPath not beginswith '.' or '/'
+    NoExtFilePath
+        ::= existing file path which has not file extension
+            | nonexisting file path
+
+        assert not os.path.isdir(no_ext_fname)
+        name = os.path.basename(no_ext_fname)
+        assert name and '.' not in name
+
+
+    CreateKeyEx(key, sub_key, *, access=KEY_WRITE)
+        HandleEx -> MaybeRelativeRegPath -> (access=KEY_CONSTANT) -> Handle
+    OpenKey(key, sub_key, *, access=KEY_READ)
+        HandleEx -> MaybeRelativeRegPath -> (access=KEY_CONSTANT) -> Handle
+    FlushKey(key)
+        HandleEx -> ()
+    CloseKey(hkey)
+        Handle -> () # not HandleEx!!
+
+    SaveKey(key, no_ext_fname)
+    LoadKey(key, sub_key, no_ext_fname)
+
+
+https://stackoverflow.com/questions/15128225/python-script-to-read-and-write-a-path-to-registry
+    #Python3 version of hugo24's snippet
+    import winreg
+
+    REG_PATH = r"Control Panel\Mouse"
+
+    def set_reg(name, value):
+        try:
+            winreg.CreateKey(winreg.HKEY_CURRENT_USER, REG_PATH)
+            registry_key = winreg.OpenKey(
+                winreg.HKEY_CURRENT_USER, REG_PATH
+                , access=winreg.KEY_WRITE)
+            winreg.SetValueEx(
+                registry_key, name
+                , access=winreg.REG_SZ, value)
+            winreg.CloseKey(registry_key)
+            return True
+        except WindowsError:
+            return False
+
+    def get_reg(name):
+        try:
+            registry_key = winreg.OpenKey(
+                winreg.HKEY_CURRENT_USER, REG_PATH
+                , access=winreg.KEY_READ)
+            value, regtype = winreg.QueryValueEx(registry_key, name)
+            winreg.CloseKey(registry_key)
+            return value
+        except WindowsError:
+            return None
+
+    #Example MouseSensitivity
+    #Read value
+    print (get_reg('MouseSensitivity'))
+
+    #Set Value 1/20 (will just write the value to reg, the changed mouse val requires a win re-log to apply*)
+    set_reg('MouseSensitivity', str(10))
+
+    #*For instant apply of SystemParameters like the mouse speed on-write, you can use win32gui/SPI
+    #http://docs.activestate.com/activepython/3.4/pywin32/win32gui__SystemParametersInfo_meth.html
+
+
+##############################
+
+class Registry(object):
+    def __init__(self, restore_state=False):
+        self.m_backup = {}
+        self.m_restore_state = restore_state
+
+    def get_key(self, hkey, subkey, access, create_if_doesnt_exist=True):
+        created_key = False
+        registry_key = None
+        try:
+            registry_key = winreg.OpenKey(hkey, subkey, 0, access)
+        except WindowsError:
+            try:
+                if create_if_doesnt_exist:
+                    registry_key = winreg.CreateKey(hkey, subkey)
+                    if registry_key not in self.m_backup:
+                        self.m_backup[registry_key] = ({}, (hkey, subkey))
+                else:
+                    registry_key = None
+            except WindowsError:
+                if registry_key:
+                    self.close_key(registry_key)
+                raise Exception('Registry does not exist and could not be created.')
+        return registry_key
+
+    def close_key(self, registry_key):
+        closed = False
+        if registry_key:
+            try:
+                winreg.CloseKey(registry_key)
+                closed = True
+            except:
+                closed = False
+        return closed
+
+    def get_reg_value(self, hkey, subkey, name):
+        value = None
+        registry_key = self.get_key(hkey, subkey, winreg.KEY_READ, False)
+        if registry_key:
+            try:
+                value, _ = winreg.QueryValueEx(registry_key, name)
+            except WindowsError:
+                value = None
+            finally:
+                self.close_key(registry_key)
+        return value
+
+    def set_reg_value(self, hkey, subkey, name, type, value):
+        registry_key = self.get_key(hkey, subkey, winreg.KEY_WRITE, True)
+        backed_up = False
+        was_set = False
+        if registry_key:
+            if self.m_restore_state:
+                if registry_key not in self.m_backup:
+                    self.m_backup[registry_key] = ({}, None)
+                existing_value = self.get_reg_value(hkey, subkey, name)
+                if existing_value:
+                    self.m_backup[registry_key][0][name] = (existing_value, type, False)
+                else:
+                    self.m_backup[registry_key][0][name] = (None, None, True)
+                backed_up = True
+            try:
+                winreg.SetValueEx(registry_key, name, 0, type, value)
+                was_set = True
+            except WindowsError:
+                was_set = False
+            finally:
+                if not backed_up:
+                    self.close_key(registry_key)
+        return was_set
+
+    def restore_state(self):
+        if self.m_restore_state:
+            for registry_key, data in self.m_backup.iteritems():
+                backup_dict, key_info = data
+                try:
+                    for name, backup_data in backup_dict.iteritems():
+                        value, type, was_created = backup_data
+                        if was_created:
+                            print registry_key, name
+                            winreg.DeleteValue(registry_key, name)
+                        else:
+                            winreg.SetValueEx(registry_key, name, 0, type, value)
+                    if key_info:
+                        hkey, subkey = key_info
+                        winreg.DeleteKey(hkey, subkey)
+                except:
+                    raise Exception('Could not restore value')
+                self.close_key(registry_key)
+
+    def __del__(self):
+        if self.m_restore_state:
+            self.restore_state()

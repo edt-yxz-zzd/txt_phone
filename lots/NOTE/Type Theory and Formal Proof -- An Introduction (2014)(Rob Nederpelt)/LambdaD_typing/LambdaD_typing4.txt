@@ -1,0 +1,164 @@
+error:
+    @@ set_id <# Sort, @@ s :: set_id, s :: ??set_id??
+
+
+keywords:
+    Term -- the universal term_set
+    :  --  term : type
+    <: --  subterm <: term; subtype <: type
+    :: --  term :: term_set; term :: Term
+    <# --  term_subset <# term_set
+    #` --  type_of; #` term ::= type_of term
+       --  [term :: Term] ==>> [term : #` term]
+    ##` -- fmap type_of; ##` term_set ::= {#` term | term <- term_set}
+        -- Type ::= ##` Term
+        -- [term : type] ==>> [type :: Type]
+        -- [term :: term_set |- #` term : ##` term_set]
+    #-` -- #-` ##` set :: set
+    ``
+    -:
+    -<:
+    -::
+    -<#
+    -> () , {}
+    @@ ?? </ />
+    fst snd
+    cast
+
+
+syntax
+    TermSet = "Term"
+            | set_id
+            | ##` TermSet
+            | #-` TermSet
+            | TermSet <# TermSet
+    Term    = term_id
+            ;; type_of
+            | #` Term
+            ;; term
+            | \IdOfClass4, Term
+            | </ IdOfClass4, Term />
+            ;; type
+            | (IdOfClass4_) -> Term
+            | (IdOfClass4_, Term)
+            ;; sort
+            | @@ IdOfClass2, Term
+            | ?? IdOfClass2, Term
+            ;; App
+            | Term Term
+            ;; assert
+            | Term OfClass3
+
+    IdOfClass2 = term_id :: TermSet | set_id <# TermSet
+    IdOfClass4 = IdOfClass2 | term_id : Term | term_id <: Term
+    IdOfClass4_ = term_id -:: TermSet | set_id -<# TermSet
+                | term_id -: Term | term_id -<: Term
+    OfClass3 = :: TermSet | : Term | <: Term
+
+
+
+[`op` = : | :: | <: | <#][a `op` b][b `op` c]
+    ==>> a `op` (b `op` c)
+    ;; Notation: a `op` b `op` c === a `op` (b `op` c)
+
+let `op4` = : | :: | <: | <#
+let `op4_` = -: | -:: | -<: | -<#
+let `op2` = :: | <#
+let `op3` = : | :: | <:
+{-
+[assumes |- conclusion]
+    ==>> [assumes, assume |- conclusion]
+    ;; "assumes, assume" should form a valid "assumes"
+    ;;      i.e. each id occur once, used after defined
+-}
+
+
+term_subset <# term_superset
+    ;; TermSet = "Term" | set_id | ##` TermSet | #-` TermSet
+    ;; eval ##` set = eval' ##` (eval set)
+    ;; eval #-` set = eval' #-` (eval set)
+    ;; eval (set <# super) = eval set <# super
+    ;; eval set_id = set_id
+    ;; eval' s = case s of
+    ;;      ##` #-` set -> set
+    ;;      #-` #+` set -> set
+    ;;      _ -> s
+
+    Type ::= ##` Term
+    Sort ::= ##` Type
+
+    ;; Term
+    [] |- Term <# Term
+
+    ;; set_id
+    [assumes |- term_set <# Term][set_id not in assumes]
+        assumes, set_id <# term_set |- set_id <# set_id
+    [assumes |- term_set <# super][set_id not in assumes]
+        assumes, set_id <# term_set |- set_id <# super
+    [assumes, set_id <# term_set |- set_id <# set]
+        assumes, set_id <# term_set |- set_id <# (set_id <# set)
+
+    ;; ##`
+    [assumes |- term_set <# Term]
+        assumes |- ##` term_set <# Term
+    [assumes |- term_set <# super]
+        assumes |- ##` term_set <# ##` super ;; eval
+    [assumes |- ##` term_set <# super <# set]
+        assumes |- ##` term_set <# (super <# set)
+
+    ;; #-`
+    [assumes |- term_set <# super <# Type]
+        ;; assumes |- #-` term_set <# Term ;; <<== eval
+        assumes |- #-` term_set <# #-` super ;; eval
+    [assumes |- #-` term_set <# super <# set]
+        assumes |- #-` term_set <# (super <# set)
+
+    ;; <#
+    [assumes |- term_set <# super][assumes |- term_set <# set]
+        assumes |- (term_set <# super) <# set
+
+
+
+term :: term_set
+    ;; term_id
+    [assumes |- term_set <# super][term_id not in assumes]
+        assumes, term_id :: term_set |- term_id :: super
+
+    ;; #`
+    [assumes |- term :: term_set]
+        assumes |- #` term :: ##` term_set
+
+    ;; term
+    [assumes, id `op4` cls |- term :: Term][assumes |- Term <# set]
+        assumes |- (\id `op4` cls, term) :: set
+        assumes |- </ id `op4` cls, term /> :: set
+
+    ;; type
+    [assumes, id `op4_` cls |- type :: Type][assumes |- Type <# set]
+        assumes |- (id `op4_` cls) -> type :: set
+        assumes |- (id `op4_` cls, type) :: set
+
+    ;; sort
+    [assumes, id `op2` cls |- sort :: sort_set <# Sort]
+        [assumes |- sort_set <# Sort][assumes |- sort_set <# set]
+            assumes |- (@@ id `op2` cls, sort) :: set
+            assumes |- (?? id `op2` cls, sort) :: set
+
+    ;; app
+    [assumes |- f : (id `op4_` cls) -> type][assumes |- a `op4_` cls]
+        [assumes, id `op4_` cls |- type :: set][assumes |- #-` set <# Term]
+                assumes |- f a :: #-` set
+
+    ;; assert
+    [assumes |- term `op3` cls][assumes |- term :: set]
+        assumes |- (term `op3` cls) :: set
+    [assumes |- term `op3` cls][assumes |- term :: set]
+        assumes |- (term `op3` cls) :: set
+
+
+
+
+
+
+    [assumes |- f : (id `op4_` cls) -> type][assumes |- a `op4_` cls]
+        ;; assumes |- f a : type[id := a]

@@ -1,0 +1,41 @@
+
+foldl f x ys === foldr (flip f) x (reverse ys)
+foldr f x ys = ... . f ys[i-1] . f ys[i] . f ys[i+1] ... $ x
+    function composition (.) is fast
+        just map ys into a composite function
+        O(n)
+foldl f x ys = f ...(f (f (f x y0) y1) y2) ... y[i]) y[i+1]) ...
+    since lazy-evalue, O(n^2)
+
+
+
+
+avoid using foldl, try foldl' or foldr instead.
+foldl and foldr will dead if the input list too long...
+foldl' (+) 0 [1..1000000000]
+
+foldl - tail recur ; not short-circuit
+foldr - not tail recur ; left-short-circuit
+    so, foldr is good for implement "all"/"any"/"and"/"or"
+use foldl' for "+", foldr for ":"
+
+
+-- useless; what if end_pred really use the input value??
+foldl_ end_pred step zero (x:xs) = if end_pred zero then zero
+    else foldl_ end_pred (step zero x) xs
+foldl_ end_pred step zero _ = zero
+
+
+
+
+
+
+
+
+
+tail recursion and anonymous functions. As nice as these are, we don¡¯t often want to use them.
+As a general rule, don¡¯t use a fold if you can compose some library functions, but otherwise try to use a fold in preference to a hand-rolled tail recursive loop.
+The relative advantages of a named function are twofold: we don¡¯t need to understand the function¡¯s definition when we¡¯re reading the code that uses it, and a well-chosen function name acts as a tiny piece of local documentation.
+
+
+

@@ -1,0 +1,28 @@
+https://docs.oracle.com/javase/tutorial/uiswing/components/jcomponent.html#custompaintingapi
+obj.validate(); // or obj.revalidate();
+obj.repaint(); // Always invoke repaint after revalidate.
+
+============================
+https://coderanch.com/t/333435/java/Whats-exact-difference-paint-repaint
+paint/repaint/paintComponent/update/updateUI/validate/revalidate
+
+1.=====================================
+paint() - this method holds instructions to paint this component. Actually, in Swing, you should change paintComponent() instead of paint(), as paint calls paintBorder(), paintComponent() and paintChildren(). You shouldn't call this method directly, you should call repaint() instead.
+
+repaint() - this method can't be overridden. It controls the update() -> paint() cycle. You should call this method to get a component to repaint itself. If you have done anything to change the look of the component, but not it's size ( like changing color, animating, etc. ) then call this method.
+
+validate() - This tells the component to lay itself out again and repaint itself. If you have done anything to change the size of the component or any of it's children(adding, removing, resizing children), you should call this method... I think that calling revalidate() is preferred to calling validate() in Swing, though...
+
+update() - This method is in charge of clearing the component and calling paint(). Again, you should call repaint() instead of calling this method directly... If you need to do fast updates in animation you should override this method to just call the paint() method...
+
+updateUI() - Call this method if you have changed the pluggable look & feel for a component after it has been made visible.
+
+
+2.================================
+The following can be used as a guide:
+1. paint method should be overridden if you have a custom component that requires unique drawing functionality. It is not wise to call this function directly.
+2. repaint method should be used to invoke any components paint method. The repaint method actually starts a new thread that calls update instead of performing the painting sequentially.
+3. update method, by default, calls the paint method after erasing the entire component. This method is usually overridden to avoid flickering (due to the erasing) during animations.
+4. updateUI is used to change the look and feel from one type to another. In most programs, this method should not be called numerous times unless the user has some control over the look-and-feel choice and constantly changes it. This method has high overhead because it must traverse the entire component heirarchy to set numerous flags in various components. I have seen many first time Swing programmers use this method instead of validate and repaint. I don't think that it is a good choice because of all the extra work that it does that is not required.
+
+

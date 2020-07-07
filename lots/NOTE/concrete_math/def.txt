@@ -1,0 +1,448 @@
+
+basic definition
+------------------------
+
+= : equal/is
+!= : is not
+== : is congruent to
+=!= : is not congruent to
+~=~ : is asymptotic to
+
+==>> : implies
+<==> : iff
+<<== : 
+-->>
+<-->
+<<--
+
+... : ellipsis
+
+
+------------------
+constant:
+    inf = +infinite
+    e = base of natural logarithm = lim (1+1/n)**n {n->inf}
+    I = sqrt(-1)
+
+
+--------------
+lambda function:
+    \z: expr = lambda z: expr
+    \x,y...: expr = \x: \y...:expr
+    ==>> \:expr = expr
+    ==>> expr() = expr
+iter-functions:
+    lim = limit
+    sum = Sigma-notation = sum of numbers
+    SS = integrate
+    II = product of numbers
+
+    def iter-function ::= <name> [[filter]:] expression {order and condition}
+
+# f |: a usless since = f a
+f |: a->b = f b - f a # f is a functor
+f(z) |: z=b = f(z).subs(z=b) = f(b)  # f(z) is an expression which contains a free varible 'z'.
+    f(x,y,z)|:(x=a,y=b,z=c) = f(x,y,z).subs(x=a,y=b,z=c) = f(a,b,c)
+f(z) |: z=a->b = f(b)-f(a)
+# NOTE: f x and f(z)|:z=x have different meanings.
+# previous f is a functor, but f(z) is an expression contains a free varible z
+# positional parameter or keyword parameter??
+
+
+D f = \z: lim (f (z+d) - f z) / d {d->0} # differential operator
+    derivative = D
+    derivative^n f # n-th derivative of the function f: f' f'' ...
+    derivative^0 f = f
+    derivative f = f'
+    derivative^2 f = f''
+    derivative^n f x = dD^n f(z) @z^n |:z=x
+dD^n expr @{frees...}x^n # determination of the n-th derivative with respect to x
+    dD expr @{frees...}x = DD expr @{frees...} / DD x @{frees...}
+    dD^n expr @x^n = dD^n expr @{x}x^n # determination of the n-th partial derivative with respect to x
+    dD^2 f(x,y) @x@y # determination of the second partial derivative first with respect to x, then with respect to y
+    dD^n f(x) @x^n = D^n \z:f(z) x
+    but dD^n f(x,y) @{x,y}x^n != D^n \z:f(z,y) x
+
+    DD f(x,y) @{x,y} = dD f(x,y) @x * DD x @{x,y} + dD f(x,y) @y * DD y @{x,y}
+    dD f(x,y) @{x,y}x = DD f(x,y) @{x,y}/DD x @{x,y} 
+        = dD f(x,y) @x + dD f(x,y) @y * DD y @{x,y}/DD x @{x,y}
+        = dD f(x,y) @x + dD f(x,y) @y * dD y @{x,y}x
+        = D \z:f(z,y) x + D \z:f(x,z) y * dD y @{x,y}x
+        != D \z:f(z,y) x
+   short hand notation: # second @ means {frees...}
+   @{frees...}: dD expr @@x = DD expr @@/DD x @@ 
+                        = dD expr @x + sum dD expr @z dD z @@x {z in frees-{x}}
+                        
+   @{frees...}: DD expr @@ = sum dD expr @x DD x @@ {x in frees}
+   @{frees...}: any symbol c not in frees is constant or dD c @@x = 0 for any x in frees.
+gD expr @(xs...) # determination of the n-th partial derivative
+    gD expr @() = expr
+    gD expr @(x,xs...) = gD dD expr @x @(xs...)
+    gD expr @(x,y,z) = dD^3 expr @x@y@z
+DD expr @{frees...} # differential
+    DD expr @{frees...} = \(dx for x in frees)...: expr|:(x=x+dx for x in frees)
+    @{frees...}: 
+        DD e1 @@ / DD e2 @@ = lim (e1/e2)|:(x=x+dx for x in frees) {dx->0 for x in frees}
+        DD expr @@ = sum dD expr @x * DD x @@ {x in frees}
+
+
+dff f = \i: (f (i+1) - f i) = shft - ID  # difference or increment # delta
+shft f = \i: f(i+1)
+ID x = x  # ID = 1
+
+
+
+
+
+
+condition environment:
+    [condtion]:
+        statement holds under the condition
+    [x>4]:
+        x-4 > 0
+    [a!=0][CC x]: [a x**2 + b x + c = 0] ==>> [x=(-b+/-sqrt(b**2-4 a c))/2/a]
+congruent:
+    mod M: a = a == a + k*M
+    mod 8: 3**2 = 9 == 1 =!= 5
+
+f x = f(x) = \z: (f z) x
+s x = bool(x in s), for [set s]
+x y = x(y) = x*y for [number x] or [matrix x]
+    2 x = 2(x) = 2*x
+    1 can be treated as identity transform
+[multiplicable x] ==>> x = \z: (x * z) = x * ID
+
+x f = x*f = \z:(x (f z)) for [[number x] or [matrix x] or [set x]][functor f]
+    2 f 3 = 2*f(3)
+
+for [functor f,g][number x,y,z]
+    f . g x = f(g(x))
+    f . g + h = f(g+h) != (f . g) + h
+    f + g . h = (f+g) . h != f + (g . h)
+    (f * g) x = f x * g x = f(x) g(x)
+        what about (y*f) x, (f*z) x, (y*z) x?
+        (y * f) x = y*(f x)
+        (f * z) x = (f x) * z
+        (y*z) x = y*z*x
+    (f + g) x = f x + g x
+        what about (y+f) x, (f+z) x, (y+z) x?
+        (y+f) x = y*x + f x
+
+        f . (g + h) x = f(g(x) + h(x)) != f . g + f . h
+        f . (g * h) x = f(g(x) * h(x))
+        (f + g) . h = (f . h) + (g . h)
+        (f * g) . h = (f . h) * (g . h)
+        
+    f**2 x = (f x)**2
+    f^2 x = f.**2 x = f . f x
+    inv f x = f^-1 x = f.**-1 x = some_a {y: f(y)=x}
+    
+    how??
+    shft . ID = ID . shft
+    [int n>=0]: dff^n = (shft - ID)^n = sum C(n,i) shft^i (-1)**(n-i) {i}
+    
+    shft (f*g) = shft f * shft g
+    dff (f*g) = (shft - 1) (f*g)
+        = shft f * shft g - shft f * g + shft f * g - f*g
+        = shft f * dff g + dff f * g
+
+    shft^d f z = f (z+d) = sum (D^i f z)/i! d**i {NN i} = e^(d*D) z
+    dff f z = f (z+1) - f (z+0) = sum (D^i f z)/i! {NN i} - (f z)
+        = (e^D - 1) f z
+    e^(d*D) = shft^d = (e^D)^d
+
+    e^(d*D) != e**(d*D) = sum (D**i)/i! d**i {NN i}
+    e**(d*D) f z = e**(d*(D f z))
+
+
+f -1 = f(-1) != f - 1 = \x:((f - 1)x) = \x:(f x - x)
+f x + g y = (f x) + (g y)
+f x * g y = (f x) * (g y)
+f x / g y = (f x) / (g y)
+f x y = ((f x) y) = some {f(x,y), f(x)*y}
+
+
+
+f[i] = f i = f(i) for [int i]
+[b] = 1 if b else 0
+[! b] = 1-[b]
+f [b] = f([b]) != f[b]
+    [b1] [b2] = [b1][b2] = [b1]([b2]) = [b1]*[b2] = [b1 and b2]
+
+
+
+[STATEMENT a,b,...,z] = [STATEMENT a][STATEMENT b,...,z]
+[any v] = 1
+[TYPE o] = [o is an instance of type TYPE]
+    [set s] = [s is a set]
+    [matrix m] = [m is a matrix]
+    [number x] = [x is a number]
+    [complex z] = [z is a complex number]
+    [real x] = [x is a real number]
+    [int x] = [x is a integer]
+    [prime x] = [x is a prime number]
+    [polynomial f] = [f is a polynomial]
+    [rational function f]
+[SET i] = [i in SET] # treat SET as a boolean STATEMENT
+[a\b] = [a>=0][exist x][int x][b=a*x] = [a divides b]
+    [0\x] = [x=0]
+    [-1\x] = 0
+[a _L b] = [a is relatively prime to b] = [gcd(a,b)=1]
+[a\\b] = [a\b][a _L (b/a)]  # [0\\0]=??
+    exponent_of(p, n) = k where [p**k\\n] for [prime p][int n]
+
+
+{x: f x} = set of all x which satisfies f
+[a..b] = {real x: a<=x<=b}
+[a..b) = {real x: a<=x<b}
+(a..b) = {real x: a<x<b}
+(a..b] = {real x: a<x<=b}
+[a:b:step] = {a, a+step,..., b}
+[a:b:step) = {a, a+step,..., b-step}
+[a:b] = {a+i: [int i][i in [a..b]]}
+
+
+some_a SET = some a element in SET
+    some_a{0,1} = 0 or 1
+max SET = the max element in SET
+min SET = the min element in SET
+
+------------------
+set:
+    empty = {}
+    primes = {p: prime p}
+    NN = {int n: n>=0} # nonnegative-integer, natural number
+    ZZ = {n: int n}
+    QQ = {n/d: [int n,d][d != 0]}
+    PZ = NN - {0} = {int n: n>0}
+    NZ = {int n: n<0}
+    CC = {z: complex z}
+    
+    ELEMENT in SET
+    s+t=s|t = {x: x in s or x in t}
+    s^t = {x: x in s and x in t}
+    s-t = {x: x in s and x not in t}
+    s-+-t = (s-t)+(t-s)
+    
+    permutations SET = set of all permutations of SET
+        permutations {a,b} = {(a,b), (b,a)}
+    perm[n] = permutations (ZZ^[1..n])
+        perm[2] = permutations {1,2} = {(1,2), (2,1)}
+
+----------------
+sum f i {i in SET} = sum f i {SET i}
+sum f i {[STATEMENT] i[: condition(i)]}
+sum f i {STATEMENT i: condition(i)} = sum [STATEMENT i][condition(i)]: f i {i}
+sum filter(i) : f i {i} = sum f i filter(i) {any i}
+sum f i {i} = sum f i {int i}  # default to integer
+    = ... + f (-1) + f 0 + f 1 + ...
+sum f i {prime i} = sum [prime i]: f i {i} = sum f i [prime i] {i}
+    = f 2 + f 3 + f 5 + ...
+sum f i {i=a..b} = sum [int i]: f (a+i) {i=0..b-a}, for [int (a-b)]
+    = f a + f(a+1) + ... + f(b)
+
+# ~i stands for d<i>, sign(~i) = some_a {-1, +1}
+sum f i {~i} = \i:(F i + C), for [int i]
+    sum f i {~i} |: a->b = F b - F a
+sum f i {~i=a->b} = sum f i {i=a..b-1} - sum f i {i=b..a-1}
+    = -sum f i {~i=b->a}, for [int (a-b)]
+
+
+lim f z {z->z0}
+lim f x {x->x0+} = lim f x {real x->x0+}
+lim f . g t {t->t0-} # x = g(t) is a curve
+
+# ~x stands for d<x>, sign(~x) = some_a {-1, +1}
+SS f z {~z} = \z:(F z + C)
+    SS f x {~x=a->b} = SS f z {~z} |: a->b = F b - F a
+SS f x {~x=a->b} = lim sum f (a+i*dx) dx {~i=0->(b-a)/dx} {dx->0}
+SS (e1 DD u1 @{frees...} + e2 DD u2 @{frees...}) = SS (e1 DD u1 @ + e2 DD u2 @) {frees...}
+@{frees...}: SS (e1 DD u1 @@ + e2 DD u2 @@)
+SS DD expr @@ = expr + C
+SS expr {~z} = SS expr DD z @{z}
+SS dD expr @z {~z} = expr + C
+but SS dD expr @z DD z @{x,z} != expr + C
+since expr+C = SS DD expr @{x,z} = SS (dD expr @x DD x @ + dD expr @z DD z @) {x,z}
+
+# integrate^2 f(x,y) dx dy =
+SS SS f(x,y) {~x} {~y} = SS SS f(x,y) DD x @{x} DD y @{y}
+    != SS SS f(x,y) DD x @{x,y} DD y @{x,y}?????????
+    
+
+
+
+
+
+
+
+II f i {i}
+II [prime i]: f i {i<6} = 2*3*5
+II filter(i): expr(i) {STATEMENT i} = exp sum filter(i): ln expr(i) {STATEMENT i}
+II f i {~i=a->b} = II f i {i=a..b-1} / II f i {i=b..a-1}
+    = 1 / II f i {~i=b->a}
+    
+    fall(x,d) = II x-i {~i=0->d}
+-------------------
+
+radix notation
+    radix base [a[0], a[1],...,a[t]] = sum a[i] base**(t-i) {i=0..t}
+        for [NN t][int base > 1][any i=0..t][0<=a[i]<base]
+
+
+-------------------
+Real z = real part of z
+Imag z = imaginary part of z
+    z = Real z + i * Imag z, for [complex z]
+
+sign x = +1 if x > 0 else -1 if x < 0 else 0, for [real x]
+floor x = max {int n: n <= x}, for [real x]
+ceil x = min {int n: n >= x}, for [real x]
+x%y = x mod y = x - y floor (x/y), for [y != 0][real x,y]
+    y < x%y <=0 if y < 0
+{.:x} = Frac x = fractional part of x = x - floor(x) = x mod 1, for [real x]
+[.:n]f = [.:n~z]f(z) = coeff of z**n in f(z)
+see Combinatorics on Words - Chapter 1(M. Lothaire,1983)::1.4.Formal Series::
+    [.<f(z), z**n>] = [.<f, **n>] = [.:n~z]f(z)
+
+
+log x
+ln x = log x / log e # natural logarithm
+lg x = log x / log 2 # binary logarithm
+
+
+abs(x) = [x>0]x + [x<0](-x) = ([x>0]-[x<0])x = (2[x>0]-1)x
+gcd(x,y) = max {d: [d\x][d\y]} = gcd(abs(x), abs(y)) >= 0  # gcd(0,0)=?? undefined
+
+sqrt(z) = square root of z = some_a {t: t**2 = z}
+x**y = pow(x,y)
+exp(z) = e**z
+
+
+
+H = harmonic
+H[n] = sum 1/i {i=1..n}  # H[n] = 0 if n < 1
+
+factorial(n) = n!
+    = II i {i=1..n} for [NN n]
+fall x m = II x-i {i=0..m-1} / II x+i {i=1..-m}
+    = II x-i {i=0..m-1} / II x-i {i=m..-1}
+    = II x-i {i=-inf..m-1} / II x-i {i=-inf..-1}
+    
+    = II x-(i+m) {i=-inf..-1} / II x-(i+m) {i=-inf..-m-1}
+    = 1/(II (x-m)-i {i=-inf..-m-1} / II (x-m)-i {i=-inf..-1})
+    = 1/fall(x-m, -m)
+    for [int m]
+rise x m = II x+i {i=-inf..m-1} / II x+i {i=-inf..-1}
+    = II x+i {i=0..m-1} / II x+i {i=m..-1}
+    
+    # m=2: rise x 2 = x(x+1)
+    = II x+m-1-i {m-1-i=0..m-1} / II x+m-1-i {m-1-i=m..-1}
+    = II x+m-1-i {i=0..m-1} / II x+m-1-i {i=m..-1}
+    = fall (x+m-1) m      # fall(x+1, 2) = (x+1)x
+    = 1/fall(x-1, -m)     # 1/fall(x-1, -2) = 1/(1/((x-1+1)(x-1+2)))
+    = 1/rise(x+m, -m)     # 1/rise(x+2, -2) = 1/(1/((x+2-1)(x+2-2)))
+    
+    = (-1)**m II -x-i {i=0..m-1} / II -x-i {i=m..-1}
+    = (-1)**m fall(-x, m)     # (-1)**2 fall(-x, 2) = (-x)(-x-1)
+    = (-1)**m rise(-x-m+1, m) # (-1)**2 rise(-x-1, 2) = (-x-1)(-x-1+1)
+    
+    = (-1)**m/fall(-x-m, -m)  # (-1)**2/fall(-x-2,-2) = 1/(1/(-x-2+1)(-x-2+2))
+    = (-1)**m/rise(-x+1, -m)  # (-1)**2/rise(-x+1,-2) = 1/(1/(-x+1-1)(-x+1-2))
+    
+    for [int m]
+
+fall x m = 1/fall(x-m, -m) = (-1)**m fall(m-1-x, m) = (-1)**m/fall(-1-x, -m)
+    = rise(x-m+1,m) = 1/rise(x+1,-m) = (-1)**m rise(-x,m) = (-1)**m/rise(m-x,-m)
+    for [int m]
+    m=2: 
+        fall x 2 = x(x-1)
+        1/fall(x-2,-2) = 1/(1/((x-2+1)(x-2+2)))
+        (-1)**2 fall(1-x, 2) = (1-x)(-x)
+        (-1)**2/fall(-1-x, -2) = 1/(1/((-1-x+1)(-1-x+2)))
+        
+        rise(x-1,2) = (x-1)x
+        1/rise(x+1,-2) = 1/(1/((x+1-1)(x+1-2)))
+        (-1)**2 rise(-x,2) = (-x)(-x+1)
+        (-1)**2/rise(2-x,-2) = 1/(1/((2-x-1)(2-x-2)))
+
+----
+P[n] = nth prime ~=~ n*ln(n)
+prime_pi(x) = ppi(x) = number of primes not exceeding x ~=~ x/ln(x)
+
+----
+phi = Euler's totient function = number of relatively prime to m in [0..m-1]
+mu = Mobius function
+for [PZ m]
+    phi(m) = m II [prime p][p\m](1-1/p)
+    mu(m) = [not p**2\m](-1)**r if m = II [i=0..r][prime p[i]]p[i]
+
+----
+C(n,k) = binomial_coefficient(n,k) = n choose k
+C(z, k) = [k>=0]fall(z,k)/k!, for [int k][CC z] # assume 1/k! = 0 for [NZ k]
+
+
+hprg = hypergeometric series
+hprg [a1,...,am] [b1,...,bn] z = hprg(a1,...,am;b1,...,bn;z)
+    = sum II rise(a[i], k) {i=1..m} / II rise(b[i], k) {i=1..n} z**k/k! {k>=0}
+
+
+
+z! = inf, for [NZ z]
+ii(z) = 1/z! = 1/gamma(z+1)
+    [ii(z) = 0] <==> [NZ z]
+fall(z, w) = z! ii(z-w) for [! NZ z]
+    = II z-i {i=0..w-1} / II z-i {i=w..-1} for [NZ z][int w]
+    = undefined for [NZ z][! int w]
+C(z,w) = ii(w) fall(z,w)
+    = ii(w) ii(z-w) z! for [! NZ z]
+    = ii(w) II z-i {i=0..w-1} / II z-i {i=w..-1} for [NZ z][int w]
+    = undefined for [NZ z][! int w]
+
+
+
+Stirling[n,k] - first kind - n cycle k
+    = the number of ways to arrange n objects into k nonempty cycles
+    Stirling[0,k] = [k=0]
+    Stirling[n,k] = Stirling[n-1,k-1] + (n-1)*Stirling[n-1,k]
+Stirling{n,k} - second kind - n subset k
+    = the number of ways to partition a set of n things into k nonempty subsets
+    Stirling{0,k} = [k=0]
+    Stirling{n>0,k} = Stirling{n-1,k-1} + k*Stirling{n-1,k}
+
+
+Eulerian<n,k> = the number of permutations of [1..n] that have k ascents (at most n-1 ascents)
+    Eulerian<0,k> = [k=0]
+    Eulerian<n,k> = Eulerian<n-1,k-1>*(n-k) + Eulerian<n-1,k>*(k+1), for [PZ n]
+
+Eulerian<<0,k>> = [k=0]
+Eulerian<<n,k>> = Eulerian<<n-1,k-1>>(2n-1-k) + Eulerian<<n-1,k>>(k+1), for [PZ n]
+    Eulerian<<0,k>> = Eulerian<<-1,k-1>> (-1-k) + Eulerian<<-1,k>> (k+1)
+    Eulerian<<-1,k>> = [k=0]/(k+1) + Eulerian<<-1,k-1>>
+    Eulerian<<-1,-1>> = x
+    Eulerian<<-1,0>> = 1 + Eulerian<<-1,-1>> = 1+x
+    Eulerian<<-1,k>> = Eulerian<<-1,k-1>> for [k!=0]
+        = [k>=0](1+x) + [k<0]x = x + [k>=0]
+    let Eulerian<<-1,k>> = [k>=0]
+    let Eulerian<<n,k>> = 0 for k < 0
+    ==>> Eulerian<<n,0>> = Eulerian<<n-1,0>> = 1
+    
+    Eulerian<<n-1,k>> = Eulerian<<n,k>>/(k+1) + Eulerian<<n-1,k-1>> + Eulerian<<n-1,k-1>>(-2n)/(k+1)
+    Eulerian<<n,k>> = Eulerian<<n+1,k>>/(k+1) + Eulerian<<n,k-1>>(k-1-2n)/(k+1)
+    Eulerian<<n,1>> = Eulerian<<n+1,1>>/2 - n
+    Eulerian<<n,1>>/2**n = Eulerian<<n+1,1>>/2**(n+1) - n/2**n 
+        = -sum i/2**i {i=n..-1} = sum i*2**i {i=1..-n}
+            dff \i:(i*2**i) i = ((i+1)*2**(i+1) - i*2**i)
+                = (i+2)*2**i = f i + 2**(i+1)
+            f i = f 0 + sum dff f a {a=0->i} = sum f k + 2**(k+1) {k=0->i}
+            sum f k {k=0->i} = f i - sum 2**(k+1) {k=0->i} = f i - (2**(i+1)-2)
+                = i*2**i - 2**(i+1) + 2 = (i-2)2**i +2
+        = (-n-1)2**(1-n) +2
+    Eulerian<<n,1>> = (-n-1)2 +2**(n+1) = 2**(n+1) - 2(n+1)
+    Eulerian<<-1,k>> = Eulerian<<-2,k-1>>(-3-k) + Eulerian<<-2,k>>(k+1)
+    Eulerian<<-2,k>> = [k>=0]/(k+1) + Eulerian<<-2,k-1>>(3+k)/(k+1)
+    Eulerian<<-2,1>> = 
+    
+    
+    
+
+

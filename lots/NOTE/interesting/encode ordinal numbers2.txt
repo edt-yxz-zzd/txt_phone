@@ -1,0 +1,351 @@
+
+encode ordinal numbers2
+
+content:
+    define of (f i m n)
+    properties of (f i m n)
+    table of (f i m n)
+    casual_repr of ordinal numbers
+
+question remains:
+    std repr of ordinal numbers?
+    compare ordinal numbers?
+        lim_{w->+oo} ??
+
+
+=================[begin define (f i m n)]==================
+add m n = m+n
+mul m n = m*n
+pow m n = m^n
+
+1:
+    mul m 2 = add m m
+    pow m 2 = mul m 2
+    ~==>>~ RuleDeg2
+2:
+    mul m n = ((add m)**n) 0
+    pow m n = ((mul m)**n) 1
+    ~==>>~ RulePrev
+
+
+let f 0 = add
+    f 1 = mul
+    f 2 = pow
+    ...
+    s.t.
+        RuleZero: [f 0 m n = m+n = (succ**n) m]
+        RuleDeg2: [i>=1] ==>> [f i m 2 = f (i-1) m m]
+        RulePrev: [i>=1] ==>> [f i m n = ((f (i-1) m)**n) (f i m 0)]
+            ==>> RulePrev': [i>=1][n>=1] ==>> [f i m n = f (i-1) m (f i m (n-1))]
+
+        RuleDeg1: [i>=1] ==>> [f i m 1 = m]
+            # why_RuleDeg1 ~<<==~ RulePrev+RuleDeg2
+        RuleDeg0_Ieq1: [f 1 m 0 = 0]
+            # why_RuleDeg0_Ieq1 <<== RulePrev+RuleDeg1+RuleZero
+            RuleDeg0_Ieq2: [m>=1] ==>> [f 2 m 0 = 1]
+            # why_RuleDeg0_Ieq2 <<== RulePrev+RuleDeg1+RuleZero
+        RuleDeg0: [i>=2] ==>> [f i m 0 = 1]
+            # why_RuleDeg0 ~<<==~ RulePrev+RuleDeg1
+
+def f = function s.t. RuleZero+RulePrev+RuleDeg0+RuleDeg0_Ieq1
+    f 0 m n = m + n # RuleZero
+    f 1 m 0 = 0     # RuleDeg0_Ieq1
+    f i m 0 = 1     # RuleDeg0
+    f i m n = (f (i-1) m)**n $ (f i m 0) # RulePrev
+    #f i m n = f (i-1) m (f i m (n-1)) # RulePrev'
+
+
+# why_RuleDeg1 ~<<==~ RulePrev+RuleDeg2
+why RuleDeg1: [i>=1] ==>> [f i m 1 = m]?
+    [i>=1]
+        RulePrev':
+            f i m 2 = f (i-1) m (f i m 1)
+        RuleDeg2:
+            f i m 2 = f (i-1) m m
+
+        f (i-1) m (f i m 1) = f i m 2 = f (i-1) m m
+        ----------^^^^^^^^^             ---------^^^
+        let f i m 1 = m
+            ~==>>~ RuleDeg1
+
+
+
+# why_RuleDeg0_Ieq1 <<== RulePrev+RuleDeg1+RuleZero
+why RuleDeg0_Ieq1: [f 1 m 0 = 0]?
+    RulePrev':
+        f 1 m 1 = f 0 m (f 1 m 0)
+    RuleDeg1:
+        f 1 m 1 = m
+    RuleZero:
+        f 0 m (f 1 m 0) = m + f 1 m 0
+
+    m + f 1 m 0 = f 0 m (f 1 m 0) = f 1 m 1 = m
+    f 1 m 0 = 0
+        ==>> RuleDeg0_Ieq1
+
+
+# why_RuleDeg0_Ieq2 <<== RuleZero+RuleDeg0_Ieq1+RulePrev+RuleDeg1
+# why_RuleDeg0_Ieq2 <<== RulePrev+RuleDeg1+RuleZero
+why RuleDeg0_Ieq2: [m>=1] ==>> [f 2 m 0 = 1]?
+    RulePrev':
+        f 2 m 1 = f 1 m (f 2 m 0)
+    RuleDeg1:
+        f 2 m 1 = m
+    f 1 <<== RuleZero+RuleDeg0_Ieq1+RulePrev:
+        f 1 m (f 2 m 0) = m * f 2 m 0
+    m * f 2 m 0 = f 1 m (f 2 m 0) = f 2 m 1 = m
+    [m >= 1] ==>> [f 2 m 0 = 1]
+        ==>> RuleDeg0_Ieq2
+
+
+# why_RuleDeg0 ~<<==~ RulePrev+RuleDeg1
+why RuleDeg0: [i>=2] ==>> [f i m 0 = 1]?
+    [i > 2]
+        RulePrev':
+            f i m 1 = f (i-1) m (f i m 0)
+        RuleDeg1:
+            f i m 1 = m
+            f (i-1) m 1 = m
+
+        f (i-1) m (f i m 0) = f i m 1 = m = f (i-1) m 1
+        ----------^^^^^^^^^                 ---------^^^
+        let f i m 0 = 1
+            ~==>>~ RuleDeg0
+
+=================[end define (f i m n)]==================
+
+
+
+=================[begin properties of (f i m n)]==================
+[i>=2] ==>> [f i m 0 = 1] # RuleDeg0
+[i>=1] ==>> [f i m 1 = m]
+
+[i>=1] ==>> [f i m 2 == f (i-1) m m]
+[f i 2 2 = 4]
+
+[i>=2] ==>> [f i 1 n = 1]
+[f 2 0 n = [n=0]]
+[i>=2] ==>> [f i 0 1 = 0]
+[i>=3] ==>> [f i 0 n = [even n]]
+
+[m>=1][n>=1] ==>> [f i m n >= 1]
+
+strictly increasing:
+    strictly_increasing_Ieq0:
+        (f 0) over [m>=0][n>=0]
+    strictly_increasing_Ieq1:
+        (f 1) over [m>=1][n>=1]
+    strictly_increasing_perI:
+        (f i) over [m>=2][n>=1]
+        f i (m+1) n > f i m n
+        f i m (n+1) > f i m n
+    strictly_increasing_allI_except22:
+        f over [i>=0][m>=2][n>=2] except [m=2][n=2]
+        f i (m+1) n > f i m n
+        f i m (n+1) > f i m n
+        [(m,n)=/=(2,2)] ==>> [f (i+1) m n > f i m n]
+[f i m n <= 3] ==>> [m<=1]+[n<=1]
+    # i.e. all solutions of [f i m n <= 1] has form (m,0/1) or (0/1,n)
+[f i m n <= 1] <==> [i=0][m+n<=1]+[i=1]([m=0]+[n=0]+[m=n=1])+[i>=2]([m<=1]+[n=0])
+
+
+----------------------- proof -------------------
+proof of [i>=1] ==>> [f i m 1 = m]
+    [i=1]
+        f 1 m 1 = m*1 = m
+    [i>=2]
+        #induction
+        f i m 1 = f (i-1) m $ f i m 0 = f (i-1) m 1 = m
+
+proof of [i>=1] ==>> [f i m 2 == f (i-1) m m]
+    [i>=1]
+        f i m 2 = f (i-1) m $ f i m 1 = f (i-1) m m
+proof of [f i 2 2 = 4]
+    [i=0]
+        f 0 2 2 = 2+2 = 4
+    [i>=1]
+        #induction
+        f i 2 2 = f (i-1) 2 2 = 4
+            <<== [f i m 2 == f (i-1) m m]
+
+
+proof of [i>=2] ==>> [f i 1 n = 1]
+    [i>=2]
+        f i 1 n = (f (i-1) 1)**n $ 1 = 1
+            #[i>=1] ==>> [f i m 1 = m]
+proof of [f 2 0 n = [n=0]]
+    [n=0]
+        f 2 0 0 = 1 = [n=0]
+    [n>=1]
+        f 2 0 n = 0^n = 0 = [n=0]
+proof of [i>=2] ==>> [f i 0 1 = 0]
+    [i=2]
+        !![f 2 0 n = [n=0]]
+        f 2 0 1 = even 1 = 0
+    [i>=3]
+        #induction
+        f (i-1) 0 1 = 0
+        f i 0 1 = f (i-1) 0 $ f i 0 0 = f (i-1) 0 1 = 0
+proof of [i>=3] ==>> [f i 0 n = [even n]]
+    [i>=3]
+        !![[i>=2] ==>> [f i m 0 = 1]]
+        f (i-1) 0 0 = 1
+
+        !![[i>=2] ==>> [f i 0 1 = 0]]
+        f (i-1) 0 1 = 0
+
+        [n<=1] ==>> [f (i-1) 0 n = 1-n]
+
+        [n=0]
+            # base case
+            f i 0 0 = 1 = [even 0] = [even n]
+        [n>=1]
+            #induction
+            f i 0 (n-1) = [even (n-1)]
+            f i 0 n = f (i-1) 0 $ f i 0 (n-1)
+                    = f (i-1) 0 [even (n-1)]
+                    !![[n<=1] ==>> [f (i-1) 0 n = 1-n]]
+                    = 1 - [even (n-1)]
+                    = [even n]
+
+proof of [m>=1][n>=1] ==>> [f i m n >= 1]
+    [i=1]
+        f 1 m n = m+n >= 2 >= 1
+    [i=2]
+        f 2 m n = m*n >= 1
+    [i>=2]
+        f i m 0 = 1 >= 1
+        [f i m (n-1) >= 1] ==>> [f i m n = f (i-1) m $ f i m (n-1) >= 1]
+        ==>> [f i m n >= 1]
+
+
+[f 0 = add] ==>> strictly_increasing_Ieq0
+[f 1 = mul] ==>> strictly_increasing_Ieq1
+proof of strictly_increasing_perI:
+    base case i = 0,1:
+        <<== strictly_increasing_Ieq0/strictly_increasing_Ieq1
+    induction case i >= 2:
+        from induction assumption:
+            [m>=2][n>=1] ==>>
+                [f (i-1) (m+1) n > f (i-1) m n]
+                [f (i-1) m (n+1) > f (i-1) m n]
+        [m>=2][n>=1]
+            # [m>=1][n>=1] ==>> [f i m n >= 1]
+            f i m n >= 1
+
+            f i (m+1) n = (f (i-1) (m+1))**n $ 1
+            f i m n = (f (i-1) m)**n $ 1
+            ==>>
+                [f i (m+1) n > f i m n]
+
+            f i m (n+1) = f (i-1) m $ f i m n
+            ==>>
+                [f i m (n+1) > f i m n]
+proof of strictly_increasing_allI_except22:
+    since strictly_increasing_perI, we need to merely prove
+        [m>=2][n>=2] ==>> [f (i+1) m n > f i m n]
+    [m>=2][n>=2][(m,n)=/=(2,2)]
+        f (i+1) m n = f i m $ f (i+1) m (n-1)
+        [f (i+1) m (n-1) > n] <<==:
+            [n=2]
+                m > 2
+                    <<== [(m,n) =/= (2,2)]
+                f (i+1) m (n-1) = f (i+1) m 1 = m > 2 = n
+            [n>=3]
+                #induction
+                f (i+1) m (n-2) > n-1
+                f (i+1) m (n-1) = f i m $ f (i+1) m (n-2) > f i m (n-1) >= n
+        f (i+1) m n = f i m $ f (i+1) m (n-1) > f i m n
+        [f (i+1) m n > f i m n]
+
+
+proof of [f i m n <= 3] ==>> [m<=1]+[n<=1]
+    [not ([m<=1]+[n<=1])]
+        [m>=2][n>=2]
+        f i m n >= f i 2 2 = 4
+        not [f i m n <= 3]
+    [f i m n <= 3] ==>> [m<=1]+[n<=1]
+
+proof of [f i m n <= 1] <==> [i=0][m+n<=1]+[i=1]([m=0]+[n=0]+[m=n=1])+[i>=2]([m<=1]+[n=0])
+    [f i m n <= 1]
+        !![f i m n <= 3] ==>> [m<=1]+[n<=1]
+        [m<=1]+[n<=1]
+
+        <==> [f i m n <= 1][[m<=1]+[n<=1]]
+
+    * [m=0]
+        !![f 2 0 n = [n=0]]
+        !![[i>=3] ==>> [f i 0 n = [even n]]]
+        1 >= f i 0 n = [i=0]n + [i=1]0 + [i=2][n=0] + [i>=3][even n]
+        [f i m n <= 1] <==> [i=0][n<=1] + [i=1] + [i=2] + [i>=3]
+                       <==> [i=0][n<=1] + [i>=1]
+    * [m=1]
+        !![[i>=2] ==>> [f i 1 n = 1]]
+        1 >= f i 1 n = [i=0](n+1) + [i=1]n + [i>=2]1
+        [f i m n <= 1] <==> [i=0][n=0] + [i=1][n<=1] + [i>=2]
+    * [n=0]
+        !![[i>=2] ==>> [f i m 0 = 1]]
+        1 >= f i m 0 = [i=0]m + [i=1]0 + [i>=2]1
+        [f i m n <= 1] <==> [i=0][m<=1] + [i=1] + [i>=2]
+    * [n=1]
+        !![[i>=1] ==>> [f i m 1 = m]]
+        1 >= f i m 1 = [i=0](m+1) + [i=1]m
+        [f i m n <= 1] <==> [i=0][m=0] + [i=1][m<=1]
+
+
+    [f i m n <= 1]
+        <==> [f i m n <= 1][[m<=1]+[n<=1]]
+        <==> [[m<=1]+[n<=1]][f i m n <= 1]
+        <==> [[m=0]+[m=1]+[n=0]+[n=1]][f i m n <= 1]
+        <==> [[m=0][f i m n <= 1]
+             +[m=1][f i m n <= 1]
+             +[n=0][f i m n <= 1]
+             +[n=1][f i m n <= 1]
+             ]
+        <==> [[m=0]([i=0][n<=1] + [i>=1])
+             +[m=1]([i=0][n=0] + [i=1][n<=1] + [i>=2])
+             +[n=0]([i=0][m<=1] + [i=1] + [i>=2])
+             +[n=1]([i=0][m=0] + [i=1][m<=1])
+             ]
+        <==> [([i=0][m=0][n<=1] + [i>=1][m=0])
+             +([i=0][m=1][n=0] + [i=1][m=1][n<=1] + [i>=2][m=1])
+             +([i=0][m<=1][n=0] + [i=1][n=0] + [i>=2][n=0])
+             +([i=0][m=0][n=1] + [i=1][m<=1][n=1])
+             ]
+        <==> [i=0][m+n<=1] + [i=1]([m=0]+[n=0]+[m=n=1]) + [i>=2]([m<=1]+[n=0])
+=================[end properties of (f i m n)]==================
+
+
+=================[begin table of (f i m n)]==================
+     \ i|   0       1       2       >=3
+(m,n) \ |   +       *       ^
+-----------------------------------------------------
+(m,0)       m       0       1       1
+(m,1)       m+1     m       m       m
+(0,n)       n       0       [n=0]   [even n]
+(1,n)       1+n     n       1       1
+(2,2)       4       4       4       4
+-----------------------------------------------------
+NOTE: avoid [m=0][i>=2][n>=W]
+=================[end table of (f i m n)]==================
+
+
+
+=================[begin casual_repr of ordinal numbers]==================
+_causal
+casual_repr
+
+Nge4 = Nge4 Nge0 Nge2 Nge2 | W
+    # = f Nge0 Nge2 Nge2
+    # for m<=1 or n<=1 see table above
+    #   expr as sum of terms
+    #NOTE: avoid [m=0][i>=2][n>=W]
+    #   W = |NN| = |set of natural numbers|
+Nge2 = Nge2 Nge1 Nge1 | _Nge4 Nge4
+    # = f 0 Nge1 Nge1
+Nge1 = Nge1 PInt | _Nge2 Nge2
+Nge0 = O | _Nge1 Nge1
+Num = Nge0
+
+=================[end casual_repr of ordinal numbers]==================
+

@@ -1,0 +1,57 @@
+8.0::23.6 Surrogates Area
+Surrogates Area: U+D800..U+DFFF
+    total 2**(3+8) == 2**11
+
+Section 3.8 Surrogates
+[page118]
+used only in the context of the UTF-16 character encoding form
+used only as part of a multibyte sequence
+
+High-surrogate code point: U+D800..U+DBFF
+    leading code unit in utf16
+    Private-Use High-Surrogates : U+DB80..U+DBFF # 7 bits
+Low-surrogate code point: U+DC00..U+DFFF
+    trailing code unit in utf16
+
+Surrogate pair = (high-surrogate code unit, low-surrogate code unit)
+    = (leading surrogate, trailing surrogate)
+
+# 8 ==>> 1000
+# B ==>> 1011 # 11==8+3
+# C ==>> 1100
+# F ==>> 1111
+High/Low-surrogate code ==>> 2+8=10 bits
+Surrogate pair ==>> 20 bits
+Private-Use Surrogate pair ==>> 17 bits (==7+10)
+    
+
+but unicode in [0:0x11 00 00] that is 21 bits (==5+8+8)
+    or 20 bits | 16 bits
+    that is 
+        non-Plane 0 : 20 bits ==>> surrogated
+        Plane 0 : 16 bits (exclude surrogates) ==>> non-surrogated
+    
+    verify:
+        num_surrogates = 2**11
+        num_codes_per_plane = 2**16 # contains surrogates and noncharaters
+        num_nonsurrogates_of_plane0 = num_codes_per_plane - num_surrogates # contains noncharaters
+        num_codes = 17 * num_codes_per_plane # 17 = 1+16 = 0x11
+        num_nonsurrogates = num_codes - num_surrogates
+        
+        num_high_surrogates = num_low_surrogates = num_surrogates//2
+        num_codes_of_non_plane0 = num_codes - num_codes_per_plane
+        assert num_codes_of_non_plane0 == num_high_surrogates*num_low_surrogates
+        num_codes_in_utf16 = num_nonsurrogates_of_plane0 + num_high_surrogates*num_low_surrogates
+        num_codes_in_utf8 = num_codes
+        assert num_nonsurrogates == num_codes_in_utf16 < num_codes_in_utf8
+        assert num_surrogates == num_codes_in_utf8 - num_codes_in_utf16
+        
+
+
+------------------------------------
+Section 3.8 Surrogates
+Section 23.6, Surrogates Area
+Section 5.4, Handling Surrogate Pairs in UTF-16
+Section 23.5, Private-Use Characters
+Section 3.9, Unicode Encoding Forms
+

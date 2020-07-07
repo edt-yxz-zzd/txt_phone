@@ -1,0 +1,320 @@
+
+term
+    logic
+        "[bool_expr]"
+            "assert bool_expr"
+        "<-->" , "<==>"
+            "if and only if"
+            "[bool_expr1] <==> [bool_expr2]"
+            "bool_expr1 <--> bool_expr2"
+
+            "[a] <==> [b] <==> [c]"
+                === "[a] <==> [b]" and "[b] <==> [c]"
+        "-->>" , "==>>"
+            "implies"
+            "[bool_expr1] ==>> [bool_expr2]"
+            "bool_expr1 -->> bool_expr2"
+
+            "[a] ==>> [b] ==>> [c]"
+                === "[a] ==>> [b]" and "[a] ==>> [c]"
+            "[a] <<== [b] ==>> [c]"
+                === "[b] ==>> [a]" and "[b] ==>> [c]"
+            "[a] ==>> [b] <<== [c]"
+                === "[a] ==>> [b]" and "[c] ==>> [b]"
+            "[a] ==>> [b] <==> [c]"
+                === "[a] ==>> [b]" and "[b] <==> [c]"
+            "[a] <==> [b] ==>> [c]"
+                === "[a] <==> [b]" and "[b] ==>> [c]"
+
+    from Haskell
+        "::"
+            "type signature"
+            "x :: T" === "type of x is T"
+        "Type"
+            "type of type"
+            "1 :: (Int :: Type)"
+        "<-"
+            "belong to"
+            "element <- Set"
+            "<-" === "::"
+            [x <- T] <==> [x :: T] <==> [T x]
+        "[expr | var <- set]"
+            set constructor
+
+"Label"
+    any (x :: Type) has form {a=Ta...}<n>
+    where
+        (a :: LabelType)
+        (Ta :: Type)
+        LabelType = Label | Type
+    "Label" is a kind
+        e.g.
+            Label is String
+         or Label is Integer
+                since there are bijections: String <-> Integer
+         or Label is Type
+                since we can define Integer: 0 ::= {}<0>, succ n ::= {n=0}<1>;
+
+{}<>                        -- combination
+\-/, /-\, \-\               -- exclude
+() as {}                    -- tuple
+NonEmpty <: List            -- nom... v.s. scola...
+Bool <: Natural <: Integer  -- Type as Value Set; label as value
+
+
+{}<>
+    {} - one alternative; choose(0,0)
+        -- or choose(n, 0); where n >= 0
+    <> - zero alternatives; choose(0,1)
+        -- or choose(n, n+1); where n >= 0
+    {a=Ta, b=Tb, c=Tc} - one alternative; choose(3,3)
+        -- or choose(m, 3); where m >= 3
+    <a=Ta, b=Tb, c=Tc> - 3 alternatives; choose(3, 1)
+        -- or choose(m, 1); where m <= 3
+
+    define a uniform type {a...}<n>
+        def {a...}<n> ::= there are at least n named labels in object
+            -- alternatives: sum choose(len(a...), i) {i <- [n..]}
+
+        let {a...}<~> ::= {a...}<len(a...)>
+        let {a...} ::= {a...}<~>                -- forall
+            e.g.
+                {} ::= {}<0>
+                {a=Ta, b=Tb, c=Tc} ::= {a=Ta, b=Tb, c=Tc}<3>
+        let <a...> ::= {a...}<1> \-\ {a...}<2>  -- exists
+            e.g.
+                <> ::= {}<1> \-\ {}<2> === {}<1> -- not exits
+                <a=Ta, b=Tb, c=Tc> ::=
+                    {a=Ta, b=Tb, c=Tc}<1> \-\ {a=Ta, b=Tb, c=Tc}<2>
+    example:
+        x :: {a=Ta, b=Tb, c=Tc}<2>
+        case x of
+            {a=a, b=b, c=c} -> ...
+            {a=a, b=b} -> ...
+            {b=b, c=c} -> ...
+            {c=c, a=a} -> ...
+
+    -- Bot, Top
+    [] ==>> [{a...}<~+1> <: {b...}<n> <: {c...}<0>]
+
+    -- <> width
+    [] ==>> [{a...}<n> <: {b=Tb,a...}<n>]
+
+    -- {} width
+    [] ==>> [{a...}<n+1> <: {a...}<n>]
+
+    -- depth
+    [Tc <: Tb] ==>> [{c=Tc,a...}<n> <: {b=Tb,a...}<n>]
+
+
+\-/, /-\, \-\
+    () \-\ <>   -- any type but Bot
+    -- view Type as a set of its values
+    -- those are the set operations
+
+    type Alt = Type
+    type Field = Type
+    rule_Type2Alts :: Type -> [Alt]
+    {a...}<n>   = {alt1...}<~> \-/ {alt2}<~> \-/ ...
+                = fold (\-/) (<>) [{alt1...}<~>, {alt2...}<~>, ..]
+                = fold (\-/) (<>) (rule_Type2Alts {a...}<n>)
+                = rule_Alts2Type  (rule_Type2Alts {a...}<n>)
+    rule_Alt2Fields :: Alt -> [Field]
+    {alt...}<~> = fold (/-\)  ()  [{a0=T0}, {a1=T1}, ..]
+                = fold (/-\)  ()  (rule_Alt2Fields {alt...}<~>)
+                = rule_Fields2Alt (rule_Alt2Fields {alt...}<~>)
+
+    {alt...=X...} \-/ {alt...=Y...} = {alt...=X...\-/Y...}
+    a \-/ b = rule_Alts2Type (rule_Type2Alts a ++ rule_Type2Alts b)
+
+    {a=X} /-\ {a=Y} = {a=X/-\Y}
+    {alt...=X...} /-\ {alt...=Y...}
+        = rule_Fields2Alt (rule_Alt2Fields a ++ rule_Alt2Fields b)
+    a /-\ b = rule_Alts2Type [a_alt /-\ b_alt
+                             | a_alt <- rule_Type2Alts a
+                             , b_alt <- rule_Type2Alts b
+                             ]
+
+
+    -- {ab,c} means there are at least two labels: "a", "b", or one: "c".
+    \-/ union   -- "\-/" =/= "\/"
+        {a=Ta, b=Tb, c=Tc}<2> \-/ {b=Tb, c=Tc, d=Td}<2>
+            = {a,b,c}<2> \-/ {b,c,d}<2>
+            = {ab, bc, ca} \-/ {bc, cd, db}
+            = {ab, ca, bc, cd, db}
+
+        assume [a =/= b]
+        x :: {a=Ta} \-/ {b=Tb}
+        case x of
+            {a=a, b=b} -> ...
+            {a=a} -> ...
+            {b=b} -> ...
+            -- v.s. \/
+            -- x :: {a} \/ {b} -- a
+            -- case x of
+            --    _ -> ...     -- no common alternatives!!
+        x :: {a=Ta}
+        case x of
+            {a=a, b=b} -> ...  -- x::{a=a, b=(b::())}, detect "b"??
+            {a=a} -> ...
+            we should avoid it.
+            we shall limit user's read operations.
+            lets introduce a notation (not a Type): {a...}<n,0>
+                which will implicitly convert the value to the topmost type.
+              e.g.
+                f :: {a=Ta}<1,0> -> ...
+                f = f_impl
+              <==>
+                f :: {a=Ta}<1> -> ...
+                f x = case x of
+                    {a=a, ...} -> f_impl {a=a}
+
+        [b\-/c <: a] <==> [b <: a][c <: a]
+        [a <: b\-/c] <==> ???????
+            [a <: b\-/c] <<== [a <: b] or [a <: c]
+            [a <: b\-/c] <==> [(a\-\c) <: b]
+
+            [a <: b\-/c]
+                <==> [all (\alt-> alt <: b\-/c) (rule_Type2Alts a)]
+            [{alt...} <: b\-/c]
+                <==> [{alt...} <: b] or [{alt...} <: c]
+
+        ----------
+        [] ==>> [a \-/ b === b \-/ a]
+        [] ==>> [a <: a \-/ b]
+        [a <: b] ==>> [a \-/ b === b]
+        {a...}<n> \-/ {a...}<m> = {a...}<min(n,m)>
+        {c...=X..., a...}<n> \-/ {c...=Y..., a...}<n> =
+            {c...=X...\-/Y..., a...}<n>
+        {c...=X..., a...}<n> \-/ {c...=Y..., b...}<m> =
+            fold (\-/) [{c...=X...\-/Y...}<i> /-\({a...}<n-i>\-/{b...}<m-i>)
+                       | i <- [0..len(c...)]
+                       ]
+                -- if only both X and Y are in form {a...}<n>
+    /-\ intersetion
+        {a=Ta, b=Tb, c=Tc}<2> /-\ {d=Td}<1>
+            = {ab, bc, ca} /-\ {d}
+            = {abd, bcd, cad}
+            = {a=Ta, b=Tb, d=Td} \-/ ... \-/ ...
+
+        {a=Ta, b=Tb}<1> /-\ {c=Tc, d=Td}<1>
+            = {a, b} /-\ {c, d}
+            = {ac, ad, bc, bd}
+            = {a=Ta, c=Tc} \-/ ...
+
+        {a=Ta, b=Tb}<1> /-\ {b=Tb, c=Tc}<1>
+            = {a, b} /-\ {b, c}
+            = {ab, ac, bb, bc}
+            = {ab, ac, b, bc}
+            = {ac, b}
+            = {a=Ta, c=Tc} \-/ {b=Tb}
+
+        [c === len(labels_of(a...) /-\ labels_of(b...))]
+            ==>> [{a...}<n> /-\ {b...}<m> <: {a..., b...}<n+m-c>]
+
+        [a <: b/-\c] <==> [a <: b][a <: c]
+        [b/-\c <: a] <==> ?????????
+            [b/-\c <: a] <<== [b <: a] or [c <: a]
+
+            [b/-\c <: a]
+                <==> [all (\alt-> b/-\c <: alt) (rule_Type2Alts a)]
+            [b/-\c <: {alt...}]
+                <==> ?????
+
+        ---------
+        [] ==>> [a /-\ b === b /-\ a]
+        [] ==>> [a /-\ b <: b]
+        [a <: b] ==>> [a /-\ b === a]
+        {a...}<n> /-\ {a...}<m> = {a...}<max(n,m)>
+        {c...=X..., a...}<n> /-\ {c...=Y..., a...}<n> =
+            {c...=X.../-\Y..., a...}<n>
+        {c...=X..., a...}<n> /-\ {c...=Y..., b...}<m> =
+            fold (\-/) [{c...=X.../-\Y...}<i> /-\{a...}<n-i>/-\{b...}<m-i>
+                       | i <- [0..len(c...)]
+                       ]
+    \-\ exclude
+        {a=Ta, b=Tb, c=Tc}<2> \-\ {b=Tb, c=Tc, d=Td}<2>
+            = {ab, bc, ca} \-\ {bc, cd, db}
+            = {ab, ca} \-\ {bc, cd, db}
+            = {ab\-\{bc, cd, db}, ca\-\{bc, cd, db}}
+            = {ab\-\{c,d}, ca\-\{b,d}}
+            = {ab\-\{c}, ca\-\{b}}\-\{d}
+            = (({a=Ta, b=Tb}\-\{c=Tc}) \-/ ({c=Tc, a=Ta}\-\{b=Tb})) \-\ {d=Td}
+        [] ==>> [a\-\a === <>]
+        [] ==>> [(a\-\b)\-/b === a\-/b]
+        [] ==>> [(a\-/b)\-\b <: a]
+            [a/-\b === <>]
+            <==> [a===<>]or[b===<>]
+            ==>> [(a\-/b)\-\b === a]
+        [a <: b] ==>> [a\-\c <: b\-\c] ==>> [a\-\b === <>]
+        [a <: b] ==>> [c\-\b <: c\-\a]
+        [a\\c <: b] <==> [a <: b\-/c]
+        [a <: b\\c] <==>
+
+() as {}
+    allow integer to be label
+    let (T...) ::= {i=T[i] | i <- [0..len(T...)-1]}<~>
+        e.g.
+            () ::= {}<0>
+            (T0, T1, T3) ::= {0=T0, 1=T1, 2=T3}<3>
+    [() === Top]
+NonEmpty <: List
+    'List     a ::= {List    ={Cons=(a, 'List     a), Empty=()}<1>}<1>
+    'NonEmpty a ::= {NonEmpty={Cons=(a, 'NonEmpty a)          }<1>}<1>
+        -- the "Cons" in 'NonEmpty is the same one in 'List
+    nested pattern:
+        -- 3 layer per type
+        {TypeName={ConstructorName1=tuple.., ...}<1>}<1>
+    to deduce "<:", assume TypeName can be replaced, but ConstructorName cannot.
+        ['NonEmpty a <: 'List b]
+        <==> [    ['NonEmpty a <: 'List b]
+             -->> [  {Cons=(a, 'NonEmpty a)}<1>
+                  <: {Empty=(), Cons=(b, 'List b)}<1>
+                  ]
+             -->> [  {Cons=(a, 'NonEmpty a)}<1>
+                  <: {Cons=(b, 'List b)}<1>
+                  ]
+             -->> [a <: b]['NonEmpty a <: 'List b]
+             -->> [a <: b]
+             ]
+        <==> [['NonEmpty a <: 'List b] -->> [a <: b]]
+
+    [a <: b] ==>> ['NonEmpty a <: 'List b]
+
+
+
+Bool <: Natural <: Integer
+    -- Type as Value Set; label as value
+    let Natural ::= {0=(), 1=(), ...}<1>
+        -- = {i=() | i <- [0..]}<1>
+    let PositiveInteger ::= {1=(), 2=(), ...}<1>
+        = Natural \-\ {0=()}<1>
+    let NegativeInteger ::= {-1=(), -2=(), ...}<1>
+    let Integer ::= {..., -1=(), 0=(), 1=(), ...}<1>
+        = Natural \-/ NegativeInteger
+    let Mod3 ::= {0=(), 1=(), 2=()}<1>
+    let Bool ::= {0=(), 1=()}<1>
+    why if we have to `type` label ??
+        now all types are in form {a...}<n>
+            -- include (->)
+            -- exclude (->)?? since (a -> b) not in Show/Read
+        subtyping is easier:
+            e.g. [PositiveInteger <: Natural <: Integer]
+        leave the label types to be an open set.
+            label_types = {String, Integer, (c => a->b), ...}
+            each label_type represents a set of label/value
+            some label_types allow us to take a subset or element.
+            some donot, e.g. (c => a->b).
+
+            -- "element <- set"
+            {i2s = () | i2s <- (Integer -> String)}<1>
+                ::= (Integer -> String)
+            {(a :: Type) = {a2s = () | a2s <- (a -> String)}<1> | a <- Type}<~>
+                ::= (forall a. a -> String)
+            {(a :: Type) = {a2s = () | a2s <- (a -> String)}<1> | a <- Show}<~>
+                ::= (forall a. Show a => a -> String)
+        Type in Type??
+
+
+
+

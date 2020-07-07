@@ -1,0 +1,38 @@
+
+Normal Form
+    "Using SQLite (2010).pdf" :: Chapter 6: Database Design :: Normal Form :: [page 103]
+
+[is_table table]:
+    table.PK, table.columns :: Set Column
+    [are_columns<table> A]:
+        table.iter(A) :: Iter table.Row[A]
+        [is_row<table> row]:
+            row[A] :: Row[A]
+
+[is_table table][are_columns<table> A][are_columns<table> B]:
+    A --> B =[def]= [B depends on A]
+        = [given an A. there are at most one B]
+        = [all([1>=len({row[B] for row in table if row[A] == a})] for a in table[A])]
+
+1NF:
+    [no ordering over rows]
+        <<== SQL
+    [unique row]
+        <<== SQL PK
+        [all(table.PK --> column for column in table.columns)]
+    [column value is a whole logical value]
+        # not any container
+
+2NF:
+    # try to reduce the size of PK for arbitray non-PK column
+    [not any((subsetPK --> column)
+            for column in table.columns if column not in table.PK
+            for subsetPK in 2^table.PK if subsetPK != table.PK
+            )
+    ]
+3NF:
+    # try to remove (A-->C) given (A-->B), (B-->C) in one table
+
+4NF,5NF
+    # inter-table relationships
+

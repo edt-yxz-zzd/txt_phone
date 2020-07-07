@@ -1,0 +1,108 @@
+in paper: Generalising monads to arrows (John Hughes)(2000)
+    continuation
+    newtype CPSFunctor ans a b c = CPS ((a c ans) -> (a b ans))
+    ...But now, in order to define the basic arrow operations on CPS arrows, we find we already need to use application at the underlying arrow type!
+    ...In a way, since continuation passing is the epitome of higher-order programming, this is not really surprising.
+
+    -- But I define a CPS without ArrowApply
+
+
+i2o_to_i2io :: Arrow arr => arr i o -> arr i (i,o)
+i2o_to_i2io a = returnA &&& a
+discardA :: Arrow arr => arr i o -> arr i i
+discardA a = i2o_to_i2io a >>> arr fst
+i2o_to_ix2o :: Arrow arr => arr i o -> arr (i,x) o
+i2o_to_ix2o a = fst ^>> a
+i2o_to_Eix2o :: (ArrowZero arr, ArrowChoice arr)
+    => arr i o -> arr (Either i x) o
+i2o_to_Eix2o a = a ||| zeroArrow
+x2a_to_xb2ab :: (Arrow arr)
+    => (x->a) -> arr (x, b) (a, b)
+x2a_to_xb2ab = first . arr
+x2a_ab2c_to_xb2c :: (Arrow arr)
+    => (x->a) -> arr (a, b) c -> arr (x, b) c
+x2a_ab2c_to_xb2c x2a a = first (arr x2a) >>> a
+
+class Arrow (ArrowCC2Arrow arr) => ArrowCC arr where
+    type ArrowCC2Arrow arr :: * -> * -> *
+    type ArrowCC2Arrow arr = (->)
+    idCC :: arr r a a
+    idCC = arrCC_ex returnA
+    (>>>>) :: arr r i x -> arr r x o -> arr r i o
+
+    firstCC :: arr r i o -> arr r (i, x) (o, x)
+    arrCC_ex :: ArrowCC2Arrow arr i o -> arr r i o
+    exitCC_ex :: arr r i r -> arr r i y
+
+
+    arrCC :: (i -> o) -> arr r i o
+    arrCC = arrCC_ex . arr
+    exitCC :: r -> arr r i y
+    exitCC = exitCC_ex . arrCC . const
+    callCC :: ((r -> arr r i y) -> arr r i r) -> arr r i r
+    callCC f = f exitCC
+
+    switchCC :: arr r i o -> arr o i r
+    mapCC
+        :: (ArrowCC2Arrow arr i x -> ArrowCC2Arrow arr i o)
+        -> (arr r i x -> arr r i o)
+    discardCC :: arr r i o -> arr r i i
+    discardCC = mapCC discardA
+    discardCC_ex :: arr r i ox -> arr r i o -> arr r i o
+    discardCC_ex arr = (discardCC arr >>>>)
+
+
+    runCC_ex :: arr r o r -> arr r i o -> ArrowCC2Arrow arr i r
+    runCC_ex o2r i2o = runCC $ i2o >>>> o2r
+    runCC :: arr r i r -> ArrowCC2Arrow arr i r
+    runCC = runCC_ex idCC
+    runCC_exR :: arr o r o -> arr r i o -> ArrowCC2Arrow arr i o
+    runCC_exR r2o i2o = runCC_ex r2o $ switchCC i2o
+    rename_resultCC :: arr o i o -> arr r i o
+    rename_resultCC = arrCC_ex . runCC
+
+    {-# MINIMAL ((>>>>), firstCC, arrCC_ex, exitCC_ex
+                , switchCC, mapCC, (runCC_ex | runCC)) #-}
+-----------
+newtype ArrCC arr r i o = ArrCC { unArrCC :: Either (arr i r) (arr i o) }
+
+instance Boxed (ArrCC arr r i o) where
+    type BoxedFrom (ArrCC arr r i o) = Either (arr i r) (arr i o)
+    box = ArrCC
+    unbox = unArrCC
+
+runArrCC :: ArrCC arr r i r -> arr i r
+runArrCC = either_merge . unbox
+composeArrCC
+    :: (ArrCC ar ~ arr, Category ar) => arr r i x -> arr r x o -> arr r i o
+composeArrCC lhs rhs = box $ case (unbox lhs, unbox rhs) of
+    (Left i2r, _) -> Left i2r
+    (Right i2x, Left x2r) -> Left $ i2x >>> x2r
+    (Right i2x, Right x2o) -> Right $ i2x >>> x2o
+idArrCC :: Category arr => ArrCC arr r a a
+idArrCC = box . Right $ Cat.id
+firstArrCC
+    :: (ArrCC ar ~ arr, Arrow ar) => arr r i o -> arr r (i, x) (o, x)
+firstArrCC = mapGBox $ bimap i2o_to_ix2o first
+
+instance Arrow arr => ArrowCC (ArrCC arr) where
+    type ArrowCC2Arrow (ArrCC arr) = arr
+    (>>>>) = composeArrCC
+    firstCC = firstArrCC
+    arrCC_ex = box . Right
+    exitCC_ex = box . Left . runArrCC
+
+    mapCC = mapGBox . fmap
+    switchCC = mapGBox either_flip
+    runCC = runArrCC
+
+
+
+instance Category arr => Category (ArrCC arr r) where
+    (.) = flip composeArrCC
+    id = idArrCC
+instance Arrow arr => Arrow (ArrCC arr r) where
+    arr = arrCC
+    first = firstCC
+
+

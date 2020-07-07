@@ -1,0 +1,562 @@
+
+############## TODO:
+    error:
+        factor_polynomial
+        is_irreducible_chain
+        to_irreducible_chains_ex
+
+        ??factor what??
+        "几何定理机器证明的基本原理（初等几何部分）（吴文俊）.pdf"
+        [page 177-178]
+
+        (asc, H') = a_characteristic_set_of_ex xs H
+        assume is_well_chain asc
+        well_asc = asc
+        QuasiAscendingChain xs fs = to_QuasiAscendingChain well_asc
+        assume fs is reducible
+        find out k, s.t. fs[:k] is irreducible, but fs[:k+1] is reducible
+
+        IIIk1 * (IIfactors - Dk*fs[k]) = SUM: qs[i]*fs[i] :{i<-0..k-1}
+        IIIk1 * IIfactors = SUM: qs[i]*fs[i] :{i<-0..k} # k not k-1
+        where
+            # NOTE: (k-1) and k as max i
+            len factors >= 2 # hence reducible
+            IIfactors = II: factor {factor<-factors}
+            Is = map (polynomial_initial_of xs) fs
+            IIIk1 = II: Is[i]^e[i] :{i<-0..k-1} # k-1 not k
+            qs[k] = IIIk1*Dk
+        zeros_of xs H
+        == zeros_of xs H'
+        == zeros_of xs fs
+        == \-/: zeros_of xs (fs\-/{Is[i]}) :{i<-0..k-1} ###### k-1 not all i
+           \-/ \-/: zeros_of xs (fs\-/{factor]}) :{factor<-factors}
+
+
+####################################
+Ritt-Wu's Decomposition Algorithm (1990)(Shang-Ching Chou and Xiao-Shan Gao).pdf
+    This paper presents an improved version of Ritt-Wu's decomposition algorithm using a new algorithm
+    , W-prem, for computing pseudo remainders (Sections 2-4)
+    , and gives an efficient method for proving geometry theorems
+    according to Formulation F2 (see below)
+    based on our improved algorithms (Sections 5-8).
+    Besides the improved algorithms, we also prove many related theorems of
+    theoretical as well as practical interest;
+    we will like to draw particular attention to Theorem (4.4).
+
+dealing with nondegenerate conditions
+    * F1
+        Hypothesis -->> (NonDegenerateCondition, Conclusion)
+    * F2
+        (Hypothesis, NonDegenerateCondition) -->> Conclusion
+
+
+#########################################################
+
+Poly = multivariate_polynomial # polynomial
+multivariate_polynomial = SUM term {term}
+term = 0 | nonzero_constant * monomial
+monomial = II symbol^e {(symbol,e) <- zip symbols exponent_vector}
+symbol2term :: Symbol -> Term
+term2poly :: Term -> Poly
+constant2poly :: Number -> Poly
+is_zero_polynomial :: Poly -> Bool
+may_divides :: Poly -> Poly -> Maybe Poly
+may_divides denominator_poly numerator_poly =
+    if numerator_poly % denominator_poly == 0
+    then Just $ numerator_poly/denominator_poly
+    else Nothing
+polynomial_gcd :: Poly -> Poly -> Poly
+
+ordered_symbols :: [Symbol]
+hypothesis :: [Poly]
+nondegenerate_condition :: [Poly]
+conclusion :: [Poly]
+    -- all
+    /\: h==0 {h<-hypothesis}
+    /\: d!=0 {d<-nondegenerate_condition}
+    -- any
+    \/: g==0 {g<-conclusion} -- not /\!!!
+Hypothesis = NonDegenerateCondition = Conclusion = [Poly]
+
+
+-- howto [proof <==> is_empty__zeros_of_exclude]??
+zeros_of<field K> :: [Symbol] -> [Poly] -> Set K^len(symbols)
+zeros_of<K> xs hypothesis
+zeros_of_exclude<K> :: [Symbol] -> [Poly] -> [Poly] -> Set K^len(symbols)
+zeros_of_exclude<K> xs hypothesis conclusion
+    = zeros_of<K> xs hypothesis - \-/: zeros_of<K> xs {f} {f<-conclusion}
+    = zeros_of<K> xs hypothesis - zeros_of<K> xs II: f {f<-conclusion}
+is_empty__zeros_of_exclude<K> :: [Symbol] -> [Poly] -> [Poly] -> Bool
+is_empty__zeros_of_exclude<K> xs hypothesis conclusion
+    = is_empty $ zeros_of_exclude<K> xs hypothesis conclusion
+    = zeros_of<K> xs hypothesis |<=| \-/: zeros_of<K> xs {f} {f<-conclusion}
+    = [all hypothesis==...0 -->> any conclusion==...0]
+[(all hypothesis==...0 /\ all nondegenerate_condition!=...0) -->> any conclusion==...0]
+<==> [all hypothesis==...0 -->> all nondegenerate_condition!=...0 -->> any conclusion==...0]
+<==> [all hypothesis==...0 -->> (not (all nondegenerate_condition!=...0) \/ any conclusion==...0)]
+<==> [all hypothesis==...0 -->> (any nondegenerate_condition==...0 \/ any conclusion==...0)]
+<==> [all hypothesis==...0 -->> any (nondegenerate_condition \-/ conclusion)==...0]
+<==> is_empty__zeros_of_exclude<K> hypothesis (nondegenerate_condition \-/ conclusion)
+
+
+
+########################################################
+########################################################
+########################################################
+{-
+this paper define leading_coefficient_of as polynomial_initial_of
+but grobner basis wiki define leading_coefficient_of as below:
+-- and leading_term_of/leading_monomial_of
+leading_coefficient_of :: [Symbol] -> Poly -> Number<K>
+    leading_coefficient_of
+        [x,y,z]
+        (15*(14*x^13+12*y^11+10*y^9)*z^8 + (7*x^6+5*y^4+3*x^2))
+    == 15
+lc = leading_coefficient_of
+leading_coefficient_of_about :: Symbol -> Poly -> Number<K>
+    leading_coefficient_of_about
+        z
+        (15*(14*x^13+12*y^11+10*y^9)*z^8 + (7*x^6+5*y^4+3*x^2))
+    == 15
+-}
+polynomial_initial_of :: [Symbol] -> Poly -> Term
+    polynomial_initial_of
+        [x,y,z]
+        (15*(14*x^13+12*y^11+10*y^9)*z^8 + (7*x^6+5*y^4+3*x^2))
+    == 15*(14*x^13+12*y^11+10*y^9)
+polynomial_initial_of_about :: Symbol -> Poly -> Term
+    polynomial_initial_of_about
+        z
+        (15*(14*x^13+12*y^11+10*y^9)*z^8 + (7*x^6+5*y^4+3*x^2))
+    == 15*(14*x^13+12*y^11+10*y^9)
+polynomial_class_of :: [Symbol] -> Poly -> Maybe UInt
+    polynomial_class_of
+        [x,y,z]
+        (15*(14*x^13+12*y^11+10*y^9)*z^8 + (7*x^6+5*y^4+3*x^2))
+    == Just 2 # [x,y,z][2] == z
+main_variable_of :: [Symbol] -> Poly -> Maybe Symbol
+    main_variable_of
+        [x,y,z]
+        (15*(14*x^13+12*y^11+10*y^9)*z^8 + (7*x^6+5*y^4+3*x^2))
+    == Just z
+lv = leading_variable_of = main_variable_of
+main_order_of :: [Symbol] -> Poly -> Maybe PInt -- or UInt??
+    main_order_of
+        [x,y,z]
+        (15*(14*x^13+12*y^11+10*y^9)*z^8 + (7*x^6+5*y^4+3*x^2))
+    == Just 8 # z^8
+ld = leading_degree_of = main_order_of
+degree_of_about :: Symbol -> Poly -> UInt       -- or Maybe PInt??
+deg = degree_of_about
+
+# numerator_poly % denominator_poly about x
+pseudo_remainder_of_about :: Poly -> (Symbol, Poly) -> Poly
+pseudo_remainder_of_about numerator_poly (x, denominator_poly)
+    = assert (ed > 0) $ prem numerator_poly
+        where
+            ed = degree_of_about x denominator_poly
+            lcd = term2poly $ polynomial_initial_of_about x denominator_poly
+            px = term2poly $ symbol2term x
+            prem remainder_poly =
+                let er = degree_of_about x remainder_poly
+                    lcr = term2poly $ polynomial_initial_of_about x remainder_poly
+                in if er < ed then remainder_poly else
+                prem r2
+            r1 = remainder_poly*(lcd/gcd)  - denominator_poly*(lcr/gcd)*px^(er-ed)
+            gcd = polynomial_gcd lcd lcr
+
+is_constant_polynomial :: [Symbol] -> Poly -> Bool
+is_constant_polynomial xs f = polynomial_class_of xs f == Nothing
+--NonConstantPoly = Poly && not is_constant_polynomial
+pseudo_remainder_of :: [Symbol] -> Poly -> NonConstantPoly -> Poly
+pseudo_remainder_of xs numerator_poly denominator_poly
+    = assert (not $ is_constant_polynomial xs denominator_poly) $
+    pseudo_remainder_of_about numerator_poly (x, denominator_poly)
+    where
+        x = leading_variable_of xs denominator_poly
+prem = pseudo_remainder_of
+is_zero__pseudo_remainder_of :: [Symbol] -> Poly -> NonConstantPoly -> Bool
+is_zero__pseudo_remainder_of xs numerator_poly denominator_poly
+    = is_zero_polynomial $ pseudo_remainder_of xs numerator_poly denominator_poly
+is_reduced_with_respect_to :: [Symbol] -> Poly -> NonConstantPoly -> Bool
+is_reduced_with_respect_to xs numerator_poly denominator_poly
+    = assert (not $ is_constant_polynomial xs denominator_poly) $
+    degree_of_about x numerator_poly < degree_of_about x denominator_poly
+    where
+        x = leading_variable_of xs denominator_poly
+is_QuasiAscendingChain :: [Symbol] -> [Poly] -> Bool
+is_QuasiAscendingChain xs [] = False
+is_QuasiAscendingChain xs [f] = not $ is_zero_polynomial f
+is_QuasiAscendingChain xs fs = and [f1 < f2 |(f1,f2) <- zip ls tail]
+    where
+        tail = map (polynomial_class_of xs) fs
+        ls = Nothing : tail
+is_triangular_form = is_QuasiAscendingChain
+data QuasiAscendingChain = QuasiAscendingChain [Symbol] [Poly]
+    # almost ascending_chain
+class IsQuasiAscendingChain a where
+    # almost IsAscendingChain
+    to_QuasiAscendingChain :: a -> QuasiAscendingChain
+    --IsQuasiAscendingChain = QuasiAscendingChain|RittAscendingChain | WuAscendingChain | WeakAscendingChain
+    -- QuasiAscendingChain |>=| WeakAscendingChain |>=| WuAscendingChain |>=| RittAscendingChain
+mkQuasiAscendingChain :: [Symbol] -> [Poly] -> QuasiAscendingChain
+mkQuasiAscendingChain = assert (is_QuasiAscendingChain xs fs)
+    $ QuasiAscendingChain xs fs
+may_mkQuasiAscendingChain :: [Symbol] -> [Poly] -> Maybe QuasiAscendingChain
+may_mkQuasiAscendingChain = if is_QuasiAscendingChain xs fs
+    then Just $ QuasiAscendingChain xs fs
+    else Nothing
+
+is_well_chain :: IsQuasiAscendingChain asc => asc -> Bool
+is_well_chain asc = case fs of
+    [f] -> not $ is_constant_polynomial f
+    _ -> True
+    where
+        QuasiAscendingChain xs fs = to_QuasiAscendingChain asc
+pseudo_remainder_of__ASC :: IsQuasiAscendingChain well_asc => Poly -> well_asc -> Poly
+pseudo_remainder_of__ASC numerator_poly denominator_asc
+    = assert (is_well_chain denominator_asc) $ f numerator_poly fs
+    where
+        QuasiAscendingChain xs fs = to_QuasiAscendingChain denominator_asc
+        f n [] = n
+        f n (d:fs) = f (pseudo_remainder_of xs n d) fs
+-- why is_zero__pseudo_remainder_of__ASC?
+--  may be optimized faster than definition
+is_zero__pseudo_remainder_of__ASC :: IsQuasiAscendingChain asc => Poly -> asc -> Bool
+is_zero__pseudo_remainder_of__ASC numerator_poly denominator_asc
+    = is_zero_polynomial $ pseudo_remainder_of__ASC numerator_poly denominator_asc
+(2.1.1) Remainder Formula:
+    let cs[i] = polynomial_initial_of xs fs[i]
+    r = pseudo_remainder_of__ASC g $ QuasiAscendingChain xs fs
+    [polynomial_class_of xs fs[0]>0]
+        ==>>[Some qs, es. II:cs[i]^es[i]{i} * g == Sum:qs[i]*fs[i]{i} + r]
+            [All f<-fs. let x=leading_variable_of xs f in
+                degree_of_about x r < degree_of_about x f]
+
+
+class IsQuasiAscendingChain a => IsAscendingChain a where
+    --IsAscendingChain = RittAscendingChain | WuAscendingChain | WeakAscendingChain
+is_RittAscendingChain :: [Symbol] -> [Poly] -> Bool
+is_RittAscendingChain xs fs = is_QuasiAscendingChain xs fs && g [] fs
+    where
+        g _ [] = True
+        g prevs (f:fs) = all (is_reduced_with_respect_to xs f) prevs
+                        && g (f:prevs) fs
+is_WuAscendingChain :: [Symbol] -> [Poly] -> Bool
+is_WuAscendingChain xs fs = is_QuasiAscendingChain xs fs && g [] fs
+    where
+        g _ [] = True
+        g prevs (f:fs) = all (is_reduced_with_respect_to xs
+                                $ polynomial_initial_of xs f) prevs
+                        && g (f:prevs) fs
+is_WeakAscendingChain :: [Symbol] -> [Poly] -> Bool
+is_WeakAscendingChain xs fs = case may_acs of
+    Nothing -> False
+    Just asc -> all (\lcf -> not . is_zero__pseudo_remainder_of__ASC lcf asc)
+                    $ map (polynomial_initial_of xs) fs
+    where may_asc = may_mkQuasiAscendingChain xs fs
+[is_RittAscendingChain xs fs ==>> is_WuAscendingChain xs fs]
+[is_WuAscendingChain xs fs ==>> is_WeakAscendingChain xs fs]
+polynomial_rank_of :: [Symbol] -> Poly -> (Maybe UInt, Maybe PInt)
+polynomial_rank_of xs f = (polynomial_class_of xs f, leading_degree_of xs f)
+
+data AscendingChainRank = AscendingChainRank [(Maybe UInt, Maybe PInt)]
+mkAscendingChainRank :: IsQuasiAscendingChain asc => asc -> AscendingChainRank
+mkAscendingChainRank asc = AscendingChainRank ranks
+    where
+        QuasiAscendingChain xs fs = to_QuasiAscendingChain asc
+        ranks = map (polynomial_rank_of xs) fs
+instance Ord AscendingChainRank where
+    AscendingChainRank lhs < AscendingChainRank rhs = lt lhs rhs
+        where
+            -- lt lranks rranks
+            -- the longer the smaller if prefix are the same
+            lt [] _ = False     # len lranks <= len rranks # not >=!!
+            lt (_:_) [] = True  # len lranks > len rranks  # not < !!
+            lt (lr:lranks) (rr:rranks) = case compare lr rr of
+                LT -> True
+                GT -> False
+                EQ -> lt lranks rranks
+--not total ordering; though "<>" is a equivalence relationship:
+    --class Ord Poly where
+    --class IsAscendingChain asc => Ord asc where
+lt__Poly :: [Symbol] -> Poly -> Poly -> Bool
+lt__Poly xs lhs rhs = polynomial_rank_of xs lhs < polynomial_rank_of xs rhs
+lt__ASC :: IsAscendingChain asc => asc -> asc -> Bool
+lt__ASC lhs rhs = assert (lxs == rxs) $ lranks < rranks
+    where
+        QuasiAscendingChain lxs lfs = to_QuasiAscendingChain lhs
+        QuasiAscendingChain rxs rfs = to_QuasiAscendingChain rhs
+        xs = lxs
+        lranks = mkAscendingChainRank xs lfs
+        rranks = mkAscendingChainRank xs rfs
+Proposition (2.3).
+    The partial order < among the set of all ascending chains is well-founded.
+
+type NNPolySet = NonEmptySet NonZeroPoly
+a_minimal_WeakAscendingChain_of :: [Symbol] -> NNPolySet -> WeakAscendingChain
+a_minimal_WeakAscendingChain_of xs poly_set =
+    -- not is_well_chain
+    if is_constant_polynomial xs f0 then WeakAscendingChain xs [f0]
+    -- is_well_chain
+    else WeakAscendingChain xs $ g f0 polys
+    where
+        polys = toList poly_set
+        f0' = minBy lt__Poly polys
+        f0 = assert (not $ is_zero_polynomial f0') $ f0'
+
+        -- f in polys; polys is not empty; f not in result yet
+        g f polys = f : (if is_empty polys' then [] else g h polys') where
+            polys' = [h | h<-polys
+                        , polynomial_class_of xs h > polynomial_class_of xs f]
+                        , not $ is_zero__pseudo_remainder_of
+                                (polynomial_initial_of xs h) f
+                     ]
+            h = minBy lt__Poly polys'
+a_weak_basic_set_of = a_minimal_WeakAscendingChain_of
+
+Algorithm W-prem (2.6) weak_pseudo_remainder_of__ASC
+    -- the main purpose of triangulation is to reduce the class or the leading degree
+-- WellWeakAscendingChain = WeakAscendingChain && is_well_chain
+weak_pseudo_remainder_of__ASC :: Poly -> WellWeakAscendingChain -> Poly
+weak_pseudo_remainder_of__ASC numerator_poly denominator_asc
+    = assert (is_well_chain denominator_asc) $ wprem g (reverse _fs)
+    where
+        g = numerator_poly
+        WeakAscendingChain xs _fs = denominator_asc
+        -- wprem g reversed_fs
+        wprem g [] = g
+        wprem g _ | is_zero_polynomial g = g
+            -- stop since cannot reduce the class and leading degree of g
+        wprem g fs | is_zero__pseudo_remainder_of__ASC lcg asc
+            -- reduce the leading degree of g
+            = wprem tail_g fs -- or? pseudo_remainder_of__ASC tail_g asc
+            where
+                lcg = polynomial_initial_of xs g
+                tail_g = g - leading_term_of xs g
+                asc = QuasiAscendingChain xs fs
+        wprem g (f:fs)
+            | polynomial_class_of xs g > polynomial_class_of xs f
+                -- stop since cannot reduce the class and leading degree of g
+                = g
+            | polynomial_class_of xs g == polynomial_class_of xs f
+                = wprem (pseudo_remainder_of g f) fs
+            | otherwise = wprem g fs -- skip f
+(2.1.1') Weak Remainder Formula:
+    see: (2.1.1) Remainder Formula:
+    let cs[i] = polynomial_initial_of xs fs[i]
+    r = weak_pseudo_remainder_of__ASC g $ WeakAscendingChain xs fs
+    [polynomial_class_of xs fs[0]>0]
+        ==>>[Some qs, es. II:cs[i]^es[i]{i} * g == Sum:qs[i]*fs[i]{i} + r]
+        -- now no: [All f<-fs. let x=leading_variable_of xs f in degree_of_about x r < degree_of_about x f]
+
+Proposition (2.7)
+    [IsAscendingChain well_asc][is_well_chain well_asc]:
+        [is_zero_polynomial $ weak_pseudo_remainder_of__ASC g well_asc]
+            <==> [is_zero__pseudo_remainder_of__ASC g well_asc]
+!!!!!!!!! redefine is_zero__pseudo_remainder_of__ASC
+is_zero__pseudo_remainder_of__ASC g well_asc
+    = is_zero_polynomial $ weak_pseudo_remainder_of__ASC g well_asc
+
+prem_zero_polynomial_set_of :: IsAscendingChain well_asc => well_asc -> Set Poly
+prem_zero_polynomial_set_of well_asc = assert (is_well_chain well_asc)
+    $ {f | is_zero__pseudo_remainder_of__ASC f well_asc}
+PD=prem_zero_polynomial_set_of
+[is_well_chain asc]:
+    [zeros_of_exclude xs asc (C\-/{polynomial_initial_of f | f<-asc})
+     == zeros_of_exclude xs (prem_zero_polynomial_set_of asc) C
+    ]
+    [is_empty $ zeros_of_exclude xs asc (C\-/{polynomial_initial_of f | f<-asc})
+     == is_empty $ zeros_of_exclude xs (prem_zero_polynomial_set_of asc) C
+     == \/: is_zero__pseudo_remainder_of__ASC d asc {d<-C}
+    ]
+
+
+Proposition (2.8)
+    [Symbols xs][NNPolySet H
+    ][well_asc=a_minimal_WeakAscendingChain_of xs H
+    ][is_well_chain well_asc
+    ][Poly h][g=weak_pseudo_remainder_of__ASC h well_asc][g!=0
+    ][asc=a_minimal_WeakAscendingChain_of xs $ H\-/{g}
+    ] ==>> [lt__ASC asc well_asc]
+    -- maybe not is_well_chain asc!!!
+
+
+triangular_procedure = a_characteristic_set_of
+a_characteristic_set_of :: [Symbol] -> NNPolySet -> WeakAscendingChain
+a_characteristic_set_of xs poly_set = fst $ a_characteristic_set_of_ex xs poly_set
+a_characteristic_set_of_ex :: [Symbol] -> NNPolySet -> (WeakAscendingChain, NNPolySet)
+a_characteristic_set_of_ex xs poly_set = main poly_set where
+    main poly_set =
+        if not $ is_well_chain asc then (asc, poly_set) else
+        if is_empty new_polys then (asc, poly_set) else
+        main poly_set'
+      where
+        asc = a_minimal_WeakAscendingChain_of xs poly_set
+        new_polys = [r | f<-poly_set
+                    , let r = weak_pseudo_remainder_of__ASC f asc
+                    , not $ is_zero_polynomial r]
+        poly_set' = set_union poly_set $ fromList new_polys
+
+
+[Symbols xs][NNPolySet H
+][(asc,H') = a_characteristic_set_of_ex xs H]:
+    ==>> H |<=| H'
+    ==>> zeros_of xs H == zeros_of xs H'
+    ==>> [asc is a_weak_basic_set_of/a_minimal_WeakAscendingChain_of xs H]
+
+Theorem (3.1). (Modified Ritt-Wu's Principle)
+    [Symbols xs][NNPolySet H
+    ][asc=a_characteristic_set_of xs H]:
+        * (3.2) [not $ is_well_chain asc]:
+            ==>> [zeros_of xs H == {}]
+        * (3.3) [is_well_chain asc]:
+            let lc_ls = map (polynomial_initial_of xs) asc
+                zeros_ex = \-/: zeros_of xs (H\-/{lc}) {lc<-lc_ls}
+            ==>> [zeros_of xs H
+            (3.3.1)
+                == zeros_of_exclude xs asc lc_ls \-/ zeros_ex
+            (3.3.2)
+                == zeros_of xs (prem_zero_polynomial_set_of asc) \-/ zeros_ex
+                ]
+
+??a_characteristic_set_of??
+    ??optimize: top-down + bottom-up
+
+
+-- multivariate factorization is available in many algebraic systems
+factor_polynomial_about :: Symbol -> Poly -> [(Poly, PInt)]
+factor_polynomial :: [Symbol] -> Poly -> [(Poly, PInt)]
+factor_polynomial xs f = factor_polynomial_about (leading_variable_of xs f) f
+    -- [All factor. polynomial_class_of xs factor == polynomial_class_of xs f]
+
+-- irreducible
+-- IrreducibleWellWeakAscendingChain = WeakAscendingChain && is_well_chain && is_irreducible_chain
+error is_irreducible_chain :: IsAscendingChain asc => asc -> Bool
+error is_irreducible_chain asc = if not $ is_well_chain well_asc) then True else
+    all (== 1) num_factors_ls
+    where
+        QuasiAscendingChain xs fs = to_QuasiAscendingChain well_asc
+        num_factors_ls = map (len . factor_polynomial xs) fs
+
+
+
+--to_irreducible_WeakAscendingChain_NNPolySet_pairs
+error to_irreducible_chains_ex
+    :: [Symbol] -> NNPolySet -> [(IrreducibleWellWeakAscendingChain, NNPolySet)]
+[All (asc, poly_set'). is_irreducible_chain asc && is_well_chain asc
+    && poly_set |<=| poly_set'
+    && zeros_of xs poly_set |>=| zeros_of xs poly_set'
+        -- |>=| not ==
+    && asc is a_characteristic_set_of poly_set'
+    && asc is a_minimal_WeakAscendingChain_of poly_set'
+    ]
+[zeros_of xs poly_set == \-/: zeros_of xs poly_set' {All (asc, poly_set')}]
+error to_irreducible_chains_ex xs poly_set = main [poly_set] where
+    main [] = []
+    main (poly_set:poly_sets) = rs
+      where
+        tail_rs = main poly_sets
+
+        (asc, poly_set') = a_characteristic_set_of_ex xs poly_set
+        rs = if not $ is_well_chain asc then tail_rs else
+            if is_irreducible_chain asc then (asc, poly_set'):tail_rs else
+            main (poly_sets' ++ poly_sets)
+
+        QuasiAscendingChain xs fs = to_QuasiAscendingChain asc
+        factors_ls = map (map fst . factor_polynomial xs) fs
+        asc_ls :: [[Poly]]
+        asc_ls = Data.List.sequence factors_ls
+        poly_sets' = map (set_union poly_set' $ fromList) asc_ls
+
+
+Theorem (4.1). Modified Ritt-Wu's Zero Decomposition Algorithm (the Re¯ned
+Form)
+    [Symbols xs][NNPolySet H][PolySet C
+    ][asc_H_pairs = to_irreducible_chains_ex xs H]:
+        ==>> [zeros_of xs H == \-/: zeros_of xs H' {(_,H')<-asc_H_pairs}
+        ==>> [zeros_of_exclude xs H C == \-/: zeros_of_exclude xs H' C {(_,H')<-asc_H_pairs}
+        [(asc, H') <- asc_H_pairs]:
+            let lc_ls = map (polynomial_initial_of xs) asc
+                zeros_ex = \-/: zeros_of xs (H'\-/{lc}) {lc<-lc_ls}
+                zeros_ex_exclude = \-/: zeros_of_exclude xs (H'\-/{lc}) C {lc<-lc_ls}
+            ==>> [zeros_of xs H'
+                == zeros_of_exclude xs asc lc_ls \-/ zeros_ex
+                == zeros_of xs (prem_zero_polynomial_set_of asc) \-/ zeros_ex
+                ]
+            ==>> [zeros_of_exclude xs H' C
+                == zeros_of_exclude xs asc (lc_ls\-/C) \-/ zeros_ex_exclude
+                == output and recur
+              since:
+                -- output asc
+                [Some d<-C. is_zero__pseudo_remainder_of__ASC d asc]
+                    ==>> [is_empty $ zeros_ex_exclude xs asc (lc_ls\-/C)]
+                    -- if is_empty: we need not output asc
+
+                -- recur decomposition
+                [All lc<-lc_ls. zeros_of_exclude xs (H'\-/{lc}) C == zeros_of_exclude xs (H'\-/{lc, pseudo_remainder_of__ASC?/weak_pseudo_remainder_of__ASC? lc asc}) C]
+                ]
+
+    let asc_ls = map fst modified_Ritt_Wu_zero_decomposition xs H C
+        asc_pairs = [(asc, map polynomial_initial_of asc) | asc<-asc_ls]
+    [zeros_of_exclude xs H C
+        * (4.1.1)
+        == \-/: zeros_of_exclude asc (lc_ls\-/C) {(asc,lc_ls)<-asc_pairs}]
+        * (4.1.2)
+        == \-/: zeros_of_exclude (prem_zero_polynomial_set_of asc) C {asc<-asc_ls}
+        -- see (4.4.1)
+        == \-/: zeros_of_exclude (prem_zero_polynomial_set_of asc) C {asc<-asc_ls | len asc <= len H}
+    ]
+    [(All H==...0) -->> (Some C==...0)]
+    <==> [is_empty $ zeros_of_exclude xs H C]
+    <==> [is_empty $ \-/: zeros_of_exclude (prem_zero_polynomial_set_of asc) C {asc<-asc_ls}]
+    <==> [all (\asc -> is_empty $ zeros_of_exclude (prem_zero_polynomial_set_of asc) C) asc_ls]
+    <==> [all (\asc -> \/: is_zero__pseudo_remainder_of__ASC d asc {d<-C}) asc_ls]
+    <==> [all (\asc -> any (\d -> is_zero__pseudo_remainder_of__ASC d asc) C) asc_ls]
+modified_Ritt_Wu_zero_decomposition
+    :: [Symbol] -> NNPolySet -> PolySet -> [(IrreducibleWellWeakAscendingChain, NNPolySet)]
+modified_Ritt_Wu_zero_decomposition xs H C = main [H] where
+    -- see Theorem (4.1)
+    main [] = []
+    main (H:Hs) = rs ++ main (Hs'++Hs)
+      where
+        asc_H_pairs = to_irreducible_chains_ex xs H
+
+        -- output
+        rs = [(asc,H') | (asc,H')<-asc_H_pairs
+                , any (\d->is_zero__pseudo_remainder_of__ASC d asc) C]
+
+        -- recur
+        Hs' = [H'\-/{lc,lc'}
+                | (asc,H')<-asc_H_pairs
+                , lc <- map (polynomial_initial_of xs) asc
+                , let lc' = weak_pseudo_remainder_of__ASC lc asc
+                --or?, let lc' = pseudo_remainder_of__ASC lc asc
+                ]
+
+Theorem (4.2). Modified Ritt-Wu's Zero Decomposition Algorithm (the Coarse Form).
+    The same statement as in (4.1), except we do not require that each w-asc ASC[i] be irreducible.
+    ??????????not irreducible????????
+        let H={g*g}
+            C={g}
+        has? [(All H==...0) -->> (Some C==...0)]
+        ??coarse form and then refined form??
+
+Remark 1.
+    ??factor (pseudo_remainder_of__ASC asc[i] asc[:i])??
+        ??not factor asc[i]??
+    Using factorization of multivariate polynomials over the integers is actually a good strategy to reduce polynomial sizes.
+    If we want to obtain the refined form, we can put off factorization over extension fields to the last step when we have the coarse form. This turns out to be very effiective to obtain the refined form.
+Remark 2. control branches
+    (1) (asc,H') = a_characteristic_set_of_ex xs poly_set
+        test whether any d<-C s.t. d <- Ideal<H'> (Grobner basis method)
+    (2) ??
+    (3) ??
+Theorem (4.4) remove the redundancy in the decomposition
+    let asc_ls = map fst modified_Ritt_Wu_zero_decomposition xs H C
+    (4.4.1)
+    [zeros_of_exclude xs H C
+        == \-/: zeros_of_exclude (prem_zero_polynomial_set_of asc) C {asc<-asc_ls | len asc <= len H}
+        ]
+    ??This is the key advantage to use Zero(PD(ASC[i])) instead of Zero(ASC[i]/I[i]).
+

@@ -1,0 +1,245 @@
+
+Enumerating p-groups
+    my algo
+    diff "A Millennium Project -- Constructing Small Groups (2002)(Besche).pdf"
+
+
+[p is prime]:
+    [G is finite p-group] =[def]= [?e:PInt. |G| == p^e]
+
+
+def C[n] =[def]= the cyclic group of order n
+def Z[G] = center(G) =[def]= {g <- G | @h<-G. h*g==g*h}
+[G is finite p-group] ==>> [|Z(G)| >= p]
+
+[G,S,K,Q :: Group]:
+    def Q[G] =[def]= G/Z[G]
+    def S <| G =[def]= [S is a normal subgroup of G]
+    def K ><| Q =[def]= {groups that are extension of Q by K} = {G :: Group | ?S<=G. [S ~=~ K][S <| G][G/S ~=~ Q]}
+    def K \><| Q =[def]= {groups that are extension of Q by K and has K as center} = {G :: Group | let S = Z[G], [S ~=~ K][G/S ~=~ Q]}
+
+
+[G :: Group]:
+    [G <- Z[G] \><| G/Z[G]]
+    [G <- Z[G] \><| Q[G]]
+[G is finite p-group]:
+    * [G is abelian]:
+        [Z[G] == G]
+        ...
+        Done!
+    * [G is non-abelian]:
+        [{1} < Z[G] < G]
+        [Q[G] > {1}]
+        TODO...
+
+############### below assume [G is finite non-abelian p-group]
+
+let Z[G] = <A... | {A[i]^(p^e[i]) = 1 | i}, {A[j]*A[i]=A[i]*A[j] | i,j}>
+    Q[G] = <B... | {L[k] = R[k] | k}>
+
+G = <A..., B... | {A[i]^(p^e[i]) = 1 | i}, commute(A...; A...,B...)
+                , {L[k]=gz[k]*R[k] | k,gz[k]<-Z[G]}
+    >
+
+[Z[G] > {1}]!
+    [len(A...) >= 1]
+[Q[G] > {1}]
+    [len(B...) >= 1]
+if [len(B...) == 1]:
+    Q[G] = <B | B^p^x = 1>
+    G = <A..., B | {A[i]^(p^e[i]) = 1 | i}, commute(A...; A...,B)
+                 , B^p^x = gz
+        > where gz <- Z[G]
+    [commute(A...; A...,B)]!
+        [commute(A...,B; A...,B)]
+        [G is abelian]
+        _L
+[len(B...) >= 2]
+[|Z[G]| <= |G|/p^2]
+[p <= |Z[G]| <= |G|/p^2]
+[Q[G] is non-cyclic]
+
+use examples to descript the algo
+example:
+[G = non-abelian Group[p^3]]
+    [p <= |Z[G]| <= |G|/p^2]!
+        [|Z[G]| == p]
+
+    [G <- Z[G] \><| Q[G]]!
+        [G <- C[p] \><| Group[p^2]]
+    [Group[p^2] <- {C[p^2], C[p]^2}]!
+
+    * [G <- C[p] \><| C[p^2]]:
+        [Q[G] == C[p^2]]
+        [C[p^2] is cyclic]!
+        [Q[G] is non-cyclic]!
+        _L
+    * [G <- C[p] \><| C[p]^2]:
+        G = <A,B,C | A^p=1, commute(A;B,C)
+                    ;        B^p=A^x, C^p=A^y,  C*B=(A^z)*B*C
+            # I[p]^2 = <B,C| B^p=1,   C^p=1,    C*B=      B*C>
+            >
+            where
+                [A^z != 1] # non-abelian
+                i.e. [[mod p]: z != 0]
+                i.e. [z%p != 0]
+
+        # eval (A^?*B^?*C^?)^n
+        C*B^i = A^z*B*C*B^(i-1) = A^(z*i)*B^i*C
+        C^j*B^i = C^(j-1)* A^(z*i)*B^i*C
+                = A^(z*i*j)*B^i*C^j
+        (B^i*C^j)^n = B^i*(C^j*B^i)^(n-1)*C^j
+                    = B^i*(A^(z*i*j)*B^i*C^j)^(n-1)*C^j
+                    = A^(z*i*j*(n-1))*B^i*(B^i*C^j)^(n-1)*C^j
+                    = A^(z*i*j*((n-1)+...+0))*B^(i*n)*(B^i*C^j)^0*C^(j*n)
+                    = A^(z*i*j*n*(n-1)/2)*B^(i*n)*C^(j*n)
+        [@g <- G. [g = A^?*B^?*C^?]]
+        [g == (A^k*B^i*C^j)]
+            g^n = (A^k*B^i*C^j)^n
+                = A^(k*n)*(B^i*(C^j))^n
+                = A^(k*n)*A^(z*i*j*n*(n-1)/2)*B^(i*n)*C^(j*n)
+                = A^(k*n+z*i*j*n*(n-1)/2)*B^(i*n)*C^(j*n)
+
+            # choose min x if possible
+            #   i.e. choose g as new B, to min x
+            #   g = g(k,i,j)
+            #   x,y,z are constants
+            #   k,i,j are variables
+            g^p = A^(k*p+z*i*j*p*(p-1)/2)*B^(i*p)*C^(j*p)
+                = A^(z*i*j*p*(p-1)/2)*A^(i*x)*A^(j*y)
+                = A^(z*i*j*p*(p-1)/2  + i*x+j*y)
+
+            C_*B_ = (A^kc*B^ic*C^jc) * (A^kb*B^ib*C^jb)
+                = A^(kc+kb) *B^ic*(C^jc*B^ib)*C^jb
+                = A^(kc+kb) *B^ic*(A^(z*ib*jc)*B^ib*C^jc)*C^jb
+                = A^(kc+kb+z*ib*jc) *B^(ic+ib)*C^(jc+jb)
+            B_*C_ = (A^kb*B^ib*C^jb) * (A^kc*B^ic*C^jc)
+                = A^(kb+kc+z*ic*jb) *B^(ib+ic)*C^(jb+jc)
+            C_*B_ / (B_*C_) = A^(z*(ib*jc-ic*jb))
+
+            # since p==p in B^p=A^x, C^p=A^y
+            #   requires: x <= y
+            #
+            (1) requires [g = g(k,i,j)][(i%p,j%p) != (0,0)][g^p = A^x_] ==>> [0 <= x <= x_%p]
+            (2) requires [g = g(k,i,j)][j%p != 0][g^p = A^y_] ==>> [0 <= y <= y_%p]
+            (3) requires [1 <= z <= z*(ib*jc-ic*jb)%p][B_^p = A^x][C_^p = A^y][ib%p != 0][jb==0][jc%p != 0]
+                # C_*B_ / (B_*C_) = A^(z*(ib*jc-ic*jb))
+
+
+            (1) requires [g = g(k,i,j)][(i%p,j%p) != (0,0)][g^p = A^x_] ==>> [0 <= x <= x_%p]
+                <==> [0 <= x <= x_%p = (z*i*j*p*(p-1)/2  + i*x+j*y)%p]
+                <==>
+                * [x == 0]:
+                    Done!
+                * [0 < x < p]:
+                    * [p == 2]
+                        <==> [x <= (z*i*j + i*x+j*y)%2]
+                        [x == 1]
+                        [z%p != 0]!
+                        <==> [x <= (i*j + i + j*y)%2]
+                        <==>
+                        * [y == 0]:
+                            <==> [x <= (i*j + i)%2]
+                            let (i,j) = (1,1)
+                            ==>> [x <= 0]
+                            _L
+                        * [y == 1]:
+                            <==> [x <= (i*j + i + j)%2]
+                            <==> [x <= 1]
+                            <==> [x == 1]
+                        <==> [p==2][(x,y) == (1,1)]
+                    * [p > 2]
+                        <==> [x <= (i*x+j*y)%p]
+                        [x != 0]!
+                        let (i,j) = (-y,x) != (0,0)
+                        ==>> [x <= 0]
+                        _L
+                    <==> [p==2][(x,y) == (1,1)]
+                <==> [x==0] + [p==2][(x,y) == (1,1)]
+            (2) requires [g = g(k,i,j)][j%p != 0][g^p = A^y_] ==>> [0 <= y <= y_%p]
+                <==> [0 <= y <= y_%p = (z*i*j*p*(p-1)/2  + i*x+j*y)%p]
+                [x==0] + [p==2][(x,y) == (1,1)]!
+                * [x==0]:
+                    <==> [y <= (z*i*j*p*(p-1)/2  + j*y)%p]
+                    * [p==2]:
+                        <==> [y <= (z*i*j + j*y)%2]
+                        [j%p != 0]!
+                        [z%p != 0]!
+                        [j%2 == z%2 == 1]
+                        <==> [y <= (i + y)%2]
+                        let i = -y
+                        <==> [y <= 0]
+                        <==> [p==2][y==0]
+                    * [p>2]:
+                        <==> [y <= (j*y)%p]
+                        * [y==0]:
+                            Done!
+                        * [0 < y < p]:
+                            let [mod p]: j = y^(-1)
+                            <==> [y <= 1]
+                            <==> [y==1]
+                        <==> [p>2][0<=y<=1]
+                    <==> [p==2][y==0] + [p>2][0<=y<=1]
+                    <==> [p==2][(x,y)==(0,0)] + [p>2][x==0][0<=y<=1]
+                * [p==2][(x,y) == (1,1)]
+                    <==> [y <= y_ = (z*i*j + i+j)%2]
+                    [z%2==1]!
+                    [j%2==1]!
+                    <==> [1 <= (i + i+1)%2 = 1]
+                    Done!
+                <==> [p==2][(x,y)==(0,0)] + [p>2][x==0][0<=y<=1] + [p==2][(x,y) == (1,1)]
+                <==> [p==2][(x,y)<-{(0,0),(1,1)}] + [p>2][x==0][0<=y<=1]
+            (3) requires [1 <= z <= z*(ib*jc-ic*jb)%p][B_^p = A^x][C_^p = A^y][ib%p != 0][jb==0][jc%p != 0]
+                [1 <= z <= z*(ib*jc-ic*jb)%p = z*ib*jc%p]
+                [(z*ib*jb*p*(p-1)/2  + ib*x+jb*y - x)%p = 0]
+                [(z*ic*jc*p*(p-1)/2  + ic*x+jc*y - y)%p = 0]
+                [ib%p != 0][jb==0][jc%p != 0]
+                * [p==2]:
+                    [z%p != 0]!
+                    <==> [z==1]
+                * [p>2]:
+                    [(ib*x+jb*y - x)%p = 0]
+                    [(ic*x+jc*y - y)%p = 0]
+
+                    [x==0][0<=y<=1]!
+                    * [(x,y)==(0,0)]:
+                        [z%p != 0]!
+                        let [mod p]: ib = z^(-1)
+                            jc = 1
+                        ==>> [1 <= z <= 1]
+                        <==> [z==1]
+                    * [(x,y)==(0,1)]:
+                        [(ib*0+0*1 - 0)%p = 0][(ic*0+jc*1 - 1)%p = 0]
+                        [(jc-1)%p = 0]
+                        [jc%p == 1]
+                        <==> [1 <= z <= z*ib%p]
+                        let [mod p]: ib = z^(-1)
+                        ==>> [1 <= z <= 1]
+                        <==> [z==1]
+                    <==> [z==1]
+                <==> [z==1]
+
+
+            <==> [[p==2][(x,y)<-{(0,0),(1,1)}] + [p>2][x==0][0<=y<=1]][z==1]
+            Done!
+            when [p=2,x=0,y=0,z=1]:
+                D4 = <A,B,C | A^2=1, commute(A;B,C); B^2=1, C^2=1, C*B=A*B*C>
+                    A = rotate(1/2)
+                    B = mirror
+                    C = rotate(1/4)*mirror
+                    C*B = rotate(1/4)*mirror*mirror = rotate(1/4)
+                    A*B*C = rotate(1/2)*mirror*rotate(1/4)*mirror
+                            = rotate(1/2)*rotate(3/4)*mirror*mirror
+                            = rotate(1/4)
+                            = C*B
+            when [p=2,x=1,y=1,z=1]:
+                Q8 = <A,B,C | A^2=1, commute(A;B,C); B^2=A, C^2=A, C*B=A*B*C>
+                    A = -1
+                    B = i
+                    C = j
+                    C*B = j*i = -i*j = A*B*C
+            when [p!=2,x=0,y=0,z=1]:
+            when [p!=2,x=0,y=1,z=1]:
+
+
+

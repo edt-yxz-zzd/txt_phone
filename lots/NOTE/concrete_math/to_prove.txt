@@ -1,0 +1,355 @@
+sum z**i C(i,d) {~i=0->n}
+sum (-1)**(n-i) C(i,d) {~i=0->n}, for [NN d,n]
+    NOTE: [0<=n<=d]: = 0
+    = f(d,n) * II (n-2k) {k=0..floor(d/2)} / -2 / d! + (1-(-1)**n)/(-2)**(d+1)
+    where f(d, n) is:
+        for d = 0..7
+        0
+        1
+        1
+        (2*n - 5)/2
+        n - 2
+        (2*n**2 - 13*n + 16)/2
+        (2*n**2 - 12*n + 13)/2
+        (4*n**3 - 50*n**2 + 176*n - 151)/4
+    
+    LC = leading_coeff
+    [d>0]: LC(f(d,n)) = 1
+    
+    degree(\n:f(d,n)) = [d>0](d-1)//2
+    degree(SUM) = d
+    degree(II) = floor(d/2) + 1
+    [d>0]: degree(\n:f(d,n)) = degree(SUM) - degree(II) = d - floor(d/2) - 1
+        = d + ceil(-d/2) -1 = ceil(d/2) - 1 = (d-1)//2
+        = floor((d-1)/2)
+    degree(II) - degree(\n:f(d,n)) = 2 degree(II) - degree(SUM)
+        = 2 floor(d/2) + 2 - d = [even d]2 + [odd d]1 = 1 + [even d]
+
+    [even n]: 0 = (0)/-2
+    [odd n]: -1 = (2)/-2
+    [even n]: -n/2 = (n)/-2
+    [odd n]: -(n/2 - 1/2) = (n - 1)/-2
+    [even n]: -n*(n - 2)/4 = (n**2 - 2*n)/-4
+    [odd n]: -(n - 1)**2/4 = (n**2 - 2*n + 1)/-4
+    [even n]: -n*(n - 2)*(2*n - 5)/24 = (n**3 - 9*n**2/2 + 5*n)/-12
+    [odd n]: -(n - 3)*(n - 1)*(2*n - 1)/24 = (n**3 - 9*n**2/2 + 5*n - 3/2)/-12
+    [even n]: -n*(n - 4)*(n - 2)**2/48 = (n**4 - 8*n**3 + 20*n**2 - 16*n)/-48
+    [odd n]: -(n - 3)*(n - 1)*(n**2 - 4*n + 1)/48 = (n**4 - 8*n**3 + 20*n**2 - 16*n + 3)/-48
+
+
+
+    def IIe n i = II n-2k {k=0..i-1}
+    def IIo n i = II n-2k-1 {k=0..i-1}
+    let D = floor(d/2)+1
+    
+    
+    let -2 d! SUM = [even n]Even(d,n)IIe(n,D) + [odd n]Odd(d,n)IIo(n,D-[even d])
+        = f(d,n) * IIe(n,D) + (1-(-1)**n) d!/(-2)**d
+    ==>> Even(d,n)=f(d,n)
+    Even(d,n)*IIe(n,D) + 2 d!/(-2)**d = 
+        = Odd(d,n)*IIo(n,D), for [odd d]
+        = Odd(d,n)*IIo(n,D-1), for [even d]
+    [d>0]: LC(Even) = LC(Odd) = 1
+    degree(Even) = deg(f) = floor((d-1)/2)
+    [d>0]: degree(Odd) = floor((d-1)/2) + [even d] = floor(d/2)
+
+    
+    [odd d]:
+        d=2D-1
+        degree(Even(d,n)) = degree(Odd(d,n)) = d-D = D-1
+        Even(d,n)*IIe(n,D) - Odd(d,n)*IIo(n,D) = -2 d!/(-2)**d
+        NOTE: gcd(IIe(n,D), IIo(n,D)) = 1
+        find s,t, s.t. s*IIe(n,D) - t*IIo(n,D) = 1, degree(s)==k-1=floor(d/2)
+        
+        degree(s) = D-1 = floor(d/2)
+            = (d-1)/2 = (d-1)//2 = degree(\n:f(d,n))
+
+        f(d,n)=Even(d,n) = s*(-2 d!/(-2)**d) for [odd d] # d=2D-1
+        Odd(d,n) = t*(-2 d!/(-2)**d)
+    [even d>0]:
+        d=2D-2
+        degree(Even(d,n)) = degree(Odd(d,n)) - 1 = d-D = D-2
+        degree(Odd(d,n)) = D-1
+        Even(d,n)*IIe(n,D) - Odd(d,n)*IIo(n,D-1) = -2 d!/(-2)**d
+        -2/d(Even(d,n)(n-2(D-1))*IIe(n,D-1) - Odd(d,n)*IIo(n,D-1)) = -2 (d-1)!/(-2)**(d-1)
+        -2/d Even(d,n)(n-2(D-1)) = Even(d-1,n) + K IIo(n,D-1)
+        -2/d Odd(d,n) = Odd(d-1,n) + K IIe(n,D-1)
+        degree(Odd(d-1,n)) = floor((d-1)/2) = floor(d/2) - 1 
+            < degree(Odd(d,n)) = floor(d/2) = D-1 = degree(IIe(n,D-1))
+        ==>> K = LC(-2/d Odd(d,n)) = -2/d
+        
+        Even(d,n) = (IIo(n,D-1) - Even(d-1,n)d/2)/(n-2(D-1))
+        Odd(d,n) = (IIe(n,D-1) - Odd(d-1,n)d/2)
+        
+    
+
+    d=2, k=2: 
+        f(2,n)=1, IIe(n,2) = n(n-2), IIo(n,2)=(n-1)(n-2)
+        Even(2,n)=1, Odd(2,n)=
+
+
+    ------------- from:
+    T d (-1) n = sum (-1)**i C(i,d) {i=0->n}
+        = sum C(-1,i) C(i,d) {i=0->n}
+        = sum C(-1,d) C(-1-d, i-d) {i=0->n}
+        = C(-1,d) sum C(-1-d, i) {i=-d->n-d}
+        2 T d (-1) n = sum (-1)**i C(i,d) {i=0->n} + sum (-1)**i C(i,d) {i=0->n} 
+            = C(0,d) + sum (-1)**i C(i,d) {i=1->n} + sum (-1)**i C(i,d) {i=0->n-1} + (-1)**(n-1) C(n-1,d)
+            = C(0,d) + (-1)**(n-1) C(n-1,d) + sum (-1)**(i+1) C(i+1,d) + (-1)**i C(i,d) {i=0->n-1}
+            = C(0,d) + (-1)**(n-1) C(n-1,d) + sum (-1)**(i+1) (C(i+1,d)-C(i,d)) {i=0->n-1}
+            = C(0,d) + (-1)**(n-1) C(n-1,d) - sum (-1)**i C(i,d-1) {i=0->n-1}
+            = C(0,d) - (-1)**n C(n-1,d) - T (d-1) (-1) (n-1)
+        [d=0]: 2 T d (-1) n = 1-(-1)**n
+        [d>0]: 2 T d (-1) n = - (-1)**n C(n-1,d) - T (d-1) (-1) (n-1)
+            (-2)**n T d (-1) n = -2**(n-1) C(n-1,d) + (-2)**(n-1) T (d-1) (-1) (n-1)
+                = - sum 2**(n-i) C(n-i,d+1-i) {i=1..n} + (-2)**0 T (d-n) (-1) 0
+                = - sum 2**i C(i,d+1-n+i) {i=0..n-1}
+                = - sum 2**i C(i,n-d-1) {i=0..n-1} # === 0 if n<=d??? yes!
+                
+                = - sum 2**(n-i) C(n-i,d+1-i) {i=1..d} + (-2)**(n-d) T 0 (-1) (n-d)
+                    # here maybe i < 0, C(i,d+1-n+i) != C(i,n-d-1)
+                = - sum 2**i C(i,d+1-n+i) {i=n-d..n-1} - 2**(n-d) (1-(-1)**(n-d))/2
+                [n<=d]: sum 2**i C(i,d+1-n+i) {i=n-d..-1} = -2**(n-d) (1-(-1)**(n-d))/2
+                [n>d]: sum 2**i C(i,d+1-n+i) {i=0..n-d-1} = 2**(n-d) (1-(-1)**(n-d))/2
+                    = sum 2**i C(i,n-d-1) {i=0..n-d-1}
+                    sum 2**i C(i,n) {i=0..n} = 2**(n+1) (1-(-1)**(n+1))/2
+
+
+sum z**i C(i,d) {~i=0->n}, for [NN d,n]
+    [CC z != 1]: = u**d/(1-z)(1 - z**n sum C(n,k) / u**k {k=0..d})
+        where u = z/(1-z)
+    [z = 1]: = C(n, d+1)
+    
+    
+    X = sum f(i) g(i) {~i}
+    dff (f*g) = shft f * dff g + dff f * g
+    dff f * g = dff (f*g) - shft f * dff g
+    sum dff f * g {~} = f*g - sum shft f * dff g {~}
+    
+    let T d z = sum z**i C(i,d) {~i}
+    dff f = \i:z**i
+    f i = z**i/(z-1)
+    g i = C(i, d)
+    dff g i = C(i, d-1)
+    T 0 z = sum z**i {~i} = f + C = -z**i/(1-z) + C
+    T d z = z**i/(z-1) * C(i, d) - sum z**(i+1)/(z-1) C(i, d-1) {~}
+        = -z**i/(1-z) C(i, d) + z/(1-z) T(d-1, z)
+    let u = z/(1-z)
+    T d z / u**d = z**i/(z-1) C(i, d) / u**d + T(d-1, z)/ u**(d-1) 
+        = -sum z**i/(1-z) C(i, k)/ u**k {k=1..d} + T(0,z)
+        = -sum z**i/(1-z) * C(i, k)/ u**k {k=1..d} - z**i/(1-z) + C
+        = C - z**i/(1-z) sum C(i, k) / u**k {k=0..d}
+        
+        
+    T d z = sum z**i C(i,d) {~i} for [NN d]
+    u = z/(1-z)
+    T d z / u**d = \i:(C - z**i/(1-z) sum C(i, k) / u**k {k=0..d})
+    assume C=K(z,n) ==>> DD C {d} === 0
+    T d z / u**d |: 0->n for [NN d,n]
+        = 1/(1-z) sum C(0, k) / u**k {k=0..d} - z**i/(1-z) sum C(i, k) / u**k {k=0..d}
+        = 1/(1-z) - z**n/(1-z) sum C(n, k) / u**k {k=0..d}
+    T d z n = (T d z / u**d |: 0->n) * u**d, for [NN d,n]
+        = u**d/(1-z) - z**n/(1-z) sum C(n,k) u**(d-k) {k=0..d}
+    =?= sum z**i C(i,d) {~i=0->n} for [NN d,n]
+    0 =?= T d z 0 = u**d/(1-z) - 1/(1-z) sum C(0,k) u**(d-k) {k=0..d} = 0; yes
+    z**n C(n,d) =?= T d z (n+1) - T d z n
+        = z**n/(1-z) sum (C(n,k)-C(n+1,k)z) u**(d-k) {k=0..d}
+        = z**n/(1-z) sum (C(n,k)-C(n,k-1)z-C(n,k)z) u**(d-k) {k=0..d}
+        = z**n/(1-z) sum C(n,k)(1-z) u**(d-k) {k=0..d}
+            - z**n/(1-z) sum C(n,k-1)z u**(d-k) {k=0..d}
+        = z**n sum C(n,k) u**(d-k) {k=0..d}
+            - z**n sum C(n,k-1) u**(d+1-k) {k=0..d}
+        = z**n sum C(n,k) u**(d-k) {k=0..d}
+            - z**n sum C(n,k) u**(d-k) {k=-1..d-1}
+        = z**n C(n,d) - z**n C(n,-1) u**(d+1)
+            [NN n] ==>> C(n,-1) = 0
+        = z**n C(n,d); yes
+
+    
+    let T d z n = sum z**i C(i,d) {~i=0->n} for [NN d,n]
+        =?= u**d/(1-z) - z**n/(1-z) sum C(n,k) u**(d-k) {k=0..d}
+            = u**d/(1-z)(1 - z**n sum C(n,k) / u**k {k=0..d})
+    
+    
+    T d z 0 = 0
+    T d z 1 = C(0,d) = [d=0]
+    [0<=n<=d] ==>> T d z n = 0
+    T d z (d+1) = z**d
+    T d 0 n = [n>0][d=0]
+    T d 1 n = sum C(i,d) {i=0->n} = C(n, d+1)
+    T 0 z n = sum z**i {i=0->n} = (1-z**n)/(1-z)
+    T 0 1 n = fall(n,1) = n = lim (1-z**n)/(1-z) {z->1} = n
+    
+    check:
+        T d z 1 = [d=0] =?= 
+            [d>0]: u**d/(1-z) - z/(1-z) sum C(1,k) u**(d-k) {k=0..1}
+                = u**d/(1-z) - z/(1-z) (u**d + u**(d-1))
+                = u**d/(1-z)(1-z-z/u) = 0
+            [d=0]: 1/(1-z) - z/(1-z) sum C(1,k) u**(0-k) {k=0..0}
+                = 1/(1-z) - z/(1-z) = 1
+        [0<=n<=d]: T d z n = 0 =?=
+            right / (u**d/(1-z)) = (1 - z**n sum C(n,k) / u**k {k=0..d})
+                = 1 - z**n sum C(n,k) / u**k {k=0..n}
+                = 1 - z**n (1-1/u)**n = 0
+        T d z (d+1) = z**d =?= 
+            right / (u**d/(1-z)) = (1 - z**n sum C(n,k) / u**k {k=0..d})
+                = 1 - z**n sum C(n,k) / u**k {k=0..n} + z**n C(n,n) / u**n
+                = z**n / u**n
+            right = u**(n-1)/(1-z) z**n / u**n = z**d
+        T d 0 n = [n>0][d=0] =?= 
+            z = 0; u = 0;
+            right = u**d/(1-z) - z**n/(1-z) sum C(n,k) u**(d-k) {k=0..d}
+                = u**d - z**n C(n,d)
+                = [d=0] - [n=0]C(n,d)
+                = [d=0] - [n=0]C(0,d)
+                = [d=0] - [n=0][d=0]
+                = [d=0](1-[n=0])
+                = [d=0][n>0]
+        T d 1 n = sum C(i,d) {i=0->n} = C(n, d+1) =?= 
+            [0<=n<=d]: = 0
+            [n=d+1]: = z**d = 1
+            [n>d]:
+            right = lim u**d/(1-z)(1 - z**n sum C(n,k) / u**k {k=0..d}) {z->1}
+                = lim z->1: z**d/(1-z)**(d+1)(1 - sum C(n,k) (1-z)**k z**(n-k) {k=0..d})
+                = lim z->1: (z**d - sum C(n,k) (1-z)**k z**(n+d-k) {k=0..d})/(1-z)**(d+1)
+                = DD^(d+1) \z:(z**d - sum C(n,k) (1-z)**k z**(n+d-k) {k=0..d}) 1 / (d+1)! (-1)**(d+1)
+            DD (f*g) = (DD f)*g + f*(DD g)
+            DD^2 (f*g) = (DD^2 f)*g + 2 (DD f)(DD g) + f*(DD^2 g)
+            def (F +++ G) (f +*+ g) = (F f +*+ G g)
+            [F.H=H.F][G.T=T.G] ==>> (F +++ G) . (H +++ T) = (H +++ T) . (F +++ G)
+            def TO_MUL (f +*+ g) = f*g
+            def TO_MUL (f + g) = TO_MUL f + TO_MUL g
+            def TO_MUL . TO_MUL = TO_MUL
+            DD (f*g) = TO_MUL . ((DD+++1) + (1+++DD)) (f +*+ g)
+            DD^m (f*g) = TO_MUL . ((DD+++1) + (1+++DD))^m (f +*+ g)
+            DD^m (f*g) = sum C(m,i) DD^i f * DD^(m-i) g {i}
+
+            DD^(d+1) \z:(z**d - sum C(n,k) (1-z)**k z**(n+d-k)
+                = DD^(d+1) \z:(- sum C(n,k) (1-z)**k z**(n+d-k) {k=0..d})
+                = - sum C(n,k) sum C(d+1,i) DD^i (1-z)**k * DD^(d+1-i) z**(n+d-k) {i} {k=0..d}
+                = - sum sum C(n,k) C(d+1,i) fall(k,i) (1-z)**(k-i) (-1)**i * fall(n+d-k, d+1-i) z**(n+d-k) {i} {k=0..d}
+            (DD^(d+1) \z: ...) 1 = - sum sum C(n,k) C(d+1,i) fall(k,i) [k=i] (-1)**i * fall(n+d-k, d+1-i) {i} {k=0..d}
+                = - sum C(n,k) C(d+1,k) k! (-1)**k * fall(n+d-k, d+1-k){k=0..d}
+                = - sum (-1)**k C(n,k) (d+1)!/(d+1-k)! fall(n+d-k, d+1-k){k=0..d}
+                = -(d+1)! sum (-1)**k C(n,k) C(n+d-k, n-1){k=0..d}
+
+            right = (DD^(d+1) \z: ...) 1 / (d+1)! (-1)**(d+1)
+                = sum (-1)**(d-k) C(n,k) C(n+d-k, n-1){k=0..d}
+                = sum (-1)**k C(n,d-k) C(n+k, n-1){k=0..d}
+                = sum (-1)**k n!/(d-k)!/(n-d+k)! (n+k)!/(n-1)!/(k+1)! {k=0..d}
+                = n sum (-1)**k (n+k)!/(d-k)!/(n-d+k)! /(k+1)! {k=0..d}
+                = n/(d+1) sum (-1)**k (n+k)!/d!/(n-d+k)! (d+1)!/(d-k)!/(k+1)! {k=0..d}
+                = n/(d+1) sum (-1)**k C(n+k, d) C(d+1, k+1) {k=0..d}
+                = n/(d+1) (sum (-1)**k C(n+k, d) C(d+1, k+1) {k=-1..d} + C(n-1,d))
+                = n/(d+1) sum (-1)**k C(n+k, d) C(d+1, k+1) {k} + C(n,d+1)
+                    [CMath 5.24] l=d+1; m=1; s=n; n=d ==>> (-1)**(l+m) C(s-m,n-l) = (-1)**(d+1+1) C(n-1,d-(d+1)) = (-1)**d C(n-1,-1)
+                = C(n,d+1); yes
+
+            
+        T 0 z n = sum z**i {i=0->n} = (1-z**n)/(1-z) =?= 
+            u**d/(1-z)(1 - z**n sum C(n,k) / u**k {k=0..d})
+                = 1/(1-z)(1 - z**n C(n,0) / u**0)
+                = (1-z**n)/(1-z)
+
+
+
+sum i**d z**i {~i=0->n} = Sum(i**d * z**i, (i, 0, n-1))
+        for [NN d,n][CC z]
+    
+    let S d z n = sum i**d z**i {~i=0->n}
+    let u = z/(1-z)
+    S d z n = sum sum fall(i,j) Stirling{d,j} {j} z**i {~i=0->n}
+        = sum sum fall(i,j) z**i {~i=0->n} Stirling{d,j} {j}
+        = sum u**j/(1-z)(1 - z**n sum C(n,k) / u**k {k=0..j}) Stirling{d,j} {j}
+        = sum u**j/(1-z) Stirling{d,j} {j}
+            - sum sum u**j/(1-z) z**n C(n,k) / u**k Stirling{d,j} {k=0..j} {j}
+
+        sum sum ... = z**n/(1-z) sum sum u**j C(n,k) / u**k Stirling{d,j} {k=0..j} {j=0..d}
+            = z**n/(1-z) sum sum u**j C(n,k) Stirling{d,j} {j=k..d}/ u**k {k=0..d}
+        
+        
+    let Eulerian_1st_poly d z = sum Eulerian<d,i>z**(d-i){i}, for [NN d]
+        [PN d]: = z sum Eulerian<d,d-1-i>z**(d-1-i){i} 
+            = z sum Eulerian<d,i>z**i {i}, for[PN d]
+        = z**[d>0] sum Eulerian<d,i>z**i {i}, for [NN d]
+    E1P = Eulerian_1st_poly
+    prove:
+    (S d z n)(1-z)**d =?= z**n sum C(d,j) n**j (1-z)**j E1P(d-j, z) {j} -E1P(d, z)
+    = z**n sum C(d,j) ((1-z)n)**(d-j) E1P(j, z) {j} -E1P(d, z)
+
+    sum C(d,j) ((1-z)n)**(d-j) E1P(j, z) {j}
+    = sum C(d,j) ((1-z)n)**(d-j) sum Eulerian<j,i>z**(j-i) {i} {j} 
+    = ((1-z)n)**d sum sum C(d,j) (z/(1-z)/n)**j Eulerian<j,i> {j} z**(-i) {i}
+        let K = ((1-z)n)**d, u = (z/(1-z)/n)
+    = K sum sum C(d,j) u**j Eulerian<j,i> {j} z**(-i) {i}
+    [.:k~z]((S d z n)(1-z)**d) = sum i**d * C(d,k-i)(-1)**(k-i) {i=0..n-1}
+    [.:k~z]right = 
+m! = sum C(m,i)(-1)**(m-i) (x+i)**m {i=0..m}
+    source: x**n = sum ?A(m,n,i) (x+i)**m {i=0..m} for m>=n
+
+    f(x) = x**m = sum Stirling{m,i} fall(x,i) {i=0..m}
+    right = T**m f x = Stirling{m,m} T**m \x:fall(x,m) x
+    T fall(\x,k) = fall(x+1,k) - fall(x,k) = k*fall(x,k-1)
+    right = m! = left
+    [DONE]
+(x+m/2)(m+1)! = sum C(m,i)(-1)**(m-i) (x+i)**(m+1) {i=0..m}
+    f(x) = x**(m+1) = sum Stirling{m+1,i} fall(x,i) {i=0..m+1}
+    right = T**m f x 
+        = Stirling{m+1,m} T**m fall(\x,m) x 
+        + Stirling{m+1,m+1} T**m fall(\x,m+1) x
+        = Stirling{m+1,m} m! + (m+1)! fall(x,1)
+        = C(m+1,2) m! + (m+1)! x
+        = (m+1)! (m/2 + x)
+    [DONE]
+
+
+
+F = fibonacci
+let f(m) = min {n>0| F[n] = 0 (mod m)} if m != 0 else 0
+[prime p] ==>> [not p**2\F[f(p)]]
+[prime p != 2] ==>> [not p**3\F[f(p)p]]
+f(F[m]**E) = M*F[M]**(E-1)/d1(m), for [E>=3]
+    where M=|m|, d1(m) = 2**[3 == m mod 6] = 2 if m=6i+3 else 1
+    
+
+
+let inv2(p, i) == 1/i (mod p**2) for [not p\i]
+let s(p,k) = sum inv2(p, p*k+i) {i=1..p-1}
+[prime p>=5] ==>> s(p,k) == 0 (mod p**2) != 0 (mod p**3)
+    source:
+        [prime p>=5] ==>> Stirling[p,2] = (p-1)!*H[p-1] == 0 (mod p**2) != 0 (mod p**3)
+
+    
+
+
+-------------
+ln (n!) = ?
+    left = sum ln (1+i) {i=0..n-1}
+        = sum sum (-1)**(j+1)/j i**j {j>0} {i=0..n-1}
+        = sum (-1)**(j+1)/j sum i**j {i=0..n-1} {j>0}
+        = sum (-1)**(j+1)/j 1/(j+1) sum C(j+1,k)B[k]n**(j+1-k) {k=0..j} {j>0}
+        = sum (-1)**(j+1)/j 1/(j+1) sum C(j+1,i)B[j+1-i]n**i {i=1..j+1} {j>0}
+        = sum (-1)**(j+1)/j 1/(j+1) sum C(j+1,i+1)B[j-i]n**(i+1) {i=0..j} {j>0}
+        = sum (-1)**(j+1)/j 1/(j+1) (C(j+1,0+1)B[j-0]n**(0+1) + sum C(j+1,i+1)B[j-i]n**(i+1) {i=1..j}) {j>0}
+        = sum (-1)**(j+1)/j/(j+1) sum C(j+1,i+1)B[j-i]n**(i+1) {i=1..j} {j>0}
+        + n * sum (-1)**(j+1)/j B[j] {j>0}
+        = sum sum (-1)**(j+1)/j/(j+1) C(j+1,i+1)B[j-i] {j>=i}n**(i+1) {i>0}
+        + ...
+        = sum sum (-1)**(j+i+1)/(j+i)/(j+i+1) C(j+i+1,j)B[j] {j>=0}n**(i+1) {i>0} + ...
+        = sum sum (-1)**(j+i)/(j+i-1)/(j+i) C(j+i,j)B[j] {j>=0}n**i {i>=2} + ...
+        = gf <0, sum (-1)**(j+1)/j B[j] {j>0}, \i:sum (-1)**(j+i)/(j+i-1)/(j+i) C(j+i,j)B[j] {j>=0}...>
+
+        // 1/(m+1) C(m+1, k)B[k] = sum Stirling{m,i}Stirling[i+1,m+1-k]/(i+1) (-1)**(i-m+k){i>=0}
+sum (-1)**(j+1)/j B[j] {j>0} = 
+
+
+        
+        
+        
+
+
+
+
+
+
+

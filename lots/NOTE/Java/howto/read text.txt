@@ -1,0 +1,63 @@
+https://stackoverflow.com/questions/4716503/reading-a-plain-text-file-in-java
+
+java.nio.file.Path
+java.nio.file.Paths
+java.nio.charset.Charset
+java.io.IOException
+java.nio.file.Files
+    throws IOException
+
+In Java 7:
+    new String(Files.readAllBytes(...))
+        //String content = new String(Files.readAllBytes(Paths.get("sample.txt")));
+    Files.readAllLines(...)
+    // Paths:
+        //static Path get(String first, String... more)
+    // Files:
+        //static List<String> readAllLines(Path path, Charset cs)
+        //static byte[] readAllBytes(Path path)
+        //static Path write(Path path, Iterable<? extends CharSequence> lines, Charset cs, OpenOption... options)
+        //static BufferedReader newBufferedReader(Path path, Charset cs)
+        //static BufferedWriter newBufferedWriter(Path path, Charset cs, OpenOption... options)
+
+In Java 8:
+    Files.lines(...).forEachOrdered(...)
+    Files.lines(...).forEach(...)       // executed in parallel
+
+=========================================
+try(BufferedReader br = new BufferedReader(new FileReader("file.txt"))) {
+    StringBuilder sb = new StringBuilder();
+    String line = br.readLine();
+
+    while (line != null) {
+        sb.append(line);
+        sb.append(System.lineSeparator());
+        line = br.readLine();
+    }
+    String everything = sb.toString();
+}
+
+
+=========================================
+try(FileInputStream inputStream = new FileInputStream("foo.txt")) {
+    String everything = IOUtils.toString(inputStream);
+    // do something with everything string
+}
+
+
+=========================================
+// not so efficient like BufferedReader
+// But much easier to use than BufferedReader
+//
+String outString;
+try(Scanner in = new Scanner(new InputStreamReader(new FileInputStream("txt.u8"), StandardCharsets.UTF_8))){
+    //Scanner in = new Scanner(new FileReader("filename.txt"));
+    StringBuilder sb = new StringBuilder();
+    while(in.hasNext()) {
+        sb.append(in.next());
+    }
+    //in.close();
+    outString = sb.toString();
+}
+
+

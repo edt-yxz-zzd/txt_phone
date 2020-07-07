@@ -1,0 +1,146 @@
+
+[page 49]
+
+[sequential object] v.s. [concurrent object]
+[sequential specification] ::= 
+    [(method, precondition, postcondition)]
+    postcondition includes return value and side effect (a change to object's state)
+
+    makes perfect sense in a sequential model of computation
+    an object must assume a meaningful state only between method calls
+
+
+
+for concurrent objects, however, overlapping method calls maybe in progress at every instant, so the object may never be between method calls.
+[Quiescent Consistency]
+
+[method call]
+    A method call is the interval that starts with an invocation event and ends with a response event. 
+    Method calls by concurrent threads may overlap, 
+        while method calls by a single thread are always sequential
+        (non-overlapping, one-after-the-other). 
+        // why?? no embedding??
+    [pending method call]
+        We say a method call is pending if its call event has occurred, but not its response event.
+
+[register] ::= the object version of a read-write memory location
+
+
+Principle3.3.1. Method calls should appear to happen in a one-at-a-time, sequential order.
+    permits reads always to return the object's initial state, even in sequential executions.
+
+
+[quiescent object]
+    An object is quiescent if it has no pending method calls.
+
+Principle3.3.2. Method calls separated by a period of quiescence should appear to take effect in their real-time order.
+
+[quiescent consistency] 
+    ::= a correctness property defined by Principles 3.3.1 and 3.3.2
+    it says that any time an object becomes quiescent, 
+        then the execution so far is equivalent to some sequential execution of the completed calls.
+        // overlap method calls (or connected by overlap methods and so on) can be reordered
+    quiescent consistency is a nonblocking correctness condition
+        for any pending invocation of a total method, there exists a quiescently consistent response.
+    
+    // on object
+    quiescent consistency is compositional, 
+        so quiescently consistent objects can be composed to construct more complex quiescently consistent objects.
+
+
+[total method] v.s. [partial method]
+    A method is total if it is defined for every object state; otherwise it is partial.
+    // we mayh throw exception on error, so I think total is nonblocking, partial is blocking
+
+[compositional correctness property]
+    A correctness property P is compositional if, whenever each object in the system satisfies P, the system as a whole satisfies P.
+
+    Compositionality is important in large systems. 
+    Any sufficiently complex system must be designed and implemented in amodularfashion. 
+
+
+
+[Sequential Consistency] // ~ on thread v.s. on object ~ quiescent consistency
+
+[program order]
+    The order in which a single thread issues method calls is called its program order. 
+    (Method calls by different threads are unrelated by program order.)
+
+Principle3.4.1. Method calls should appear to take effect in program order.
+
+[sequential consistency] 
+    ::= a correctness property defined by Principles 3.3.1 and 3.4.1
+    which is widely used in the literature on multiprocessor synchronization.
+
+    there is a way to order the method calls sequentially so that they 
+        (1) are consistent with program order, and 
+        (2) meet the object's sequential specification. 
+    There may be more than one order satisfying this condition.
+    
+    Sequential consistency, like quiescent consistency, is nonblocking: 
+        any pending call to a total method can always be completed.
+
+    // on method
+    sequential consistency is not compositional
+        every object is sequentially consistent
+        objects as a whole may not
+        // method calls of different objects can be reorder!
+
+    Sequential consistency is a good way to describe standalone systems, such as hardware memories, where composition is not an issue.
+        // each sequential consistency object can have a global memory and a private memory for each thread
+        // the update is unpredicated if compare with other objects
+
+sequential consistency and quiescent consistency are incomparable
+
+[memory barrier] or [fence]
+    In most modern multiprocessor architectures, memory reads and writes are not sequentially consistent: they can be typically reordered in complex ways.
+        Most of the time no one can tell, because the vast majority of reads-writes are not used for synchronization.
+        In those specific cases where programmers need sequential consistency, they must ask for it explicitly. 
+        The architectures provide special instructions (usually called memory barriers or fences) that instruct the processor to propagate updates to and from memory as needed, to ensure that reads and writes interact correctly. 
+        In the end, the architectures do implement sequential consistency, but only on demand. 
+
+
+
+[linearizability]
+Principle3.5.1. Each method call should appear to take effect instantaneously at some moment between its invocation and response.
+    the real-time behavior of method calls must be preserved.
+    Every linearizable execution is sequentially consistent
+
+[Linearization Point]
+    The usual way to show that a concurrent object implementation is linearizable is
+        to identify for each method a linearization point where the method takes effect.
+    For lock-based implementations, each method's critical section can serve as its linearization point. 
+    For implementations that donot use locking, the linearization point is typically a single step where the effects of the method call become visible to other method calls.
+    // effects become visible to other method calls
+
+
+Linearizability is nonblocking and compositional
+    the result of composing linearizable objects is linearizable.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

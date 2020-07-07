@@ -1,0 +1,39 @@
+[peak-tracking algorithm]
+    This method employs STFT analysis data to control an additive synthesiser. In this case, the analysis stage includes an algorithm that converts the STFT data into amplitude and frequency trajectories – or envelopes – that span across the STFT frames. This is generally referred to as the "peak-tracking algorithm" and can be implemented in a number of ways.
+
+[envelope]
+    ？？包络？？
+    ？？幅度/包络控制器？？
+    1) envelope for the window
+    2) the size of the window
+    3) the overlap factor
+
+    1) envelope for the window
+        various types of envelopes for windowing
+            Hamming function
+            Kaiser function
+            -- Both functions have a bell-like shape
+
+        From the various types of envelopes for windowing available, Phase Vocoder normally employs either the Hamming functionor the Kaiser function. Both functions have a bell-like shape. One may provide better analysis results than the other, depending upon the nature of the sound analysed and the kind of result expected.
+    2) the size of the window
+        window_size = num_samples_per_window
+            should: sampling_rate/num_channels < lowest_interest_frequency
+            ==>> num_channels > sampling_rate / lowest_interest_frequency
+            I think: ??num_channels = window_size?? - seems fault
+            what is num_channels??
+        time_resolution = window_size / overlap_factor / sampling_rate
+            = the time per window go ahead
+            = the time per window span if overlap_factor == 1
+            -- sampling_rate - unit : Hz
+            -- time_resolution - unit : second
+            -- the smaller time_resolution, the better resolution
+            should: time_resolution >= 4 / lowest_interest_frequency
+            ==>> window_size >= 4*overlap_factor*sampling_rate/lowest_interest_frequency
+
+        The size of the window defines the number of input samples to be analysed at a time. The larger the window, the greater the number of channels, but the lower the time resolution, and vice versa. This should be set large enough to capture four periods of the lowest frequency of interest. The sampling rate divided by the number of channels should be less than the lowest pitch in the input sound. This may be set in terms of the lowest frequency of interest or in terms of the number of channels required. Note that the term ‘channel’ is the Phase Vocoder jargon for what we referred earlier to as harmonic detectors (Figure 3.11).
+    3) the overlap factor
+        step = window_size/overlap_factor
+        window[i] = samples[i*step, i*step+window_size]
+
+        The overlap factor is the number of samples that the algorithm skips along the input samples each time it takes a new window (Figure 3.12). This factor is specified as a fraction of the window size; e.g. an eighth of the window size.
+

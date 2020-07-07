@@ -1,0 +1,50 @@
+
+matrix_chain_ordering_problem O(nlogn)
+"how to determine the optimal parenthesization of a product of n matrices?" 
+1) matrix_chain_ordering_problem of n-matrices
+    -> parenthesized (total: (n-1)-th Catalan number)
+    -> triangulation of (n+1)-th polygon
+    1) cost of matrix (A by B) * (B by C) == A*B*C
+    2) a triangulation of (n+1)-th polygon (0..n) gives a product cost:
+        sum w[i]*w[j]*w[k] {triangle<i,j,k> in triangulation}
+        where
+            w =[def]= i-th matrix is (w[i] by w[i+1]) for i = 0..n-1
+    why?
+        polygon has not orientation, can rotate or reflex
+
+2) triangulation -> find diagonals
+    diagonal<i,j> where the less w[i],w[j], the better
+    V =[def]= sorted([0..n], key = w.__getitem__)
+    invV[v] =[def]= i iff V[i] == v
+    assert w[V[0]] == min(w[i] for i in [0..n])
+    assert w[V[-1]] == max(w[i] for i in [0..n])
+    consider:
+        # the less the better
+        arc01 = arc<V[0], V[1]>
+        arc02 = arc<V[0], V[2]>
+        arc03 = arc<V[0], V[3]>
+        arc12 = arc<V[1], V[2]>
+    NOTE:
+        arc == side or diagonal of polygon
+    ==>> if arc01 or arc02 is diagonal then we choose it to split polygon
+        [proof ...]
+    [arc01 and arc02 are both side][n>=3,i.e. polygon has at least 4 vertices]:
+        ==>> arc03 and arc12 are both diagonal
+        ==>> arc03 and arc12 are diagonal that cross each other
+        ==>> one of [arc03, arc12] should be choose
+            [proof ...]
+        how to choose??
+        let wVi =[def]= w[V[i]]
+        [choose arc12] ==>> [(1/wV0 + 1/wV3) <= (1/wV1 + 1/wV2)]
+        [(1/wV0 + 1/wV3) > (1/wV1 + 1/wV2)] ==>> [choose arc03]
+        consider the 4-polygon<V0,V1,V2,V3>
+            ==>> [(1/wV0 + 1/wV3) < (1/wV1 + 1/wV2)] ==>> [choose arc12]
+            ==>> [choose arc03] ==>> [(1/wV0 + 1/wV3) >= (1/wV1 + 1/wV2)]
+            [proof...]
+        difficult case: [(1/wV0 + 1/wV3) == (1/wV1 + 1/wV2)]
+        [wV0 <= wV1 <= wV2 <= wV3] ==>> choose ???
+            [wV0 == wV1 <= wV2 <= wV3] ==>> choose arc12
+                let [V0,V1] be [V1,V0] in definition of V, hence arc12 be arc02
+            [wV0 < wV1 <= wV2 <= wV3] ==>> choose ???
+
+

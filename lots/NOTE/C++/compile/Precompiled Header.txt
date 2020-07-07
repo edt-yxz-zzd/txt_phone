@@ -1,0 +1,56 @@
+g++ -x all.hpp options... -o all.hpp.gch/[options...].gch
+mv all.hpp all.hpp._ && echo #error>all.hpp
+g++ -include "all.hpp" ...
+
+
+
+---------------------------------------------
+https://gcc.gnu.org/onlinedocs/gcc/Precompiled-Headers.html
+3.21 Using Precompiled Headers
+
+1. compile
+    g++ -x <header>
+    # xxx.hpp ==>> xxx.hpp.gch
+    use make to keep up-to-date
+2. search
+    always <header>.gch before <header> under same folder
+    at diff folder?
+        # use -I to ensure that directory is searched before
+        g++ -I<pch_folder> ...
+    // ? maybe diff option (-DNDEBUG) makes diff .gch
+    // so even there is a .gch, it may not be used
+    // see "3. test"
+3. test
+    g++ -x xxx.hpp
+    mv xxx.hpp xxx.hpp._ && echo #error>xxx.hpp
+
+4. global
+    good for projects not designed with precompiled header files in mind
+
+    others.hpp
+        include all other project headers included by ".cpp"
+
+    stds.hpp
+        include others.hpp
+        include most std headers used/may used
+    precompile stds.hpp
+        // stable!
+
+    all.hpp
+        include stds.hpp
+        include all stable headers of this project
+        include most extra std headers used/may used
+        include most extra others headers used/may used
+    precompile all.hpp
+        // not that stable
+
+    g++ -x all.hpp
+    g++ -include all.hpp xxx.cpp yyy.cpp ...
+        // ? xxx.cpp = '#include "all.hpp"\n' + xxx.cpp
+
+5. many
+    precompile the same header file for different languages, targets, or compiler options
+
+    g++ -x xxx.hpp options... -o xxx.hpp.gch/[options...].gch
+
+

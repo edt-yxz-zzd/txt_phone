@@ -1,0 +1,42 @@
+python---解决“Unable to find vcvarsall.bat”错误
+
+今天在安装reportlab时老是发生Unable to find vcvarsall.bat的错误，上网找了一下，在eddsn找到了“Unable to find vcvarsall.bat” error when trying to install rdflib这么一篇文章，解决了问题。方法如下：
+
+首先安装MinGW，在MinGW的安装目录下找到bin的文件夹，找到mingw32-make.exe，复制一份更名为make.exe；
+把MinGW的路径添加到环境变量path中，比如我把MinGW安装到D:\MinGW\中，就把D:\MinGW\bin添加到path中；
+打开命令行窗口，在命令行窗口中进入到要安装代码的目录下；
+输入如下命令就可以安装了。
+setup.py install build --compiler=mingw32
+
+
+===============================================
+error: Unable to find vcvarsall.bat
+
+搜索了网上大多数解决方案，多是要你换用mingw32或者修改Python官方源代码的，使用mingw32时会出现形如undefined reference to `_imp__Py...' build\temp.win-amd64-2.7无法链接到Python库的问题，本来想以这个为突破口寻求解决办法，结果在stackoverflow上《Cython won’t compile on Windows 7 x64》找到这么一段文字，给我泼了一盆冷水：
+
+I’d suggest you to switch to x86 Python, you gain no real advantage by using the x64 version. If you want to stick with x64, you can’t use MingW and you have to use MS SDK C++ compiler.
+意思是无法使用MingW编译64位的Python扩展，如果一定那么做就必须使用MSVC微软的编译器，有人肯定会问为什么不使用64位的mingw64呢？原文作者也给出了说明，也可以参考《Compiling 64-bit extension modules on Windows》这篇文章：
+
+** Do not use MinGW-w64. As you will notice, the MinGW import library for Python (e.g. libpython27.a) is omitted from the AMD64 version of Python. This is deliberate. Do not try to make one using dlltool. There is no official MinGW-w64 release yet, it is still in “beta” and considered unstable, although you can get a 64-bit build from e.g. TDM-GCC. There have also been issues with the mingw runtime conflicting with the MSVC runtime; this can happen from places you don’t expect, such as inside runtime libraries for g++ or gfortran. To stay on the safe side, avoid MinGW-w64 for now.
+意思是mingw64还不稳定，存在一些问题，那刚才的问题又回到了起先，还有一个办法是改官方的安装脚本源代码，我觉得这样不太好，于是摸索了一番，正好又在stackoverflow上找到这么一篇文章《Building 64-bit C Python extensions on Windows》，然后问题被成功解决了！
+
+下面我分享下可行的编译操作步骤：
+
+1.打开64位Visual Studio 2010命令行编译模式，你可以依次从开始菜单 – Microsoft Visual Studio 2010 – Visual Studio Tools – Visual Studio x64 Win64 命令提示(2010)，如下图所示：
+
+2.使用下面的命令设置环境：
+
+set DISTUTILS_USE_SDK=1
+set MSSdk=1
+2.切换到所要编译的扩展setup.py所在路径运行下面的命令进行编译：
+
+python setup.py install
+一会儿后如果相关依赖没有错误，并且源代码正确的话应该可以成功编译！编译完成后你可以从build\lib.win-amd64-2.7\找到代码包，并且也已经安装进Python环境中去了。
+
+如果编译出现问题，比如链接失败，你可以检查下环境设置是否有问题，比如系统Path变量是否包含C:\Python27\libs假设Python装在C盘。
+
+注：上述方案在Windows 7 x64、Visual Studio 2010以及Python 27 x64测试通过。
+
+
+
+

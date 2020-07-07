@@ -1,0 +1,186 @@
+
+
+;; Constructive propositional logic
+\ (=>) = \ A B : Sort, A -> B,
+    \ =>_in = \ A B : Sort, \ u : A -> B, (u :: A => B),
+    \ =>_el = \ A B : Sort, \ u : A => B, \ v : A, (u v :: B),
+\ Err = @ A : Sort, A,
+    \ Err_in = \ A : Sort, \ u : A, \ v : A => Err, (v u :: Err),
+    \ Err_el = \ A : Sort, \ u : Err, (u A :: A),
+\ Not = \ A : Sort, A => Err,
+    \ Not_in = \ A : Sort, \ u : A -> Err, (u :: Not A),
+    \ Not_el = \ A : Sort, \ u : Not A, \ v : A, (u v :: Err),
+\ (/\) = \ A B : Sort, (A, B), ;; </ /> fst snd swap_pair
+    \ /\_in = \ A B : Sort, \ u : A, \ v : B, (</ u, v /> :: A /\ B),
+    \ /\_el_1 = \ A B : Sort, \ u : A /\ B, (fst u :: A),
+    \ /\_el_2 = \ A B : Sort, \ u : A /\ B, (snd u :: B),
+\ (\/) = \ A B : Sort, (A | B), ;; left right alt_apply swap_either
+    \ \/_in_1 = \ A B : Sort, \ u : A, (left u :: A \/ B),
+    \ \/_in_2 = \ A B : Sort, \ v : B, (right v :: A \/ B),
+    \ \/_el = \ A B R : Sort, \ or : A \/ B, \ f : A -> R, \ g : B -> R,
+        (alt_apply </ f, g /> or :: R),
+\ (<=>) = \ A B : Sort, (A => B) /\ (B => A),
+    \ <=>_in = \ A B : Sort, \ u : A => B, \ v : B => A,
+        (/\_in (A => B) (B => A) u v :: A <=> B),
+    \ <=>_el_1 = \ A B : Sort, \ u : A <=> B,
+        (/\_el_1 (A => B) (B => A) u :: A => B),
+    \ <=>_el_2 = \ A B : Sort, \ u : A <=> B,
+        (/\_el_2 (A => B) (B => A) u :: B => A),
+    \ <=>_reflexivity = \ A : Sort, (<=>_in A A (id A) (id A) :: A <=> A),
+    \ <=>_symmetry = \ A B : Sort, \ a2b : A <=> B,
+        (<=>_in B A (<=>_el_2 a2b) (<=>_el_1 a2b) :: B <=> A)
+    \ <=>_transitivity = \ A B C : Sort, \ a2b : A <=> B, \ b2c : B <=> C,
+        (<=>_in A C
+            (\ a : A, <=>_el_1 b2c (<=>_el_1 a2b a))
+            (\ c : C, <=>_el_2 a2b (<=>_el_2 b2c c))
+        :: A <=> C
+        ),
+\ id : @ A : Sort, A -> A = \ A : Sort, \ a : A, a
+;; Classical propositional logic
+\ Excluded_Third : @ A : Sort, A \/ Not A,
+\ Double_Negation : @ A : Sort, Not Not` A => A
+    = \ A : Sort, \ nnA : Not Not` A,
+        \/_el A (Not A) (Excluded_Third A) (id A) (\ nA : Not A, nnA nA A),
+    \ NotNot_in = \ A : Sort, \ a : A, \ nA : Not A, nA a (Not Not` A),
+    \ NotNot_el = Double_Negation
+\ \/_in_alt_1 = \ A B : Sort, \ nA2B : Not A => B,
+    (\/_el A (Not A) (Excluded_Third A)
+        (\/_in_1 A B)
+        (\ nA : Not A, \/_in_2 A B (nA2B nA))
+    :: A \/ B
+    ),
+\ \/_in_alt_2 = \ A B : Sort, \ nB2A : Not B => A,
+    (swap_either (\/_in_alt_1 B A nB2A) :: A \/ B),
+\ \/_el_alt_1 = \ A B : Sort, \ AorB : A \/ B, \ nA : Not A,
+    (\/_el A B AorB (\ a : A, nA a B) (id B) :: B),
+\ \/_el_alt_2 = \ A B : Sort, \ AorB : A \/ B, \ nB : Not B,
+    (\/_el_alt_1 B A (swap_either AorB) nB :: A),
+
+
+
+;; Constructive predicate logic
+\ All = \ A : Sort, \ P : A -> Sort, @ a : A, P a,
+    ;; section; (a -: A) -> P a
+    \ All_in = \ A : Sort, \ P : A -> Sort, \ f : @ a : A, P a, (f :: All A P),
+    \ All_el = \ A : Sort, \ P : A -> Sort, \ f : All A P, \ a : A, (f a :: P a),
+\ Any = \ A : Sort, \ P : A -> Sort, ? a : A, P a,
+    ;; pair; (a -: A, P a)
+    ;; @ R : Sort, (@ a : A, P a -> R) -> R
+    \ Any_in = \ A : Sort, \ P : A -> Sort, \ a : A, \ Pa : P a,
+        (</ a, Pa /> :: Any A P),
+    \ Any_el = \ A : Sort, \ P : A -> Sort, \ p : Any A P,
+        \ R : Sort, \ f : @ a : A, P a -> R, (f (fst p) (snd p) :: R),
+        ;; p R f
+
+;; Classical predicate logic
+\ Any_in_alt = \ A : Sort, \ P : A -> Sort, \ u : Not @ a : A, Not (P a),
+    (\/_el (Any A P) (Not (Any A P)) (Excluded_Third (Any A P))
+        (id (Any A P))
+        (\notAnyAP : Not (Any A P),
+            u
+            (\ a : A, \/_el (P a) (Not (P a)) (Excluded_Third (P a))
+                (\Pa : P a, notAnyAP (Any_in a Pa) (Not (P a)))
+                (id (Not (P a)))
+             :: @ a : A, Not (P a)
+            )
+            (Any A P)
+        )
+    :: Any A P
+    ),
+
+\ Any_el_alt = \ A : Sort, \ P : A -> Sort, \ p : Any A P,
+    (\ f : @ a : A, Not (P a), f (fst p) (snd p) :: Not @ a : A, Not (P a)),
+
+\ Eq = \ A : Sort, \ x y : A, @ P : A -> Sort, P x <=> P y,
+\ Eq_reflexivity = \ A : Sort, \ x : A, (<=>_reflexivity (P x) :: Eq A x x),
+\ Eq_in = \ A : Sort, \ x y : A, \ f : @ P : A -> Sort, P x => P y,
+    (f (Eq A x) (Eq_reflexivity A x) :: Eq A x y),
+\ Eq_substitute = \ A : Sort, \ P : A -> Sort, \ x y : A,
+    \ eq : Eq A x y, \ Px : P x, (<=>_el_1 (P x) (P y) eq Px :: P y),
+\ Eq_congruence = \ A B : Sort, \ f : A -> B, \ x y : A, \ eq : Eq A x y,
+    (\ Q : B -> Sort, eq (\ a : A, Q (f a)) :: Eq B (f x) (f y)),
+\ BiRelation = \ A : Sort, A -> A -> Sort,
+\ Reflexivity = \ A : Sort, \ le : BiRelation A,
+    @ x : A, le x x,
+\ Transitivity = \ A : Sort, \ le : BiRelation A,
+    @ x y z : A, le x y => le y z => le x z,
+\ PreOrder = \ A : Sort, \ le : BiRelation A,
+    Reflexivity A le /\ Transitivity A le,
+\ Symmetry = \ A : Sort, \ le : BiRelation A, @ x y : A, le x y <=> le y x,
+\ AntiSymmetry = \ A : Sort, \ le : BiRelation A,
+    @ x y : A, le x y => le y x => Eq A x y,
+\ PartialOrder = \ A : Sort, \ le : BiRelation A,
+    PreOrder A le /\ AntiSymmetry A le,
+
+\ Eq_transitivity : @ A : Sort, Transitivity A (Eq A)
+    = \ A : Sort, \ x y z : A, \ xEy : Eq A x y, \ yEz : Eq A y z,
+        (Eq_substitute A (Eq A x) y z yEz xEy :: Eq A x z),
+\ Eq_symmetry : @ A : Sort, Symmetry A (Eq A)
+    = \ A : Sort, \ x y : A, \ xEy : Eq A x y,
+        ((\ P : A -> Sort, <=>_symmetry (P x) (P y) (xEy P)) :: Eq A y x),
+\ Eq_anti_symmetry : @ A : Sort, AntiSymmetry A (Eq A)
+    = \ A : Sort, \ x y : A, \ xEy : Eq A x y, \ yEx : Eq A y x, xEy,
+
+;; Unique existence
+\ Least = \ A : Sort, \ le : BiRelation A, \ min : A,
+    @ x : A, le min x,
+\ AtMostOne = \ A : Sort, \ P : A -> Sort,
+    @ x y : A, P x => P y => Eq A x y,
+    ;; ??
+\ AtLeastOne = Any,
+    ;; ?+
+\ ExactlyOne = \ A : Sort, \ P : A -> Sort,
+    AtLeastOne A P /\ AtMostOne A P,
+    ;; ?1
+\ The : @ A : Sort, @ P : A -> Sort, @ u : ExactlyOne A P, A
+    = \ A : Sort, \ P : A -> Sort, \ u : ExactlyOne A P,
+        fst (/\_el_1 u),
+\ The_proposition
+    : @ A : Sort, @ P : A -> Sort, @ u : ExactlyOne A P, P (The A P u)
+    = \ A : Sort, \ P : A -> Sort, \ u : ExactlyOne A P,
+        snd (/\_el_1 u),
+\ The_unique
+    : @ A : Sort, @ P : A -> Sort, @ u : ExactlyOne A P,
+        @ x : A, P x => Eq A x (The A P u)
+    = \ A : Sort, \ P : A -> Sort, \ u : ExactlyOne A P,
+        \ x : A, \ Px : P x,
+        /\_el_2 u   x (The A P u)   Px (The_proposition A P u),
+\ The_unique_proof_irrelevant
+    : @ A : Sort, @ P : A -> Sort, @ u v : ExactlyOne A P,
+        Eq A (The A P u) (The A P v)
+    = \ A : Sort, \ P : A -> Sort, \ u v : ExactlyOne A P,
+        The_unique A P v (The A P u) (The_proposition A P u),
+
+;; 273 (302 / 465)
+\ Min_proposition = \ A : Sort, \ le : BiRelation A,
+    \ u : AntiSymmetry A le, \ e : Any A (Least A le),
+    (
+        ( e
+        , \ min min' : A, \ s : Least A le min, \ t : Least A le min',
+            u min min' (s min') (t min)
+        )
+    :: ExactlyOne A (Least A le)
+    )
+\ Min = \ A : Sort, \ le : BiRelation A,
+    \ u : AntiSymmetry A le, \ e : Any A (Least A le),
+    (The A (Least A le) (Min_proposition A le u e) :: A),
+\ Min_unique = \ A : Sort, \ le : BiRelation A,
+    \ u : AntiSymmetry A le, \ e : Any A (Least A le),
+    (The_unique A (Least A le) (Min_proposition A le u e)
+    :: @ x : A, @ w : Least A le x, Eq A x (Min A le u e)
+    ),
+
+
+;; Sets and subsets
+\ Subset = Any,
+
+
+
+
+
+
+
+
+
+
+

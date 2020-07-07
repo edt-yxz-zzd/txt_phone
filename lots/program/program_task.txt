@@ -1,0 +1,101 @@
+os
+    - ls-tree
+    - rename
+    - save the paths of selected files in gui
+    - zip each item in one zipfile
+    - zip folder except some subitem
+    
+graph
+    - generate 3-regular bridgeless graph(loops,multi-edges,0点环)
+        1)plain-storage-form(symmetry_matrix[a,b]==number-of-edges)
+        2)expanding-form(add 2 vertices to each arc)
+        3)planar-graph-canonization-form //?Bridge-finding algorithm
+        4)planar-graph-ordering-form // boost-graph-library
+
+素数
+	- isprime.exe:: input string-of-huge-positive-number-base-10;; output Y or N;; needed primitive-testing-algorithm
+	- isprime_bitmap.dat:: each bit stands for isprime( offset-of-that-bit);; range of offset is [0, 2^32-1];; size of this file is 512MB
+	- primes.dat:: each 4B stands for a number from 2 to 2^32-1, little-endian;; first number is 2;; next number is the next prime;; size-of-file is about 500MB
+	- max_prime_factor.dat:: the number is the max prime factor of the offset of this number, except the first 2 number;; size-of-file is 16GB;; needed factor-algorithm;; used for positive-integer's-rooted-tree-representation
+	- min_prime_factor_but2357.dat:: sequence k = N but times of 2,3,5,or 7;; number at offset of file is min-p-factor of k( offset);; size-of-file is 3926827244B< 3.6GB< 4GB;;
+	- find out all witnesses for the compositeness of n (Miller–Rabin primality test)
+	   is there a simple kind of witnesses = f(n)?
+
+文字加密
+	- char_map.exe:: 英文ASCII、汉字加密－兼容集内部置换
+	- hex_map.exe:: input string-of-hex_char;; output hex_string of the same length;; input comes from binary-representation-of-file
+	- given m, calc {n}, s.t. phi(n) = m :: s = { p | (p-1)|m & p is a prime} try m = IIp^x*(p-1)
+	- reverse :: given m, a, calc b, s.t. a*b = 1 mod m => a*b+x*m = 1
+
+
+
+field
+	- A/B+C/D*sqrt(N)
+	- continued_fractions ::= [a0,....am,1] = a0 + 1/(a1+1/....+1/(am+1)..) 
+					or [a0,....,am, X/Y] = (k1*X+k2*Y)/(k3*X+k4*Y) => 
+							[a0,....,am, an, X/Y] = [a0,....,am, Y/(X+an*Y)] = (k1*Y+k2*(X+an*Y))/(k3*Y+k4*(X+an*Y)) 
+							= (k2*X+(k1+k2*an)*Y)/(k4*X+(k4*an+k3)*Y) =>
+							k1,k2,k3,k4 = k2,(k1+k2*an),k4,(k3+k4*an)
+
+file_process
+	- hex_edit_tool_set ::=
+	{
+		// offset-format ::= [-+]?( 0d[0-9]+ | 0x[0-9A-Z]+)
+		// if offset < 0, real-offset = offset + file_size + 1
+		uint            file_size()
+		bytes           snap_data_at( offset = 0, position = [first|middle|last]_line, width = 32, height = 16)
+		string          show_data_at( offset = 0, position = [first|middle|last]_line, width = 32, height = 16, line_offset = on|off, hex_data = on|off, printable_char = on|off) // special-char will show as space in the printable_char column
+		vector<offset>  search_bytes( match_bytes, from_offset = 0, to_offset = -1, stop_match_times = 0)  // if from > to, then search backward; if stop_match_times > 0, result.size <= stop_match_times 
+		error_code      overwrite_at( vector<offset>, writing_bytes)
+		error_code      match_and_replace_at( vector<offset>, writing_bytes, assert_original_bytes) // writing_bytes.size == assert_original_bytes.size
+		error_code      erase_and_replace_at( newfile_name, vector<offset>, writing_bytes, assert_original_bytes) // need not writing_bytes.size == assert_original_bytes.size, data will be shifting
+	}
+
+	
+
+文件格式定义语言
+static_store_file_format ::= 
+	PRE-DEFINE ::= 
+		byte_type ::= 8 bits nature_number in range[0,128)
+		nature_type ::= vary_length
+		pointer_type ::= fix_length in file_scope
+		vary_size_type ::= { nature_type size_of_data; raw_data} // size_of( raw_data) == size_of_data, so we can skip it
+		pointed_type base vary_size_type // move the vary_length_type to another space, then we can construct fix_size_types
+		array_type<fix_size_type> base vary_size_type ::= { nature_type size_of_data; some items of one fix_size_type} // size_of_data/size_of_item == number_of_item
+		bytes_type base array_type ::= array_type<byte>
+		string_type ::= { pointer_type bytes}
+		tree_node_type ::= { pointer_type upto_root; pointer_type node_data} // if upto_root->upto_root == upto_root, then it is a root
+		tree_node_data_type base pointed_type ::= { nature_type size_of_data; string_type local_unique_name; string_type content_description; pointer_type item_type_definition; pointer_type item} // if are_brothers( nodeX/Y), then nodeX.node_data->local_unique_name != nodeY.node_data->local_unique_name
+		tree_type ::= array_type<tree_node_type>
+
+	function depth( tree_node_type node) ::= 
+	{
+		if is_root( node) return 0;
+		else return 1+depth( *node.upto_root);
+	}
+
+	function name( tree_node_type node) ::= 
+	{
+		return node.node_data->local_unique_name;
+	}
+
+	function path( tree_node_type node) ::= 
+	{
+		if is_root( node) return '/' + name(node);
+		else return name( *node.upto_root) + '/' + name(node);
+	}
+		
+	file ::=
+	{
+		nature_type size_of_ptr; // size_of( file) < power( 2, 8*size_of_ptr)
+		type_definition ???
+		tree_type tree_of_items;
+		tree_node_data_type *s; // anonymity // uname // node_data in tree_of_items
+		string_type *s; // local_unique_name in tree_node_data
+		string_type *s; // content_description in tree_node_data
+		??? items...;
+	}
+
+	sorting ::= by path( node)
+		
+

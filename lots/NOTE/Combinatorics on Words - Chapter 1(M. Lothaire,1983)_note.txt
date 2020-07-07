@@ -1,0 +1,232 @@
+
+letter
+A:: alphabet - set of letter
+word - a word over the alphabet A is a finite sequence of elements of A
+    con - equipped with a binary operation obtained by concatenating two sequences
+    A* - set of all words over alphabet A
+
+1 - empty word
+
+monoid - a monoid is a set M with a binary operation that is associative and has a neutral element denoted by 1_M
+    monoid = monoid(M, mul_M, 1_M)
+    for x,y,z in M: mul_M(mul_M(x,y), z) = mul_M(x, mul_M(y,z))
+    for x in M: mul_M(x,1_M) = mul_M(1_M,x) = x
+morphism - a morphism of a monoid M into a monoid N is a mapping PHI of M into N compatible with operations of M and N
+    PHI :: M -> N
+    PHI(1_M) = 1_N
+    PHI(mul_M(x,y)) = mul_N(PHI(x), PHI(y))
+    
+universal property - Proposition 1.1.1.
+    for any ALPHA :: A::alphabet -> M::monoid, exist unique morphism PHI, s.t.
+        PHI :: A*::monoid -> M::monoid  
+    free monoid - call A* the free monoid over the set A
+
+A+ = A* - 1
+    A+ - free semigroup over A
+    a semigroup is a set with an associative binary operation
+        monoid is a semigroup with a 1
+
+X Y = {x y | x in X, y in Y}
+len(w) = |w| = length of word w
+    len :: free monoid A* -> additive monoid N
+let |w|_B = number of letters of w which belong to set B
+    |w|_a = |w|_{a} = number of occurrences of letter 'a' in word w
+    alph(w) = {a in A | |w|_a > 0}
+    |w| = sum |w|_a {a in A} = |w|_A = |w|_alph(w)
+    
+factor - a segment of a word
+    word x is a factor of word w <==> exist u,v in A*: w = u.x.v
+    "is factor of" is an order on A*
+    proper factor: x is a factor of w and x != w
+    left factor/prefix/initial segment - w = x.v
+    "<=" :: "is left factor of" is an order on A*
+        property of equidivisibility of the free monoid:
+            [u <= w][v <= w] ==>> [u<=v] or [v<=u]
+    right factor...
+reversal of word - w~
+subword - subsequence
+    x is subword of w <==> exist a[0] < a[1] < ... < a[t] in NN: x = II w[a[i]] {i=0..t}
+
+
+
+
+
+
+
+--------------------------------------
+
+1.2.Submonoids and Morphisms
+submonoid N of monoid M :: N.N = N and 1_M in N
+[X <= A] ==>> X* is submonoid of A*
+minimal generating set
+    P is submonoid of A* 
+    ==>> exist unique minimal X: X* = P 
+    ==>> X = (P-1) - (P-1)**2
+
+
+free monoid M <==> exist alphabet A: M is isomorphism to A*
+Proposition 1.2.1. [code generate free monoid]
+    let P be a submonoid of A* 
+    let X be the minimal generating set of P
+        P is free <==> exist unique factorization of P over X
+        P is free ==>> X is a code ==>> X is the basis of P
+    prefix X :: for x,y in X: [x<=y <--> x==y]
+    prefix code X :: X is prefix and 1 not in X   // NOTE: X={1} // but X={}??
+// code mimic alphabet
+
+Proposition 1.2.3. [word in free submonoid has unique factorization]
+    [P is a submonoid of A*]
+        [P is free] <==> [[w in A*][p,q, p.w, w.q in P] -->> [w in P]]
+    Corollary 1.2.4. [intersection of free submonoids is free]
+    [X <= A*] 
+        ==>> exist F be the smallest free submonoid contains X
+        ==>> exist Y be the minimal generating set of F
+        call Y the free hull of X
+// free hull
+
+
+Theorem 1.2.5(Defect theorem) [free hull smaller]
+    [finite X <= A*][X is not a code]
+        [X is not a code] ==>> [Card(X)>=2]
+        [Y is the free hull of X] ==>> [1 <= Card(Y) <= Card(X)-1]
+    Corollary 1.2.6. {x,y} is a code or {x,y} <= {z}*
+    
+nonerasing - [alphabet A,B][morphism PHI: B* -> A*]
+    def [PHI is nonerasing] ::= [PHI(B+) <= A+] 
+    <==> [PHI(B) <= A+] 
+    <==> [1_A not in PHI(B)]
+    <==> [w in B*][len(w)<=len(PHI(w))]
+
+
+
+------------------------
+1.3.Conjugacy
+
+primitive - [word x is primitive] <==> [[x in w*] -->> [x == w]]
+Proposition 1.3.1. [unique primitive word]
+    [x**n == y**m] ==>> [exist z: {x,y} <= z*]
+    [word w] ==>> [exist unique primitive word z: w in z*]
+    def primitive(w) = the unique primitive word z, s.t. w in z*
+Proposition 1.3.2. [commute iff powers]
+    [word w][set X][x.w==w.x for x in X] ==>> [exist word z: X <= z*]
+    let commute_set(w) = {word x | x.w==x.w}
+    ==>> commute_set(w) = primitive(w)*
+
+conjugate - u.v and v.u are conjugate
+def circlic_lshift(w) 
+    = 1 if [w == 1]
+    = x.a if [w == a.x][a in A][x in A*]
+{all conjugate words of w} = {orbit of circlic_lshift on w}
+
+
+Proposition 1.3.3. [conjugate iff roots too]
+    [conjugate x,y] <==> [conjugate primitive(x), primitive(y)]
+Proposition 1.3.4. [conjugate iff equ solvable]
+    [conjugate x,y] <==> [exist z: x.z == z.y]
+    [u.v.z = z.v.u] ==>> [z == u(v.u)*]
+    [x.z == z.y] <==> [{x,y,z} <= {x,y,z}* <= {u,v}*] // by defect theorem
+
+def nprim(k,n) = number of classes of conjugates of primitive words of len n on alphabet of size k
+    k**n = sum d * nprim(k,d) {d\n}
+    nprim(k,d) = 1/n sum Mu(d) k**(n/d) {d\n} // by Mobius inversion formula
+
+
+
+Proposition 1.3.5.(Fine and Wilf's Theorem) [unique primitive word refinement]
+    [n=len(x)][m=len(y)][d=gcd(n,m)][L=n+m-d]
+        [x**q[:L] == y**p[:L]] ==>> [exist z: {x,y} <= z*]
+
+
+
+
+
+
+---------------------------------
+1.4.Formal Series
+// see also concrete_mathematics(2nd)::8.4 FLIPPING COINS::page409::three equations(8.79)
+let K be ring with unit
+formal series :: element in K<<A>> 
+    K<<A>> ::= {sum k(w) * w {w in A*} | any map k: A* -> K}
+
+[.<SIGMA, w>] = coefficient of w in SIGMA = k(w) above
+CS(X) = characteristic series of X
+    [X <= A*][CS(X) in K<<A>>][[.<CS(X), w>] == [w in X]]
+
+polynomial :: element in K<A> 
+    K<A> ::= {f in K<<A>> | Card({w in A |[.<f,w>]!=0}) != inf}
+
+def [.<SIGMA, f>] for [SIGMA in K<<A>>][f in K<A>]
+    ::= sum [.<SIGMA, w>][.<f, w>] {w in A*}
+
+
+extend the sum in formal series
+    locally finite ::=
+        family SIGMA[i] for i in I
+        [w in A*] ==>> [Card({i in I | [.<SIGMA[i], w>] != 0}) != inf]
+    [locally finite family SIGMA[i] for i in I] 
+        ==>> [sum SIGMA[i] {I i} is well defined]
+
+[SIGMA in K<<A>>][[.<SIGMA, 1>]==0]
+    ==>> [[.<SIGMA**i, w>]==0 for i>len(w)]
+    ==>> [locally finite family SIGMA**i for i in NN]
+    def star of SIGMA ::= SIGMA* = sum SIGMA**i {NN i}
+    Proposition 1.4.1. [unique solution of ...]
+        [s in K<<A>>][s(1-SIGMA)==(1-SIGMA)s==1] ==>> [s==SIGMA*]
+    
+Proposition 1.4.2.
+    [X,Y <= A*]
+        [Z==X+Y]
+            [CS(Z)==CS(X)+CS(Y)] <==> [X /\ Y == {}]
+        [Z==X.Y]
+            [CS(Z)==CS(X)*CS(Y)] <==> [x,a in X][y,b in Y][[x.y==a.b]<-->[x==a][y==b]]
+        [X <= A+][P <= X*]
+            [CS(P)==CS(X)*] <==> [X is a code]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,94 @@
+
+--------------------------version2
+target:
+    ###input classfile and dependsfile to verify dependsfile
+    input classfile_path/jarfile_path to show depended_modules
+        use "javap.exe -c -verbose -cp <jarfile_path> <module_qname>"
+        can:
+            * verify dependsfile.main_field
+                whether classfile_path has "public static main"
+            * verify dependsfile.modules
+                javap output has:
+                    '''
+                    Constant pool:
+                        ...
+                        #18 = Class              #60            // _try/XXX$inner
+                        ...
+                        #60 = Utf8               _try/XXX$inner
+                    '''
+        cannot:
+            * dependsfile.toplevels
+                well, if assume input <classfile_path> instead of jarfile_path and we could read all classfiles in same output-classes-directory (hence all classes generated from a javafile must in same directory),
+                    we can known which toplevels are generated from same javafile:
+                    javap output has:
+                        '''
+                        Compiled from "*******.java"
+                        '''
+
+            * dependsfile.resources
+            * verify dependsfile use javafile directly.
+                we have to compile javafile and generate a classfile on filesystem and then to verify dependsfile.
+why version1->version2?
+    to exactly parse javafile is difficult, since the java version grows.
+        see: ANTLR
+            https://github.com/antlr/grammars-v4
+    to roughly parse javafile(well-formed in some sence) to extract very few information like version1 below take too much time.
+
+--------------------------version1
+target:
+    input javafile and dependsfile to verify dependsfile
+
+    design-verify-dependsfile 3 fields (except "resources:"):
+        * [-+]main?
+        * toplevels:
+        * modules:
+
+assumptions:
+    # to simplify parse
+    * import modules before refer to another modules.
+        * import modules instead of import package!!
+            so I neednot to search <source_path> or <class_path> to determine whether package or class.
+        * import before refer to modules in same package
+    * donot static import inner class members.
+        so I neednot to search <source_path> or <class_path> to determine whether toplevel or inner;
+
+    "import <module_qname>;"
+    # X: "import <pkg_qname>;"
+    # X: "import <module_qname>.<inner_class>;"
+    "import <subpkg_qname_of_exculded_pkg>.*;"
+
+    "import static <module_qname>.<member>;"
+    "import static <module_qname>.*;"
+    # X: "import static <module_qname>.<inner_class>.*;"
+    # X: "import static <module_qname>.<inner_class>.<member>;"
+
+lexer:
+    spaces = r"\s+"
+    line_comment = r"//[^\n]*"
+    lines_comment = r"/\*((?!\*/).)*\*/"
+    ignore = f"(?:{spaces}|{line_comment}|{lines_comment})"
+    name = fr"\w+"
+    kw_package = r'package'
+    kw_import = r'import'
+    kw_static = r'static'
+    kw_public = r'public'
+    op_dot = r'\.'
+    op_endl = r';'
+    op_star = r'\*'
+    kw_class = r'class'
+    op_open = r'[{\[(]'
+    op_close = r'[)\]}]'
+    op_ops = r'[^\w\d\s\."'{}\[\]()]'
+    string = r'"(?:\\.|[^"\\])*"'
+    char = r"'\\[^']+'"
+    tokens_after_import = fr'({op_close}|{op_open}|{string}|{char}|{ignore}|(?!//|/\*|["'{}\[\]()])(op_ops|name|digits|op_dot))'
+parser:
+    replace ignores1 by ' '
+    twice: replace ignores1 by ' '
+    ignores0 = ignore*
+    ignores1 = ignore+
+    qname = name (ignores0 op_dot ignores0 name)*
+    stmt_import = kw_import ignores1 (kw_static ignores1)? qname ignores0 (op_dot ignores0 op_star ignores0)? op_endl
+
+
+

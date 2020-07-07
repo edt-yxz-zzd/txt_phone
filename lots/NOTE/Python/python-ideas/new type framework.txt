@@ -1,0 +1,531 @@
+
+
+@x@ is a low_level_object used by interpreter only
+object{
+    @data_type_info@
+    @data_payload@
+}
+# data_type_info.data_type_protocol.data_type
+# data_type is the physical layout and alignment
+# data_type_protocol is the meanings of the data_type, how to define and use members of the data_type
+@basic_data_type_protocol@ :: object -> (@data_type_info@, @data_payload@)
+@get_data_type_protocol@ :: @data_type_info@ -> Either @data_type_protocol@ data_type_protocol
+    # builtins or user-defined
+@get_class@ :: @data_type_protocol@ -> @data_payload@ -> @MayNone@ cls
+@get_proxy_info@ :: @data_type_protocol@ -> @data_payload@ -> @MayNone@ proxy_info
+    # if no None then use the __getattribute__ of proxy_info
+    # why not via cls? since some objects have no class
+
+
+
+# object vs instance
+# data_type vs duck_type vs class vs interface vs metaclass
+# every thing is object
+is_object :: obj -> Bool
+    is_object _ = True
+is_data_type :: obj -> Bool
+    is_data_type obj = obj in IDataType
+is_duck_type :: obj -> Bool
+    is_duck_type obj = obj in IDuckType
+
+is_instance :: obj -> Bool
+    is_instance obj = obj in IInstance
+is_class :: obj -> Bool
+    is_class obj = obj <- IClass
+is_metaclass :: obj -> Bool
+    is_metaclass obj = obj <<: IClass
+is_interface :: obj -> Bool
+    is_interface obj = obj in IInterface
+
+
+
+
+is_instance_of :: obj -> cls -> Bool
+    obj <- cls
+is_duck_of :: obj -> duck_type -> Bool
+    obj in duck_type
+get_data_type :: obj -> data_type
+get_class :: obj -> MayNone cls
+get_instance_data_type :: cls -> data_type
+    [obj in cls] ==>> [get_instance_data_type cls == get_data_type obj]
+
+a data_type is an object represent the physical data structure of obj
+    every object has a data_type
+    compare data_types should use '=='
+the class is the class object of obj
+    every instance has a class
+    not every object has a class
+        to avoid recursion
+        metaclass should be constructed before class
+        so some class have no class
+    any object can be a duck of some duck_type
+
+    compare classes should use 'is', '<:'
+        only cls which is an instance of meta can use "<:" and "<-"
+        to min cls have no class, let us assume there are only one such cls
+            named "TOP"
+        so, we can not call: "cls <: TOP" or "cls <- TOP"
+        let us assume there are only one cls s.t. "cls <- TOP"
+            named "Top"
+    objects of diff classes may have same data_type
+    assume instances of same class should have same data_type
+
+relationship:
+    data_type in IDataType
+    duck_type in IDuckType
+    instance in IInstance
+    cls <<: IInstance
+    metaclass <: Class <: Instance
+        '==' is final member in Class
+        [cls in Class] ==>> [cls <: Instance]
+    interface in Interface <: Class <: Instance
+
+    in Python:
+        object, type <- type
+        object, type <- object
+        type <: object
+        not (object <: type)
+
+
+    ###### DuckType, Top, TOP; None
+    ###### DataType, Instance, Class, Interface, InterfaceUnion
+    ###### IDataType, IInstance, IClass, IInterface, IInterfaceUnion
+    ###### ICallable, IHashable, IImmutable, IMutable, ITotalOrdered, IPartialOrdered
+
+    ###### object relationship: before
+        [before is a partial order]
+    ###### class relationship: <- <: <-:
+        [instance <- cls]
+        [subclass <: cls]
+        [obj <-: cls] <=[def]=> [obj <: cls][obj <- cls]
+        [<: is a partial order]
+
+        [instance <- cls <: super] ==>> [instance <- super]
+        [sub <: cls <- meta][sub <- meta2] ==>> [meta2 <: meta]
+            [subclass <: cls <- metaclass] ==>> [subclass <- metaclass]
+        [sub <: cls] ==>> [cls before sub]
+        [instance <- cls] ==>> [cls before instance]
+
+        [get_class TOP is None]
+        [[get_class cls is TOP] <==> [cls is Top]]
+
+        IDuckType <- DuckType <- Top <- TOP
+            # IDuckType: every duck of IDuckType is a duck_type
+        IDataType <- DuckType
+            # IDataType: every duck of IDataType is a data_type
+        IInstance <- DuckType
+            # IInstance: every duck of IInstance is an instance, i.e. has a class
+            # assume there are only one object is not instance, the TOP
+        IClass <- DuckType
+            # IClass: every duck of IClass is a class
+            # a class is also a duck_type. IClass <<: IDuckType
+        IInterface <- DuckType
+        IInterfaceUnion <- DuckType
+
+        None <- Top # not (Top <<: IClass) <<== None is not a class
+        DataType <- Top
+        InterfaceUnion <: Interface <: Class <-: Instance <- Top
+
+
+    ###### duck_type relationship: in <<: <<-:
+        # duck_type is set
+        # duck is element of set
+        # may require a proof path
+        [duck in duck_type]
+        [subtype <<: duck_type]
+        [obj <<-: duck_type] <=[def]=> [obj <<: duck_type][obj in duck_type]
+        [<<: is a partial order]
+
+        [subclass <: cls] ==>> [subclass <<: cls]
+        [instance <- cls] ==>> [instance in cls]
+
+        [[duck in duck_type] ==>> [duck in supertype]] ==>> [duck_type <<: supertype]
+        [duck in duck_type <<: supertype] ==>> [duck in supertype]
+        [subtype <<: duck_type in meta][subtype in meta2] ==xx==>> [meta2 <<: meta]
+            [subtype <<: duck_type in meta] ==xx==>> [subtype in meta]
+        [duck in duck_type] ==xx==>> [duck_type before duck]
+        [subtype <<: duck_type] ==xx==>> [duck_type before subtype]
+
+
+        IInterfaceUnion <<: IInterface <<: IClass <<-: IDuckType
+            [every class is a duck_type] ==>> [IClass <<: IDuckType]
+            [IClass is a duck_type] ==>> [IClass in IDuckType]
+            [cls in IClass] ==xx==>> [cls in IInstance]
+                i.e. cls may not have a class
+                ==>> not (IClass <: IInstance)
+
+        [cls in IClass] ==>> [cls <<: IInstance][cls in IDuckType]
+        [meta <<: IClass] ==>> [meta <<: IDuckType]
+
+        # TOP, Top, DuckType, IDuckType, IInstance, IClass
+            # TOP
+            TOP in IClass
+                TOP in IDuckType
+                TOP <<: IInstance
+            TOP not in IInstance
+            TOP <<: IDuckType
+                TOP <<: IClass
+                # since there are only instance of TOP, i.e. Top
+
+            # Top
+            Top in IClass
+                Top in IDuckType
+                Top <<: IInstance
+            Top in IInstance
+            may not (Top <<: IDuckType)
+                may not (Top <<: IClass)
+
+            # DuckType
+            DuckType in IClass
+                DuckType in IDuckType
+                DuckType <<: IInstance
+            DuckType in IInstance
+            DuckType <<: IDuckType
+            may not (DuckType <<: IClass)
+                a duck_type may not be a class
+
+            # IDuckType
+            IDuckType in IDuckType
+            IDuckType in IInstance
+            IDuckType may not in IClass
+            not (IDuckType <<: IInstance)
+                a duck_type may not have a class
+            not (IDuckType <<: IClass)
+                a duck_type may not be a class
+
+            # IInstance
+            IInstance in IDuckType
+            IInstance in IInstance
+            IInstance may not in IClass
+                IInstance which is a duck_type may not be a class
+            not (IInstance <<: IDuckType)
+                not (IInstance <<: IClass)
+
+            # IClass
+            IClass <<-: IDuckType
+            IClass in IInstance
+            IClass may not in IClass
+                since IClass may not be a class
+            not (IClass <<: IInstance)
+                not every class has a class
+
+        # DataType, Instance, Class *** IDuckType, IInstance, IClass
+            # DataType
+                DataType <<-: IInstance
+                DataType in IClass
+                not (DataType <<: IClass)
+                DataType not in IDuckType
+                not (DataType <<: IDuckType)
+            # Instance
+                Instance <<-: IInstance
+                Instance in IClass
+                not (Instance <<: IClass)
+                    not every instance is a class
+                Instance not in IDuckType
+                not (Instance <<: IDuckType)
+            # Class
+                Class <<-: IInstance
+                Class <<-: IClass
+                Class not in IDuckType
+                not (Class <<: IDuckType)
+                    not every class is a duck_type
+        pass
+
+
+######### subclass method
+each api come with partial_le
+subclass.f() `le` cls.f()
+    e.g.
+        f == __contains__
+        le sr cr == not sr or cr == int(sr) <= int(cr)
+            True -> False but not reverse
+        f == __timestamp__
+        le = gt
+
+interface need not contain constructors
+algo depend on interpreter implement or not
+    e.g. ??(DuckType in IDuckType)??
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+member
+
+there are should be one and only one definition source class for each member
+    get_definition_source :: cls -> member_name -> MayNone supercls
+a class says what members subclass must and must not have.
+a class says which members subclass should and should not override.
+    abstract member and final member
+when a member overrided, some related members will be set abstract.
+    or should override at same time
+    e.g.
+        1) __hash__, __eq__
+        2)
+            def __call__...
+            __lshift__ = __call__
+
+            # when we override __call__, we may forgot to override __lshift__
+            # if we def __lshift__ to call __call__,
+            # then when we override __lshift__, __call__ is left unchanged
+when a member conflict from base classes, it will be set abstract.
+auto mixin base class??
+    auto mixin interface and its default_implement_base_class
+    each concrete class should refer to some interfaces
+        offer interfaces and constructors for user
+        hidden concrete classes until the user want to derive class from them.
+        e.g. IFile.py to offer IFile and make_file :: (...) -> File
+                _File.py to offer File
+
+
+data field
+    public implicit lookup data_type info member
+    private object data
+        reference count # for weakref
+        R?W? power authority
+    optional:
+        public object data
+            # a dict :: Map name obj
+        public object dict
+            # a dict with arbitrary keys
+            # have no syntax support
+            get_public_object_dict :: obj -> MayNone dict
+    instance only:
+        # object as instance
+        # let cls = get_class this_obj
+        # access via cls's property descriptor
+        #       prior to this_obj's public object data
+        # need not mutex:
+        #       cls's "public class member" and super's
+        #       this_obj's "public object data"
+        # private instance data and public object data may overlay
+        private instance data
+        public implicit lookup class info member
+    class only:
+        # object as class
+        # a dict :: Map name descriptor
+        # descriptor should be one of static_member/class_member/instance_member
+        public class implicit lookup member
+        public class member
+        private class member # used by public class member
+
+    get_implicit_lookup_member :: cls -> name -> MayError obj
+        cls..implicit_lookup_dict[name]
+        # do not search superclass, since all members have been copied
+    get_public_class_member :: cls -> name -> MayError obj
+        cls..public_class_member_dict[name]
+        <|> search superclass's public_class_member_dict
+    get_private_class_member :: cls -> name -> MayError obj
+        cls..private_class_member_dict[name]
+        # do not use public member
+        # can not use superclass's private member
+
+    get_public_object_member :: obj -> name -> MayError obj
+
+    cls@@.f
+        get_implicit_lookup_member cls 'f'
+        return f cls
+    cls@.f
+        get_implicit_lookup_member cls 'f'
+        <|> get_public_class_member cls 'f'
+        return f cls
+    @.@f
+        get_implicit_lookup_member __class__ 'f'
+        <|> get_private_class_member __class__ 'f'
+        <|> get_public_class_member __class__ 'f'
+        return f __class__
+    instance.f
+        # instance prior to object
+        # since not every object is instance
+        # should be careful??
+        get_class(instance)@.f instance
+        <|> get_public_object_member instance 'f'
+    obj.@f
+        # object prior to instance
+        get_public_object_member instance 'f'
+        <|> get_class(obj)@.f obj
+
+function
+function version 2
+def f(result... =; = value_to_set
+    ; positinal_only..., @, positinal_or_keyword...
+    , *input_only_args, positinal_or_keyword..., @, positinal_only
+    ; keyword_only..., (keyword = default)...
+    , **kwargs, del keyword_name...):
+    var = input_only | &output_only | &&inout
+    arg = var | (arg, ...) | {(keyword=arg)...}
+    positinal_only = arg
+    positinal_or_keyword = var
+    keyword_only = var
+    keyword = var
+    keyword_name = name
+
+    default = obj
+    input_only = name
+    output_only = name
+    inout = name
+    input_only_args = name
+    kwargs = name # kwargs is a dict<var, obj>
+
+
+
+function version 1
+def f(
+    # NOTE: return results; results are output_only
+        output_only... =
+        # why? so the result will always a tuple; prevent 'return None'
+        # output_only do not appear in call_stmt
+        # in body of f, 'out = xxx' will set the result
+
+    # inout target_list
+        ; inout...
+
+    # input_only
+        ; positinal_only...
+        , @, positinal_or_keyword...
+        , *args
+        , keyword_only...
+        , (default_keyword_only = default)...
+        , **kwargs
+        ):pass
+    '''f(inout...; ...) where inout should be variable names (or target_list??)
+
+def f(div, mod; q, d):
+    div, mod = divmod(q, d)
+
+div = mod = None
+r = f(div, mod; 5, 3)
+assert r is None
+assert div == 1
+assert mod == 2
+'''
+
+
+
+
+
+target method:
+    # get
+    def f(*args, **kwargs):
+    # set
+    def &f(*args, value&, **kwargs):
+        ...
+    f(...) = val
+    <==> &f(..., val)
+    f(...) <==> f(...)
+
+    or version2
+    def get(...)
+    def set(...)
+    @getset(get, set)
+    def f(...):pass
+
+
+    or version3
+    class Ref:
+        def get(self):
+        def set(self, value):
+        def del(self):
+    def &&f(...)
+        return Ref()
+
+    g(&x.f().f())
+    ??<==> g(&<x.f().f()>) # choose this
+    or ??<==> g(x.f().&<f()>)
+
+    g(&x.f().f()) != g(x.f().&f())
+    g(&x[a][b]) != g(x[a].&[b])
+
+
+
+power/danger
+    call(f, *args, **kwargs)
+    return obj with min powers and high danger level of args kwargs...
+    how to work with dict?
+    how to merge two equal keys with different levels?
+
+what is self's members? what is references?
+    lock??
+DangerLevel
+Read
+    have some read ops, i.e. return value is non-None
+Write
+    have some write ops, i.e. modify self
+View(Read, not Write)
+SelfImmutable(View)
+WholeImmutable(SelfImmutable, HashableObject)
+    merge if '=='
+        i.e. when result is True using '==' and of same class,
+            then merge the two instances
+
+
+
+
+
+
+################
+ground
+    0) Lambda
+        class of basic function
+            with positinal_only args
+        we can call it directly
+        if get_class f is Lambda:
+            @call@(f, ...)
+    # Lambda with builtins IO makes everything
+    ######### builtins
+    1) 'is' / Bool / True / False
+        control flow
+        test Exception
+    2) Function / Identity
+        # Identity for Function name and Namespace's key
+        # Identity is String
+        to refer builtins functions
+        to get members of instance/object
+        obj??.f =[def]=
+            getattr??(obj, 'f')
+                cls = get_class obj
+                get_data_type_info(obj/cls) is builtins objects
+                if obj/cls is builtins objects:
+                    bypass...
+                elif cls is None:
+                    use obj's data_type protocol
+                else:
+                    use obj's cls protocol
+                        i.e. cls@.__instance_getattribute__(obj, 'f')
+                        i.e. class_getattr(cls, __instance_getattribute__)(obj, 'f')
+            class_getattr(cls, name)
+                # name == __instance_getattribute__/__class_getattribute__:
+                # instance.f mostly class_getattr(cls, '__instance_getattribute__')(instance, 'f')
+                # cls@.f mostly class_getattr(cls, '__class_getattribute__')(cls, 'f')
+                try use cls's data_type protocol's implicit_lookup first
+                    directly
+                try use cls's data_type protocol's metaclass mro protocol's class member lookup
+                    indirectly
+                    via metaclass's mro protocol
+                if cls is DataTypeProtocol or other builtins classes:
+                    bypass...
+    4) DataType / DataTypeProtocol
+
+    5) Namespace
+        Namespace is a HalfFrozenDict<Identity, obj>
+        cls@.f =[may def]= search get_class_namespace(super) for super in cls.mro()
+    5) Tuple/Arg = Tuple+Namespace
+        arg = args+kwargs
+        if len(args) >= required:
+            kwargs should not contain positinal_or_keyword
+        else:
+            let input_only_args = ()
+            seach key (<- *input_only_args ->) for positinal_or_keyword in kwargs
+            args fill remains
+
+
+

@@ -1,0 +1,159 @@
+CHAPTER 4 Design
+
+
+
+[page112] CHAPTER 4 Design::4.2.2 Example Functional Requirements
+    functional requirements should document what an API should do and not how it does it.
+[page113]
+    Use cases are essentially a form of functional requirement that specifically captures who does what with an API and for what purpose rather than simply providing a list of features, behaviors, or implementation notes.
+    work with your users to produce use cases first and then derive a list of functional requirements from these use cases.
+
+[page134] 4.6.3 Using Inheritance
+    TIP
+        Avoid deep inheritance hierarchies.
+[page135]
+    TIP
+        Avoid multiple inheritance, except for interfaces and mixin classes.
+
+
+TIP
+    Prefer composition to inheritance.
+Open/Closed Principle (OCP) Bertrand Meyer
+    open for extension but closed for modification (Meyer, 1997)
+
+TIP
+    Your API should be closed to incompatible changes in its interface, but open to extensibility of its functionality.
+    1) stable interface: maintenance of a stable interface gives you the flexibility to change the underlying implementation without unduly affecting your client¡¯s code. 
+    2) testing: the use of extensive regression testing can allow you to make internal code changes without impacting existing behavior that your users rely upon. 
+    3) use of an appropriate plugin architecture can provide your clients with a versatile point of extensibility.
+
+
+Principle of Least Knowledge
+    Law of Demeter (LoD) - the Demeter Project at Northeastern University in the late 1980s (Lieberherr and Holland, 1989)
+    only talk to your immediate friends
+        Call other functions in the same class.
+        Call functions on data members of the same class.
+        Call functions on any parameters that it accepts.
+        Call functions on any local objects that it creates.
+        Call functions on a global object (but you should never have globals).
+        ==>> never call a function on an object that you obtained via another function call. 
+            bad: a.f().g()
+
+
+
+
+
+[page141] 4.6.7 Class Naming
+    Simple class names should be powerful, descriptive, and self-explanatory.
+    good names drive good designs. 
+        a class should do one thing and do it well, and a class name should instantly convey its purpose (Bloch, 2008)
+        If a class is difficult to name, that's usually a sign that your design is lacking. 
+    if you are using any more than two or three words then this can indicate that your design is too confusing or complex.
+    Interfaces (abstract base classes) 
+        tend to represent adjectives in your object model. 
+            They can therefore be named in this way, for example, Renderable, Clonable, or Observable.
+        Alternatively, its common to prefix interface classes with the uppercase letter I, 
+            for example, IRenderer and IObserver.
+    Avoid cryptic abbreviations. Good class names should be obvious and consistent.
+        ?? std | SDL | ...
+    You should include some form of namespace for your top-level symbols
+        namespace or prefix (OpenGL - "gl"; Qt - "Q")
+
+4.7.2 Function Naming
+    Functions used to set or return some value should fully describe that quantity using standard prefixes such as Get and Set.
+    Functions that answer yes or no queries should use an appropriate prefix to indicate this behavior, such as Is, Are, or Has, and should return a bool result, 
+        for example,IsEnabled(), ArePerpendicular(),or HasChildren().
+    Functions used to perform some action should be named with a strong verb, 
+        for example,Enable(), Print(),or Save(). 
+    If you are naming a free function, rather than a method of a class, then you should include the name of the object that the action will be applied to, 
+        for example,FileOpen(), FormatString(), MakeVector3d().
+    Use positive concepts to name your functions rather than framing themin the negative. 
+        For example, use the nameIsConnected()instead of IsUnconnected(). 
+    Function names should describe everything that the routine does. 
+        For example, if a routine in an image processing library performs a sharpening filter on an image and saves it to disk, the method should be called something like SharpenAndSaveImage() instead of just SharpenImage().
+        If this makes your function names too long, then this may indicate that they are performing too many tasks and should be split up (McConnell, 2004).
+
+    You should avoid abbreviations. 
+        Names should be self-explanatory and memorable, but the use of abbreviations can introduce confusing or obscure terminology. 
+            For example, the user has to remember if you are usingGetCurrentValue(), GetCurrValue(), GetCurValue(),orGetCurVal(). 
+        Some software projects specify an explicit list of accepted abbreviations that must be conformed to, 
+        but in general it's simply easier for your users if they don't have to remember lists such as these.
+    Functions should not begin with an underscore character. 
+        The C++ standard states that global symbols starting with an underscore are reserved for internal compiler use. 
+        The same is true for all symbols that begin with two underscores followed by a capital letter. 
+        While you can find legal combinations of leading underscore names that navigate these rules, it is generally best simply to avoid this practice in your function names 
+            (some developers use this convention to indicate a private member).
+    Functions that form natural pairs should use the correct complementary terminology. 
+        For example, OpenWindow() should be paired with CloseWindow(), not DismissWindow(). 
+        The use of precise opposite terms makes it clearer to the user that one function performs the opposite function of another function (McConnell, 2004). 
+        The following list provides some common complementary terms.
+            Add/Remove      Begin/End       Create/Destroy
+            Enable/Disable  Insert/Delete   Lock/Unlock
+            Next/Previous   Open/Close      Push/Pop
+            Send/Receive    Show/Hide       Source/Target
+
+
+TIP
+    Avoid long parameter lists.
+    Joshua Bloch suggests that five or more parameters are too many (Bloch, 2008).
+    For functions that accept many optional parameters, you may consider passing the arguments¡¡using a struct or map instead.
+Named Parameter Idiom (NPI)
+    setter methods (return *this;)
+    obj.setX().setY();
+4.7.4 Error Handling
+    it has been estimated that up to 90% of an application¡¯s code is related to handling exceptional or error conditions (McConnell, 2004).
+Ken Pugh¡¯s Three Laws of Interfaces(Pugh, 2006):
+    1. An interfaces implementation shall do what its methods say it does.
+    2. An interfaces implementation shall do no harm.
+    3. If an interfaces implementation is unable to perform its responsibilities, it shall notify its caller.
+the three main ways of dealing with error conditions in your API are
+    1. Returning error codes.
+        1) returning a numeric code to indicate the success or failure of a function.
+        2) set the value of the errno global variable as a side effect. 
+            OpenGL - an error checking function called glGetError().
+        return the error code as the function result and use an out parameter to fill in the result value.
+        the only option if you¡¯re developing an API that must be accessible from plain C programs. 
+    2. Throwing exceptions.
+        the only way to report failures in a constructor.
+        pros:
+            separate error handling code from the normal flow of control, making for more readable code. 
+            They offer the benefit of being able to catch one or more errors in a sequence of several function calls, without having to check every single return code
+            handle an error higher up in the call stack instead of at the exact point of failure. 
+            carry more information than a simple error code.
+        cons:
+            Handling an exception can be an expensive operation due to the run-time stack unwinding behavior. 
+            an uncaught exception can cause your clients¡¯ programs to abort, resulting in data loss and frustration for their end users. 
+            Writing exception safe code is difficult and can lead to resource leaks if not done correctly. 
+            if any part of an application uses exceptions then the entire application must be prepared to handle exceptions correctly.
+    3. Aborting the program.
+TIP
+    Use a consistent and well documented error handling mechanism.
+TIP
+    Derive your own exceptions from std::exception.
+
+    1) Derive your own exceptions from std::exception and define a what() method to describe the failure.
+    2) Consider using RAII techniques to maintain exception safety, that is, to ensure that resources get cleaned up correctly when an exception is thrown.
+    3) Make sure that you document all of the exceptions that can be thrown by a function in its comments.
+    4) You might be tempted to use exception specifications to document the exceptions that a function may throw. 
+        However, be aware that these constraints will be enforced by the compiler at run time, if at all, and that they can impact optimizations, such as the ability to inline a function.
+        As a result, most C++ engineers steer clear of exception specifications such as the following:
+            void MyFunction1() throw(); // throws no exceptions
+            void MyFunction2() throw(A, B); // throws either A or B
+    5) Create exceptions for the set of logical errors that can be encountered, not a unique exception for every individual physical error that you raise.
+    6) If you handle exceptions in your own code, then you should catch the exception by reference to avoid calling the copy constructor for the thrown object.
+    7) Also, try to avoid thecatch(...)syntax because some compilers also throw an exception when a programming error arises, such as an assert() or segmentation fault.
+    8) If you have an exception that multiply inherits from more than one base exception class, you should use virtual inheritance to avoid ambiguities and subtle errors in your clients code where they attempt to catch your exceptions.
+
+TIP
+    Fail quickly and cleanly with accurate and thorough diagnostic details.
+    1) your API should fail as fast as possible once an error occurs and it should clean up any intermediate state, such as releasing resources that were allocated immediately before the error. 
+    2) try to avoid returning an exceptional value, such as NULL, where it is not necessary. 
+        Doing so causes your clients to write more code to check for these cases. 
+        For example, if you have a function that returns a list of items, consider returning an empty list instead of NULL in exceptional cases. 
+            This requires your clients to write less code and reduces the chance that your clients will dereference a NULL pointer.
+    3) any error code or exception description should represent the actual failure. 
+        Invent a new error code or exception if existing ones do not describe the error accurately. 
+    4) You should also give users as much information as possible to track down the error. 
+        For example, if a file cannot be opened, then include the filename in the error description and the cause of the failure, for example, lack of permissions, file not found, or out of disk space.
+
+

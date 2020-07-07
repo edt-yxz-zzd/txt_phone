@@ -1,0 +1,249 @@
+subgraph
+    spanning subgraph
+        vertices_of spanning_subgraph == vertices_of whole_graph
+    induced subgraph
+        maximal subgraph with given vertices
+    restricted to
+        subgraph_of_restricted_to :: Graph -> Set Vertex -> InducedSubgraph
+
+isomorphic: G0 ~=~ G1
+    [G0 and G1 are isomorphic]
+        <==> [exists an (isomorphism :: BiMap G0.HEdge G1.HEdge), s.t. ...]
+
+path<n> :: the n-vertices graph or a subgraph of ...
+    endvertices/ends
+    # endvertices/ends of aedge/path
+    1 <= (degree of vertices of path) <= 2
+        # n >= 2
+        # no circle # vs walk
+    path vs walk
+        no circle
+
+cycle<n>
+    multigraph:     n>=1
+        1-cycle
+            a loop # self_loop
+        2-cycle
+            two parallel edges
+    simple_graph:   n>=3
+
+    cycle vs closed walk
+        no proper subcircle
+
+joining/connecting
+connected
+    connected component <==> maximal connected subgraph
+
+chord
+    chordless
+    induced cycle
+
+walk :: (Vertex, [(AEdge, Vertex)])
+    closed walk
+
+complete graph K<n>
+clique <==> complete subgraph
+complete bipartite graph K<n,m>
+wheel W<n>
+    n >= 3
+    num_vertices_of W<n> = n+1
+    W<n> = circle<n> + center + edges from center to circle vertices
+    W<3> = K<4>
+
+drawing
+
+union
+intersection
+Cartesian product
+    grid graph <==> Cartesian product of two paths
+
+subtract: G - vertices | G - aedges
+    (-) :: (G<-Graph) -> (X<-Set Vertex) -> Graph
+        precondition: X |<=| vertices_of G
+    (-) :: (G<-Graph) -> (A<-Set AEdge) -> Graph
+        precondition: A |<=| aedges_of G
+    (-) :: (G<-Graph) -> (v<-Vertex) -> Graph
+        precondition: v <- vertices_of G
+    (-) :: (G<-Graph) -> (e<-AEdge) -> Graph
+        precondition: e |<-| aedges_of G
+
+    vertex-deleted subgraph: G-{v}
+add: G + (u,v)
+    (+) :: Graph -> (Vertex, Vertex) -> Graph
+        precondition: (u,v) are nonadjacent vertices of G.
+
+edge contraction: G/aedges
+    (/) :: Graph -> AEdge -> MultiGraph
+    (/) :: Graph -> Set AEdge -> MultiGraph
+    remove aedge and merge its endvertices
+minor
+    [H is a minor of G]
+        <==> [? A,B <- Set AEdge. ? X <- Set Vertex. (G-A-X)/B ~=~ H]
+        <==> [? A,B <- Set AEdge. ? X <- Set Vertex. (G/A)-B-X ~=~ H]
+
+
+vertex splitting <==> inverse operation of edge contraction
+subdivision
+    H is a subdivision of G
+        <==> H can be obtained from G by inserting vertices of degree two on some edges.
+homeomorphic
+    G,H are homeomorphic
+        <==> ? G',H' <- Graph. is_subdivision_of G' G && is_subdivision_of H' H && G' ~=~ H'
+
+<H>-bridge-in-<G> / <H>-component-in-<G>
+    B is a H-bridge in G
+    is_bridge_in :: Graph -> Graph -> Graph
+    is_bridge_in B H G
+    <==> B  = an edge e' of G       # foot
+                not in H but with both ends in H
+                + endvertices of e' # vertex of attachment
+            | a connected component B' of (G - vertices_of H)
+                + all edges A' which have one end in B' and another in H
+                    # foots
+                + (endvertices of A' /-\ vertices_of H)
+                    # attachments
+    vertices_of_attachment / attachments
+        attachments of H-bridge = vertices_of H-bridge /-\ vertices_of H
+    foot
+        [e is a foot of H-bridge]
+            <==> [e is an edge in H-bridge][e is incident to a vertex of attachment of H-bridge]
+
+    edge sets of H-bridges in G partition (aedges_of G |\\| aedges_of H)
+    (aedges_of G |\\| aedges_of H) = SUM` aedges_of B `{B <- all H-bridges in G}
+
+    overlap
+        [C is a cycle in G][B0,B1 <- C-bridges in G]
+            [overlap B0 B1] <==>
+                [len(attachments_of B0 /-\ attachments_of B1) >= 3]
+                or [skew-overlap B0 B1]
+            [skew-overlap B0 B1] <==>
+                [(a, b, c, d) are distinct vertices of C in this cyclic order
+                ][{a,c} |<=| attachments_of B0
+                ][{b,d} |<=| attachments_of B1
+                ]
+
+
+
+
+####################### trees and bipartite graphs
+tree
+    endvertex == leaf
+    endvertices of tree == leave
+    # endvertices of aedge/path/tree
+
+    spanning tree # spanning_subgraph
+
+bipartite graph
+    is_bipartite :: Graph -> Bool
+    is_a_bipartition_of :: (Set Vertex, Set Vertex) -> Graph -> Bool
+
+    [is_bipartite G] <==> [G contains no cycle of odd length]
+
+are_pairwise_disjoint
+matching
+    is_a_matching_in :: Set AEdge -> Graph -> Bool
+    [is_a_matching_in A G] <==>
+        [A |<=| aedges_of G
+        ][are_pairwise_disjoint $ map endvertices_of A
+        ]
+        # why not use 2*len?
+        #   len(endvertices_of e) in [0,1,2, ...]
+
+    perfect matching
+        [is_a_perfect_matching_in A G] <==>
+            [is_a_matching_in A G
+            ][\-/~ map endvertices_of A == vertices_of G
+            ]
+
+vertex cover
+    is_a_vertex_cover_of :: Set Vertex -> Graph -> Bool
+    [is_a_vertex_cover_of X G] <==>
+        [all (\e -> endvertices_of e /-\ X =/= {}) $ aedges_of G]
+
+The Konig-Egervary Theorem
+    [is_bipartite G]
+        ==>> [(max . map len $ all_matchings_of G)
+                == min . map len $ all_vertex_covers_of G
+                ]
+
+
+####################### blocks
+block
+    # equivalence relation
+    (~[same_block_aedges]~) :: AEdge -> AEdge -> Bool
+    [is_equivalence_relation (~[same_block_aedges]~)]
+    e0 ~[same_block_aedges]~ e1
+        = [e0 == e1]
+        or [?C <- Circle. [is_subgraph_of C G][{e0,e1} |<=| aedges_of C]]
+
+    cutedge
+    is_cutedge e = not . any (~[same_block_aedges]~ e) $ aedges_of G |\\| {e}
+
+    # block = isolated_vertex | cutedge | biconnected_component
+    blocks_of G
+        = isolated_vertices_of G
+        \-/ {eq_cls + vertices_of eq_cls | eq_cls <- [=same_block_aedges=]}
+
+    cutvertex
+    is_cutvertex v = 2 <= len [g | g <- blocks_of G, v |<-| vertices_of g]
+
+block-cutvertex tree # BC_tree?  # block-cutvertex forest
+    endblock
+        # endvertex of block_cutvertex_tree
+
+why isolated_vertex is not cutvertex?
+    1)
+        remove cutvertex ==>> more connected_components
+        remove isolated_vertex ==>> less connected_components
+
+    2) endvertex of block_cutvertex_tree is block
+        isolated_vertex is the only endvertex of a block_cutvertex_tree
+        ==>> isolated_vertex is block
+
+
+
+
+####################### connectivity
+<k>-connected
+    [G is k-connected] <==>
+        [num_vertices_of G >= k+1
+        ][@X |<=| vertices_of G. [len X <= k-1] -->> is_connected(G - X)
+        ]
+    connectivity_of G = -1 + head [k <- [0..] | G is not k-connected]
+separating
+    # A graph is connected when there is a path between every pair of vertices.
+    #   edgeless_graph
+    #   order_zero_graph |<=| edgeless_graph
+    #       # but since thare are maybe loose_aedges
+    #       # I define nothing_graph = edgeless order_zero graph
+    #   empty_graph = edgeless_graph
+    #   null_graph =[ambiguous]= edgeless_graph |ambiguous-or| order_zero_graph
+    # ==>> nothing_graph is connected
+
+    is_separating_of :: Set Vertex -> Graph -> Bool
+    [is_connected G]
+        [is_separating_of X G] <==>
+            [X |<=| vertices_of G][is_disconnected (G - X)]
+        # ??why not extend to connected_components??
+    does_separate :: Set Vertex -> (Vertex, Vertex) -> Bool
+ear decomposition of 2-connected graph
+    ear_decomposition_of :: (G<-Graph) -> (_ <- is_2_connected G) -> (Cycle [Path])
+        postcondition:
+            (cycle, paths) = result
+
+            [G == cycle \-/ \-/~ paths]
+            [len(cycle) >= 3]
+            AND [[len(vertices_of g /-\ vertices_of paths[i]) == 2]
+                | i <- [0..len(paths)-1]
+                , g = cycle \-/ \-/~ paths[:i]
+                ]
+
+    Proposition 1.4.2. # Proposition_1_4_2
+        If G is a 2-connected graph
+        , then it can be obtained
+            from a cycle of length at least three
+            by successively adding a path
+                having only its ends in common with the current graph.
+
+
+

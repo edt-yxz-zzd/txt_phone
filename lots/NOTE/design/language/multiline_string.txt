@@ -1,0 +1,147 @@
+
+indented multiline-string
+using prefix operators
+
+part-of-prefix-operator-meaning:
+    ------------------payload handler
+    "/" - treat the remaining tail line as raw text
+    "\" - escape the remaining tail line
+            \n \t \u{XXXX}
+    "?" - the remaining tail line contains HEX digit pairs
+            ABCD EF
+            or use "X"?
+    ------------------jointer
+    "," - continue above line
+    ";" - begin a new line; i.e. insert a newline
+    "." - begin or end the whole multiline-string
+    ------------------
+
+==>>
+    * middle with payload
+    "/, "
+    "\, "
+    "?, "
+        - continue
+    ";/ "
+    ";\ "
+    ";? "
+        - newline
+others:
+    * without payload
+        * begin
+            ".,"$ - begin the whole multiline-string without payload
+        * middle
+            ";,"$ - an empty line
+            "--"$ - empty comment <==> "##"
+            "##"$ - empty comment
+        * end
+            ".."$ - stop the whole multiline-string
+            ";."$ - append a newline then stop
+        * single-line
+            ".;."$ - the whole multiline-string is "\n"
+            ".,."$ - the whole multiline-string is ""
+
+    * with payload
+        * begin
+            "./ "
+            ".\ "
+            ".? "
+                - begin the whole multiline-string
+        * middle
+            "-- " <==> "#/"
+            "#/ "
+            "#\ "
+            "#? "
+                - comment
+            "/, "
+            "\, "
+            "?, "
+                - continue
+            ";/ "
+            ";\ "
+            ";? "
+                - newline
+        * end
+            "/. "
+            "\. "
+            "?. "
+                - continue above line and then end the whole multiline-string
+
+        * single-line
+            "./. "
+            ".\. "
+            ".?. "
+                - begin&end the whole multiline-string
+                    i.e. a single tail line
+
+how to put into an expr as sub-expr?
+let X = xxxxxxxxxxxxxxxxxxxxxxx
+* single line:
+    * without payload:
+        (.,.) ==>> ""
+        (.;.) ==>> "\n"
+    * with payload:
+        (./. xxxxxxxxxxxxxxxxxxxxxxx
+        ) ==>> "X"
+
+* begin:
+    * without payload:
+        (   .,
+            ..
+        ) ==>> ""
+    * with payload:
+        (   ./ xxxxxxxxxxxxxxxxxxxxxxx
+            ..
+        ) ==>> "X"
+
+
+* end:
+    * without payload:
+        (   .,
+            ..
+        ) ==>> ""
+        -------------
+        (   .,
+            ;.
+        ) ==>> "\n"
+    * with payload:
+        (   .,
+            /. xxxxxxxxxxxxxxxxxxxxxxx
+        ) ==>> "X"
+
+* middle:
+    * without payload:
+        (   .,
+            ;,
+            ..
+        ) ==>> "\n"
+    * with payload:
+        (   .,
+            ;/ xxxxxxxxxxxxxxxxxxxxxxx
+            ..
+        ) ==>> "\nX"
+        -------------
+        (   .,
+            /, xxxxxxxxxxxxxxxxxxxxxxx
+            ..
+        ) ==>> "X"
+
+
+
+
+
+combines:
+    (   ./ xxxxxxxxxxxxxxxxxxxxxxx
+        ;/ xxxxxxxxxxxxxxxxxxxxxxx
+        /. xxxxxxxxxxxxxxxxxxxxxxx
+    ) ==>> "X\nXX"
+    -------------
+    (   ./ xxxxxxxxxxxxxxxxxxxxxxx
+        --
+        ;/ xxxxxxxxxxxxxxxxxxxxxxx
+        #/ yyyyyyyyyyyyyyy
+        ;/ xxxxxxxxxxxxxxxxxxxxxxx
+        ;.
+    ) ==>> "X\nX\nX\n"
+
+

@@ -1,0 +1,103 @@
+
+std lib bugs from calc_CFG_inits
+    nn_ns.MessageClosureExecutor.CFG.calc_CFG_inits.calc_CFG_inits
+    nn_ns.MessageClosureExecutor.MessageClosureExecutor_ABC__using_namedtuple__str
+    #weird
+    namedtuple.__eq__
+
+    from collections import namedtuple
+    A = namedtuple('A', ['a'])
+    B = namedtuple('B', ['b'])
+    a = A(0)
+    b = B(0)
+    assert hash(a) == hash(b)
+    assert a == b
+
+    # when use as key, be replaced!!!
+
+std lib bugs from nn_ns.my_fileformat.configuration
+    # weird
+    import re
+    assert re.compile(r'fs\Z').match('afsx', 1,3)
+    assert not re.compile(r'\Afs\Z').match('afsx', 1,3)
+
+std lib bugs from seed.io.iter_line_contents
+    # it seems not a bug, since the interpreter does so too!
+    # doctest bug py3.6.0
+    >>> import io
+    >>> fin = StringIO('')
+    >>> fin.seek(0); # requir 0 below instead of nothing!
+    0
+
+
+std lib bugs from java_make.py :: get_java_package_from_src
+    # re.match - slow
+    fast_rex1 = re.compile(r'(/\*([^*]+|\*[^/])*\*/)*') # fast
+    fail_rex = re.compile(r'(/\*([^*]+|\*[^/])*\*/)*p') # slow
+    fast_rex2 = re.compile(r'(/\*((?!\*/)[^a]|a)*\*/)*p') # fast
+    fast_rex3 = re.compile(r'(/[^/]*/)*p') # fast
+    s = '/*.................................................*/'
+    for name, rex in [('fast_rex1', fast_rex1),
+                      ('fast_rex2', fast_rex2),
+                      ('fast_rex3', fast_rex3),
+                      ('fail_rex very slow', fail_rex),
+                      ]:
+        print(name)
+        rex.match(s)
+    print('finish')
+
+
+std lib bugs from nth_pow_continued_fraction__using_sympy.py
+bug1 argparse - from main:
+    group = parser.add_mutually_exclusive_group()#required=True)
+    group.add_argument('-d', '--cf_digits', type=int,
+                        nargs = '+')
+    group.add_argument('-f', '--from_file', type=argparse.FileType())
+
+    run with: "-d 1 3 1  -f afsaf" # no such file
+        error: argument -f/--from_file:
+        can't open 'afsaf': [Errno 2] No such file or directory: 'afsaf'
+    run with: "-d 1 3 1  -f r.bat" # file exist
+        error: argument -f/--from_file:
+        not allowed with argument -d/--cf_digits
+    I think it is a bug, you cannot open a file first before parsing args.
+
+
+inspect.Signature.empty # what if use it as default value??
+
+
+
+super
+    from abc import ABCMeta
+    # super(supercls, obj) v.s. super(supercls, cls)
+    # it seems to treat as cls before obj
+    assert super(type, type).__repr__ is object.__repr__
+    assert super(type, ABCMeta).__repr__ is object.__repr__
+
+
+std lib bugs from key_as_attr.py :: __eq__
+    bug: python abc
+        abc.ABCMeta.__instancecheck__
+            use "instance.__class__" instead of "type(instance)"
+
+      File "key_as_attr.py", line 342, in _t
+        assert rw == KeyAsAttr({'abc': 'ABC', 'f': 'F2', 'a': 'A'})
+      File "key_as_attr.py", line 224, in __eq__
+        if not isinstance(other, __class__):return NotImplemented
+      File "C:\Python36\lib\abc.py", line 181, in __instancecheck__
+        subclass = instance.__class__
+
+std lib bugs from abc.ABC:
+    ABC has not '__slots__ = ()'
+
+
+
+# std lib bugs from re.compile:
+    re.compile('<!--(?(?!-->).){,100}-->')
+    #sre_constants.error: bad character in group name '?!-->' at position ...
+
+    ???  (?!...) vs (?P<name>...)
+
+    not a bug:
+    NOTE: the ":" in "?:"
+    re.compile('<!--(?:(?!-->).){,100}-->')

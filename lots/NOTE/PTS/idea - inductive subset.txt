@@ -1,0 +1,90 @@
+
+inductive subset
+
+inductive should not be axiom
+    or every ADT with axioms should have at least one concrete instance.
+    pure ADT without instances may be _L.
+
+
+idea is that use subset instead of type directly.
+    why?
+        assume that all terms of a type is constructed as expect is wrong.
+        we should assume there are terms with unknown constructors has that type.
+            otherwise real number will be countable since set of all terms is countable.
+        hence the assumption that there are 2 terms of type [@R:*. R->R->R] is wrong.
+            i.e. the CC bool_ind is wrong.
+
+require:
+    (1) [M:?x:A.B] ==>> [Pair<type(M)>(fst M, snd M) === M]
+    (2) proof irrelevance
+        (1) is not necessary, since (2)==>>(1)??
+
+old:
+    UInt = @R:*. (R->R) -> (R->R)
+    zero = ... : UInt
+    succ = ... : UInt->UInt
+    ind_UInt = @P:UInt->*. P zero -> (@u:UInt. P u -> P (succ u)) -> @u:UInt. P u
+
+new:
+    class ADT_UInt UInt:
+        # here UInt is any type s.t. below axiom
+        #UInt = ... : *
+        zero = ... : UInt
+        succ = ... : UInt->UInt
+        ind_UInt = ... : @P:UInt->*. P zero -> (@u:UInt. P u -> P (succ u)) -> @u:UInt. P u
+        ...
+        ...
+
+    # rename old version UInt/zero/succ are old version above
+    #   as PlainUInt/zero_PlainUInt/succ_PlainUInt
+    IndUInt = (?x:PlainUInt. @P:PlainUInt->*. P zero_PlainUInt -> (@u:PlainUInt. P u -> P (succ_PlainUInt u)) -> P x)
+        # NOTE: (P x) vs (@u:PlainUInt. P u)
+    zero_IndUInt = ... : IndUInt
+    succ_IndUInt = ... : IndUInt -> IndUInt
+    ind_IndUInt = ... : @P:IndUInt->*. P zero_IndUInt -> (@u:IndUInt. P u -> P (succ_IndUInt u)) -> @u:IndUInt. P u
+        # how? can we impl ind_IndUInt?
+
+
+    instance ADT_UInt IndUInt:
+        zero = zero_IndUInt
+        succ = succ_IndUInt
+        ind_UInt = ind_IndUInt
+        ...
+        ...
+
+    ind_IndUInt : @P:IndUInt->*. P zero_IndUInt -> (@u:IndUInt. P u -> P (succ_IndUInt u)) -> @u:IndUInt. P u
+    ind_IndUInt =
+        \P:IndUInt->*.
+        \P0:P zero_IndUInt.
+        \Psucc:(@u:IndUInt. P u -> P (succ_IndUInt u)).
+        \u:IndUInt.
+        let (x:PlainUInt, q_q0_qsucc2qx) = u
+            #Q = \y:PlainUInt. P (y, q_q0_qsucc2qy) # ???q_q0_qsucc2qy???
+            q : PlainUInt->*
+            q = \y:PlainUInt. @q_q0_qsucc2qy:??. P (y, q_q0_qsucc2qy)
+            q0 : q zero_PlainUInt
+            q0 = ...
+            qsucc : @y:PlainUInt. q y -> q (succ_PlainUInt y)
+            qsucc = ...
+            qx : q x
+            qx = q_q0_qsucc2qx q q0 qsucc
+            pu : P u
+            pu = qx q_q0_qsucc2qx
+            ############
+            q0 = \q_q0_qsucc2q0:??. P0
+                # ??? P0:P (zero_PlainUInt, q_q0_qsucc2q0) ???
+            qsucc = \y:PlainUInt. \qy : q y.
+                #->q (succ y)
+                #qy = q_q0_qsucc2qy_to_PY
+                #Psucc = Y_PY_to_PsuccY
+                \q_q0_qsucc2qsuccy:??.
+                #->PsuccY
+                let q_q0_qsucc2qy = ??? ########## fail here!!!
+                    Y = (y, q_q0_qsucc2qy)
+                    PY = qy q_q0_qsucc2qy
+                    PsuccY = Psucc Y PY
+                in  PsuccY
+        in  #... : P u
+            pu
+
+

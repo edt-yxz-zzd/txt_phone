@@ -1,0 +1,111 @@
+https://en.wikipedia.org/wiki/Linearizability
+
+1) only one object
+2) multi-thread
+3) a thread invoke a method of THE object, and then get response
+-- Linearizability is better when considering individual objects separately, as the reordering restrictions ensure that multiple linearizable objects are, considered as a whole, still linearizable.
+
+
+-- ignore args
+data Invoke = Invoke Thread Object Method
+    -- Invoke thread<id> object<name> method<f>
+data GetRespone = GetRespone Thread Object Method
+    -- GetResponse thread<id> object<name> method<f>
+type Operantion = Either Invoke GetResponse
+class GetObject a where
+    getObject :: a -> Object
+instance GetObject Invoke where
+    getObject (Invoke id name f) = name
+instance GetObject GetResponse where
+    getObject (GetResponse id name f) = name
+instance (GetObject a, GetObject b) => Either a b where
+    getObject (Left a) = getObject a
+    getObject (Right b) = getObject b
+... define getThread/getMethod
+class Constraint a where
+    constraint :: a -> Bool
+
+type History = [Operantion]
+data ObjectHistory = ObjectHistory Object [Operantion]
+instance Constraint ObjectHistory where
+    constraint h@(ObjectHistory name ls) =
+        (flip all ls  $ \op-> getObject op == name)
+        && constraint (object_history2object_thread_history h)
+does_sequential_history_meet_object_contract :: History -> Bool
+    -- should be sequential_history
+    -- each ObjectHistory meets the object contract
+
+data ObjectThreadHistory = ObjectThreadHistory Object Thread [Operantion]
+instance Constraint ObjectThreadHistory where
+    constraint h@(ObjectThreadHistory name id ls) =
+        (flip all ls $ \op-> getObject op == name && getThread op == id)
+        && is_sequential_history ls
+
+is_sequential_history :: [Operantion] -> Bool
+is_sequential_history ((Right _):ls) = is_sequential_history' ls
+is_sequential_history ls = is_sequential_history' ls
+
+is_sequential_history' ((Left (Invoke id name f)):(Right (GetResponse id' name' f')):ls) =
+    (id, name, f) == (id', name', f') && is_sequential_history' ls
+is_sequential_history' [] = True
+is_sequential_history' _ = False
+
+object_history2object_thread_history id (ObjectHistory name ls) =
+    ObjectThreadHistory name id $ flip filter ls $ \op -> getThread op == id
+
+-- reordering rules: history -> sequential_history
+serializability reordering rules:
+    history -> sequential_history and meet object contract
+    s_reorder h@(prefix:op1:op2:suffix)
+        | getThread op1 == getThread op2 = h
+        | otherwise = h <|> prefix:op2:op1:suffix
+linearizability reordering rules:
+    history -> sequential_history and meet object contract
+        and if get_response < invoke in history ==>> in sequential_history
+    l_reorder (prefix:op1:op2:suffix)
+        | getThread op1 == getThread op2 = h
+        | isGetResponse op1 && isInvoke op2 = h
+        | otherwise = h <|> prefix:op2:op1:suffix
+
+
+class Monad m => SetMonad a m | m -> a where
+    contains :: a -> m Bool
+class SetMonad m => SetMonad_WithAdd a m where
+    add :: a -> m () -- after add, contains should be true
+
+
+serializability_reordering_without_object_contract
+    :: SetMonad_WithAdd History m => (History->Bool) -> History -> m ()
+serializability_reordering_without_object_contract is_valid history =
+    reorder can_swap is_valid history where
+    can_swap op1 op2 = getThread op1 /= getThread op2
+linearizability_reordering_without_object_contract is_valid history =
+    reorder can_swap is_valid history where
+    can_swap op1 op2 = getThread op1 /= getThread op2
+                        && not (isGetResponse op1 && isInvoke op2)
+
+reorder
+    :: SetMonad_WithAdd History m
+    => (Operantion -> Operantion -> Bool)
+    -> (History -> Bool) -> History -> m ()
+reorder can_swap is_valid history =
+    unless (contains history) $
+        if not $ is_valid history
+        then return ()
+        else do
+            add history
+            forM (generate1 can_swap history) $ \h ->
+                reorder can_swap is_valid h
+  where
+    generate1 history@(op1:h@(op2:ls)) =
+        if can_swap op1 op2 then (op2:op1:ls): others
+        else others
+        where others = map (op1:) $ generate1 h
+
+
+
+
+
+
+
+

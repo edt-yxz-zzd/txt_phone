@@ -1,0 +1,326 @@
+
+Set
+    original:
+        A : Type
+        A -> Prop : PowerSet
+        where
+            Type = Prop = *
+            PowerSet = #
+            * : #
+    mine:
+        Type = PowerSet = #
+        Prop = *
+
+NOTE:
+    "@x,y,z:A." ==>> "@x y z:A,"
+    "\x,y,z:A." ==>> "\x y z:A,"
+    "A -> B" ==>> "(-:A) -> (-:B)"
+    "A -> #" ==>> "(-:A) -> (-:: #)"
+    "(@a:A, P a) -> #" ==>> "((a-:A) -> P a) -> (-:: #)"
+    "(?a:A, P a) -> #" ==>> "(a-:A, -: P a) -> (-:: #)"
+    "@e:(?a:A, P a), B (proj1 e) (proj2 e)" ==>> "(a-:A, u-:P a) -> B a u"
+    "Arr A B" ==>> "A -> B"
+    "All A P" ==>> "@a:A, P a"
+    "Any A P" ==>> "?a:A, P a"
+    ;; AnyAll A P = ?_:A, @a:A, P a = (A, All A P)
+    "(a-:A, b-:B, ...)" = "(a-:A, (b-:B, ...))"
+    compare:
+        "(a-: A) -> (b-: B a) -> (c-: C a b) -> (r-: R a b c)"
+        "(a-: A, b-: B a, c-: C a b) -> (r-: R a b c)"
+        "(abc-: (a-: A, b-: B a, c-: C a b)) -> (r-: R a b c)"
+        "(abc-: (a-: A, b-: B a, c-: C a b)) -> (r-: R' abc)"
+
+new symbol ">-" / ">>-" / "<-"
+    @x:A. P x = All A P = A -[x]-> P x = A>-x -> P x = @x:A. -> P x
+        = {A}>-x -> P x
+        ;; to make it clearly that "@x:A. P x" is an arrow!!!
+        @x,y,z:*. M
+        @x y z:*, M -- better!
+        ;; record type: {a::A, b::B, c::C} = @x:{a,b,c}. P x === A*B*C
+        ;;      where P x = case x of {a -> A, b -> B, c -> C}
+        ;;      or @x:Str. In_abc x -> P x
+        ;;      where P x = case x of {a -> A, b -> B, c -> C, _ -> _L}
+        ;;            In_abc x = case x of {a -> (), b -> (), c -> (), _ -> _L}
+        ;; NOTE!!: tuple is an indexed set/record/dependent product/map from nat
+        ;;      dependent sum is a tuple too!!
+        ;;      (x, y, z) =?= (x, (y, z)) =?= ((x,y), z)
+    ?x:A. P x ;; May ERROR = @R. (@x:A. P x -> R) -> R
+        = Any A P == (A -[x]->, P x) == (A >- x, P x)
+        ;; to make it clearly that "?x:A. P x" is a pair!!!
+        ;; <a::A, b::B, c::C> = ?x:{a,b,c}. P x === A+B+C
+        ;;      where P x = case x of {a -> A, b -> B, c -> C}
+        ;; NOTE:
+        ;;  we have to define "proj1/proj2/..."or ?? "exists_ind" to
+        ;;  make it useful as a sum type
+        ;;  otherwise we can not have "proj2 : {Any A P}>-e -> P (proj1 e)"
+
+    @x:T. P x -> M = P>>-x -> M = x<-{P} -> M
+        = T>- x <- P -> M
+
+    how to introduct new symbol like "??" ?/ ?+ >- <- ???
+    shorhand and pattern matched
+    f(| x : ?_X, y : ?_P x |) = ...
+
+prop should be in form:
+    "T->R" ==>> "@x:T. P x -> ?y:R. Q y"
+        ;; ERROR: ==>> "All T P -> Any R Q" ERROR
+        ==>> "T>-x -> P x -> Any R Q"
+        ==>> "P>>-x -> Any R Q"
+
+[dead!!]
+    derivations inside abstractions:
+        a0 : ?x:A. ?y:B. M x y ;; a0 : (A>-x, (B>-y, M x y))
+        a1 : R = a0 R \x:A. \y_Mxy:(B>-y, M x y). ->
+            ;; derivations below!!
+    BOOOOOOOOOM!
+    we should have "let (x, (y, Mxy)) = a0 in ..."
+    a0 R \x:A. \y_Mxy:(B>-y,M x y). y_Mxy R \y:B. \Mxy:M x y. (... : R)
+
+infix/prefix/suffix
+    a ==[s] b
+    a `g `f === f` g` a === f (g a) === f . g $ a === f $ g a
+    if[ bool ]then[ r ]else[ r ]
+
+    infix[-] /\ \/ ;; commutative and assoc
+    infix-- ++ . ;; assoc
+    infix_ != ;; no "x op y op z"
+    infix~ (by /\) == < <= ;; transitive by
+
+    ;; prec ordering
+    infix [==|<>] op{2,}
+        infix <> a b c ;; then no "x a y b z"
+    infix [<|<=|>|>=] op '(' op{1,} ')'
+        infix < a (b c) ;; then "x a y b z" ==>> "x a (y b z)"
+
+
+
+[frameworks]
+    1) ":" "->"
+        term : type : sort : ...
+        type -> type
+        @var:type. type
+    2) "::" "-->"
+        sort :: #
+        #[n] :: # --> #
+        ;; there are many (s::#) , s.t. (#s) is the same
+        ;; i.e. we can assume: @s::#, @Type,Set,Prop (:#s && ::#), ...
+    virtual typing: ":::"
+    virtual arrow:  "--->"
+
+[no type]
+    why?
+        we may have many universes(sorts)
+            s : #s : ##s : ...
+        we may have many different frameworks
+            ":" "->" v.s. "::" "-->"
+    id : R -> R ;; here R has no type, we can not assume any type for it
+    id = \x.x
+
+    or Top ?? subtype?? or scheme??
+
+
+[quotient type]
+    f : S -> T
+    quotient(S, f) : *
+        ;; === image(S,T,f) === subtype(T, \t.?x:S. f t == x)
+        ;; === (T>-t, ?x:S. f t == x)
+    eqv(S, f, a) : S -> * = \b. f b == f a
+
+    quotient-box(S, f) : S -> quotient(S, f)
+    quotient-unbox(S, f) : quotient(S, f) -> S
+    quotient-class(S, f) : @x,y:S. f x == f y <=> quotient-box(S,f) x == quotient-box(S,f) y
+    quotient-inv(S, f) : @x:S. quotient-box(S,f) (quotient-unbox(S,f) q) == q
+
+[attr type]
+    construct a finite attr set
+    attrs = { .name1, .name2, .name3 } : *
+
+    @attr:attrs, P attr
+    ?attr:attrs, P attr
+    where P:attrs -> * = { .name1 -> ..., .name2 -> ..., _ -> ...}
+        ;; { .name2->define ... } is the constructor
+
+    <==> attrs = name1 | name2 | name3
+        name1 != name2 ...
+        attrs_ind :: P name1 -> P name2 -> P name3 -> attrs>-attr -> P attr
+[ADT]
+    api and implement should be seperated
+    api can be subclass/extend
+
+    any result/definition/constant... will be a dependent type which refer to
+        the input ADT.
+        too tedious!!
+    why?
+        we know in math, iso => theorem same
+            A ~=~ B  <==>  f:A->B, g:B->A, g.f==id[A], f.g==id[B]
+            P:A -> * ~=~ Q:B -> *  <==>  P == Q.f, Q == P.g
+        hence, we need only one Nat!
+        but, in compute, different encodings/represetations lead to diff algo.
+        we may want to use different code to fasten the excution
+
+        should be able to offer a proofed algorithm(with certain data encoding) to replace some function definition when computing constants.
+
+
+    ADT is a tuple in a virtual framework:
+        Nat_ADT = @r. (
+            * >- N ->
+            N >- zero ->
+            (N->N) >- succ ->
+
+            ;; avoid "0->...->0"
+            (N>-n -> zero != succ n) ->
+
+            ;; avoid "0->...->a->...->a"
+            (N>-n -> N>-m -> (n != m) => (succ n != succ m)) ->
+
+            ;; avoid "0->...; x->...; y->..."
+            (@P:N -> * . -> P zero -> (N>-n -> P n -> P (succ n))
+                -> N>-n -> P n
+              ) >- nat_ind ->
+            r
+          ) -> r
+
+        but how to use Nat_ADT?? hard!!
+        Nat_Props(N : *, zero:N, succ:N->N) =
+            (N>-n -> zero != succ n) /\
+            (N>-n -> N>-m -> (n != m) => (succ n != succ m)) /\
+            (@P:N -> * . -> P zero -> (N>-n -> P n -> P (succ n))
+                -> N>-n -> P n)
+        ;; n == zero \/ ?m:N, succ m == n
+        theorem__zero_or_pos
+            = * >-N -> N>-zero -> N>-succ -> Nat_Props(N,zero,succ)
+            -> N>-n -> (n == zero \/ ?m:N, succ m == n)
+        theorem__zero_or_pos?(N: *, zero:N, succ:N, props:Nat_Props(N,zero,succ))
+            : N>-n -> (n == zero \/ ?m:N, succ m == n)
+        NatAdd_Props?(N: *, zero:N, succ:N, props:Nat_Props(N,zero,succ), add:N->N->N)
+            : (N>-n -> add n zero == n)
+            /\ (N>-n -> N>-m -> add n (succ m) == succ (add n m)
+        ;; "xxxx?" means that this is a API/interface to be implemented
+        ;; each time we may define only one instance for special arguments.
+        ;;      like a C++ template; we can specialize a template
+
+
+        why not?
+            Nat_Props(X: *, N:X -> *, zero:X, succ:X->X) =
+                N zero /\ (N>>-n -> N (succ n))
+                (N>>-n -> zero != succ n) /\
+                (N>>-n -> N>>-m -> (n != m) => (succ n != succ m)) /\
+                (@P:X -> * . -> P zero -> (N>>-n -> P n -> P (succ n))
+                    -> N>>-n -> P n)
+            ;; succ1:X->X
+            ;;      v.s. succ2 : N>>-x -> X
+            ;;      v.s. succ3 : N>>-x -> Any X N
+            ;;      v.s. succ4 : Any X N -> Any X N
+            ;;  but how to build succ1??
+            ;; succ3 is required; succ1 may be hard!!
+            ;;  what we know is N, but it can't tell us how to find the subset!
+            ;;  (f : X -> Bool) s.t. N <=> \x:X. f x (N x) _|_
+            ;;  we better to guard the input with (N x) as succ2
+            ;;  and hence guard output, lead to succ3
+            ;;  finally we translate X to (Any X N) as succ4
+            (X, N) v.s. (Any X N)
+                [P:X -> *; Q:Any X N -> *]
+                ;; (N>>-n -> P n) <=> Q
+                P' = N>>-n -> P n
+                    ;; v.s. P n
+                    ;; P : X -> *
+                    ;; P' : *
+                Q = \n_u, n_u * \n:X,\u:N n, P n
+                Q' = {Any X N}>-e -> Q e
+                    ;; Q : Any X N -> *
+                    ;; Q' : *
+                proof:
+                    Q' <=> P'
+                    ;; i.e. ({Any X N}>-e -> Q e) <=> (N>>-n -> P n)
+                left2right: Q' -> P'
+                    = \e2Qe, \n:X,\u:N n, (e2Qe (mkAny n u) : P n)
+                right2left: P' -> Q'
+                    = \n2u2Pn, \e:Any X N,
+                        ;; fail!!!  fisrt 'n' and second one is not the same!
+                        ;; e (P (e X \n,\u,n)) \n,\u,(n2u2Pn n u : P n)
+                        n2u2Pn (proj1 e) (proj2 e)
+
+how to manage dependent relationship?
+    every function has a set of named implict input argments.
+    we define a global abstract named_place_holder:
+        {} => Nat? : *
+        {Nat?} => zero? : Nat?
+        {Nat?} => succ? : Nat? -> Nat?
+        {Nat?, zero?, succ?} =>
+            nat_props? : Nat_Props(Nat?, zero?, succ?)
+            Nat_rec? : @R, @P:Nat?->R,
+                @g0:P zero , @g1:@n:Nat?,P n -> P (succ? n),
+                ?/g: @n:Nat?, P n,
+                g zero? == g0 /\ @n:Nat?, g (succ? n) == g1 (g n)
+                ;; I call this constructor_replacer[Nat?]
+                ;;      a tree represent of Nat?
+                ;;      replace each node the constructor by func
+                ;;      O -> g0; S -> g1
+                ;; if R == *, then nat_ind!
+                ;; if R == * and P == \_, R', then rec func
+                ;; let Q g = g zero? == g0 /\ @n:Nat?, g (succ? n) == g1 (g n)
+                ;; nat_ind (\_, R') g0 g1 : @n:Nat?, R' ;; ie. Nat? -> R'
+                ;; nat_ind P g0 g1 : @n:Nat?, P n ;; exists g
+                ;;  ;; how ==>> ?+g. Q g
+                ;;  ERRRRRRRRRRRROR
+                ;; let P' n = ?g:@n:Nat?, P n, g zero? == g0 /\ g1 (g n) == g (succ? n)
+                ;; @g,f:Nat?>-n -> P n, Q g -> Q f -> @n:Nat?, g n == f n
+                ;;      nat_ind ...  ;; ==>> ??g. Q g
+                ;; ??g /\ ?+g ==>> ?/g
+        {Nat?} => nat_add? : Nat? -> Nat? -> Nat?
+        {Nat?, zero?, succ?, nat_props?, nat_add?} =>
+            nat_add_props? : NatAdd_Props(Nat?, zero?, succ?, nat_props?, nat_add?)
+
+    user view (abstract):
+        import-api xxx? yyy?
+        import-implement {xxx?}=>{yyy?=...}
+        {xxx?} => f = ... xxx? yyy? ...
+        {Nat?, zero?, succ?, nat_props?, nat_add?, nat_add_props?} =>
+            f = ...(same name "f" can have many implements base on same or different assume sets)
+    implementer view(concrete):
+        import-api xxx? yyy?
+        import-implement {xxx?}=>{yyy?=...}, {yyy?}=>{zzz?}
+
+        to define/assign:
+        {xxx?} => f = ... xxx? yyy? ... zzz? ... zzz?{yyy? = other implement} ...
+        to proof:
+            { direct_used_yyy? direct_used_zzz? } => { xxx1? xxx2? }
+            { direct_used_yyy? } => { xxx3? }
+        proof:
+            [...] ;; flag fmt
+            /\-el / split_goal ==>>
+                use subgoal first and leave it virtual to be proved.
+        corollary:
+            { alt_axiom_set1? | alt_axiom_set2? } => {xxx1? xxx3, xxx2 }
+
+
+        CNat = @R. (R->R) -> R -> R
+        CNat_zero = \R,\f,\r,r
+        CNat_succ = \n,  \R,\f,\r, f (n R f r)
+        CNat_add = \n,\m, \R,\f,\r, n R f (m R f r)
+        CNat_rec : @R. @g0:R, @g1:R->R, ?/g:CNat -> R,
+            g CNat_zero == g0 /\ @n:CNat, g (CNat_succ n) == g1 (g n)
+        prop__add_zero = CNat>-n -> CNat_add n CNat_zero =[beta]= n
+        prop__add_succ = CNat>-n -> CNat>-m ->
+                ;; CNat_add n (CNat_succ m) =[beta]= CNat_add (CNat_succ n) m
+                CNat_add n (CNat_succ m) =[beta]= CNat_succ (CNat_add n m)
+            ;; ??? how ?? (n R f (m R f (f r))) <=> (n R f (f (m R f r)))
+            ;; ??? how ?? (m R f (f r)) <=> (f (m R f r))
+            ;; nat_ind on m??
+            ;; (zero R f (f r)) == f r == (f (zero R f r))
+            ;; assume: (m R f (f x)) == ? == (f (m R f x))
+            ;; (succ m R f (f r)) == ? == (f (succ m R f r))
+            ;; (m R f (f (f r))) == ? == (f (m R f (f r))) ;; x = f r
+            ;; (m R f (f (f r))) == ? == (m R f (f x)) ;; ind
+            ;; (m R f (f (f r))) == (m R f (f (f r)))
+            ;; can I replace "f r" by "x"??
+
+        {Nat? = CNat}
+            {zero? = CNat_zero; succ? = CNat_succ}
+                {nat_props?} => ;; leave unproof
+                    {add? = CNat_add}
+                        {nat_add_props? = ?????}
+                            ;; CNat_add n CNat_zero =[beta]= n
+
+
+

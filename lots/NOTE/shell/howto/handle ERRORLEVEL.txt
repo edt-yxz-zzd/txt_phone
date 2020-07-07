@@ -1,0 +1,61 @@
+see:
+    "ERRORLEVEL vs %ERRORLEVEL%.txt"
+    "handle environment variable.txt"
+
+
+1. set ERRORLEVEL
+    ERRORLEVEL cannot be set directly, but...
+    # error: set ERRORLEVEL=1
+    0. set ERRORLEVEL=&&cmd /c "exit /b 1"
+    1. see: set_ERRORLEVEL.bat
+    2. we can write a return.bat:
+        return.bat/
+            exit /b %1
+        call return 1
+
+2. show ERRORLEVEL
+    set ERRORLEVEL=&&echo %ERRORLEVEL%
+
+
+====================== use ERRORLEVEL
+directly use ERRORLEVEL
+1.
+    # ERRORLEVEL==0 : succeeded
+    command1 && command2 will execute command2 only if command1 succeeded
+    command1 || command2 will execute command2 only if command1 failed.
+2.
+    if NOT ERRORLEVEL 1 <cmd>
+        # if errorlevel < 1
+    if ERRORLEVEL 1 <cmd>
+        # if errorlevel >= 1
+        "if the errorlevel is greater or equal to n, then ..."
+        can only be used in this statement
+
+===================================
+use ERRORLEVEL via %ERRORLEVEL%
+    //but should firstly <del ERRORLEVEL from env, so that %ERRORLEVEL% is a view of ERRORLEVEL>
+    //  by "set ERRORLEVEL="
+
+    // help if
+    //  error: if NOT DEFINED ERRORLEVEL <command>
+    //      always defined
+    IF [/I] string1 compare_op string2 command
+        #compare_op
+        EQU - ==
+        NEQ - !=
+        LSS - <
+        LEQ - <=
+        GTR - >
+        GEQ - >=
+1.
+    set ERRORLEVEL=
+    goto answer%ERRORLEVEL%
+    :answer0
+    echo Program had return code 0
+    :answer1
+    echo Program had return code 1
+
+    IF %ERRORLEVEL% LEQ 1 goto okay
+        # assume 0 <= ERRORLEVEL <= 9
+2. call if succeed
+    set ERRORLEVEL=&&if %ERRORLEVEL% EQU 0 <cmd>

@@ -1,0 +1,57 @@
+
+fsm <==> rules <<== regex ## but how to "rules ==>> regex"?
+    -- nondetermine fsm
+    -- rule in form "A ::= B" or "A ::= a B" or "A ::= " or "A ::= a"
+    ---- or in form "A ::= a..." or "A ::= a... B"
+    ---- abstract syntax for each rule : "data Rule = Rule Nonterminal [Terminal] (Maybe Nonterminal)"
+
+from fsm:
+    states : Q = {q[i] for i in 0..t}
+    go_to: T : State -> Maybe Terminal -> [State]
+    
+    for any transition "q[i] =[a]=>> q[j]" where a in alphabet or a == none:
+        yield rule "Q_i ::= a Q_j"
+    for any initial state q[i]:
+        yield rule "START ::= Q_i"
+    for any final state q[i]:
+        yield rule "Q_i ::= FINAL" # i.e. "Q_i ::= none FINAL"
+    yield "FINAL ::= " # i.e. "FINAL ::= none"
+    set "START" as the <start symbol>
+    
+
+
+from regex:
+    concat two regex:
+        rules[e0 + e1] ==>>
+            merge rules[e0] and rules[e1]
+            add "START ::= START0"
+            add "FINAL ::= "
+            replace "FINAL0 ::= " by "FINAL0 ::= START1"
+            replace "FINAL1 ::= " by "FINAL1 ::= FINAL"
+    
+    union two regex:
+        rules[e0 | e1] ==>>
+            merge rules[e0] and rules[e1]
+            add "START ::= START0"
+            add "START ::= START1"
+            add "FINAL ::= "
+            replace "FINAL0 ::= " by "FINAL0 ::= FINAL"
+            replace "FINAL1 ::= " by "FINAL1 ::= FINAL"
+            
+    
+    regex star:
+        rules[e0*] ==>>
+            rules[e0]
+            add "START ::= START0"
+            add "FINAL ::= "
+            add "START ::= FINAL"
+            add "FINAL0 ::= START0"
+            replace "FINAL0 ::= " by "FINAL0 ::= FINAL"
+            
+    
+    null regex:
+        rules[""] ==>> {"START ::= FINAL", "FINAL ::= "}
+    singleton regex:
+        rules["a"] ==>> {"START ::= a FINAL", "FINAL ::= "}
+    
+

@@ -1,0 +1,240 @@
+graph
+graph with supplementary properties
+
+graph canonization is the problem finding a canonical form of a given graph G
+graph isomorphism: to test whether two graphs G and H are isomorphic
+
+underlying undirected graph
+
+adjacency list :: Array<V, [V]>
+    adjacency_list :: Array<V, {V}>
+    adjacency list :: Array<V, [(V,UInt)]>
+    adjacency list :: Array<V, sorted[(V,UInt)]>
+    adjacency list :: Array<V, {V:UInt}>
+
+    adjacency_list :: Array<V, [(V,AEdge)]>
+    adjacency_list :: Array<V, sorted[(V,AEdge)]>
+    adjacency_list :: Array<V, {V:AEdge}>
+    adjacency_list :: Array<V, {V:ReIter AEdge}>
+
+    adjacency_list :: Array<V, MultiMap V AEdge>
+    adjacency_list :: FullMap(ALL_VTC)<MultiMap V AEdge>
+
+adjacency matrix :: Matrix<V,V,bool>
+    adjacency_matrix :: Matrix<V,V,UInt>
+        adjacency_matrix[v][u] = num_edges (v->->u | v-><-u)
+    adjacency_matrix :: Matrix<V,V,Maybe AEdge>
+    adjacency_matrix :: Matrix<V,V,[AEdge]>
+    adjacency_matrix :: {(V,V):[AEdge]}
+
+    adjacency_matrix contains degree and faster iter neighbors
+        adjacency_matrix[v][v] = deg(v)
+        adjacency_matrix[v][u] > 0 = num_edges
+        adjacency_matrix[v][u] < 0 = distance to next neighbor from u
+
+    adjacency_matrices of bipartite graph
+        :: (Matrix<V1,V2, UInt>, Matrix<V2,V1, UInt>)
+        for v in V1 and u in V2:
+            adjacency_matrices[0][v][u] = num_edges (v->->u | v-><-u)
+            adjacency_matrices[1][u][v] = num_edges (v<-<-u | v-><-u)
+
+incidence matrix
+    unoriented incidence matrix :: Matrix<V,E, bool>
+    oriented incidence matrix :: Matrix<V,E, [-1..1]>
+
+    incidence list :: {E: (V,V)}
+indegree and outdegree
+dgraph_vtx = terminal | internal
+    isolated = source & sink
+    terminal = isolated | non_isolated_source | non_isolated_sink
+
+
+bidirected edge
+
+bidirected graph
+    # edge, aedge
+    # ledge, hhedge, fedge
+    # loop, nonloop_fedge
+    # ehedge, ihedge, oedge, uedge, dedge
+    # xedge
+
+    edge # aedge
+    edge = loose_edge | half_edge | ordinary_edge
+    half_edge = extraverted_half_edge | introverted_half_edge
+    ordinary_edge = extraverted_edge | introverted_edge | directed_edge
+    ordinary_edge = loop | nonloop_fedge
+        # cycle is path, loop is edge
+
+
+    ordinary_edge                       # fedge # full edge
+    loose_edge = None-None              # ledge
+    half_edge                           # hhedge
+    extraverted_half_edge = None->vtx   # ehedge
+    introverted_half_edge = vtx->None   # ihedge
+    extraverted_edge = u<-->v           # oedge # <--> <> o
+    introverted_edge = u-><-v           # uedge
+    directed_edge = u->->v              # dedge
+    xedge = uedge | dedge
+
+    if all edges are ordinary_edge:
+        the bidirected_graph is directed_graph
+    if all edges are introverted_edge:
+        the bidirected_graph is undirected_graph
+
+
+
+
+explicit graph
+implicit graph
+    may no num_vertices
+    may no vertex_eq/aedge_eq
+any_graph[n] = any graph with n vertices # edges...
+C[n] = cycle graph with n vertices
+    n >= 1
+K[n] = complete graph with n vertices
+    n >= 0 # 0!!
+edgeless graph = no edges
+    http://mathworld.wolfram.com/EmptyGraph.html
+    edgeless_graph[n] = edge_complement(K[n])
+    empty graph = edgeless graph!!! # donot use "empty graph"
+    null graph = edgeless_graph[0]
+    singleton graph = edgeless graph & single-vertex
+bipartite graph
+K[n,m] = complete bipartite graph with n,m vertices
+
+
+undirected graph
+directed graph
+simple directed graph
+directed multigraph
+loop-digraph
+
+path
+cycle is a path
+loop is an edge not a cycle
+
+tree
+    labeled tree
+        Cayley's formula states that there are n^(n-2) trees on n labeled vertices.
+        A classic proof uses Prufer sequences, which naturally show a stronger result: the number of trees with vertices 1, 2, ..., n of degrees d1, d2, ..., dn respectively, is the multinomial coefficient
+            choose (n-2) (d1 | d2 | d3 ... | dn)
+
+        choose =[def]=
+            choose n (d1 ... dn) = n!/d1!/d2!.../dn!
+            where sum d1... == n
+            (sum` x[i] `{i=1..m})^n = sum` (choose n (ks[1] | ... | ks[m])) * II` x[i]^ks[i] `{i=1..m} `{ks | len(ks) == m, sum(ks) == n}
+        A more general problem is to count spanning trees in an undirected graph, which is addressed by the matrix tree theorem. (Cayley's formula is the special case of spanning trees in a complete graph.) The similar problem of counting all the subtrees regardless of size has been shown to be #P-complete in the general case (Jerrum (1994)).
+    unlabeled tree
+        the number of unlabeled free trees is a harder problem. No closed formula for the number t(n) of trees with n vertices up to graph isomorphism is known. The first few values of t(n) are
+
+        1, 1, 1, 1, 2, 3, 6, 11, 23, 47, 106, 235, 551, 1301, 3159, … (sequence A000055 in the OEIS).
+
+
+undirected tree types
+    path graph (linear graph)
+        # 0-1-2-...-n
+    starlike tree # central vertex + incident paths
+         # a tree has exactly one vertex of degree greater than 2.
+    star tree
+        a tree which consists of a single internal vertex (and n-1 leaves).
+    caterpillar tree
+        # all internal vertex form a path, but allow 1 <= n < 3
+        # a tree in which all vertices are within distance 1 of a central path subgraph.
+        # num of unlabeled caterpillar tree [n]
+        #   | n >= 4 = 2^(n-4) + 2^floor ([n-4]/2)
+        #   | 1 <= n < 4 = 1
+        # 1, 1, 1, 2, 3, 6, 10, 20, 36, 72, 136, 272, 528, 1056, 2080, 4160, ... (sequence A005418 in the OEIS).
+    lobster tree
+        # all internal vertex form a caterpillar tree
+        # a tree in which all vertices are within distance 2 of a central path subgraph.
+pseudoforest
+    # or: directed graph & every vertex has a parent(maybe itself)
+    an undirected graph in which every connected component has at most one cycle.
+
+    * maximal pseudoforest = every component is a unicyclic graph
+        # ==>> num_edges == n
+
+pseudotree = pseudoforest & connected
+    = tree | unicyclic graph
+directed pseudoforest
+    a directed graph in which each vertex has at most one outgoing edge; that is, it has outdegree at most one.
+maximal directed pseudoforest (functional graph)
+    a directed graph in which each vertex has outdegree exactly one.
+
+series-parallel graph (SPG)
+    undirected series-parallel graph
+        * with two distinguished vertices source and sink
+        * with no source and sink
+            O(n) - recognization and construct series-parallel decomposition of SPGs
+    A 2-connected graph is series-parallel if and only if there are no R nodes in its SPQR tree.
+    Series-parallel graphs are characterised by having no subgraph homeomorphic to K[4]
+generalized series-parallel graphs (GSP-graphs)
+    The class of GSP-graphs include the classes of SP-graphs and outerplanar graphs.
+outerplanar graph
+    a graph that has a planar drawing for which all vertices belong to the outer face of the drawing.
+
+-- graph with supplementary properties: root/roots
+rooted graph = undirected rooted graph | directed rooted graph
+
+    singly rooted graph | multiply rooted graph
+    vertex-rooted graphs | edge-rooted graph
+    reachable_from_roots? any node reachable from roots? maybe not
+    connected? maybe_disconnected
+    roots_identified? "at least" exists
+        # The Art of Computer Programming defines rooted digraphs slightly more broadly, namely a directed graph is called rooted if it has at least one node that can reach all the other nodes; Knuth notes that the notion thus defined is a sort of intermediate between the notions of strongly connected and connected digraph.
+            <==> strongly connected component supergraph is singly sourcable
+        I dont like above definition
+        it should called "singly_strongly_connected_component_source_rootable digraph"
+
+        roots must be identified!!
+
+    -- singly-vertex-rooted
+    rooted tree = undirected rooted tree | directed rooted tree
+    directed rooted tree = in-tree | out-tree
+
+
+-- at least one inverse arrow pre arrow
+symmetric directed graph
+
+-- at most one inverse arrow pre arrow
+simple directed graph
+
+    -- symmetric & simple & complete & directed
+    complete directed graphs
+
+    -- no inverse arrows
+    -- <==> no 2-cycles
+    -- <==> underlying undirected graph is simple
+    oriented graph
+
+        -- oriented; underlying undirected graph is complete
+        tournament
+
+        -- no directed cycles
+        directed acyclic graph (DAG)
+
+            -- diamond-free partial order
+            -- diamond-free poset(partially ordered set)
+            -- <==> directed & at most one directed path between any two nodes, in either direction
+            -- <==> directed & subgraph reachable from any node forms a tree
+            multitree -- multi-children; multi-parent;
+
+                -- directed & underlying undirected graph is tree
+                polytree (oriented tree)(singly connected network) -- multi-children; multi-parent;
+
+                    -- polytree & (single-parent or single-child)
+                    directed rooted tree
+
+                        -- directed rooted tree & root is source
+                        out-tree (out-arborescence)
+
+                        -- directed rooted tree & root is sink
+                        in-tree (in-arborescence)
+
+
+
+forbidden graph characterization
+    forbidden minor
+    In graph theory, a branch of mathematics, many important families of graphs can be described by a finite set of individual graphs that do not belong to the family and further exclude all graphs from the family which contain any of these forbidden graphs as (induced) subgraph or minor.
+    A prototypical example of this phenomenon is Kuratowski's theorem, which states that a graph is planar (can be drawn without crossings in the plane) if and only if it does not contain either of two forbidden graphs, the complete graph K5 and the complete bipartite graph K3,3.
+

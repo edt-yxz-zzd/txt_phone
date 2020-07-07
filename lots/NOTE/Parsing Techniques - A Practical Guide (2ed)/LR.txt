@@ -1,0 +1,94 @@
+[look-ahead][end-of-input]
+    An LR parser with a look-ahead of k tokens is called LR(k).
+    Just as the Earley parser, it requiresk end-of-input markers to be appended to the input; 
+        this implies that an LR(0) parser does not need end-of-input markers.
+
+
+[LR(0) automaton]
+    ID ==>> (ID, 0) -- called [station]
+    alt_id: A = B | ... ==>>
+        (A, 0) --[Nothing]-->> (B, 0) | ...
+        (A, 0) --[B|...]-->> (A, 1)
+    seq_id: A = B[0] ... ==>>
+        for 0 <= i < len(rule(A)):
+            (A, i) --[Nothing]-->> (B[i], 0)
+            (A, i) --[B[i]]-->> (A, i+1)
+    
+    ACTION table
+        Map state action
+        final_state -> reduce : a rule
+        nonfinal_state -> shift
+    GOTO table
+        Map (state, symbol) (Maybe state)
+        final_state, any_symbol -> Nothing
+        final_state has no fan out
+        [accepting state] <<== a NFA total state contains one of (alt_id, 1) or (seq_id, len rule seq_id)
+        [inadequate state]
+            if accepting state has outgoing arc ==>> shift/reduce conflict
+            if accepting state contains more than one reduction ==>> reduce/reduce conflict
+        adequate accepting state should be a set containing one element which is a reduction
+        
+    ACTION/GOTO table
+        Map state (Either reduce_rule (Map symbol (Maybe state)))
+        
+
+nullable-LR(0)
+    [nullable A]
+        state = {..., B = ... @ A ..., ...}
+        ==>> {..., B = ... @ A ..., A = ... but "A=;", B = ... ~A @ ...} where ~A mean null i.e. A not in stack
+        NOTE: 
+            to avoid exponential explosion, "B = ... ~A @ ..." was not actually present
+            we need to scan the stack to make decision : how many symbol should be popped when reducing.
+
+
+
+
+LR(1)
+    ACTION table
+        Map state (Map (Maybe terminal) (Maybe action))
+        Maybe terminal - ahead_symbol; Nothing i.e. end-of-input
+        Maybe action - Nothing means error i.e. the symbol is not a look_ahead_symbol
+    GOTO table
+        Map state (Map symbol (Maybe state))
+        initial_state, EOI --[start_symbol]-->> final_state -- i.e. when the stack remain the ...
+        
+        
+LR(k>1):
+    item look-ahead ::= last dot look-ahead
+    dot look-ahead ::= the current input look-ahead
+    ACTION table
+        Map state (Map [terminal] (Maybe action))
+
+        len([terminal]) <= k
+
+
+the LR(0), LR(1), and LR(k>1) table construction algorithms differ in more than just the value of k: 
+    LR(0) needs a check upon shift; 
+    LR(k>1) needs the computation of dot look-ahead; 
+    and LR(1) needs either but not both. 
+
+It is of course possible to design a combined algorithm, but for all values of k part of it would not be activated.
+If a common-or-garden variety grammar is not LR(1), chances are minimal that it is LR(2) or higher.
+
+
+
+[deterministic language]
+    if a language allows parsing with a pushdown automaton ==>> it has an LR(1) grammar; 
+    such languages are called deterministic languages.
+
+[immediate error detection property]
+    LR(>0) parsers have the immediate error detection property: 
+        they will stop at the first incorrect token in the input and not even perform another shift or reduce. 
+    This is important because this early error detection property allows a maximum amount of context to be preserved for error recovery. 
+    LR(0) parsers do not have this property. -- what?! I cannot see it????????????????????
+
+
+
+LALR(1) ::= LA(1)LR(0) = Look-ahead Augmented (1) LR (0)
+
+
+
+
+
+
+

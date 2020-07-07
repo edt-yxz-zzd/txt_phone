@@ -1,0 +1,63 @@
+
+// ConceptTableABC<ConceptNameTag> is an ABC
+template<typename ConceptNameTag, typename OrginalType>
+struct ConceptTable : public virtual ConceptTableABC<ConceptNameTag>
+// like pointer traits but using a virtual function table
+{
+    typedef OrginalType Object;
+    typedef ConceptTable Table;
+    // ...
+    r h(void const* p_obj, ...) override;
+    
+    static ConceptTable const instance; // = ConceptTable();
+};
+
+struct VirtualPtrBase
+{
+    VirtualPtrBase(void const* p_object, void const* p_table);
+    void const* get_object_ptr(){return p_object;}
+    protected:
+    void const* p_table;
+    private:
+    void const* p_object;
+};
+
+template<typename ConceptTableABC>
+struct VirtualConceptPtr : public VirtualPtrBase
+{
+    typedef ConceptTableABC Table;
+    typedef typename Table::ConceptNameTag ConceptName;
+    
+    // convertor
+    template<typename Object> 
+    VirtualPtr(Object const& obj):VirtualPtrBase(&obj, &ConceptTable<ConceptName, Object>::instance){}
+    
+    Table const& get_table()const{return *(Table const*)p_table;}
+};
+
+
+// Result is some concrete type or
+//       pair<shared_ptr<void> /*result object*/, ConceptTableABC<ConceptNameX> const* /*static table ptr*/ >
+template<Result, ArgT1, ArgT2>
+inline Result f(ArgT1 const& a1, ArgT2 const& a2)
+{
+    return f_impl<Result, ConceptName1, ConceptName2>(a1, a2);
+}
+
+template<typename Result,
+         typename ConceptName1, // ArgT1 should be a Concept1
+         typename ConceptName2> // ArgT2 should be a Concept2>
+Result f_impl(VirtualPtr<ConceptTableABC<ConceptName1> > a1,
+              VirtualPtr<ConceptTableABC<ConceptName2> > a2)
+{
+    // ...
+}
+
+
+
+
+
+
+
+
+

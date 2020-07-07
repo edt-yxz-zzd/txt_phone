@@ -1,0 +1,264 @@
+indent tokenizer
+Set is Predicator ;; instead of type!!
+    @x:T.@u:x <- P. Body
+    nat_ind : \s1,s2 :: .\T:s1. \N:T->s2. \by:??. \proof:??.
+        \nat:NAT_ADT s1 s2 T N by proof
+        \s3 :: . @P:T->s3. P (nat.zero) -> (@n:T. n<-Set(T,N) -> P n -> P (nat.succ n))
+        -> (@n:T. n<-Set(T,N) -> P n)
+
+    @x:T. @P:T->s. @_:x <- P. ... is fine
+    but what about output?? Set(T,P) is required
+        (x<-P -> ... -> Set(S,Q))
+        input output use diff format!!
+
+xxx.xxx ==>> module name and variable name should be disjoint
+    or module is a record, too. so share same name space!!
+
+
+
+ADT
+    N0
+        _L
+    N1
+        Maybe N0
+        id
+    N2
+        Bool
+        Maybe N1
+    ADT or Axiom argument pass by implict parameters:
+    one AbstractProof and many concrete implements with same or diff Axiom sets
+    one ADT and many (one object and many iso-or-noniso implements)
+        ?-ET-? : @P. P \/ !` P # global decl?? so we need not decl everytime
+            auto derive:
+                {?-DN-?} <==> {?-ET-?}
+                so same named object can have diff sets of Axiom
+                default Axiom set of ?-xxx-? is singleton set of itself
+                but in {?-DN-?} <==> {?-ET-?}, it changes
+            we can assign a value to the implict parameter to make it concrete and remove it!! diff with def in envirement. contexts!!
+                algo derive(assumes:{id}, anyall_imported:{id:[({id}, proof)]}) -> {id:[proof]}
+                syntax example:
+                    api file:
+                        xxx1? : type...
+                        xxx2? : type...
+                        xxx3? : type...
+                    implement file:
+                        to proof:
+                            { direct_used_yyy? direct_used_zzz? } => { xxx1? xxx2? }
+                            { direct_used_yyy? } => { xxx3? }
+                        proof:
+                            [...] ;; flag fmt
+                        corollary:
+                            { alt_axiom_set1? | alt_axiom_set2? } => {xxx1? xxx3, xxx2 }
+                            ;; use the above "algo deduce" to find implement path
+            /\-el / split_goal ==>>
+                use subgoal first and leave it virtual to be proved.
+            xxx? abstract global name
+            ?_xxx pattern to match inside definition of ggg(| ... |)
+            xxx local name instead of xxx/ !!
+
+        {?-ET-?, ?-xxx-?}[....]
+            ...if call a func that use ?-yyy-? not in list then error
+            ;; named by ET? instead
+        should be able to offer a proofed algorithm(with certain data encoding) to replace some function definition when computing constants.
+
+    integer = @R.@P.@Z.@N. (P->P)->(Z->P)->(N->N)->(Z->N)->(P->R)->(Z->R)->(N->R)->Z->R
+    integer = @R.@P.@N. (P->P)->(N->N)->(P->R)->(N->R)->P->N->R->R
+    integer = @R.(nat->R) -> (nat->R) -> R->R
+    ..., u : ?x. P x == y |- let v:P x = y in M
+            ==>> u \x. \v:P x = y. M
+    ..., u : ?x.?z. P x z == y |- let v:P x z = y in M
+    ..., u : ?x.?z. y == P x z |- let v:P x z = y in M
+    ..., u : ?x.?z. y == (P x \/ Q z) |- let v:(P x \/ Q z == y) in M
+    nat(s::) : s = @R:s. (R->R) -> R -> R
+    SUCC(s::) : nat(s) -> nat(s) = \n. \R. \f. \r. f (n R f r)
+    ZERO(s::) : nat(s) = \f. \r. r
+        data nat(s::) (R:s) where
+            SUCC : R->R
+            ZERO : R
+        nat(s::) : s = @R:s. (R->R) -> R -> R
+            deriving disjoint-union[SUCC, Zero]
+        [n : nat(s)]
+            ZERO(s::) != SUCC(s::) n
+
+            disjoint-union(| n:nat(s) |) = n == ZERO(s) \/ ?/m. n == SUCC(s) m
+                # ??auto be primitive??
+                #       since the disjoint-union-set form
+
+        [p : nat(s) -> s]
+            a0/ : p (\r2r.\r. r) = ...
+            [n : nat(s); u : p n]
+                a1 : p (\r2r.\r. r2r (n r2r r)) = ...
+            a2/ : @n:nat(s). p n -> p (SUCC n) = ...
+            a3/ : @n:nat(s). p n = \n. n (p n) a2/ a0/
+        nat_ind : @p : nat->s. (p \f.\r.r) -> (@n:nat. p n -> p \f.\r. f (n f r)) -> @n:nat. p n = ...
+        nat_ind : @p : nat->s. type(| a0/(p) |) -> type(| a2/(p) |) -> @n:nat(s). p n = \p. \a0. \a2.
+            ;; \n. ??? n (p n) ??? a0
+            \n. n (p ZERO(s) -> p (SUCC(s) n)) (\n. \p0_pn. \p0. a2 n (p0_pn p0)) (\p0. p0)   a0
+            if n == ZERO(s) then a0
+                else let v:SUCC(s) m == n in a2 m
+        !!!! fail to derive nat_ind!!!!!!!!
+
+[page 342] Numbers and arithmetic inλD
+    However, by appealing to (a special form of) the Recursion Theorem, derivable inλD (albeit with a proof too complex for the present book), we have succeeded in incorporating both arithmetical operations in a smooth and convincing manner.
+    -- how???
+
+
+multi (type system)s
+    a : @@s::sort. ... = \@s. ...
+    /\(P,Q) = @R:#. (P->Q->R)->R
+    /\(s,t,r::sort, P:s,Q:t):r = @R:r. (P->Q->R)->R
+    eq : r = @@r::sort. @@s::sort. @T:s. @x,y:T. @P:T->r. P x <=> P y
+    ==(T:#,x:T,y:T) : # = @P:T->#. P x <=> P y
+    ==(r,s,T:s,x:T,y:T) : r = @P:T->r. P x <=> P y
+    to support power_set
+        subset(S,P) = P : S->#
+        subset(r,s::, S:s,P) = P : S->r
+
+    s::sort. ==>> s:#s:##s...
+    s == #[0]s
+    #s == #[1]s
+    ...
+
+
+
+\x y z : T : *. B === \T:*.\x.\y.\z.B
+
+x -> y = @ _ : x. y
+? ?? ?+ ?/ ?@ # beginswith ? or '  ;  or endswith @
+    exists, exists<=1, exists>=1, exists1, forall and exists
+    ?@ x : S . M === @x:S.M /\ ?x:S.M === ?x:S.@x:S.M
+        =/= @x:S.?x:S.M
+
+'+++ x : S . M === +++ S (\x:S. M)
+The S P u === (?/ x:S. P x) /\ P (The S P) # recur!!
++++-abc
++++_abc
+infixLR /\ # +++ or `abc` or +++-abc or ...[x,y]
+infix[L|R|LR|_|~] op # LR means assoc; _ forbid (x op y op z); ~ means like 'is'/'=='/'<=>'
+infix [==|<>] op{2,}
+infix [<|<=|>|>=] op '(' op{1,} ')'
+prefix op # +++` or abc` or +++-abc` or ...[x,y]`
+    f . g $ a === f` g` a
+suffix op # `+++ or `abc or `+++-abc or `...[x,y]
+Module.globol
+++[ ... ]++[ expr... ]++-abc[ ... ][ ... ]
+xx{str...}++{...}xxx # {[^\s{}]+}
+
+# keyword: ";xxx"
+;export (...)
+;export xxx(...)
+;import xxx (...) [as yyy]
+
+label: [x y z : T : *; ...]
+    label = rule(label, ...):
+    global(...) : ... = ...
+    global?(...) : ... # primitive
+    # anything use ET?? should named xx??
+    local/(...) : ... = ...
+    local/ : ... = ... # omit parameter list
+    ;del local/ ...
+    ;del* # del all locals in this level or sublevels above
+
+
+shorthand:
+    ==(S, a:S, b:S) = ...
+    ==(| a:S?, b:S? |) = ==(S?, a, b)
+    a(| u : pattern, v : pattern |) = ...
+    # @ x (: S). Body
+    # @ x <- V : S -> *_p. Body == @ x : S. (V x -> Body)
+    qu x constrant. Body = ...
+
+    iota
+    [S : #, P:S->#, u: ?/s:S. P s]
+        The?(S, P, u) = _||_ : S
+        The?(S,P){u} = _||_ : S
+        The?(S,P; u) ;; after ';' is not important; will disappear; can not restore
+            The?(S,P; u) == The?(S,Q;v) if P |==|[S] Q
+
+[page 284] Sets and subsets
+    Furthermore, we overloadthe symbol ‘=’, since this equality symbol, earlier having been defined for elements, is now also employed for subsets.
+    [page 286]
+    It is easy to show (Exercise 13.1) that Leibniz-equality implies subset-equality. For the implication the other way round, however, no proof can be constructed with what we have. So it is necessary to add another axiom.
+    P == Q
+        @R: ** . @P,Q:S->R. (@x:S. P x == Q x) ==>>? (P == Q)??????????? func eq
+        (@x:S. P x <=> Q x) ==>>? (P == Q)??????????? subset eq
+            unless using #Bool; see below
+
+    (x == y) -> (@R: ## .@P: S->R. P x <=> P y)
+        ==>> P x -> P y
+    (P =[/set]= Q) -> (@x: S. P x <=> Q x)
+        ==>> (@x<-P. B) -> (@x<-Q. B)
+
+power_set
+    S : #
+    ps(S) = S -> # : ##
+    ps = \S : # . @_:S. # : ##
+    ;; sort increase!!!
+    ps(ps(S)) ??????????????
+
+    [S:#; P,Q:S->#]
+        ;; PsSet(S, P) = @R:#. (@s:#.@p:s->#.R) -> R : #
+        ;; only one element!
+
+        PsSet(S) = _||_ : #  ;; 'ps:#'
+        ps-box(S) = _||_ : (S->#) -> PsSet(S) ;; diff P gives same ss????
+        ps-unbox(S) = _||_ : PsSet(S) -> (S->#) ;; same ss gives diff P????
+        ;; predicator not unique is a serious problem
+        ;; PsSet(S) : #, so it element should be unique
+        ;; we can not standard a predicator
+            not error:
+                iota(S,P,u) == iota(S,P,v)
+                where we can not get the proof u/v from iota(S,P)
+        ;; what about new sort '#Bool'?
+            #Bool : ##
+            predicator : S -> #Bool : ##
+
+
+            ## = _||_ ::: @@@sort@@@ : ###
+            # = _||_ ::: @@@sort@@@ : ##
+            ##Predicator = _||_ ::: @@@sort@@@ : ###
+            #Bool = _||_ ::: @@@finite_sort@@@ : ##Predicator
+
+            two
+            False = _||_ : #Bool
+            True = _||_ : #Bool
+            _||_ : True != False
+            _||_ : @b:#Bool. b == True \/ b == False
+            one
+            () = _||_ : True
+            _||_ : @t:True. t == ()
+            zero
+            _||_ : False -> _|_
+        ;; ps-bi(S) = ;; bijection ps-box(S) ps-unbox(S)
+        PsSet(S) = _||_ : #  ;; 'ps:#'
+        [ss : PsSet(S)]
+            ps-box(S,P) = _||_ : PsSet(S) ;; diff P gives same ss????
+            ps-unbox(S,ss) = _||_ : (S->#) ;; same ss gives diff P????
+            ps-unbox-inv(S,ss) = _||_ : ps-box(S,ps-unbox(S,ss)) == ss
+            ps-class(S,P,Q) = _||_ : (P |==| Q) <=> (ps-box(S,P) == ps-box(S,Q))
+        PsPredicator(S,P) : PsSet(S) -> #
+            = \subset. ps-unbox(subset) |<=|[S] P
+        PsSubSet(S,P) = PsPredicator(S,P)
+        PsPsSubSet(S,P) : PsSet(PsSet(S)) -> # = PsPredicator(PsSet(S), PsPredicator(P))
+
+        SubSet(S;P) = _||_ : #
+        [a:S; u:P a]
+            subset-box(S,P,a,u) : SubSet(S;P) = _||_
+        [ss:SubSet(S;P)]
+            subset-unbox(S,P,ss) : S = _||_
+            subset-eq1(S,P,ss)
+                : ?@u:P (subset-unbox(S,P,ss)).
+                  subset-box(S,P,subset-unbox(S,P,ss), u) ==[SubSet(S;P)] ss
+        [a:S; u:P a; v:Q a]
+            subset-eq2(S,P,a,u) = _||_
+                : subset-unbox(S,P,subset-box(S,P,a,u)) ==[S] a
+            subset-eq3(S,P,Q,a,u,v) = _||_
+                : (P |==| Q) <==> subset-box(S,P,a,u) == subset-box(S,Q,a,v)
+
+
+[from Coq Tutorial]
+drinker : forall (D : Set) (P : D -> Prop),
+    D -> (forall A : Prop, A \/ ~ A) ->
+    exists x : D, P x -> forall x0 : D, P x0
+    ;; !!!    x -> ET -> exists x : D, (P x -> forall x0 : D, P x0)
+

@@ -1,0 +1,94 @@
+# assoc,ftype are outdated
+#   fail due to UserChoice
+
+howto let scripts executable on Windows?
+
+assoc .xxx=XXX_file & ftype XXX_file=<exe> %1 %*
+
+!!!!!!!!!!! there other Registries override it!!!!!!!!!!!!!
+    ; this let "...> xxx.py" become "...> gvim xxx.py"
+    ;   instead of "py xxx.py"
+    ; application associations take precedence via the Open With dialog
+    [HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.py\UserChoice]
+        "Progid"="Applications\gvim.exe"
+    ; or [HKEY_CURRENT_USER\Software\Classes\Applications\...]
+    [HKEY_CLASSES_ROOT\Applications\gvim.exe\shell\edit\command]
+        @="C:\Program Files (x86)\Vim\vim80\gvim.exe" "%1"
+!!!!!!!!!!! NOTE: assoc,ftype use diff key_name!!!!!!!!!!!!!!
+    ; assoc .py=Python.File
+    ; never [HKEY_CURRENT_USER\Software\Classes\.py\...]
+    ;   since outdated, see below
+    [HKEY_CLASSES_ROOT\.py]
+        @="Python.File"
+        ; this may come from python installer
+        "Content Type"="text/plain"
+
+    ; ftype Python.File=py %1 %*
+    ; never [HKEY_CURRENT_USER\Software\Classes\\Python.File\...]
+    ;   since outdated, see below
+    [HKEY_CLASSES_ROOT\Python.File\shell\open\command]
+        @="py %1 %*"
+
+
+############################
+assoc /?
+ftype /?
+
+
+
+>set pathext
+PATHEXT=.COM;.EXE;.BAT;.CMD;.VBS;.VBE;.JS;.JSE;.WSF;.WSH;.MSC
+
+>assoc .js
+.js=JSFile
+
+>ftype JSFile
+JSFile=C:\Windows\System32\WScript.exe "%1" %*
+
+>assoc .bat
+.bat=batfile
+
+>assoc .exe
+.exe=exefile
+
+>assoc .cmd
+.cmd=cmdfile
+
+>ftype exefile
+exefile="%1" %*
+
+>ftype batfile
+batfile="%1" %*
+
+>ftype cmdfile
+cmdfile="%1" %*
+
+> assoc .pl=PerlScript
+.pl=PerlScript
+
+> ftype PerlScript=perl.exe %1 %*
+PerlScript=perl.exe %1 %*
+
+> <script>.pl 1 2 3
+...
+
+> set PATHEXT=%PATHEXT%;.pl
+> <script> 1 2 3
+...
+
+> assoc .pl
+.pl=PerlScript
+
+> ftype PerlScript
+perl.exe %1 %*
+
+
+
+
+https://stackoverflow.com/questions/11472843/set-up-python-on-windows-to-not-type-python-in-cmd
+https://superuser.com/questions/361816/pass-command-line-arguments-to-windows-open-with
+    The problem is that if you have already associated the program with the extension via the Open With dialog then you will have created an application association, instead of a file extension association, between the two. And application associations take precedence.
+
+    # assoc,ftype are outdated
+    CMD's assoc and ftype are legacy commands. They weren't updated to for the extensions to file associations added in Windows XP, 7, and 8. They only modify the file association and ProgId keys under the system key "HKLM\Software\Classes". They don't read or modify per-user HKCU settings, which take precendence, or the newer subkeys such as "Applications" and "SystemFileAssociations", or per-application capabilities keys from "RegisteredApplications". They also don't read or modify the user's choice under "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts"
+

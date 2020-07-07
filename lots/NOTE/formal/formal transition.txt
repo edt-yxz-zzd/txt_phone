@@ -1,0 +1,49 @@
+|-
+    Elemnts Of The Theory Of Computation 2ed - Harry Lewis
+    [page 58] Chapter 2: FINITE AUTOMATA
+
+    Verification of Sequential and Concurrent Programs
+    [page 130] 4 Recursive Programs :: Example 4.2.
+    
+    ?? is what |= to proof system what |- to system studied??
+class Formal st tk sys | sys -> st tk where
+    -- st : state of system
+    -- [tk] : input tokens
+    -- (st, [tk]) : configuration of system
+    
+    step :: (?sys :: sys) => st -> tk -> [(st, [tk])]
+    yield, yields :: (?sys :: sys) => (st, [tk]) -> [(st, [tk])]
+        -- yields ::= yield*
+        -- output tokens may be longer than input's
+        -- for deterministic system, len(output) == 1
+        -- for nondeterministic system, len(output) may be infinite
+        -- yields (st, []) == [(st, [])] ???
+        --        let (_, []) be halting configuration ???
+    yield (st, []) = [(st, [])]
+    yield (st, t:ls) = fmap f $ step st t where
+        f (st, outs) = (st, outs++ls)
+    yields conf = yields_ [conf] where
+        -- use merge_lsls instead of concat
+        -- since lsls : countable countable
+        yield_ = merge_lsls . map yield -- step :: ls -> ls
+        yield_m = just . yield_ -- :: ls -> Maybe ls
+        yields_ = merge_lsls . gen_list yield_m -- step* :: ls -> ls
+    
+    (|-), (|-*) :: (?sys :: sys, Eq st, Eq tk) => (st, [tk]) -> (st, [tk]) -> Bool
+    a |- b = elem b $ yield a
+    a |-* b = elem b $ yields a
+    
+    
+    
+    is_halting_configuration :: (?sys :: sys) => (st, [tk]) -> Bool
+    is_halting_configuration (_, []) = True
+    is_halting_configuration _ = False
+    
+    partial_deduce_chain :: (?sys :: sys, Eq st, Eq tk) => [(st, [tk])] -> Bool
+    partial_deduce_chain ls = all (uncurry (|-)) $ zip ls $ tail ls
+
+    total_deduce_chain :: (?sys :: sys, Eq st, Eq tk) => [(st, [tk])] -> Bool
+    total_deduce_chain [] = False
+    total_deduce_chain ls = is_halting_configuration (last ls) && partial_deduce_chain ls
+
+

@@ -1,0 +1,58 @@
+https://zh.wikibooks.org/zh-cn/Haskell/Fix_和递归#cite_ref-2
+https://www.zhihu.com/question/41925054#
+https://en.wikipedia.org/wiki/Fixed-point_combinator#Type_for_the_Y_combinator
+
+fix :: (a -> a) -> a
+    -- general, error!
+fix f = let x = f x in x
+    fix f = x = f x = f (fix f)
+
+fix (const 1) = let x = const 1 x in x = 1
+fix f = f (f (f ...)))
+fix (1:) = [1, 1, ...] = repeat 1
+fix (2+) = _L
+fix id = _L
+
+    newtype Rec a = In { out :: Rec a -> a }
+    y :: (a -> a) -> a
+    y = \f -> (\x -> f (out x x)) (In (\x -> f (out x x)))
+        y = fix -- Y f = (\a -> f (a a)) (\a -> f (a a))
+        In :: (Rec a -> a) -> Rec a
+        out :: Rec a -> (Rec a -> a)
+        y f = g (In g) where
+            g r = f (out r r)
+            -- x :: X
+            -- f :: X -> X
+            -- r :: Rec X
+            -- g :: Rec X -> X
+            -- y :: (a->a) -> a
+
+
+
+
+
+assume _L ~<=~ a
+assume _L ~<~ a if a is not _L
+assume no (1 ~<~ 2)
+fix f := min fix point of f
+-- what is "min"?????????????
+
+
+
+newtype Fix f = Fix (f (Fix f))
+a, b, c :: Fix Maybe
+a = Fix Nothing
+b = Fix (Just a)
+c = Fix (Just c)
+
+
+newtype Mu f = Mu (forall a. (f a->a)->a)
+data Nu f = forall a. Nu a (a->f a)
+
+a, b, c :: Mu Maybe
+g :: (Maybe a -> a) -> a
+g f = f Nothing  --  ==>> g contains a (Maybe a) for any "a"??
+g f = f (Just undefined) -- g contains a "a"??
+g f = undefined          -- as above
+
+a = Mu $ \may_a2a -> may_a2a Nothing

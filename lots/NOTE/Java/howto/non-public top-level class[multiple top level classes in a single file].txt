@@ -1,0 +1,89 @@
+non-public top-level class[multiple top level classes in a single file]
+
+see:
+    NOTE/Java/howto/example/pkgMakeJarShouldContains/MyClass.java
+        MyClass.java/
+            package pkgMakeJarShouldContains;
+
+            class UnexportedClass{} // non-public top-level class
+            class MyClass{
+                class Inner{}
+                MyClass(){
+                    new Object(){}; // anonymous
+                }
+            }
+
+        javac MyClass.java
+            UnexportedClass.class
+            MyClass.class
+            MyClass$1.class
+            MyClass$Inner.class
+
+2 problems:
+    1. compile order
+        xxx/
+            A.java/
+                package xxx;
+                import xxx._B;
+                class A{};
+                class _A{};
+            B.java/
+                package xxx;
+                import xxx._A;
+                class B{};
+                class _B{};
+
+        if there is no "_A.class", then "import xxx._A;" will fail
+            since javac cannot find "_A.class" or "_A.java"
+
+        some compile order may succeed, some fails.
+
+        we may modify the source "A.java" to compile a stab "_A.class" firstly
+            secondly "_B.class" and thirdly true "_A.class"
+
+    2. same name class
+        xxx/
+            A.java/
+                package xxx;
+                class A{};
+                class XXX{};
+            B.java/
+                package xxx;
+                class B{};
+                class XXX{};
+        compile and we have two "XXX.class", that is a error
+
+
+https://stackoverflow.com/questions/2336692/java-multiple-class-declarations-in-one-file
+
+javac doesn't actively prohibit this, but it does have a limitation that pretty much means that you'd never want to refer to a top-level class from another file unless it has the same name as the file it's in.
+
+Suppose you have two files, Foo.java and Bar.java.
+
+    Foo.java/
+        public class Foo
+
+    Bar.java/
+        public class Bar
+        class Baz
+
+Let's also say that all of the classes are in the same package (and the files are in the same directory).
+
+What happens if Foo.java refers to Baz but not Bar and we try to compile Foo.java? The compilation fails with an error like this:
+
+    Foo.java:2: cannot find symbol
+    symbol  : class Baz
+    location: class Foo
+      private Baz baz;
+              ^
+    1 error
+
+This makes sense if you think about it. If Foo.java refers to Baz, but there is no Baz.java (or Baz.class), how can javac know what source file to look in?
+
+If you instead tell javac to compile Foo.java and Bar.java at the same time, or even if you had previously compiled Bar.java (leaving the Baz.class where javac can find it) then this error goes away. This makes your build process feel very unreliable and flaky, however.
+
+Because the actual limitation, which is more like "don't refer to a top-level class from another file unless it has the same name as the file it's in or you're also referring to a class that's in that same file that's named the same thing as the file" is kind of hard to follow, people usually go with the much more straightforward (though stricter) convention of just putting one top-level class in each file. This is also better if you ever change your mind about whether a class should be public or not.
+
+Sometimes there really is a good reason why everybody does something in a particular way.
+
+

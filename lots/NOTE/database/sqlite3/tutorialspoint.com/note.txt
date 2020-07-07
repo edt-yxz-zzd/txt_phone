@@ -1,0 +1,484 @@
+
+__method__:
+__example__:
+__command__:
+__data_type__
+
+
+https://www.tutorialspoint.com/sqlite/sqlite_python.htm
+
+-------------------------__method__:
+db = connection = sqlite3.connect(database, ...)
+cursor = connection.cursor()
+
+cursor.execute(sql_stmt [, optional parameters])
+cursor.executemany(sql_stmt, seq_of_parameters)
+    <==>
+        for parameters in seq_of_parameters:
+            cursor.execute(sql_stmt, parameters)
+
+
+cursor.executescript(sql_script)
+    <==>
+        COMMIT
+        for sql_stmt in sql_script.split(';'):
+            cursor.execute(sql_stmt)
+
+connection.total_changes()
+    #since the database connection was opened
+connection.commit()
+    #flush
+connection.rollback()
+    # This method rolls back any changes to the database since the last call to commit().
+
+connection.close()
+    <==>
+        connection.rollback()
+        connection.close()
+    always call it:
+        * 1
+            connection.rollback()
+            connection.close()
+        * 2
+            connection.commit()
+            connection.close()
+
+
+-------------------------
+cursor.fetchone()
+    <==> next(iterable, None)
+    #This method fetches the next row of a query result set, returning a single sequence, or None when no more data is available.
+cursor.fetchmany([size])
+cursor.fetchall()
+
+
+
+-------------------------__example__:
+import sqlite3
+connection = sqlite3.connect('test.db')
+cursor = connection.cursor()
+
+cursor.execute(
+    '''CREATE TABLE COMPANY
+        (ID INT PRIMARY KEY     NOT NULL
+        ,NAME           TEXT    NOT NULL
+        ,AGE            INT     NOT NULL
+        ,ADDRESS        CHAR(50)
+        ,SALARY         REAL
+        )
+        ;
+    ''')
+
+
+cursor.execute("INSERT INTO COMPANY (ID,NAME,AGE,ADDRESS,SALARY) \
+      VALUES (1, 'Paul', 32, 'California', 20000.00 )");
+
+cursor.execute("INSERT INTO COMPANY (ID,NAME,AGE,ADDRESS,SALARY) \
+      VALUES (2, 'Allen', 25, 'Texas', 15000.00 )");
+
+cursor.execute("INSERT INTO COMPANY (ID,NAME,AGE,ADDRESS,SALARY) \
+      VALUES (3, 'Teddy', 23, 'Norway', 20000.00 )");
+
+cursor.execute("INSERT INTO COMPANY (ID,NAME,AGE,ADDRESS,SALARY) \
+      VALUES (4, 'Mark', 25, 'Rich-Mond ', 65000.00 )");
+
+
+rows = cursor.execute("SELECT id, name, address, salary from COMPANY")
+for row in rows:
+    ...row[0] # can row.ID???
+
+cursor.execute("UPDATE COMPANY set SALARY = 25000.00 where ID = 1")
+cursor.execute("DELETE from COMPANY where ID = 2;")
+
+connection.commit()
+connection.close()
+
+
+----------------------------__command__:
+https://www.tutorialspoint.com/sqlite/sqlite_quick_guide.htm
+CREATE, SELECT, INSERT, UPDATE, DELETE, DROP
+
+SQL comment:
+    regex'--.*?\n'
+    regex'/\*.*?\*/'
+SQLite command:
+    * DDL - Data Definition Language
+        # INOUT: table, a view of a table, or other object in database
+        CREATE/ALTER/DROP
+    * DML - Data Manipulation Language
+        # INOUT: record
+        INSERT/UPDATE/DELETE
+    * DQL - Data Query Language
+        SELECT
+            # Retrieves certain records from one or more tables
+
+    case insensitive
+        but there are some commands, which are case sensitive like GLOB and glob have different meaning in SQLite statements
+
+SQLite ANALYZE Statement:
+    ANALYZE;
+    ANALYZE database_name;
+    ANALYZE database_name.table_name;
+
+
+SQLite AND/OR Clause
+    SELECT column1, column2....columnN
+    FROM table_name
+    WHERE CONDITION-1 {AND|OR} CONDITION-2;
+
+SQLite ALTER TABLE Statement
+    ALTER TABLE table_name ADD COLUMN column_def...;
+
+SQLite ALTER TABLE Statement (Rename)
+    ALTER TABLE table_name RENAME TO new_table_name;
+
+SQLite ATTACH DATABASE Statement
+    ATTACH DATABASE 'DatabaseName' As 'Alias-Name';
+
+SQLite BEGIN TRANSACTION Statement
+    BEGIN;
+    BEGIN EXCLUSIVE TRANSACTION;
+
+SQLite BETWEEN Clause
+    SELECT column1, column2....columnN
+    FROM table_name
+    WHERE column_name BETWEEN val-1 AND val-2;
+
+SQLite COMMIT Statement
+    COMMIT;
+
+SQLite CREATE INDEX Statement
+    CREATE INDEX index_name
+    ON table_name ( column_name COLLATE NOCASE );
+
+SQLite CREATE UNIQUE INDEX Statement
+    CREATE UNIQUE INDEX index_name
+    ON table_name ( column1, column2,...columnN);
+
+SQLite CREATE TABLE Statement
+    CREATE TABLE table_name(
+       column1 datatype,
+       column2 datatype,
+       column3 datatype,
+       .....
+       columnN datatype,
+       PRIMARY KEY( one or more columns )
+    );
+
+SQLite CREATE TRIGGER Statement
+    CREATE TRIGGER database_name.trigger_name 
+    BEFORE INSERT ON table_name FOR EACH ROW
+    BEGIN
+       stmt1;
+       stmt2;
+       ....
+    END;
+
+SQLite CREATE VIEW Statement
+    CREATE VIEW database_name.view_name AS
+    SELECT statement....;
+
+SQLite CREATE VIRTUAL TABLE Statement
+    CREATE VIRTUAL TABLE database_name.table_name USING weblog( access.log );
+    CREATE VIRTUAL TABLE database_name.table_name USING fts3( );
+
+SQLite COMMIT TRANSACTION Statement
+    COMMIT;
+
+SQLite COUNT Clause
+    SELECT COUNT(column_name)
+    FROM table_name
+    WHERE CONDITION;
+
+SQLite DELETE Statement
+    DELETE FROM table_name
+    WHERE {CONDITION};
+
+SQLite DETACH DATABASE Statement
+    DETACH DATABASE 'Alias-Name';
+
+SQLite DISTINCT Clause
+    SELECT DISTINCT column1, column2....columnN
+    FROM table_name;
+
+SQLite DROP INDEX Statement
+    DROP INDEX database_name.index_name;
+
+SQLite DROP TABLE Statement
+    DROP TABLE database_name.table_name;
+
+SQLite DROP VIEW Statement
+    DROP INDEX database_name.view_name;
+
+SQLite DROP TRIGGER Statement
+    DROP INDEX database_name.trigger_name;
+
+SQLite EXISTS Clause
+    SELECT column1, column2....columnN
+    FROM table_name
+    WHERE column_name EXISTS (SELECT * FROM   table_name );
+
+SQLite EXPLAIN Statement
+    EXPLAIN INSERT statement...;
+    EXPLAIN QUERY PLAN SELECT statement...;
+
+SQLite GLOB Clause
+    SELECT column1, column2....columnN
+    FROM table_name
+    WHERE column_name GLOB { PATTERN };
+
+SQLite GROUP BY Clause
+    SELECT SUM(column_name)
+    FROM table_name
+    WHERE CONDITION
+    GROUP BY column_name;
+
+SQLite HAVING Clause
+    SELECT SUM(column_name)
+    FROM table_name
+    WHERE CONDITION
+    GROUP BY column_name
+    HAVING (arithematic function condition);
+
+SQLite INSERT INTO Statement
+    INSERT INTO table_name( column1, column2....columnN)
+    VALUES ( value1, value2....valueN);
+
+SQLite IN Clause
+    SELECT column1, column2....columnN
+    FROM table_name
+    WHERE column_name IN (val-1, val-2,...val-N);
+
+SQLite Like Clause
+    SELECT column1, column2....columnN
+    FROM table_name
+    WHERE column_name LIKE { PATTERN };
+
+SQLite NOT IN Clause
+    SELECT column1, column2....columnN
+    FROM table_name
+    WHERE column_name NOT IN (val-1, val-2,...val-N);
+
+SQLite ORDER BY Clause
+    SELECT column1, column2....columnN
+    FROM table_name
+    WHERE CONDITION
+    ORDER BY column_name {ASC|DESC};
+
+SQLite PRAGMA Statement
+    PRAGMA pragma_name;
+
+        example:
+            PRAGMA page_size;
+            PRAGMA cache_size = 1024;
+            PRAGMA table_info(table_name);
+
+SQLite RELEASE SAVEPOINT Statement
+    RELEASE savepoint_name;
+
+SQLite REINDEX Statement
+    REINDEX collation_name;
+    REINDEX database_name.index_name;
+    REINDEX database_name.table_name;
+
+SQLite ROLLBACK Statement
+    ROLLBACK;
+    ROLLBACK TO SAVEPOINT savepoint_name;
+
+SQLite SAVEPOINT Statement
+    SAVEPOINT savepoint_name;
+
+SQLite SELECT Statement
+    SELECT column1, column2....columnN
+    FROM table_name;
+
+SQLite UPDATE Statement
+    UPDATE table_name
+    SET column1 = value1, column2 = value2....columnN=valueN
+    [ WHERE  CONDITION ];
+
+SQLite VACUUM Statement
+    VACUUM;
+
+SQLite WHERE Clause
+    SELECT column1, column2....columnN
+    FROM table_name
+    WHERE CONDITION;
+
+
+
+
+
+
+
+
+
+
+
+
+----------------------__data_type__
+SQLite - Data Type
+SQLite Storage Classes
+    * NULL
+        The value is a NULL value.
+
+    * INTEGER
+        The value is a signed integer, stored in 1, 2, 3, 4, 6, or 8 bytes depending on the magnitude of the value.
+
+    * REAL
+        The value is a floating point value, stored as an 8-byte IEEE floating point number.
+
+    * TEXT
+        The value is a text string, stored using the database encoding (UTF-8, UTF-16BE or UTF-16LE)
+
+    * BLOB
+        The value is a blob of data, stored exactly as it was input.
+
+#SQLite storage class is slightly more general than a datatype. The INTEGER storage class, for example, includes 6 different integer datatypes of different lengths.
+
+
+
+
+SQLite Affinity Type
+    # SQLite supports the concept of type affinity on columns. Any column can still store any type of data but the preferred storage class for a column is called its affinity. Each table column in an SQLite3 database is assigned one of the following type affinities
+
+    * TEXT
+        This column stores all data using storage classes NULL, TEXT or BLOB.
+
+    * NUMERIC
+        This column may contain values using all five storage classes.
+
+    * INTEGER
+        Behaves the same as a column with NUMERIC affinity, with an exception in a CAST expression.
+
+    * REAL
+        Behaves like a column with NUMERIC affinity except that it forces integer values into floating point representation.
+
+    * NONE
+        A column with affinity NONE does not prefer one storage class over another and no attempt is made to coerce data from one storage class into another.
+
+
+
+
+
+
+
+
+
+SQLite Affinity and Type Names
+    #Following table lists down various data type names which can be used while creating SQLite3 tables with the corresponding applied affinity.
+    Affinity -> [Data Type]
+
+    * INTEGER
+        INT
+        INTEGER
+        TINYINT
+        SMALLINT
+        MEDIUMINT
+        BIGINT
+        UNSIGNED BIG INT
+        INT2
+        INT8
+
+    * TEXT
+        CHARACTER(20)
+        VARCHAR(255)
+        VARYING CHARACTER(255)
+        NCHAR(55)
+        NATIVE CHARACTER(70)
+        NVARCHAR(100)
+        TEXT
+        CLOB
+
+
+    * NONE
+        BLOB
+        no datatype specified
+
+
+    * REAL
+        REAL
+        DOUBLE
+        DOUBLE PRECISION
+        FLOAT
+
+    * NUMERIC
+        NUMERIC
+        DECIMAL(10,5)
+        BOOLEAN
+        DATE
+        DATETIME
+
+
+Boolean Datatype
+    SQLite does not have a separate Boolean storage class. Instead, Boolean values are stored as integers 0 (false) and 1 (true).
+Date and Time Datatype
+    SQLite does not have a separate storage class for storing dates and/or times, but SQLite is capable of storing dates and times as TEXT, REAL or INTEGER values.
+
+    * TEXT
+        A date in a format like "YYYY-MM-DD HH:MM:SS.SSS"
+
+    * REAL
+        The number of days since noon in Greenwich on November 24, 4714 B.C.
+
+    * INTEGER
+        The number of seconds since 1970-01-01 00:00:00 UTC
+
+    You can choose to store dates and times in any of these formats and freely convert between formats using the built-in date and time functions.
+
+
+
+
+
+
+
+----------------------------sqlite3 command
+CREATE Database
+$sqlite3 DatabaseName.db
+sqlite>.databases
+sqlite>.tables
+sqlite>.quit
+
+
+$sqlite3 testDB.db .dump > testDB.sql
+$sqlite3 testDB.db < testDB.sql
+
+
+ATTACH DATABASE 'DatabaseName' As 'Alias-Name';
+    # The above command will also create a database in case the database is already not created, otherwise it will just attach database file name with logical database 'Alias-Name'.
+    #   The database names "main" and "temp" are reserved
+    #
+    sqlite> ATTACH DATABASE 'testDB.db' as 'TEST';
+    sqlite> .database
+    seq  name             file
+    ---  ---------------  ----------------------
+    0    main             /home/sqlite/testDB.db
+    2    test             /home/sqlite/testDB.db
+DETACH DATABASE 'Alias-Name';
+    sqlite> DETACH DATABASE 'test';
+    sqlite> .database
+    seq  name             file
+    ---  ---------------  ----------------------
+    0    main             /home/sqlite/testDB.db
+
+
+
+SQLite - CREATE Table
+    sqlite> CREATE TABLE COMPANY(
+       ID INT PRIMARY KEY     NOT NULL,
+       NAME           TEXT    NOT NULL,
+       AGE            INT     NOT NULL,
+       ADDRESS        CHAR(50),
+       SALARY         REAL
+    );
+
+    sqlite>.schema COMPANY
+    CREATE TABLE COMPANY(
+       ID INT PRIMARY KEY     NOT NULL,
+       NAME           TEXT    NOT NULL,
+       AGE            INT     NOT NULL,
+       ADDRESS        CHAR(50),
+       SALARY         REAL
+    );
+
+DROP TABLE database_name.table_name;

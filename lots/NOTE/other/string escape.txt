@@ -1,0 +1,94 @@
+
+1)
+    pdf's method is too tedious, too noisy
+        we should not treat '\r' special, since pdf is a binary file after all
+    I make new ones:
+    1) escape binary bytes
+        rex"\n\." -> EOS (end-of-stream, mark the literal ends)
+        rex"\n#.*?(?=\n)" -> "" (comment)
+        1) unescaped line
+            "\n|" -> "\n" (begin an unescaped line)
+            "\n-" -> ""  (wrap an unescaped line)
+            rex"([^\n])" -> "(\1)" (otherwise keep the same in an unescaped line)
+        2) escaped line
+            "\n\\" -> "\n" (begin an escaped line)
+            "\n/" -> ""  (wrap an escaped line)
+            "\\\X\X" -> char (where "\X" == "[0-9A-F]")
+            "\\[nrft_\\]" -> char ("\_" -> ' ')
+            "\\%.*?(?=\n)" -> "" (comment)
+            (otherwise keep the same in escaped line)
+        rex"\n[^.|-\\/]" -> ERROR
+    3) enable indent
+        "\n\s{same-indent-length}[.|>\\/]" as-if "\n[.|>\\/]"
+    4) example
+        |an unescaped line wi
+        -th wrapped part
+        \an escaped line contain a escaped LineFeed:\n an
+        /d a escaped Space:\_\%comment here
+        .
+        above string ==
+            "an unescaped line with wrapped part\n"
+            "an escaped line contain a escaped LineFeed:\n"
+            " and a escaped space: "
+    5) new EOS
+        rex"\n[!~><](.*?)\n" as "\n[|-\/]" but end the string
+    but use EOS that contains "\n"
+        ==>> any string occupies at least 2 lines
+        only for multiline string
+    6) begin a string:
+        "i\"-*(?=[.|\\!>])" - begin a string
+        example:
+            i"--|a unescaped string
+                \ occuped 3 lines
+                .
+            === "a unescaped string occuped 3 lines"
+            i"--\\00 a escaped string begins with NUL
+                .
+            === "\0 a escaped string begins with NUL"
+            i"!a unescaped string neednot '.'
+            === "a unescaped string neednot '.'"
+            i">a escaped string ends with LF\n
+            === "a escaped string ends with LF\n"
+            i".
+            === ""      (useless)
+    7) new version
+    <string>= <single_line>
+            | <begin_line> <middle_line>* <end_line>
+            | <wrapped_begin_line> <middle_line>* <end_line>
+            | <wrapped_single_line>
+    <single_line> = ^([^<EOL>]+&(<other-prefix>\s+)?i"((?=[^<EOL>])\s)*)<end_line_rightpart>
+    <begin_line> = ^(?P<len_indent>[^<EOL>]+&(<other-prefix>\s+)?i"((?=[^<EOL>])\s)*)<begin_line_rightpart>
+    <wrapped_begin_line> = ^([^<EOL>]+&(<other-prefix>\s+)?i"((?=[^<EOL>])\s)*)<EOL><indent><begin_line_rightpart>
+    <wrapped_single_line> = ^([^<EOL>]+&(<other-prefix>\s+)?i"((?=[^<EOL>])\s)*)<EOL><indent><end_line_rightpart>
+    <middle_line> = ^<indent><middle_line_rightpart>
+    <end_line> = ^<indent><end_line_rightpart>
+    <begin_line_rightpart> = <middle_line_rightpart>
+    <middle_line_rightpart> = <pre_EOL><escaped_content><EOL> | <comment><EOL>
+    <pre_EOL> = <with_EOL>|<without_EOL>
+    <with_EOL> = "|"  # add "\n" at beginning
+    <without_EOL> = "\+*-"
+    <escaped_content> = <raw> | <escaped> | <hex> | <unicode> | <empty>
+    <comment> = "\\#.*"
+    <raw> = "/.*" # cannot comment
+    <escaped> = "\\" ([^\\]+|\\x<x>{2}|\\u<u>{4}|\\U<U>{8}|\\[_nrt]|\\\{<char_name>\})* <comment>?
+    <x> = [0-9A-F] # no [a-f]
+    <u> = <x>
+    <U> = <x>
+    <char_name> = [^<>\s]+ # undefined
+    <hex> = (\s+|<x>{2})* <comment>?
+    <unicode> = (\s+|\+<x>{1,8})* <comment>?
+    <empty> = "~" \s* <comment>? # "|~" ==>> empty line
+    <end_line_rightpart> = <end_line_rightpart_empty> | <end_line_rightpart_nonempty>
+    <end_line_rightpart_empty> = <pre_EOL> "\." # NOTE: without <EOL>!
+    <end_line_rightpart_nonempty> = <pre_EOL><post_EOL> <escaped_content> <EOL>
+    <post_EOL> = <pre_EOL>
+2) single line string
+    1) tagged single/multiline string:
+        rex"r?\{(?P<tag>[^{[\]}]*)\](.*?)\[(?P=tag)\}"
+        where "r?" means whether a raw string
+        example:
+            r{]a raw string \[} === "a raw string \\"
+            {]an error string \[} === ERROR
+            {]an escaped string \\[} === "an escaped string \\"
+
+

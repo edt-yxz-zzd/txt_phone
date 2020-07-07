@@ -1,0 +1,223 @@
+forbidden substring
+border
+period in string
+KMP failure function
+autocorrelation
+
+
+分类问题：
+1)假设字母表是有限的，大小为W，且W足够大。
+2)对于给定的某一长度大于0的字符串D及非负整数L，定义以下两个函数：
+--f(D,L)=不以D为子串的、长度为L的字符串的数量
+--g(D,L)=长度为L且在其后添加D的最长真前缀后仍不以D为子串的字符串的数量
+----（为了避免误解，这里的‘子串’是指该字符串中相邻一整串）
+3)如果两个字符串D1、D2，对于任意L有f(D1,L)=f(D2,L)且g(D1,L)=g(D2,L)，就说它们等价。
+4)对于给定的正整数n，长度为n的字符串可以被归为几个等价类？
+5)能够找到一个效率较高的算法来枚举这些类么？
+
+A border of x is a substring that is both proper prefix and proper suffix of x
+较短的前(prefix)、后(suffix)、双(border)、互补双缀是较长的同型缀的此型缀
+互补真双缀的出现意味着D是周期的，双缀的前补串不一定与后补串相同。
+两个双缀长分别为x,y，且x<y<2x，则2x-y也是一个双缀长
+若最长真双缀长为0<s<L，则L-k(L-s) for 0<k<L/(L-s)是都是非空真双缀长
+注意D[0:L-s]是非周期的。
+t = L-s
+r = L mod t
+若 s1, s2 是不同的双缀长，且 s1 + s2 >= L
+则 t1+t2 = L-s1 + L-s2 <= L, 观察 D[0:t1+t2]
+设 0<=x<t1<=t2, D[x]=D[x+t2]=D[x+t2 mod t1] = D[x+k*t2 mod t1] = D[x+k*gcd(t1,t2) mod t1], 从而 gcd(t1,t2)是一个不大于它俩的伪周期。
+称形如 k*t+r的双缀长为主双缀长，则非主双缀长必小于min(L-s,s)
+001000100==>9 5 2 1 0 // 0 < 2 < min(9-5, 5)
+if t1 + t2 = L+d > L, t1<t2, then
+for 0<=x<t1-d, D[x]=D[x+t2]=D[x+t2 mod t1], 
+if 1<=d <= gcd(t1,t2)=g <= t1, then g is a 伪周期
+    1<=(t1+t2)-L=d<=g
+    0<=t1<t2 ==>> 0<g<=t2 ==>> t2-g<t2; 0<=t2-g<=t1+t2-g<=t1+t2-d<L;
+        ==>> D[:t2-g] = D[t1:t1+t2-g]
+
+    cut D[:t1+t2-g] into (t1+t2-g)/g=BL blocks of len g: 
+        B[i] = D[g*i:g*(i+1)] for i in [0..BL)
+        B[:t2/g-1] = B[t1/g:(t1+t2)/g-1]
+        0 <= j < t2/g-1 (except t2/g-1) ==>> B[j] = B[j+t1/g mod t2/g]
+        let j0 = t2/g-1 + t1/g mod t2/g
+        gcd(t1/g, t2/g) = 1 ==>> j0+i*t1/g mod t2/g != t2/g-1, for i=0..t2/g-2
+        B[j0+i*t1/g mod t2/g] = B[j0+(i+1)*t1/g mod t2/g], for i=0..t2/g-2
+        ==>> B[t2/g-1] = B[j0+i*t1/g mod t2/g], for i=0..t2/g-1
+        ==>> all B[i] for i=0..t2/g-1 are the same
+    ==>> g is a period of D[:t2], hence of D
+
+    if t1+t2 <= L+gcd(t1,t2) ==>> gcd(t1,t2) is a 伪周期
+    let all periods of D be 0=t0<t1<t2<...<tk=L
+        0<t1<t2<=L, t1, t2 are the two smallest periods except 0
+        let g = gcd(t1,t2), not 2t1<t2
+        ==>> t1+g <= t2 <= 2t1 // since 2t1 is a period if 2t1<=L
+        ==>> t1=g or t1+t2>L+g 
+        ==>> [2t1=t2] or [2t1>t2][3t1>t1+t2>L+g>L][2t2>=t1+g+t2>L+2g>L]
+        [2t1>t2] ==>> [t1>L/3][t2>L/2]
+            t1>g>=1; t1 != 1;
+            t1+t2>L+g  ==>> L-t2 < t1-g
+                if [t1=2]: g=1,L-1<t2=L, 3<=t2<4 ==>> t2=L=3; 2t1>L;3t1=2t2
+                if [t1=3]: g=1,t2>L+1-3=L-2, 3+1<=t2<2*3 ==>> t2=4|5
+                    t2<=L<t2+2 ==>> L=t2|t2+1
+                    [t2=4, L=4]: 2t1>L;
+                    [t2=4, L=5]: 2t1>L;
+                    [t2=5, L=5]: 2t1>L;
+                    [t2=5, L=6]: 2t1=L;3t1<2t2
+                    
+            t1+g<t2 ==>> L-t2 <= L-(t1+g) ==>> L-t2 <= min(t1-g-1, L-t1-g)
+            [t1<t2<2t1<=L<3t1][L<2t2] or [t1<t2<=L<2t1]
+            1) [t1<t2<2t1<=L<3t1][L<2t2]: 
+                // example: D=(XY)**m XZXY (XY)**m XZXY (XY)**(m-1) X = XYXZXY XYXZXY X
+                // aaaaaaaaa0aaa aaaaaaaaa0aaa aaaa, 0=t0<t1=13<t2=23<24<25<2t1=26<...
+                [2t1<=L]
+                if 3/2t1 >= t2 ==>> t1+t2 <= 5/2t1
+                D=RARAR=BC, t1=len(RA)>len(R)>=0, t2=len(B)>len(C)>0
+                A != R (otherwise t=len(R)<t1);
+                len(RARA)>len(B)>len(RA)
+                len(R) = L-2t1
+                len(A) = t1-len(R) = 3t1-L
+                
+                len(RAR) = 2t1 - len(A) = L-t1 < t2-g < len(B)
+                len(RAR) < len(B) < len(RARA)
+                
+                let B=RARQ, A=QT ==>> C=TR
+                C=B[:len(C)] ==>> TR = R+A[:len(T)]
+                let A=NP, len(N)=len(T)
+                TR=RN ==>> AR=QRN ==>> ARP=QRA
+                q,r = divmod(len(R), len(T))
+                R = T*q + X = T**q X
+                TX=XN, len(X)=r<len(T)
+                let T=XY ==>> YX=N, TX=XYX=XN
+                R = (XY)*q + X = (XY)**q X
+                A = QXY = YXP
+                maybe // there are other solutions
+                    A = Y(XY)**q or YXZXY or...
+                    [A = Y(XY)**q] RA = (XY)**m X Y(XY)**q = (XY)**n : false
+                    [A = YXZXY] RA = (XY)**q X YXZXY = (XY)**(q+1) XZXY 
+                        let Z != Y(XY)**c
+                        D=RARAR = (XY)**m XZXY ... = ()XZXY()XZXY()**q X
+                        Q=YXZ
+                        B=RARQ = ()XZXY()**q X YXZ = ()XZXY()XZ
+                        C= XY()**q X = ()X = B[:len(C)]
+                        
+
+                        
+                        
+
+d=g-(L mod g), t2=L-t1+g-(L mod g)>t1, g-(r1 mod g)>2t1-L
+
+if t1<t2 and D[0:t1] = D[t2-t1:t2] then t2-t1 is a 伪周期，此时t1 t2只能是主双缀长
+
+h(D,L,k) = 长度为L且在其后添加D[0:k]后仍不以D为子串的字符串的数量，0<=k<len(D)
+f(D,L) = h(D,L,0)
+g(D,L) = h(D,L,len(D)-1) = h(D,L,s) // s=s(D,len(D)-1)<len(D)
+h(D,L,x) = h(D,L,s(D,x)) // s(D,x)是小于等于x<len(D)的D的最大双缀长
+h(D,<0,0<= <len(D)) = 0 (f'1)
+h(D,>=0,0<= <len(D)) > 0 (f'2)
+h(D,0,..) = 1 (f'3)
+h(D,L,0) = h(D,L-1,0)*W - h(D,L-len(D),s) for L>=1 (f1)
+h(D,L,s) = h(D,L,0) - sum<i 是非0的s或非0的非主双缀长>{h(D,L-(len(D)-i), len(D)-i)}
+NOTE: if i != s, then i <= len(D)-s, so len(D)-i >= s
+if s != 0, h(D,L,s) = h(D,L,0) - sum<i 是非0的非主双缀长>{h(D,L-(len(D)-i), s)} - h(D,L-(len(D)-s), len(D)-s) (f2)
+if 2s > len(D), h(D,L, len(D)-s) = h(D,L,0) - sum<i 是非0的小于等于len(D)-s的双缀长>{h(D,L-(len(D)-i), s)} (f3)
+上述两式中i的差别仅在于下面多取了一个值:r(if r>0)或len(D)-s(if r==0)，所以只有一项不同：(f2)~h(D,L-(len(D)-s), len(D)-s); (f3,r>0)h(D,L-(len(D)-r), s); (f3,r==0)h(D,L-s, s)
+
+
+整理并推导得到相同h的不同的双缀长：
+h(D,<0,0<= <len(D)) = 0
+h(D,>=0,0<= <len(D)) > 0
+h(D,0,..) = 1
+s == 0: 
+    h(D,L,0) = h(D,L-1,0)*W - h(D,L-len(D),0) for L>=1
+             = h(D,L-1,0)*W = W^L for 0<=L<len(D)
+             = W^L-1 for L==len(D)
+0<s<=len(D)/2:
+    h(D,L,0) = h(D,L-1,0)*W - h(D,L-len(D),s) for L>=1
+    h(D,L,s) = h(D,L,0) - sum<i 是非0的非主双缀长>{h(D,L-(len(D)-i), s)} - h(D,L-(len(D)-s), s)
+             = h(D,L,0) = W^L for 0<=L<len(D)-s
+             = h(D,L,0) - 1 = W^L-1 for L==len(D)-s
+    若len(D1)==len(D2)、双缀长不同而h(D1,L,0)==h(D2,L,0)，则由(f1)得：h(D1,L,s1)==h(D2,L,s2)；再由(f2)得：sum<i1>{h(D1,L-(len(D1)-i1), s1)}==sum<i2>{h(D2,L-(len(D2)-i2), s2)}；再由(f'1)(f'2)得i1与i2必须是一致的，==>> s1 != s2。只要非主双缀长一致就行！
+s>len(D)/2:
+    h(D,L,0) = h(D,L-1,0)*W - h(D,L-len(D),s) for L>=1
+    h(D,L,s) = h(D,L,0) - sum<i 是非0的非主双缀长>{h(D,L-(len(D)-i), s)} - h(D,L-(len(D)-s), len(D)-s)
+    h(D,L, len(D)-s) = h(D,L,0) - sum<i 是非0的小于等于len(D)-s的双缀长>{h(D,L-(len(D)-i), s)}
+    同上得sum<i1>{h(D1,L-(len(D1)-i1), s1)} - h(D1,L-(len(D1)-s1), len(D1)-s1)==sum<i2>{h(D2,L-(len(D2)-i2), s2)} - h(D2,L-(len(D2)-s2), len(D2)-s2)
+    
+
+任意合法双缀长集有相应位串：
+    若1<=t<=L/2, 则可先构造出t+r长的相应于该双缀长集子集的位串，再重复t
+    若L/2<t<L, 先构造出相应r长位串，r+(t-r)+r形，令y=~x，则t-r长串可取“[y..]x或[y..]y”(至少一个有效) “[y..]y或[x..]x”(至少一个有效)
+    若t=L, 则x[y..]
+    可得到相应的二进制长为L（即最高位为1的情况下）的最小、最大、最少翻转正整数
+    证：若RYR存在伪周期t1,0<t1<=t-r 或 r <= t1 < r+(t-r)=t, 则R全是y，故[y..]x与[x..]x均可
+    若RYR不存在t1而存在t2,t-r<t2<r, 要求0<r<t<2r<r+t=L<3r。t2<r故它也是R的某一伪周期；由于t2小于L/2，故t2必是RYR的某主伪周期之一；令t2>1为RYR的最短主伪周期，即是R的最短主伪周期或非主伪周期。t是D的伪周期，t+t2<t+r=L，即t是主伪周期，在此有t2|t, t2 < r < t, 令r = k*t2+r2, 则 t = (k+1)*t2 since t-r<t2。
+    对于R的非主伪周期有k=1，此时t2=t/2，至多只有一个满足覆盖条件；而k>1的情形只有R的最短主伪周期（因为要满足自身非周期性），也至多只有一个。所以对于给定的串R与长t-r，至多只有两个串Z，长t-r，且RZR有0与t+(R原有伪周期)以外的伪周期。如果存在这么两个Z，记为Z3、Z4，设此时R的最短主伪周期t3、另一相应的非主伪周期t4，t3=t/(k+1), r = k*t3+r3, t4 = t/2 > r-t3=(k-1)*t3+r3 ==>> t/2>(k-1)t/(k+1) ==>> k+1>2k-2 ==>> k<3；t4>t3 ==>> t/2>t/(k+1) ==>> k>1 ==> k = 2, 6|t, 0<=r3<t3=t/3<t4=t/2<2t3<=r<t ==>> r<t3+t4-gcd(t3,t4) = 5t/6-t/6=2t/3 ==>> r3 = r-2t3 < 0!!。所以事实上至多只有一个串Z。由假设Y正是唯一的Z，此时任意其它串均可。
+    综上，Y或者{~R[0].*,.*~R[0]}==>>Y or {x.*, *.x} ==>> Y or {~a.*a}
+
+
+
+
+---------------------
+不含特定子串的、长为Ｌ的字符串　的集合的大小是多少？（修正为：在后面添加特定子串的极大真前缀后仍不含该串）
+假设字符集大小为Ｗ，指定的子串长度为ＬＥ
+把对于任意Ｌ，上述问题解相同的子串归为一类，则有多少类型？
+V(k) = T^k * V(0)，如果Ｔ的特征值t[i]两两不同，那么 V(k)[0] = sum( a[i]*t[i]^k)？
+如果是这样，T2的特征值与Ｔ相同时，只要V([0:n])[0] = V２([0:n])[0]，那么V(x)[0] = V2(x)[0]
+
+
+# string after '#' is a comment
+define N = the set of all natural numbers
+let L, W, a, b, LE, p in N
+define tuple(L) = the set of all L-tuples           #Length
+if L > 0 and s in tuple(L), 
+  s[0]..s[L-1] stand for the elements of s
+  s[a:b] = () if a >= b
+           s[0:b] if a < 0
+           s[a:L] if b > L
+           (s[a],s[a+1],..,s[b-1]) if 0 <= a < b <= L
+  len(s) = L if s in tuple(L)
+  if s1,s2 are tuples, then s = s1+s2 iff s[0:len(s1)] = s1 and s[len(s1):len(s)] = s2
+  [a:b] stands for N[a:b] if N = (0,1,2,...)
+
+
+A(W) = { a in N | a < W}                            #Alphabet
+S(L,W) = { s in tuple(L) | any a in s, a in A(W)}   #String
+e in S(LE,W) and LE > 0                             #End-string, #Length-of-End-string
+find(e,s) = true if exist a, b, s.t. s[a:b] = e
+            false otherwise
+
+E(L,e,W) = { s in S(L,W) | find(e,s) = false}       #Exclude #strings that don't contain the end-string
+# ? E(L,e,W) = { s in S(L,W) | find(e,s+e[0:LE-1]) = false}
+
+problem1: NE(L,e,W) = |E(L,e,W)| = ? # Number of elements in E
+
+define E(p,L,e,W) = { s in S(L,W) | find(e,e[0:p]+s) = false} # length-of-a-Prefix-of-end-string
+so E(L,e,W) = E(0,L,e,W)
+assert |E(LE,L,e,W)| = 0, E(p,0,e,W) = 1 if p in [0:LE], L >= 0
+
+repeat_prefixs(s) = { i in [0:len(s)+1] | s[len(s)-i:len(s)] = s[0:i]} if len(s) >= 0 #notice: include  prefix of length 0 and len(s)
+grow_prefixs(p,e) = { i in repeat_prefixs(e[0:p]) | i = max( j  for j in repeat_prefixs(e[0:p]) if e[j] = e[i]) } if 0 <= p < len(e)
+                  = {} otherwise
+
+E(p,L,e,W) = (W-|grow_prefixs(p,e)|)*E(0,L-1,e,W) + sum( E(i+1,L-1,e,W) for i in grow_prefixs(p,e) if i+1 < len(e) ) if L > 0 and p in [0:LE] 
+    # notice len(e)-1 may be in grow_prefixs(p,e) if p = len(e)-1, 
+    # but E(len(e)-1,L,e,W) = 0, it doesn't matter
+
+VE(L,e,W) = ( E(p,L,e,W) for p in [0:len(e)] )   # vector of E's
+t(i,j,e,W) = W-|grow_prefixs(i,e)|               if j = 0
+         = (j-1) in grow_prefixs(i,e) ? 1 : 0    if 0 < j < len(e)
+T(e,W) = [ [ t(i,j,e,W) for j in [0:len(e)] for i in [0:len(e)]   #Transform matrix #notice W only occur in the 0th column
+VE(L,e,W) = T(e,W)*VE(L-1,e,W)' if L > 0
+
+since E(p,L,e,W) = W^L     if p in [0:LE], L >= 0, p+L < len(e)
+                 = W^L - 1 if p in [0:LE], p+L = len(e)
+so for any e, E(0,L,*,W) is the same if 0 <= L <len(e)
+it leads to if eigenvalue( T(e*,W)) = eigenvalue( T(e,W)), then E(p,L,e*,W) = E(p,L,e,W) 
+det( T(e,W) - t*I) = det( TA(e) - t*I) + W*det( TB(e)-t*IM) = f(t,n)+W*g(t,n-1)
+
+the close-form expression of VE(L,e,W)?
+of what pattern, string e1, e2 make T(e1,W)=T(e2,W) ? VE(L,e1,W)=VE(L,e2,W)? E(0,L,e1,W)=E(0,L,e2,W)?
+
+given a vector v, T1^n *v' = T2^n *v' for any n iff what relation of (T1,T2)?
+given vectors u,v, u* (T1^n-T2^n) *v' = 0 for any n iff what relation of (T1,T2)?  what if v = [1,1,1..], u = [1,0,0...]?
+

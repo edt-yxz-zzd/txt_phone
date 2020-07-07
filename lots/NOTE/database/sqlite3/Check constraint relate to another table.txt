@@ -1,0 +1,71 @@
+
+Check constraint relate to another table
+
+using below idea:
+    problem:
+        "INSERT INTO" is tedious
+
+
+
+idea:
+    unique compound key
+    FOREIGN KEY refer to the unique compound key
+other_table
+    (A ...
+    ,B...
+    ,...
+    ,UNIQUE (A, B)
+    )
+this_table
+    (X ...
+    ,Y ...
+    ,...
+    ,FOREIGN KEY (X, Y)
+        REFERENCES other_table(A, B)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE
+    ,check (f(X, Y, ...))
+    )
+
+
+or: use user-defined function
+
+https://stackoverflow.com/questions/3880698/can-a-check-constraint-relate-to-another-table
+https://stackoverflow.com/questions/16100700/having-data-from-another-table-put-in-into-check-constraint
+    see idea above
+
+
+https://stackoverflow.com/questions/13000698/sub-queries-in-check-constraint
+    create view "with check option"
+https://stackoverflow.com/questions/22217593/adding-constraints-using-subquery-from-other-table
+    create view to check "on commit"
+    # too heavy?
+    create table messages(
+       message_id  number       not null
+      ,sender_id   varchar2(20) not null
+      ,primary key(message_id)
+    );
+
+    create table receivers(
+       message_id  number       not null
+      ,receiver_id varchar2(20) not null
+      ,primary key(message_id,receiver_id)
+      ,foreign key(message_id) references messages(message_id)
+    );
+
+    create materialized view log 
+        on receivers with primary key, rowid including new values;
+
+    create materialized view log 
+        on messages  with primary key, rowid (sender_id) including new values;
+
+    create materialized view mv 
+    refresh fast on commit
+    as
+    select count(*) as bad_rows 
+      from messages  m
+      join receivers r using(message_id)
+     where m.sender_id = r.receiver_id;
+
+    alter materialized view mv
+      add constraint dont_send_to_self check(bad_rows = 0);

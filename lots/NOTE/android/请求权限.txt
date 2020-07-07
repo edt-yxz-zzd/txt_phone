@@ -1,0 +1,84 @@
+请求权限
+https://developer.android.google.cn/training/permissions/requesting
+
+
+系统显示的对话框说明了您的应用需要访问的权限组，它不会列出具体权限。例如，如果请求 READ_CONTACTS 权限，系统对话框只会说明您的应用需要访问设备的联系人。用户只需要针对每个权限组授予一次权限。如果您的应用请求该组中的其他任何权限（已在您的应用清单中列出），系统会自动授予这些权限。当您请求权限时，系统会调用您的 onRequestPermissionsResult() 回调方法并传递 PERMISSION_GRANTED，就像用户通过系统对话框明确同意了您的请求时的处理方式一样。
+    注意：您的应用仍需要明确请求它需要的每项权限，即使用户已授予同一组中的其他权限。此外，权限分组在将来的 Android 版本中可能会发生变化。您的代码不应依赖于特定权限属于或不属于同一组的假设。
+
+按 API 级别声明权限
+    要仅在支持运行时权限的设备（即运行 Android 6.0（API 级别 23）或更高版本的设备）上声明某项权限，请添加 uses- permission-sdk-23 标记，而不是 uses-permission 标记。
+    使用这些标记中的任意一个时，您均可设置 maxSdkVersion 属性，以指定在运行更高版本的设备上不需要特定权限。
+
+
+要声明应用需要某项权限，请在应用清单中添加 <uses-permission> 元素，作为顶级 <manifest> 元素的子项。
+
+    <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+            package="com.example.snazzyapp">
+
+        <uses-permission android:name="android.permission.INTERNET"/>
+        <!-- other permissions go here -->
+
+        <application ...>
+            ...
+        </application>
+    </manifest>
+
+
+
+
+检查权限
+    如果应用需要一项危险权限，那么每次执行需要该权限的操作时，您都必须检查自己是否具有该权限。从 Android 6.0（API 级别 23）开始，用户可随时从任何应用撤消权限
+
+请求权限
+    // Here, thisActivity is the current activity
+    if (ContextCompat.checkSelfPermission(thisActivity,
+            Manifest.permission.READ_CONTACTS)
+            != PackageManager.PERMISSION_GRANTED) {
+
+        // Permission is not granted
+        // Should we show an explanation?
+        if (ActivityCompat.shouldShowRequestPermissionRationale(thisActivity,
+                Manifest.permission.READ_CONTACTS)) {
+            // Show an explanation to the user *asynchronously* -- don't block
+            // this thread waiting for the user's response! After the user
+            // sees the explanation, try again to request the permission.
+        } else {
+            // No explanation needed; request the permission
+            ActivityCompat.requestPermissions(thisActivity,
+                    new String[]{Manifest.permission.READ_CONTACTS},
+                    MY_PERMISSIONS_REQUEST_READ_CONTACTS);
+
+            // MY_PERMISSIONS_REQUEST_READ_CONTACTS is an
+            // app-defined int constant. The callback method gets the
+            // result of the request.
+        }
+    } else {
+        // Permission has already been granted
+    }
+
+处理权限请求响应
+    当用户响应您应用的权限请求时，系统会调用您应用的 onRequestPermissionsResult() 方法，在调用过程中向其传递用户响应。您的应用必须替换该方法，以查明是否已向其授予相应权限。在回调过程中传递的请求代码与传递给 requestPermissions() 的请求代码相同。
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+            String[] permissions, int[] grantResults) {
+        switch (requestCode) {
+            case MY_PERMISSIONS_REQUEST_READ_CONTACTS: {
+                // If request is cancelled, the result arrays are empty.
+                if (grantResults.length > 0
+                    && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    // permission was granted, yay! Do the
+                    // contacts-related task you need to do.
+                } else {
+                    // permission denied, boo! Disable the
+                    // functionality that depends on this permission.
+                }
+                return;
+            }
+
+            // other 'case' lines to check for other
+            // permissions this app might request.
+        }
+    }
+    
+

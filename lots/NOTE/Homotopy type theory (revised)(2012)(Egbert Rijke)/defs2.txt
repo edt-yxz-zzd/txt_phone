@@ -1,0 +1,36 @@
+;; let path_y2z .{path} path_x2y = composition_path ... path_y2z path_x2y
+;; (.{path}) : EQ T y z -> EQ T x y -> EQ T x z
+
+;; let path_x2y ${path} Px = path2imply ... path_x2y Px
+;; (${path}) : (EQ T x y) -> P x -> P y
+;; infix .{path} > ${path}
+
+
+;; path_y2z .{path} path_x2y ${path} Px ~> path_y2z ${path} path_x2y ${path} Px
+tc  :  (T-: *) -> (P-: T -> *) -> (x y z -: T)
+    -> (path_y2z-: EQ T y z)
+    -> (path_x2y-: EQ T x y)
+    -> (Px-: P x)
+    -> EQ (P z)
+        (path2imply T P x z (composition_path T x y z path_y2z path_x2y) Px)
+        (path2imply T P y z path_y2z (path2imply T P x y path_x2y Px))
+tc' :  (T-: *) -> (P-: T -> *) -> (y z -: T)
+    -> (path_y2z-: EQ T y z)
+    ;; induction
+    -> (x-: T)
+    -> (path_x2y-: EQ T x y)
+    -> (Px-: P x)
+    -> EQ (P z)
+        (path2imply T P x z (composition_path T x y z path_y2z path_x2y) Px)
+        (path2imply T P y z path_y2z (path2imply T P x y path_x2y Px))
+
+properties{tc}
+    :  (T-: *) -> (P-: T -> *) -> (x y -: T)
+    -> (path_x2y-: EQ T x y)
+    -> (Px-: P x)
+    ;; path_y2z === ID T y
+    -> let Py = path2imply T P x y path_x2y Px in
+        tc T P x y y (ID T y) path_x2y Px ===[EQ (P y) Py Py] ID (P y) Py
+
+
+properties{}

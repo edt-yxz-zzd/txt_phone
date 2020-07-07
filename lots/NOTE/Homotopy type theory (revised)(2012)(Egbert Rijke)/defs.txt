@@ -1,0 +1,492 @@
+utils:
+    all2any : (A-: *) -> (P-: A -> *) -> All A P -> A -> Any A P
+    all2any = \A P f a, mkPair a (f a)
+
+
+equality = definitional equality(===)
+    The thing that you should keep in mind with definitional equality is that if f and g are functions from A to B such g has the same values as f but is computed in a different way, then the functions f and g are not definitionally equal even though we would consider them to be equal from a set theoretical point of view (by function extensionality).
+    The point here is that we might have an interpretation of type theory in which there is a type containing two functions for which the number of steps a function needs to compute the value at a certain point might be relevant, so we consider functions that involve different computations as different elements even if there is a proof that their values are always the same.
+    [a === b] ==>> [f a === f b; P a === P b]
+    (===) : T -> T -> *
+    (===) : (T-: *) -> T -> T -> *
+    (===) : (s0 s1 -:: #) -> (T-: s0) -> T -> T -> s1
+    (===) : {s -:: #} -> (T-: s) -> T -> T -> s
+        ;; {... -:: ...} - means hiding
+
+    conversion rule:
+        xxx === yyy
+
+propositional equality
+    definitional equality is a syntactical notion
+    propositional equality is internal in the theory of types
+    EQ T x y
+    x ==[T] y
+    x ~>[T] y
+
+[dependent product] @a:A, P a
+[section] term of ProductType / point of space
+    The terms of (@a:A. P a) are functions that take a term a of A to a term of type P(a) which we call sections of P.
+    The dependent product (@a:A. P a) has the following property:
+        each judgement      a:A |- g a : P a
+        defines a term      \a.g(a) : @a:A. P a
+
+[omit args]
+    f : @a:A, @u:P a, Q a u
+    "f u" instead of "f a u"
+        ;; but "P a" cannot tell us which "a"!!
+        ;; e.g. P = \_, R
+
+[dependent sum][total space of P] ?a:A, P a
+    ;; constructor
+    ;; or mkAny ??
+    mkPair = <,> : @a:A, P a -> ?a:A, P a
+    mkPair = <,> : @a:A, (P a -> ?a:A, P a)
+    mkPair = <,> : A>-a -> (P a -> ?a:A, P a)
+    mkPair = <,> : A>-a -> P a -> ?a:A, P a
+    mkPair a = <a,> : P a -> ?a:A, P a
+
+    [minimality principle][induction principle]
+        xxx_principle
+            ;; : @Q:(?a:A,P a) -> *
+            : @A: *
+            , @P: A -> *
+            , @Q: Any A P -> *
+            , @q: @a:A,@u:P a, Q(mkPair a u)
+            , ?section
+                : @pair: Any A P, Q pair
+                , @a:A, @u:P a, section(mkPair a u) ===[Q (mkPair a u)] q a u
+
+        xxx_principle
+            : @A: *
+            , @P: A -> *
+            , ?mkSection
+                : @Q: Any A P -> *
+                , @q: @a:A,@u:P a, Q(mkPair a u)
+                , @pair: Any A P
+                , Q pair
+            , @a:A, @u:P a, mkSection Q q (mkPair a u) ===[Q (mkPair a u)] q a u
+
+        xxx_principle
+            :  (A-: *)
+            -> (P-: A -> *)
+            ->  ( mkSection
+                    -: (Q-: Any A P -> *)
+                    -> (q-: @a:A,@u:P a, Q(mkPair a u))
+                    -> (pair-: Any A P)
+                    -> Q pair
+                , _
+                    -: (Q-: Any A P -> *)
+                    -> (q-: @a:A,@u:P a, Q(mkPair a u))
+                    -> @a:A, @u:P a,
+                    (mkSection Q q) (mkPair a u) ===[Q (mkPair a u)] q a u
+                )
+
+        xxx_principle
+            :  (A-: *)
+            -> (P-: A -> *)
+            -> (Q-: Any A P -> *)
+            -> (q-: @a:A,@u:P a, Q(mkPair a u))
+            -> ( section
+                    ;; All (Any A P) Q
+                    -: (pair-: Any A P)
+                    -> Q pair
+               , _
+                    -: @a:A, @u:P a, section (mkPair a u) ===[Q (mkPair a u)] q a u
+               )
+        ;; @R. (@a:A,    P a -> R             ) -> R
+        ;; @Q. (@a:A, @u:P a.   Q (mkPair a u)) -> (f-: All (Any A P) Q, ...)
+
+        proj1 : (A-: *) -> (P-: A -> *) -> Any A P -> A
+        proj1_properties = \A P a_u, xxx_principle A P (\_,A) (\a u, a)
+                    ;; now we get (section, _) and then??
+                    A \section _, section a_u
+        proj1 = ???
+        proj2 : (A-: *) -> (P-: A -> *) -> (a_u-: Any A P) -> P (proj1 A P a_u)
+        proj2_properties = \A P a_u, xxx_principle A P
+                    (\a_u, P (proj1 A P a_u))
+                    ;; (\b v, (v: Q (mkPair b v)))
+                    (\b, \v: P b, (v: P (proj1 A P (mkPair b v))))
+                    ;; P b ===[*] P (proj1 A P (mkPair b v)) ??
+        proj2 = ???
+
+        xxx_principle ensures:
+            (Any A P -> B) ~=~ All A (\a, P a -> B)
+            (Any A P -> B) ~=~ (@a:A, P a -> B)
+            left2right given by pre-composition ...
+
+
+        ;; mkSection_Any + properties{mkSection_Any}
+        ;;  = induction_principle_for_Any
+        mkSection_Any
+            :  (A-: *)
+            -> (P-: A -> *)
+            -> (Q-: Any A P -> *)
+            -> (q-: @a:A,@u:P a, Q(mkPair a u))
+            -> (section-: All (Any A P) Q)
+        ;; conversion_rule_for_Any
+        properties{mkSection_Any}
+            :  (A-: *)
+            -> (P-: A -> *)
+            -> (Q-: Any A P -> *)
+            -> (q-: @a:A,@u:P a, Q(mkPair a u))
+            -> (properties-: @a:A, @u:P a,
+                 (mkSection_Any A P Q q) (mkPair a u) ===[Q (mkPair a u)] q a u
+               )
+
+
+[minimality principle]
+[induction principle]
+    ;; how to construct "section : All A P" tagged with properties
+    ;; how to construct "(section -: All A P, Q section)"
+    ;; how to construct "Any (All A P) Q"
+    ;; Error: how to construct "@P: A -> *, All A P"/"All (A -> *) (All A)"
+    ;; All : (A-: *) -> (A -> *) -> *
+    ;; All : (typeof_P-: **) -> (typeof_P -> *) -> *
+    ;; All : (sort -:: #) -> (T-: sort) -> (T -> *) -> *
+    ;; All : (s0, s1 -:: #) -> (T-: s0) -> (T -> s1) -> s1
+    ;; AnyAll A P = ?_:A, @a:A, P a = (A, All A P)
+    Many types in type theory can be defined by stating an induction principle for them. To define a type inductively we have to specify the basic terms of that type and then we have to state that that type satisfies a certain minimality principle.
+
+    the induction principle for N becomes a way to define sections of the dependent types P over N.
+        induction_principle_for_N
+            ;; known (N: *, zero: N, succ: N->N)
+            :  (P-: N -> *)
+            -> (atO-: P zero)
+            -> (f-: (n-:N) -> P n -> P (succ n))
+            -> ( section -: All N P
+               , section zero ===[P zero] atO
+                 /\ ((n-:N) -> f n (section n) ===[P (succ n)] section (succ n))
+               )
+    induction_principle_for_Unit
+        ;; known (Unit: *, unit:Unit)
+        :  (P-: Unit -> *)
+        -> P unit
+        -> ( section -: All Unit P, section unit ===[P uint] P unit)
+    induction_principle_for_Empty
+        ;; known (_L : *)
+        :  (P-: _L -> *)
+        -> (section -: All _L P)
+    induction_principle_for_Either
+        ;; known (Either: * -> * -> *
+        ;;      , left: (A B -: *) -> A -> Either A B
+        ;;      , right: (A B -: *) -> B -> Either A B
+        ;;      )
+        :  (A B -: *)
+        -> (P-: Either A B -> *)
+        -> (a2p-: (a-:A) -> P (left a))
+        -> (b2p-: (b-:B) -> P (right b))
+        -> ( section -: All (Either A B) P
+           , ((a-:A) -> section (left a) ===[P (left a)] a2p a)
+             /\ ((b-:B) -> section (right b) ===[P (right b)] b2p b)
+           )
+    induction_principle_for_Maybe ;; Maybe is subtype of Either Unit
+        ;; known (Maybe: * -> *
+        ;;      , nothing: (A-: *) -> Maybe A
+        ;;      , just: (A-: *) -> A -> Maybe A
+        ;;      )
+        :  (A-: *)
+        -> (P-: Maybe A -> *)
+        -> (at_nothing-: P nothing)
+        -> (a2p-: (a-:A) -> P (just a))
+        -> ( section -: All (Maybe A) P
+           , (section nothing ===[P nothing] at_nothing)
+             /\ ((a-:A) -> section (just a) ===[P (just a)] a2p a)
+           )
+    induction_principle_for_Pair ;; Pair is subtype of Any
+        ;; known (Pair: * -> * -> *
+        ;;      , mk_pair: (A B -: *) -> Pair A B
+        ;;      )
+        :  (A B -: *)
+        -> (P-: Pair A B -> *)
+        -> (ab2p-: (a-:A) -> (b-:B) -> P (mk_pair a b))
+        -> ( section -: All (Pair A B) P
+           , (a-:A) -> (b-:B)
+             -> section (mk_pair a b) ===[P (mk_pair a b)] ab2p a b
+           )
+    induction_principle_for_Any
+        ;; known (mkPair: (A-: *) -> (P-: A -> *) -> Any A P)
+        :  (A-: *) -> (Q-: A -> *)
+        -> (P-: Any A Q -> *)
+        -> (au2p-: (a-:A) -> (u-:Q a) -> P (mkPair a u))
+        -> ( section -: All (Any A Q) P
+           , (a-:A) -> (u-:Q a)
+             -> section (mkPair a u) ===[P (mkPair a u)] au2p a u
+           )
+
+;; I write "Id" as "EQ"/"=="
+;; propositional equality
+EQ, (==) :: (T-: *) -> T -> T -> *
+EQ, (==) :: (s0, s1-:: #) -> (T-: s0) -> T -> T -> s1
+ID : (A-: *) -> (a-:A) -> EQ A a a
+    ;; constant path
+idmap : (A-: *) -> A -> A
+[UIP][the principle of Uniqueness of Identity Proofs]
+    extensional type theory
+        where a principle such as UIP is assumed
+    intensional type theory
+        without such an assumption.
+
+
+term : type
+term : space
+path : EQ T x y
+    EQ T = T -> T -> *
+    (EQ T) the path space of T
+    x ~>[T] y = EQ T x y
+
+    Note that the fact that functions act on paths tells us that all functions in type theory are continuous.
+1) any path between types induces an equivalence between those types.
+    (==) ==>> (~=~)
+2) Voevodsky took this a step further by reasoning that the spaces of paths between types and the spaces of equivalences between types are themselves equivalent. This is his univalence axiom, which allows us to interchange equivalent spaces in an argument without any compromises.
+    (~=~) ==>> (==)
+    hence (==) ~=~ (~=~)
+    it has been proven that the univalence axiom holds in the simplicial set interpretation of intensional type theory.
+
+
+[inductive definition of identity types]
+    how to construct a predicator of EQ
+        "section : (x-:A) -> (y-:A) -> EQ A x y -> *"
+    the only basic constructor:
+        ID : (A-: *) -> (a-:A) -> EQ A a a
+    TD = (A-: *) -> (x-:A) -> (y-:A) -> EQ A x y -> *
+    induction_principle_for_EQ
+        :  (A-: *)
+        ;; predicator like P above
+        -> (D-: TD A)
+        ;; replace basic constructor by predicator
+        -> (d-: (a:A) -> D a a (ID A a))
+        ;; make up a section
+        -> ( section ;; predicate a path
+                -: (x-:A) -> (y-:A) -> (path-: EQ A x y) -> D x y path
+           , (a:A) -> section a a (ID A a) ===[D a a (ID A a)] d a
+           )
+
+    mkSection_EQ
+        :  (A-: *)
+        -> (D-: TD A)
+        -> (d-: (a:A) -> D a a (ID A a))
+        -> (section-: (x-:A) -> (y-:A) -> (path-: EQ A x y) -> D x y path)
+    mkSection_EQ = \A D d, proj1 (induction_principle_for_EQ A D d)
+    ;; J = mkSection_EQ
+    ;; conversion_rule_for_EQ
+    properties{mkSection_EQ}
+        :  (A-: *)
+        -> (D-: TD A)
+        -> (d-: (a:A) -> D a a (ID A a))
+        -> (properties-: (a:A) ->
+                (mkSection_EQ A D d) a a (ID A a) ===[D a a (ID A a)] d a
+           )
+    properties{mkSection_EQ} = \A D d, proj2 (induction_principle_for_EQ A D d)
+
+
+
+[inverse_path]
+    inverse_path : (T-: *) -> (x-: T) -> (y-: T) -> EQ T x y -> EQ T y x
+    inverse_path = \T, \x y, \path_x2y, mkSection_EQ T
+                    (\x y path_x2y, EQ T y x)   ;; D
+                    (\a, ID A a)                ;; d
+    properties{inverse_path}
+                :  (T-: *) -> (a-: T)
+                -> inverse_path T a a (ID T a) ===[EQ T a a] ID T a
+    properties{inverse_path} = \T,\a, properties{mkSection_EQ} T ($D$) ($d$)
+    ;; $xx$ refer the above function
+
+[composition_path]
+    composition_path
+            : (T-: *) -> (x y z -: T) -> EQ T y z -> (EQ T x y -> EQ T x z)
+    composition_path = \T,\x y z,\path_y2z path_x2y, mkSection_EQ T
+                    (\y z path_y2z, EQ T x y -> EQ T x z)   ;; D
+                    (\a, \path_x2a:EQ T x a, path_x2a)      ;; d
+                    ;; \a, idmap (EQ T x a)
+
+    properties{composition_path} ;; y2y <<< x2y === x2y | (y2y <<<) === idmap
+            :  (T-: *) -> (x y -: T) -> (path_x2y-: EQ T x y)
+            -> composition_path T x y y (ID T y)
+                ===[EQ T x y -> EQ T x y] idmap (EQ T x y)
+    properties{composition_path}
+        = \T,\x y,\path_x2y, properties{mkSection_EQ} T ($D$) ($d$)
+
+    ;; let path_y2z .{path} path_x2y = composition_path ... path_y2z path_x2y
+    ;; (.{path}) : EQ T y z -> EQ T x y -> EQ T x z
+
+
+[The w-groupoid structure of types]
+    reflRight_path
+            :  (T-: *) -> (x y -: T) -> (path_x2y-: EQ T x y)
+            -> EQ (EQ T x y) path_x2y (composition_path path_x2y (ID T x))
+    invLeft_path
+            :  (T-: *) -> (x y -: T) -> (path_x2y-: EQ T x y)
+            -> EQ (EQ T x x)
+                (composition_path (inverse_path T x y path_x2y) path_x2y)
+                (ID T x)
+    invRight_path
+            :  (T-: *) -> (x y -: T) -> (path_x2y-: EQ T x y)
+            -> EQ (EQ T y y)
+                (composition_path path_x2y (inverse_path T x y path_x2y))
+                (ID T y)
+    invTwice_path
+            :  (T-: *) -> (x y -: T) -> (path_x2y-: EQ T x y)
+            -> EQ (EQ T x y)
+                (inverse_path T y x (inverse_path T x y path_x2y))
+                path_x2y
+    assoc_path
+            :  (T-: *) -> (x y z a -: T)
+            -> (path_x2y-: EQ T x y)
+            -> (path_y2z-: EQ T y z)
+            -> (path_z2a-: EQ T z a)
+            -> EQ (EQ T x a)
+                (composition_path T x z a
+                    path_z2a
+                    (composition_path T x y z path_y2z path_x2y)
+                )
+                (composition_path T x y a
+                    (composition_path T y z a path_z2a path_y2z)
+                    path_x2y
+                )
+    assoc_path'
+            :  (T-: *) -> (z a -: T)
+            -> (path_z2a-: EQ T z a)
+            ;; below is the $D$
+            -> (x y -: T)
+            -> (path_x2y-: EQ T x y)
+            -> (path_y2z-: EQ T y z)
+            -> EQ (EQ T x a)
+                (composition_path T x z a
+                    path_z2a
+                    (composition_path T x y z path_y2z path_x2y)
+                )
+                (composition_path T x y a
+                    (composition_path T y z a path_z2a path_y2z)
+                    path_x2y
+                )
+
+    [up to homotopy]
+        path_x2x' = (inverse_path path_x2y) <<< path_x2y
+        path_x2x' == ID T x
+            instead of path_x2x' === ID T x
+
+;; simple version of "lift_path/dependent_map"
+;; we need "path2imply" to get "lift_path"
+;;    need "path_lifting_property" to get "full_lift_path"
+plain_lift_path ;; "A->B" not "(a-:A) -> P a"
+        :  (A B -: *) -> (f-: A->B) -> (x y -: A)
+        -> (path_x2y-: EQ A x y)
+        -> (lifted_path -: EQ B (f x) (f y))
+properties{plain_lift_path}
+        :  (A B -: *) -> (f-: A->B) -> (x-: A)
+        -> (plain_lift_path A B f) x x (ID A x) ===[EQ B (f x) (f x)] ID B (f x)
+
+[transport]
+    transport, path2imply
+        :  (T-: *) -> (P-: T -> *) -> (x y -: T)
+        -> (path_x2y-: EQ T x y) -> (P x -> P y)
+        ;; propositionally equal ==>> equivalence
+        ;; let path_x2y ${path} Px = path2imply ... path_x2y Px
+        ;; (${path}) : (EQ T x y) -> P x -> P y
+    properties{path2imply}
+        :  (T-: *) -> (P-: T -> *) -> (x -: T)
+        -> (path2imply T P) x x (ID T x) ===[P x -> P x] idmap (P x)
+
+[dependent map]
+    ;; lift_path : path_x2y -> ((path_x2y ${path} f x) ~> f y)
+    dependent_map, lift_path
+        :  (A-: *) -> (P-: A -> *) -> (f-: All A P) -> (x y -: A)
+        -> (path_x2y-: EQ A x y)
+        ;; (path_x2y ${path} f x) ~> f y
+        -> (lifted_path -: EQ (P y) (path2imply A P x y path_x2y (f x)) (f y))
+    properties{lift_path}
+        :  (A-: *) -> (P-: A -> *) -> (f-: All A P) -> (x-: A)
+        -> lift_path A P f x x (ID A x) ===[EQ (P x) (f x) (f x)] ID (P x) (f x)
+
+
+[path_lifting_property]
+    ;; path_lifting_property : path_x2y -> (<x,u> ~> <y, path_x2y ${path} u>)
+    path_lifting_property
+        :  (A-: *) -> (P-: A -> *) -> (x y -: A) -> (u-: P x)
+        -> (path_x2y-: EQ A x y)
+        ;; <x,u> ~> <y, path_x2y ${path} u>
+        -> (lifted_path-: EQ (Any A P)
+                (mkPair x u)
+                (mkPair y (path2imply A P x y path_x2y u))
+           )
+    properties{path_lifting_property}
+        :  (A-: *) -> (P-: A -> *) -> (x-: A) -> (u-: P x)
+        -> path_lifting_property A P x x u (ID A x)
+            ===[EQ (Any A P) (mkPair x u) (mkPair x u)]
+            ID (Any A P) (mkPair x u)
+
+[full_lift_path] ;; Corollary 2.1.9.
+    ;; lift_path : path_x2y -> ((path_x2y ${path} f x) ~> f y)
+    ;; path_lifting_property : path_x2y -> (<x,u> ~> <y, path_x2y ${path} u>)
+    ;; path_lifting_property : path_x2y -> (<x,f x> ~> <y, path_x2y ${path} f x>)
+    ;; ??0 : <y, path_x2y ${path} f x> ~> <y, f y>
+    ;; full_lift_path : path_x2y -> (<x,f x> ~> <y, f y>)   ;; done except ??0
+    ;; lift_path, ??1 => ??0                                ;; done except ??1
+    ;; ??1 : (uu ~> vv) -> (<y, uu> ~> <y, vv>)
+    ;; lift_path => ??1                                     ;; done
+    full_lift_path
+        :  (A-: *) -> (P-: A -> *) -> (f-: All A P) -> (x y -: A)
+        -> (path_x2y-: EQ A x y)
+        ;; <x, f x> ~> <y, f y>
+        -> (lifted_path -: EQ (Any A P) (mkPair x (f x)) (mkPair y (f y)))
+    properties{full_lift_path}
+        :  (A-: *) -> (P-: A -> *) -> (f-: All A P) -> (x-: A)
+        -> full_lift_path A P f x x (ID A x)
+            ===[EQ (Any A P) (mkPair x (f x)) (mkPair x (f x))]
+            ID (Any A P) (mkPair x (f x))
+
+
+
+
+[proj1/proj2]
+    Lemma_2_1_10
+        :  (A-: *) -> (P-: A -> *)
+        -> (a_u-: Any A P) -> (a-: A, (u-: P a, EQ (Any A P) a_u (mkPair a u)))
+    ;; proof
+    ;; re-intro
+    mkSection_Any
+        :  (A-: *)
+        -> (P-: A -> *)
+        -> (Q-: Any A P -> *)
+        -> (q-: @a:A,@u:P a, Q(mkPair a u))
+        -> (section-: All (Any A P) Q)
+    ;; conversion_rule_for_Any
+    properties{mkSection_Any}
+        :  (A-: *)
+        -> (P-: A -> *)
+        -> (Q-: Any A P -> *)
+        -> (q-: @a:A,@u:P a, Q(mkPair a u))
+        -> (properties-: @a:A, @u:P a,
+             (mkSection_Any A P Q q) (mkPair a u) ===[Q (mkPair a u)] q a u
+           )
+
+
+    Lemma_2_1_10
+        ;;All (Any A P) Q
+        ;;All (Any A P) (\a_u, (a-:A, (u-:P a, EQ (Any A P) a_u (mkPair a u))))
+        :  (A-: *) -> (P-: A -> *)
+        -> (a_u-:Any A P) -> (a-:A, (u-:P a, EQ (Any A P) a_u (mkPair a u)))
+        = \A P, mkSection_Any
+            A P                                                     ;; A P
+            (\a_u, (a-:A, (u-:P a, EQ (Any A P) a_u (mkPair a u)))) ;; Q
+            ;; Q (mkPair a u)
+            ;; === (a-:A, (u-:P a, EQ (Any A P) (mkPair a u) (mkPair a u)))
+            ;; type_of (q a u)
+            (\a u, mkPair a (mkPair u (ID (Any A P) (mkPair a u)))) ;; q
+    so, how can we construct proj1/proj2???
+    when we call "a = proj1 a_u; u = proj2 a_u; eq = proj12_eq a_u; ..."
+        transform to:
+            "Lemma_2_1_10 A P a_u R \a u_eq, u_eq R \u eq, ..."
+
+    proj_Any
+        :  (A-: *) -> (P-: A -> *) -> (a_u-:Any A P)
+        -> (R-: *)
+        -> ((a-:A) -> (u-:P a) -> EQ (Any A P) a_u (mkPair a u) -> R) -> R
+    proj_Any A P a_u R a2u2eq2r
+        = Lemma_2_1_10 A P a_u R \a u_eq, u_eq R \u eq, a2u2eq2r a u eq
+
+
+properties{}
+
+
+

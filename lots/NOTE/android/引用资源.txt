@@ -1,0 +1,83 @@
+
+引用资源
+    在代码中：
+        R.string.hello
+    在 XML 中：
+        @string/hello
+
+https://developer.android.google.cn/guide/topics/resources/providing-resources
+注意：切勿手动修改 R.java 文件 - 在您编译项目时，aapt 工具会生成该文件。下次编译时，所有更改都会被覆盖。
+
+
+以下是在代码中引用资源的语法：
+    [<package_name>.]R.<resource_type>.<resource_name>
+        <package_name> 是资源所在包的名称（如果引用的资源来自您自己的资源包，则不需要）。
+        <resource_type> 是资源类型的 R 子类。
+        <resource_name> 是不带扩展名的资源文件名，或 XML 元素中的 android:name 属性值（若资源是简单值）。
+用例
+    ImageView imageView = (ImageView) findViewById(R.id.myimageview);
+    imageView.setImageResource(R.drawable.myimage);
+
+    getWindow().setTitle(getResources().getText(R.string.main_title));
+
+
+
+
+以下是在 XML 资源中引用资源的语法：
+    @[<package_name>:]<resource_type>/<resource_name>
+        <package_name> 是资源所在包的名称（如果引用的资源来自相同资源包，则不需要）
+        <resource_type> 是资源类型的 R 子类
+        <resource_name> 是不带扩展名的资源文件名，或 XML 元素中的 android:name 属性值（若资源是简单值）。
+用例
+    =============== def ==================
+    <?xml version="1.0" encoding="utf-8"?>
+    <resources>
+       <color name="opaque_red">#f00</color>
+       <string name="hello">Hello!</string>
+    </resources>
+
+
+    =============== ref ==================
+    <?xml version="1.0" encoding="utf-8"?>
+    <EditText xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:textColor="@color/opaque_red"
+            #or: android:textColor="@android:color/secondary_text_dark"
+        android:text="@string/hello" />
+
+    ================= drawable/alias.xml =======================
+    # now R.drawable.alias === R.drawable.other_drawable
+    <?xml version="1.0" encoding="utf-8"?>
+    <bitmap xmlns:android="http://schemas.android.com/apk/res/android"
+        android:src="@drawable/other_drawable" />
+
+    ================ @string/hi === @string/hello ==============
+    # I think this is ambiguous
+    # why not <string name="hi" ref="@string/hello" />
+    # or: <string name="hi">\@string/hello</string> ?????????
+    <?xml version="1.0" encoding="utf-8"?>
+    <resources>
+        <string name="hello">Hello</string>
+        <string name="hi">@string/hello</string>
+    </resources>
+
+    ================ layout/main.xml ====================
+    # layout/main.xml === layout/main_ltr.xml
+    <?xml version="1.0" encoding="utf-8"?>
+    <merge>
+        <include layout="@layout/main_ltr"/>
+    </merge>
+
+
+
+引用样式属性
+    ?[<package_name>:][<resource_type>/]<resource_name>
+        android:textColor="?android:textColorSecondary"
+        android:textColor="?android:attr/textColorSecondary"
+
+访问原始文件
+    从 res/ 读取资源的唯一方法是使用资源 ID
+    在 res/raw/ 中，利用 openRawResource() 读取字节流
+    在 assets/ 中，利用 AssetManager 读取原始数据。
+

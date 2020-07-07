@@ -1,0 +1,99 @@
+"[planar_graph][triconnected][isomorphism][1973]A V log V algorithm for isomorphism of triconnected planar graphs[good].pdf"
+
+let hedge repr directed edge
+    since hedge -> aedge <- another_hedge
+
+hedge.head = hedge2vertex[hedge]
+hedge.tail = hedge2vertex[hedge2another_hedge[hedge]]
+hedge.reversal = hedge2another_hedge[hedge]
+
+path = (hedges, end_vertex)
+    hedges[i].tail == hedges[i+1].head
+    hedges[-1].tail == end_vertex
+    len(hedges) >= 0
+simple_path = path, s.t.
+    [i==j] <==> [hedges[i].head == hedges[j].head]
+    hedges[i].head != end_vertex
+cycle = path, s.t.
+    [i==j] <==> [hedges[i].head == hedges[j].head]
+    hedges[0].head == end_vertex
+    # cycle is simple!!
+
+
+primary_path = path, s.t.
+    hedges[i] is
+        * either the edge to the immediate right of hedges[i-1]
+        *     or the edge to the immediate left  of hedges[i-1]
+
+def corresponding:
+  [path p2 is corresponding to path p1 starting with hedge h0_2] =[def]=
+    h0_2 == p2.hedges[0]
+    len(p2.hedges) == len(p1.hedges)
+    [p2.hedges[i] is k[i]-edge to the right of p2.hedges[i-1]]
+        -->> [p1.hedges[i] is k[i]-edge to the right of p1.hedges[i-1]]
+
+
+
+
+
+hedge.hclass = hedge2hedge_class[hedge]
+hedge2hedge_class :: [UInt]
+    s.t. [hedge2hedge_class[h1] == hedge2hedge_class[h2]]
+        <==>
+            [h1.right_face.degree == h2.right_face.degree]
+            [h1.left_face.degree == h2.left_face.degree]
+            [h1.head.degree == h2.head.degree]
+            [h1.tail.degree == h2.tail.degree]
+
+            i.e.
+            [face2degree[hedge2right_face[h1]] == face2degree[hedge2right_face[h2]]]
+            [face2degree[hedge2left_face[h1]] == face2degree[hedge2left_face[h2]]]
+            [vertex2degree[hedge2vertex[h1]] == vertex2degree[hedge2vertex[h2]]]
+            [vertex2degree[hedge2vertex[hedge2another_hedge[h1]]] == vertex2degree[hedge2vertex[hedge2another_hedge[h2]]]]
+
+
+
+
+def distinguishable
+    [h1,h2 are distinguishable] =[def]=
+        [exist primary_path p1,p2.
+            [p1 is corresponding to p2]
+            [p1.hedges[-1].hclass != p2.hedges[-1].hclass]
+        ]
+
+def indistinguishable
+
+
+
+
+
+
+[G1,G2 are triconnected graph planar embedding]
+    [hedge h1 in G1][hedge h2 in G2]
+        [h1,h2 are indistinguishable] <==> [h1.reversal,h2.reversal are indistinguishable]
+
+        [path p1 in G1][path p2 in G2][p1.hedges[0]==h1][p2.hedges[0]==h2]
+            [h1,h2 are indistinguishable][p1 is corresponding to p2]
+                ==>> [p1.hedges[-1],p2.hedges[-1] are indistinguishable]
+
+[G is biconnected graph planar embedding][nonempty simple_path p in G]
+    [exist face f in G.
+        let common_hedges = face2hedges[f]/-\p.hedges in
+        [common_hedges != {}]
+        [common_hedges form a path]
+        [@h<-common_hedges. h.right_face == f]
+    ]
+
+
+
+[G1,G2 are triconnected graph planar embedding]
+    [hedge h1 in G1][hedge h2 in G2]
+        [path p1 in G1][path p2 in G2][p1.hedges[0]==h1][p2.hedges[0]==h2]
+            [h1,h2 are indistinguishable][p1 is corresponding to p2]
+                ==>> [[p1 is cycle] <--> [p2 is cycle]]
+                # cycle is simple
+        [exist isomorphism F of G1 onto G2. F(h1)=h2] <==> [h1,h2 are indistinguishable]
+
+
+
+

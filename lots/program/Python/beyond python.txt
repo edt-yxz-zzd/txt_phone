@@ -1,0 +1,117 @@
+
+beyond python:
+try:
+    assert 1 in int # but in python __contains__ means a containor
+        # int/Fraction is iterable but real... are not
+except Exception as e:
+    print(repr(e))
+    #TypeError("argument of type 'type' is not iterable",)
+
+
+try:
+    type.__contains__ = lambda cls, obj: isinstance(obj, cls)
+    type.__le__ = lambda base, subcls: issubclass(subcls, base)
+    assert 1 in int
+    assert object <= int
+except Exception as e:
+    print(repr(e))
+    # TypeError("can't set attributes of built-in/extension type 'type'",)
+
+code should be movable # super-portable: 
+    # this : where I am
+    this-file # __file__, __line__
+    this-module # __import__(__name__); why? to prevent self-ref??
+    this-class # __class__
+        # C++ is too horrible to use TypeName as constructor name, 
+        # templates are a bit easier.
+    derived_most_subclass # cls, type(self)
+    the_only_one_extending_baseclass # ?? super()
+    this # self
+    this-func # ?? unbounded version, no such thing
+    
+    # parent : whose body I am defined in
+    parent-func 
+    parent-class # outer class of __class__
+    
+    # children : who are defined in my body
+    iter...
+    
+    this-scope # locals()
+    this-caller # the obj whose method's direct-arg exprs contain me
+        obj.method(a+this_caller) ::= obj.method(a+a)
+        obj.method(a+this_caller..) ::= obj.method(a+obj)
+        # source code analyse to ignore decorators
+    this-call # the bounded-method use me as arg
+        g(f(this_call..)) is g
+    this-default
+        def f(a=0, b=1):pass
+        f(this_default, 3) ::= f(0,3)
+        # to easy forward and call
+        # use .split(,1) instead of .split(None, 1)
+        # . or void stand for default value
+            def f(a, b=b0, c=c0, d=d0):pass
+            f(a, , ., g(..)) ::= f(a, b0, c0, g(d0))
+            # so what about ... ??
+        
+
+
+space_call # like Haskell
+    args are lazy evaluated
+    # to implement sth like "and", "or"
+    f a ::= f.__space__(a)
+        f () is not f()
+        f (a) == f a
+        f (a,) == f.__space__((a,))
+
+    class Number:
+        def __space__(self, a):
+            return self * a
+    x = Number()
+    assert x a == x*a
+    3 "a" == "aaa"
+    "a" "b" == "ab" # +
+    # python bugs: 
+    #   'a''b' == 'a'r'b' == 'ab' may be want "a''b" or "a'r'b"
+    #   '' '' valid but '''' is not
+    #   'a''b' should be seperated as 'a' 'b'
+    
+    
+    def ands *args:
+        r = True
+        for a in args:
+            # when "a" checkout, it was evalued "in-place"
+            r = r and a
+        return r
+    def switch(case, *args):
+        'I donot want to write [lambda:f(), ...][case]()'
+        return args[case]
+
+    # and I want to implement my own assert/print
+    # use r"\" as a lazy arg passing "lambda"
+    print.__space__ = \print, x: print(x) or print
+    print 1 2 3 # so fun
+    
+    # I have codes like below:
+    if not all(isinstance(x, Integral) for x in [...]):
+        raise TypeError('not all(isinstance(x, Integral) for x in [...])')
+    if not all(x > 0 for x in [...]):
+        # donot know which one fail
+        raise ValueError('not all(x > 0 for x in [...])')
+        
+    # since "assert" is used for logic not for careless
+    # it was not supposed to use to check value error in input.
+    # and python have no static type system, I need to check input types.
+    # 1) my "assert" should not be removed even __debug__ is False
+    # 2) I want to raise the source code. inspect may fail.
+    # if using lazy evalue, and each arg caches the source code
+    # then I can get the expr string.
+    assert ... # only raise AssertError
+    +assert a f() b exc=ValueError # may raise ValueError('f()')
+    -assert expr  # only do static syntax check, acts as comment indeed
+    
+    assert.__pos__ = \self, x, exc=None: \
+        (self if self and x else 
+        setattr(self, "err", True) or self if exc is None else 
+        raise exc(src))
+    assert.__neg__ = \self, x, exc=None: self
+    assert.__not__ = \self: setattr(self, "err", True)

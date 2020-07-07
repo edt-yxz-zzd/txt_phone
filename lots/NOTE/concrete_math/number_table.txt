@@ -1,0 +1,242 @@
+
+
+0) f(n,k) = f[row=n][col=k], for [ZZ n,k]
+
+1) f(0,k) = [k=0]
+
+2) f(n,k) = f1(n-1,k-1) f(n-1, k-1) + f0(n-1,k) f(n-1,k)
+
+3) switch:
+3-1) f(n,k) = 0 if [k<0]
+3-2) f(-n,-k) is another table
+3-3) f(-k,-n) is another table
+    [k>0][n<0]:f(n,k) = undefined or 0
+    require: f(n,0) = [n=0]
+
+
+
+f(n,k) = 0 if [n>=0][! 0<=k<=n]
+[n>=0]:
+    f(n,0) = f1(n-1,k-1) f(n-1, -1) + f0(n-1,k) f(n-1,k) = f0(n-1,0) f(n-1,0)
+        = II f0(i,0) {~i=0->n}
+    f(n,n) = f1(n-1,n-1) f(n-1, n-1) + 0
+        = II f1(i,i) {~i=0->n}
+
+L f n k = f(n-1, k-1)
+U f n k = f(n-1, k)
+    L (f+g*h) = L f + L g * L h
+    U . L = L . U
+
+f = L f1 * L f + U f0 U f
+    = L f1 * L (L f1 * L f + U f0 U f) + U f0 U (L f1 * L f + U f0 U f)
+    = L f1 * L^2 f1 * L^2 f + L f1 * L.U f0 * L.U f
+        + U f0 * U.L f1 * U.L f + U f0 * U^2 f0 U^2 f
+    = L f1 * L^2 f1 * L^2 f
+    + (L f1 * L.U f0 + U f0 * U.L f1) * L.U f
+    + U f0 * U^2 f0 U^2 f
+    # path ... 
+
+
+
+3-1) f(n,k) = 0 if [k<0]
+    def nf(n,k) = f(k-n, k)
+        = f1(k-n-1,k-1) f(k-n-1, k-1) + f0(k-n-1,k) f(k-n-1,k)
+        = f1(k-n-1,k-1) nf(n, k-1) + f0(k-n-1,k) nf(n+1,k)
+    
+    nf(n+1,k) = -f1(k-n-1,k-1)/f0(k-n-1,k) nf(n, k-1) + 1/f0(k-n-1,k) nf(n,k)
+    nf(n,k) = -f1(k-n,k-1)/f0(k-n,k) nf(n-1, k-1) + 1/f0(k-n,k) nf(n-1,k)
+    let nf1(n-1,k-1) = -f1(k-n,k-1)/f0(k-n,k)
+    let nf0(n-1,k) = 1/f0(k-n,k)
+    
+    nf1(n,k) = -f1(k-n,k)/f0(k-n,k+1)
+    nf0(n,k) = 1/f0(k-n-1,k)
+    
+    NOTE: nf(1,k) = f(k-1, k) = [k-1>=0]0 + [k-1<0]f(k-1, k)
+        = [k<1]f(k-1, k) = [0<=k<1]f(k-1, k) = [k=0]f(-1, 0)
+        = [k=0]nf(1,0)
+    nf(1,0) = -f1(0-1,0-1)/f0(0-1,0) nf(1-1, 0-1) + 1/f0(0-1,0) nf(1-1,0)
+        = -f1(-1,-1)/f0(-1,0) f(-1-0,-1) + 1/f0(-1,0) f(0-0,0)
+        = 1/f0(-1,0) f(0,0)
+        = 1/f0(-1,0)
+    nf(1,k) = [k=0]/f0(-1,0)
+    
+    --------- may set nf(1,0) = 1 ==>> f0(-1,0)=1
+        nf0(-1+1,0) = 1/f0(0-0-1,0) ==>> 1
+        so, nf(n+1, k) is another table
+
+    check:
+        f(n,k) = C(n,k)
+        f1 = f0 = 1
+        nf1 = -1
+        nf0 = 1
+        
+
+3-2) f(-n,-k) is another table
+    def sf(n,k) = f(-n,-k)
+        = f1(-n-1,-k-1) f(-n-1, -k-1) + f0(-n-1,-k) f(-n-1,-k)
+    
+    exist sf1, sf0, s.t.
+        sf(n,k) = sf1(n-1,k-1) sf(n-1, k-1) + sf0(n-1,k) sf(n-1,k)
+
+    f(n+1,k) = f1(n,k-1)f(n,k-1) + f0(n,k)f(n,k)
+    f(n,k) = sf(-n,-k) 
+        = sf1(-n-1,-k-1) sf(-n-1, -k-1) + sf0(-n-1,-k) sf(-n-1,-k)
+        = sf1(-n-1,-k-1) f(n+1, k+1) + sf0(-n-1,-k) f(n+1,k)
+    f(n+1, k+1) = (f(n,k) - sf0(-n-1,-k) f(n+1,k))/sf1(-n-1,-k-1)
+    
+    f(n+1, k+1) = f1(n,k) f(n, k) + f0(n,k+1) f(n,k+1)
+    f(n,k+1) = (f(n+1, k+1) - f1(n,k) f(n, k)) / f0(n,k+1)
+        = ((f(n,k) - sf0(-n-1,-k) f(n+1,k))/sf1(-n-1,-k-1) - f1(n,k) f(n, k)) / f0(n,k+1)
+        = ((1- sf1(-n-1,-k-1) f1(n,k))f(n,k) - sf0(-n-1,-k) f(n+1,k)) / f0(n,k+1)/sf1(-n-1,-k-1)
+        = ((1- sf1(-n-1,-k-1) f1(n,k))f(n,k) - sf0(-n-1,-k) (f1(n,k-1)f(n,k-1) + f0(n,k)f(n,k))) / f0(n,k+1)/sf1(-n-1,-k-1)
+        = ((1- sf1(-n-1,-k-1) f1(n,k) - sf0(-n-1,-k)f0(n,k))f(n,k) - sf0(-n-1,-k)f1(n,k-1)f(n,k-1)) / f0(n,k+1)/sf1(-n-1,-k-1)
+
+    0 = f0(n,k+1)sf1(-n-1,-k-1)f(n,k+1) + sf0(-n-1,-k)f1(n,k-1)f(n,k-1)
+        + (sf1(-n-1,-k-1) f1(n,k) + sf0(-n-1,-k)f0(n,k) - 1)f(n,k)  -------- (1)
+    
+    by symmetric: sf <-> f
+    0 = sf0(n,k+1)f1(-n-1,-k-1)sf(n,k+1) + f0(-n-1,-k)sf1(n,k-1)sf(n,k-1)
+        + (f1(-n-1,-k-1) sf1(n,k) + f0(-n-1,-k)sf0(n,k) - 1)sf(n,k)
+      = sf0(n,k+1)f1(-n-1,-k-1)f(-n,-k-1) + f0(-n-1,-k)sf1(n,k-1)f(-n,-k+1)
+        + (f1(-n-1,-k-1) sf1(n,k) + f0(-n-1,-k)sf0(n,k) - 1)f(-n,-k)
+    subs: (n,k) := (-n,-k)
+    0 = sf0(-n,-k+1)f1(n-1,k-1)f(n,k-1) + f0(n-1,k)sf1(-n,-k-1)f(n,k+1)
+        + (f1(n-1,k-1) sf1(-n,-k) + f0(n-1,k)sf0(-n,-k) - 1)f(n,k)  -------- (2)
+
+    remove f(n,k+1) by using (1) (2):
+    f0(n-1,k)sf1(-n,-k-1) ( sf0(-n-1,-k)f1(n,k-1)f(n,k-1) 
+            + (sf1(-n-1,-k-1) f1(n,k) + sf0(-n-1,-k)f0(n,k) - 1)f(n,k) )
+    = f0(n,k+1)sf1(-n-1,-k-1) ( sf0(-n,-k+1)f1(n-1,k-1)f(n,k-1)
+            + (f1(n-1,k-1) sf1(-n,-k) + f0(n-1,k)sf0(-n,-k) - 1)f(n,k) )
+    so, f(n,k) = F(f(n, k-1))
+    
+    
+
+3-3) f(-k,-n) is another table
+    def tf(n,k) = f(-k,-n)
+    exist tf0, tf1 s.t.:
+        tf(n,k) = tf1(n-1,k-1) tf(n-1, k-1) + tf0(n-1,k) tf(n-1,k)
+
+    tf(0,k) = [k=0] = f(-k,0)
+    ==>> f(n,0) = [n=0]
+
+
+    f(-k,-n) = tf(n,k) = tf1(n-1,k-1) f(1-k,1-n) + tf0(n-1,k) f(-k,1-n)
+    f(k,n) = tf1(-n-1,-k-1) f(1+k,1+n) + tf0(-n-1,-k) f(k,1+n)
+    f(n,k) = tf1(-k-1,-n-1) f(1+n,1+k) + tf0(-k-1,-n) f(n,1+k)
+    f(1+n,1+k) = (f(n,k) - tf0(-k-1,-n) f(n,1+k))/tf1(-k-1,-n-1)
+    f(n,k) = (f(n-1,k-1) - tf0(-k,-n+1) f(n-1,k))/tf1(-k,-n)
+    ==>> f1(n-1,k-1) = 1/tf1(-k,-n)
+        f0(n-1,k) = -tf0(-k,-n+1)/tf1(-k,-n)
+        
+        f1(n,k) = 1/tf1(-1-k,-1-n)
+        f0(n,k) = -tf0(-k,-n)/tf1(-k,-1-n)
+        
+        tf1(n,k) = 1/f1(-1-k,-1-n) = 1/(1/tf1(-1-(-1-n),-1-(-1-k))) = tf1(n,k)
+        tf0(n,k) = -f0(-k,-n)/f1(-k,-1-n) = 
+            = tf0(-(-n),-(-k))/tf1(-(-n),-1-(-k)) tf1(-1-(-1-n),-1-(-k))
+            = tf0(n,k)/tf1(n,-1+k) tf1(n,-1+k)
+            = tf0(n,k)
+        
+        check:
+            Stirling{}: f1(n-1,k-1) = 1; f0(n-1,k) = k
+            Stirling[]: tf1(n-1,k-1) = 1; tf0(n-1,k) = n-1
+            f1(n,k) = 1; f0(n,k) = k
+            tf1(n,k) = 1; tf0(n,k) = n
+            1/tf1(-1-k,-1-n) = 1 = f1(n,k)
+            -tf0(-k,-n)/tf1(-k,-1-n) = -tf0(-k,-n) = k = f0(n,k)
+    
+    tf1(n,k) = 1/f1(-1-k,-1-n)
+    tf0(n,k) = -f0(-k,-n)/f1(-k,-1-n)
+
+    fail: maybe we can extend C(n,k) like: NOOOO!! since C(n,0) != [n=0]
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

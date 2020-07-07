@@ -1,0 +1,166 @@
+
+[Formal_Languages_and_Compilation(2ed)]
+CFG - Earley parser 
+    -- Earley¡¯s Algorithm on NDFA; Earley-like intersection algorithm
+    ---- [Parsing Techniques - A Practical Guide (2ed)]
+    ---- [13.4 Reducing the Intermediate Size: Earley¡¯s Algorithm on FSAs][page437]
+    linear grammar
+        unilinear grammar -- regular language
+            right-linear grammar -- maybe ambiguous
+                -- "A -> a* B?"
+                
+                NDFA gram.
+                -- every non-terminal is a NDFA state
+                -- "A -> a B" for transition
+                -- "A -> " for final state
+    unambiguous CFG
+        LR(1) gram.
+            LA(1)LR(0) gram.
+            strong-LL(1) gram. 
+                -- [Parsing Techniques - A Practical Guide (2ed)]
+                ---- [8.2.2.1 Extending the FIRST Sets]
+                ---- [8.2.2.2 The Need for FOLLOW Sets]
+                ---- [8.2.3 LL(1) versus Strong-LL(1)]
+                -- every LL(1) grammar is strong-LL(1)
+                -- "full LL(1)" starts with "S#"; each time prediction "Ax...#" and input "a..." replace to "A[i][0]...A[i][k]x...#" if a in FIRST("A[i]x...#") and a not in FIRST("A[j]x...#") where j != i
+                ---- i.e. dynamic calc FIRST sets of predictions
+                ------ decisions on FIRST(A¡¤¡¤¡¤#)
+                ---- implement:
+                ------ using (nonterminal, look_ahead_terminals) instead of nonterminal to form a new larger grammar
+                -- "strong-LL(1)" using FOLLOW sets
+                ---- i.e. static calc parse table
+                ------ decisions on the approximation FIRST(A FOLLOW(A))
+                -- "full LL(1)" v.s. "strong-LL(1)"
+                ---- LL(1) grammar <==> strong-LL(1) grammar
+                ---- but "full LL(1)" may halt before "strong-LL(1)"
+                ------ though they are both not consume the error terminal,
+                ------ "strong-LL(1)" may yield some more nullable nonterminals
+                ---- full-LL(1) parser has the immediate error detection property
+                ---- strong-LL(1) parser only has the correct-prefix property
+                LL(1) without nullable-rules
+                    SLL(1)
+                        -- simple LL(1) gram. or simple deterministic gram.
+                        -- all right-hand sides of a non-terminal start with a different terminal symbol
+                        
+                        DFA gram.
+                            -- every non-terminal is a DFA state
+                            -- "A -> a B" for transition
+                            -- "A -> " for final state
+                            -- all non-nullable right-hand sides of a non-terminal start with a different terminal symbol
+                        
+                            Locally Testable Language
+                                -- lang. may contain ""
+                                -- sentence startswith Ini(L), endswith Fin(L)
+                                -- local = (initials, finals, digrams)
+                                if "" in L: "S -> "
+                                for a in Ini(L): "S -> a FOLLOW_a"
+                                for a in Fin(L): "FOLLOW_a -> "
+                                for a, b in Dig(L): "FOLLOW_a -> b FOLLOW_b"
+            
+            parenthesized gram. without RRP
+                distinctly parenthesized gram.
+                
+                
+            Floyd OP gram.  // ?? maybe error
+                            // though OP lang. < LR lang., I am not sure whether OP gram. < LR(1) gram.
+                invertible Floyd OP gram. // not include any rules with repeated right parts (RRP)
+            
+
+
+translation grammar
+attribute grammar // not support EBNF!!
+    // [page352] In the following discussion we use pure BNF syntax for the support, because the use of EBNF productions makes it difficult to specify the correspondence between syntax symbols and attributes.
+    A :: {inherited_attr::Type, ...} -> {synthesized_attr::Type, ...}
+    A:0 -> B:1 "+" C:2
+        1.xx := 0.yy...
+        ...
+        0.zz = ...
+
+    A:0 -> ...
+    B :: ...
+    B -> ...
+    B -> ...
+
+
+
+    NOTE:
+        the output grammar (Earley) Symbol A_begin_end may be present more than once in a syntax tree.
+        1) [Nullable A]
+            B -> A A
+            or: C -> A B; D -> B A; S->C D; and [Nullable B]
+        2) [loop unit rule A]
+            if exists A -> B... and sum(map isNullable [B...]) >= len([B...])-1 >= 0
+                ==>> exists unit rule A -> X for some X in [B...]
+            e.g.
+                A -> Nullable B; B -> A Nullable;
+                if we have A_3_6, then we have [A_3_6 -> Nullable_3_3 [B_3_6 -> [A_3_6->...] Nullable_6_6]]
+    one-sweep grammar/multi-sweep grammar 
+        // subset of attribute grammar
+        // e.g. first phase of multi-sweep ==>> guide predicate which is L-condition
+        donot allow loop unit rule to avoid infinite many syntax trees derived from one sentence.
+        
+        each Symbol has only two attributes: Left(synthesized), Right(inherited)
+            or say, all left or right attibutes must be assigned at same time (and once of course)
+        
+        and we have global values or state from Monad
+            hence evalue order are important:
+                default: A -> B C...
+                    A.right; B.right; B.left; (C...).right; (C...).left; A.left
+                we may reorder the children:
+                    A -> B C D / D B C
+                we may insert some temp valuables:
+                    A -> B C D / D A@1@temp B C A@3@temp
+                    @temp has only right attributes
+                    like terminals??? // though I think terminal has only left attributes
+                                        // this book donot agree me
+
+            why?
+                e.g. C++ namespace
+                    this object was updated in seperated increase way.
+
+    L-condition one-sweep grammar
+        top-down LL(k)
+        if A -> B... C D...
+            then C.right = f(A.right, (B...).left, (B...).right)
+                 C.left = f(C.right)
+                 A.left = f(f(A.right, (B... C D...).left, (B... C D...).right))
+    A-condition one-sweep grammar
+        bottom-up LR(k)
+        if A -> B... C D...
+            then C.right = f((B...).left, (B...).right) # no A.right!!!
+                 C.left = f(C.right)
+                 A.left = f(f(A.right, (B... C D...).left, (B... C D...).right))
+
+
+
+mine:
+    consider "simple deterministic gram." and "Floyd OP gram."
+    what about unique operator??
+        e.g. operator occur in one rule
+            or most terminals and nonterminals occur once in right-part
+
+        Expr = MaybeAdd
+        MaybeMul = Atom | MaybeMul '*' Atom
+        MaybeAdd = MaybeMul | MaybeAdd '+' MaybeMul | MaybeAdd '-' MaybeMul
+        Atom = '(' Expr ')' | 'val'
+        -- NOTE: all nonterminals are occur once
+    e.g. 
+        "fixed degree operator polish gram."
+            Polish = '*' Polish Polish | '~' Polish | 'if' Polish Polish Polish | 'val'
+        "variadic degree operator asm gram."
+            Op = 'add' | 'nop' | 'jump_if'
+            Nonop = ...
+            Asm = Statement*
+            Statement = Op Nonop*
+        
+
+    abstract syntax tree(AST) gram. -- see also : Const.txt
+        each alter have form A -> a0 B1 a1 B2 a2 ... Bt at where a[i] are abstract CONST
+
+
+
+
+
+
+
+

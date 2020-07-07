@@ -1,0 +1,145 @@
+
+dir(__builtins__)
+hasattr
+getattr
+exec/eval/ast.literal_eval/compile
+
+import traceback/inspect/operator
+@functools.lru_cache
+@functools.total_ordering
+# no mixin for +-/*&|^... they have default implements for __iXXX__
+itertools.chain
+
+module:
+    __name__: get current module name
+    __file__
+    
+    globals()
+    cls/func/method.__module__
+    
+     __import__
+     importlib.import_module
+     # this_module = __import__('importlib').import_module(__name__)
+     
+
+
+class:
+    type(self): subclass
+    __class__: get current class # not subclass
+    
+    issubclass
+    isinstance
+    super
+
+    cls.mro()
+    cls.__bases__ # what diff ???
+    
+    @property
+    abc.ABCMeta
+    @abc.abstractmethod 
+    collections.abc/numbers
+
+    
+    def __new__(subclass, ...):
+        this_class = __class__ 
+        # but no __func__ sadly
+        # .__func__.__name__ == inspect.stack(0)[0][3]
+        # how to get __func__ ??
+        #   may try: but not always work:
+        #   (lambda i=1:(lambda frame:frame[0].f_globals[frame[3]])(inspect.stack(0)[i]))()
+        ... = transform(...)
+        self = super(this_class, subclass).__new__(subclass, ...)
+    
+
+instance
+    .__dict__
+    vars
+
+
+
+def f(a,..., b=x,..., *args, k,...,h=y,..., *kwargs):pass
+
+// 3. Data model :: Callable types
+// 28.12. inspect ¡ª Inspect live objects
+ 
+func
+    .__name__
+    .__closure__
+    .__globals__
+    .__defaults__
+    .__kwdefaults__
+    .__doc__
+    
+    locals()
+    
+instance method // bound method
+    mthd.__self__
+    mthd.__func__
+    mthd = lambda ...: mthd.__func__(mthd.__self__(...))
+        = mthd.__self__.getattr(mthd.__name__)
+        
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+-------------------------------------------------------------------
+# success
+>>> g = (lambda i=1:(lambda frame:frame[0].f_globals[frame[3]])(inspect.stack(0)[i]))()
+>>> def f():
+        def h():
+        	h = 1
+        	print(h)
+        	return g()
+        try:
+        	return h
+        finally:
+        	h = 2
+        	print(h)
+
+>>> f()()
+2
+1
+<function f.<locals>.h at 0x000000000422E620>
+------------------------------------------------------------------
+# fail
+>>> def f():
+	global f
+	del f
+	return g()
+
+>>> f()
+Traceback (most recent call last):
+...
+KeyError: 'f'
+
+-------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+

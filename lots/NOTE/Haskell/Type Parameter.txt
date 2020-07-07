@@ -1,0 +1,36 @@
+
+
+type A a b = ([a], b) -- not in form (T a b)
+newtype N a b = A a b -- newtype is required
+
+type B = IO
+type C a = IO a -- bad! prefer B
+==>> type A0 a = (,) [a]
+
+newtype N a String = N String
+g :: (Read a, Show a) => String -> N a String
+g s = show (read s :: a)
+
+
+
+Real World Haskell
+
+[page 434] Chapter 18: Monad Transformers
+
+
+Where¡¯s the Missing Type Parameter?
+You might have noticed that our typesynonym doesn¡¯t have the usual type parameter
+athat we associate with a monadic type:
+-- file: ch18/UglyStack.hs
+type App2 a = ReaderT AppConfig (StateT AppState IO) a
+Both Appand App2work fine in normal type signatures. The difference arises when we
+try to construct another type from one of these. Say we want to add another monad
+transformer to the stack: the compiler will allow  WriterT [String] App a, but reject
+WriterT [String] App2 a.
+The reason for this is that Haskell does not allow us to partially apply a type synonym.
+The synonym  Appdoesn¡¯t take a type parameter, so it doesn¡¯t pose a problem. However,
+because App2takes a type parameter, we must supply some type for that parameter if
+we want to use App2to create another type.
+This restriction is limited to type synonyms. When we create a monad transformer
+stack, we usually wrap it with a  newtype(as we will see shortly). As a result, we will
+rarely run into this problem in practice.

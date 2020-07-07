@@ -1,0 +1,104 @@
+
+
+Note:
+    1) assignment and pass-by in Python is C-like, 
+        just coping var.ptr as in C
+    2) using OO methods in Python makes var's type 
+        look like C++-like reference, 
+        var.method() in Python is not 
+        var.method() but var.ptr->method() in C++
+        since 'method' not belong to 'usr_var_t' but object_t
+
+    exactly, like boost::ref
+
+
+
+
+
+## all object Python users handle with is of subclass of this object_t 
+class object_t
+{
+    // work with smart pointer; hope it not overflow...
+    uint32_t reference_counter;
+    void count_down(){ --reference_counter; 
+        if (!reference_count) delete this;}
+    void count_up(){ if(reference_counter == UINT32_MAX) 
+        throw overflow_error("object_t::reference_counter->uint32_t"); 
+        ++reference_counter;}
+protect:
+    object_t():reference_count(0){}
+    friend class usr_var_t;
+public:
+    virtual void call( usr_var_t& result, string const& method, 
+                       vector<usr_var_t> const& argv)=0; 
+                        // as a abstract class, 
+                        // it contains a pointer to 
+                        // it's virtual method table.
+                        // add up to 2 words
+};
+
+## ObjectA is a type that Python users actually used
+struct ObjectA : object_t
+{
+    ...
+};
+
+## all named variable in Python is instance of type usr_var_t in C++
+## but usr_var_t is invisible for Python users
+class usr_var_t : object_t
+{
+    // smart pointer
+    object_t* ptr;
+    void replace(object_t* p){ if ( ptr == p) return; 
+        if(ptr)ptr->count_down(); ptr = p; if(ptr)ptr->count_up();}
+        // NOTE:since the container in Python is of this class but not object_t
+        // never will one object contain the other.
+        // That ensures this replace function didn't do thing wrong.
+public:
+    usr_var_t( usr_var_t const& that):ptr(0){ replace(that.ptr);}
+    template<typename T>
+    usr_var_t( string const& value):ptr(0){ replace(new T(value));}
+    usr_var_t& operator =( usr_var_t const& that){ replace(that.ptr);}
+    ~usr_var_t(){ replace(0);}
+    
+    void call( usr_var_t& result, string const& method, 
+               vector<string> const& argv)
+    {
+        ptr->call( result, method, argv);
+    }
+};
+
+
+## if you see some code in Python like this:
+    i = 355
+    i.bit_length()
+
+## we may rewrite it in C++ like this:
+    struct ObjectInt : object_t
+    {
+        bool sign;                  // 1 word
+        vector<uint32_t> abs_value; // == {uint32_t *begin, *end} =>2 words
+                                    // add up to 5 words
+    protect:
+        ObjectInt( string const& number);
+    public:
+        #like ObjectInt bit_length()const;
+        void call( usr_var_t& result, string const& method, 
+                   vector<usr_var_t> const& argv) override
+        {
+            str2method.at(method)(result,  argv);
+        }
+    private:
+        void _bit_length(usr_var_t&,vector<usr_var_t> const&);
+        static const map<string,void(ObjectInt::*)
+            (usr_var_t&,vector<usr_var_t> const&)>
+            str2method{ {"bit_length", _bit_length},...};
+    };
+    
+    usr_var_t<ObjectNone> _("");
+    usr_var_t<ObjectInt> i("355");
+    i.call( _, "bit_length", vector<usr_var_t>())
+    
+
+
+    

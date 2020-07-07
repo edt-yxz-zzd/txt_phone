@@ -1,0 +1,62 @@
+case at exit point // branch like if..else..
+case at static_type // like function overloading, template
+case at constant value // like template
+case at dynamic_type // like exception
+
+
+concept concept_name; // used to check the usage of type of this concept
+concept state_name; // to build invariants, to limits the write-operations
+    // since any a in subset B is in A
+    // so, when we builds a invariants, it seems likely that
+    // the write-operations will break them.
+    // every invariant builds on some other invariants,
+    // before it be destructed it will let the invariants it based be read-only.
+    // each can specify some friend functions to keep itself.
+concept block_name; // char[size] with alignment 
+concept struct_name; // block_name with data members
+concept partially_initialized_state; // every type has a p_i_t
+concept uninitialized_t base type_name; // u_t
+concept initialized_t base type_name; // i_t
+concept constant_t base type_name; // c_t
+concept pointer_t; // p_t
+concept natural_number;
+concept pointer;
+
+
+alloc(type, length)->p:
+    is_type_name(type) // check precondictions
+    is_of_type(u_t(p_t(u_t(type))),p)
+    is_natural_number(length)
+    ------{...} // length == 0 => ? unknown
+    normal: // normal exit point
+        is_of_type(i_t(p_t(u_t(type))),p)
+        case array: // case at constant value
+        null: is_null(array)
+        otherwise: not is_null(array) and is_uninitialized_array(array, length)
+    
+
+
+concept_name string_c
+{
+    // array;  // a name to help building invariant
+    // length;
+    
+    constructor(&self): // & means in-output, &~ means write-only, otherwise read-only
+        is_of_type(u_t(this_type), self)
+        ------
+        normal: 
+        is_null(self.array)
+        is_zero(self.length)
+        not is_of_type(u_t(this_type), self) 
+            // !otherwise it guarantee that we can apply this c'tor twice!
+        is_of_type(this_type, self)
+        
+    constructor(&self, that)
+        is_of_type(u_t(this_type), self)
+        is_of_type(this_type, that) // it means when constructor return, that is not modified. it can be T or const T&
+        ------
+        normal:
+        
+        
+     xor is_array(array, length)
+};

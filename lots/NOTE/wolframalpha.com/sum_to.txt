@@ -1,0 +1,55 @@
+[expr :: _L | Monoid a => a][bool_expr==True ==>> [expr is not _L]]:
+    [bool_expr]expr
+        =[def]= [bool_expr] *> expr
+        = expr if bool_expr else mempty
+
+
+[a,b <- ZZ]:
+    sum_gele f a b =[def]= sum f(i) {i=a..b}
+    sum_arrow f a b =[def]= sum f(i) {i=a->b}
+
+sum f(i) {i=a..b}
+    =[def]= [a<=b]f(a) + [a+1<=b]sum f(i) {i=a+1..b}
+    #= sum(f(i) for i in range(a, b))
+sum f(i) {i=a..b}
+    = [a<=b]sum f(i) {i=a..b}
+    = [a<=b]f(a) + sum f(i) {i=a+1..b}
+    = sum f(i) {i=a..b-1} + [a<=b]f(b)
+sum f(i) {i=a..b} - sum f(i) {i=a..b-1} = [a<=b]f(b)
+sum f(i) {i=a..b} - sum f(i) {i=a+1..b} = [a<=b]f(a)
+
+
+sum f(i) {i=a->b} = - sum f(i) {i=b->a}
+[a<b]:
+    sum f(i) {i=a->b} = sum f(i) {i=a..b-1}
+[a>b]:
+    sum f(i) {i=a->b} = - sum f(i) {i=b->a}
+        = -sum f(i) {b..a-1}
+[a==b]:
+    sum f(i) {i=a->b} = - sum f(i) {i=b->a}
+        = -sum f(i) {i=a->b}
+        = 0
+
+sum f(i) {i=a->b}
+    =[def]= [a<b]sum f(i) {i=a..b-1} - [a>b]sum f(i) {i=b..a-1}
+    = sum f(i) {i=a..b-1} - sum f(i) {i=b..a-1}
+sum f(i) {i=a->b+1} - sum f(i) {i=a->b}
+    = (sum f(i) {i=a..b} - sum f(i) {i=b+1..a-1})
+    - (sum f(i) {i=a..b-1} - sum f(i) {i=b..a-1})
+
+    = (sum f(i) {i=a..b} - sum f(i) {i=a..b-1})
+    - (sum f(i) {i=b+1..a-1} - sum f(i) {i=b..a-1})
+
+    = [a<=b]f(b) - -[b<=a-1]f(b)
+    = f(b)
+
+[sum f(i) {i=a->b+1} - sum f(i) {i=a->b} = f(b)]
+    !!!!!!!!!!!!!!
+
+#indefinite_sum like indefinite_integral
+let S<m>(f, n) = sum_arrow(f, m, n)
+[f defined over m->a and m->b]:
+    sum_arrow(f, a, b) = S<m>(f, b) - S<m>(f, a)
+    indefinite_sum(f, n) = sum_arrow(f, ??, n) = S<m>(f, n) + C<m,f,??>
+
+

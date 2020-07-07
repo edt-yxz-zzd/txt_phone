@@ -1,0 +1,91 @@
+see: "Markov.txt"
+
+# filtering, alias state_estimation
+filtering[S,E](t,e) = PD(S[t] | e[1..t])
+    ?current state
+    Filtering is what a rational agent does to keep track of the current state so that rational decisions can be made.
+    filtering_ex[S,d,E](t,e) = PD(S[t-d+1..t] | e[1..t])
+
+let d = the order of Markov process, d>=1
+filtering_by_recursive_estimation[S,E] =
+    ?f. @t. @e. filtering_ex[S,d,E](t+1,e) == f(e[t+1], filtering_ex[S,d,E](t,e))
+
+filtering_ex[S,d,E](t+1,e)
+    = normalization sensor_Markov_model[S,E]{E=e[t+1]}
+                    .* sum``
+                            stationary_transition_Markov_model[S,d]
+                            * filtering_ex[S,d,E](t,e)
+                    ``{S[t-d+1]}
+
+    proof:
+    ?PD(S[t-d+2..t+1] | e[1..t+1])             #filtering_ex[S,d,E](t+1,e)
+        given
+            e[t+1]
+            PD(S[t-d+1..t] | e[1..t])          #filtering_ex[S,d,E](t,e)
+
+    PD(S[t-d+2..t+1] | e[1..t+1])
+        = normalization1 PD(S[t-d+2..t+1], e[1..t+1])
+        = normalization1 PD(S[t+1], e[t+1], S[t-d+2..t], e[1..t])
+        = normalization1 sum`` PD(S[t+1], e[t+1], S[t-d+1..t], e[1..t]) ``{S[t-d+1]}
+    PD(S[t+1], e[t+1], S[t-d+1..t], e[1..t])
+        = PD(S[t+1] | e[t+1], S[t-d+1..t], e[1..t]) * PD(e[t+1], S[t-d+1..t], e[1..t])
+        -- e[t+1] and S[t-d+1..t] both affect S[t+1]!!
+        -- fail! should cut out e[t+1] first!!!
+    PD(S[t+1], e[t+1], S[t-d+1..t], e[1..t])
+        = Pr(e[t+1] | S[t+1], S[t-d+1..t], e[1..t]) .* PD(S[t+1], S[t-d+1..t], e[1..t])
+        =[sensor_Markov_assumption]= Pr(e[t+1] | S[t+1]) .* PD(S[t+1], S[t-d+1..t], e[1..t])
+        =[sensor_Markov_model def]= sensor_Markov_model[S,E]{E=e[t+1]} .* PD(S[t+1], S[t-d+1..t], e[1..t])
+    PD(S[t+1], S[t-d+1..t], e[1..t])
+        = PD(S[t+1] | S[t-d+1..t], e[1..t]) * PD(S[t-d+1..t], e[1..t])
+        =[transition_Markov_assumption]= PD(S[t+1] | S[t-d+1..t]) * PD(S[t-d+1..t], e[1..t])
+        =[stationary_process_assumption]= stationary_transition_Markov_model[S,d] * PD(S[t-d+1..t], e[1..t])
+    PD(S[t-d+1..t], e[1..t])
+        = PD(S[t-d+1..t] | e[1..t]) *. Pr(e[1..t])
+        =[filtering_ex def]= filtering_ex[S,d,E](t,e) *. Pr(e[1..t])
+
+    # conclusion
+    PD(S[t-d+2..t+1] | e[1..t+1])
+        = normalization1 sum`` PD(S[t+1], e[t+1], S[t-d+1..t], e[1..t]) ``{S[t-d+1]}
+        = normalization1 sum`` sensor_Markov_model[S,E]{E=e[t+1]} .* PD(S[t+1], S[t-d+1..t], e[1..t]) ``{S[t-d+1]}
+        = normalization1 sum`` sensor_Markov_model[S,E]{E=e[t+1]} .* stationary_transition_Markov_model[S,d] * PD(S[t-d+1..t], e[1..t]) ``{S[t-d+1]}
+        = normalization1 sum`` sensor_Markov_model[S,E]{E=e[t+1]} .* stationary_transition_Markov_model[S,d] * filtering_ex[S,d,E](t,e) *. Pr(e[1..t]) ``{S[t-d+1]}
+        = normalization1 {Pr(e[1..t]) .* sensor_Markov_model[S,E]{E=e[t+1]} .* sum`` stationary_transition_Markov_model[S,d] * filtering_ex[S,d,E](t,e) ``{S[t-d+1]}}
+        = normalization2 sensor_Markov_model[S,E]{E=e[t+1]} .* sum`` stationary_transition_Markov_model[S,d] * filtering_ex[S,d,E](t,e) ``{S[t-d+1]}
+        normalization1 by 1/Pr(e[1..t+1])
+        normalization2 by Pr(e[1..t])/Pr(e[1..t+1])
+
+
+def ff(t,e) = filtering_ex[S,d,E](t,e) where e[1..t] are accessable
+def ll(t,e) = likelihood_message(t,e) = PD(S[t-d+1..t], e[1..t])
+            = ff(t,e)*Pr(e[1..t])
+    likelihood(t,e) = Pr(e[1..t]) = sum`` ll(t,e) ``{S[t-d+1..t]}
+ff(t+1,e) = normalization sensor_Markov_model[S,E]{E=e[t+1]}
+                    .* sum``
+                            stationary_transition_Markov_model[S,d]
+                            * ff(t,e)
+                    ``{S[t-d+1]}
+    ff(t+1,e) = Pr(e[1..t])/Pr(e[1..t+1]) .* sensor_Markov_model[S,E]{E=e[t+1]}
+                        .* sum``
+                                stationary_transition_Markov_model[S,d]
+                                * ff(t,e)
+                        ``{S[t-d+1]}
+    ff(t+1,e)*Pr(e[1..t+1]) = sensor_Markov_model[S,E]{E=e[t+1]}
+                        .* sum``
+                                stationary_transition_Markov_model[S,d]
+                                * ff(t,e)*Pr(e[1..t])
+                        ``{S[t-d+1]}
+    ll(t+1,e) = sensor_Markov_model[S,E]{E=e[t+1]}
+                        .* sum``
+                                stationary_transition_Markov_model[S,d]
+                                * ll(t,e)
+                        ``{S[t-d+1]}
+def ff(t,e) = PD(S[0]) = prior_probability_distribution[S] where t <= 0
+def ll(t,e) = ff(t,e)*Pr(e[1..t]) = ff(t,e)*Pr("") = ff(t,e) where t <= 0
+def FORWARD, s.t.
+    ll(t,e) = FORWARD ll(t-1,e) e[t] where t > 0
+    ff(t,e) = normalization FORWARD ff(t-1,e) e[t] where t > 0
+
+
+
+
+

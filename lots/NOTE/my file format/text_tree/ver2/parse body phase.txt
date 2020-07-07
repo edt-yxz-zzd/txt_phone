@@ -1,0 +1,49 @@
+
+
+
+0) remove white line
+1) alias "\-+ "
+    "\\-* " ==>> "\\ "
+    "\\^-* " ==>> "\\^ "
+2) escape "?^ "
+    op like ";^ " will translated to "; "
+    will verify "!^ " too
+3) remove free comment
+    will remove "! "
+4) merge
+    will remove "\\ " and "; "
+    from last line to first line:
+        if current op is "\\ " or "; ":
+            while True:
+                upper = the upper op
+                assert upper have same indent
+                if upper is "[]":
+                    remove upper line
+                    continue
+                if upper is "." and current op is "; ":
+                    remove upper line
+                    continue
+                if upper is regex"[\\;#'"+-] ": # content ops
+                    merge current payload to upper payload
+                    # "; " will insert a newline
+                    break
+                else:
+                    raise
+
+5) alias "..~"/"." to "[]"
+6) undo block dedent
+    verify paired op and payload/tag
+    ensure no stmt between pair dedent beyond the pair
+    will remove <<< >>> <>>> ><<<
+    will insert ".."
+7) remove "[]" if the containing body is not empty after this action
+    should be after undo block dedent
+    otherwise we can not find out whether siblings exist.
+8) verify body follows only nonleaf node '["+-] '
+9) verify indent rule and make tmp body for (11)
+10) remove "[]"/".." both in lines and the tmp body
+11) verify "(^^^|...)[#'"+-]" and then remove them
+12) verify only "[#'"+-] " remains and create a body.
+
+
+

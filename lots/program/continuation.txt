@@ -1,0 +1,149 @@
+1) f(){yield;} // blocking itself, all the local state are keep, may continue...
+2) f(){jump g();} // if g, return then return
+
+yield C f(B b)       // s0{p0; C c; B b; null;}  // before p0 run
+{ // p0              // go()=>p0()=>s0->s1{p1;t1; ->s0}
+    T t1;
+    yield p1;        // pause at point p1;
+    loop:            // go through point loop
+    if (t1)
+    {                // go-thr
+        A a2;
+        yield p2;    // s0->s2{p2;a2;->s1}
+    }
+    else
+    {
+        yield p3;    // s0->s3{p3; ;->s1}
+        goto loop;   // !!!!
+    }
+    yield p4;        // s0->s4{p4;;->s1}
+} yield p5           // s5{p5==null; C c; B b; null;} 
+
+
+struct abstract_t
+{
+    virtual ~abstract_t()=0;
+};
+struct ctn_t;
+template<typename T> struct labeled_point_t;
+template<>
+struct labeled_point_t<ctn_t>
+{
+    typedef enum {reset, pause, stop, enum_end} state_t;
+};
+
+
+struct ctn_t : public abstract_t
+{
+    typedef enum {pause, go_thr, go_back} e_t;
+    typedef unique_ptr<ctn_t> p_t;
+    struct ret_t;
+    typedef virtual void (ctn_t::*ftor_t)(ret_t&);
+    struct ret_t{e_t state; p_t data;}; // yield
+    virtual void reset()=0; // reset states so can restart
+    void go_on();
+    virtual p_t factory()const=0;
+    virtual p_t copy()const=0;
+    virtual void del()nothrow=0;
+    virtual bool is_pause()const=0;
+    virtual bool is_stop()const{return null == ypos;}
+    virtual ftor_t get_start_point()const=0;
+    virtual ftor_t get_this_point()const=0; // one point one type
+    virtual ftor_t get_pre_point()const=0;
+    virtual ftor_t get_pre_point(ftor_t)const=0; // to start; multi to single
+    
+    private:
+    virtual void _go_on(ret_t&);
+    void push(p_t p_){if (p_ == nullptr) throw "push null"; if (p_->p != nullptr) throw "push more than 1 item"; if (p_->get_pre_point() != (this->p == nullptr?nullptr:this->p->get_this_point()) throw "not in design stack"; swap(this->p,p_->p);this->p=move(p_->p);}
+    void pop(){if (p == nullptr) throw "pop null"; p_t tmp; swap(p->p, tmp);p=move(tmp);}
+    void pop_to(ftor_t f){while(p!=nullptr){if (p->get_this_point()==ftor)return; pop();} throw "not such pre-point";} 
+    void pop_atexit(){while(p!=nullptr)pop();}
+    p_t p;
+};
+
+
+struct ctn_0_t : public ctn_t
+{
+};
+ctn_t(ftor_t ypos_):ypos(ypos), p(this){}
+
+void ctn_t::go_on()
+{
+    if (is_stop()){throw "stoped!";}
+    
+    ret_t r;
+    while(1)
+    {
+        if (this->p != nullptr) p->_go_on(r);
+        switch(r.state)
+        {
+        case pause: push(r.data);return;
+        case go_thr: push(r.data);break;
+        case go_back: if (r.data==nullptr)throw "can not go back to start";pop_to(r.data->get_this_point());break; // {0}if{1}else{2}{3}=>0->1|2->0->3
+        case exit: pop_to(start);
+        }
+    }
+    
+}
+
+template<typename output_t>
+struct fctn_base_out_t
+{
+    unique_ptr<output_t> out;
+};
+
+
+template<typename output_t, typename input_t>
+struct fctn_base_inout_t : public fctn_base_out_t<output_t>
+{
+    unique_ptr<intput_t> in;
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+struct c_t;
+struct cp_t
+{
+    friend struct c_t;
+    typedef enum {pause,go_to}
+    virtual e_t go_on(p_t& data)=0;
+};
+
+struct c_t
+{
+    bool go_on();
+    
+};
+
+
+
+
+
+
+
+
+
+

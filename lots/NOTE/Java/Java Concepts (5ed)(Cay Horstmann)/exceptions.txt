@@ -1,0 +1,100 @@
+[page 504] Chapter 11 Input/Output and Exception Handling Page 10 of 42
+The Hierarchy of Exception Classes
+    Throwable (unchecked)
+        -> Error (unchecked)
+            -> ... (unchecked)
+        -> Exception (checked)
+            -> RuntimeException (unchecked)
+            -> ... (checked)
+
+
+checked and unchecked exceptions
+    Unchecked exceptions extend the class RuntimeException or Error
+
+    Is it the fault of some external event, or is it the fault of the programmer?
+        Checked exceptions are due to external circumstances that the programmer cannot prevent. 
+            A checked exception describes a problem that is likely to occur at times, no matter how careful you are. 
+            an unexpected end of file can be caused by forces beyond your control, such as a disk error or a broken network connection. 
+        The unchecked exceptions, on the other hand, are your fault. 
+            you are to blame for a NullPointerException, because your code was wrong when it tried to use a null reference.
+
+
+[throws] propagate
+    void main(String[] args) throws IOException
+    {
+        throw new IOException();
+        throw new FileNotFoundException();
+    }
+    
+    Always keep in mind that exception classes form an inheritance hierarchy. 
+    For example, FileNotFoundException is a subclass of IOException. 
+    Thus, if a method can throw both an IOException and a FileNotFoundException, you only tag it as throws IOException.
+
+[try-catch]
+    try
+    {
+        String filename = . . .;
+        FileReader reader = new FileReader(filename);
+        Scanner in = new Scanner(reader);
+        String input = in.next();
+        int value = Integer.parseInt(input);
+        . . .
+    }
+    catch (IOException exception)
+    {
+        exception.printStackTrace();
+    }
+    catch (NumberFormatException exception)
+    {
+        System.out.println("Input was not a number");
+    }
+
+    PrintWriter out = new PrintWriter(filename);
+    try
+    {
+        writeData(out);
+    }
+    finally
+    {
+        out.close();
+    }
+
+
+
+QUALITY TIP 11.3 Do Not Use catch and finally in the Same try Statement
+    It is tempting to combine catch and finally clauses, but the resulting code can be hard to understand. 
+    Instead, you should use a try/finally statement to close resources and a separate try/catch statement to handle errors. 
+        try
+        {
+            PrintWriter out = new PrintWriter(filename);
+            try
+            {
+                // Write output
+            }
+            finally
+            {
+                out.close();
+            }
+        }
+        catch (IOException exception)
+        {
+            // Handle exception
+        }
+    Note that the nested statements work correctly if the call out.close() throws an exception.
+
+
+
+my exception
+    class MyCheckedException extends Exception {...}
+    class MyUncheckedException extends RuntimeException {...}
+    public MyException(){}
+    public MyException(String msg){super(msg);}
+
+
+
+getMessage
+printStackTrace
+
+
+
+

@@ -1,0 +1,124 @@
+
+# copy from continued_fraction_digits_of_quadratic_surd.py
+#   see below "algo"
+
+see:
+    "NOTE/math/continued fraction/[20190331]proof_about_continued_fraction_of_quadratic_irrational.txt"
+
+x = A1/A2 + A3/A4*sqrt(A5)
+[?P,N,Q. [x == (P + sqrt(N))/Q]]
+    #[sqrt(A5) is irrational][A3!=0][A2!=0][A4!=0]
+    x = A1/A2 + A3/A4*sqrt(A5)
+        = (A1*A4 + A2*A3*sqrt(A5))/ (A2*A4)
+        = (s*A1*A4/g + s*A2/g*A3*sqrt(A5))/ (s*A2*A4/g)
+        = (s*A1*A4/g + sqrt((A2/g*A3)^2*A5))/ (s*A2*A4/g)
+        = (P + sqrt(N))/Q
+    where
+        # algo A1_5_to_PNQ
+        s = sign (A2/g*A3)
+        g = gcd(A2, A4)
+        P = s*A1*A4/g
+        N = (A2/g*A3)^2*A5
+        Q = s*A2*A4/g
+[?B,D,C. [x == (B + sqrt(D))/C][C `divs` D-B^2]]
+    algo PNQ2BDC(P,N,Q):
+        [KK,k :: Integer][B = P*KK][D=N*KK^2][C=Q*KK]:
+            [(D-B^2) = (N-P^2)*KK^2 = k*KK*Q]
+            [(D-B^2) = (N-P^2)*KK = k*Q]
+            [KK = Q/gcd(Q,N-P^2)]
+        return (B,D,C)
+    algo A1_5_to_BDC(P,N,Q):
+        [g = gcd(A2, A4)]!
+        [1 = gcd(A2/g, A4/g)]
+        [1 = gcd(A1, A2)]
+        [1 = gcd(A3, A4)]
+        [KK = Q/gcd(Q,N-P^2)
+            = s*A2*A4/g / gcd(s*A2*A4/g, (A2/g*A3)^2*A5 - (s*A1*A4/g)^2)
+            = s*A2*A4/g / gcd(g*A2/g*A4/g, (A2/g*A3)^2*A5 - (A1*A4/g)^2)
+            # gcd(A2/g, (A2/g*A3)^2*A5 - (A1*A4/g)^2) = 1
+            # gcd(A4/g, (A2/g*A3)^2*A5 - (A1*A4/g)^2) = 1
+            # gcd(g, (A2/g*A3)^2*A5 - (A1*A4/g)^2) = ???????
+            = s*A2*A4/g / gcd(g, (A2/g*A3)^2*A5 - (A1*A4/g)^2)
+            = Q / gcd(g, N - P^2)
+        ]
+        # via PNQ2BDC instead A1_5_to_BDC
+        #   since A1_5_to_BDC can not make better result
+
+# d is arbitrary
+[[d :: Integer][x = d+1/x'
+][x == (B + sqrt(D))/C][C `divs` D - B^2
+][B' = d*C-B][C' = (D-B^2)//C + (2*B - d*C)*d][D'==D
+    # algo update BDC
+]]:
+    [x' = (B' + sqrt(D'))/C'][C' `divs` D' - B'^2]
+    [D' - B'^2 == C*C'][D' == D]
+    # NOTE: D never changed!
+    # floor_sqrt(D) is constant!!
+
+
+
+
+[x == (P + sqrt(N))/Q]:
+    [floor(x) = floor((P + sqrt(N))/Q)
+        = [Q>0]floor((P + sqrt(N))/abs(Q))
+        - [Q<0]ceil((P + sqrt(N))/abs(Q))
+        = [Q>0]floor((P + sqrt(N))/abs(Q))
+        - [Q<0]floor((P + sqrt(N) + abs(Q)-1)/abs(Q))
+        = [Q>0]floor((P + floor_sqrt(N))/abs(Q))
+        - [Q<0]floor((P + floor_sqrt(N) + abs(Q)-1)/abs(Q))
+        = [Q>0]floor((P + floor_sqrt(N))/abs(Q))
+        - [Q<0]floor((P + floor_sqrt(N) - 1)/abs(Q))
+        - [Q<0]
+    ]
+
+    # algo floor(x)
+    [floor(x) = floor((P + sqrt(N))/Q)
+        = [Q>0]floor((P + floor_sqrt(N))/abs(Q))
+        - [Q<0]floor((P + floor_sqrt(N) - 1)/abs(Q))
+        - [Q<0]
+    ]
+
+
+
+
+[sqrt(N) is irrational]:
+    conjugate ((P + sqrt(N))/Q) =[def]= (P - sqrt(N))/Q
+[x is reduced_quadratic_surd] =[def]= [x is quadratic_irrational][x > 1][-1 < conjugate x < 0]
+
+
+[x is purely_periodic_continued_fraction] <==> [x is reduced_quadratic_surd]
+
+
+[sqrt(N) is irrational][x = (P+sqrt(N))/Q]:
+    [x > 1] = [Q>0][P+sqrt(N) > Q] + [Q<0][P+sqrt(N) < Q]
+        = [Q>0][P+floor_sqrt(N) >= Q]
+        + [Q<0][P+floor_sqrt(N) < Q]
+        = [Q>0][floor_sqrt(N) >= Q-P]
+        + [Q<0][floor_sqrt(N) < Q-P]
+    [-1 < conjugate x < 0]
+        = [-1 < (P - sqrt(N))/Q < 0]
+        = [Q>0][-Q < (P - sqrt(N)) < 0]
+        + [Q<0][-Q > (P - sqrt(N)) > 0]
+        = [Q>0][Q > -P + sqrt(N) > 0]
+        + [Q<0][Q < -P + sqrt(N) < 0]
+        = [Q>0][Q+P > sqrt(N) > P]
+        + [Q<0][Q+P < sqrt(N) < P]
+        = [Q>0][Q+P > floor_sqrt(N) >= P]
+        + [Q<0][Q+P <= floor_sqrt(N) < P]
+    [x is reduced_quadratic_surd]
+        = [x > 1][-1 < conjugate x < 0]
+        = ([Q>0][floor_sqrt(N) >= Q-P] + [Q<0][floor_sqrt(N) < Q-P])
+         *([Q>0][Q+P > floor_sqrt(N) >= P] + [Q<0][Q+P <= floor_sqrt(N) < P])
+        = [Q>0][floor_sqrt(N) >= Q-P][Q+P > floor_sqrt(N) >= P]
+        + [Q<0][floor_sqrt(N) < Q-P][Q+P <= floor_sqrt(N) < P]
+        = [Q>0][Q+P > floor_sqrt(N) >= P][floor_sqrt(N) >= Q-P][P>0]
+        + [Q<0][Q+P <= floor_sqrt(N) < P][floor_sqrt(N) < Q-P][P<0]
+        = [Q>0][Q+P > floor_sqrt(N) >= P][floor_sqrt(N) >= Q-P][P>0]
+        + [Q<0][Q+P <= floor_sqrt(N) < P][floor_sqrt(N) < Q-P][P<0][False]
+        = [Q>0][P>0][Q+P > floor_sqrt(N) >= P][floor_sqrt(N) >= Q-P]
+
+    # algo is_reduced_quadratic_surd(x)
+    [x is reduced_quadratic_surd]
+        = [Q>0][P>0][Q+P > floor_sqrt(N) >= P][floor_sqrt(N) >= Q-P]
+
+

@@ -1,0 +1,57 @@
+
+attack is the best form of defence
+see: Artificial Intelligence -- A Modern Approach (3ed)(2010)(Stuart Russell) :: Chapter 17. Making Complex Decisions :: Section 17.1. Sequential Decision Problems
+    policy
+    horizon
+
+
+class Ord num => Game num state | state -> num where
+    -- t - time
+    -- a - attack
+    -- d - defence
+
+    type State = state
+    type Score = num
+
+    type Policy = State -> State -- state[t] -> state[t+1]
+    type Game = Policy -> Policy -> Ordering -- who wins?
+
+    attack :: State -> Score
+    defence :: State -> Score
+    left_initial_state :: State
+    right_initial_state :: State
+    max_steps :: Integer -- finite horizon
+
+    game :: Game
+    game playerA playerB =
+        game_ playerA playerB 0 left_initial_state right_initial_state
+
+    game_ :: Policy -> Policy -> Integer -> State -> State -> Ordering
+    game_ playerA playerB step stateA stateB = _game_ step stateA stateB where
+        _game_ step stateA stateB =
+            if step > max_steps then EQ else
+
+            -- both dead
+            if attackA > defenceB and defenceA < attackB then EQ else
+
+            -- B dead
+            if attackA > defenceB and defenceA >= attackB then LT else
+
+            -- A dead
+            if attackA <= defenceB and defenceA < attackB then GT else
+
+            -- both live
+            if attackA <= defenceB and defenceA >= attackB then
+                _game_ (step+1) (playerA stateA) (playerB stateB)
+
+            -- impossible
+            else undefined
+            where
+                attackA = attack stateA
+                defenceA = defence stateA
+                attackB = attack stateB
+                defenceB = defence stateB
+
+
+
+

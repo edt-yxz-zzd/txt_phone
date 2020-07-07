@@ -1,0 +1,126 @@
+
+
+XML in a Nutshell (2ed)(2002)[chapter 1,2,3]
+[page 45] 3.4 General Entity Declarations
+    The entity replacement text must be well-formed.
+    Replacement text may itself contain entity references that resolved before the text is replaced. However, self-referential and circular references are forbidden.
+
+
+
+
+
+Extensible Markup Language (XML) 1.0 (Fifth Edition)
+    -- 4.4 XML Processor Treatment of Entities and References
+                                -- I think
+                                -- <!ENTITY try "&#60;"> do not work as "it"
+<!ENTITY lt     "&#38;#60;">    -- "&#60;"  -- a ref ; not a "<"
+<!ENTITY gt     "&#62;">        -- ">"      -- a '>' ; not a ref
+<!ENTITY amp    "&#38;#38;">    -- "&#38;"
+<!ENTITY apos   "&#39;">        -- "'"
+<!ENTITY quot   "&#34;">        -- '"'
+    -- I think: include in 
+
+4 Physical Structures
+entity = (content, (name | the_document_entity | the_external_DTD_ubset))
+named_entity = parsed_parameter_entity
+                -- parameter_entity -- %;
+                -- internal | external
+             | internal_parsed_general_entity
+                -- <= internal_entity  -- &;
+             | external_unparsed_general_entity
+                -- <= external_entity  -- attribute::ENTITY|ENTITIES
+    named_entity = parsed_entity | unparsed entity
+    named_entity
+        -- use within document content
+        = general_entity
+        -- use within DTD only
+        | parameter_entity
+-- a parameter entity and a general entity with the same name are two distinct entities.
+-- The replacement text may contain both character data and (except for parameter entities) markup, which must be recognized in the usual way. (The string " AT&amp;T; " expands to " AT&T; " and the remaining ampersand is not recognized as an entity-reference delimiter.)
+parsed_entity =     ( content::replacement_text
+                    , name from entity_reference) -- &; or %;
+                    -- superset of parameter_entity
+unparsed_entity =   ( content::binary_resource from IO
+                    , name::notation from attribute::ENTITY | ENTITIES)
+                    -- subset of general_entity
+get_unparsed_entity :: notation -> IO Bytes -- not by parse xml
+
+
+= parsed_parameter_entity = ( content::replacement_text=
+internal_entity = internal_parsed_general_entity
+                | internal_parsed_parameter_entity
+external_entity = external_unparsed_general_entity
+                | external_parsed_parameter_entity
+internal_entity__literal2replacement_text
+    :: [String|CharERef|ParamERef|I_GERef] -> m [String|I_GERef]
+    -- literal is the match string about grammar nonterminal "EntityValue"
+
+[78]   extParsedEnt   ::=    TextDecl? content
+external_parsed_parameter_entity__literal2replacement_text
+    :: (TextDecl, X_content) -> m String
+    -- literal is file content
+external_entity__literal2replacement_text literal = convert $ snd literal
+internal_entity__literal2replacement_text literal =
+    fmap concat $ mapM replace literal where
+    replace (s::String|I_GERef) = return s
+    replace (i::CharERef) = return $ chr i
+    replace (n::ParamERef) = lookup_parameter_entity n
+
+
+
+
+------------
+
+xml = '''<?xml version="1.0"?>
+<!DOCTYPE root [
+    <!ELEMENT p (#PCDATA)>
+    <!ENTITY try "&#60;">
+        <!-- replacement txt == str"<"
+            if put &try into content, will create a begin of tag
+        -->
+    <!ENTITY try2 "&#38;#60;">
+        <!-- == lt
+            replacement txt == str"&#60;" since &#38; included
+        -->
+    <!ENTITY e0 "&amp;lt;&try2;&#38;#38;lt;">
+        <!-- only char_ref/peref included, i.e. &#38 -> '&'
+             &amp; and &try2 are bypassed
+            [ref"&amp;", str"lt;", ref"&try2;", str"&#38;lt;"]
+            replacement txt == "&#38;lt&#60;&#38;lt;"
+        -->
+    <!ENTITY e1 "e0&e0;">
+        <!-- bypassed e0's replacement txt, so treat "&#38;" as text
+            ==>> "e0&#38;lt&#60;&#38;lt"
+        -->
+    <!ENTITY e2 "e1&e1;">
+    <!ENTITY e3 "e2&e2;">
+    <!ENTITY e4 "e3&e3;">
+
+    <!ENTITY e6 "&amp;lt;">
+    <!ENTITY e7 "">
+    <!ENTITY % pe0 ""><!-- quot;&#59;&#38;apos;" - ->
+    <!ENTITY e5 "pe0%pe0;"> -->
+]>
+<root>
+    <p>
+        &#60;&lt;&try2;
+        <!-- &try; can place here!-->
+
+        &e0;
+            <!--
+                e0's replacement_text is str"&#38;lt;&#60;&#38;lt;"
+                included in content;
+                    like C "#include"
+                    require further recognize
+                recognized as ==>> "&lt;<&lt;"
+            -->
+        &e1;
+        &e2;
+        &e3;
+        &e4;
+
+         e5;
+    </p>
+</root>
+'''
+

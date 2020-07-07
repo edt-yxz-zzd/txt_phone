@@ -1,0 +1,50 @@
+Control.Monad.Trans.State
+
+
+
+
+try:
+StateT s m a = (s->s, m a)
+Monad m => Monad (StateT s m)
+    (s->s, m a) <==> (s->s, m ()->a)
+    return a <==> (\s->s, return \()->a) 
+             = (id, return a)
+    ma >> mb  <==> (\s->s0, \()->a) . (\s->s1, \()->b)
+                   = (\s->s0 . \s->s1, \()->b)
+                   = (\s->s0->s1, \()->b)
+              = (fst ma . fst mb, snd ma >> snd mb)
+    m >>= f <==> (fst m . (fst . f . GETOUT $ snd m), snd m >>= (snd . f))
+    cannot implement GETOUT except for m = Identity
+        State s a = StateT s Identity a
+
+try:
+newtype StateT s m a = MkStateT (m (s->s, a))
+Monad m => Monad (StateT s m)
+    m (s->s, a) <==> \()->(s->s, a)
+    return a <==> \()->(\s->s, a) 
+             = return (id, return a)
+    ma >> mb  <==> \()->(\s->s0, a) . \()->(\s->s1, b)
+                   = \()->(\s->s0 . \s->s1, b)
+                   = \()->(\s->s0->s1, b)
+              = ma >>= \_: return mb
+              = do
+                MkStateT ma' = ma
+                (s2s, _) <- ma'
+                MkStateT mb' = mb
+                (s2s', a') <- m'
+                return (s2s . s2s', a')
+                
+    MkStateT m >>= f <==> (fst m . (fst . f . GETOUT $ snd m), snd m >>= (snd . f))
+        = MkStateT $ do
+            (s2s, a) <- m
+            MkStateT m' = f a
+            (s2s', a') <- m'
+            return (s2s . s2s', a')
+
+
+
+
+
+
+
+

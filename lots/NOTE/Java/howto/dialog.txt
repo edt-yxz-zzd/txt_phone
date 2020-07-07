@@ -1,0 +1,155 @@
+https://docs.oracle.com/javase/tutorial/uiswing/components/dialog.html
+javax.swing.JOptionPane
+JOptionPane.show<XXX>Dialog(...);
+
+
+=============================showMessageDialog
+JOptionPane.showMessageDialog(frame, "Eggs are not supposed to be green.");
+
+//default title and icon
+JOptionPane.showMessageDialog(frame,
+    "Eggs are not supposed to be green.");
+
+
+//custom title, warning icon
+JOptionPane.showMessageDialog(frame,
+    "Eggs are not supposed to be green.",
+    "Inane warning",
+    JOptionPane.WARNING_MESSAGE);
+
+
+//custom title, error icon
+JOptionPane.showMessageDialog(frame,
+    "Eggs are not supposed to be green.",
+    "Inane error",
+    JOptionPane.ERROR_MESSAGE);
+
+
+//custom title, no icon
+JOptionPane.showMessageDialog(frame,
+    "Eggs are not supposed to be green.",
+    "A plain message",
+    JOptionPane.PLAIN_MESSAGE);
+
+
+//custom title, custom icon
+JOptionPane.showMessageDialog(frame,
+    "Eggs are not supposed to be green.",
+    "Inane custom dialog",
+    JOptionPane.INFORMATION_MESSAGE,
+    icon);
+
+
+
+=============================showOptionDialog
+//Custom button text
+Object[] options = {"Yes, please",
+                    "No, thanks",
+                    "No eggs, no ham!"};
+int n = JOptionPane.showOptionDialog(frame,
+    "Would you like some green eggs to go with that ham?",
+    "A Silly Question",
+    JOptionPane.YES_NO_CANCEL_OPTION,
+    JOptionPane.QUESTION_MESSAGE,
+    null,
+    options,
+    options[2]);
+
+
+=============================showConfirmDialog
+final JOptionPane optionPane = new JOptionPane(
+    "The only way to close this dialog is by\n"
+    + "pressing one of the following buttons.\n"
+    + "Do you understand?",
+    JOptionPane.QUESTION_MESSAGE,
+    JOptionPane.YES_NO_OPTION);
+
+//default icon, custom title
+int n = JOptionPane.showConfirmDialog(
+    frame,
+    "Would you like green eggs and ham?",
+    "An Inane Question",
+    JOptionPane.YES_NO_OPTION);
+
+
+Object[] options = {"Yes, please",
+                    "No way!"};
+int n = JOptionPane.showOptionDialog(frame,
+    "Would you like green eggs and ham?",
+    "A Silly Question",
+    JOptionPane.YES_NO_OPTION,
+    JOptionPane.QUESTION_MESSAGE,
+    null,     //do not use a custom Icon
+    options,  //the titles of buttons
+    options[0]); //default button title
+
+
+
+=============================showInputDialog
+Object[] possibilities = {"ham", "spam", "yam"};
+String s = (String)JOptionPane.showInputDialog(
+                    frame,
+                    "Complete the sentence:\n"
+                    + "\"Green eggs and...\"",
+                    "Customized Dialog",
+                    JOptionPane.PLAIN_MESSAGE,
+                    icon,
+                    possibilities,
+                    "ham");
+
+//If a string was returned, say so.
+if ((s != null) && (s.length() > 0)) {
+    setLabel("Green eggs and... " + s + "!");
+    return;
+}
+
+//If you're here, the return value was null/empty.
+setLabel("Come on, finish the sentence!");
+
+...
+
+===========================================
+final JOptionPane optionPane = new JOptionPane(
+                "The only way to close this dialog is by\n"
+                + "pressing one of the following buttons.\n"
+                + "Do you understand?",
+                JOptionPane.QUESTION_MESSAGE,
+                JOptionPane.YES_NO_OPTION);
+
+final JDialog dialog = new JDialog(frame, 
+                             "Click a button",
+                             true);
+dialog.setContentPane(optionPane);
+dialog.setDefaultCloseOperation(
+    JDialog.DO_NOTHING_ON_CLOSE);
+dialog.addWindowListener(new WindowAdapter() {
+    public void windowClosing(WindowEvent we) {
+        setLabel("Thwarted user attempt to close window.");
+    }
+});
+optionPane.addPropertyChangeListener(
+    new PropertyChangeListener() {
+        public void propertyChange(PropertyChangeEvent e) {
+            String prop = e.getPropertyName();
+
+            if (dialog.isVisible() 
+             && (e.getSource() == optionPane)
+             && (prop.equals(JOptionPane.VALUE_PROPERTY))) {
+                //If you were going to check something
+                //before closing the window, you'd do
+                //it here.
+                dialog.setVisible(false);
+            }
+        }
+    });
+dialog.pack();
+dialog.setVisible(true);
+
+int value = ((Integer)optionPane.getValue()).intValue();
+if (value == JOptionPane.YES_OPTION) {
+    setLabel("Good.");
+} else if (value == JOptionPane.NO_OPTION) {
+    setLabel("Try using the window decorations "
+             + "to close the non-auto-closing dialog. "
+             + "You can't!");
+

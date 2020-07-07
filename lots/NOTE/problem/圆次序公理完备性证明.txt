@@ -1,0 +1,230 @@
+
+# TODO:
+#   use zx_def_axiom to replace zx_real_axiom as REAL
+#   try to make new version of zx_def_axiom without changing "cfg"
+#   proof:
+#       [zx_def_axiom ==>> 公理集] # easy
+#       [公理集 ==>> zx_def_axiom] P1
+#           or cannot then [(zx_def_axiom-->prop)-->(公理集-->prop)] P2
+#           如果zx_def_axiom不去掉changing "cfg"的部分，显然无P1
+#       [zx_def_axiom ==>> 排中律]
+#
+
+圆次序公理完备性证明
+
+圆上有一些点a..b，我们定义函数z:
+    z : 点* -> Bool
+    z(a..b)
+        | (a..b)无重复点    = (a..b)在圆上是顺时针方向
+    z     (a,b..c,a)        = z(a,b..c)
+    z     (a..b,c,c,d..e)   = z(a..b,c,d..e)
+    z     _                 = False # 有不相邻重复点
+    # len(a..b) >= 0
+
+请问以下公理集合是否正确且完备：
+    [n0]:       z()
+    [n1]:       z(a)
+    [n2]:       z(a,b)
+    [n3]:       z(a,b,c)\/z(a,c,b)          # 排中律
+    [shift]:    z(a..b,c) ==>> z(c,a..b)    # require 不重复
+    [delete]:   z(a..b,c) ==>> z(a..b)
+    #bug:[insert]: z(x,a..b,c)/\z(c,d,x) ==>> z(x,a..b,c,d)
+    [insert1]:   z(x,a..b,c)/\z(c,d,x)/\[c!=x]/\[d not in (a..b)] ==>> z(x,a..b,c,d)
+
+proof:[n23]: z(a,a,b)
+    [z(b,a,a)\/z(b,a,a)] <<== [n3]
+    [z(b,a,a)]
+    [z(a,a,b)] <<== [shift]
+    !DONE
+proof:[insert2]: z(x,a..b,c)/\[{d..e}<={c}][{f..g}<={x}] ==>> z(x,a..b,c,d..e,f..g)
+proof:[insert3]: z(x,a..b,c)/\z(c,d..e,x)/\[c!=x]/\[{a..b}/\{d..e}=={}] ==>> z(x,a..b,c,d..e)
+    1. base case: (d..e) = ()
+        [(d..e)=()]:
+            [z(x,a..b,c,d..e) == z(x,a..b,c)]
+            [z(x,a..b,c)]:
+                [z(x,a..b,c,d..e)]
+                !DONE
+
+    2. ind_step: (d..e) = (d..y,e)
+        ind_assume: [z(x,a..b,c)/\z(c,d..y,x) ==>> z(x,a..b,c,d..y)]
+        c1:[z(c,d..y,e,x) ==>> z(c,d..y,x)/\z(y,e,x)] # [shift][delete]
+        [(d..e) = (d..y,e)]:
+            [z(c,d..y,e,x) == z(c,d..e,x)]
+            [z(c,d..e,x)]:
+                [z(c,d..y,e,x)]
+                [z(c,d..y,x)/\z(y,e,x)] <<== c1
+                [z(x,a..b,c)]:
+                    [z(x,a..b,c,d..y)] <<== ind_assume
+                    [z(x,a..b,c,d..y,e)] <<== insert
+                    [z(x,a..b,c,d..e)] <<== ind_step
+                    !DONE
+
+
+to proof:
+    z(a,b,c,d)\/z(a,b,d,c)\/z(a,c,b,d)\/z(a,c,d,b)\/z(a,d,b,c)\/z(a,d,c,b)
+    ...
+    证明完备性是否等价于证明公理集能推出n点时的排中律 \/~all_perms<n>？
+    0) REAL ==>>:
+        REAL <=[def]=> def of z
+        expand z with n,cfg:
+            type ZxType = Set 点 # 无序不重复
+            type Config = [点] s.t. 有序不重复
+            zx :: ZxType -> Config -> [点] -> Bool
+            zx :: @n::Set 点. Perm<n> -> [n] -> Bool
+            zx n cfg ls # precondition:
+                | not (set(ls) <= set(cfg) == n) = undefined
+            zx _ _   [] = True
+            zx _ cfg (a:ls) = are_clockwise False start ls where
+                start = index a cfg
+                are_clockwise :: Bool -> UInt -> [点] -> Bool
+                are_clockwise wrapped i [] = True
+                are_clockwise wrapped i (a:ls) = r where
+                    j = index a cfg
+                    r = if wrapped
+                        then if i <= j <= start
+                            then are_clockwise wrapped j ls
+                            else False
+                        else if i <= j
+                            then are_clockwise wrapped j ls
+                            else are_clockwise True 0 (a:ls)
+
+        zx_shift:[REAL --> shift] by zx def
+        zx_delete:[REAL --> delete] by zx def
+        zx_ex_mid:[REAL --> 排中律<n;cfg>] by zx def
+    0) zx_def_axiom:
+        # assume cfg <- Perm<n>
+        shift4remove:[zx n cfg (a,b..c)] <==> [zx n cfg (b..c,a)]
+        remove_duplications:[zx n cfg (a,a,b..c)] <==> [zx n cfg (a,b..c)]
+        delete4detect_error:[zx n cfg (a,b..c)] ==>> [zx n cfg (b..c)]
+        #bug:try_reduce:[zx n cfg (b..c)][a not in n] ==>> [zx ({a}+n) (a:cfg) (a,b..c)][a not in (b..c)]
+        try_reduce:[zx n cfg@(a,d..e,x) (a,b..c,x)][y not in n] ==>> [zx ({y}+n) (y:cfg@(a,d..e,x)) (y,a,b..c,x)][y not in (b..c)]
+        try_clean_cfg:[zx n cfg (b..c)][a not in n] ==>> [zx ({a}+n) (a:cfg) (b..c)][a not in (b..c)]
+        shift4clean:[zx n cfg@(a,b..c) ls] <==> [zx n (b..c,a) ls]
+        forbidden_pattern: [not (zx n cfg@(a,b,c) (a,c,b))]
+            # the only errcase
+            # but require change cfg, the orignal z version do have such property
+        base_case0:[zx {} [] []]
+    1) prop_tpl_def:
+        [prop<n;cfg>] <=[def]=> [@cfg::Perm<n>. [prop<n> cfg]]
+            where n and prop<n> are unbound variables, cfg were not.
+        truth_meaning:[REAL --> prop<n;cfg>]
+            <==> [REAL -> @cfg::Perm<n>. [prop<n> cfg]]
+            <==> [@cfg::Perm<n>. [REAL --> prop<n> cfg]]
+            where
+                n :: Set 点
+                prop<n> :: Prop<n>
+                Prop<n> = @cfg::Perm<n>. Boolean<n;cfg>
+                Boolean<n;cfg> = {t | t = /\~ \/~ op $ zx n cfg (f n i j) {j}{i}, f :: @n::Set 点. Index -> Index -> [n], op <- {id, not}}
+
+    1) ex_mid_def:
+        [排中律<n;cfg>] <=[def]=> [?perm<-all_perms<n>. zx n cfg perm]
+            <==> [any zx n cfg all_perms<n>]
+    2) real_axiom_def:
+        [real_axiom] <=[def]=> [shift/\delete/\排中律]
+        zx_real_axiom:[REAL -> real_axiom]
+            <<== zx_shift, zx_delete, zx_ex_mid
+    2) theorem_def:
+        [is_theorem prop<n;cfg>] <=[def]=> [公理集 --> prop<n;cfg>]
+    3) truth_def:
+        [is_truth prop<n;cfg>] <=[def]=> [REAL --> prop<n;cfg>]
+    3) complete_def:
+        [完备性] <==> [[is_truth prop<n;cfg>] --> [is_theorem prop<n;cfg>]]
+    4) sound_def:
+        [正确性] <==> [[is_theorem prop<n;cfg>] --> [[is_truth prop<n;cfg>]]
+
+
+    to_proof:[完备性 --> (公理集 --> real_axiom)]!DONE
+    to_proof:real_axiom_meaning:[[REAL --> prop<n;cfg>] --> [real_axiom --> prop<n;cfg>]]
+        !HALT
+    to_proof:[(公理集 --> real_axiom) --> 完备性]
+
+    to_proof:[(real_axiom --> 公理集) --> 正确性]
+    to_proof:[正确性 --> (real_axiom --> 公理集)]
+
+    to_proof:[公理集 --> real_axiom]
+    to_proof:[real_axiom --> 公理集]
+    to_proof:[完备性][正确性]
+    =================================
+    proof:[完备性 --> (公理集 --> real_axiom)]
+        [完备性]:
+            [[is_truth prop<n;cfg>] --> [is_theorem prop<n;cfg>]]
+                <<== complete_def
+            [[is_truth real_axiom] --> [is_theorem real_axiom]]
+                <<== let prop<n;cfg> = real_axiom
+            c1:[[REAL --> real_axiom] --> [公理集 --> real_axiom]]
+                <<== truth_def, theorem_def
+            [公理集 --> real_axiom] <<== [c1 zx_real_axiom]
+            !DONE
+
+    proof:[(公理集 --> real_axiom) --> 完备性]
+        # require: [real_axiom_meaning]
+        a1:[公理集 --> real_axiom]:
+            a2:[REAL --> prop<n;cfg>]:
+                # --> (公理集 --> prop<n;cfg>)
+                c1:[real_axiom --> prop<n;cfg>] <<== [real_axiom_meaning a2]
+                [公理集 --> prop<n;cfg>] <<== c1 . a1
+                !DONE
+    proof:real_axiom_meaning:[[REAL --> prop<n;cfg>] --> [real_axiom --> prop<n;cfg>]]
+        <==> [@n::Set 点. @prop<n>::Prop<n>.
+                    [@cfg::Perm<n>. REAL --> prop<n> cfg]
+                --> [@cfg::Perm<n>. real_axiom --> prop<n> cfg]
+                ]
+            <<== prop_tpl_def
+        1) base case: len(n)=0, n={}
+            Perm<n={}> = {[]}
+            [cfg <- {[]}]
+            [cfg == []]
+            [[prop<n> cfg] is a constant]
+            ????????????????? how to proof?????????????????????
+            a1:[@cfg::Perm<n>. REAL --> prop<n> cfg]:
+                [REAL --> prop<{}> []]
+            [prop<{}> _ == True]
+            [@cfg::Perm<n>. prop<n> cfg]
+            [@cfg::Perm<n>. real_axiom -> prop<n> cfg]
+            [       [@cfg::Perm<n>. REAL --> prop<n> cfg]
+                --> [@cfg::Perm<n>. real_axiom --> prop<n> cfg]
+                ]
+            !DONE
+        2) ind_step: len(n)>0
+            ind_assume:
+                [@m::Set 点. [m<n] -> @prop<m>::Prop<m>.
+                    [@cfg::Perm<m>. REAL --> prop<m> cfg]
+                --> [@cfg::Perm<m>. real_axiom --> prop<m> cfg]
+                ]
+            since Boolean occurs only in output:
+                we can tear down "t = /\~ \/~" to "t = \/~", i.e. redefine:
+
+
+
+        ?????????????????????????????
+        a1:[REAL --> prop<n;cfg>]:
+            c1:[REAL -> @n::Set 点.@cfg::Perm<n>. [prop n cfg]]
+                <<== prop_tpl_def
+            a2[real_axiom]:
+                # -> prop<n;cfg>
+                c2:[shift/\delete/\排中律] <<== real_axiom_def
+    proof:[(real_axiom --> 公理集) --> 正确性]
+        a1:[real_axiom --> 公理集]:
+            a2:[公理集 --> prop<n>]:
+                # --> [REAL --> prop<n>]
+                [real_axiom --> prop<n>] <<== a2 . a1
+                [REAL --> prop<n>] <<== see theorem_def
+                !DONE
+
+
+to proof:
+    z(a,A,b)/\z(a,B,b)/\z(A,C,B)/\z(a,C,b) ==>> z(a,A,C,B,b)\/z(a,C,B,A,b)\/z(a,B,A,C,b)
+    z(a,A,b)/\z(a,B,b)/\z(A,C,B)/\z(a,b,C) ==>> z(a,B,A,b,C)
+
+    z(a,A,b)/\z(a,B,b)/\z(A,C,B)/\z(a,C,A) ==>> z(a,C,B,A,b)
+    #z(a,A,b)/\z(a,B,b)/\z(A,C,B)/\z(a,A,C) ==>> ?NO
+
+    #z(a,A,b)/\z(a,B,b)/\z(A,C,B)/\z(a,C,B) ==>> ?NO
+    #z(a,A,b)/\z(a,B,b)/\z(A,C,B)/\z(a,B,C) ==>> ?NO
+
+    #z(a,A,b)/\z(a,B,b)/\z(A,C,B)/\z(a,A,B) ==>> ?NO
+    #z(a,A,b)/\z(a,B,b)/\z(A,C,B)/\z(a,B,A) ==>> ?NO
+
+
+
+

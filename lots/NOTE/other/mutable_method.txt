@@ -1,0 +1,180 @@
+
+base_class == superset
+derived_class == subset
+
+sizeof derived_class == sizeof base_class
+    in C++
+        not Derived is subclass of Base
+        but (Derived&) to (Base&) or (Derived*) to (Base*)
+    in Java/Python/Haskell
+        boxing type is indeed a reference
+
+should not override Base non-virtual methods
+1) base as member
+    (Base&) Derived - contains as many data as Base
+    best:
+        let Base be a public base class of Derived
+    support any Base methods
+    Derived extends Base
+
+2) base as superset
+    (Base const&) Derived - contains less data than Base
+    subset <==> less data <==> less information <==> less surprising
+           <==> more strict class_invariants
+           <==> may perform an update as a transaction/batch
+                e.g.
+                    // Rectangle & Square 
+                    setSize(w,h) intead of {setWidth(w);setHeight(h);}
+                    // atomic... ?? parallel??
+    
+    e.g.
+        enum Base {B1, B2, B3} 
+        enum Derived:Base {B1, B3}
+        
+        class Square : Rectangle {...}
+        
+        // {Base* p} is a superset of {Derived* p}
+        typedef (Base*) Superset;
+        typedef (Derived*) Subset;
+        
+        class List<T> extends List<? proper_super T>
+    best:
+        define Base as an interface
+
+    support any Base immutable methods
+    all Base mutable methods should be virtual
+        since Derived will not support some Base mutable methods
+        if Base::mutable_method is overrided in Derived:
+            then Base::mutable_method becomes a private member in Derived
+            no others can call Base::mutable_method anymore
+    Derived implements Base
+
+
+
+
+
+
+immutable method
+    r = a.f(...) ==>> r = f a ...
+mutable method
+    r = a.g(...) ==>> (r, a) = g a ...
+
+    a.setXXproperty()
+    a.assign(b)
+    
+    # Object & Apple
+    class Object:
+        def assign(Object&);
+    
+    class Apple(Object):
+        def assign(Object& other):
+            # 1) other should be an Apple
+                if (! b instanceof Apple):
+                    raise NotSupport
+                ...
+            #or 2) Object is a public base class
+            #      i.e. treat Object as a public member
+                this.Object::assign(other)
+    
+    
+    # Rectangle & Square
+    class Rectangle:
+        # @class_invariants:
+        #   width > 0
+        #   height > 0
+        
+        def set(width, height);
+        
+        # @postcondition
+        #   width became input value
+        #   height should not be changed
+        def setWidth(width); 
+        def setHeight(height);
+    class Sqare(Rectangle):
+        # @class_invariants:
+        #   width > 0
+        #   height > 0
+        #   width == height
+        
+        def set(width, height):
+            if width != height:
+                raise NotSupport
+            ...
+        def setWidth(width):
+            set(width, this.height) # raise
+
+
+    # List<T> & List<? super T>
+    class List<T> : List <? super T>{
+        void <E> add(<E super T> e){
+            if (! e instanceof T)
+                // but in Java, type erasure ==>> T will become Object
+                // this test is ignored
+                throw NotSupport
+            ...
+        }
+    }
+    
+    assume a generic template:
+        generic:
+            like Java and Haskell: no code explosion
+        template:
+            like C++: code explosion; specialization for each template
+        generic-template:
+            no specialization
+            but store generic parameters
+            e.g.
+                class A<T... ts>{
+                    // "this" contains Class<?>[]{T...}
+                    A(T... ts);
+                }
+                // when "new", assign <T...> to the result object
+                //   that will not occupy more spaces
+                //   since t.getClass() ::= t.getNewType().getErasedType()
+                T<Int, Int> t = new T<>(); 
+                assert t.getGenericParameters() == <Int, Int>;
+        
+
+
+mutable method can not be inherited!
+    g :: Superset -> Superset
+    Subset a;
+    r, a = g a;
+    // Error: decl type of a is Subset but actual type is Superset
+    // we must override it
+    
+    
+    e.g.
+            
+        class C{
+            // C c => means c extends C, c is a subclass of C
+            virtual char f(int) const; // f :: C c => MonadState c () -> int -> char
+            virtual char g(int); // g :: C c => MonadState c () -> int -> MonadState c char
+        }
+        class D:C{
+            // instance D d => C d where 
+            //    C.f = D.f; C.g = D.g
+            char f(int) const; // f :: D d => MonadState d () -> int -> char
+            char g(int); // g :: D d => MonadState d () -> int -> MonadState D char
+        }
+        C& c;
+        c.f(2);
+    e.g.
+        typedef B* Superset;
+        typedef D* Subset; // where D extends B
+        void g(Superset& a, Superset b){
+            a = b;
+        }
+        Superset b;
+        vector<Subset> ls;
+        g(ls[0], b);
+        // Error: ls contains a Superset object.
+
+
+
+
+
+
+
+
+

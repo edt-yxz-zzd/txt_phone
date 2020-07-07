@@ -1,0 +1,234 @@
+
+keywords:
+    -- TermSet
+    Term Type Sort
+    :  --  term : type
+    :: --  term :: term_set; term :: Term
+    -- :# --  term_set :# TermSet
+    <# --  term_subset <# term_set
+    <: --  subtype <: type
+    #` --  #` term ::= type_of term
+       --  type_of; [term :: Term] ==>> [term : #` term]
+    ##` -- ##` term_set ::= {#` term | term <- term_set}
+        -- fmap type_of
+    ``
+    -:
+    -::
+    -- -:#
+    -<#
+    -<:
+    -> () , {}
+    @@ ?? </ />
+    fst snd
+    cast
+
+-- term_set :# TermSet
+term_set <# Term
+    {-
+        TermSet = "Term" | ##` TermSet | set_id
+        Term = id | TermC | TypeC | SortC
+        {-
+        Term    = id
+                ;; term
+                | \id OfClass3, Term
+                | </ id OfClass3, Term />
+                ;; type
+                | (id OfClass3_) -> Term
+                | (id OfClass3_, Term)
+                ;; sort
+                | @@ id OfClass2, Term
+                | ?? id OfClass2, Term
+                ;; type_of
+                | #` Term
+                ;; | ##` Set
+        OfClass2 = :: TermSet | <# TermSet
+        OfClass3 = OfClass2 | : Term
+        OfClass3_ = -:: TermSet | -<# TermSet | -: Term
+
+
+        -}
+
+        SortIDx = sort_id | #` SortIDx | #` TypeIDx
+        TypeIDx = type_id | #` TypeIDx | #` TermIDx
+        TermIDx = term_id | #` TermIDx
+        SortC   =
+                | @@ IdOfClass2, SortC
+                | ?? IdOfClass2, SortC
+                | sort_id
+                | #` SortC
+                | #` TypeC
+                -- #` TypeC
+                -- #` ((t -:: T) -> R) === @@ t :: T, #` R
+                -- #` (t -:: T,  R) === ?? t :: T, #` R
+        TypeC   =
+                | (IdOfClass3_) -> TypeC
+                | (IdOfClass3_, TypeC)
+                | type_id
+                | #` TermC
+                | AppT TermC Term
+        TermC   =
+                | \IdOfClass3, Term
+                | term_id
+        IdOfClass3 = IdOfClass2
+                | term_id : TypeC
+                | type_id : SortC
+        Sortx = "Sort" | ##` Sortx
+        IdOfClass2 =
+                | term_id :: "Term"
+                | type_id :: "Type"
+                | sort_id :: Sortx
+                | term_set <# TermSet
+        IdOfClass3_ =
+                | term_id -: TypeC
+                | type_id -: SortC
+                | term_id -:: "Term"
+                | type_id -:: "Type"
+                | sort_id -:: Sortx
+                | term_set -<# TermSet
+
+
+    -}
+
+    {-
+    [Term :# TermSet]
+    [term_set :# TermSet]
+        ==>> ##` term_set :# TermSet
+        ==>> term_set <# Term
+    -}
+
+    [Term <# Term]
+    [term_set <# Term]
+        ==>> ##` term_set <# Term
+        [term :: term_set]
+            ==>> #` term :: ##` term_set
+            ==>> term : #` term
+
+    [term_subset <# term_set]
+        ==>> ##` term_subset <# ##` term_set
+        ==>> [term :: term_subset] -->> [term :: term_set]
+        {-
+        <==> [term :: term_subset] -->> [term :: term_set]
+        [term_set <# term_superset]
+            ==>> [term_subset <# term_superset]
+        -}
+    Type ::= ##` Term
+    Sort ::= ##` Type
+    ;; [] ==>> Sort <# Type <# Term
+    ;; [] ==>> [type :: Type |- #` type :: Sort]
+
+    [s <# Sort][term_set <# Term |- S_term_set :: s]
+        ==>> (@@ term_set <# Term, S_term_set) :: s
+        ==>> (?? term_set <# Term, S_term_set) :: s
+    [term_set <# super |- P_term_set :: Type]
+        ;; arrow and its term
+        ==>> (term_set -<# super) -> P_term_set :: Type
+        ==>> (term_set -<# super) -> P_term_set
+                                    : @@ term_set <# super, #` P_term_set
+        [term_set <# super |- Body_term_set : P_term_set]
+            ==>> \term_set <# super, Body_term_set :: Term
+            ==>> \term_set <# super, Body_term_set
+                                    : (term_set -<# super) -> P_term_set
+
+        ;; pair and its term
+        ==>> (term_set -<# super, P_term_set) :: Type
+        ==>> (term_set -<# super, P_term_set)
+                                    : ?? term_set <# super, #` P_term_set
+        [term_set <# super |- Body_term_set : P_term_set]
+            ==>> </ term_set <# super, Body_term_set /> :: Term
+            ==>> </ term_set <# super, Body_term_set />
+                                    : (term_set -<# super, P_term_set)
+        ;; (a, b, c...) = (a, (b, c...))
+        ;; </ a, b, c... /> = </ a, </ b, c... /> />
+    [f : (term_set -<# super) -> P_term_set][term_set <# super]
+        ==>> f term_set : P_term_set[term_set := term_set]
+    [p : (term_set -<# super, P_term_set)]
+        ==>> fst p <# super
+        -- error: ==>> snd p : (\term_set <# super, P_term_set) (fst p)
+        --      see "cast" below
+        ==>> snd p : P_term_set[term_set := fst p]
+
+    ;; cast <:
+    ;; NOTE: need not sort eq; sort can cast too!
+    [subtype <: type]
+        #` subtype <: #` type
+        [a : subtype]
+            ==>> cast type a : type
+        [s : subtype |- P_s <: Q_s]
+            [s : type |- P_s :: Type][s : subtype |- Q_s :: Type]
+                ==>> (s -: type) -> P_s <: (s -: subtype) -> Q_s
+            [s : subtype |- P_s :: Type][s : type |- Q_s :: Type]
+                ==>> (s -: subtype, P_s) <: (s -: type, Q_s)
+    [t :: Type] ==>> [t <: t]
+    [subset <# super]
+        [a :: subset]
+            ==>> cast super a :: super
+        [s <# subset |- P_s <: Q_s]
+            [s <# super |- P_s :: Type][s <# subset |- Q_s :: Type]
+                ==>> (s -<# super) -> P_s <: (s -<# subset) -> Q_s
+                ==>> @@ s <# super, #` P_s <: @@ s <# subset, #` Q_s
+            [s <# subset |- P_s :: Type][s <# super |- Q_s :: Type]
+                ==>> (s -<# subset, P_s) <: (s -<# super, Q_s)
+                ==>> ?? s <# subset, #` P_s <: ?? s <# super, #` Q_s
+        error: [s :: subset |- P_s <: Q_s]
+            [s :: super |- P_s :: Type][s :: subset |- Q_s :: Type]
+                ==>> (s -:: super) -> P_s <: (s -:: subset) -> Q_s
+                ==>> @@ s :: super, #` P_s <: @@ s :: subset, #` Q_s
+            [s :: subset |- P_s :: Type][s :: super |- Q_s :: Type]
+                ==>> (s -:: subset, P_s) <: (s -:: super, Q_s)
+                ==>> ?? s :: subset, #` P_s <: ?? s :: super, #` Q_s
+term :: term_set
+    term :: Term
+    type :: Type
+    sort :: Sort
+    [s <# Sort][term_set <# Term][term :: term_set |- S_term :: s]
+        ==>> (@@ term :: term_set, S_term) :: s
+        ==>> (?? term :: term_set, S_term) :: s
+    [term_set <# Term][term :: term_set |- P_term :: Type]
+        ;; arrow and its term
+        ==>> (term -:: term_set) -> P_term :: Type
+        ==>> (term -:: term_set) -> P_term : @@ term :: term_set, #` P_term
+        [term :: term_set |- Body_term : P_term]
+            ==>> \term :: term_set, Body_term :: Term
+            ==>> \term :: term_set, Body_term : (term -:: term_set) -> P_term
+
+        ;; pair and its term
+        ==>> (term -:: term_set, P_term) :: Type
+        ==>> (term -:: term_set, P_term) : ?? term :: term_set, #` P_term
+        [term :: term_set |- Body_term : P_term]
+            ==>> </ term :: term_set, Body_term /> :: Term
+            ==>> </ term :: term_set, Body_term /> : (term -:: term_set, P_term)
+    [f : (term -:: term_set) -> P_term][term :: term_set]
+        ==>> f term : P_term[term := term]
+    [p : (term -:: term_set, P_term)]
+        ==>> fst p :: term_set
+        ==>> snd p : (\term :: term_set, P_term) (fst p)
+term : type : sort
+    ;; NOTE: [type : sort][type :: Type]
+    ;; unique: [term : a][term : b] ==>> a === b
+    ;; term : type : sort === (term : (type : sort)) == term : type == term
+    [type :: Type][sort :: Sort][term : type |- P_term : sort]
+        ;; arrow and its term
+        ==>> (term -: type) -> P_term :: Type
+        ==>> (term -: type) -> P_term : sort
+            ;; compare with the "-::" version:
+            ;;      "-:"  -- "term" does not affect "sort"
+            ;;      "-::" -- "term" does affect sort, "@@ term ..."
+        [term : type |- Body_term : P_term]
+            ==>> \term : type, Body_term :: Term
+            ==>> \term : type, Body_term : (term -: type) -> P_term
+
+        ;; pair and its term
+        ==>> (term -: type, P_term) :: Type
+        ==>> (term -: type, P_term) : sort
+        [term : type |- Body_term : P_term]
+            ==>> </ term : type, Body_term /> :: Term
+            ==>> </ term : type, Body_term /> : (term -: type, P_term)
+    [f : (term -: type) -> P_term][term : type]
+        ==>> f term : P_term[term := term]
+    [p : (term -: type, P_term)]
+        ==>> fst p : type
+        ==>> snd p : (\term : type, P_term) (fst p)
+
+implict
+    f : {T -:: Type = #` x} -> (`` x -: T) -> T
+    [super :: Type] ==>> f : {T -<: super = #` x} -> (`` x -: T) -> T

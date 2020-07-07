@@ -1,0 +1,60 @@
+
+;; NOTE: term :: set ==>> #` term :: ##` set
+
+;; :: : => <:
+
+
+;; ::
+[context, (globals; locals) |- (\# depth term_id of2 cls `[cs], body) : t]
+ [context, (globals; locals) |- set <# Term]
+  [context, (globals; locals, (term_id of2 cls; [])) |- body :: set]
+    context, (globals; locals) |- (\# depth term_id of2 cls `[cs], body) :: set
+
+;; :
+;; 0#
+[context, (globals; locals, (term_id :: cls; [])) |- term : type]
+    context, (globals; locals) |-
+        (\# 0# term_id :: cls `[], term) : \# 0# term_id :: cls `[], type
+
+;; 1#
+[context, (globals; locals) |- type ::<# Type]
+ [context, (globals; locals, (term_id of2 cls; cs)) |- term : type]
+    context, (globals; locals) |- (\# 1# term_id of2 cls `[cs], term) : *` type
+
+;; <# 2#
+[context, (globals; locals, (term_id of2 cls; cs)) |- body : type]
+ [context, (globals; locals) |- depth ==# ##` depth' <# 2#]
+  [context, (globals; locals)
+  |- (\# depth' term_id of2 cls `[cs], type) ::<# Type]
+    context, (globals; locals) |-
+        (\# depth term_id of2 cls `[cs], body)
+            : \# depth' term_id of2 cls `[cs], type
+
+
+;; =>
+;; eta-reduction
+[context, (globals; locals) |- (\# depth term_id of2 cls, body) : type]
+    [context, (globals; locals, term_id of2 cls) |- body => body']
+        if[body' == f term_id][context, (globals; locals) |- f : type' <: type]
+            ;; f = (id/fst/snd/cast) args...
+            context, (globals; locals) |-
+                (\# term_id of2 cls, body) => f
+        else:
+            context, (globals; locals) |-
+                (\# term_id of2 cls, body) => \# term_id of2 cls, body'
+
+
+
+
+
+
+
+;; <:
+[context, (globals; locals) |- (\# depth id1 of2 cls1, body1) :: set]
+ [context, (globals; locals) |- (\# depth id2 of2 cls2, body2) :: set]
+  [context, (globals; locals) |- cls2 lt2 cls1]
+   [context, (globals; locals, id2 of2 cls2) |- body1[id1 := id2] <: body2]
+    context, (globals; locals) |-
+        (\# depth id1 of2 cls1, body1) <: \# depth id2 of2 cls2, body2
+
+

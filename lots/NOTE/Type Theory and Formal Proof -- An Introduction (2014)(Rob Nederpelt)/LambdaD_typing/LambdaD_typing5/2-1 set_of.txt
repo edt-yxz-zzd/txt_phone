@@ -1,0 +1,30 @@
+{-
+;; #`{large_enough} term = basic_term
+BasicTerm   = let id of2 cls = Term in BasicTerm
+            | \# 0# term_id :: cls `[cs], BasicTerm
+            | #` BasicTerm
+            | term_id
+-}
+
+
+
+;; =[basic_set_of]=>
+;; let* \0*, #`* term_id =[basic_set_of]=> set_of term_id
+[context |- term_id :: set => set'][term_id in context]
+    context |- term_id =[basic_set_of]=> set'
+[context |- term =[basic_set_of]=> set]
+    context |- #` term =[basic_set_of]=> ##` set
+[context |- (\# 0# id :: cls `[cs], term) : t]
+    [context, ([]; (id :: cls; cs) |- term =[basic_set_of]=> set]
+    context |- (\# 0# id :: cls `[cs], term) =[basic_set_of]=> set
+[context |- (let id of2 cls = def in body) : t]
+    [context, (id of2 cls = def; []) |- body =[basic_set_of]=> set]
+        [context |- (let id of2 cls = def in body) =[basic_set_of]=> set]
+
+;; set_of
+[context |- term : type]
+    if[context |- term =[basic_set_of]=> set][term not in context]
+        [context |- term :: set]
+    elif[context |- type :: set ==# ##` set'][term not in context]
+        [context |- term :: set']
+

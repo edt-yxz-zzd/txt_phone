@@ -1,0 +1,78 @@
+
+PTS subsystem
+    pure type system subsystem
+
+\x : T : S. ...
+    public
+    1) abstract
+        input of lambda
+        position + type
+    2) axiom
+        import/export of package
+        name + type
+\x = obj : T : S. ...
+\x(...) = obj : T : S. ...
+    access: public/private
+    definition without/with parameter
+    "\x(a:A:B) = obj : T : S." <==> "\x = (\a:A:B. (obj:T:S)): @a:A:B. (T:S) : macro#"
+    "\x(a1:A1:B1, a2:A2:B2) = obj : T : S." <==> "\x = (\a1:A1:B1. \a2:A2:B2. (obj:T:S)): @a1:A1:B1. (@a2:A2:B2. (T:S) : macro#) : macro#"
+
+two special sorts:
+    macro#, sort#
+    sort# for type of any sort -- so, a term will have many types...
+        axiom: (any sort, sort#) -- (sort# : sort#) ???????
+        no rule: (_, _, sort#)
+    macro# for parametered definition
+        rule: (any sort except macro#, any sort, macro#)
+
+    ???? type#, term# ????
+        -- term# is not a sort!!
+        axiom: (any type, type#)
+            -- (sort# : type#) (type# : type#) (type#, sort#)
+        no rule: (_, _, type#)
+
+no "is", but "equivalence"
+    equivalent of
+    e.g. integer:
+        \zero : integer.
+        \succ : integer -> integer.
+        \eq : equivalence integer -- "eq" instead of "is"/"=="
+        \succ_nonzero : @n:integer. not (eq zero (succ n)).
+        \succ_injective : @n:integer. @m:integer. ((succ n `eq` succ m) <==> (n `eq` m)).
+        \integer_indutive : @R,S:sort#. @P:integer -> R : S.
+                            @P0:P zero. @Psucc: @i:integer. (P i -> P (succ i)).
+                            @Peq: @i,j:integer. i `eq` j => (P i <==> P j).
+                            (@i:integer. P i).
+        ...
+
+half equivalence class
+    a == a; a == b <==> b == a; a == b /\ b == c ==>> a == c
+    equivalence class
+        @a,b. a == b or a != b
+    half equivalence class
+        @a,b. a == b or unknown
+        can not deduce a != b
+equivalence class
+    \T:S:sort#. \eq : equivalence T.
+        1) \t:T. ?x:T. (x `eq` t) -- wrong! user will receive both x and t
+        2) EqCls T eq
+            constructor:
+                mkEqCls : @S:sort#. @T:S. @eqT. @t:T. EqCls S T eqT : ??
+            use
+                useEqCls : @S.@T.@eqT. @S'.@R.@eqR. (EqCls S T eqT -> (?f: @t:T.R. (@t1,t2:T. eqT t1 t2 <==> eqR (f t1) (f t2))) -> EqCls S' R eqR)
+                unEqCls : @S.@T. (EqCls S T (=[T]=) -> T)
+
+
+subsystem
+    \ subsystem = subsystem_spec spec_instance record.
+    \ subsystem_instance = subsystem spec_instance.
+    \ package = record. ...
+    record = <tag=lambda_term, ...>
+        -- recur record: no infinite down chains: tag+partial_parameters
+    spec_instance = {sub_sort = outer_sort, ...}
+    subsystem_spec = {sorts = sub_sort*; axioms = (sub_sort:sub_sort')*; rules =(sub_sort, sub_sort', sub_sort'')* ; turnoff macro# sort# inductive#, coinductive# }
+
+    use subsystem:
+        subsystem spec_instance .tag
+        subsystem_instance .tag
+        package .tag

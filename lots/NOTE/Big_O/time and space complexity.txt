@@ -1,0 +1,309 @@
+time and space complexity
+
+jump to overview
+
+Notation:
+    # NOTE: "~" and "~[XXX]~" is a "<=" binary relationship
+    * expr1 ~ uint O(expr2)
+        where result of expr1 and expr2 are both real number
+        means: exist a constant C::uint, s.t. abs(expr1/expr2) < C
+    * stmt ~ time O(expr)
+        where stmt is a statement
+        means: the time complexity of stmt is expr
+    * stmt ~ space bit size O(expr)
+        where stmt is a statement
+        means: the space complexity in bit size of stmt is expr
+
+    * expr1 ~[uint]~ expr2
+        where result of expr1 and expr2 are both real number
+        means: exist a constant C::uint, s.t. abs(expr1/expr2) < C
+    * stmt1 ~[time]~ stmt2
+        where stmt1 and stmt2 are both statement
+        means: the time complexity of stmt1 and stmt2 are the same
+    * stmt1 ~[space bit size]~ stmt2
+        where stmt1 and stmt2 are both statement
+        means: the space complexity in bit size of stmt1 and stmt2 are the same
+
+assume:
+    * int operations:
+        # n, m :: uint
+        * n*m         ~ time O(log(n)*log(m))
+        * divmod(n,m) ~ time O(log(n)*log(m))
+
+        for op in "+-<=":
+        * n `op` m ~ time O(log(n)+log(m))
+
+    * machine word operations:
+        # n, m :: uint
+        # max(n,m) <= MAX_MACHINE_WORD
+        for op in "*/%+-<=":
+        * [n `op` m <= MAX_MACHINE_WORD] ==>> [n `op` m ~ time O(1)]
+
+    * array operations:
+        # len(array) <= MAX_ARRAY_SIZE <= MAX_MEMORY_SIZE
+        # MAX_MEMORY_SIZE <= 2^POINTER_BIT_SIZE
+        # log2(MAX_MEMORY_SIZE) ~[uint]~ POINTER_BIT_SIZE
+        * log2(len(array)) ~[uint]~ POINTER_BIT_SIZE ~[uint]~ MAX_MACHINE_WORD
+
+        * array[i] ~ time O(1)
+            # array+i
+
+def XXX_list and XXX_table:
+    XXX_list<n> :: [num]
+        len(XXX_list<n>) = n-1
+    XXX_table<n> :: [[num]]
+        len(XXX_table<n>) = n-1
+        usually, (sum $ map len XXX_table<n>) ~ uint O(n^2)
+
+
+
+
+overview:
+    Notation:
+        define: "~" and "~[XXX]~" as "<=" binary relationship
+    assume:
+        * int operations:
+            ...
+        * machine word operations:
+            ...
+        * array operations:
+            ...
+    def XXX_list and XXX_table:
+        ...
+
+    overview # this
+
+    * factorial:
+        factorial(n)        ~ space bit size O(n*log(n))
+        factorial_list<n>   ~ space bit size O(n^2 * log(n))
+        factorial(n)        ~ time O(n^2 * log(n)^2)
+        factorial_list(n)   ~ time O(n^2 * log(n)^2)
+        # factorial_conclusion: limited by MAX_MACHINE_WORD
+    * choose:
+        choose(n,i)         ~ space bit size O(n)
+        choose_table<n>     ~ space bit size O(n^3)
+        choose(n,i)         ~ time O(n^2 * log(n))
+        choose_table<n>     ~ time O(n^3)
+        # choose_conclusion: limited by MAX_MACHINE_WORD
+    * Catalan_number:
+        Catalan_number(n)   ~ space bit size O(n)
+        Catalan_list<n>     ~ space bit size O(n^2)
+        Catalan_number(n)   ~ time O(n^2 * log(n))
+        Catalan_list(n)     ~ time O(n^2 * log(n))
+        # Catalan_conclusion: limited by MAX_MACHINE_WORD
+    * ballot_number:
+        ballot_number(p,q)  ~ space bit size O(q)
+        ballot_table<Q>     ~ space bit size O(Q^3)
+        ballot_number(p,q)  ~ time O(q^2 * log(q))
+        ballot_table<Q>     ~ time O(Q^3)
+        # ballot_conclusion: limited by MAX_MACHINE_WORD
+
+    * compare_based_sort
+        best time O(n*log(n)*time(<))
+    * bucket_sort
+        time O(n*time(get_key))
+
+
+
+* factorial:
+    n >= 0
+    let n! = factorial(n)
+    * space complexity
+        n! ~ uint O(n^n)
+        ==>> factorial(n) ~ space bit size O(n*log(n))
+        ==>> factorial_list<n> ~ space bit size O(n^2 * log(n))
+
+    * time complexity
+        * multiplicative_formula:
+            factorial(n)
+                | n == 0 = 1
+                | n >= 1 = factorial(n-1) * n
+            n! ~ space bit size O(n*log(n))
+            ==>> mul_iter ~ time O(n * log(n)^2)
+            ==>> factorial(n) ~ time O(n^2 * log(n)^2)      # here
+            ==>> factorial_list<n> ~ time O(n^2 * log(n)^2) # here
+
+        # factorial conclusion
+        # factorial_conclusion
+        ==>> factorial(n) ~ time O(n^2 * log(n)^2)
+        ==>> factorial_list(n) ~ time O(n^2 * log(n)^2)
+        [factorial(n) <= MAX_MACHINE_WORD]
+            ==>> factorial(n) ~ time O(n)
+            ==>> factorial_list(n+1) ~ time O(n)
+
+* choose:
+    choose(n,i)
+        # n::int; i::int
+        | i < 0     = 0
+        | n < 0     = choose((i-1)-n,i) * (-1)**i   # i>=0; -n-1>=0
+                                                    # n-i <= n < 0 <= i
+        | n-i < i   = choose(n, n-i)                # (n-i) may < 0
+        | 0 <= i <= n//2 <= n = ...                 # see below
+
+    assume 0 <= i <= n//2
+
+    * space complexity
+        sum` choose(n,i) `{i<-[0..n]} == 2^n
+        ==>> choose(n,i) ~ uint O(2^n)
+        ==>> choose(n,i) ~ space bit size O(n)
+        ==>> choose_table<n> ~ space bit size O(n^3)
+
+    * time complexity
+        * recursive_formula
+            choose(n,i) = choose(n-1,i) + choose(n-1,i-1)
+            choose(n,i) ~ space bit size O(n)
+            ==>> add_iter ~ time O(n)
+            ==>> choose_table<n> ~ time O(n^3) # here
+
+        * factorial_formula
+            choose(n,i)
+                = n!/(n-i)!/i!
+                = II` k `{k<-[n-i+1..n]} / i!
+
+            ==>> choose(n,i) ~[time]~ n! ~ time O(n^2 * log(n)^2)
+            ==>> choose_table<n> ~ time O(n^4 * log(n)^2)
+
+        * multiplicative_formula:
+            choose(n,i)
+                | i == 0    = 1
+                | otherwise = choose(n-1, i-1) * n / i
+
+            choose(n,i) ~ space bit size O(n)
+            ==>> mul_div_iter ~ time O(n * log(n))
+            ==>> choose(n,i) ~ time O(n^2 * log(n)) # here
+            ==>> choose_table<n> ~ time O(n^4 * log(n))
+
+        # choose conclusion
+        # choose_conclusion
+        ==>> choose_table<n> ~ time O(n^3)
+        ==>> choose(n,i) ~ time O(n^2 * log(n))
+        [n <= MAX_MACHINE_WORD]
+            [choose(n,i) <= MAX_MACHINE_WORD]
+                ==>> choose(n,i) ~ time O(i) ~ time O(n)
+            [choose(n,n//2) <= MAX_MACHINE_WORD]
+                ==>> choose_table<n+1> ~ time O(n^2)
+
+
+* Catalan_number
+    n >= 0
+    let Catalan(n) = Catalan_number(n)
+    # sum Catalan(i)z**i = f(z) = 1 + z*f*f = [1-sqrt(1-4z)]/(2z)
+
+    * space complexity
+        Catalan(n) = choose(2n,n)/(n+1) = O(4**n/(pi*n**3)**.5 (1+O(1/n)))
+        ==>> Catalan_number(n) ~ uint O(4^n)
+        ==>> Catalan_number(n) ~ space bit size O(n)
+        ==>> Catalan_list<n> ~ space bit size O(n^2)
+
+    * time complexity
+        * via_choose
+            Catalan(n) = choose(2n,n)/(n+1)
+            choose(n,i) ~ time O(n^2 * log(n))
+            ==>> Catalan_number(n) ~ time O(n^2 * log(n)) # here
+            ==>> Catalan_list<n> ~ time O(n^3 * log(n))
+
+        * recursive_formula
+            Catalan(n)
+                | n == 0    = 0
+                | n >= 1    = sum` Catalan(i)*Catalan(n-1-i) `{i<-[0..n-1]}
+
+            Catalan_number(n) ~ space bit size O(n)
+            ==>> sum_iter ~ time O(n^3)
+            ==>> Catalan_list<n> ~ time O(n^4)
+            ==>> Catalan_number(n) ~ time O(n^4)
+
+        * multiplicative_formula:
+            Catalan(n)
+                | n == 0    = 0
+                | n >= 1    = Catalan(n-1) * 2*(2n-1)/(n+1)
+
+            Catalan_number(n) ~ space bit size O(n)
+            ==>> mul_div_iter ~ time O(n*log(n))
+            ==>> Catalan_list(n) ~ time O(n^2 * log(n))   # here
+            ==>> Catalan_number(n) ~ time O(n^2 * log(n)) # here
+
+        # Catalan conclusion
+        # Catalan_conclusion
+        ==>> Catalan_list(n) ~ time O(n^2 * log(n))
+        ==>> Catalan_number(n) ~ time O(n^2 * log(n))
+        [n <= MAX_MACHINE_WORD][Catalan_number(n) <= MAX_MACHINE_WORD]
+                ==>> Catalan_number(n) ~ time O(n)
+                ==>> Catalan_list<n+1> ~ time O(n)
+
+
+* ballot_number
+    let ballot(p,q) = ballot_number(p,q)
+    ballot(p,q)
+        | 0 <= p <= q   = ... # see below
+        | otherwise     = 0
+
+    assume 0 <= p <= q
+
+    * space complexity
+        ballot(q,q) = Catalan_number(q) ~ space bit size O(q)
+        ==>> ballot_number(p,q) ~ space bit size O(q)
+        ==>> ballot_table<Q> ~ space bit size O(Q^3)
+
+    * time complexity
+        * via_choose:
+            ballot(p,q)
+                | 0 <= p <= q = choose(q+p,p)*(q-p+1)/(q+1)
+                | otherwise = 0
+
+            choose(n,i) ~ time O(n^2 * log(n))
+            ==>> ballot_number(p,q) ~ time O(q^2 * log(q)) # here
+            ==>> ballot_table<Q> ~ time O(Q^4 * log(Q))
+
+        * recursive_formula
+            ballot(p,q)
+                | (0,0)             = 1
+                | 0 <= p <= q =/=0  = ballot(p,q-1) + ballot(p-1,q)
+                | otherwise         = 0
+
+            ballot(p,q) ~ space bit size O(q)
+            ==>> add_iter ~ time O(q)
+            ==>> ballot_table<Q> ~ time O(Q^3) # here
+            ==>> ballot_number(p,q) ~ time O(q^3)
+
+        # ballot conclusion
+        # ballot_conclusion
+        ==>> ballot_number(p,q) ~ time O(q^2 * log(q))
+        ==>> ballot_table<Q> ~ time O(Q^3)
+        [q <= MAX_MACHINE_WORD]
+            [ballot_number(p,q) <= MAX_MACHINE_WORD]
+                ==>> ballot_number(p,q) ~[time]~ choose(q+p,p) ~ time O(p) ~ time O(q)
+            [ballot_number(Q,Q) <= MAX_MACHINE_WORD]
+                # i.e. Catalan_number(Q) <= MAX_MACHINE_WORD
+                ==>> ballot_table<Q+1> ~ time O(Q^2)
+
+
+
+
+* "<"-based sort
+    compare_based_sort :: Ord a => [a] -> [a]
+    input_array :: Ord a => [a]
+    n = len(input_array)
+
+    ==>> best time O(n*log(n)*time(<)) where n <= MAX_ARRAY_SIZE
+* bucket_sort
+    bucket_sort :: (a->UInt) -> [a] -> [a]
+    get_key :: a -> UInt
+    input_array :: [a]
+    n = len(input_array)
+    assume: [all (< n) $ map get_key input_array]
+
+    1) buffer
+        key2input_elements :: [[a]]
+
+        [all (< n) $ map get_key input_array]
+        ==>> max_key = max -1 (map get_key input_array) < n
+        ==>> len(buffer) = len(key2input_elements) = max_key+1 <= n
+        ==>> buffer.__init__() ~ time O(n)
+    2) key operations
+        buffer.__index__ ~ time O(1)
+
+    ==>> time O(n*time(get_key)) where n <= MAX_ARRAY_SIZE
+
+
+
+

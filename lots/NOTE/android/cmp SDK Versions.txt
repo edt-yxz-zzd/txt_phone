@@ -1,0 +1,119 @@
+
+Compile SDK Version
+Minimum SDK Version
+Maximum SDK Version
+Target SDK Version
+
+
+
+minSdkVersion <= (compileSdkVersion) <??> (targetSdkVersion <= maxSdkVersion) <= latestAndroidVersion
+    # but initial: targetSdkVersion <= compileSdkVersion == latestAndroidVersion
+    #   then we select the min compileSdkVersion
+    #   targetSdkVersion++ until latestAndroidVersion or fail then set maxSdkVersion
+targetSdkVersion = level that select a style between (minSdkVersion? or compileSdkVersion?) and maxSdkVersion (since features' meaning are changing)
+maxSdkVersion = min ({latestAndroidVersion}+{notPassTestingVersion-1: minSdkVersion < notPassTestingVersion <= latestAndroidVersion})
+compileSdkVersion = max {API level when feature introduced: feature <- all critical or optional features}
+minSdkVersion = max {API level when feature introduced: feature <- all critical features}
+    # optional feature: "check the feature exists before using it"
+
+
+
+========================
+https://stackoverflow.com/questions/26694108/what-is-the-difference-between-compilesdkversion-and-targetsdkversion
+Late to the game.. and there are several great answers above-- essentially, that the compileSdkVersion is the version of the API the app is compiled against, while the targetSdkVersion indicates the version that the app was tested against.
+
+I'd like to supplement those answers with the following notes:
+
+    That targetSdkVersion impacts the way in which permissions are requested:
+        If the device is running Android 6.0 (API level 23) or higher, and the app's targetSdkVersion is 23 or higher, the app requests permissions from the user at run-time.
+        If the device is running Android 5.1 (API level 22) or lower, or the app's targetSdkVersion is 22 or lower, the system asks the user to grant the permissions when the user installs the app.
+
+    If the compileSdkVersion is higher than the version declared by your app's targetSdkVersion, the system may enable compatibility behaviors to ensure that your app continues to work the way you expect. (ref)
+
+    With each new Android release...
+        targetSdkVersion should be incremented to match the latest API level, then thoroughly test your application on the corresponding platform version
+        compileSdkVersion, on the other hand, does not need to be changed unless you're adding features exclusive to the new platform version
+        As a result, while targetSdkVersion is often (initially) less than than the compileSdkVersion, it's not uncommon to see a well-maintained/established app with targetSdkVersion > compileSdkVersion
+
+---------------
+compileSdkVersion
+
+The compileSdkVersion is the version of the API the app is compiled against. This means you can use Android API features included in that version of the API (as well as all previous versions, obviously). If you try and use API 16 features but set compileSdkVersion to 15, you will get a compilation error. If you set compileSdkVersion to 16 you can still run the app on a API 15 device as long as your app's execution paths do not attempt to invoke any APIs specific to API 16.
+targetSdkVersion
+
+The targetSdkVersion has nothing to do with how your app is compiled or what APIs you can utilize. The targetSdkVersion is supposed to indicate that you have tested your app on (presumably up to and including) the version you specify. This is more like a certification or sign off you are giving the Android OS as a hint to how it should handle your app in terms of OS features.
+
+For example, as the documentation states:
+
+    For example, setting this value to "11" or higher allows the system to apply a new default theme (Holo) to your app when running on Android 3.0 or higher...
+
+The Android OS, at runtime, may change how your app is stylized or otherwise executed in the context of the OS based on this value. There are a few other known examples that are influenced by this value and that list is likely to only increase over time.
+
+For all practical purposes, most apps are going to want to set targetSdkVersion to the latest released version of the API. This will ensure your app looks as good as possible on the most recent Android devices. If you do not specify the targetSdkVersion, it defaults to the minSdkVersion.
+
+
+https://www.dummies.com/web-design-development/mobile-apps/the-compile-sdk-minimum-sdk-and-target-sdk-versions/
+Compile SDK Version
+
+The Compile SDK Version is the version of Android in which you write code. If you choose 5.0, you can write code with all the APIs in version 21. If you choose 2.2, you can write code only with the APIs that are in version 2.2 or earlier. You can’t use the Wi-Fi Direct APIs in version 2.2, for example, because they weren’t introduced until version 4.0.
+
+Minimum SDK Version
+
+Android operating system (OS) versions are backward-compatible. If your minSdkVersion is set to Android version 4.0, for example, your application can run on Android 5.0, 4.4, 4.3, 4.2, 4.1, and 4.0. The benefit of choosing the 4.0 framework is that your application is exposed to a much larger market share. Your app can be installed on devices going back to 4.0 (and on future versions, too!).
+
+Selecting an older version isn’t free of consequences, however. By targeting an older framework, you’re limiting the functionality you have access to.
+
+You should set the minSdkVersion to the oldest version of Android that you are willing to support. For this app you will simplify your development life by supporting only the latest version of Android.
+
+If your Minimum SDK Version is not the same as your Compile SDK Version, you must take great care! For example, you might set your Compile SDK Version to 5.0 in order to use the latest APIs and your Minimum SDK Version to 16 to support devices running Android 4.1, but your app will crash if you use 5.0 APIs and run it on an Android 4.1 device (because Android 4.1 did not have any of 5.0’s APIs).
+
+The Google Play Store decides which users to show your app to based on your minSdkVersion. If you’re having trouble deciding which version to set as your minimum, the current version distribution chart can help you decide.
+
+The minSdkVersion is technically optional, but you should always set it! If you don’t know what to set it to, then set it to the same value as your compileSdkVersion.
+
+It’s up to you to test your app on all the versions of Android between your Minimum SDK Version and the latest Android SDK version!
+Target SDK Version
+
+Compile SDK Version and Minimum SDK Version are arguably the most important SDK version settings that you need to understand. However, there’s a third SDK version called targetSdkVersion that’s often misunderstood and equally important to understand.
+
+You should set the targetSdkVersion to the most recent version of Android that you have tested on. In this case, you are building and testing against Lollipop, so that’s what you’ll set your targetSdkVersion to.
+
+Whenever a new version of Android comes out, you will want to update the targetSdkVersion to the latest Android version and test your app to fix any problems. If you don’t update the targetSdkVersion, Android devices will assume that your app wasn’t tested on the latest version of Android, so they may introduce some backward-compatibility behavior for your app to make sure your app still looks and feels the way you designed it for that older version of Android. It gets a little tricky, so the best policy is to always keep your targetSdkVersion up to date with the latest versions of Android.
+
+---------------
+I see a lot of differences about compiledSdkVersion in previous answers, so I'll try to clarify a bit here, following android's web page.
+
+A - What Android says
+
+According https://developer.android.com/guide/topics/manifest/uses-sdk-element.html:
+
+    Selecting a platform version and API Level When you are developing your application, you will need to choose the platform version against which you will compile the application. In general, you should compile your application against the lowest possible version of the platform that your application can support.
+
+So, this would be the right order according to Android:
+
+compiledSdkVersion = minSdkVersion <= targetSdkVersion
+
+B - What others also say
+
+Some people prefer to always use the highest compiledSkdVersion available. It is because they will rely on code hints to check if they are using newer API features than minSdkVersion, thus either changing the code to not use them or checking the user API version at runtime to conditionally use them with fallbacks for older API versions.
+
+Hints about deprecated uses would also appear in code, letting you know that something is deprecated in newer API levels, so you can react accordingly if you wish.
+
+So, this would be the right order according to others:
+
+minSdkVersion <= targetSdkVersion <= compiledSdkVersion (highest possible)
+
+What to do?
+
+It depends on you and your app.
+
+If you plan to offer different API features according to the API level of the user at runtime, use option B. You'll get hints about the features you use while coding. Just make sure you never use newer API features than minSdkVersion without checking user API level at runtime, otherwise your app will crash. This approach also has the benefit of learning what's new and what's old while coding.
+
+If you already know what's new or old and you are developing a one time app that for sure will never be updated, or you are sure you are not going to offer new API features conditionally, then use option A. You won't get bothered with deprecated hints and you will never be able to use newer API features even if you're tempted to do it.
+
+
+
+
+
+
+

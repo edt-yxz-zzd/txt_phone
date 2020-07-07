@@ -1,0 +1,92 @@
+
+definitions:
+    # multivariate polynomial equations
+    #
+    # poly = SUM term # multivariate polynomial
+    # term = 0 | nonzero_coeff * product
+    # product = II pow
+    # pow = symbol ^ power
+    # poly_class poly :: UInt
+    # poly_class_order = main_degree of main_variable/poly_class
+    #   main_variable = mvar(poly_class)
+    #   main_degree = mdeg(poly, poly_class)
+    # poly_Ritt_rank = (poly_class, poly_class_order)
+    # leading_term poly = ...
+    # initial_term poly = leading_term / symbols[poly_class poly] ^ poly_class_order poly
+
+    def [All X. P X ==>> C] <==> [All X. (P X ==>> C)]
+        #   <=/=> [(All X. P X) ==>> C]
+    def [N(X)==...0] <==> [All i. N[i]==0]
+        <==> [N(X)==0]
+    def [D(X)!=...0] <==> [All i. N[i]!=0]
+    def [D(X)!=0] <==> not [D(X)==0] <==> [Some i. D(X)!=0]
+
+zeros:
+    [N(X)==...0] ==>> [C(X)==...0]
+    let T = mk_characteristic_set_by_Wu_method(N)
+        # triangular set
+        # Ritt-Wu process # polynomials triangulation
+        # Ritt characteristic set
+        # Wu characteristic set
+        # Wu's characteristic set method has exponential complexity
+        #   ; improvements in computing efficiency by weak chains, regular chains, saturated chain were introduced
+    let I = {initial_term poly | poly <- T}
+    zeros(N) = (zeros(N)-zeros(I)) \-/ UNION: zeros(N\-/{init}) {init<-I}
+             # all I not zero or at least one I zero
+             = (zeros(T)-zeros(I)) \-/ UNION: zeros(N\-/{init}) {init<-I}
+
+
+
+# special form of polys and conclusion, not any forms
+# "special form" comes from "geometry" axioms
+#   introduce new polys to define new points
+N(X)
+D(X)
+C(X)
+
+to proof:
+    [N(X)==0] =/=>> [D[i](X)==0]
+        i.e. [exist X. [N(X)==0][all D(X)!=0]]
+        i.e. [exist X,y. [N(X)==0][y*II: D[i](X) {i} == 1]]
+    [N(X)==0][D(X)!=0] ==>> [C(X)==0]
+
+
+
+conclusion form:
+    #[All X. [All i. N[i](X)==0][All j. D[j]!=0] ==>> [All k. C[k](X)==0]]
+    be  [All X. [N[i](X)==...0][D[j]!=...0] ==>> [C[k](X)==...0]]
+    not [All X. [N[i](X)==...0][D[j]!=...0] ==>> [C[k](X)!=...0]]
+    # conclusion should be positive not negative
+condition form:
+    # we donot assume "field == CC"
+    [p==0][q==0] <=/=> [p^2+q^2==0]
+    ???[p!=0][q!=0] <=/=> [p*q!=0]???
+    [p!=0][q!=0] <=/=> [p*q*a==1]
+
+    ???variable_order is important???:
+        [N1(X1)==...0][D1(X1)!=...0] ==>> [C1(X1)==...0]
+        [N2(X2)==...0][D2(X2)!=...0] ==>> [C2(X2)==...0]
+        let N=N1/\N2, X=X1++X2, D=D1(only), C=C1\/C2
+        [N(X)==...0][D1(X1)!=...0] ==>> [C(X)==...0]
+            ???require [D2(X2)!=...0]???
+            NO!!! we can avoid use initial_term which may be 0
+            i.e. conclusion:[f*u^2+g*u+h == 0]
+            if we can not reduce u, since D[i] about u has maybe0 initial_term
+            then we make more strict conclusion [f==0][g==0][h==0]
+
+
+
+# field = RR
+# >, >=, !=
+[a>0] <==> [a*x^2==1]
+[a<0] <==> [a*x^2==-1]
+[a>=0] <==> [a==x^2]
+[a<=0] <==> [a==-x^2]
+[sign a == sign b] <==> [a*b>0] <==> [a*b*x^2==1]
+[sign a != sign b] <==> [a*b<0] <==> [a*b*x^2==-1]
+[a!=0] <==> [a*x==1]
+
+# field = CC ==>> field RR
+poly == 0 ==>> Imag poly == 0 == Real poly
+
+

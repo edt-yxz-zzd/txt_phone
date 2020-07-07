@@ -1,0 +1,133 @@
+call_by_name vs call_by_need
+    * call_by_name
+        evaluated many0 times
+    * call_by_need
+        evaluated 0/1 times
+call_by_name vs call_by_macro_expansion
+    * call_by_name
+        capture_avoiding_substitution
+    * call_by_macro_expansion
+        textual_substitution
+call_by_name vs normal_order_evaluation
+    * call_by_name
+        eval_to_weak_head_normal_form(f)
+    * normal_order_evaluation
+        eval_to_normal_form(f)
+call_by_sharing vs call_by_reference
+    * call_by_sharing
+        "swap(a,b) with copy"
+        void f(A* a)
+    * call_by_reference
+        "swap(a,b) without copy"
+        void f(A** a)
+
+
+
+
+
+
+https://en.wikipedia.org/wiki/Evaluation_strategy
+
+evaluation_strategy
+    * strict_evaluation = eager_evaluation
+        * call_by_value = pass_by_value
+            * applicative_order_evaluation = leftmost_innermost_evaluation
+        * call_by_sharing = call_by_object = call_by_object_sharing
+            "box"
+        * call_by_reference = pass_by_reference
+        * call_by_copy_restore = copy_in_copy_out = call_by_value_result = call_by_value_return
+            "reference unique"
+        * partial_evaluation
+            "complete or partial"
+    * non_strict_evaluation
+        * call_by_macro_expansion
+        * call_by_name
+        * call_by_need
+            * lazy_evaluation
+            * optimistic_evaluation
+        * normal_order_evaluation = leftmost_outermost_evaluation
+
+
+
+call_by_sharing
+    pass value_of_reference
+    def f(a:A, b:A):
+        a = b; a.g
+    "a=b" is assignment of value_of_reference
+    void f(A* a, A* b){a = b; (*a).g;}
+call_by_reference
+    pass address_of_reference
+    def f(a:A, b:A)
+        a = b; a.g
+    "a=b" is assignment of value_of_reference
+    void f(A** a, A** b){*a = *b; (**a).g;}
+
+
+call_by_copy_restore
+    def f(a,b):
+        _a = a; _b = b
+        a = a.copy(); b = b.copy()
+        ...
+        _a.assign(a); _b.assign(b)
+        return result
+    f(a,a) ==>> "a" undefined
+partial_evaluation
+    def f(a,b)
+    f a = partial(f,a)
+    f a b = f(a,b) = call(f, a, b)
+call_by_value = pass_by_value
+    evaluated then copying the value into a new memory region
+    call_by_value is not a single evaluation strategy, but rather the family of evaluation strategies in which a function's argument is evaluated before being passed to the function.
+        # left-to-right/right-to-left or other orders?
+    f(a...b) = (eval_to_normal_form(f)
+                `par` eval_to_normal_form(a)
+                ...
+                `par` eval_to_normal_form(b)
+               )`seq` call(f,a...b)
+
+applicative_order_evaluation = leftmost_innermost_evaluation <: call_by_value
+    applicative_order_evaluation refers to an evaluation strategy in which the arguments of a function are evaluated from left to right in a post-order traversal of reducible expressions (redexes).
+    f(a...b) = eval_to_normal_form(f)
+                `seq` eval_to_normal_form(a)
+                ...
+                `seq` eval_to_normal_form(b)
+                `seq` call(f,a...b)
+
+capture_avoiding_substitution body x expr =[def]= body[x:=expr]
+    x[x:=expr] = expr
+    y[x:=expr] = y
+    (f g)[x:=expr] = (f[x:=expr]) (g[x:=expr])
+    (\x. body)[x:=expr] = \x. body                              #!!!!!
+    (\y. body)[x:=expr] = \y. (expr[x:=expr])
+textual_substitution body x expr =[def] = body.replace(x:=expr)
+    x.replace(x:=expr) = expr
+    y.replace(x:=expr) = y
+    (f g)[x:=expr] = (f.replace(x:=expr)) (g.replace(x:=expr))
+    (\x. body).replace(x:=expr) = \x. (expr.replace(x:=expr))   #!!!!!
+    (\y. body).replace(x:=expr) = \y. (expr.replace(x:=expr))
+
+
+normal_order_evaluation = leftmost_outermost_evaluation
+    normal_order_evaluation is the evaluation strategy where the outermost redex is always reduced, applying functions before evaluating function arguments.
+    In contrast, call_by_name does not evaluate inside the body of an unapplied function.
+    f expr = case eval_to_normal_form(f) of
+            (\x. body) -> body[x:=expr]
+call_by_name
+    call_by_name is an evaluation strategy where the arguments to a function are not evaluated before the function is called--rather, they are substituted directly into the function body (using capture_avoiding_substitution) and then left to be evaluated whenever they appear in the function.
+    evaluated many0 times
+    f expr = case eval_to_weak_head_normal_form(f) of
+            (\x. body) -> body[x:=expr]
+call_by_need
+    call_by_need is a memoized variant of call by name where, if the function argument is evaluated, that value is stored for subsequent uses. If the argument is side-effect free, this produces the same results as call by name, saving the cost of recomputing the argument.
+    evaluated 0/1 times
+lazy_evaluation <: call_by_need
+    Haskell
+optimistic_evaluation <: call_by_need
+    optimistic_evaluation is another variant of call by need in which the function's argument is partially evaluated for some amount of time (which may be adjusted at runtime), after which evaluation is aborted and the function is applied using call by need. This approach avoids some of the runtime expense of call by need, while still retaining the desired termination characteristics.
+
+call_by_macro_expansion
+    call_by_macro_expansion is similar to call_by_name, but uses textual_substitution rather than capture_avoiding_substitution. With uncautious use, macro substitution may result in variable capture and lead to undesired behavior.
+    f expr = case eval_to_weak_head_normal_form(f) of
+            (\x. body) -> body.replace(x:=expr)
+
+

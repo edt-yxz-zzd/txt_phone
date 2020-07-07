@@ -1,0 +1,228 @@
+
+
+keywords:
+    Term, Type, Sort -- the universal term_set/type_set/sort_set
+        ;; Term ::= 0# ; Type ::= 1# == ##` 0# ; Sort ::= 2#
+    "let" "in"
+    :  --  term : type
+    <: --  subterm <: term; subtype <: type
+    :: --  term :: term_set; term :: Term
+    <# --  term_subset <# term_set
+    #` --  type_of; #` term ::= type_of term
+       --  [term :: Term] ==>> [term : #` term]
+    ##` -- fmap type_of; ##` term_set ::= {#` term | term <- term_set}
+        -- 'Type ::= ##` Term
+        -- [term : type] ==>> [type :: 'Type]
+        -- [term :: term_set |- #` term : ##` term_set]
+    -- #-` -- #-` ##` set :: set
+    *` -- *` *` a == a ;; not callable
+        -- #` *` a == #` a; since (*` \# ...) is callable
+        -- a <: *` a; *` a <: *` a; callable <: not callable
+        -- #` \# 0# .., body = * \# 0#.., #` body
+    \#
+    \  @ ? @@
+    -: -<: -::
+    --::
+    ::<# -- term ::<# super = term :: set <# super
+    :<: -- term :<: super = term : type <: super
+    ==# -- a ==# b = a <# b <# a
+    ==: -- a ==: b = a <: b <: a
+    -> </ />
+    () ,
+    {} `` -- implict
+    fst snd
+    cast
+    set_of
+        ;; why type_of is "#`" but set_of is not op???
+        ;;      (#`) : term -> term; set_of : term -> set
+        ;;      "#` #` term" but not "set_of (set_of term)"
+
+
+VarID - variable id set
+TermID -- Term id set
+SetID -- TermSet id set
+SetID /-\ TermID == {}
+
+
+: ==>> ::
+    [type :: set][term : type]
+        ==>> [term :: set'] where [##` set' ==# set]
+<: has no relation with ::
+    <: ==/=>> ::
+    so instead of (\ x <: t, body), we should have (\ x :: s `[x <: t], body)
+
+    example:
+        [subset <# superset]
+            superterm : \0 x :: subset, #` x = \0 x :: subset, x
+            subterm : \0 x :: superset, #` x = \0 x :: superset, x
+                subterm <: superterm
+                subterm :: superset
+                superterm :: subset
+                set_of superterm ==# subset <# superset ==# set_of subterm
+                set_of superterm <# set_of subterm
+
+            superterm2 : \1 x <: subterm, #` x = \2 x <: subterm :: superset, x
+            subterm2 : \1 x <: superterm, #` x = \2 x <: superterm :: subset, x
+                subterm2 <: superterm2
+                subterm2 :: subset
+                superterm2 :: superset
+                set_of subterm2 ==# set_of superterm
+                    <# set_of subterm ==# set_of superterm2
+                set_of subterm2 <# set_of superterm2
+
+
+syntax
+    NaturalExpr = 0#
+                -- Natural
+                -- | NaturalExpr + NaturalExpr | NaturalExpr - NaturalExpr
+                | ##` NaturalExpr
+                | uint_id
+                -- set_of
+                | set_of Term
+    TermSet = NaturalExpr
+    Depth = NaturalExpr
+    Constraints<term_id> = "`[" Constraint<term_id>/"," "]"
+    Constraint<term_id> = "#`"* term_id "<:" term
+    Term    = term_id -- term_id in TermID
+                -- [(id :: set) in context] ==>> id : #` id; id :: set
+                -- [(id : type) in context][type :: ##` set]
+                --      ==>> id : type; id :: set
+            | "let" term_id : Term = Term "in" Term
+            | "let" set_id <# 0 = TermSet "in" Term
+            ;; lambda
+            ;; of = "::" | ":"
+            | \# Depth term_id of cls Constraints<term_id>, Term
+                -- #` \# depth id of cls constraints, body ==
+                --      depth <# 2# ==>>
+                --              \# depth-1 id of cls constraints, #` body
+                --      depth ==# 1# ==>> *` #` body
+                --      depth ==# 0#, of=="::", constraints==[] ==>>
+                --              \# 0# id :: cls, #` body
+                --
+                -- set_of \# depth ..., body == [context, ...] set_of body
+            -- | \ term_id OfClass3, Term
+                -- \# 2# term_id OfClass3, Term
+            -- | </ term_id OfClass3 = Term, Term />
+            ;; arrow-type
+            -- | @ term_id OfClass3, Term
+                -- (term_id OfClass3_) -> Term
+                -- \# 1# term_id OfClass3, Term
+            -- | ? term_id OfClass3, Term
+            ;; arrow-sort
+            -- | @@ term_id :: TermSet, Term
+                -- @@ ..., #`* Term
+                -- @@..., @@ R::_, @@..., #`+ R
+                -- (term_id --:: TermSet) -> Term
+                -- \# 0# term_id :: TermSet, Term
+            ;; app
+            | Term Term
+                -- type_of term1 == (\# ...) | (*` ...)
+                --
+                -- type_of
+                -- [#` f == *` _][f == \# 1# id ..., body] ;; known definition
+                --      ==>> #` (f a) == #` body[id := a]
+                -- [#` f == \# ...]{depth_of f /=# 1#}
+                --      ==>> #` (f a) == (#` f) a
+                --
+                -- set_of
+                -- [#` f == *` t]
+                --      ==>> set_of (f a) == set_of f
+                --      [##` set == set_of *` t]
+                --          ==>> set_of (f a) == set
+                -- [#` f === \# 0# id :: set, body][a :: set']
+                --      [##` set'' ==# set_of (\# 0# id :: set', body)]
+                --          ==>> set_of (f a) == set''
+                -- [depth_of #` f /=# 0#] ==>> set_of (f a) == set_of f
+            | fst Term
+            | snd Term
+            | cast Term Term
+            ;; type_of
+            | #` Term
+                -- set_of #` t == ##` set_of t
+            ;; not_callable
+            ;;      term of this type is not callable
+            ;;      but the type itself is callable
+            | *` Term
+                -- *` (\# ...)
+                -- *` *` t == *` t
+                -- #` *` t == #` t
+                -- set_of *` t == set_of t
+            -- ;; assert
+            -- | Term OfClass3
+            -- | 'defined_term_id
+            -- | ?defined_term_id
+
+    OfClass3_ = -:: TermSet | -: Term | -<: Term
+    OfClass3 = :: TermSet | : Term | <: Term
+
+context = [([global]; [local])]
+            -- [(globals; locals)]
+global = global_declaration | definition
+local = local_declaration
+global_declaration = term_id : type
+definition = term_id : type = term | set_id <# Term = set
+local_declaration = (term_id of2 cls; [local_constraint])
+local_constraint = "#`"* term_id <: term
+conclusion = set <# set | term of2 cls | term => term
+basic_conclusion = Term <# Term
+                 | term_id => term
+                 ;; decl_id => decl_id
+basic_conclusion2=
+                 ;; ==>> set_id <# set_id
+                 | set_id <# set | set_not_id <# set_id
+                 | term_id :: set
+                 | term_id : type
+                 ;; ==>> | decl_term_id <: decl_term_id
+                 | term_id <: term | term_not_id <: term_id
+
+
+[`op` = : | :: | <: | <#][a `op` b][b `op` c]
+    ==>> a `op` (b `op` c)
+    ;; Notation: a `op` b `op` c === a `op` (b `op` c)
+
+let of2 = : | ::
+let lt2 = <: | <#
+
+
+
+Pair:
+    Pair a b = @R, (a -> b -> R) -> R
+    Pair = \a b, @R, (a -> b -> R) -> R
+    Pair = \a b : *, @R : (* or **), (a -> b -> R) -> R
+    Pair' A P = @R, (@a : A, P a -> R) -> R
+    Pair' = \A : *, \P : A -> *, @R : *, (@a : A, P a -> R) -> R
+    Pair' = \A : *, \P : @_ : A, *, @R : *, (@a : A, @ _ : P a, R) -> R
+    Pair' = \A : *, \P : @_ : A, *, @R : *, @a2Pa2R : (@a : A, @ _ : P a, R), R
+        --   2       2               1       1
+    Pair' : @A : *, (A -> *) -> *
+    Pair' : @A : *, @P : (@a2b : A, *), *    :    **
+
+
+    ;; A -> B -> (P -: A -> B) -> R -> ((a -: A) -> P a -> R) -> R
+    Pair = \# 1# A :: Type, \# 1# B :: Sort, \# 1# P : \# 1# _ : A, B,
+                \# R :: Type `[], \ a2b2R : \a,\b,R, R
+
+
+
+Notation:
+    \ a b... , body = \ a, \ b..., body
+    </ a, b, c... /> = </ a, </ b, c... /> />
+    a -> b -> c... = a -> (b -> c...)
+    (a, b, c...) = (a, (b, c...))
+
+    ;; (a, b) = (R -:: 'Type) -> (a -> b -> R) -> R
+    (a :: S, P a) = (R -:: 'Type) -> ((a -:: S) -> P a -> R) -> R
+        ?? a :: S, #` (P a) = @@ R :: 'Type, #` R
+            | : #` @@ R :: 'Type, #` R
+            | :: 'Sort
+    (a `op2` T, P a) = (R -:: 'Type) -> ((a `op2_` T) -> P a -> R) -> R
+        @@ R :: 'Type, #` R
+
+
+    </ id ofC = a, b /> = \R :: 'Type, \ a2b2R : id ofC -> #` b -> R, a2b2R a b
+
+    (a of3_ t) -> b = @ a of2 t, b
+    (a --:: t) -> b = @@ a :: t, b
+    
+
+

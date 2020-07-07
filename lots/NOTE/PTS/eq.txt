@@ -1,0 +1,169 @@
+
+BigType = (BasicType, Eq BasicType)
+BigFunc = BigTypeA --> BigTypeB
+        = (f <- (BasicTypeA -> BasicTypeB)
+            , eqA <- Eq BasicTypeA
+            , eqB <- Eq BasicTypeB
+            , (a<-BasicTypeA) -> (a2<-BasicTypeA)
+              -> (fst$ eqA a a2) -> (fst$ eqB (f a) (f a2))
+            )
+pair
+    Big X = (_<-X, Eq X)
+    BigPair1 X Y = Big (_<-X,Y) != (_<-Big X, Big Y)
+    'BigPair2 BigX BigY = BigPair1 BigX.X BigY.X
+    'BigPair3 (_<-BigX, BigY) = 'BigPair2 BigX BigY
+    depend????? Y may depend on (x<-X), BigPair1 will fail!!!
+    we define some builtin permutation about pair
+    pattern matching is require too: (first pair, then Big _)
+    'BigPair3 pair@(bx<-Big X, Big Y)
+        = (unpack[0] >>> try_permutation[1.0, 2.0] >>> pack[0,1.0]) pair
+        = try_permutation[0.1, 1.0]
+    or using dependence DAG in matching pattern:
+        (_<-(a<-_, a=> b), a=>(c<-_, c=>d))
+        ((a,b),(c,d)) where [a=>b,c,d][b,c=>d] # both (_<-_, _) and (_=_,_)
+        or ((a,b),(c,d)) <=> ((a,c), (b,d))
+    or define a builtin type to support such usage!
+        ...
+
+proof irrelevance
+    proof_irrelevance asserts equality of all proofs of a given formula
+    Definition proof_irrelevance := forall (A:Prop) (a1 a2:A), a1 = a2.
+
+    # NOTE: some proof is not ghost! we require it to def lambda
+    #       e.g. the (Unique P)
+
+    (x<-X, P x) ==>> (x<-X, @y:X. eqX x y -> P y)
+    let 'BigPred eqX P = BigPred X eqX P
+    BigPred {s} = \X:s.. \eqX : 'Eq X.. \x:X.. @y:X. eqX x y -> P y
+    let 'Proof P BigX = 'BigPred BigX.eqX P BigX.x
+
+    (x<-X, 'BigPred eqX P x)        # pred over super vertex
+    (_<-(x<-X, eqX), (p <- 'BigPred eqX P x, AllEq (P x)))
+    == (BigX@(x<-X, eqX), (p <- 'Proof P BigX, AllEq (P x)))
+    let 'ProofIrr eqX P = BigPair3 above # existence
+
+
+
+TopEq
+RefineEq
+RefineFunc
+    [f <= g] =[def]= [f.eqA <= g.eqA][f.eqB <= g.eqB][@a. g.eqB.eq (f.f a) (g.f a)]
+EqFunc
+    use EqFunc to introduce "add" instead of define "add" by "succ" directly
+
+
+type system
+    class Arrow
+        [f >>> g] if f.eqB <= g.eqA
+    class Typed
+        # sort may have no type!
+        get_type$ :: ... -> ...
+    class Callable:
+        # for -->
+        call$
+    newtype # named type, for type system. # -->
+
+
+
+ghost:
+    A -> B -> (c<-C:r; [PA a -> PB b -> PC c :r2 | ...]) : (r;[ r2 | ...])
+        # can have more than 1 sort
+        # if we omit the ghost we get the first sort.
+    [a<-A; PA a] -> [b<-B; PB b] -> [c<-C; PC c]
+
+    Unique eqX P = ?x:X. (P x /\ (y <- X) -> P y -> eqX x y)
+        can not be ghost!!
+    # eqX is not '=='
+    The eqX P = fst$ (Unique eqX P)
+
+
+(A,B) is (_=A, B) is not (_ <- A, B) == (A /\ B)
+    or let (a,b) ==>> {[a,b]} so we can use (A,B) as (A/\B)
+    since hard to decide, forbid (A,B)!!!!!!!
+        now we have to write (except the last obj):
+            (_<-a, _=b, _<-c, _=d, e)
+    [fst {[a,b,c]} == a] ==>> (a,b,c) == (a,(b,c)) == ?a. ?b. c  # fine!!
+        == head ls # fine!!
+    let (a,b,c).0 = a; # no .[-1], since c may be pair too!!
+        .1 == (b,c)
+        .1.0 == b
+        .2 = .1.1 == c
+(A /\ B) : ?? # (A \/ B) is the same
+    == (A -> B -> R) -> R
+    A:a, B:b, R:r, (b,r,r), (a,r,r), (r,r,r) ==>> {<r>, (get_type$(A), r,r), (...),...} \R:r. (((A -> B -> R) -> R):r)
+
+    think:
+        (A /\ B) -> R <==> A -> B -> R
+            require only (a,r,r) (b,r,r)
+        X -> (A /\ B) <==> (X->A /\ X->B)
+            require only (x,a,a) (x,b,b)
+        (A/\B) -> (C/\D)
+            require (a,b->>c,d)
+        so, (A/\B) : {a,b}
+let (a,b,s->>r) repr (a,r,r) (b,r,r) (s,r,r) # neednot (r,r,r)
+
+
+
+let (\x:A.. o) be a macro
+    ".."
+when define a lambda
+    xxx {<a;b,c>, (a:b), (a,c,c)} = ...:R:c
+    require "0=a<b=c" is a good subsystem instance
+    so we neednot to spec one
+    the result's type's type is the last sort, e.g. "c"
+
+    xxx {<a;b,c>, (a:b), (a,c,c)} = ({...} ...) -> ({} lambda)
+    i.e. (schema (schema lambda -> schema lambda)) is allowed
+
+    can offer a Macro keyword if the subsystem lambda is a Macro
+        default to the current PTS system's Macro
+
+# equivalence class
+# Eq {<s,r>} X
+#   where s is any sort, (X:s)
+BinOp {<s,r>, (s,r,r)} = \R:r.. \T:s.. ((T -> T -> R):r)
+    # BinOp {...} R T   :r
+    # NOTE: (BinOp {...} R)'s type's type is Macro
+    # R may be *
+    # let 'BinOp R T =[def]= BinOp {<get_type$(T), get_type$(R)>} R T
+    # let derived s,r,R,T <-- 'BinOp R T
+    #       T = arrow_left$ ('BinOp R T)
+    #       R = arrow_right$ (arrow_right$ ('BinOp R T))
+
+Reflex {<s,r,R>, (R:r),(s,r,r)} = \T:s.. \f: 'BinOp R T.. (a<-T) -> f a a
+    # Reflex {...} T f    : r  # since (@a:T:s. (f a a :R:r)):r
+    # 'Reflex R T =[def]= Reflex {.R..} T f
+    # NOTE: where R is
+    # let derived s,r,R,T <-- 'Reflex R T   # since @a:T. (... : R)
+    #       T = arrow_left$ ('Reflex R T)
+    #       R = get_type$ (arrow_right$ ('Reflex R T))
+Trans {<s,r,R>, (R:r), (s,r,r)} = \T:s.. \f: 'BinOp R T. ([a,b,c]<-T) -> f a b -> f b c -> f a c
+    # Trans {...} T f
+Sym {<s,r,R>, (R:r), (s,r,r)} = \T:s.. \f: 'BinOp R T.. ([a,b]<-T) -> f a b -> f b a
+    # Sym {...} T f
+    # 'Sym R T
+Equal {<s,r,R>, (R:r), (s,r,r), (r,r,r)} = \T:s.. \f: 'BinOp R T..
+    (_ <- 'Reflex R T f, 'Trans R T f, 'Sym R T f)
+    # Equal {...} T f   : r  # ((a:r)/\(b:r)/\(c:r)):r
+    # 'Equal R T
+    # let 'Equal R T =[def]= Equal {<get_type$(T), get_type$(R),R>}
+    # let derived s,r,R,T <-- 'Equal R T
+
+Eq {<s,r,R>, (R:r), (s,r->>r)} = \T:s.. (f <- 'BinOp R T, 'Equal R T f)
+    # Eq {...} T   : r
+    # let derived s,r,R,T <-- 'Eq R T
+
+RefineEq {<s,r,r2,R,R2>, (R:r), (R2:r2),(s,r,r), (s,r2,r2)} = \T:s..
+    \(eq1,_) : 'Eq R T..
+    \(eq2,_) : 'Eq R2 T..
+    -> ([a,b]<-T) -> eq1 a b -> eq2 a b
+    # RefineEq {...} T eq1 eq2
+    # s,r,r2,R,R2,T <-- 'RefineEq R R2 T eq1 eq2
+SameEq {<s,r,r2,R>, (R:r), (s,r,r), (s,r2,r2)} = \R:r.. \R2:r2.. \T:s..
+    \(eq1,_) : 'Eq R T..
+    \(eq2,_) : 'Eq R2 T..
+    ('RefineEq R R2 T eq1 eq2 /\ 'RefineEq R2 R T eq2 eq1)
+
+
+thePairEq eqX eqY = [(_=x,y), (_=a,b) <- (_<-X, Y)] -> ((eqX x a) /\ eqY y b)
+

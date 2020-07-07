@@ -1,0 +1,243 @@
+
+
+-----------------------------------------------
+add __contains__ into the "type" object
+
+where we use types?
+    almost:
+        isinstance(obj, T);
+        # issubclass(S, T);
+
+Note that TYPE is SET;
+    if we add __contains__ and __le__ into "type",
+    then things become:
+        obj in T;
+        # S <= T;  # if only not misleading to a total ordering
+
+example:
+    def __getitems__(self, i):
+        if i in Integral:
+            ...
+        elif i in slice:
+            ...
+
+# Save "(,)". Really, I prefer to type "lambda:;" than "()".
+# I fail to modify the "type" object, since it is a C-object.
+
+TYPE is not a collection!
+But  conceptually it is a SET,  set of all its possible instances.
+
+quot:
+    "Types and Programming Languages (2002)(Benjamin C. Pierce)"
+    [page 92] Chapter 8 Typed Arithmetic Expressions
+    "a term t has type T" (or "t belongs to T," or "t is an element of T")
+An object obj has a type T or obj is a type T <==> obj belongs to T
+    So, "obj in T" is fine.
+    e.g.
+        "1 in int" means 1 is in the whole number set.
+
+
+
+
+---------------------------------
+__repr__: to support pprint
+
+Oftenly, __repr__ return "{type}({args}, {kws})"
+problem:
+    1) to call .format() myself is tedious
+        I have seen someone do it wrong: "T(1,)"!
+        I write a helper function myself,
+            but to import such tiny function everywhere isnot good.
+    2) pprint cannot dive into string that from repr
+        To use pprint, I sometimes have to recursively
+            turn objects into builtin containers:
+            (type_name, args...)
+
+solution:
+allow __repr__ to return
+    str
+    OR tuple: (args, kws)
+
+
+Better, isn't it?
+
+
+
+
+
+It has not to break current code:
+
+    def repr(obj, allowed_tuple = False):
+        r = type(obj).__repr__()
+        if allowed_tuple:
+            return r
+        if isinstance(r, tuple):
+            r = make_str(type(obj), r)
+        return r
+
+
+
+
+
+
+
+
+------------------------------------------------
+
+add variable "__this_func__" inside all functions' locals
+
+How a function refer itself?
+    def f():
+        f() # fine... really???
+
+consider these situations:
+1) decorator
+    @xxx
+    def f():... # how can I access the wrapped version?
+
+2) replace by other
+    def f(): f() # call second!!
+    a = T(f)     # to call first
+    def f():...
+
+3) refactor: rename function
+    # first version
+    def f():f()
+    -------------------
+    # second version, wrap it
+    def f():
+        log();
+        try:            # to avoid indent
+            _f_impl()
+        except...
+    def _f_impl(): _f_impl() # hadnot we rename it!
+
+
+solution:
+    # add __this_func__
+    class C:
+        @xxxx
+        def f(self):
+            self.f()
+            __class__.f(self)
+            __this_func__(self)
+
+
+We need not care other functions, just the "current" one.
+    Other functions are definitely out of our control.
+My last example distinguish 3 cases:
+    self.f()            # object/overloaded version
+    __class__.f(self)   # decorated version
+    __this_func__(self) # prime version
+
+
+
+
+
+
+
+---------------------------------------
+add __default__ keyword to enhance arg forwarding
+
+How to forward arguments?
+# decorator is the simplest case which not concerned here.
+
+3 ways come up:
+1) *args
+    def f(a, b, *args):
+        h(a,b)
+        g(*args)
+
+2) use None as default value everywhere
+    def f(a, b=None):
+        h()
+        g(b)
+    def g(b=None):...
+
+3) implement a framework
+    def g(a=1):...
+    def f(a=get_default(g, 'a')):...
+
+
+let's look closely:
+1) *args
+    1) __doc__ is poor
+        you donot know which keyword or argument can be supplied
+        you can not see the default value with help()
+        see tkinter
+    2) if we named a parameter, what default value should it get??
+        def f(b = ???, *args):
+            # what if f() need to use "b"?
+            a, c = args
+            g(a, b, c)
+        def g(a, b, c):..
+
+2) None everywhere
+    1) if only it were the idiom, it is not.
+        see os
+    2) we can not see the default value with help()
+    3) noisy
+        def f(x=None):
+            if x is None: x = ...
+    4) not work for all cases
+        if None is a valid value
+
+3) implement a framework
+    1) occasionally, cycle dependency would bite it
+        implement and interface should be seperated
+    2) ugly
+
+
+
+how __default__ works????????????????????????????
+
+
+---------------------------------------
+add a always turn on "assert"
+
+"assert" is good, but it is used as a guard frequently.
+We can make such usage legal by adding a new syntax:
+    assert bool_expr, ExceptionType, True
+
+suggest reasons:
+1) even "__debug__" turn off, assert is working
+    assertion as guard.
+
+2) to avoid boilerplate code
+    I write code like this:
+        if pred(....) or pred(....):
+            raise ValueError('pred(....) or pred(....)')
+
+    Simplifed:
+        assert pred(...), ValueError, True
+        # the above line will be printed when error.
+        # I need not to copy the condition!
+
+3) future: "assert bool_expr, ET, False"
+    To aid static tool, like Proof System.
+    Better document.
+        For complicate algorithm,
+        I actually add a invariant outline comment
+        above every statement.
+
+
+
+
+
+--------------------------------------------
+a bad feature in Python syntax
+
+I'm bited once:
+    >>> '' in {} == False
+    False
+    >>> ('' in {}) == False
+    True
+
+    # '' in {} == False ==>> ('' in {}) and ({} == False) ==>> False!
+
+I think only compare operations should be chained.
+
+
+
+
+

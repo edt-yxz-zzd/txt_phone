@@ -1,0 +1,55 @@
+
+address2atomic_values :: Map Address [AtomicValue] -- len > 0
+thread_address2last_idx :: Map (Thread, Address) Int -- init 0
+address_idx2thread_batch :: Map (Address, Int) (Thread, Batch) -- which one flush the batch
+
+
+class synchronized Atomic:
+def relaxed_write(thread, address, value):
+    thread_address2last_idx[thread, address] = len(address2atomic_values[address])
+    address2atomic_values[address].append(value)
+
+def relaxed_read(thread, address):
+    newest_idx = len(address2atomic_values[address]) - 1
+    known_idx = thread_address2last_idx[thread, address]
+    return_idx = random.randint(known_idx, newest_idx)
+    thread_address2last_idx[thread, address] = return_idx
+    return address2atomic_values[address][return_idx]
+
+
+def store_release(thread, address, value, batch, flush=False):
+    relaxed_write(thread, address, value)
+    if flush:
+        last_idx = thread_address2last_idx[thread, address]
+        address_idx2thread_batch[address, last_idx] = thread, batch.copy()
+        batch.increase()
+
+
+def __load_acquire__impl(thread, address):
+    # -> (Value, Maybe (Thread, Batch))
+    value = relaxed_read(thread, address)
+    known_idx = thread_address2last_idx[thread, address]
+    m = address_idx2thread_batch.get((address, known_idx))
+    return value, m
+
+def load_acquire(thread, address, batch):
+    L = len(address2atomic_values[address])
+    known_batch = batch
+    for idx in range(L-1, -1, -1):
+        m = address_idx2thread_batch.get((address, idx))
+        if m is None: continue
+        (thread, flushed_batch) = m
+        if flushed_batch <= batch:
+            known_idx = idx
+            thread_address2last_idx[thread, address] = known_idx
+            break
+    
+    return relaxed_read(thread, address)
+
+
+
+
+
+
+
+

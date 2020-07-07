@@ -1,0 +1,134 @@
+extend trace-refusal
+    the orginal refusal = subset_close subsets = subset_close max_subsets
+        where
+            max_subsets <= subsets
+            any a b in max_subsets, a == b || not (a < b || b < a)
+            subset_close ss = {s' | s in ss, s' <= s}
+    ==>> lose info if s' <= s and s' s in subsets
+    not call subset_close
+
+let 2**s = {s' | s' <= s}
+    {...a0, a1,...} = \-/ 2**a[i] {i}
+    e.g. {...a, b} = 2**a \-/ 2**b
+[page 153-154]
+    P:=x; P1 | x; P2 where
+        P1:=w; P1 | y; stop and P2:=w; P2 | z; stop
+    Q:=x; Q1 | x; Q2 where
+        Q1:=w; Q2 | y; stop and Q2:=w; Q1 | z; stop
+    [tr| P or Q |] = {"", x, ...xw*, xw*y, xw*z}
+    Refuse(P or Q, "") = {...{w,y,z}}
+                    = {"", {w}, {y}, {z}, {w,y}, {w,z}, {y,z}, {w,y,z}}
+                    = 2**{w,y,z}
+    Refuse(P or Q, xw*) = {...{x,z}, {x,y}}
+                        = {"", {x}, {z}, {y}, {x,z}, {x,y}}
+    Refuse(P or Q, xw*z or xw*y) = {...{w,x,y,z}} = 2**{w,x,y,z}
+
+    P' :=hide w in P
+    Q' :=hide w in Q
+    [tr| P' or Q' |] = {"", x, xy, xz}
+    Refuse(P' or Q', "") = {...{y,z}}
+    Refuse(P', x) = {...{x,z}, {x,y}}
+    Refuse(Q', x) = {...{x}}
+    Refuse(P' or Q', xz or xy) = {...{x,y,z}}
+
+to avoid problem caused by "hiding"
+    -- asynchronous sample v.s. synchronous trace
+    -- may/must failure/ready
+    include a frozen phase
+        when performing internal action, we assume black box were frozen,
+            i.e. cannot respone to "some" external action
+                 or cancel some offering buttons
+    
+    x; y; stop ==>>
+        -- phase ; offer buttons;  action
+        frozen:     {}
+        respone:    {x}
+        press:                     x
+        frozen:     {}
+        respone:    {y}
+        press:                     y
+        frozen:     {}
+
+
+    P:
+                    {}
+                    {x}
+                                    x
+                    {}
+                    {w,z}:{w,y}
+                                    w
+                    {}
+                    {w,z}:{w,y}
+                                    z:y
+                    {}
+    Q:
+                    {}
+                    {x}
+                                    x
+                    {}
+                    {w,z}:{w,y}
+                                    w:w | z:y
+                    {}
+                    {w,y}:{w,z} | N/A
+                                    w:w | y:z
+                    {}
+                    {w,z}:{w,y} | N/A
+                                    z:y
+                    {}
+
+
+    example:
+        S = r;g;b;S -- show Red;Green;Blue color/button/drink
+        S1 = {r};{};{g};{};{b};{};S1
+            -- whole color: {} -- means undefined color or invisible
+            -- button/drink: {} -- means frozen or invisible
+        S2 = {r};{r,g};{g};{g,b};{b};{b,r};S2
+            -- button/drink: {r,g} -- means offer both
+        S3 = {r};{r,g|};{g};{g,b|};{b};{b,r|};S3
+            -- {r,g|} = {r,g} or {}
+
+        P/Q/P'/Q' as above
+        P = {x}-x->{}->_P
+        _P = {w}-w->{}->(_P | {y}-y->stop | {z}-z->stop)
+        Q = {x}-x->{}->(_Qy | _Qz)
+        _Qy = {w,y}(-w->{}->_Qz | -y->stop)
+        _Qz = {w,z}(-w->{}->_Qy | -z->stop)
+        P = {x}x({}{w}w)*{}({y}y|{z}z){}stop
+            ==>> {x}({}{w})*{}({y}|{z}){}stop
+        Q = {x}x( {}{w,y}(w{}{w,z}w{}{w,y})*y{}stop
+                | {}{w,y}(w{}{w,z}w{}{w,y})*w{}{w,z}z{}stop
+                | {}{w,z}(w{}{w,y}w{}{w,z})*z{}stop
+                | {}{w,z}(w{}{w,y}w{}{w,z})*w{}{w,y}y{}stop
+                )
+            ==>> {x}{}({w,y}{}{w,z}{})*{}{w,y}{}stop
+                |{x}{}({w,z}{}{w,y}{})*{}{w,z}{}stop
+                |{x}{}({w,y}{}{w,z}{})+{}stop
+                |{x}{}({w,z}{}{w,y}{})+{}stop
+        P =/= Q
+        P'= {x}x{}({y}y|{z}z){}stop
+            ==>> {x}{}({y}|{z}){}stop
+        Q'= {x}x( {}{y}({}{z}{}{y})*y{}stop
+                | {}{y}({}{z}{}{y})*{}{z}z{}stop
+                | {}{z}({}{y}{}{z})*z{}stop
+                | {}{z}({}{y}{}{z})*{}{y}y{}stop
+                )
+            ==>> {x}{}({y}{}{z}{})*{}{y}{}stop
+                |{x}{}({z}{}{y}{})*{}{z}{}stop
+                |{x}{}({y}{}{z}{})+{}stop
+                |{x}{}({z}{}{y}{})+{}stop
+
+
+test-eq?
+    A = x; (y;- | i;z;-)
+    B = x; (i;y;- | i;z;-)
+    C = (x;i;y;- | x;i;z;-) = (x;y;- | x;z;-)
+
+    [tr| A/B/C |] = {"", x, xy; xz}
+    Refuse(A/B/C, "") = {...{y,z}}
+    Refuse(A, x) = {...{x,y}} -- i => {x,y}
+    Refuse(B/C, x) = {...{x,z},{x,y}} -- left i => {x,z};right i => {x,y}
+    Refuse(A/B/C, xy/xz) = {...{x,y,z}}
+    A =/= B === c
+
+
+

@@ -1,0 +1,148 @@
+Ethernet switches perform their linking function by bridging Ethernet frames between Ethernet segments. To do this, they copy Ethernet frames from one switch port to another, based on the media access control (MAC) addresses in the Ethernet frames.
+Ethernet bridging was initially defined in IEEE Standard 802.1D, “IEEE Standard for Local and Metropolitan Area Networks: Media Access Control (MAC) Bridges.”
+The 802.1D standard was extended and enhanced by the subsequent  development  of  the  802.1Q-2011  standard,  “Media  Access Control (MAC) Bridges and Virtual Bridged Local Area Networks.”
+
+
+
+“switching hub”- the central connection point
+AP - wireless access points - to provide 802.11 Wi-Fi services
+
+
+bridge v.s. router
+    diff:
+    1) Bridges move frames between Ethernet segments based on Ethernet addresses, with little or no configuration of the bridge required. 
+         transparent bridging
+         no configuration
+         makes no changes in the data, address, or other fields of the basic Ethernet frame. 
+    2) Routers move packets between networks based on high-level protocol addresses, and each network being linked must be configured into the router.
+
+    same:
+    both bridges and routers are used to build larger networks
+    both devices are called switches in the marketplace.
+    switch = bridge OR router
+
+    BUT:
+        THIS BOOK will use the words “bridge” and “switch” interchangeably
+        Ethernet bridge ==bridge==switch== Ethernet switch
+        == “link layer devices” 
+        == “Layer 2 devices” 
+        == “Layer 2 switches”
+
+frame v.s. packet
+    TCP/IP packets are carried between computers in the data fields of Ethernet frames.
+
+
+address learning
+    Traffic forwarding is based on address learning. 
+    each port of a switch runs in  promiscuous  mode.
+    In this mode, the interface is programmed to receive  all frames 
+    and adds that source address to the forwarding database 
+        - that shows which stations can be reached on which ports.
+
+adaptive filtering
+    Without an address database, the switch would have to send traffic received on any given port out all other ports to ensure that it reached its destination. 
+    With the address database, the traffic is filtered according to its destination. 
+    The switch is “adaptive” in that it learns new addresses automatically.
+
+flooding
+    When the switch receives a frame that is destined for a station address that it hasn’t yet seen, the switch will send the frame out all of the ports other than the port on which it arrived. 
+    If a station doesn’t send traffic for a designated period, then the switch will delete the forwarding entry for that station. 
+
+each port has packet switching queue
+
+Broadcast and Multicast Traffic
+    Multicast:
+        A frame sent to a multicast destination address can be received by all stations configured to listen for that multicast address. 
+        interface can be programmed to receive frames sent to one or more multicast group addresses, as well as frames sent to the unicast MAC address belonging to that interface.
+        
+        multicast group discovery protocols 
+            - station tell the switch about the multicast group addresses that the station wants to receive frames from
+                so that the switch sends multicast packets only to the ports connected to stations that have indicated their interest in receiving the multicast traffic. 
+        lower-cost switches flooding multicast packets.
+    flooding broadcast packets
+
+    USAGE:
+        ARP 
+            - High-level network protocols like TCP/IP use broadcast or multicast frames as part of their address discovery process. 
+        DHCP - 自动动态主机配置协议 
+            - Broadcasts and multicasts are also used for dynamic address assignment on stations, which occurs when a station is first powered on and needs to find a high-level network address. 
+        multimedia
+            - Multicasts are also used by certain multimedia applications, which send audio and video data in multicast frames for reception by groups of stations, and by multiuser games as a way of sending data to the group of game players.
+            Streaming applications (video)
+            Disk backup and disk duplication systems based on multicast
+
+    to avoid congestion:
+        1) limit the total number of stations linked to a single network
+        2) divide the network into multiple virtual LANs (VLANs)
+        3) use a router to separate broadcast domains
+
+
+Forwarding Loops
+    IEEE 802.1D bridging standard provides a Spanning Tree Protocol (STP) 
+    to avoid this problem by automatically suppressing forwarding loops
+    NOTE:
+        1) low-cost  switches  may  not  include  spanning  tree  capability
+        2) this capability may be disabled by default
+
+    STP - Spanning Tree Protocol
+    RSTP - Rapid Spanning Tree Protocol
+        sends BPDU packets every two seconds to monitor the state of the network
+    BPDU - bridge protocol data unit
+        configuration messages sent by each switch
+        IEEE 802.1D switches join the BPDU multicast group 
+        and listen to frames sent to this address, 
+        so that every switch can send and receive spanning tree configuration messages.
+
+        The bridge multicast  group  MAC  address  is  01-80-C2-00-00-00.
+        Vendor-specific spanning tree enhancements may also use other addresses. 
+            For  example,  Cisco’s  Per-VLAN  Spanning  Tree  (PVST)  sends BPDUs to address 01-00-0C-CC-CC-CD.
+    BID - bridge ID
+        source from:
+        1) a configurable bridge priority value (32,768 by default) 
+            to avoid using  low-performance  bridge as the root bridge
+        2) system MAC, unique per bridge for use by the spanning tree process
+    root bridge
+        Bridges send BPDUs to one another, and the bridge with the lowest BID is automatically elected to be the root bridge.
+        
+    least-cost path
+        path cost is based on the speed at which the ports operate, with higher speeds resulting in lower cost. 
+        As BPDU packets travel through the system, they accumulate information about the number of ports they travel through and the speed of each port.
+        If there are multiple paths to the root with the same cost, then the path connected to the bridge with the lowest bridge ID will be used.
+    RP - root port
+        the end of a span-tree-edge which is far away from root
+        bridge connect to its parent via RP
+    DP - designated port
+        the end of a span-tree-edge which is near to root
+        bridge connect to its child via DP
+    DB - designated bridge
+        bridge with DP
+        # if not DB ==>> no traffic but BPDU
+        #   since there are no RP/DP or only one RP
+        #   ports that not RP and not DP are blocking
+    
+    [page312/313] Spanning tree port states
+        Disabled
+        Blocking
+        Listening
+        Learning
+        Forwarding
+        
+        not forwarded while listening or learning
+            In STP, the listening and learning states lasted for 30 seconds, during which time packets were not forwarded. 
+            In the newer RSTP, it is possible to assign a port type of “edge” to a port. That allows the RSTP state machine to bypass the learning and listening process on that port and to transition it to the forwarding state immediately.
+            Allowing a station to immediately begin sending and receiving packets helps avoid such issues as application timeouts on user computers when they are rebooted.
+
+
+
+non-blocking switch
+    A non-blocking switchis one that provides enough internal switching capability to handle the full load even when all ports are simultaneously active for long periods of time.
+    However, even a non-blocking switch may discard frames when a port becomes congested, depending on traffic patterns.
+    ~ are capable of operating at  wire speed.
+
+    the switches used at the edges of a network can be lower-performance
+
+
+store-and-forward switching
+    IEEE 802.1D–compliant switches operate in store-and-forward mode
+    in which the packet is fully received on a port and placed into high-speed port buffer memory (stored) before being forwarded.
+

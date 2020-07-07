@@ -1,0 +1,82 @@
+over : depends on
+in : is a part of
+
+xxxx_a_b_c_d_e.zzz
+
+interface version number:
+    a++ when introduced changes that were not backward compatible
+    b++ when the changes may cause backward compatible problems, such as the packages that it depends were added or removed or used new features...
+implement version number:
+    c++ when subpackages were added or deleted or their 1st-version-number changed
+    d++ when subpackages were modified/released
+    e++ when modifying and debuging; be 0 and c++ after debug
+
+keep every xxxx_a_b_c_d_0.zzz source files(release).
+keep the current working draft xxxx_a_b_c_d_?.zzz
+
+
+
+
+virtual object file(*.sym):
+    let each source knows which headers/forward it should include,
+    which sources it will depends.
+    let each version target knows which version sources should be built.
+    1) is internal symbol: contains the name of subvirtual objects.
+        import older.sym
+        -oldsub.sym
+        +newsub.sym
+        external_headers: 
+            +older.sym.external_headers
+            -oldsub.sym.external_headers
+            +...
+        external_forwards:
+    2) is leaf symbol: contains names of non-symbol files.
+        source:
+            xxx.fwd xxx.hpp OR xxx.cpp OR xxx.tpp // one file!!
+        depends:
+            yyy.sym... // virtual objects directly depended...
+        refers:
+            kkk.sym... // whose header should be included 
+        external_headers: 
+            xxx.hpp
+        external_forwards:
+            xxx.fwd
+
+if D_1 in A_0 over B_2 over C_3, D_1 over C_1:
+    this may cause problems for C_3 vs C_1
+
+begin:
+A_latest.sym : // never be used, just a statement of current major version
+    name : A_0.sym
+
+// symbol for symbol, link to the current A_0
+A_0.sym : // the two are for those over them
+    name : A_0_0.sym
+A_0_0.sym : 
+    name : A_0_0_0_0_0.sym
+
+// the true release of A_0, for the one that A_0 in
+A_0_0_0_0_0.sym : 
+    sub : D_1_0_0_0_0.sym # for D_1 in A_0
+    ref : B_2.sym # for A_0 over B_2
+
+
+
+
+
+D_1.sym : name : D_1_0.sym
+D_1_0.sym : name : D_1_0_0_0_0.sym
+
+// the true release of A_0, for the one that A_0 in
+D_1_0_0_0_0.sym : 
+    ref : C_1.sym
+
+
+
+
+
+
+
+
+E_0 in D_1
+F_0 in A_0

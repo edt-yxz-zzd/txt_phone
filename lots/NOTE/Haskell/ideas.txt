@@ -1,0 +1,57 @@
+
+qualified over class as module
+    import qualified Module
+        (qualified Class as C (..)
+        ,..
+        )
+    Module.C.f
+
+class forall a. Monad (arr a) => Arrow arr
+type variables refered by name
+    Monad m
+    m a -- "a" refered by position
+    m {Value = a} -- refered by name Value
+
+(a | b) v.s. Either a b
+    1) (a | a) === a
+    2) (a | b) === (b | a), ((a|b)|c) === (a|(b|c))
+    3) if a =/= b:
+        (Left _L) v.s. (_L :: a)
+        we can detect Left, but we can tell wether _L is a "a" or "b".
+    4) distinguish by constructor (like GADTs)
+        f :: (Maybe a | [a]) -> [a]
+        f (Just a) = [a]
+        f Nothing = []
+        f ls = ls
+    5) ([a] | [b]) <==> [(a|b)]
+        (Either a b | Either c d) <==> (Either c b | Either a d)
+        wanted??
+        newtype Option a = Option (Maybe a)
+        (Option a | Maybe a) ==>> error!! cannot distinguish
+    6) unbox able??
+        f :: a -> a -- if "a" is unbox able
+        f (Just _) = Nothing
+        f a = a
+
+        if unbox disable, then we can do nothing with ([a] | Maybe a)
+        related:
+            throw able ::= iff the input object/typeclass method throw then
+                then function is allow to pass the exception;
+                and hence it can only call same throw disable functions.
+
+
+forall a . (C a) => [Dec]
+    we can define a common shorthands for list of decls.
+
+for template haskell, anywhere can place a placeholder
+    e.g.
+        class _hole_C_ .... where
+            f = _hole_f_body_
+
+
+
+f :: verifier
+f = ...
+    signature is a function/object, which verifies the place f used.
+    and can be used to extract context/constraint table/infomation.
+

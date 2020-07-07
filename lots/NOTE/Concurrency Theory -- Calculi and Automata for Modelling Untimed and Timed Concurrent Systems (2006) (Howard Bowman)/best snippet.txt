@@ -1,0 +1,102 @@
+-- choice: |
+-- independently in parallel: ||| where ||| = |[]|
+-- parallel composition: |[...]|
+-- sequential composition operator (i.e. enabling): >>
+
+[page26-27] concurrent system >?= algorithm >?= transformational system ~ Turing machine
+    In fact, some prominent researchers, e.g. Peter Wegner [197], have suggested that the class of concurrent systems is in computability terms more expressive than the class of transformational systems. In other words there exist concurrent computations that cannot be expressed by Turing machines!
+
+[page26-27]
+    The restriction to atomic actions does not limit expressiveness, because nonatomic activities can be specified in terms of the actions that delimit the activity; i.e. rather than defining an action that has duration, we can specify the atomic instant at which the activity starts and the atomic instant at which it stops. For example, rather than specifying that a philosopher eats, we specify that at some instant he starts eating (which could be marked with an action "pick") and at some instant he stops eating (which could be marked with an action "put").
+    -- howto: non-atomic action -> atomic action
+    -- non-atomic action := actionBegin; actionEnd
+
+
+
+
+[page 37]
+    Sender[get, send, receiveAck]::= get; send; Sending[get, send, receiveAck]
+    Sending[get, send, receiveAck]:= hide timeout in
+        ( receiveAck; Sender[get, send, receiveAck]
+        | timeout; send; Sending[get, send, receiveAck]
+        )
+    Although they are the same actions, the two references to "send" are conceptually different: the "send" in Sender is an initial transmission, whereas the "send" in Sending is a retransmission of an old message. This distinction is justified because an initial transmission "send" is preceded by the action "get". You can think of the effect of the action "get" as being to fill the send buffer with a new message.
+    -- "get; send" v.s. "timeout; send"
+[page 38]
+    In terms of state machines,Sending can be viewed as a state back to which the machine iterates. In fact, all constituent behaviours of a pbLOTOS specification can be viewed as states. For example, the behaviour expression:
+        get; send; Sending[...]
+    can be viewed as a state from which a transition labelled "get" can be performed and the system evolves into state,
+        send; Sending[...]
+    which is a state from which a transition labelled "send" can be performed and the system evolves into state,
+        Sending[...]
+    -- state"g;s;S[...]" --[label "g"]->> state"s;S[...]" --[label "s"]->> state"S[...]"
+
+
+
+[page 40]
+    extreme cases of divergence, where the recursive call is not even "guarded" by an internal action, are certainly problematic, viz: P:=P
+[page 40]
+    In the standard LOTOS language, the relabelling operator is not available to the specifier, rather it is used in defining the semantics of the language. This is because the basic form, i.e. renaming through binding actual gate names to formal gate names is viewed to be more usable from the specifier's point of view. However, the basic form is really just syntactic sugar for direct application of the relabelling operator. In particular, an invocation,
+    P[y1,...,yn] of a process definition, P[x1,...,xn]:=B
+    can always be rewritten using our simplified form of process instantiation and relabelling, i.e.,
+    P[y1/x1,...,yn/xn] with a process definition, P:=B
+    This approach of completely dividing the mechanisms for process invocation and the mechanisms for relabelling leads to more elegant semantic definitions and is thus, generally used in our chapters on semantics. However, the basic form is kept for presentation of examples.
+    -- basic form:      "P[x1,...,xn]:=B". "Q[...] := ...; P[y1,...,yn]; ..."
+    -- simplified form: "P:=B".            "Q := ...; P[y1/x1,...,yn/xn]; ..."
+
+
+[page 41]
+    Thus, interleaving allows parallelism to be expressed in terms of sequence and choice and although behaviours may be "truly in parallel", no two actions occur "truly" simultaneously.
+    -- interleaving ==>> "truly in parallel" but not "truly simultaneously"
+    -- x;stop ||| y;stop === x;y;stop | y;x;stop
+
+
+[page 60] congruence / reusing / incremental system development
+    One reason why congruence is such an important property is that it enables incremental system development. For example, if we wish to develop a component of a complete system, then congruence implies that, if we can derive a relationship between the component and its replacement, then we will obtain the same relationship between the entire system and the system with the component replaced.
+
+    Two particular ways in which congruence is important are in (i) reusing known relationships and (ii) enabling strategies of stepwise refinement to implementation. Specifically, (i), if a property, such as equivalence or refinement, can be determined between two specifications B and B', by perhaps some complex proof, we can infer a property between larger specifications, if the two specifications are placed in a particular context. This suggests that, if known results are stored, significant reuse can be obtained.
+
+    Congruence enables us to, (ii), employ a stepwise refinement strategy in which we assume some initial specification is identified, S say. Then we can construct implementations as follows. First, decide on a construction C to use and write a subspecification, S', such that C[S'] is equivalent to S. Now, if we can identify an implementation of S', I say, we know how C[I] is related to S. In addition, if at any stage it is not feasible to implement the identified component, the refinement process can be applied recursively.
+
+
+
+
+
+
+[page 93] weak bisimulation & testing equivalence
+    So, weak bisimulation relations do distinguish nondeterminism due to internal behaviour from deterministic behaviour and also different varieties of nondeterminism due to internal behaviour. This relatively closely reflects the capabilities of the external environment to observe a pbLOTOS behaviour, as we have discussed previously. However, it should be pointed out, that some researchers believe that even weak bisimulation induces an unrealistically strong equivalence; they advocate a relation calledtesting equivalence, which we consider in Chapter 5.
+
+
+
+[page 95] weak bisimulation v.s. weak bisimulation congruence
+    -- initial move
+    It is important to note that when compared with weak bisimulation, this definition only imposes the stronger (==>=>) constraint on initial moves. In particular, once initial transitions have been successfully matched, the definition reverts to checking weak bisimulation (hence the use of ¡Ö rather than ¡Öc). Through this stronger constraint on initial moves, weak bisimulation congruence prevents a behaviour with an initial i transition from being matched with a behaviour that offers no such transition.
+
+
+[page 96]
+    It is also worth pointing out that bisimulation relations do not distinguish divergent behaviour. This is in contrast to CSP failure semantics. We discuss this issue in some depth in Chapter 7.
+    -- not distinguish divergent behaviour
+
+
+[page 151] fairness assumption
+    A theoretical key to the handling of divergence in LOTOS trace-refusals is a fairness assumption, which states that, if there is a path out of a tau cycle, as is the case in R6 and R7, then that path cannot be infinitely often ignored. In other words, if an action is repeatedly enabled, a process cannot infinitely often refuse to take that path. This is commonly called Kooman's Fair Abstraction property [8] and it is an issue we return to when we compare the LOTOS and the CSP handling of divergence, the latter of which is typically described as a catastrophic interpretation of divergence.
+
+
+
+[page 161] testing equivalent
+    The importance of these results is that they link semantic models to the capacity of pbLOTOS processes to observe other pbLOTOS processes. For example, Corollary 5.3 ensures that, if two processes are testing equivalent, then no process (when run as an observer) can tell them apart. Thus, "red" and "te" characterise the testing power of the behavioural specification notation itself! Because of this natural intuitive characterisation, testing equivalence has a claim to being the most appealing of the LOTOS equivalence relations, as does reduction in respect of nonequivalence development relations.
+
+
+[page 172]
+    1. The precondition of the supertype operation implies the precondition of the subtype operation, and
+    2. The postcondition of the subtype operation implies the postcondition of the supertype operation.
+    Thus, through subtyping, preconditions can be weakened and postconditions can be strengthened. In informal terms, weakening of preconditions enables operations to be applied (i.e. terminate) in more states, whereas strengthening of postconditions reduces nondeterminism. This really does give us what we seek: addition of traces and reduction of refusals when we take subtypes.
+
+
+
+
+
+[page 186] disabling
+    We have not included disabling in pbLOTOS because it has some unpleasant semantic consequences. For example, disabling cannot be expressed easily using the bundle event structure true concurrency semantics that were considered in Chapter 4.
+
+

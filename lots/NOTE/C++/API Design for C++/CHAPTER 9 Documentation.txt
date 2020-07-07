@@ -1,0 +1,538 @@
+CHAPTER 9 Documentation
+
+
+API ::= header files + supporting documentation
+
+
+documentation
+    // why the API exists?
+    // where and when to use?
+    how to use an interface
+    how the interface should behave under different inputs
+    describing their relationship to the rest of the API
+    specifying the units of parameters and return values 
+        document the units of the timeout to be seconds, but it would still be reasonable for a client to ask:
+            ? Does time refer to real-world (wall clock) time or process time?
+            ? What is the accuracy of the timer?
+            ? Will other API operations affect the accuracy of, or block, the timer?
+            ? Will the timer drift over time or will it always fire relative to the start time?
+
+
+TIP
+    Write API documentation as you implement each component. Then revise it once the API is complete.
+9.1.2 Documenting the Interface¡¯s Contract
+    contract programming
+    1. Preconditions 
+    2. Postconditions // side effects // undefined behavior
+    3. Class invariant
+
+    Doxygen syntax
+    ///
+    /// \brief Calculate the square root of a floating point number.
+    /// \pre value>=0
+    /// \post fabs((result * result) value)<0.001
+    ///
+    double SquareRoot(double value);
+
+    ///
+    /// \brief A container that operates on sequences of characters.
+    /// \invariant size()>=0 && c str() !=NULL && data() !=NULL
+    /// \invariant empty() implies c str()[0]==\0
+    ///
+    class String
+    {
+    public:
+        ...
+        ///
+        /// \brief Append str to this string object.
+        ///\post size()==@pre.size()+str.size()
+        ///
+        void append(const std::string &str);
+        ...
+    };
+
+
+TIP
+    Contract programming implies documenting the preconditions and postconditions for your functions and the invariants for your classes.
+
+In terms of inheritance relationships between classes, 
+    the preconditions for derived classes can be weaker, but not stronger, than those in its base classes (Pugh, 2006). 
+    In contrast, a derived class should inherit all postconditions from its base classes. 
+        That is, a function in a derived class must meet all of its base class postconditions, as well as the further postconditions that it defines itself.
+
+checklist of questions to ask yourself when you¡¯re producing the documentation
+    ? What is the abstraction that a class represents?
+    ? What are the valid inputs, for example, can you pass a NULL pointer?
+    ? What are the valid return types, for example, when does it return true versus false?
+    ? What error conditions does it check for, for example, does it check for file existence?
+    ? Are there any preconditions, postconditions, or side effects?
+    ? Is there any undefined behavior, for example,sqrt( 1.0)?
+    ? Does it throw any exceptions?
+    ? Is it thread safe?
+    ? What are the units or any parameters?
+    ? What is the space or time complexity, for example, O(logn)or O(n**2)?
+    ? What is the memory ownership model, for example, is the caller responsible for deleting any returned objects?
+    ? Does a virtual method call any other method in the class, that is, what methods should clients call when they override the method in a derived class?
+    ? Are there any related functions that should be cross-referenced?
+    ? In which version of the API was this feature added?
+    ? Is this method deprecated; if so, whats the alternative?
+    ? Are there any known bugs in this feature?
+    ? Do you wish to share any planned future enhancements?
+    ? Are there any code examples you can provide?
+    ? Does the documentation add extra value or insight, for example, the comment sets the color doesnt tell you much you didnt already know for a function calledSetColor().
+
+list of qualities that all good code documentation should strive for (Spinellis, 2010).
+    1. Complete
+    2. Consistent
+    3. Effortlessly accessible
+    4. Non-repetitive
+
+
+TIP
+    Document every public element of your API.
+
+It¡¯s also good practice to have another person review your documentation. 
+    As the developer who wrote the code, you are often too close to the problem space and may assume knowledge that the normal user will not have. 
+    As Michi Henning puts it, the developer of the API is ¡°mentally contaminated by the implementation¡± (Henning, 2009).
+
+
+TIP
+    Use an automated documentation tool that extracts API documentation from your header comments.
+    - AutoDuck: http://helpmaster.info/hlp-developmentaids-autoduck.htm
+    - CcDoc: http://ccdoc.sourceforge.net/
+    - CppDoc: http://www.cppdoc.com/
+    - Doc-O-Matic: http://www.doc-o-matic.com/
+    - Doc++: http://docpp.sourceforge.net/
+    - Doxygen: http://www.doxygen.org/
+    - GenHelp: http://www.frasersoft.net/
+    - HeaderDoc: http://developer.apple.com/darwin/projects/headerdoc/
+    - Help Generator: http://www.helpgenerator.com/
+    - KDOC: http://sirtaj.net/projects/kdoc/
+    - ROBODoc: http://www.xs4all.nl/rfsber/Robo/robodoc.html
+    - TwinText: http://www.ptlogica.com/
+
+9.2.2 Overview Documentation
+    - A high-level conceptual view of the API: what problem is being solved and how the API works. Diagrams are great if they are appropriate.
+    - Key concepts, features, and terminology.
+    - System requirements for using the API.
+    - How to download, install, and configure the software.
+    - How to provide feedback or report bugs.
+    - A statement on the life cycle stage of the API, for example, prerelease, maintenance, stability, or deprecated (see the versioning chapter).
+9.2.3 Examples and Tutorials
+how to actually use the API to perform a task
+? Simple and short examples. 
+    These should be minimal and easy to digest snippets of code that demonstrate the APIs key functionality. 
+    They are not normally code that can be compiled, but instead focus on your API calls without all the boilerplate code that goes around it.
+? Working demos. 
+    These are complete real-world examples that show how the API can be used to perform a more complex and practical task. 
+    These should be easy to reuse so that your users have a working starting point for their own projects. 
+    You should provide the source code for these with your API.
+? Tutorials and walkthroughs. 
+    A tutorial illustrates the steps that you go through in order to solve a problem rather than simply presenting the end result. 
+    This can be a useful way to build up a complex example and to address specific features of the API as you gradually add more calls to the worked example.
+? User contributions. 
+    Your users can be a great source of examples, too. 
+    Encourage your users to send you example code that can be added to your collection of demos, perhaps under a specific contribdirectory so that it is clear that these are not supported by you.
+? FAQs. 
+    A set of answers to frequently asked questions can be a very helpful addition to your documentation set. 
+    It lets your users discover quickly and easily if the API suits their needs, how to avoid common pitfalls, or how to solve typical problems.
+
+
+9.2.4 Release Notes
+    Each release after the first release should include release notes. 
+    These tell your users what has changed since the last release. 
+        ? An overview of the release, including a description of whats new or what the focus was for the release, for example, bug fixes only.
+        ? A link to where the release can be found.
+        ? Identification of any source or binary incompatibilities from the previous release.
+        ? A list of bugs fixed in the release.
+        ? A list of features that were deprecated or removed.
+        ? Migration tips for any changes in the API, such as how to use any upgrade scripts provided with the release.
+        ? Any known issues, either introduced in this release or remaining from previous versions.
+        ? Troubleshooting tips to work around known issues.
+        ? Information on how users can send feedback and bug reports.
+9.2.5 License Information
+    You should always specify the license that you are distributing your API under.
+    1. Proprietary
+    2. Free and Open Software
+        open source software
+            FOSS (Free and Open Source Software)
+            FLOSS (Free, Libre, Open Source Software)
+        two major bodies that approve FLOSS licenses
+            Free Software Foundation (FSF)
+                founded by Richard Stallman in 1985
+                Free Software Definition
+            Open Source Initiative (OSI)
+                founded by Bruce Perens and Eric S. Raymond in 1998
+                Open Source Definition
+        two principal types of FLOSS licenses.
+            1. Copyleft: 
+                Offers the right to distribute modified and unmodified copies of a piece of software and requires that any such derived works must be released under the same terms. 
+                There is a further subcategory of weak copyleft, which is often applied to software libraries to allow clients to distribute code that links with that library without requiring that product to be distributed under the librarys copyleft license.
+            2. Permissive: 
+                Offers the right to distribute modified and unmodified copies of a piece of software and allows the derived work to be distributed under terms that are more restrictive than those in the original license. 
+                This means you can provide an open source library, but your clients are not required to make all distributed derivates available as open source.
+
+        http://www.fsf.org/
+        http://www.opensource.org/
+        License Name Brief Description
+            No license 
+                If you do not specify a license, your users have no legal right to use your API unless they ask for your permission directly (as you are the copyright holder).
+            GNU GPL License
+                The GNU General Public License (GPL) is a copyleft license, which means that any derived works must also be distributed as GPL. 
+                An open source GPL library therefore cannot be used in a proprietary product. 
+                The Linux kernel and the GIMP image processing tool are released under the GPL. 
+                Nokias Qt library was originally released under either a commercial or a GPL license.
+            GNU LGPL License
+                The GNU Lesser General Public License (LGPL) is a weak copyleft license that allows an open source API to be binary linked to proprietary code. 
+                The derived work can be distributed under certain specific conditions, such as providing the source code of the modified or unmodified LGPL library, among others constraints.
+                GTK+ is licensed under the LGPL. 
+                Nokia added the LGPL license to Qt as of version 4.5.
+            BSD License
+                The BSD license is a simple permissive license that includes a legal disclaimer of liability by a named owner/organization. 
+                Normally a modified version of BSD is used, without the advertising clause. 
+                Proprietary code that links against BSD code can be distributed freely. 
+                Google released its Chrome browser under the BSD license. 
+                The Zend framework and libtiff library also use BSD.
+            MIT/X11 License
+                This is a simple permissive license in the same vein as the BSD license. 
+                Proprietary code that links against MIT-licensed code can be distributed freely. 
+                MIT-licensed software includes Expat, Mono, Ruby on Rails, Lua 5.0 onwards, and the X11 Window System.
+            Mozilla Public License
+                This is a weak copyleft license that allows your open source library to be used to build proprietary software. 
+                Any code modifications must be redistributed under the MPL license. 
+                The Mozilla software products Firefox and Thunderbird are made available under the MPL.
+            Apache License
+                This is another permissive license that allows proprietary software to be distributed that is built upon Apache-licensed code. 
+                The Apache Web server obviously uses the Apache license. 
+                Google also uses it for many of its products, such as Android and the Google Web Toolkit.
+
+
+
+// mine license; or put it into public domain??
+    Panda License
+        Who got a copy of Panda-Licensed source or binary code can use it in ANY WAY as if he is the copyright holder.
+        So, he could modifies the copy in ANY WAY(i.e. licenses the copy under other licenses, changes the authors), redistributes modified and unmodified copies.
+        If he licensed the copy under other licenses, that will affect those who got the modified copy BUT NOT who got the original Panda-Licensed copy.
+
+
+
+9.3 DOCUMENTATION USABILITY
+    ? Index page. 
+        Provide an overall index page that serves as a jumping off point into the individual documentation elements. This gives users a conceptual map of the entire documentation set.
+        Additionally, each starting point should provide some indication of what it will cover and what class of users it targets (developers, managers, legal, etc.).
+    ? Consistent look and feel. 
+        API documentation will normally be composed of different elements, some autogenerated, some written by hand, some contributed by users. 
+        You should use a consistent and unique style for all these pages so that users are always aware when they are browsing your documentation content or if they have navigated to another Web site.
+    ? Code examples. 
+        There can often be a lot of documentation for users to read. 
+        Consider the massive size of the Microsoft Developer Network library. 
+        Providing example code snippets and working demos can help users find and assimilate the information they need to use the API in their own code more quickly.
+    ? Diagrams. 
+        Clear and concise diagrams that illustrate the high-level concepts can be helpful, particularly for users who just want to scan the documentation quickly. 
+    You should use familiar diagram formats where possible, such as UML or entity relationship diagrams.
+    ? Search. 
+        A good search facility is important to let users find the information they need as fast as possible. 
+        All parts of the documentation should be searchable, including the autogenerated API specification as well as any manually written text.
+    ? Breadcrumbs. 
+        Use navigation aids that let users keep track of their location within the documentation hierarchy and move back up the hierarchy easily. 
+        The term breadcrumbs is used to describe the common technique of displaying the current location as a series of pages with a separator symbol, for example, index>overview>concepts. 
+        In addition, it can be useful to let users backtrack to various high-level pages easily.
+    ? Terminology. 
+        Crucial terminology should be defined and used consistently. 
+        However, you should avoid specialized or esoteric terminology where it is not necessary as this can serve to confuse and frustrate users.
+a difficult-to-use API will likely also be difficult to learn.
+hindrances to API learning (Robillard, 2009)
+    ? Lack of code examples
+        Insufficient or inadequate examples are provided.
+    ? Incomplete content
+        Documentation is missing or presented inadequately.
+    ? Lack of task focus
+        No details are offered on how to accomplish specific tasks.
+    ? No design rationale
+        Insufficient or inadequate details provided on the high-level architecture and design rationale.
+    ? Inaccessible data formats
+        Documentation isn't available in the desired format.
+
+developers are often reluctant to read API documentation carefully or thoroughly (Zhong et al., 2009).
+    This suggests that providing more documentation can sometimes actually be detrimental because your users may miss the really important points and caveats due to them being buried too deeply. 
+    The use of higher-level tutorials and example code can help address this problem.
+    cross-references between related classes and methods can lead the user to discover features that they were not aware of. 
+    Some researchers have also suggested using word clouds, or other variable-font techniques, to highlight important or common classes (Stylos et al., 2009).
+
+9.4 USING DOXYGEN
+9.4.1 The Configuration File
+    generate default configuration file
+        Doxygen -g
+    edit configuration file
+        PROJECT_NAME = <name of your project>
+        FULL_PATH_NAMES = NO
+        TAB_SIZE = 4
+        FILE_PATTERNS = *.h *.hpp *.dox
+        RECURSIVE = YES
+        HTML_OUTPUT = apidocs
+        GENERATE_LATEX = NO
+    generate document
+        cd <source folder>
+        Doxygen
+
+9.4.2 Comment Style and Commands
+    /**
+    *.. .text...
+    */
+    
+    /*!
+    *.. .text...
+    */
+    
+    ///
+    ///...text.. .
+    ///
+    
+    //!
+    //!...text.. .
+    //!
+
+commands within a comment
+    - \file[<filename>]
+    - \class<class name>[<header-file>][<header-name>]
+    - \brief<short summary>
+    - \author<list of authors>
+    - \date<date description>
+    - \param<parameter name><description>
+    - \param[in]<input parameter name><description>
+    - \param[out]<output parameter name><description>
+    - \param[in,out]<input/output parameter name><description>
+    - \return<description of the return result>
+    - \code<block of code>\endcode
+    - \verbatim<verbatim text block>\endverbatim
+    - \exception<exception-object><description>
+    - \deprecated<explanation and alternatives>
+    - \attention<message that needs attention>
+    - \warning<warning message>
+    - \since<API version or date when the entity was added>
+    - \version<version string>
+    - \bug<description of bug>
+    - \see<cross-references to other methods or classes>
+
+
+formatting commands to change the style of the next word
+    \b(bold)
+    \c(typewriter font)
+    \e(italics)
+commands to genenrate one character:
+    \n to force a new line
+    \\ to enter a backslash character
+    \@ to enter the at sign
+
+9.4.3 API Comments
+    \mainpage - overview
+        Doxygen allows you to specify overview documentation for your entire API using the \mainpage comment. 
+        This lets you provide a high-level description of the API, as well as provide a breakdown of the major classes. 
+        This description will appear on the front page of the documentation that Doxygen produces. 
+        It is common to store these comments in a separate file, such as overview.dox (this requires updating the FILE_PATTERNS entry of the Doxygen configuration file to include *.dox).
+    \section \subsection \page - to justify breaking into separate sections
+    
+    \defgroup \ingroup - declaring a group with \defgroup and then using the \ingroup to add any specific element to that group
+
+
+9.4.4 File Comments
+    You can place a comment at the top of each header file to provide documentation for the entire module.
+        ///
+        /// \file<filename>
+        ///
+        /// \brief<brief description>
+        ///
+        /// \author<list of author names>
+        /// \date<date description>
+        /// \since<API version when added>
+        ///
+        /// <description of module>
+        ///
+        /// <license and copyright information>
+        ///
+
+    If this file contains functionality that you want to add to a group that you¡¯ve defined, then you can also add the \ingroup command to this comment.
+
+9.4.5 Class Comments
+    Each class in your header can also have a comment to describe the overall purpose of the class.
+        ///
+        /// \class<class name>[header file] [header name]
+        ///
+        /// \brief<brief description>
+        ///
+        ///<detailed description>
+        ///
+        /// \author<list of author names>
+        /// \date<date description>
+        /// \since<API version when added>
+        ///
+    
+    In addition to the sample template given here, you may consider including 
+        \ingroup if the class belongs to a group youve defined
+        \deprecated if the class has been deprecated
+        \code...\endcode if you want to provide some example code.
+
+9.4.6 Method Comments
+    ///
+    /// \brief<brief description>
+    ///
+    ///<detailed description>
+    ///
+    /// \param[in]<input parameter name><description>
+    /// \param[out]<output parameter name><description>
+    /// \return<description of the return value>
+    /// \since<API version when added>
+    /// \see<methods to list in the see also section>
+    /// \note<optional note about the method>
+    ///
+    
+    consider adding\ingroup or \deprecated, as appropriate
+    
+    // so what about exceptions??
+
+
+    If you have methods in a class that fall into one or more logical groupings, you can specify this to Doxygen so that it will group the related methods together under a named subsection. 
+    This can be used to provide a more appropriate ordering of the class members instead of Doxygens default behavior.
+        class Test
+        {
+        public:
+            /// \name<group1 name>
+            //@{
+            void Method1InGroup1();
+            void Method2InGroup1();
+            //@}
+            /// \name<group2 name>
+            //@{
+            void Method1InGroup2();
+            void Method2InGroup2();
+            //@}
+        };
+
+9.4.7 Enum Comments
+    using Doxygen¡¯s < comment syntax
+    ///
+    /// \brief<brief description>
+    ///
+    ///<detailed description>
+    ///
+    enum MyEnum {
+        ENUM 1, ///<description of enum value ENUM 1
+        ENUM 2, ///<description of enum value ENUM 2
+        ENUM 3  ///<description of enum value ENUM 3
+    }
+
+
+
+
+
+
+9.4.8 Sample Header with Documentation
+
+///
+/// \file version.h
+///
+/// \brief Access the API¡¯s version information.
+///
+/// \author Martin Reddy
+/// \date 2010 07 07
+/// \since 1.0
+/// \ingroup group Versioning
+///
+/// Copyright (c) 2010, Martin Reddy. All rights reserved.
+///
+#ifndef VERSION H
+#define VERSION H
+#include<string>
+///
+/// \class Version version.h API/version.h
+///
+/// \brief Access the version information for the API
+///
+/// For example, you can get the current version number as
+/// a string using \c GetVersion, or you can get the separate
+/// major, minor, and patch integer values by calling
+/// \c GetMajor, \c GetMinor, or \c GetPatch, respectively.
+///
+/// This class also provides some basic version comparison
+/// functionality and lets you determine if certain named
+/// features are present in your current build.
+///
+/// \author Martin Reddy
+/// \date 2010 07 07
+/// \since 1.0
+///
+class Version
+{
+public:
+    /// \name Version Numbers
+    //@{
+    ///
+    /// \brief Return the API major version number.
+    /// \return The major version number as an integer.
+    /// \since 1.0
+    ///
+    static int GetMajor();
+    ///
+    /// \brief Return the API minor version number.
+    /// \return The minor version number as an integer.
+    /// \since 1.0
+    ///
+    static int GetMinor();
+    ///
+    /// \brief Return the API patch version number.
+    /// \return The patch version number as an integer.
+    /// \since 1.0
+    ///
+    static int GetPatch();
+    ///
+    /// \brief Return the API full version number.
+    /// \return The version string, e.g., "1.0.1".
+    /// \since 1.0
+    ///
+    static std::string GetVersion();
+    //@}
+    /// \name Version Number Math
+    //@{
+    ///
+    /// \brief Compare the current version number against a specific
+    /// version.
+    ///
+    /// This method lets you check to see if the current version
+    /// is greater than or equal to the specified version. This may
+    /// be useful to perform operations that require a minimum
+    /// version number.
+    ///
+    /// \param[in] major The major version number to compare against
+    /// \param[in] minor The minor version number to compare against
+    /// \param[in] patch The patch version number to compare against
+    /// \return Returns true if specified version> current version
+    /// \since 1.0
+    ///
+    static bool IsAtLeast(int major, int minor, int patch);
+    //@}
+    /// \name Feature Tags
+    //@{
+    ///
+    /// \brief Test whether a feature is implemented by this API.
+    ///
+    /// New features that change the implementation of API methods
+    /// are specified as "feature tags." This method lets you
+    /// query the API to find out if a given feature is available.
+    ///
+    /// \param[in] name The feature tag name, e.g., "LOCKING"
+    /// \return Returns true if the named feature is available.
+    /// \since 1.0
+    ///
+    static bool HasFeature(const std::string &name);
+    //@}
+};
+
+
+
+
+
+
+
+
+
+#endif

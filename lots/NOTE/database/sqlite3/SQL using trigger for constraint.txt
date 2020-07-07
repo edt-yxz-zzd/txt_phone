@@ -1,0 +1,93 @@
+SQL using trigger for constraint
+https://stackoverflow.com/questions/9663263/sql-using-trigger-for-constraint
+
+
+
+
+
+First, I think this is a data rule and therefore should be enforced centrally. That is, there should be a database constraint (or equivalent) enforced by the DBMS that prevents all applications for writing bad data (rather than relying on the individual coders of each application to refrain from writing bad data).
+
+Second, I think an AFTER trigger is appropriate (rather than an INSTEAD OF trigger).
+
+Third, this can be enforced using foreign key and and row-level CHECK constraints.
+
+For a constraint type trigger, the idea generally is to write a query to return bad data then in the trigger test that this result is empty.
+
+You haven't posted many details of your tables so I will guess. I assume student_number is meant to be a tally of students; as it is it sounds like an identifier so I will change the name and assume the identifier for students is student_id:
+
+WITH EnrolmentTallies
+     AS
+     (
+      SELECT teacher_id, COUNT(*) AS students_tally
+        FROM Enrolment
+       GROUP 
+          BY teacher_id      
+     ) 
+SELECT * 
+  FROM Teachers AS T
+       INNER JOIN EnrolmentTallies AS E
+         ON T.teacher_id = E.teacher_id
+            AND E.students_tally > T.students_tally;
+
+In SQL Server, the trigger definition would look something like this:
+
+CREATE TRIGGER student_tally_too_high ON Enrolment
+AFTER INSERT, UPDATE
+AS
+IF EXISTS (
+           SELECT * 
+             FROM Teachers AS T
+                  INNER JOIN (
+                              SELECT teacher_id, COUNT(*) AS students_tally
+                                FROM Enrolment
+                               GROUP 
+                                  BY teacher_id      
+                             ) AS E
+                                  ON T.teacher_id = E.teacher_id
+                                     AND E.students_tally > T.students_tally
+          )
+BEGIN
+RAISERROR ('A teachers''s student tally is too high to accept new students.', 16, 1);
+ROLLBACK TRANSACTION;
+RETURN 
+END;
+
+There are some further considerations, however. Executing such a query after every UPDATE to the table may be very inefficient. You should use UPDATE() (or COLUMNS_UPDATED if you think column ordering can be relied upon) and/or the deleted and inserted conceptual tables to limit the scope of the query and when it is fire. You will also need to ensure that transactions are properly serialized to prevent concurrency problems. Although involved, it isn't terribly complex.
+
+I highly recommend the book Applied Mathematics for Database Professionals  By Lex de Haan, Toon Koppelaars, chapter 11 (the code examples are Oracle but can be easily ported to SQL Server).
+
+It may be possible to achieve the same without triggers. The idea is to make a superkey on (teacher_id, students_tally) to be referenced in the Enrolment, for which a sequence of unique student occurrences will be maintained with a test that the sequence will never exceed the maximum tally.
+
+Here's some bare bones SQL DDL:
+
+CREATE TABLE Students 
+(
+ student_id INTEGER NOT NULL,
+ UNIQUE (student_id)
+);
+
+CREATE TABLE Teachers 
+(
+ teacher_id INTEGER NOT NULL,
+ students_tally INTEGER NOT NULL CHECK (students_tally > 0), 
+ UNIQUE (teacher_id), 
+ UNIQUE (teacher_id, students_tally)
+);
+
+CREATE TABLE Enrolment
+(
+ teacher_id INTEGER NOT NULL UNIQUE,
+ students_tally INTEGER NOT NULL CHECK (students_tally > 0), 
+ FOREIGN KEY (teacher_id, students_tally)
+    REFERENCES Teachers (teacher_id, students_tally)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE, 
+ student_id INTEGER NOT NULL UNIQUE 
+    REFERENCES Students (student_id),
+ student_teacher_sequence INTEGER NOT NULL
+    CHECK (student_teacher_sequence BETWEEN 1 AND students_tally)
+ UNIQUE (teacher_id, student_id), 
+ UNIQUE (teacher_id, student_id, student_teacher_sequence)
+);
+
+Then add some 'help' stored procs/functions to maintain the sequence on update.

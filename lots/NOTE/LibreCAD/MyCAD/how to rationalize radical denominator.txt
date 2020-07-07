@@ -1,0 +1,143 @@
+https://txt20180801.wordpress.com/2018/08/21/how-to-rationalize-radical-denominator/
+how to rationalize radical denominator
+
+definitions:
+    type Int
+    type UInt = Int{0..}
+    type PInt = Int{1..}
+
+    PI, E, J :: Complex
+    -- J^2 == -1
+
+    nth_root :: Complex -> PInt -> Complex
+    --(nth_root x n)^n = x
+    nth_root x n = x^(1/n)
+
+    sqrt :: Complex -> Complex
+    sqrt x = nth_root x 2 = x^(1/2)
+
+    w :: Int -> PInt -> Complex
+    w i n = (nth_root 1 n)^i = E^(2*PI*i/n*J)
+    let w[i,n] = w i n
+
+
+example of problem:
+    n/(sqrt x + sqrt y) = n*(sqrt x - sqrt y)/(x - y)
+    n/(sqrt x + nth_root y 3 + z)
+        -- let a = sqrt x, b = nth_root y 3, c = z
+        = n/(a + b + c)
+        -- find r,g; 6=lcm [2,3,1]
+        = n*r/g(a^6, b^6, c^6)
+
+problem:
+    input:
+        m :: Int{2..}
+        n :: PInt
+    find out denominator function f<xs, n> and helper g<m, n>:
+        f<xs, n> = g<len xs, n> [xs[i]^n | i<-[0..len xs - 1]]
+        s.t.
+            xs :: [Symbol], where len xs >= 2
+            [sum xs `divs` f<xs, n>]
+
+example of f,g:
+    f<[x,y],2> = (x+y)*(x-y)
+        = x^2 - y^2
+        = g<2,2> [x^2,y^2]
+    g<2,2> [x2,y2] = x2 - y2
+
+
+
+    f<[x,y,z],2> = (x+y+z)*(x-y+z)*(x+y-z)*(x-y-z)
+        = x^4+y^4+z^4 -2*(x^2*y^2 + y^2*z^2 + z^2*x^2)
+        = g<3,2> [x^2,y^2,z^2]
+    g<3,2> [x2,y2,z2] = x2^2+y2^2+z2^2 - 2*(x2*y2+y2*z2+z2*x2)
+
+
+    f<[x,y],3> = (x+y)*(x+w[1,3]*y)*(x+w[2,3]*y)
+        = x^3 + y^3
+    g<2,3> [x3, y3] = x3 + y3
+
+
+    f<[x,y,z],3> = (x+y+z)*(x+w[1,3]*y+z)*(x+w[2,3]*y+z)
+                  *(x+y+w[1,3]*z)*(x+w[1,3]*y+w[1,3]*z)*(x+w[2,3]*y+w[1,3]*z)
+                  *(x+y+w[2,3]*z)*(x+w[1,3]*y+w[2,3]*z)*(x+w[2,3]*y+w[2,3]*z)
+    ...
+
+solution:
+    f<xs,n> = II: SUM: w[ks[i],n]*xs[i]
+                {i<-[0..len xs-1]}
+                {ks <- Control.Monad.sequence ([0]:
+                        Data.List.replicate (len xs - 1) [0..n-1])}
+
+proof: [f<xs,n> is a function about xs[i]^n]
+    f<x:xs,n> = II: II: (x+w[j,n]*remain_sum) {j<-[0..n-1]} {remain_sum}
+        = II: x^n - (-remain_sum)^n {remain_sum}
+    ==>> [f<xs,n> is a function about xs[0]]
+    DONE.
+
+
+##############################################################
+########### any algebra number instead of radical ############
+##############################################################
+https://en.wikipedia.org/wiki/Resultant
+https://en.wikipedia.org/wiki/Sylvester_matrix
+
+
+-- univariate or multivariate polynomial
+[resultant(z, f, g)==0] <==> [zeros(z, f)/-\zeros(z, g)!={}]
+[resultant(z, a1*II:(z-r1[i1])^e1[i1]:{i1}
+            , a2*II:(z-r2[i2])^e2[i2]:{i2})
+    == a1^SUM:e1[i1]:{i1}
+     * a2^SUM:e2[i2]:{i2}
+     * II:(r1[i1]-r2[i2])^(e1[i1]*e2[i2]):{(i1,i2)}
+    ]
+
+resultant :: Indeterminate -> (UInt, Polynomial) -> (UInt, Polynomial) -> Polynomial
+resultant x f g = resultant_ex x (0,f) (0,g)
+resultant_ex :: Indeterminate -> (UInt, Polynomial) -> (UInt, Polynomial) -> Polynomial
+resultant_ex x (delta_deg_x_f, f) (delta_deg_x_g, g) = determinant mx
+    where
+        -- leading coeffient may be 0
+        deg_x_f = delta_deg_x_f + leading_degree_of_about x f
+        deg_x_g = delta_deg_x_g + leading_degree_of_about x g
+        get_coeffients x deg_x_f f = [coeffient_polynomial_of_about x d f | d <- [0..deg_x_f]]
+        coeffs_f = get_coeffients x deg_x_f f
+        coeffs_g = get_coeffients x deg_x_g g
+
+        mx = the_Sylvester_matrix_of coeffs_f coeffs_g
+        the_Sylvester_matrix_of coeffs1 coeffs2
+            = Matrix (n,n) (mk_rows coeffs1 n2 ++ mk_rows coeffs2 n1)
+            where
+                n1 = len coeffs1
+                n2 = len coeffs2
+                n = n1+n2
+                mk_rows coeffs1 n2 = [[0]*i++coeffs1++[0]*(n2-1-i) | i<-[0..n2-1]]
+
+field K
+field extension K[s]:K
+the_minimal_polynomial_of :: (T<-FieldType) -> Indeterminate -> (s<-FieldElement) -> Polynomial
+the_minimal_polynomial_of K x s
+
+normalize_polynomial K ss s xs f
+    = resultant z fz (the_minimal_polynomial_of K z s)
+    where
+        -- precondition: f <- K[ss...][s][xs...]
+        z = new Indeterminate(xs)
+        fz = f[s:=z]
+        -- assert fz <- K[ss...][z, xs...]
+        -- assert result <- K[ss...][xs...]
+
+example:
+    * rationalizing: f(x,y) = sqrt(2)*x+nth_root(3,3)*y
+        normalize_polynomial QQ [nth_root(3,3)] sqrt(2) [x,y] f(x,y)
+        == resultant z (z*x+nth_root(3,3)*y) (the_minimal_polynomial_of QQ z sqrt(2))
+        == resultant z (z*x+nth_root(3,3)*y) (z^2-2)
+        == determinant [[x, nth_root(3,3)*y, 0], [0, x, nth_root(3,3)*y], [1, 0, -2]]
+        == -2*x^2 + nth_root(3,3)^2*y^2
+
+        normalize_polynomial QQ [] nth_root(3,3) [x,y] (-2*x^2 + nth_root(3,3)^2*y^2)
+        == resultant z (-2*x^2 + z^2*y^2) (the_minimal_polynomial_of QQ z nth_root(3,3))
+        == resultant z (-2*x^2 + z^2*y^2) (z^3-3)
+        == determinant [[y^2, 0, -2*x^2, 0, 0], [0, y^2, 0, -2*x^2, 0], [0, 0, y^2, 0, -2*x^2], [1, 0, 0, -3, 0], [0, 1, 0, 0, -3]]
+        == 9*y^6 - 8*x^6
+

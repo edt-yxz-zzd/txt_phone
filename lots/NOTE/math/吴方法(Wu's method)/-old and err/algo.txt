@@ -1,0 +1,56 @@
+
+1. input:
+    #??All U,V,W. [N(U,W)==...0] ==>> [C(V,W)==...0]??
+    U,V,W :: [Symbol]
+    N(U,W), C(V,W) :: [Poly]
+2. output:
+    # All U,V,W. [N(U,W)==...0][OR: DR[i][0](U,W)!=...0 && DR[i][1](V,U)==...0 {i}] ==>> [C(V,W)==...0]
+    # or fail
+    Maybe [DR] :: Maybe [([Poly], [Poly])]
+3. ordering unknowns/variables:
+    sorted such that: U before W # i.e. U[i] < W[j]
+        # so, we will never meet U when prem/pseudo-remainder # prem(C,N)
+    sorted by V before W # e.g. V < U < W
+        or remove V by: C(V,W) over K = C'(V) over K[W]
+            let [all coeff of C'[V] ==... 0] replace [C(V,W)==...0]
+        V is coeff in C to be determined
+    let Z=arbitrary_order(V)+order(U)+order(W)
+    let X=W
+4. loop:
+    Ns = {N}
+    old_Ns = {N}
+    org_N = N
+    DR = []
+    while Ns:
+        N = Ns.pop()
+        R = prem(C, modulars=N, main_variables=X, ordering=Z)
+        if R.free_symbols /-\ X == {}:
+            # R is R(V,U)
+            D = map initial_term_of N
+            # D is D(U,W)
+
+            DR = (D,R)
+            DRs.append(DR) # output
+
+            # Wu-Ritt zero structure theorem
+            for I in D:
+                N' = N \-/ {I}
+                if N' not in old_Ns:
+                    Ns.add(N')
+                    old_Ns.add(N')
+        elif N is org_N:
+            # fail
+            return () # Nothing
+        pass
+    assert DR
+
+    # NOTE: we can collect/group DR, to simplify output
+    DR = __simplify_DR(DR)
+    # now DR may be empty!!
+    # [not DR] means [N==0 ==>> C==0], need not extra conditions
+
+    return (DR,) # Just DR
+
+
+
+

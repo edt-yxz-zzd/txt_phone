@@ -1,0 +1,76 @@
+:e! ++enc=utf8
+    DO NOT run this before saving your work as it will wipe the changes you have made. :u will save you though. 
+    http://stackoverflow.com/questions/5166652/how-to-view-utf-8-characters-in-vim-or-gvim#
+
+https://www.xuebuyuan.com/329672.html?mobile=1
+    set fileencodings=ucs-bom,utf8,prc
+http://earnfs.sinaapp.com/html/731.htm
+    在C:\Program Files\Vim\_vimrc的最前面加入下面二行，如果没有这个文件，就建一个这个文件。
+        let &termencoding=&encoding
+        set fileencodings=utf-8,gbk,ucs-bom,cp936
+    记的保存哦，然后在用Vim打开看看，UTF8和GB2312都没有问题。
+
+
+-- output
+    :write ++enc=utf-8 russian.txt
+    iconv -f utf-16 -t utf-8 file.xml > file.utf8.xml
+
+
+options: fileencodings encoding fileencoding
+
+fileencodings:
+    when read a file, try these encodings
+    if success -> set fileencoding = ...
+    else -> set fileencoding = encoding
+
+==>> use a list: fileencodings + [encoding]
+
+
+:filetype on
+
+plugin
+    # runtimepath
+    global plugin
+        $VIMRUNTIME/macros
+    filetype plugin
+        $VIMRUNTIME/ftplugin
+:filetype plugin on
+e.g.
+    vim73\ftplugin\utf8.vim
+        set fileencodings=utf8
+*new-filetype*
+        $VIMRUNTIME/ftdetect/<filetype>.vim
+            au BufRead,BufNewFile *.<ext1>,*.<ext2>		set filetype=<filetype>
+        $VIMRUNTIME/ftdetect/utf8.vim
+            au BufRead,BufNewFile *.u8	set filetype=utf8
+
+
+
+
+---------------- example ------------------
+assume opening XXX.txt with encoding "gbk"
+we rename XXX.txt to XXX.u8 and wish to open it with encoding "utf8"
+
+# $HOME/_vimrc
+C:\Users\Administrator\_vimrc
+    add 2 two lines:
+        filetype on
+        filetype plugin on
+# $VIMRUNTIME/ftdetect/<filetype>.vim
+#??C:\Program Files (x86)\Vim\vim73\ftdetect\
+C:\Program Files (x86)\Vim\vimfiles\ftdetect\utf8.vim
+    add new file "utf8.vim" with content:
+        au BufRead,BufNewFile *.u8      set filetype=utf8
+# $VIMRUNTIME/ftplugin/<filetype>.vim
+#??C:\Program Files (x86)\Vim\vim73\ftplugin\
+C:\Program Files (x86)\Vim\vimfiles\ftplugin\utf8.vim
+    add new file "utf8.vim" with content:
+        set fileencodings=utf8
+
+
+open XXX.u8
+    :set filetype
+    ==>> filetype=utf8
+    :set fileencodings
+    ==>> fileencodings=utf8
+

@@ -1,0 +1,52 @@
+
+??? [* : *] ???
+
+f f ??
+f : (a -: *) -> ??
+f : (a -: *) -> (g -: P a) -> Q a g
+
+let P x = (a -: *) -> (g -: P a) -> Q a g
+f x g = g x g
+
+
+
+my proof
+
+define C, s.t. (C s) iff
+    s is a set of lambda term
+    [f <- s][e is subterm of f] ==>> [e <- s]
+    [f, g <- s] ==>> [(f g) <- s]
+    [f <- s] ==>> [(Eval f) <- s]
+define H, s.t. (H s) iff
+    C s
+    [f <- s] ==>> [Halt f]
+
+define close P s = intersetion { s' >= s | P s' }
+define s[e] = close C (s + {e})
+    -- extend
+
+[H s][x is variable] ==>> [H s[x]]
+[H s] ==>> [H s[\x. x]]
+[H s][f <- s][x not in FV(f)] ==>> [H s[\x. f]]
+[H s][f, g <- s] ==>> [H s[(\x. f) g]]
+[H s][f, g <- s][(x ... x) is not subterm of (Eval f)] ==>> [Halt (g (\x. f))]
+[H s][f <- s][a... <- s][g === \x. f][Halt (g a... g)] ==>> [H s[\x. f]]
+
+-- pure type system (PTS)
+==>> [any type system prevent "((f:F) a... f => body(f)[arg(f):=a0] a1...f =[1+]=> (f:F) a... f)" has strong normalisation property]
+==>> [any PTS has strong normalisation property]
+    -- since (f : @ F : *, F -> R), f (type_of f) f
+    --      input f has type (F) which is not a arrow
+    -- since (f : @ I : *, (@ I':*, P I' -> R) -> R), f (type_of f) f
+    --      P _ = @ I:*, P I -> R
+==>> [any PTS has strong normalisation property]
+==>> [any PTS[sorts={(*)}, axiom={(*:*)},  rules={(*,*,*)}] has strong normalisation property]
+
+
+;; f : (a -: *) -> a -> r
+f = \a g, g a g
+    (\g, g a g) (\g, g a g) = (\g, g a g) a (\g, g a g) = a a a (\...)
+f a f = f a f !!!!!!!!!!!
+
+f = \a f g, g a f g
+g = \a f g, f a f g

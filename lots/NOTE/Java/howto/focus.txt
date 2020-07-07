@@ -1,0 +1,74 @@
+https://docs.oracle.com/javase/tutorial/uiswing/misc/focus.html
+requestFocusInWindow # even when not visible but no effects
+    instead of requestFocus # depend on platform
+    should be after setVisible(true)
+grabFocus # must visible # force ancestor
+isFocusOwner
+    instead of hasFocus
+isFocusable()
+setFocusable(boolean focusable)
+java.awt.Component::addFocusListener(java.awt.event.FocusListener)
+    java.awt.event.FocusAdapter
+        void focusGained(FocusEvent e)
+        void focusLost(FocusEvent e)
+    java.awt.event.FocusEvent
+
+java.awt.Window::addWindowFocusListener(java.awt.event.WindowFocusListener)
+    java.awt.Window <: java.awt.Component
+    java.awt.event.WindowAdapter
+        void windowGainedFocus(WindowEvent e)
+        void windowLostFocus(WindowEvent e)
+
+        void windowActivated(WindowEvent e)
+        void windowClosed(WindowEvent e)
+        void windowClosing(WindowEvent e)
+        void windowDeactivated(WindowEvent e)
+        void windowDeiconified(WindowEvent e)
+        void windowGainedFocus(WindowEvent e)
+        void windowIconified(WindowEvent e)
+        void windowLostFocus(WindowEvent e)
+        void windowOpened(WindowEvent e)
+        void windowStateChanged(WindowEvent e)
+    java.awt.event.WindowEvent
+
+====================================every time
+//This code snippet shows how to give a particular component the focus every time the window gains the focus:
+//Make textField get the focus whenever frame is activated.
+frame.addWindowFocusListener(new WindowAdapter() {
+    public void windowGainedFocus(WindowEvent e) {
+        textField.requestFocusInWindow();
+    }
+});
+
+
+====================================first time
+//If you want to ensure that a particular component gains the focus the first time a window is activated, you can call the requestFocusInWindow method on the component after the component has been realized, but before the frame is displayed. The following sample code shows how this operation can be done:
+
+    //...Where initialization occurs...
+    JFrame frame = new JFrame("Test");
+    JPanel panel = new JPanel(new BorderLayout());
+
+    //...Create a variety of components here...
+
+    //Create the component that will have the initial focus.
+    JButton button = new JButton("I am first");
+    panel.add(button);
+    frame.getContentPane().add(panel);  //Add it to the panel
+
+    frame.pack();  //Realize the components.
+    //This button will have the initial focus.
+    button.requestFocusInWindow();
+    frame.setVisible(true); //Display the window.
+
+
+====================================first time
+//Alternatively, you can apply a custom FocusTraversalPolicy to the frame and call the getDefaultComponent method to determine which component will gain the focus.
+
+
+====================================more see the link
+The focus subsystem is designed to do the right thing as invisibly as possible. In most cases it behaves in a reasonable manner, and if it does not you can tweak its behavior in various ways. Some common scenarios might include:
+
+    The ordering is right but the first component with the focus is not set. As shown in a code snippet in the preceding section, you can use the requestFocusInWindow method to set the focus on a component when the window becomes visible.
+    The ordering is wrong. To fix this issue, you can change the containment hierarchy, you can change the order that the components are added to their containers, or you can create a custom focus traversal policy. For more details see Customizing Focus Traversal.
+    A component must to be prevented from losing focus, or you need to check a value in a component before it loses focus. Input verification is a solution to this problem.
+    A custom component is not getting the focus. To fix this issue, you need to make sure that it satisfies all the requirements outlined in Making a Custom Component Focusable.

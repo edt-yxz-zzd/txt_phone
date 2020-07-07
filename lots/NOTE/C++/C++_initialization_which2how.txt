@@ -1,0 +1,190 @@
+which2how
+
+default initialization  
+    T object ;  (1) 
+    new T ;  (2) 
+    
+    If T is a class type, the default constructor is called to provide the initial value for the new object. 
+    If T is an array type, every element of the array is default-initialized. 
+    Otherwise, nothing is done. 
+    //Default initialization of non-class variables with automatic and dynamic storage duration produces objects with indeterminate values (static and thread-local objects get zero initialized) 
+    
+    // but what default constructor does???????????
+    Trivial default constructor performs no action. !!!!!!!!!!!!!!!!!!!!!!
+        T has no virtual member functions 
+        T has no virtual base classes 
+        T has no non-static members with brace-or-equal initializers (since C++11) 
+        Every direct base of T has a trivial default constructor 
+        Every non-static member of class type has a trivial default constructor 
+
+    // but what happens for a base/data-member which has trivial default constructor??
+    // implicitly-defined default constructor calls the subobject default constructors
+    // so, if they are trivial, then subobjects NOT initialized.
+    // but it was difference with what I saw!  implicit dtor() != T(){}
+    Implicitly-defined default constructor == T(){} call sub default ctors
+    If the implicitly-declared default constructor is not deleted or trivial, it is defined (that is, a function body is generated and compiled) by the compiler, and it has exactly the same effect as a user-defined constructor with empty body and empty initializer list. That is, it calls the default constructors of the bases and of the non-static members of this class. 
+
+
+
+
+ 
+value initialization 
+    T object {};  (1)  (since C++11)  
+     
+    T(); 
+    T{}; 
+     (2)  
+    (since C++11)  
+     
+    new T (); 
+    new T {}; 
+     (3)  
+    (since C++11)  
+
+    If T is a class type with at least one user-provided constructor of any kind, the default constructor is called. 
+    If T is an non-union class type without any user-provided constructors, then the object is zero-initialized and then the implicitly-declared default constructor is called (unless it's trivial) 
+    If T is an array type, each element of the array is value-initialized 
+    Otherwise, the object is zero-initialized. 
+    // The syntax T object(); does not initialize an object; it declares a function that takes no arguments and returns T. The way to value-initialize a named variable before C++11 was T object = T();, which value-initializes a temporary and then copy-initializes the object: most compilers optimize out the copy in this case. 
+    
+
+
+
+zero initialization
+    static T object ;  (1)   
+     
+    int () ;  (2)   
+     
+    char array [ n ] = "";  (3)   
+
+    If T is a scalar type, the object's initial value is the integral constant zero implicitly converted to T. 
+    If T is an non-union class type, all base classes and non-static data members are zero-initialized, and all padding is initialized to zero bits. The constructors, if any, are ignored. 
+    If T is a union type, the first non-static named data member is zero-initialized and all padding is initialized to zero bits. 
+    If T is array type, each element is zero-initialized 
+    If T is reference type, nothing is done. 
+
+    //The static and thread-local variables are first zero-initialized and then initialized again as specified in the program, e.g. a function-local static is first zero-initialized at program startup, and then its constructor is called when the function is first entered. If the declaration of a non-class static has no initializer, then default initialization does nothing, leaving the result of the earlier zero-initialization unmodified. 
+    //A zero-initialized pointer is the null pointer value of its type, even if the value of the null pointer is not integral zero. 
+
+
+
+
+copy initialization
+    T object = other ;  (1)   
+     
+    f(other);  (2)   
+     
+    return other;  (3)   
+     
+    catch ( T other) ;  (4)   
+     
+    T array [ N ] = { other };  (5)   
+
+
+direct initialization
+    T object ( arg ); 
+    T object ( arg1, arg2, ... ); 
+     (1)   
+     
+    T object { arg }; 
+    T object { arg1, arg2, ... }; 
+     (2)  (since C++11)  
+     
+    T ( other ) 
+    T ( arg1, arg2, ... ); 
+     (3)   
+     
+    static_cast< T >( other )  (4)   
+     
+    new T(args, ...)  (5)   
+     
+    Class::Class() : member(args, ...) {...  (6)   
+     
+    [arg](){...  (7)  (since C++11)  
+     
+
+
+aggregate initialization
+    T object = {arg1, arg2, ...};  (1)   
+     
+    T object {arg1, arg2, ...};  (2)  (since C++11)  
+ 
+
+
+list initialization
+    T object { arg1, arg2, ... };  (1)   
+     
+    T { arg1, arg2, ... };  (2)   
+     
+    new T { arg1, arg2, ... };  (3)   
+     
+    return { arg1, arg2, ... } ;  (4)   
+     
+    function( { arg1, arg2, ... } ) ;  (5)   
+     
+    object[ { arg1, arg2, ... } ] ;  (6)   
+     
+    T( { arg1, arg2, ... } )  (7)   
+     
+    Class { T member = { arg1, arg2, ... }; };  (8)   
+     
+    Class::Class() : member{arg1, arg2, ...} {...  (9)   
+     
+    T object = {arg1, arg2, ...};  (10)   
+     
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Trivial default constructor The implicitly-declared default constructor for class T is trivial if all of the following is true: 
+    T has no virtual member functions 
+    T has no virtual base classes 
+    T has no non-static members with brace-or-equal initializers (since C++11) 
+    Every direct base of T has a trivial default constructor 
+    Every non-static member of class type has a trivial default constructor 
+A trivial default constructor is a constructor that performs no action. Objects with trivial default constructors can be created by using reinterpret_cast on any suitably aligned storage, e.g. on memory allocated with std::malloc. All data types compatible with the C language (POD types) are trivially default-constructible. 
+
+
+Trivial copy constructor The implicitly-declared copy constructor for class T is trivial if all of the following is true: 
+    T has no virtual member functions 
+    T has no virtual base classes 
+    The copy constructor selected for every direct base of T is trivial 
+    The copy constructor selected for every non-static class type (or array of class type) memeber of T is trivial 
+A trivial copy constructor is a constructor that creates a bytewise copy of the object representation of the argument, and performs no other action. Objects with trivial copy constructors can be copied by copying their object representations manually, e.g. with std::memmove. All data types compatible with the C language (POD types) are trivially copyable. 
+
+
+
+
+

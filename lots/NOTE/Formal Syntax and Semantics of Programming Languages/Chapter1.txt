@@ -1,0 +1,127 @@
+
+[alphabet]
+    The finite set of terminal symbols
+[vocabulary]
+    The vocabulary of a grammar includes its terminal and nonterminal symbols.
+    // syntactic categories == nonter minal symbols == vocabulary - alphabet
+
+productions == rules
+[start symbol]
+
+
+
+
+
+
+-- it seems abstract syntax is more like a C-struct or union of C-structs or a Haskell "data"-type
+1.4 ABSTRACT SYNTAX
+    [concrete syntax]
+        The BNF definition of a programming language is sometimes referred to as the concrete syntax of the language since it tells how to recognize the physical text of a program.
+        scan :: [Char] -> [Token]
+        parse :: [Token] -> DerivationTree -- only if unambiguous
+        ?? :: DerivationTree -> AbstractSyntaxTree
+        
+    [Abstract Syntax Trees]
+        // confusion "derivation tree" and "abstract syntax tree" both as "parse tree"
+        Those qualities of a BNF definition that make parsing possible also create a resulting derivation tree containing far more information than necessary for a semantic specification. 
+        The derivation tree retains all the information used in parsing including details that only the parser needs. On the other hand, an abstract syntax tree captures the syntactic structure of the expression completely in a much simpler form. After all, the crucial property of the expression ※5*a 每 (b+1)§ is that it is a difference of a product and a sum of certain numbers and variables. Any other information is redundant. Figure 1.17 shows two possible abstract syntax trees for the expression. In all three trees, we assume that the text has already been tokenized (scanned).
+            -- keywords: tokenized, redundant
+        In transforming a derivation tree into an abstract syntax tree, we generally pull the terminal symbols representing operations and commands up to the root nodes of subtrees, leaving the operands as their children. The second tree in Figure 1.17 varies slightly from this principle in the interest of regularity in expressions. Using this approach, this expression can be thought of as a binary operation and two subexpressions. The choice of the left subtree for the binary operation is arbitrary; it seems to suggest a prefix notation for binary operations, but we are not talking about concrete syntax here, only an abstract representation of certain language constructs. We may choose any representation that we want as long as we can describe the constructs of the language adequately and maintain consistency.
+            -- keywords: maintain consistency
+        The literature of computer science contains considerable confusion between derivation trees and abstract syntax trees; the term parse tree has been used to refer to both kinds of trees. We explain the issue by viewing these trees as abstractions of phrases in a programming language. Derivation trees abstract derivations in the sense that one derivation tree can correspond to several different derivations〞for example, leftmost or rightmost. Further-more, abstract syntax trees abstract derivation trees, since several strings in the language may correspond to the same abstract syntax tree but yet have different derivation trees; for example, ※(a+5)每x/2§ and ※a+5每(x/2)§ have the same abstract syntax tree, although their derivation trees are different.
+            -- keywords: confusion
+        
+        
+        
+        e.g. 5*a - (b+1)
+            "derivation tree"
+            <expr> |==>> <expr> |==>> <term> |==>> <term> |==>> <elem> |==>> <numeral> |==>> num(5)
+                   |                         |==>> <strong op> |==>> *
+                   |                         |==>> <elem> |==>> <variable> |==>> <id> |==>> id(a)
+                   |==>> <weak op> |==>> -
+                   |==>> <term> |==>> <elem> |==>> (
+                                             |==>> <expr> |==>> <expr> |==>> <term> |==>> <elem> |==>> <variable> |==>> <id> |==>> id(b)
+                                             |            |==>> <weak op> |==>> +
+                                             |            |==>> <term> |==>> <elem> |==>> <numeral> |==>> num(1)
+                                             |==>> )
+
+
+            "abstract syntax tree" case 1
+            - |==>> * |==>> num(5)
+              |       |==>> id(a)
+              |==>> + |==>> id(b)
+                      |==>> num(1)
+            "abstract syntax tree" case 2
+            expr |==>> -
+                 |==>> expr |==>> *
+                 |          |==>> num(5)
+                 |          |==>> id(a)
+                 |==>> expr |==>> +
+                            |==>> id(b)
+                            |==>> num(1)
+
+
+
+    [Abstract Syntax of a Programming Language]
+        The point of abstract syntax is simply to communicate the structure of phrases in terms of their semantics in a programming language as trees. Semantics can be defined in terms of derivation trees and actually is with attribute grammars, but most semantic methods are far more understandable when based on a cleaner representation of the phrases in a language. As can be seen from Figure 1.17, designing patterns for abstract syntax allows freedom in format, but for a particular programming language specification, we want uniform templates for the various parts of a language. The blueprints for the abstract syntax trees of a programming language are specified by a collection of syntactic categories or domains and a set of rules telling how categories are decomposed into other categories or tokens.
+            -- keywords: uniform, blueprint
+        ...
+        After the redundant nonterminals are merged into Expression, these basic templates can be summarized by the following abstract production rules:
+            Expression ::= Numeral | Identifier | true| false | Expression Operator Expression |每Expression | not (Expression)
+            Operator ::= +| 每| *| /| or| and|<=| <| =| >| >=| <>
+
+        ... This abstract syntax delineates the possible abstract syntax trees that may be produced by programs in the language. To avoid confusion with concrete syntax, we utilize a slightly different notation for abstract production rules, using identifiers starting with uppercase letters for syntactic categories.
+            -- keywords: different notation
+
+        Notice that a definition of abstract syntax tolerates more ambiguity since the concrete syntax has already determined the correct interpretation of the symbols in the program text. We investigate a formal description of abstract syntax in Chapter 12, using the terminology of algebraic semantics.
+        We suggested earlier that parsing a program results in the construction of a derivation tree for the program. As a consequence of adhering to the BNF syntax of a language, any parsing algorithm must at least implicitly create a derivation tree. But in fact we usually design a parser to generate an abstract syntax tree instead of a derivation tree. Therefore the syntax of ※parse§ is given by
+            parse :: [Token] -> AbstractSyntaxTree -- updated
+
+
+        Generally, this parse function will not be one to one. The token lists for the expressions ※a+b-c§ and ※(a+b-c)§ map to the same abstract syntax tree. The main point of abstract syntax is to omit the details of physical representation, leaving only the forms of the abstract trees that may be produced. For example, the abstract syntax has no need for parentheses since they are just used to disambiguate expressions. Once this assessment has been done by the parser, the resulting abstract trees have unambiguous meaning, since the branching of trees accurately conveys the hierarchical structure of a phrase. Whereas the concrete syntax defines the way programs in a language are actually written, the abstract syntax captures the pure structure of phrases in the language by specifying the logical relations (relative to the intended semantics) between parts of the language. We can think of an abstract syntax tree as embodying the derivation history of a phrase in the language without mentioning all of the terminal and nonterminal symbols.
+            -- "without mentioning all of the terminal and nonterminal symbols"
+            -- "specifying the logical relations"
+        When we implement a parser using Prolog in Chapter 2, the parsing operation applied to the token string for the expression ※5*a 每 (b+1)§ will create a Prolog structure:
+            expr(minus,expr(times,num(5),ide(a)),expr(plus,ide(b),num(1))),
+
+
+
+        An alternative way of describing the abstract production rules is displayed in Figure 1.19 where the definitions are given as tagged record structures. Actually, the notation used to specify the abstract productions is not crucial. The important property of abstract syntax is embodied in the relationships between the categories; for example, a whilecommand consists of an expression and a list of commands. As mathematical objects, the various categories are built from aggregations (Cartesian products), alternations (disjoint unions), and list structures. Any notations for these three constructors can serve to define the abstract production rules. We explore these mathematical structures more carefully in Chapter 10.
+            Command   ::= assign(Identifier, Expression) 
+                        | skip
+                        | read(Identifier) |write(Expression)
+                        | while(Expression, Command+) 
+                        | if(Expression, Command+)
+                        | ifelse(Expression, Command+, Command+)
+
+
+        Although concrete syntax is essential to implementing programming languages, it is the abstract syntax that lies at the heart of semantic definitions. The concrete syntax is incidental to language specification, but it is important to users since it influences the way they think about a language. This aspect of pragmatics is not of direct concern to us in studying the semantics of programming languages.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

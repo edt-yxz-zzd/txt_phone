@@ -1,0 +1,242 @@
+p7 1.7 The C ++ memory model
+byte - number of bits of one byte >= 8, unique address. // 1 The fundamental storage unit in the C ++ memory model is the byte. A byte is at least large enough to contain any member of the basic execution character set and the eight-bit code units of the Unicode UTF-8 encoding form and is composed of a contiguous sequence of bits, the number of which is implementation-defined. ... Every byte has a unique address.
+memory location - thread access without interfering // 3 A memory location is either an object of scalar type or a maximal sequence of adjacent bit-fields all having non-zero width. ... Two threads of execution can update and access separate memory locations without interfering with each other.
+p8 1.8 The C ++ object model
+complete object & subobject // 2 Objects can contain other objects, called subobjects. A subobject can be a member subobject, a base class subobject, or an array element. An object that is not a subobject of any other object is called a complete object.
+most derived class/object vs base class/subobject // 4 If a complete object, a data member, or an array element is of class type, its type is considered the most derived class, to distinguish it from the class type of any base class subobject; an object of a most derived class type or of a non-class type is called a most derived object.
+
+
+
+ISO/IEC N3797
+p10 1.9 Program execution
+side effect v.s. evaluation : evaluated ==>> side effect considered completed (external actions may not)
+    12 Accessing an object designated by a volatile glvalue (3.10), modifying an object, calling a library I/O function, or calling a function that does any of those operations are all side effects, which are changes in the state of the execution environment. Evaluation of an expression (or a sub-expression) in general includes both value computations (including determining the identity of an object for glvalue evaluation and fetching a value previously assigned to an object for prvalue evaluation) and initiation of side effects. When a call to a library I/O function returns or an access to a volatile object is evaluated the side effect is considered complete, even though some external actions implied by the call (such as the I/O itself) or by the volatile access may not have completed yet.
+
+[sequenced before] : -[sb]-> (partial order)
+    13 Sequenced before is an asymmetric, transitive, pair-wise relation between evaluations executed by a single thread (1.10), which induces a partial order among those evaluations. Given any two evaluations A and B, if A is sequenced before B, then the execution of A shall precede the execution of B. If A is not sequenced before B and B is not sequenced before A, then A and B are unsequenced . [ Note: The execution of unsequenced evaluations can overlap. ¡ªend note ] Evaluations A and B are indeterminately sequenced when either A is sequenced before B or B is sequenced before A, but it is unspecified which. [ Note: Indeterminately sequenced evaluations cannot overlap, but either could be executed first. ¡ªend note ]
+full-expression -[sb]-> next full-expression
+    14 Every value computation and side effect associated with a full-expression is sequenced before every value computation and side effect associated with the next full-expression to be evaluated.
+unsequenced in same expression; 
+argument -[sb]-> result; 
+indeterminately sequenced : function executions do not interleave with each other
+    15 Except where noted, evaluations of operands of individual operators and of subexpressions of individual expressions are unsequenced. [ Note: In an expression that is evaluated more than once during the execution of a program, unsequenced and indeterminately sequenced evaluations of its subexpressions need not be performed consistently in different evaluations. ¡ªend note ] The value computations of the operands of an operator are sequenced before the value computation of the result of the operator. If a side effect on a scalar object is unsequenced relative to either another side effect on the same scalar object or a value computation using the value of the same scalar object, the behavior is undefined.
+       Every evaluation in the calling function (including other function calls) that is not otherwise specifically sequenced before or after the execution of the body of the called function is indeterminately sequenced with respect to the execution of the called function. Several contexts in C ++ cause evaluation of a function call, even though no corresponding function call syntax appears in the translation unit. [ Example: Evaluation of a new expression invokes one or more allocation and constructor functions; see 5.3.4. For another example, invocation of a conversion function (12.3.2) can arise in contexts in which no function call syntax appears. ¡ªend example ] The sequencing constraints on the execution of the called function (as described above) are features of the function calls as evaluated, whatever the syntax of the expression that calls the function might be.
+
+
+
+1.10 Multi-threaded executions and data races
+
+value visible to thread // except UB
+    3 The value of an object visible to a thread T at a particular point is the initial value of the object, a value assigned to the object by T , or a value assigned to the object by another thread, according to the rules below. [ Note: In some cases, there may instead be undefined behavior. Much of this section is motivated by the desire to support atomic operations with explicit and detailed visibility constraints. However, it also implicitly supports a simpler view for more restricted programs. ¡ªend note ]
+
+conflict
+    4 Two expression evaluations conflict if one of them modifies a memory location (1.7) and the other one accesses or modifies the same memory location.
+
+// how to be visible
+synchronization operation : making assignments in one thread visible to another.
+    5 The library defines a number of atomic operations (Clause 29) and operations on mutexes (Clause 30) that are specially identified as synchronization operations. These operations play a special role in making assignments in one thread visible to another. A synchronization operation on one or more memory locations is either a consume operation, an acquire operation, a release operation, or both an acquire and release operation. A synchronization operation without an associated memory location is a fence and can be either an acquire fence, a release fence, or both an acquire and release fence. In addition, there are relaxed atomic operations, which are not synchronization operations, and atomic read-modify-write operations, which have special characteristics. [ Note: For example, a call that acquires a mutex will perform an acquire operation on the locations comprising the mutex. Correspondingly, a call that releases the same mutex will perform a release operation on those same locations. Informally, performing a release operation on A forces prior side effects on other memory locations to become visible to other threads that later perform a consume or an acquire operation on A. ¡°Relaxed¡± atomic operations are not synchronization operations even though, like synchronization operations, they cannot contribute to data races. ¡ªend note ]
+
+[modification order of ONE atomic object] total order <<== happens before;
+cannot be combined into a single total order
+    6 All modifications to a particular atomic object M occur in some particular total order, called the modification order of M . If A and B are modifications of an atomic object M and A happens before (as defined below) B, then A shall precede B in the modification order of M , which is defined below. [ Note: This states that the modification orders must respect the ¡°happens before¡± relationship. ¡ªend note ] [ Note: There is a separate order for each atomic object. There is no requirement that these can be combined into a single total order for all objects. In general this will be impossible since different threads may observe modifications to different objects in inconsistent orders. ¡ªend note ]
+[release sequence of ONE atomic object M]
+    ::= release operation by T (operation by T | read-modify-write operation)*
+    = modification order[M][i:j] // maximal contiguous subsequence
+    7 A release sequence headed by a release operation A on an atomic object M is a maximal contiguous subsequence of side effects in the modification order of M , where the first operation is A, and every subsequent operation
+        ¡ª is performed by the same thread that performed A, or
+        ¡ª is an atomic read-modify-write operation.
+[call synchronize with call]
+    reading a later value ==xx==>> visibility
+    8 Certain library calls synchronize with other library calls performed by another thread. For example, an atomic store-release synchronizes with a load-acquire that takes its value from the store (29.3). [ Note: Except in the specified cases, reading a later value does not necessarily ensure visibility as described below. Such a requirement would sometimes interfere with efficient implementation. ¡ªend note ] [ Note: The specifications of the synchronization operations define when one reads the value written by another. For atomic objects, the definition is clear. All operations on a given mutex occur in a single total order. Each mutex acquisition ¡°reads the value written¡± by the last mutex release. ¡ªend note ]
+[carries a dependency to]
+    ¡°Carries a dependency to¡± is a subset of ¡°is sequenced before¡±
+
+
+[dependency-ordered before]
+    ¡°is dependency-ordered before¡± v.s. ¡°synchronizes with¡±
+    release/consume                  v.s. release/acquire.
+
+    // release sequence head-release and some consume or carries a dependency to
+    10 An evaluation A is dependency-ordered before an evaluation B if
+            ¡ª A performs a release operation on an atomic object M , and, in another thread, B performs a consume operation on M and reads a value written by any side effect in the release sequence headed by A, or
+            ¡ª for some evaluation X , A is dependency-ordered before X and X carries a dependency to B.
+       [ Note: The relation ¡°is dependency-ordered before¡± is analogous to ¡°synchronizes with¡±, but uses release/consume in place of release/acquire. ¡ªend note ]
+[inter-thread happens before] -[ib]->
+    sw | d | sw sb | sb ib | ib ib
+    ==>> sw d | sw sb | d sw | sb sw | sb d | d sb ib // ??d sb??
+    ==xx==>> sb* | .* d sb
+11 An evaluation A inter-thread happens before an evaluation B if
+    ¡ª A synchronizes with B, or
+    ¡ª A is dependency-ordered before B, or
+    ¡ª for some evaluation X
+        ¡ª A synchronizes with X and X is sequenced before B, or
+        ¡ª A is sequenced before X and X inter-thread happens before B, or
+        ¡ª A inter-thread happens before X and X inter-thread happens before B. 
+    [ Note: The ¡°inter-thread happens before¡± relation describes arbitrary concatenations of ¡°sequenced before¡±, ¡°synchronizes with¡± and ¡°dependency-ordered before¡± relationships, with two exceptions. The first exception is that a concatenation is not permitted to end with ¡°dependency-ordered before¡± followed by ¡°sequenced before¡±. The reason for this limitation is that a consume operation participating in a ¡°dependency-ordered before¡± relationship provides ordering only with respect to operations to which this consume operation actually carries a dependency. The reason that this limitation applies only to the end of such a concatenation is that any subsequent release operation will provide the required ordering for a prior consume operation. The second exception is that a concatenation is not permitted to consist entirely of ¡°sequenced before¡±. The reasons for this limitation are (1) to permit ¡°inter-thread happens before¡± to be transitively closed and (2) the ¡°happens before¡± relation, defined below, provides for relationships consisting entirely of ¡°sequenced before¡±. ¡ªend note]
+
+[happens before] -[hb]->
+// no transitive ==>> not a partial order
+// no cycle ==>> DAG
+12  An evaluation A happens before an evaluation B if:
+    ¡ª A is sequenced before B, or
+    ¡ª A inter-thread happens before B.
+    The implementation shall ensure that no program execution demonstrates a cycle in the ¡°happens before¡± relation. [ Note: This cycle would otherwise be possible only through the use of consume operations. ¡ªend note]
+
+
+// how to avoid data race
+[visible side effect] // last modify
+    13 A visible side effect A on a scalar object or bit-field M with respect to a value computation B of M satisfies the conditions:
+        ¡ª A happens before B and
+        ¡ª there is no other side effect X to M such that A happens before X and X happens before B.
+       The value of a non-atomic scalar object or bit-field M , as determined by evaluation B, shall be the value stored by the visible side effect A. [ Note: If there is ambiguity about which side effect to a non-atomic object or bit-field is visible, then the behavior is either unspecified or undefined. ¡ªend note ] [ Note: This states that operations on ordinary objects are not visibly reordered. This is not actually detectable without data races, but it is necessary to ensure that data races, as defined below, and with suitable restrictions on the use of atomics, correspond to data races in a simple interleaved (sequentially consistent) execution. ¡ªend note ]
+
+
+
+
+
+
+
+
+
+
+
+
+
+// follows explain why atomic operations are called "atomic".
+[visible sequence of side effects on ONE atomic object, with with respect to a value computation of the object]
+    // value computation B of object M ::= B is a function with input M
+    // v.s. operation A that modifies an atomic object M ::= A with output M
+    visible sequence of side effects (M, B) 
+    ::= visible side effect[B] (side effect which not B -[hb]-> this)*
+    = modification order[M][i:j] // maximal contiguous subsequence
+
+[write-write coherence]
+    15 If an operation A that modifies an atomic object M happens before an operation B that modifies M , then A shall be earlier than B in the modification order of M . [ Note: This requirement is known as write-write coherence. ¡ªend note ]
+
+[read-read coherence]
+    16 If a value computation A of an atomic object M happens before a value computation B of M , and A takes its value from a side effect X on M , then the value computed by B shall either be the value stored by X or the value stored by a side effect Y on M , where Y follows X in the modification order of M . [ Note: This requirement is known as read-read coherence. ¡ªend note ]
+
+[read-write coherence]
+    17 If a value computation A of an atomic object M happens before an operation B that modifies M , then A shall take its value from a side effect X on M , where X precedes B in the modification order of M . [ Note: This requirement is known as read-write coherence. ¡ªend note ]
+
+[write-read coherence]
+    18 If a side effect X on an atomic object M happens before a value computation B of M , then the evaluation B shall take its value from X or from a side effect Y that follows X in the modification order of M . [ Note: This requirement is known as write-read coherence. ¡ªend note ]
+
+
+19 [ Note: The four preceding coherence requirements effectively disallow compiler reordering of atomic operations to a single object, even if both operations are relaxed loads. This effectively makes the cache coherence guarantee provided by most hardware available to C++ atomic operations. ¡ªend note ]
+20 [ Note: The visible sequence of side effects depends on the ¡°happens before¡± relation, which depends on the values observed by loads of atomics, which we are restricting here. The intended reading is that there must exist an association of atomic loads with modifications they observe that, together with suitably chosen modification orders and the ¡°happens before¡± relation derived as described above, satisfy the resulting constraints as imposed here. ¡ªend note ]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+29 Atomic operations library
+p1132
+29.3 Order and consistency
+namespace std {
+    typedef enum memory_order {
+        memory_order_relaxed, memory_order_consume, memory_order_acquire,
+        memory_order_release, memory_order_acq_rel, memory_order_seq_cst
+    } memory_order;
+}
+1 The enumeration memory_order specifies the detailed regular (non-atomic) memory synchronization order as defined in 1.10 and may provide for operation ordering. Its enumerated values and their meanings are as follows:
+¡ª memory_order_relaxed: no operation orders memory.
+¡ª memory_order_release, memory_order_acq_rel, and memory_order_seq_cst: a store operation performs a release operation on the affected memory location.
+¡ª memory_order_consume: a load operation performs a consume operation on the affected memory location.
+¡ª memory_order_acquire, memory_order_acq_rel, and memory_order_seq_cst: a load operation performs an acquire operation on the affected memory location. 
+[ Note: Atomic operations specifying memory_order_relaxed are relaxed with respect to memory ordering. Implementations must still guarantee that any given atomic access to a particular atomic object be indivisible with respect to all other atomic accesses to that object. ¡ªend note ]
+
+
+
+// what is [synchronizes with]
+// atomic,  acquire in release sequence ==>> head synchronizes with the acquire
+2 An atomic operation A that performs a release operation on an atomic object M synchronizes with an atomic operation B that performs an acquire operation on M and takes its value from any side effect in the release sequence headed by A.
+
+// memory_order_seq_cst <==> lock on a global mutex
+3 There shall be a single total order S on all memory_order_seq_cst operations, consistent with the ¡°happens before¡± order and modification orders for all affected locations
+[ Note: Although it is not explicitly required that S include locks, it can always be extended to an order that does include lock and unlock operations, since the ordering between those is already included in the ¡°happens before¡± ordering. ¡ªend note ]
+
+
+[memory_order_seq_cst fence] // flush all processers caches??
+8 [ Note: memory_order_seq_cst ensures sequential consistency only for a program that is free of data races and uses exclusively memory_order_seq_cst operations. Any use of weaker ordering will invalidate this guarantee unless extreme care is used. In particular, memory_order_seq_cst fences ensure a total order only for the fences themselves. Fences cannot, in general, be used to restore sequential consistency for atomic operations with weaker ordering specifications. ¡ªend note ]
+
+
+// r-m-w
+11 Atomic read-modify-write operations shall always read the last value (in the modification order) written before the write associated with the read-modify-write operation.
+
+
+
+
+
+
+29.8 Fences
+// x.store(..., release) <==> fence(release); x.store(..., relaxed)??
+// x.load(acquire) <==> x.acquire(relaxed); fence(acquire)??
+// x.rmw(..., acq_rel) ~~~ y=x.acquire(relaxed); fence(acquire); fence(release); x.store(f(y), relaxed)
+// lock {...} unlock ==>> fence(acquire); {...} ; fence(release)??
+
+
+A -[sw]-> B <<== 
+    release fence A; // flush cache of this thread // cache i.e. working memory
+    acquire fence B; // reload cache of this thread
+    A -[sb]-> write-after-release-sequence-head[M] -[mo]-> read[M] -[sb]-> B
+2 A release fence A synchronizes with an acquire fence B if there exist atomic operations X and Y, both operating on some atomic object M, such that A is sequenced before X, X modifies M, Y is sequenced before B, and Y reads the value written by X or a value written by any side effect in the hypothetical release sequence X would head if it were a release operation.
+
+
+
+
+
+
+
+30.4.1.2 Mutex types
+p1156
+11 Synchronization: Prior unlock() operations on the same object shall synchronize with (1.10) this operation.
+m.unlock() -[sw]-> m.lock()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

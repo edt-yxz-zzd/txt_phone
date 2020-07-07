@@ -1,0 +1,201 @@
+
+probability expression
+
+[page 484-485]
+Pr(a_possible_world) = probability
+Sum Pr(world) {world <- World} == 1.0
+Pr(possible_world_set) = Sum Pr(possible_world) {possible_world <- possible_world_set} = probability
+Pr(proposition) = Pr({world <- World | world |- proposition})
+    -- "world <- proposition" =[def]= "world |- proposition"
+Pr(proposition|evidence) = probability
+[X == <x0,x1> == x0 /\ x1 == And X] # X == {} == True = And {}
+    Pr(x0,x1) =[def]= Pr(X)
+    [Y == <y0,y1> == y0 /\ y1]
+        Pr(x0,x1|y0,y1) =[def]= Pr(X|Y)
+
+[page 486-488]
+proposition: factored representation
+    random variables # 'RandomVariable'
+    domain # 'value'  # assume default order
+        # VariableNamedDomain values
+        #   value names are belong to only one random variable
+        #   unlike Bool/Int...
+    {Variable0=value0, Variable1=value1}
+    {BooleanVariable0=true, BooleanVariable1=false}
+    {booleanVariable0, not booleanVariable1}
+    ####### now lowercase names are values in domain or BooleanVariable assignment with true value.
+PD(RandomVariables) = probability_distribution
+    :: Map (Map RandomVariable Domain) Probability
+    -- Assignments = Map RandomVariable Domain
+    -- ProbabilityDistribution = Map Assignments Probability
+    PD(BooleanVariable0) = { {BooleanVariable0:'true'}:0.3
+                           , {BooleanVariable0:'false'}:0.7
+                           }
+                        = <0.3, 0.7> # default order of Bool
+    PD(BooleanVariable0, BooleanVariable1) =
+            { {BooleanVariable0:'true', BooleanVariable1:'true'}:0.1
+            , {BooleanVariable0:'true', BooleanVariable1:'false'}:0.2
+            , {BooleanVariable0:'false', BooleanVariable1:'true'}:0.3
+            , {BooleanVariable0:'false', BooleanVariable1:'false'}:0.4
+            }
+            = <0.1, 0.2, 0.3, 0.4> # default order of domain (Bool, Bool)
+PD(RandomVariables0 | RandomVariables1) = conditional_probability_distribution
+    :: Map (Map RandomVariable1 Domain) (Map (Map RandomVariable0 Domain) Probability)
+    -- ConditionalProbabilityDistribution == Map Assignments ProbabilityDistribution
+
+PD(RandomVariables0, Assignments1) = probability_facet
+    :: Map Assignments01 Probability
+    -- == ProbabilityFacet
+    PD(BooleanVariable0, BooleanVariable1=true)
+        = PD(BooleanVariable0, booleanVariable1)
+        = { {BooleanVariable0:'true', BooleanVariable1:'true'}:0.1
+          , {BooleanVariable0:'false', BooleanVariable1:'true'}:0.3
+          }
+
+probability density function
+type ProbabilityDensity = (Probability, 1/Unit)
+
+Pr(r,c) = Pr(r|c)*Pr(c)
+PD(R,C) = PD(R|C)*PD(C)
+    PD(R,C), PD(R|C) - |R| by |C| matrix
+    PD(C) - |C| by 1 matrix
+    PD(C,C) - |C| by |C| matrix
+    M(R,C, PD(R,C)) = M(R,C,PD(R|C)) @ M(C,C, PD(C,C)) ## @ is matrix mul
+[assume U = Map Str Domain][assume X \+/ Y \+/ Z == U][assume known PD(U)]
+        let PD(X|Y//Z) = PD(X|Y) # i.e. Z=U\\X\\Y are the hidden variables
+        PD(X|Y//Z)
+            = Mx(row_idx:=(X=x), col_idx:=(Y=y), elem_value=...)
+            = Mx(col_idx:=(Y=y), col_vector = normalization_colume {{X=x}: Sum PD(X=x,Y=y,Z=z) {z <- domain Z}})
+        PD(X) = PD({'X1':domain X1, ...})
+            # domain is a set: Domain = ?a. Set a
+            # domain is an ordered set: Domain = ?a. (Ord a) => (Set a)
+            #   default order
+            #       => dict to list ([key], [value])
+            #       => dict dict to matrix ([row_key], [col_key], [[value]])
+            #       where key is sorted tuple<variable_name>, i.e. [Str]
+            #           now two "compare"/"<":
+            #               1) for values in each domain
+            #               2) for variable_names in U, default to str.__lt__
+        Pr(X=x) = Pr({'X1':x[1], 'X2':...})
+                = unsingleton PD({'X1':{x[1]}, 'X2':...})
+
+CFG of factored representation proposition probability
+    UpName = {Name begins with uppercase letter}
+    LowName = {Name begins with lowercase letter}
+    NumericalValue = Int | Real | Bool | ...
+    MultivariableDomainValue = NumericalValue | LowName | ...
+    VariableNamedDomainValue = LowName
+
+    DomainValue = VariableNamedDomainValue | MultivariableDomainValue
+    RandomVariable = UpName
+    Assignment = NormalAssignment | VariableNamedDomainAssignment | BooleanAssignment | AssignmentS
+    NormalAssignment = RandomVariable '=' DomainValue
+    VariableNamedDomainAssignment = VariableNamedDomainValue
+    BooleanAssignment = LowName | 'not' BooleanAssignment
+    AssignmentS = AssignmentSet | AssignmentTuple | BooleanAssignments
+    Assignments = AssignmentList1 | AssignmentS
+    AssignmentList1 = ','.join(Assignment+)
+    AssignmentTuple = '(' AssignmentList ')'
+    AssignmentSet = '{' AssignmentList '}'
+    BooleanAssignments = '/\'.join(Assignment+)
+
+    P_expr = 'Pr(' P_inside ')'
+    P_inside = Assignments ('|' Assignments)
+
+
+    R_Assignment = Assignment | RandomVariable | R_AssignmentS
+    R_AssignmentS = R_AssignmentSet | R_AssignmentTuple | R_BooleanAssignments
+    R_Assignments = R_AssignmentList1 | R_AssignmentS
+    R_AssignmentList1 = ','.join(R_Assignment+)
+    R_AssignmentTuple = '(' R_AssignmentList ')'
+    R_AssignmentSet = '{' R_AssignmentList '}'
+    R_BooleanAssignments = '/\'.join(R_Assignment+)
+
+[page 488-]
+PD(X,Y) -> Pr(X=x,Y=y)
+    Pr(X=x,Y=y) = PD(X,Y)[{X:x, Y:y}]
+PD(X,Y) -> PD(X)
+    # marginalization
+    # X,Y :: R_Assignments
+    PD(X) = Sum PD(X,(vars Y)=y) {y <- domain Y}
+        = {(vars X)=x : Sum Pr((vars X)=x, (vars Y)=y) {y <- domain Y}
+          | x <- domain X}
+PD(X|Y) -> Pr(X=x|Y=y)
+    Pr(X=x|Y=y) = PD(X|Y)[{X:x, Y:y}]
+PD(X|Y),PD(Y) -> PD(X)
+    # conditioning
+    PD(X) = PD(X|Y)*PD(Y)
+        = Sum PD(X|Y=y)*Pr(Y=y) {y <- domain Y}
+        = {X=x : Sum Pr(X=x|Y=y)*Pr(Y=y) {y <- domain Y}
+          | x <- domain X}
+
+# normalization
+    PD(X|Y=y) = normalization PD(X,Y=y)
+    PD(X|Y=y,Z) = normalizations Z PD(X,Y=y,Z)
+        = {{Y=y,Z=z}: normalization PD(X,Y=y,Z=z)}
+
+
+
+
+
+
+###################
+
+
+-- generally, variable can have different types or continue types
+type BooleanVariable = Name              -- x, y, ...
+-- type Literal = (BooleanVariable, Bool)   -- x, not x, y, not y
+-- type BooleanAssignments = Set Literal   -- or 
+type BooleanAssignments = Map BooleanVariable Bool
+type Probability === float[0..1]
+type ProbabilityDistribution = Map BooleanAssignments Probability
+get_variablesPD :: ProbabilityDistribution -> Set BooleanVariable
+get_variablesPD = Map.keySet . head . Map.keys
+    -- pd :: ProbabilityDistribution
+    -- Map.length pd >= 1
+    -- sum (values pd) == 1.0 == marginalize pd Set.empty
+    -- length (Set.fromList . map Map.keySet $ Map.keys pd) == 1
+    -- all (== get_variablesPD pd) (map Map.keySet $ Map.keys pd)
+    -- Map.length pd == 2^(Set.length $ get_variablesPD pd)
+
+
+X,Y :: BooleanAssignments
+-- unconditional/prior/marginal probability: Pr(X)
+-- conditional/posterior probability: Pr(X|Y)
+Pr :: BooleanAssignments -> BooleanAssignments -> Probability
+
+
+get_unconditional_probability :: BooleanAssignments -> ProbabilityDistribution -> Probability
+get_unconditional_probability = Map.get
+remove :: BooleanVariable -> ProbabilityDistribution -> ProbabilityDistribution
+removes :: Set BooleanVariable -> ProbabilityDistribution -> ProbabilityDistribution
+removes vars pd = foldr remove pd vars
+remove x pd = if x not in vars then pd else pd' where
+    vars = get_variablesPD pd
+    vars' = Set.delete x vars
+    pd' = f pd Map.empty
+    f pd pd' = case Map.minView pd where
+        Nothing -> pd'
+        Just ((assignment, p), pd_) -> let key = Map.delete x assignment in
+            let pd'' = if key in pd' then pd'[key] := p else pd'[key] := p in
+            f pd_ pd''
+marginalize :: ProbabilityDistribution -> BooleanAssignments -> Probability
+marginalize pd ba =
+    get_unconditional_probability ba $ removes (Set.diff (get_variablesPD pd) vars) pd
+    where vars = Map.keySet ba
+PD
+
+
+Bayes rule
+    1) Pr(cause|effect) is what we actually want.
+    2) Pr(effect|cause) is more stable than Pr(cause|effect), since latter depens on Pr(cause)
+    3) direct effects are conditional independent
+
+    Pr(cause|effect)
+        = Pr(effect|cause)Pr(cause)/Pr(effect)
+        = Pr(effect|cause)Pr(cause)/Sum Pr(effect|cause)Pr(cause) {cause <- all cause assignmets}
+
+    Pr(direct_effects|cause) = Product Pr(direct_effect|cause) {direct_effect <- direct_effects}
+    Pr(cause|effect)
+        = Product Pr(direct_effect|cause) {direct_effect <- effect} * Pr(cause)/Sum ... {cause <- ...}
+

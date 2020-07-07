@@ -1,0 +1,164 @@
+
+static and dynamic data flow
+hidden detail/packed path/base class/unbound path
+defaults and override or forbidden or final or required(abstract)
+
+
+as a
+
+
+filter (left: input, right: output)
+       ---------
+      |         |
+-->>--|         |-->>--
+      |         |
+       ---------
+filter/source/sink/world (Hello, World!)
+static : static-object   # in C++, class, type, function, constant, conexpr
+dynamic : dynamic-object # ...
+at definition: 
+    # in C++, static-version: defintion or dynamic-version: eval
+    *           static                       dynamic
+    filter      template                     function
+                constant-function            class nonstatic member
+                type/template constructor
+                function constructor...
+                function-name 
+                    # without signature
+    source      constant                     object
+                builtin-type
+                function-object
+    sink        #error??                     abort/exit
+                #source-file??
+    world       ??                           ??
+
+
+
+
+
+
+
+an unbound path/namespace (left:parent; right:children)
+       ---------
+-->>--|         |-->>--
+      |         |
+--<<--|         |--<<--
+       ---------
+(unqual-unbound means the static flow left I/O unbound; left-unbound; right-unbound; both-unbound)
+(when binding the dynamic flow left I/O, perform a call -- the dynamic parent is the caller who provides the input; the static parent setup the executing envirement and covert the result)
+(indeed, only static-left-bound-and-dynamic-left-unbound-right-bound paths are callable, it has no static parent; but since we want to hidden the details, we pack up some nodes in a path refered as unbound path. if that virtual node happens to be right unbound, it is treated as a base class and refered as the static parent of the deriving class/namespace/child-node)
+
+at definition: # though we are talking about namespaces
+    (static-left-input-unbound: template; otherwise static-source)
+        # template : pure-function/template
+        # in C++, static-source examples:
+        #    type/function/constant-expr
+    (static-right-input-unbound: static-abstract; otherwise static-concrete)
+        # in C++, static-abstract example:
+        #    namespace
+        #    declaration without definition.
+        # Mixin classes are static-abstact. 
+        #    in C++, no such thing, idioms are:
+        #    template<RightInput> class Mixin: RightInput{...};
+        #       that is, right-input are part of left-input
+        #       using more basic model:
+        #           input-->>--[pure-function]-->>--output
+    (static-right-output-unbound: base; otherwise final)
+        # in C++, final examples: builtin type; xx.c file??
+        #    base examples: 
+        #       class (inherit)
+        #       xx.h file?? (include it)
+        #       namespace?? (create new namespace in old one)
+    (static-left-output-unbound: static-sink; otherwise normal-expr) 
+        # in C++, static-sink example: 
+        #    xx.c file?? EOF ?? anonymous namespace??
+        # static-sink : neither sth/void(Maybe(Just sth/Nothing)) 
+        # nor named/anonymous , nor static_assert, nor comment
+        # 
+        # does anonymous object unbound?? 
+        # if that object was in use, then bound. 
+        # anonymous union/struct are the output of the type constructor
+        #   (not confuse with instance constructor)
+        # and indeed used.
+        # if output was unbound in definition, then it is discarded.
+        # static_assert indeed has output when error
+        #
+        # comments are in series with others
+
+    (dynamic-left-input-unbound: callable; otherwise value)
+    (dynamic-left-output-unbound: noreturn; otherwise expression)
+        # noreturn : i.e. abort/exit
+        # void is a expr, I think.
+    (dynamic-right-output-unbound: ??; otherwise ??)
+        # bound example: printer/screen; server
+        # unbound: usb without hardware; disconnect network
+    (dynamic-right-input-unbound: dynamic-abstract; otherwise dynamic-concrete)
+        # bound example: keyboard/mouse; server
+        # in C++, dynamic-abstract example:
+        #    abstract class
+        #    function/module with unresolved extern function/type declaration
+        #    unbound nonstatic class member
+        #        that is why we have OO-language
+    (dynamic-left-input contians dynamic-evirement, side-effect counts)
+
+
+
+
+
+
+connected in series
+          ---------
+----->>--|         |-->>--
+         | child_1 |
+   --<<--|         |--<<--
+  |       ---------
+  |
+  |
+  |       ---------
+   -->>--|         |-->>--
+         | child_2 |
+   --<<--|         |--<<--
+  |       ---------
+  |
+ ...
+  |
+  |       ---------
+   -->>--|         |-->>--
+         | child_N |
+-----<<--|         |--<<--
+          ---------
+
+
+connected in parallel 
+                      ---------
+----------------->>--|         |-->>--
+  |                  | child_1 |
+  |            --<<--|         |--<<--
+  |           |       ---------
+  |           |
+  |           |
+  |           |       ---------
+  |-----------(-->>--|         |-->>--
+  |           |      | child_2 |
+  |           (--<<--|         |--<<--
+  |           |       ---------
+  |           |
+ ...         ...
+  |           |
+  |           |       ---------
+   -----------(-->>--|         |-->>--
+              |      | child_N |
+-----------------<<--|         |--<<--
+                      ---------
+(-->>--: share: namespace/base class/xx.h/html-entry; globals(for threads), broadcast)
+(--<<--: unify: translate, destruct; collect, first, best, serialize)
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,83 @@
+[page 317] 7.3 MORE NP-COMPLETE PROBLEMS
+[NP-complete A][NP B][exist polynomial reduction from A to B] ==>> [NP-complete B]
+    -- [NP-complete A][NP B] ==>> B is not harder than A
+    -- [exist polynomial reduction from A to B] ==>> A is not harder than B in sense of polynomial reduction
+    -- ==>> B is as hard as A ==>> [NP-complete B]
+
+Figure 7-4
+
+BOUNDED TILING
+    SATISFIABILITY
+        3SAT
+        MAX SAT
+        EXACT COVER
+            HAMILTON CYCLE
+                UNDIRECTED HAMILTON CYCLE
+                    TRAVELING SALESMAN PROBLEM
+            KNAPSACK
+                PARTITION
+                TWO MACHINE SCHEDULING  
+        INDEPENDENT SET
+            CLIQUE
+            NODE COVER
+        INEQUIVALENCE OF *-FREE REGULAR EXPRESSIONS
+GRAPH COLORING  
+
+
+
+
+7.4 COPING WITH NP-COMPLETENESS
+    Special Cases
+        graph v.s. tree
+    Approximation Algorithms
+        All NP-complete optimization problems can therefore be subdivided into three large categories:
+        [fully approximable]
+            (a) Problems that are fully approximable, in that there is an e-approximate polynomial-time algorithm for them for all e > 0, however small. Of the NP-complete optimization problems we have seen, only TWO-MACHINE SCHEDULING (in which we wish to minimize the finishing time D) falls into this most fortunate category. 
+        [partly approximable]
+            (b) Problems that are partly approximable, in that there are e-approximate polynomial-time algorithms for them for some range of e's, but -- unless of course P = NP -- this range does not reach all the way down to zero, as with the fully approximable problems. Of the NP-complete optimization problems we have seen, NODE COVER and MAX SAT fall into this intermediate class. 
+        [inapproximable]
+            (c) Problems that are inapproximable, that is, there is no e-approximation algorithm for them, with however large e -- unless of course P = NP. Of the NP-complete optimization problems we have seen in this chapter, unfortunately many fall into this category: the TRAVELING SALESMAN PROBLEM, CLIQUE, INDEPENDENT SET, as well as the problem of minimizing the number of states of a deterministic automaton equivalent to a given regular expression in output polynomial time (recall the corollary to Theorem 7.3.8). 
+    approximate special cases
+        TRAVELING SALESMAN PROBLEM
+             distance matrices satisfy the triangle inequality ==>> partly approximable
+             Euclidean distances ==>> fully approximable
+    Backtracking -- "yes-no" problem
+    Branch-and-Bound -- optimization problem, e.g. minimization problem/maximization problem
+    Local Improvement -- optimization problem, evolution
+        Our final family of algorithms is inspired by evolution: What if we allow a solution of an optimization problem to change a little, and adopt the new solution if it has improved cost? Concretely, let S0 be the set of candidate solutions in an instance of an optimization problem (again, we shall assume that it is a minimization problem). Define a neighborhood relation R on the set of solutions R |<=| S0 * S0 -- it captures the intuitive notion of "changing a little." For s |<-| S0, the set {s' : (s, s') |<-| R} is called the neighborhood of s.
+        -- evolution - change a little - neighborhood relation - neighborhood
+        [local optimum] s is a local optimum if there is no s' in the neighborhood of s with better cost.
+        energy landscape
+        initial_solution should best be randomized
+            to restart many times the local improvement algorithm, and obtain many local optima. 
+
+        simulated annealing
+            annealing schedule
+        genetic algorithms
+        neural networks
+
+
+
+
+
+
+data QuickResult result
+    = Solution result
+    | Backtracking -- NoResult
+    | NotObviously -- NotClearly
+quick_heuristic_test :: problem -> QuickResult result
+branching :: problem -> Set problem
+backtracking_algorithm :: Set problem -> Maybe result
+backtracking_algorithm problems =
+  case S.minView problems of
+    Nothing -> Nothing
+    Just (problem, problems') ->
+      case quick_heuristic_test problem of
+        Solution result -> Just result
+        Backtracking -> f problems'
+        NotObviously -> f $ S.union problems' $ branching problem
+  where f = backtracking_algorithm
+
+
+
+

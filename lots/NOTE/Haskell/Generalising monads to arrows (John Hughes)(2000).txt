@@ -1,0 +1,534 @@
+G ::= a G b | c
+gram = symbol "a" `cat` gram `cat` symbol  "b" <+> symbol "c"
+
+
+
+
+
+2. Background: Library design using monads
+
+class Monad m where
+    return :: a -> m a
+    (>>=) :: m a -> (a -> m b) -> m b -- bind
+
+    -- parameterised type : m :: *->*???
+
+
+2.1. An Example: A monad to manage failures
+    data Maybe a = Just a | Nothing
+    fail:: Maybe a
+    fail = Nothing
+2.2. Another example: A monad to manage state
+    newtype StateMonad s a= SM (s -> (a, s))
+
+    instance Monad (StateMonad s) where
+        return a = SM (\s -> (a, s))
+        x >>= f = SM (\s -> let SM s2as = x
+                                (a, s') = s2as s -- state updating was the same as x, so we need other method to update the state
+                                SM s2bs = f a -- m b
+                            in s2bs s') -- the new state s'
+
+
+        fetch :: StateMonad s s
+        fetch = SM (\s -> (s, s))
+        store :: s -> StateMonad s ()
+        store x = SM (\s -> ((),x))
+
+
+2.3. Monadic parsing combinators
+    newtype Parser s a = P ([s] -> Maybe (a, [s]))
+
+
+2.5. Further parsing combinators
+    -- failure operator
+    class Monad m => MonadZero m where
+        zero :: m a
+    instance MonadZero Parser where
+        zero = P (\s -> Nothing)
+    
+    -- support a choice combinator
+    class MonadZero m => MonadPlus m where
+        (++) ::m a -> m a -> m a
+    instance MonadPlus Parser where
+        P s2as1 ++ P s2as2 = P(\s -> case s2as1 s of
+                                    Just (x, s1) -> Just(x, s1)
+                                    Nothing -> s2as2 s)
+
+
+
+Ironically, in practice a and b usually recognise quite different syntactic constructs, so that if a succeeds in parsing many symbols then b will almost certainly fail as soon as it is invoked. Saving the input for b is costly only when it is unnecessary!
+Although monadic parser libraries work quite well in practice, the fundamental problem remains unsolved, which is really rather unsatisfactory.
+
+
+3. Swierstra and Duponcheel's parsing library
+    data StaticParser s = SP Bool [s]  -- nullable, first_symbols
+    newtype DynamicParser s a = DP ([s] -> Maybe (a, [s]))
+    data Parser s a = P (StaticParser s) (DynamicParser s a)
+
+    we must compute the static parts of parsers once and for all, before parsing begins. It is simply impossible to find a definition of >>= which does this.
+
+
+
+Just as we think of a monadic type m a as representing a `computation delivering an a', so we think of an arrow type a b c (that is, the application of the parameterised type a to the two parameters b and c) as representing a `computation with input of type b delivering a c'.
+
+class Arrow a where
+    arr   :: (b -> c) -> a b c          -- v.s. return :: a -> m a
+    (>>>) :: a b c -> a c d -> a b d    -- v.s. (>>=)  :: m a -> (a -> m b) -> m b
+
+    -- let b be () ...
+    -- arr :: (() -> c) --> a () c
+    -- a () c -> a c d -> a () d
+    -- a () c v.s. m c
+    
+    -- why not define : call :: a b c -> b -> a () c
+    --         call a_b2c b = (arr \()->b) >>> a_b2c 
+    -- why not define : (>>>==) :: a () c -> (c -> a () d) -> a () d
+    
+    -- what if arr :: Arrow aa => (aa b c) -> a b c
+    -- note : Arrow (->) where arr f = f
+
+For any monad m, functions of type b -> m c are potential arrows.
+newtype Kleisli m b c = K (b -> m c)
+instance Monad m => Arrow (Kleisli m) where
+    arr b2c = K (\b -> return (b2c b))
+    K b2mc >>> K c2md = K (\b -> b2mc b >>= c2md)
+
+
+-- monad add v.s. arrow add
+add :: Monad m => m Int -> m Int -> m Int
+add x y = x >>= \u -> y >>= \v -> return (u+v)
+add :: Arrow a => (a b Int) -> (a b Int) -> (a b Int)
+add f g = ??? -- arr \b -> call f b + call g b
+              -- save input as b, calc result from f and g, add them
+              -- arr \b -> call f b >>>== 
+                     \i -> call g b >>>== 
+                     \j -> arr () (i+j)
+
+
+class Arrow a where
+    ... -- arr, >>>
+    first :: a b c -> a (b, d) (c, d) -- save part of input...
+
+
+second :: Arrow a => a b c -> a (d, b) (d, c)
+second f = arr swap >>> first f >>> arr swap
+           where swap (x, y) = (y, x)
+
+(***) :: Arrow a => a b c -> a d e -> a (b, d) (c, e)
+f *** g = first f >>> second g
+(&&&) :: Arrow a => a b c -> a b d -> a b (c, d)
+f &&& g = arr(\b -> (b, b)) >>> (f *** g)
+
+liftA2 :: Arrow a => (b->c->d) -> (a e b) -> (a e c) -> (a e d)
+liftA2 op f g = (f &&& g) >>> arr(\(b, c) -> b `op` c)
+add :: Arrow a => (a b Int) -> (a b Int) -> (a b Int)
+add = liftA2 (+)
+
+
+
+[side-effect]
+    (f&&&g) >>> arr fst = f -- not holds
+    since our arrows usually represent computations with some sort of effect, laws of this sort are simply false. In this case, the side-effects of g are lost on the right-hand side.
+    why we chose to take first as primitive, rather than (say) &&& which resembles a well-known categorical operator.
+        1) order : 
+            since in general our arrows represent computations with effects, evaluation order makes a difference.
+            definition of f&&&g above is explicit about this: the effects of f are composed with the effects of g in that order, that is evaluation is left to right.
+        2) size :
+            first is a simpler operator than &&&, and in general its implementation is around half the size of that of the latter.
+
+
+
+
+
+
+
+
+Our intention is that the static properties of a parser should not depend on parse-time inputs, so let us change only the type of the dynamic parsing function:
+    data StaticParser s = SP Bool [s]  -- nullable, first_symbols
+    -- deprecated: newtype DynamicParser s a = DP ([s] -> Maybe (a, [s]))
+    -- deprecated: data Parser s a = P (StaticParser s) (DynamicParser s a)
+    newtype DynamicParser s a b = DP ((a, [s]) -> Maybe (b, [s]))
+    data Parser s a b = P (StaticParser s) (DynamicParser s a b)
+
+
+
+
+class Arrow a => ArrowZero a where
+    zeroArrow :: a b c
+class ArrowZero a => ArrowPlus a where
+    (<+>) :: a b c -> a b c -> a b c
+
+
+(<*>) :: Parser s a (b->c)  -> Parser s a b -> Parser s a c
+(<*>) = liftA2 (\f x -> f x)
+
+
+
+
+
+5. Arrows and interpreters
+data Exp = Var Id | Add Exp Exp
+type Id = String
+data Val = Num Int
+type Env = [(Id, Val)]
+
+-- monad
+eval :: Exp -> Env -> M Val
+eval (Var s) env = return (lookup s env)
+eval (Add e1 e2) env = liftM2 add (eval e1 env) (eval e2 env)
+    where add (Num u) (Num v) = Num (u+v)
+
+-- arrow
+eval :: Exp -> A Env Val
+eval (Var s) = arr (lookup s)
+eval (Add e1 e2) = liftA2 add (eval e1) (eval e2)
+    where add (Num u) (Num v) = Num (u+v)
+
+
+5.1. Interpreting conditionals
+data Exp = ... | If Exp Exp Exp
+data Val = ... | Bl Bool
+
+-- monad
+eval (If e1 e2 e3) env = eval e1 env >>= \(Blb) -> 
+    if b then eval e2 env else eval e3 env
+
+-- arrow
+eval (If e1 e2 e3)= (eval e1 &&& eval e2 &&& eval e3) >>>
+    arr (\(Bl b, (v1,v2)) -> if b then v1 else v2)
+but this does not properly capture the meaning of a conditional expression: both branches are evaluated, and we just choose between the results.
+
+data Either a b = Left a | Right b
+(|||) :: ArrowChoice a => a b d -> a c d -> a (Either b c) d
+
+class Arrow a => ArrowChoice a where
+    left :: a b c -> a (Either b d) (Either c d)
+
+right f = arr mirror >>> left f >>> arr mirror
+            where mirror (Left x) = Right x
+                  mirror (Right x) = Left x
+f +++ g = left f >>> right g
+f ||| g = (f +++ g) >>> arr untag
+            where untag (Left x) = x
+                  untag (Right y) = y
+
+test :: Arrow a => a b Bool -> a b (Either b b)
+test f = (f &&& arr id) >>> arr(\(b, x) -> if b then Left x else Right x)
+
+eval (If e1 e2 e3) = test (eval e1 >>> arr(\(Bl b) -> b)) >>> (eval e2 ||| eval e3)
+
+
+
+5.2. Interpreting lambda-calculus
+data Exp = ... | Lam Id Exp | App Exp Exp -- but App (Lam ...) Exp
+-- monad
+data Val = ... | Fun (Val -> M Val)
+-- arrow
+data Val = ... | Fun (A Val Val)
+
+-- monad
+eval (Lam x e) env = return (Fun (\v -> eval e ((x, v):env)))
+eval (App e1 e2) env = eval e1 env >>= \f -> eval e2 env >>= \v -> f v
+    -- bug, should be
+    eval (App e1 e2) env = eval e1 env >>= \ff -> 
+            case ff of 
+            Fun f -> eval e2 env >>= \v -> f v
+            _ -> failure
+
+-- arrow
+eval (Lam x e) = arr (\env -> Fun (arr (\v -> (x, v):env) >>> eval e))
+eval (App e1 e2) = ((eval e1 >>> arr (\(Fun f) -> f)) &&& eval e2) >>> app
+for some suitable definition of app, then we find that app must invoke an arrow which it receives as an input, and there is no way to do so using the combinators so far introduced.
+class Arrow a => ArrowApply a where
+    app :: a (a b c, b) c
+class ArrowApply a => ArrowChoice where
+    left f = arr (\z -> case z of
+                    Left b -> (arr (\() -> b) >>> f >>> arr Left, ())
+                    Right d -> (arr (\() -> Right d), ())
+                 ) >>> app
+
+
+instance Monad m => ArrowApply (Kleisli m) where
+    app = K (\(K f, x) -> f x)
+
+
+
+newtype ArrowApply a => ArrowMonad a b = M (a Void b)
+    where Void is Haskell's one-point type, whose only element is the undefined value _L.
+
+instance ArrowApply a => Monad (ArrowMonad a) where
+    return x = M (arr (\_->x))
+    M m >>= f = M (m
+                   >>> arr (\x -> let M h = f x in (h, _L))
+                   >>> app)
+One conclusion we can draw from this is that arrow types which support app are just as expressive as monads.
+
+But another conclusion to draw is that arrows supporting app are really of little interest to us here.
+    any library which supports an arrow type with app could equally well be given a monadic interface.
+    therefore, we will be most interested in arrow types which "cannot" be made instances of ArrowApply.
+
+
+
+
+
+
+[arrow/~choice/~apply v.s. monad]
+    What we see here is that the arrow interface lets the programmer make finer distinctions than the monad interface does; we can distinguish between types of computations that permit dynamic choices and calls of dynamic functions, and types of computations that do not. In contrast, once we declare a type to be a monad, we open the possibility of doing everything with it. This is why the monadic interface is restrictive: the only kinds of computations we can represent as monads are those which support "all" the operations of choice, application, and so on. But computations which support only some of these can still be represented as arrows, they just will not be instances of all the arrow classes.
+
+    It may seem surprising that we focus our attention on arrows without app, when Cartesian Closed Categories (which model the lambda-calculus) otherwise play such a large role in computer science, or indeed, when higher-order programming is so prevalent in Haskell. But we are actually giving up very little, since when we use arrows we work with two `levels' of function. Of course, we can still work with functions on functions, and even functions on arrows; the one thing we cannot express is arrows on arrows. It is a small price to pay for the generality which arrows give us.
+
+
+
+
+
+
+
+
+6. Stream processors: Processes as arrows
+class StreamProcessor SP where
+    -- StreamProcessor InputElem OutputElem
+
+    put :: b -> SP a b -> SP a b 
+    -- which constructs a stream processor which outputs the b and then behaves like the second argument
+
+    get :: (a -> SP a b) -> SP a b
+    -- which constructs a stream processor which waits for an input, passes it to its function argument, and then behaves like the result.
+
+
+
+instance StreamProcessor SP => Arrow SP where
+    arr f = get (\x -> put (f x) (arr f)) -- output = fmap f input??
+    
+    -- assume Put/Get as constructors
+    -- the >>> operator connects two processes in series
+    --    >>> infixr
+    -- run (sp1 >>> sp2) input == run sp2 . run sp1 $ input
+    sp1 >>> Put c sp2 = Put c (sp1 >>> sp2)
+    Put b sp1 >>> Get f = sp1 >>> f b
+    Get f1 >>> Get f2 = Get (\a -> f1 a >>> Get f2)
+    ...
+
+        first sp = bypass [] [] sp
+
+-- The function bypass below takes as additional arguments the queues of unused first and second components; note that one of these is always empty.
+-- bypass :: [b]:unused_fst [d]:unused_snd (sp b c)
+bypass [] ds (Get f) = Get (\(b, d) -> bypass [] (ds++[d]) (f b))
+bypass (b:bs) [] (Get f) = bypass bs [] (f b)
+bypass bs [] (Put c sp) = Get (\(b, d) -> Put (c, d) (bypass (bs++[b]) [] sp))
+bypass [] (d:ds) (Put c sp) = Put (c, d) (bypass [] ds sp)
+
+
+
+-- outputs Fibonacci numbers:    fibs = put 0 fibs'   
+    -- fibs = 0 : fibs'
+    -- fibs[0] = 0; fibs[i] = fibs'[i-1]
+    fibs' = put 1 (liftA2 (+) fibs fibs') 
+    -- fibs' = 1 : zipWith (+) fibs fibs'
+    -- fibs'[0] = 1; fibs'[i] = fibs[i-1] + fibs'[i-1]
+
+
+-- support a natural notion of failure: a failing process simply never produces more output. 
+-- sink
+instance ArrowZero SP where
+    zeroArrow = Get(\x -> zeroArrow) 
+
+-- p<+>q to run p and q in parallel, merging their outputs
+-- fanout ??
+instance ArrowPlus SPwhere
+    Put b sp1 <+> sp2 = Put b (sp1 <+> sp2)
+    sp1 <+> Put b sp2 = Put b (sp1 <+> sp2) -- random...
+    Get f1 <+> Get f2 = Get (\a -> f1 a <+> f2 a)
+
+laws:
+    zeroArrow <+> q = q
+    p <+> zeroArrow = p
+    (p<+>q)<+>r = p<+>(q<+>r)
+
+instance ArrowChoice SP where
+    left (Put c sp)=Put(Leftc)(left sp)
+    left (Get f) = Get (\z -> case z of
+                            Left a -> left (f a)
+                            Right b -> Put (Right b) (left (Get f))
+                        )
+
+
+-- +++ : several channels
+-- ||| : multiplexing several channels onto one
+
+-- one to two channels
+f |&| g = (arr Left <+> arr Right) >>> (f +++ g)
+
+-- just copies one input channel and discards the other
+justLeft = arr id ||| zeroArrow
+justRight = zeroArrow ||| arr id
+
+
+laws:
+    (f |&| g) >>> justLeft = f
+    (f |&| g) >>> justRight = g
+But these properties have a categorical interpretation: 
+    they tell us that the Either type is a "weak categorical product" in the category of stream processors! 
+    (Only weak, because there is more than one way to define |&| so that these equations hold; our definition favours g over f in the case that both produce outputs simultaneously.)
+
+
+
+
+
+
+
+
+it turns out that there is no sensible definition of
+    app :: SP (SP a b, a) b
+Since app would receive a new stream processor to invoke with every input, there is no real sense in which the stream processors it is passed would receive a stream of inputs; we could supply them with only one input each. This would really be very unnatural.
+-- unnatural but we are "able" to implement it!!!
+
+
+dyn :: SP (Either (SP a b) a) b
+There is actually a very natural definition with this type: the `dynamic stream processor' dynreceives stream processors on its first input channel, and then passes inputs from its second input channel through the stream processor received, until it receives another stream processor to replace the first.
+dyn = dynloop zeroArrow
+    where dynloop (Put b sp) = Put b (dynloop sp)
+          dynloop (Get f) = Get (\z -> case z of
+                                    Right a -> dynloop (f a)
+                                    Left sp -> dynloop sp
+                                )
+
+
+
+
+
+
+
+
+
+
+7. Arrow laws
+an implementation of return and >>= constitutes a monad only if the so-called monad laws are satisfied:
+[monad laws]
+    -- return : unit
+    return x >>= f = f x
+    m >>= return = m
+    
+    -- >>= : associative
+    (m >>= \x->f x) >>= g = m >>= \x-> (f x >>= g)
+    
+These laws state in essense that sequential composition is associative, and return is its unit, although they are complicated slightly by the need to pass values from one computation to the next.
+
+
+
+
+
+
+-- (->) be arrow
+instance Arrow (->) where
+    arr f = f
+    f >>> g = g . f
+    first f = \(b, c) -> (f b, c)
+instance ArrowChoice (->) where
+    left f (Left b) = Left (f b)
+    left f (Right d) = Right d
+instance ArrowApply (->) where
+    app = \(f, x) -> f x
+
+
+[arrow laws]
+    [>>>]
+        (f>>>g) >>> h = f >>> (g>>>h) -- f :: Arrow a => a b c
+        arr (f>>>g) = arr f >>> arr g -- f,g :: a->b
+        
+        arr id >>> f = f = f >>> arr id -- f :: Arrow a => a b c
+        
+        
+    [first/left]
+        first (arr f) = arr (first f) -- f :: a->b
+        left (arr f) = arr (left f) -- f :: a->b
+        
+        
+        first (f>>>g) = first f >>> first g
+        left (f>>>g) = left f >>> left g
+        
+        -- not hold: (f***g) >>> (h***k) = (f>>>h) *** (g>>>k)
+        -- since eval order diff: 
+        --   1) (a, b) -> (c, b) ->   (c, d)   -> (e, d) -> (e, f)
+        --   2) (a, b) -> (c, b) ->   (e, b)   -> (e, d) -> (e, f)
+        --   if (g,h) has side-effect ...
+        
+        
+        
+        first f >>> arr fst = arr fst >>> f
+        -- not hold : first f >>> arr snd = arr snd
+        --     since side-effects of f lost in right-hand side
+        
+        
+        
+        first f >>> second (arr g) = second (arr g) >>> first f
+        -- require (arr g) to be pure arrow to avoid potentially changing the order in which side-effects occur.
+        
+        
+        
+        assoc ((x, y), z) = (x, (y, z)) -- moving yinto the `saved state'
+        arr assoc >>> first f = first (first f) >>> arr assoc
+        
+        ((f***g)***h) >>> assoc = assoc >>> (f***(g*L***h))
+        
+        -- not hold : f>>>(g&&&h) = (f>>>g)&&&(f>>>h)
+        --   the side-effects of fare duplicated on the right.
+        
+        arr Left >>> left f = f >>> arr Left
+        right (arr g) >>> left f = left f >>> right (arr g)
+        arr assocsum >>> left f = left (left f) >>> arr assocsum
+        where
+            assocsum (Left (Left x)) = Left x
+            assocsum (Left (Right y)) = Right (Left y)
+            assocsum (Right z) = Right (Right z)
+        
+        
+    [app]
+        first (arr (\x -> arr (\y -> (x, y)))) >>> app = arr id
+        
+        first (arr (g>>>)) >>> app = second g >>> app 
+        -- g :: a b c
+        -- (g>>>) :: a c d -> a b d
+        -- arr (g>>>) :: a (a c d) (a b d)
+        -- first (arr (g>>>)) :: a (a c d, bb) (a b d, bb)
+        ---- app :: a (a b d, b) d
+        -- first (arr (g>>>)) >>> app :: a (a c d, b) d
+        -- second g :: a (acd, b) (acd, c)
+        ---- app :: a (a c d) d
+        -- second g >>> app :: a (a c d, b) d
+        
+        first (arr (>>>h)) >>> app = app >>> h
+        
+        
+        arr (\x -> (f, x)) >>> app = f
+        
+        
+        
+        
+        first (arr (\x -> arr (\y -> (x, y)) >>> f)) >>> app = f
+
+
+
+    [ArrowZero/ArrowPlus]
+        <+>is associative, and zeroArrow is its unit.
+        -- not holds: zeroArrow >>> f = zeroArrow
+
+
+
+
+
+
+// mine:
+//   ????????
+
+newtype StateMonad s a = SM (s -> (a, s))
+newtype StateMonad state_t output_t = SM (state_t -> (output_t, state_t))
+newtype StateMonad self result = SM (self -> (result, self))
+
+class X:
+    def __call__(self):
+        ...
+        return result
+
+
+
+

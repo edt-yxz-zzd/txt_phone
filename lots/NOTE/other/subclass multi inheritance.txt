@@ -1,0 +1,83 @@
+
+class MRO_ABC_Meta(ABCMeta):
+base class not instance of MRO_ABC_Meta will move to last in mro
+0) __contains__, __le__
+1) @override
+    use @override iff define a new method to override same name method in base class
+    so there are one and only one introduction of a method
+        except it is a NotImplemented abstract_method
+    there are not two base classes with no relationship but both introduct same method
+        ??__init__??
+        ??__hash__??
+    forbidden super(...).f; only XXX.f(self, ...) allowed
+        except f is arbitrary_override_order_method
+2) let bases == mro except those bases not instances of MRO_ABC_Meta
+    each time run the python, assign each cls a global order uint
+    A is B <==> ord[A] == ord[B]
+    A <: B, ==>> ord[A] <= ord[B]
+    [not (A <: B or B <: A)]:
+        (ord[A] < ord[B]) may change
+        methods of same name of A,B must be overrided in the some subclass of both A,B
+
+
+@not_impleneted_abstract_method
+    raise NotImplementedError
+#abstract_methods
+property/classmethod/staticmethod
+    property override property
+    classmethod override classmethod
+    should not override staticmethod
+
+@override
+    @arbitrary_override_order_method
+        used at definition in base class
+        api should be stable, like:
+        f(a, b, *arg, k, v=2, **kwargs):pass
+        since will call super().f
+        f should not be not_impleneted_abstract_method
+    __using_methods__ = {supercls: method_names}
+    should use an overrided method
+        i.e.
+            class C:
+                def f()...
+            class B(C):
+                @override
+                def f()...
+            class D(C):
+                @override
+                def f()...
+            class A(B):
+                using C.f # Error: B.f override C.f
+            class A(D,B):
+                using D.f # fine
+                using B.f # fine
+override_methods
+    like __eq__, __hash__
+    when __eq__ overrided, __hash__ will be disable
+    when 'f' be overrided,
+        *) one method set of [fs | gs | hs] should be overrided right now
+        *) method set us should be overrided later: mark as abstract methods
+    __override_methods_now__ = {method_names : [method_names]}
+    __override_methods_later__ = {method_names : method_names}
+final_method
+    if final_method present, then __using_methods__ should use it to disambiguouse
+
+auto_mixin_methods
+    {__eq__} <==> {__ne__}
+    {__le__|__ge__} ==>> {__eq__}
+    {__le__} <==> {__ge__}
+        # {__le__} ==>> {__gt__, __lt__} for total ordering only
+    {__lt__} <==> {__gt__}
+    {__eq__, __lt__} ==>> {__le__}
+    {__ne__, __le__} ==>> {__lt__}
+    {__le__, __lt__} ==>> {__eq__}
+    ...
+
+    # assume __eq__, (__lt__ | __le__)
+    {__eq__} ==>> {__ne__}
+    {__lt__} ==>> {__gt__}
+    {__le__} ==>> {__ge__}
+    {__eq__, __lt__} ==>> {__le__}
+    {__eq__, __le__} ==>> {__lt__}
+    so, there are 5 base AutoMixinBaseClass
+

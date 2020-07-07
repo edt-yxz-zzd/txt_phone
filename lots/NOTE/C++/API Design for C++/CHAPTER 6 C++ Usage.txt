@@ -1,0 +1,202 @@
+CHAPTER 6 C++ Usage
+
+CHAPTER 6 C++ Usage
+TIP
+    Always provide a namespace for your API symbols via either a consistent naming prefix or the C++ namespace keyword.
+
+TIP
+    If your class allocates resources, you should follow the rule of The Big Three and define a destructor, copy constructor, and assignment operator.
+TIP
+    Consider using the explicit keyword before the declaration of any constructor with a single argument.
+    the new C++0x specification lets you use the explicit keyword in front of conversion operators
+
+TIP
+    Ensure that your API is const correct.
+TIP
+    Declare methods and parameters as const as soon as you can. Trying to retrofit const correctness into an API at a later date can be a time consuming and frustrating activity.
+TIP
+    When passing a reference or pointer into a const method, think about whether that parameter can be declared const too.
+TIP
+    Prefer to return the result of a function by value rather than const reference.
+
+
+Instantiation
+    This is when the compiler generates a regular class, method, or function by substituting each of the template¡¯s parameters with a concrete type.
+Explicit Instantiation
+    template class Stack<int>;
+    However, the onus is then placed on the programmer to ensure that a particular specialization is explicitly instantiated once and only once.
+    From an API perspective, explicit instantiation allows us to move the template implementation into the .cpp file, and so hide it from the user.
+Implicit Instantiation
+    Leaving the decision to the compiler means that it must find an appropriate place to insert the code, and it must also make sure that only one instance of the code exists to avoid duplicate symbol link errors. 
+    This is a non-trivial problem and can cause extra bloat in your object files or longer compile and link times to solve. 
+    Most importantly for API design, implicit instantiation means that you have to include the template definitions in your header files so that the compiler has access to the definitions whenever it needs to generate the instantiation code.
+Lazy Instantiation
+     the standard implicit instantiation behavior
+     only generate code for the parts of a template that are actually used.
+Specialization
+    When a template is instantiated, the resulting class, method, or function is called a specialization.
+    1) instantiated (or generated) specialization
+    2) explicit specialization
+        when you provide a custom implementation
+        template<> void Stack<int>::Push(int val){...}
+Partial Specialization
+    This is when you provide a specialization of the template for a subset of all possible cases.
+    template<typename T> class Stack<T*>{...};
+
+6.4.2 Implicit Instantiation API Design
+    1) Inclusion Model (Vandevoorde and Josuttis, 2002)
+        // XXX.hpp
+        #ifndef XXX_HPP
+        #define XXX_HPP
+        template <...>
+        class XXX{...}; // declare members only
+        #include "XXX_private" // members definition
+        #endif
+    
+    2) Separation Model
+        This allows the declaration of a class template in a .h file to be preceded with the export keyword. Then the implementation of the template methods can appear in a .cpp file.
+        However, this part of the C++ specification is very poorly supported by most compilers. 
+        In particular, neither GNU C++4.3 nor Microsoft Visual C++9.0 compilers support the export keyword. 
+        You should therefore avoid this technique in your APIs to maximize the portability of your API.
+
+6.4.3 Explicit Instantiation API Design
+    If you want to provide only a predetermined set of template specializations for your API and disallow your users from creating further ones, then you do in fact have the option of completely hiding your private code.
+        // XXX.hpp
+        #ifndef XXX_HPP
+        #define XXX_HPP
+        template <...>
+        class XXX{...};  // declare members only
+        typedef XXX<int>IntXXX; // To indicate to your users which template specializations they can use
+        #endif
+        
+        // XXX.cpp
+        #include "XXX.hpp"
+        #include "XXX_private" // members definition
+        template class XXX<int>; // generate the code for the int specialization at this point in the code.
+
+    not only do you (and your clients) get faster builds due to the removal of the overhead of implicit instantiation, 
+    but also, by removing the template definitions from your header, you reduce the #include coupling of your API and reduce the amount of extra code that your clients¡¯ programs must compile every time they #include your API headers.
+
+
+TIP
+    Prefer explicit template instantiation if you only need a predetermined set of specializations. Doing so lets you hide private details and can reduce build times.
+    
+    most compilers provide an option to turn off implicit instantiation completely
+        -fno_implicit_templates // GNU C++ and Intel ICC compilers
+    C++0x extern templates
+        // .hpp
+        // do not instantiate the template here
+        extern template class Stack<int>;
+        
+        // .cpp
+        // explicitly instantiate the template here
+        template class Stack<int>;
+
+6.5 OPERATOR OVERLOADING
+    rule of least surprise
+        use operator overloading in cases where it makes sense, that is, where doing so would be considered natural to the user of your API and not violate the rule of least surprise.
+    avoid overloading the operators &&,||, & (unary ampersand), and , (comma) as these exhibit behaviors that may surprise your users, such as short-circuited evaluation and undefined evaluation order (Meyers 1998; Sutter and Alexandrescu, 2004).
+6.5.2 Free Operators versus Member Operators
+    C++ standard requires that the following operators be declared as member - ?Assignment
+    - [] Subscript
+    - ->Class member access
+    - ->* Pointer-to-member selection
+    - () Function call
+    - (T) Conversion, i.e., C-style cast
+    - new/delete methods to ensure that they receive an lvalue as their first operand
+
+    remaining overloadable operators
+        favor the free function version over the class method version of defining an operator.
+
+    1. Operator symmetry. 
+        binary operator
+    2. Reduced coupling. 
+        A free function cannot access the private details of a class.
+        exception to this rule: 
+            If your operator must access private or protected members of your class, then you should define the operator as a method of the class. 
+            I make this exception because otherwise you would have to declare the free operator to be a friend of your class.
+
+TIP
+    Prefer declaring operators as free functions unless the operator must access protected or private members or the operator is one of , [], ->, ->*, (), (T), new, or delete.
+
+
+
+6.6.1 Pointer versus Reference Parameters
+    - References are used as if they were a value, for example,object.Function() instead of object->Function().
+    - A reference must be initialized to point to an object and does not support changing the referent object after initialization.
+    - You cannot take the address of a reference as you can with pointers. Using the & operator on a reference returns the address of the referent object.
+    - You cant create arrays of references.
+    
+    prefer the use of references over pointers for any input parameters. 
+        This is because the calling syntax for your clients is simpler and you do not need to worry about checking for NULL values (because references cannot be NULL). 
+        However, if you need to support passing NULL or if youre writing a plain C API, then you must obviously use a pointer.
+
+    some engineers dislike the fact that the use of references does not indicate to your clients the fact that a parameter may be changed.
+    However, the pointer version makes this fact explicit due to the required use of the & operator. 
+TIP
+    Prefer the use of const references over pointers for input parameters where feasible. 
+    For output parameters, consider using pointers over non const references to indicate explicitly to the client that they may be modified.
+
+
+6.6.2 Default Arguments
+    Default arguments are a very useful tool to reduce the number of methods in your API and to provide implicit documentation on their use. 
+    They can also be used to extend an API call in a backward-compatible fashion so that older client code will still compile, but newer code can optionally provide additional arguments 
+    (although it should be noted that this will break binary compatibility, as the mangled symbol name for the method will necessarily change).
+
+    two issues to be aware
+    First, it supports combinations of arguments that don't make logical sense
+    Also, the default values will be compiled into your client¡¯s programs. 
+        This means that your clients must recompile their code if you release a new version of the API with a different default radius. 
+        In essence, you are exposing the behavior of the API when you do not explicitly specify a radius value.
+TIP
+    Prefer overloaded functions to default arguments when the default value would expose an implementation constant.
+
+    Not all instances of default arguments need to be converted to overloaded methods. 
+    In particular, if the default argument represents an invalid or empty value, such as defining NULL as the default value for a pointer or "" for a string argument, then this usage is unlikely to change between API versions. 
+    However, if you have cases where you are hardcoding specific constant values into your API that might change in future releases, then you should convert these cases to use the overloaded method technique instead.
+    As a performance note, you should also try to avoid defining default arguments that involve constructing a temporary object because these will be passed into the method by value and can therefore be expensive.
+
+
+6.7 AVOID #DEFINE FOR CONSTANTS
+    1. No typing.A #define does not involve any type checking for the constant you are defining. 
+    2. No scoping.A #define statement is global and is not limited to a particular scope
+    3. No access control. You cannot mark a #defineas public, protected, or private. It is essentially always public.
+    4. No symbols. #define symbolic names may be stripped from your code by the preprocessor, and as such the compiler never sees this name and cannot enter it into the symbol table (Meyers, 2005).
+
+TIP
+    Use static const data members/enums to represent class constants instead of #define.
+
+TIP
+    Avoid using friends. They tend to indicate a poor design and can allow users to gain access to all protected and private members of your API.
+
+
+
+6.9 EXPORTING SYMBOLS
+    1. External linkage.
+    2. Exported visibility.
+    
+    1. Static declaration.
+    2. Anonymous namespace. namespace {...}
+
+    exporting symbols for shared library
+        For symbols that have external linkage, there is the further concept of exporting symbols, which determines whether a symbol is visible from a shared library. 
+        Most compilers provide decorations for classes and functions that let you explicitly specify whether a symbol will appear in the exported symbol table for a library file. 
+        However, this tends to be compiler-specific behavior.
+            GCC : -fvisibility_hidden + __attribute__((visibility("default"))) | __attribute__((visibility("hidden")))
+            MVS : __declspec(dllexport) | __declspec(dllimport)
+            
+        Many compilers also allow you to provide a simple ASCII file that defines the list of symbols that should be exported by a dynamic library. 
+        Symbols that do not appear in this file will be hidden from client programs.
+            MVS .def files
+            GCC export map files
+TIP
+    Use internal linkage to hide file scope free functions and variables inside your .cpp files. This means using the static keyword or the anonymous namespace.
+
+
+TIP
+    Specify coding standards for your API to help enforce consistency, define processes, and document common engineering pitfalls.
+
+    C++coding conventions
+        Google C++ style guide http://google-styleguide.googlecode.com/
+
+

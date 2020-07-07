@@ -1,0 +1,101 @@
+
+;; Term <# Term ;; legal context
+    ;; empty
+    [] |- Term <# Term
+
+    ;; more pair
+    [context |- Term <# Term]
+        [context, ([]; [])] |- Term <# Term
+
+    ;; more globals
+    [context, (globals; []) |- term_set <# Term]
+        [set_id not in (context, (globals; [])]
+            context, (globals, set_id <# Term = term_set; []) |- Term <# Term
+    [context, (globals; []) |- term : type]
+        [term_id not in (context, (globals; [])]
+            context, (globals, term_id : type = term, []) |- Term <# Term
+    [context, (globals; []) |- type :: Type]
+        [term_id not in (context, (globals; [])]
+            context, (globals, term_id : type, []) |- Term <# Term
+
+    ;; more locals
+    [term_id not in (context, (globals; locals)]
+        [context, (globals; locals) |- type ::<# Type]
+            context, (globals; locals, (term_id : type; [])) |- Term <# Term
+        [context, (globals; locals) |- set <# Term]
+            context, (globals; locals, (term_id :: set; [])) |- Term <# Term
+        ;; more local constraints
+        [context, (globals; locals) |- term ::<# Term]
+            [context, (globals; locals, (term_id of2 cls; constraints))
+            |- Term <# Term]
+                context, (globals; locals, (term_id of2 cls;
+                            constraints, term_id <: term)) |- Term <# Term
+        [context, (globals; locals, (term_id of2 cls
+        ; constraints, type <: term)) |- Term <# Term]
+            context, (globals; locals, (term_id of2 cls;
+                        constraints, #` type <: term)) |- Term <# Term
+
+
+
+[context |- term :: set <# super]
+    context |- term ::<# super
+[context |- term : type <: super]
+    context |- term :<: super
+[context |- a <: b <: a]
+    context |- a ==: b
+[context |- a <# b <# a]
+    context |- a ==# b
+
+
+;; id ; basic conclusion { <# => :: : <:}
+{-
+[context |- set' <# set <# set'][[] |- set' <# Term]
+    context |- set => set'
+-}
+
+[context |- Term <# Term]
+    ;; def in globals
+    [(set_id <# Term = set) in context]
+        ;; ==>> context |- set_id <# set_id
+        [context |- set <# super]
+            context |- set_id <# super
+        [context |- subset <# set][subset not in VarID]
+            context |- subset <# set_id
+        {-
+        [context |- Term <# set]
+            context |- Term <# set_id
+        [context |- ##` subset <# set]
+            context |- ##` subset <# set_id
+        -}
+    [(term_id : type = term) in context][context |- term => term']
+        context |- term_id => term'
+        context |- term_id : type
+        [context |- term :: set]
+            context |- term_id :: set
+
+        ;; ==>> context |- term_id <: term_id
+        [context |- term <: super]
+            context |- term_id <: super
+        [context |- subterm <: term][subterm not in VarID]
+            context |- subterm <: term_id
+
+    ;; decl in globals or locals
+    [(term_id : type) in context]
+        context |- term_id => term_id
+        context |- term_id : type
+        [context |- type :: set][context |- set ==# ##` set']
+            context |- term_id :: set'
+        context |- term_id <: term_id
+
+    ;; decl in locals
+    [(term_id :: set) in context]
+        context |- term_id => term_id
+        context |- term_id : #` term_id
+        [context |- set ==# set']
+            context |- term_id :: set'
+        context |- term_id <: term_id
+
+    [(term_id_types <: term) in context]
+        [context |- term <: super]
+            context |- term_id_types <: super
+

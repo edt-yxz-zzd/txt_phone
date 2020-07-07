@@ -1,0 +1,540 @@
+Stupid Monkey
+声明与定义并无明显差别。脚本程序通常只有定义，若有声明，则只是静态检查或早期过滤。声明的作用在于分离协作，约束实现。声明可以越来越严格直至与实现一致。
+模糊的地方，比如调用约定、字长、端序，在同一编译器、同型机器上是一致的，但不利于动态库的共享、数据的交流。
+名字与位置的引入、属性与约束的施加
+
+
+
+big_ptr = {ptr_to_struct, ptr_to_info(such as type, data offset, member function...)}
+
+void is not None: // diff from python
+    f(,a) => f(void,a) => f(the_default_value, a)
+    void f() => error a=f()
+    f(void=>a,) => a = f's first argument's default value
+    None is just a NULL ptr, it occupied bytes
+
+用例反向定制：
+    for type, data in DFS(graph, root):
+        if type == tree_edge:
+            x = data.lowpt # <====  now type_of(data) contains 'lowpt', we custum the DFS...
+
+提示策略：
+    div(a, b).hint('divided').strategy('somemethod')
+    给出提示以优化，但不一定被支持，可以被忽略，并非必须
+    比如推荐某个范围，再推荐它的子范围，如果无法认知子范围，则忽略，也就是最后有效
+
+中心控制：
+    是否私有，是否是当前编译必须被支持的策略（防止‘提示策略’中策略名写错而不知，虽然可开warning）
+    当前目录只有头模块可以绝对引用外部模块，其它模块从头模块引入
+
+环境感知：
+    比如上面的‘提示策略’，或矩阵乘法，都可以进行全局感知进行优化
+    相关语句从哪里开始，到哪里结束
+    
+群体控制:
+    from XX import *
+    变成 from XX import XX_branch_group
+
+
+
+
+
+
+keyword 'a'
+    predefine p is a prime
+    'a p' is a definition.
+    'a i' or 'a n' for example, as shorthand for 'int i' and 'int n'
+
+usage_wapper
+suger_template
+
+
+内层嵌套的place_holder: loop_ex{..use loop_in..} loop_in{..} // 扁平化
+静态入参构造检查：如SQL语句或repr的字符串形态
+后向配置：对于上层的调用者而言只需知道IO接口，而对于下层的实现模块（本层为半实现框架）只需告知它们接入点的要求
+等价变换：如出现/%时可以进行优化，即高层操作合并指示，这样实现可以非常有效率而用户不需知道真实接口只需用标准接口，支持代码形式不变，减少用户记忆。
+共态分割：如域F[p]，通常p是初始化时决定的，当使用矩阵模板时，每一个元素都含同一个p，这很多余。再比如，只含同一数组中的地址的数组可以抽出首地址，这样只剩下自然数序列，更抽象，只要更换首地址就能变成如文件内地址。
+同态：性质决定对象，偏见决定性质。一个类在某种映射下同态于另一类。在定义一个类时确定它的基类或同态类显然不可能做到。
+
+
+
+一个程序应被分为几个文件，帮助文件/配置文件每用户及默认/交互界面/数据格式化/无ＵＩ功能块（单功能多个）/资源文件（多媒体文件必须独立！）/源文件，以及一个类似于脚本的接口文件，按用户参数进行选择性执行
+文件系统除了绝对地址外，还需要属性标签、注释（方便组织、搜索），支持多视图表达（如上面的某用户的所有配置文件集中在某个视图下的一个配置文件夹中，以方便修改，如当用户名更改时），宏文件概念（如上面的多个文件会抽象为一个接口文件而不致于视图繁杂）
+因为太长的表达式很难阅读，所以可以这样："quotient := divide dividend by divisor" with q = quotient, dd = dividend, d = divisor，注意q,dd,d是实际变量，而quotient 之类是有注释作用的形参（在一处多次使用还可避免重复求值），另外多字段函数名（divide-by）由于使用了by等助词分隔参数，在参数类型相同或可相互转换时，不容易造成参数易位。
+剧情语言（事件、分支、情报变量、剧情必需的资源－对白+环境站位动作镜头）+资源控制语言（物人屋之像－纯文字+头像+ＶＲ、地图、对白旁白语音、音乐音效、ＵＩ、随机事件－遇敌+伤害值+回避率+损毁率。。。）＝ＲＰＧ　or　电影
+强调文件间的相关性（共享性、依赖性、兼容性、构成同一系统的组份平等性、类型或属性相近）与某体系中的地位（注册后可即刻通知潜在使用者、之后可被索引使用；可被通知新事件）
+越是底层的程序，越是强调单一功能和接口规范以便于与其它程序交流；越是高层的程序，越是强调与用户的交互、协调底层程序的组织、可定制性（个性化配置）；系统必须对程序进行分层
+onepass simple, multipass smooth. // 串行简单但可能出现性能瓶颈，并行更流畅、特别是面向用户时能利用用户的阅读、思考、反应时间或单纯分散注意力或进行其它工作但设计复杂？（新的语言特性来了！）
+
+
+程序设计语言
+multipass2onepass::=定义通用的函数ＩＯ格式，如stream，定义push动作，表示一个小结构完成，如ostream<<endl，框架保证每一个小段的数据都被各个函数按顺序处理过（或直到一个函数没有输出）后，才产生一个新的小段。这样各个函数独立工作时是multipass，结合工作时是onepass
+//其实这就是lazy evaluation....
+
+通用文件结构
+按名索引数据，类似文件系统，采用树状路径名
+定义解析动作，类似驱动程序，用于加载别的文件系统或加密文件
+标准化，类似于碎片整理，但保证只要内容一致，标准化后的文件是字节相同的，因此产生的校验码是一致的
+
+
+an assertion is a predicate (a true–false statement) placed in a function to indicate that the predicate is always true at that place.//precondition postcondition
+assert应出现于函数声明前后：
+    assert(input)
+    R func(output, input)
+    assert(R,output,input)
+函数声明：
+    名称、目的
+    约束：输入数据的有效范围、对输出结果的要求（即目的）
+    复杂度保证、资源使用保证（是否无副作用、结果可重现性、内部算法、数据、版本的要求。。。）
+公理与定理的引入：
+    使函数的内部过程在有限条件下能被证明是会实现‘目的’的
+    任何语句都能被证明是合法有效的。
+概念（模板）：=操作+约束+模型目的+与其它概念的关系
+
+
+
+同实现的不同类型：typedef_cast
+也就是typedef old_t, new_t;定义了一个新的类，不可以隐式转换，但可以用typedef_cast转换
+这也要求vector<new_t>只能使用old_t的特化，而不能有自己的定义。
+
+
+
+宏使用声明：
+using macro XXX, YYY
+{
+    // XXX, YYY may be macros
+    // no others should be treated as macros
+}
+
+
+////////////////////////
+类的部分前置声明：
+只声明名字：则可定义指针、引用；delete
+声明部分成员函数：则可用new进行构造、==(const&)（因为不知道结构成员，成员函数的参数类型只能是本类型指针或引用）
+声明部分继承关系与数据成员：但不能用于指针转换
+上述部分成员函数与继承关系的声明：可以用于概念的确认，是否含XX函数之类
+    比如当使用auto_ptr<T>时，根本不需要T的具体定义
+
+
+//////////////////
+按意义挑选类型：
+	比如：int(机器字长)、int_least8_t(表明数据范围), 函数参数类型const int or const struct&(按效率), input_iterator(按概念)、byte(内存最小取址单元)、char(基本字符集的存储单元)、uint_t<2*sizeof(uint)>(按比例)
+但是文件数据格式、模块接口中的类型、通信协议中的类型都是按字节数与字节序定义的: int16_t(定长整型)、byte(octet|8bit)...
+typedef C_t = get the fastest one: {search a container_type that can preserve iterater while inserting items}
+Note: when compiling, C_t will be a concrect type, the object-file will never change, but the compiler env and library headers may change.
+so should generate a concrect header that finally def C_t = ?;
+yes, we can operate name in high level, but in the C compile model, our name various should be determined and stored in file after compiling.
+分离模型：每当编译出低一级的语言表示的库，必须给出完整的头文件。文件格式、体系、指令集、字长、代码是否位置无关、标识映射、数据结构的定义、数据对齐、成员顺序、数据大小、调用约定、异常并行等支持、runtime的要求、动态库的输入要求
+
+双声明：
+    每一份定义都给出详细的保证声明：
+        退出风格（可能缓冲溢出？可能栈溢出(无参数不可重入函数也许可以，参数及返回地址以全局变量传递，直接jump)？可能有递归？可重入(main不可)？可多线程重入？可能死循环？可能不返回（Collatz猜想、停机）？可能调用exit/abort（特别退出）？可能被中断？可能竞争？可能抛出异常？只抛出特定异常？可能阻塞挂起？）
+        算法描述（in-place（堆排序）、复杂度（详细点的分段函数而不仅是bigO，如长精度整数乘法在不同规模时采用不同策略）、更多可选信息（比如求第n个素数时，有时知道前面n-1个素数也许更容易求）、空间要求、随机？稳定？....）
+    每一个调用处都给出一个最少的需求声明+最多的可选信息+挑选指导：任何满足需求声明的保证声明将列入候选，再由优化指导选出最符合要求的结果（或者模糊结果等全局配置）
+
+
+
+意图的区分
+const a = f(b)
+0) 无副作用
+1) 立即求值、输出副作用，a将以固定值出现在后面的使用中
+2) 懒惰求值（重复求值），入参的变化将影响结果，相当于宏展开，只是不想多码字及意思更明确
+3) 延迟求值，只在必须时计算，第一次的求值结果将作为最终结果
+
+
+输出类型也算函数签名
+    f(); <=> (void)f();
+    (T)f(); <=> ...
+
+
+
+
+//////////////////////
+类与精化
+尽量只考虑基本的局部约束
+比如家谱中的每一个人，只要记录双亲就可以了。
+问题：近亲不可以有子女？每个人的父母最多各一个、性别分别是男女？这是一个有向无环图么？
+1）近亲结婚在现代的某些地方依合法，更何况数据的记录可能追及古代；濒危物种人工繁殖或天然都会出现直系交配。
+2）技术在发展，观念在改变。克隆、变性、gay……不管法律与道德，事实就是事实，凭什么拒绝记载客观真相？
+3）因果律，物理约束很靠谱，但是对科幻场景不适用。凭什么数据库不能记录电影中的人物关系？
+4）不过问题也来了，变性问题、双性人之类的，说明性别不只男女，而且可能是变量。说到底基因可以从零造起来源本难考、何况特修斯之舟？
+还是好好地说明类的实现与类名之间的巨大不同比较现实。
+
+
+
+
+
+
+
+
+////////////////////////////////////////////////////
+element and set: // beyond boolean
+enum Number{undetermined,0..}
+set undetermined{u.} nonexist{0}, unique{1}, multiple{2..}, exist{1..}
+a in exist?
+////////////////////////////////////////////////////
+randamness classify:
+////////////////////////////////////////////////////
+name operate
+////////////////////////////////////////////////////
+在C++里面，声明的参数类型都是确定的数据（如果把C++类型名当作编译时的数据），实际参数时由调用处在运行期（函数）或编译期（模板）给出
+参数类型相当于过滤器（搜索），只接受指定集合中的数据
+    如果集合的定义为开放式的，如A={a|traits<a>::is_A == true}，则为概念
+数据的存储空间与解读含义
+存储空间由大小与对齐决定类型（类数组类型的大小？？）
+存储空间满足某些条件，则可成为某些类型
+但有些条件是运行时决定的，比如某指针是否有效，而且无法检查，只能全局控制
+数据 = 数（只读、数据+解码、稳恒）、引用（只读、资源时空限定）、资源（读写）
+//////////////////////////////////////////////////////////////////
+
+
+
+scoped_operater or pattern_reconize: floor(a/b) => floor(/)(a,b){...} 
+scoped_const_cooperation:q=a/b;r=a%b; => inline div_mod(a,b,&q,&r){...}
+
+
+read_ptr/write_ptr/free_ptr(ownership)
+
+
+
+pass_to = assign or swap (using the faser one)
+temp_write_in_place = if failure, this piece will be discard. // since the inner object needn't swap
+    // so, like func()const, we can have func()temp; the normal one will act as: no exception or thrown an exception but no modifiness happened(all-or-nothing)
+return_constructor ::= (t1 v1, t2 v2...) func(t3 v3,...){....;build v1(); build v2();...}
+C++默认实现的函数，默认构造/复制构造/析构/赋值，表示存在对成员进行的顺序枚举的可继承模板函数，可继承表示函数知道当前的类型
+
+
+
+
+
+
+
+ptr<T, stack/heap/static/null, single/(array, length), (init,destruct)/(uninit,construct), read/write, [delete]>
+init/uninit 是状态，表征当前是否已初始化
+destruct/construct/read/write 是表示是否授权构造/析构/读/写（虽然未初始化，也不表示有权初始化）
+delete 是当在heap中时，是否允许free
+当授权一个函数construct时，即代表该函数是一个构造函数，如果失败，只能以异常或其它内建方式通知。
+destruct同理。
+1) typedef pod_like_t<T> A;
+f()
+{
+    static A s;
+    static A as[3]; // array
+    {
+        A a; // auto
+        A aa[3];
+        A* h = new A; // heap
+        A* ah = new A[3];
+        
+        ptr<T, static, single, uninit> ps = &s;
+        ptr<T, static, array, 3, uninit> pas = &as;
+        ptr<T, stack, single, uninit> pa = &a;
+        ptr<T, stack, array, 3, uninit> paa = &aa;
+        ptr<T, heap, single, uninit, delete> ph = h;
+        ptr<T, heap, array, 3, uninit, delete> pah = ah;
+        // 像uninit这种编译期状态，也可在想像的运行期流程中被改变，只不过在分支过后，必须一致（或者统一为一个泛状态）
+        // 在每一个点必须有确定状态
+        redefine ps as ptr<T, static, single, read+write+destruct> by T::init(ps)
+        redefine pas as ptr<T, static, array, 3, read+write+destruct> by
+            if (xxxx)
+            {
+                T::init(pas,axxx...);
+            }
+            else
+            {
+                T::init(pas,bxxx...);
+            }
+        ptr<T, anywhere_but_null, array, any_positive_length, read+write> tmp = pas;
+        redefine ps as ptr<T, static, single, read>; // const
+        redefine ps as ptr<T, static, single>; // 不能读写
+    }
+.....
+
+
+标识的作用域：
+    声明一个新的标识及作用层 // 检查同层不存在同名标识（可要求不与外层标识碰撞，否则默认覆盖外层名；可要求覆盖同层之前的同名标识，否则同层同名碰撞）；占用标识名
+    // 标识的作用域为声明起或前置域（a for a in | a where a =） 至 本层结束或本层某取消点或某屏蔽点
+    // 作用层的扁平化风格：
+    //  {a{b}c{d}e{f{g}}h} == {a|b}.{c|d}.{e|fg}.{h}
+    // 引入别名与约束：
+    //  a::mutable{a->b::constant;a<-unvisible}.{using b instead of a...}
+    增加属性、取消属性
+    // 比如：a.property::set{variable_on_stack::{typeid::type=int,did_alloc::bool=false,did_constuct::bool=false,can_construct::bool=false,can_distruct::bool=false,can_read=false,can_write=false}}
+    // a.property::set{variable_on_stack::{typeid::type=undetermined}}
+    // a.property.variable_on_stack.{typeid=int,did_alloc::bool=false}
+    // a.property.variable_on_stack.{typeid=int,did_alloc::bool=true,can_free::bool=true,did_construct=false}
+    // a.property.discard(variable_on_stack)
+    // 虽然底层可以增加约束属性，但有效性在退出时消失也可在退出前先行取消
+    // 属性增加点可以将动作下放到底层，但属性的增量是已确定的，每分支中底层必须作出要求的增量
+    // 属性增加语句可由基本属性增加语句构成  // 比如自定义构造函数f(int.uninit& a, string.uninit& b, T.uninit& c...)will_init(a,b){...}//why input an uninit data but let it a long? nonsense
+    // 其实构造函数的成员初始化列表太死板，若可声明为T(..)init(all_data_members), 那么初始化可自由控制；有异常则自动rock back
+    // 注意到分支只有if..else，for/try都太复杂
+    // for可能执行多次，属性可能增加多次
+    // try{}catch{}finally{}可能只执行前半部分，属性可能增加0次，有异常时自动析构，所以进入catch只有再次全部构造或抛出异常。
+    // for{}.break{break or goto outer}else{condition=false}finally{} // for 退出状态分为两个再归为一个（重点在于循环的退出状态仍有保存）
+    // 增加点语句的运行结果：成功，属性增加；没有通过，abort，或已析构已初始化部分，此时正常返回或异常
+    // 属性可以有依赖性，当增加一个后继属性时，前面的属性必须已增加；取消时反之
+    // 重点在于不同标识的属性作用域与标识自身不同属性的作用域之间不必有特定约束（如嵌套）
+    // 但可以预先声明约束，如a的作用域小于b，a的某属性作用域小于b的某属性，某作用域开始于某作用域的结束之前
+    // 注意函数的入栈参数：
+    // :output.uninit,input1,i2,i3,call-func<os=1,is=3>
+    // 所以增强版可以为：
+    // :o1,o2,i1,i2,i3,call-f<2,3> // 注意output可以不是uninit,input也可标为uninit
+    // 在栈处理：可以慢慢生成调用栈，前面的函数的输出将保留下来而作为下面函数的输出入
+    // 变长数组与变长多类型 printf(...)...
+    // 无栈溢出函数(或转新栈函数)jump，使用全局变量或预分配新栈保存返回点上下文、出入参及内部变量，重入性是个问题，严格控制函数调用。
+    // goto 同层地址变量（拥有相同属性点，其实就算不是同层也没关系）
+    // 反序标号catch: try{ .A..lab1:.B.;lab2:..C.}switch(lab x){case lab2: catch(e){lab2:..BA; }catch... break; case lab1: catch(e){..A}...}//前面是rockback风格(invented to separate error-handling code from normal code)，如果想在正常流程中处理，可用online_catch: 语句catch...
+    // 可定义函数内部特定属性点类型（goto地址）及相关函数，这些变量只能在同层及内层函数中使用，内层函数只能在同属性点调用（当然不能重入，外函数之外不存在此类型，所以也不能传播到外面），可使用外层函数的标识（甚至goto），与内层作用域的不同之外在于可在多处调用而避免代码重复
+    // 属性可有默认值，但可以重新配置为其它默认值；可以完全展开，从而得到与书写便利无关的源代码；
+    // 书写便利指像‘把这段代码重复x次’‘像python用缩进代替{}’‘使用某属性为默认值其它继承外面配置’；为避免出现像C++11中move构造函数是否隐含实现的问题，可以先展开（编译）为属性确定性源代码，这样的话虽然不会有性能的提升，但也保证意图不会被篡改；编译器的可利用率上升，不同层面的重用：1）如果只是便利风格，那么只是前端的字符串修改，后端不变；2）如果出现新特性，像异常之于C，但能兼容旧语法，则虽然旧编译器无法编译新代码，但新编译器可以编译所有代码；3）属性展开代码不兼容，则!!!；4）属性可选择部分展开，则只避免局部问题，而仍可以有性能上的提升
+    // 元编程。。。分离编译+宏模块+指定输出+输出重命名（或一体多名）+输入重命名。。。
+    // 编译期检查与链接期检查（比如猜测某未定义结构的大小及对齐、模块依赖检查版本什么的）
+    // 每一个函数、类型编译后都是确定的，可用相关配置参数精确刻画；所以编译结果可以并存且可以在链接期检查约束（某某与某某的某参数应该一致；某参数应全局一致）
+    // union指出哪些成员可能同时出现（即不能共享内存）（模糊位置，如果对先后顺序有要求甚至对具体布局都指定的话则确切）
+    // 声明语句间的并行+数据相关性
+    // 分隔线-比如文件的末尾可视为一分隔线，作为某些作用域的结尾；缩进也可是。
+    // sorted_list.discard(sorted)[可去除属性、放宽约束]->random_list->do_anything_to_list【modify】->list.sort()->sorted_list[约束重建] again...
+    // 只读时，1) sorted_list is list: print; 2) sorted_list is faster: find/sort[特化]; 修改时，1) 有更强的约束，容易违规；2) 可先放弃属性，而后重建；3) 避免异常，可以试验临时对象再swap；4) 拥有临时属性的对象在构建与修改时无需在意异常的发生而造成成功一半的尴尬，因为一切修改都会被取消。
+    //     Exception guarantee(none/basic(no resources is leaked, all objects in a correct state, RAII)/strong(either succeed, or throw an exception and date in the same state, temp and swap)/nothrow
+    // 虚成员函数表指针与虚数据成员指针表指针是作为基类的构造入参初始化，公共只读成员：所以其实对于类，数据分为：私有（可进行细分，这样每个组组内有约束，组间正交，组本身就该是一个类）、只读区（也可细分为组，初始化确立约束）、类外只读（类似final阻止覆写）、子类控制区（初始化与析构由子类负责，所以基类不能实例化（纯虚函数）或者提供一个默认版本（虚数据成员，注意到它们并不在本类结构中，但是本类却可实例化，这说明实例化的结构是一个新的类。可细分为不可访问区（如果完全不知道是否已初始化）或本类只读区），其它正交区（保护与公有））
+    //     约束、可见性、类 是不同概念：约束是逻辑上相关的变量集合，是执行代码对当前数据状态的假设，而可见性是用于控制访问（隐藏实现细节，防止随意修改导致约束破坏，防止泄漏信息，分隔信息），类则更多了一层对数据拼装的功能（即使是正交数据也一样拼起来）。约束组：组内数据成员（或函数的局部变量）存在约束，而组间则无关；基本修改函数每次只修改一个组，一个组可以有多个基本修改函数，相当于类（而原先的类默认假设为tuple，即数据成员正交）。有三类数据访问者：本类（友元）、子类（特例）、外部（一般）；方法权限：构、读、写、析；数据状态：不可见、构析未知（知道地址以及内存可用，禁止读写、他人负责，相当于不可见）、约束未知（未知约束是否保持，处于修改进程中或异常）、约束部分确立（比如组内成员是完整的，但组本身的约束可能已破坏，是禁止读写的僵尸，如果析构函数也是只需特定的部分约束，则可以正常析构）、约束确立（可正常读写）。假设读操作对约束无影响，则约束组对基本修改函数外的函数而言是不可见（私有）或只读。非约束区不可见就是屏蔽细节（这是自动生成函数的用武之地或被子类继承），非约束区的只读就是控制写。
+    // concept union: 可以指出当类被当作某一概念时，接口减少、并重命名（为防止不同概念之间的名字冲突，在指定范围内只能是一个概念，共享但不并用）
+    // 由异常的现实可以得出多属性输出函数（比如将返回地址表作为输入，若非以默认状态退出则先替换返回地址）
+    // 重载（特别是const this，或是前面说的temp this）：多属性输入函数，如果每个属性组合都单列处理则与重载无异。
+    // 自由迁移：函数可以声明输出内部跳转点（属性为栈状态及其约束与返回状态的约束），纯迁移入口（被跳入）
+    // function try used on ~destructor()nothrow; AND destructor SHOULD be nothrow/nofail; the empty destructor is used after close()throw(...) otherwise the default handler will be used when nonempty one throw, finally if the handler failed, abort()
+约束与类的区别：类是把结构与约束混合在一起的概念；约束只是对当前可见变量关系的描述
+约束构造函数执行后，被约束变量的某些属性改变，某些属性只读（只有约束析构函数可以修改），只有约束保持可以修改变量。
+不同约束之间的变量可以有重叠部，构造约束时可以一一分别构造，但是因为先前的约束锁定了某些属性，所以后面的构造函数必须能接受这种情况，析构也一样。
+普通函数也可有多约束重载，它不同与函数重载（多个不同函数、调用处选择）或多退出状态函数（多个返回地址，和返回后再case不同），它只是声明本算法将输入类型的特定子集映射到输出类型的特定子集，比如中值排序通常声明为不稳定排序，但是如果输入是已排序的数据，则函数本身的属性也可是稳定的；binary_search虽然输入声明void*，也可用模板函数作类型检查，但毕竟不如直接在声明中说明问题；注意如果基类函数get_visual_address(){return this;}可以同时声明为const版本以及派生类的版本(即返回值根据变量的静态类型cast为该派生类指针，与通常的区别是现在调用处无须显式cast到派生类，更安全)
+注意到，当类型A的数据空间是类型Z的空间的子集时，则称A为Z的子集。Z到Z的映射不一定是A到A，但是Z的不变映射一定是A的不变映射。A的不变映射可扩展到Z，A到A的映射可扩展到Z。
+如果所有f:Z->Z都是f(A)->A，则A称为Z的子类；所以子类有两个条件：A is subset of Z; any f:Z->Z, f(A) is subset of A.
+对于计算机而言，类型的数据空间是按语义的，这表示某些数据表达是不敏感的或者说是等价；比如说对象的地址是否要区别（比如说只能知道自己的值，却并不知道自己的所在，大多数无指针高级语言；比如不能取地址的对象、成员函数中可见的this在返回时将无效之类；将对象与未初始化对象按字节交换，能确立对象的初始化状态的交换，以及对象不敏感本变化；这可用于访问控制类型K，当要访问K控制的资源对象J，需要通过K进行申请，J属于自身地址不敏感型，K状态改变时，J的地址将变化，外部只能再次申请J的地址；J的可移动性仍保持J的惟一性，并不存在构析过程！这对于动态tuple也很重要）？
+    指针成员是否依所指对象区别（瞬时含义-指针通常由机器、程序、输入数据所决定，运行结束后无意义；数组索引也一样；但也因此很可能是不敏感的数据，假设指针缺失整数含义，即不能相减、不能步进、不能比较、不能转化为整数、不能cast或转为基类指针，只剩下默认与复制构造、析构、引用、is_null，并且保证当不是nullptr时不是无效指针且有唯一访问权，则保存入文件时指针可简单变为文件索引，任何需要引用被指对象的东西只能保存对本对象的引用，说明被指对象的引用比本对象的引用失效更快。每一个对象只被单独拥有要保存比较容易（树状），要么不保存的多被指向对象（有向无环或有环）要么只能同时保存，否则同一性丧失，在这一保护过程中必须保证每个引用的有效性，保持每个对象地址只映射到一个文件地址，并且小心内部成员的外在引用；
+    每个可保存类都应该生成一个对应结构，它里面记录了哪些数据成员直接保存、哪些不保存、新增的信息，对于指针成员可以有更详细的信息：1）拥有析构权：真实类型（分配内存时的指针、分配大小、析构方法、保存方法、读取方法）【新增数据可以是指向特定成员（或基类或指明偏移量）、是否数组、数组长度】2）普通观察引用，如果在保存完其它数据后，依然没发现它落在某个已保存区间中，则有误！）？基类指针类型不是派生类指针类型的基类，因为存在偏移量；即使第一个基类0偏移，但是指针加减的增量不同（基类与派生类的数组中）；如果除一个基类外再无其它数据成员，则可将B*视为D*的基类。
+    对象的数值表达空间V可映射到类的数据空间Z，满射同态H:V->Z，s.t. F:V->V,fH(v)=HF(v),(如果H_(z)={v|H(v)=z}),Z是抽象的，而V/F是具体的、可变的，H是表示对无关信息不敏感（这是一种属性）；而当H改变时，表示约束改变，即V所表达的类型改变。V在H下的一个等价分割S(H,V)={{v for v in V if H(v)=z} for z in Z}，注意{} not in S(H,V)
+    假设Z_是Z的子类，即Z_是Z的子集且f(Z_)是Z_的子集，C:Z->Z_是约束构造函数。V_是Z_的数据表达，如果要求V_兼容V，则条件是V_是V的子集，‘满射’同态H:V_->Z_，F(V_)是V_的子集（这是一个重要的要求，比如F()），【fH(v)=HF(v)=>fH(v_)=HF(v_)】
+    Z_的非兼容V表达Vx，如果可转换时，可以是与V_一一映射的。可转换的非兼容表达。
+    简单来说，一个对象v的数据表达为：将有限空间分为可见与不可见区，可见区与不可见内存区的内容是正交的，可见区的空间又分为合法空间与非法空间（如果知道地址，则这也是一个区分其它v的重要信息，但如果并不需要，则代表可能存在于寄存器或其它内存空间，自身地址是不敏感的，即在H中被过滤掉），而子类如果有新的数据成员，显然可见区增加，不可见的自由度下降，整个数据空间减少。
+    数据空间减少（注意常以可见区增加的形式出现，对新区的读写能力增加了自由度）、自由度增加（常以原映射自动继承的形式出现，由于数据空间变小，对称性亦将增加） -> 子类
+    !!!!等等，好像全错了！！！！定义Fz(Z)={z}，则要求Fz(z_)=z not in Z_!!!如果数据空间减少，那就是只读子类！如果要修改它，那么就是属性变更，或者声明原操作的结果仍属于本子类！
+class A; typedef const A A_; class B: private A{}; class C:public A{}; class D:public A{int a;}; A[]; C[]; 则A: 部分内部数据受A的规则约束，数据空间变小，操作由A规定，其它内存空间未约束，操作自由；A_少了写操作，自由度下降，导致数据空间可能比A小，但是由于它保证数据空间与A一致，所以A_是A基类；B因为增加了约束，减少了操作，所以自由度‘可能’下降，数据空间‘可能’比A小，B与A无继承关系；A与C互为基类；D是A的子类，
+即使是整数，如果单位不同，则一样是不同的；索引于不同数组，也是不同的，不同类型的数组的索引需要cast，不同长度的同类型数组的索引之间有派生关系，长度长的派生于长度短的。指针的关系集{非NULL（引用就不行）}{NULL（类型重载变量）}{auto},{static},{heap}（按存储类型），{new}{new[]}{malloc}(按特定内存池)。
+
+
+
+bitwise生成枚举：每个生成子都是这种形式：1<<x；可以与或非，结果仍是此枚举类型；可以指明排除某些组合
+
+
+
+//////////////
+def a=?
+will_not_use a // in the same scope as a
+def a override pre/outer...
+not_use_name a in this level and/or inner level
+
+
+
+/////////////
+语句的执行结果：
+    确定返回
+    确定永不返回
+    动态返回 - 依执行过程与外界交换的信息而定
+    由调用时的参数决定为前面三种。
+    可能抛出异常
+    强制中止（阻塞、中断、暂停、继续、原子）
+语句执行的重叠性：
+    串行 - 不可重叠，按指定先后 - 顺序固定
+    固定交换 - 不可重叠，必须特定先后 - 同一运行期多次执行，顺序相同：1）源代码确定排列，则结果特定于书写顺序；2）编译期确定排列，则结果特定于某次编译的随机值；3）运行期初始化确定排列，则结果特定于某次运行的随机值。
+    交换 - 不可重叠，不必特定先后 - 实现上为每次执行任一串行排列（可以实现为串行） - 或者要求顺序无关（如C中函数实参的求值顺序），或者要求外部对不同的结果不敏感（比如对大小写字母不敏感、随便来一些数据）
+    随机交换 - 不可重叠，禁止每次都是同一先后 - 任一排列出现概率不为0。（比如某些随机算法，即使最后结果相同，通过使用随机数可以避免最坏情况产生）
+    抢答 - 可重叠，禁止实现为串行，某一返回抢答或全部结束则结束 - 每时任一未中止语句的被继续执行的概率不为0，避免被永远挂起（状态1：未中止语句不为0，可能永不停机；状态2：有一返回抢答信号，中止其它，退出语句块；状态3：全部或中止或返回状态4：异常或外部中止） - 结果比如为可能死循环+定时中止（或接收用户中止信号）、漫长而空闲（下载+读写外存）【被系统挂起】+提高CPU利用率、多个策略（最快抢答）
+    任意序 - 可重叠，可以任意方式实现
+语句执行的数据相关性：
+    数据产生与消费 - 固定先后
+    概念上无关 - 概念上无必然联系，但可能出现关联，不影响观察（比如其实使用lock访问同一区域进行累加）
+    逻辑上无关 - 必然读写无关，引用到的字节完全无关
+    顺序无关 - 结果差异不敏感或完全相同
+    冲突
+    
+执行顺序：// 注意
+    {A,B}
+    0）任意序。AB的运行结果不相互影响，都确定返回。都返回时才退出语句块。可并可串。// 注意，意为运行期的结果在概念上无关，但是如果不同实现或在不同环境中因不同执行顺序而得到不同结果，则可确定为设计上的逻辑问题。
+    1）串行：B必须在A结束之后执行，两者无须有返回要求。
+    2）任意序串行，可交换。A、B不特定先后，都确定返回，但运行期不能有重叠部，结果不变。
+    3）有向无环图串行。各语句的执行期不能重叠，有依赖关系的则有先后顺序，否则无关。{指向所有中间结点，所有中间结点指向}
+    4）一终并行：AB的运行结果不相互影响，但至少有一个会返回且返回结果要求终止所有语句的执行。(比如多个优化策略同时执行，最快发现最优结果的策略返回将终止其它)
+        以中止为唯一交流信号（检测返回值时，有的已返回、有的正被检查返回值、有的仍在运行；有一个返回值要求中止，则中止运行中的语句、丢弃其它返回值、以该语句为退出状态）
+    5）通信并行，全部返回则结束。AB有外部关联数据（等待状态、暂停其它、读写公共数据）：虽然不一定要并行（比如在B运行前A就结束了），但也不能强制A在B前运行（比如A可能永远不会停，那么B就永远得不到执行）
+    {A,B,C,D}：默认（任意序）依赖（A->B,C->B）终止语句（B,C,D）友信（）
+    对语句关系的声明，不仅增加编译的自由度，同时突显作者意图，更容易发现实现代码与意图不符的低级错误。
+    调试时可以标记所有新增、修改、访问、删除的字节，看看AB是否无关。
+
+
+
+
+
+inner function: 函数里定义的函数
+noname function: 无名函数，由于无名，无法在下次被调用，所以其实是当场展开的函数
+                复合语句无返回值，虽能通过引用修改变量达到输出目的，但不能用于初始化
+                逗号，不能定义变量（或多个变量），难以保存临时变量
+                a = (int) _{import * or b as i; ...; return t;}
+                a = (int) for (;;){... break/return i;} else { return i;}
+
+return construct: like stack-alloc + in-place new
+
+
+
+
+
+
+//////////////////////
+数据格式、模块依赖、协议
+文件：txt vs bin
+    txt 代表易扩展、数据类型长度无约束。通过搜索分隔字符串，将文件分割为list of string，再进行解析处理。缺点，对特定数据的定位慢，读取某数据时必已读其前面的数据，对正在读取的数据长度无法预知（缓冲区溢出或分段读取或ralloc）
+    bin 代表固定结构、特定字长。易定位源于定长结构及其数组，因为结构定长，易定位各成员；定位所需的索引值通常为定长整数类型，否则包含它的结构为变长（使用索引本来在于将长度不定数组存于他处，但如果索引本身不定长，将无法将变长部分分割出），数组亦变长。定长假设下，文件大小将有限制，或者使用一个变长头以确定后面的索引字长。在定长区，由于索引字长已确定，处理函数必须能够处理至少该范围的整型，如果处理函数使用定长整型，则字长须不小于索引字长。索引字长、定长类型的长度与字节表示、数组的排列、结构的定义等即为格式。
+模块依赖
+    模块的输出、模块的依赖模块、模块的更新、模块的格式
+    模块的输出 - 输出变量声明、输出接口声明、接口调用约定、数据类型的声明（int字长、字节序！）、标识长名
+        如果结构的含义由{x,y}变成{y,x}，如何发现不匹配？
+    模块的格式 - 机器字长、体系指令集、OS、运行库(异常、并行、runtime、ui)
+    模块的输入（依赖） - 依赖于某些模块中的某些接口与变量。（不考虑间接依赖）
+        类型与含义严格匹配。
+    模块的更新 - 可代换性
+        自身更新 - 旧输出不变，增加新输出；没有新输入，减少旧输入 - 方向性，不可逆
+        输入模块集更新 - 旧输入依然能匹配新输入模块集的输出，新模块集的直接依赖属于原所有直/间接依赖（除更新模块外）
+
+
+
+
+
+//////////////////////////////////
+number = boolean | natural_number | lossy_real_number | ring_of_integers_modulo_n | integer | rational_number
+union = union(type:viewer_name,...) // fix size, different types 
+tuple = tuple(type:field_name,...) // fix size, different types
+vector = vector(type) // various length, one type
+array = array(type, n) // fix length, one type
+struct = union | tuple | vector | array
+data_t = number | struct(data_t) // no reference inside it or to it, pure constant data, .bin() .eq()
+reference = reference(type)
+object = reference | number | struct(object) // at least one reference to it, always mutable but can be decrared as constant
+data_object = object(data_t)
+mutable_object = reference(data_t) // mutable-in-place
+name_t = name_t(type) = tuple(string:name, 
+                              bool:is_to_name, 
+                              union(reference(type):to_object, 
+                                    reference(name_t(type)):to_name
+                             )     )
+
+
+name   name_t   object_t  // name is visible for user; name_t is a middle layer; object_t is the block contains real data
+a   -> na    -> oa
+                 ^
+                 |
+b   -> nb    ----- // b != a if a changed
+       ^
+       |
+c   -> nc // c is the same as b except the height and the name
+       ^
+       |
+d   ----  // d is an alias of c, d <=> c
+
+
+
+
+后向配置：
+1) pure algorithms
+    assume concepts or types with limits(i.e. set of all values of the type), functors and axioms
+    assume basic functions and external variables, of above types and concepts // like declaration
+        // #include ...
+    no-side-effect-function-definiton...
+2) architecture/os/memory/runtime/filesystem/gui/...underlying depended configurations
+3) abstract layer headers: constants and typedef
+4) alias or wrapper sources
+5) algorithm-implimented-functions
+6) package configuration
+
+a) compile: 
+    package-configuration
+        other depended-package-configurations
+            alias-or-wrapper sources
+        algorithm-implimented-functions
+            pure-algorithms
+            abstract-layer-headers
+                underlying-depended-configurations
+b) link:
+    package-configuration
+        alias-or-wrapper sources
+        
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+type and concept:
+
+def <type> <instance>;
+
+a type is a set of 3 elements: E, F, A:
+    E is a set of values;
+    F is a set of functions;  # for type identity
+    A is a set of conditions; #axioms# for type identity 
+    
+    M/ME is a set of functions, is a superset of F;  # for practical application
+    C/CE is a set of conditions, is a superset of B; # for practical application
+    M,C can be deduced from {F,A};
+    ME,CE can be deduced from {E,F,A};
+    
+def type T ::= 
+{
+    A = {is_type}
+    F = {}
+    E = {t: is_type(t) for any t}
+};
+
+a value of a type is an element of E of the type;
+a function is a sequence of operations over some named instances which are io or internal variables of certain types or concepts;
+a condition is a theorem about the type(or E or F of the type);
+an instance is a variable, holds an element of a type;
+a concept of some types ts is a type such that:
+    E = { t in T.E:  c(t, ts) for any c in A}
+    F = {}
+    A = {cf, ca}
+    bool cf(T t, T ts...){return t.F contains some certain functions about t and ts}
+    bool ca(T t, T ts...){return t.A contains some certain conditions about t and ts}
+
+
+type itself is a concept;
+
+type t1 is a subtype of type t2 while:
+    t1.E is a subset of t2.E
+    t1.F is a superset of t2.F
+    t1.A is a superset of t2.A
+
+
+
+
+def buildin-type bool ::=
+{
+    E = {true, false};
+    F = {not, and, or}
+    A = {not false, not not true, ...}# since we uses bool here, bool should be a buildin type?
+    M = {equal}
+};
+
+
+
+
+
+
+

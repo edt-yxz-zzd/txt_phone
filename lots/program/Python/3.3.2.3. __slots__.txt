@@ -1,0 +1,21 @@
+3. Data model
+3.3. Special method names
+3.3.2. Customizing attribute access
+3.3.2.3. __slots__
+By default, instances of classes have a dictionary for attribute storage. This wastes space for objects having very few instance variables. The space consumption can become acute when creating large numbers of instances.
+
+The default can be overridden by defining __slots__ in a class definition. The __slots__ declaration takes a sequence of instance variables and reserves just enough space in each instance to hold a value for each variable. Space is saved because __dict__ is not created for each instance.
+
+object.__slots__ 
+This class variable can be assigned a string, iterable, or sequence of strings with variable names used by instances. If defined in a class, __slots__ reserves space for the declared variables and prevents the automatic creation of __dict__ and __weakref__ for each instance.
+
+3.3.2.3.1. Notes on using __slots__
+When inheriting from a class without __slots__, the __dict__ attribute of that class will always be accessible, so a __slots__ definition in the subclass is meaningless. 
+Without a __dict__ variable, instances cannot be assigned new variables not listed in the __slots__ definition. Attempts to assign to an unlisted variable name raises AttributeError. If dynamic assignment of new variables is desired, then add '__dict__' to the sequence of strings in the __slots__ declaration. 
+Without a __weakref__ variable for each instance, classes defining __slots__ do not support weak references to its instances. If weak reference support is needed, then add '__weakref__' to the sequence of strings in the __slots__ declaration. 
+__slots__ are implemented at the class level by creating descriptors (Implementing Descriptors) for each variable name. As a result, class attributes cannot be used to set default values for instance variables defined by __slots__; otherwise, the class attribute would overwrite the descriptor assignment. 
+The action of a __slots__ declaration is limited to the class where it is defined. As a result, subclasses will have a __dict__ unless they also define __slots__ (which must only contain names of any additional slots). 
+If a class defines a slot also defined in a base class, the instance variable defined by the base class slot is inaccessible (except by retrieving its descriptor directly from the base class). This renders the meaning of the program undefined. In the future, a check may be added to prevent this. 
+Nonempty __slots__ does not work for classes derived from ¡°variable-length¡± built-in types such as int, str and tuple. 
+Any non-string iterable may be assigned to __slots__. Mappings may also be used; however, in the future, special meaning may be assigned to the values corresponding to each key. 
+__class__ assignment works only if both classes have the same __slots__. 

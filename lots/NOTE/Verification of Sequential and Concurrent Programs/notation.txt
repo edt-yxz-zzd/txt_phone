@@ -1,0 +1,122 @@
+
+notation
+    {precondition} program {postcondition}
+    
+    {assertion} statement* {assertion}
+
+
+pass // skip // nop
+if B then S1 else S2 ==>> B:(S1|S2)
+while B do S od ==>> B:(S B:)* == (B:S)*B:
+
+while without break ==>> while with break
+    while B do
+        S0;
+        break if B1; ==>> if B1 then break else S1
+        S1
+    od
+    ==>> B:(S0;B1:S1;B:)*(S0;B1:)?
+    b1 := false;
+    while B && not b1 do
+        S0;
+        b1 := B1;
+        if b1 then pass else S1
+    od
+
+while without continue ==>> while with continue
+    while B do
+        S0;
+        continue if B1;
+        S1
+    od
+    ==>>
+    while B do
+        S0;
+        if B1 then pass else S1
+    od
+
+what if break/continue inside "if then else" or other "while"?
+what if break/continue <block-label>??
+    label_x: 
+    control_stmt {
+        {*
+            break label_x; // == goto after_x
+            continue label_x; // == goto endof_x
+        *}
+    endof_x:
+    }
+    else {}
+    after_x:
+what if break/continue <block-label>? to <block-case>??
+    label_x: 
+    control_stmt {
+        {*
+            break label_x to after1; // == goto after_x
+            continue label_x to end1; // == goto endof_x
+        *}
+    endof_x:
+        continue-case{
+            end1:...
+        }
+    }
+    else {}
+    after_x:
+        break-case{
+            after1
+        }
+
+
+S === EMPTY <==> pass
+S === S1; pass; S2 <==> S1; S2
+S === if B then S1 else S2 fi; S3 <==> if B then S1; S3 else S2; S3 fi
+S === goto <T::label>; S1 <==> goto <T::label> <==> T[label:]
+
+
+S === ... {p}; <label~q~n>: {q}T{r}; ...
+    q - label invariant - a boolean expression
+    n - label bound function - an integer expression
+    
+    q -->> n >= 0
+    time t: ip[t-1] > ip[t]==<lable> -->> n[prev] > n[t]
+        i.e. backward goto -->> n[prev] > n[curr]
+        // ip - instruction pointer
+        // backward goto ::= ip[t-1] > ip[t]
+        // forward goto ::= ip[t-1] < ip[t]
+        // reset n for each forward goto
+        // decrease n for each backward goto
+        // ==>> n of first label will reset only once
+        // ==>> visit first label finite times
+        // ==>> visit each label finite times
+        // finite len(S) ==>> finite labels ==>> halt S
+
+
+    what if S === call T. T === call S??
+        ns[S] := [+inf] // initial for call bound of ?reenterable? S
+            // ns[S] := [0] cannot call
+            // ns[S] := [1] cannot reenter
+        call S~pre~n~post === {pre} {n < head ns[S]} ns := n:ns; S; ns := tail ns {post}
+    
+
+
+goto:
+
+S === S0; <label>:S1
+S0 {p}; <label>: {q} S1 ==>> p -->> q
+
+S === S0; <label>:S1; ... S2 goto <label>
+S2 {p} goto <label> ... <label>: {q} S1 ==>> p -->> q
+since goto <S:label> ==>> S[label:]
+
+
+
+
+
+
+
+
+
+
+
+
+
+

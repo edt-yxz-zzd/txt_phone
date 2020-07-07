@@ -1,0 +1,42 @@
+see: "Markov.txt"
+
+smoothing[S,E](t,k,e) = PD(S[t-k] | e[1..t]) where 0<k<=t
+    ?past state
+    Smoothing provides a better estimate of the state than was available at the time, because it incorporates more evidence.
+    smoothing_ex[S,d,E](t,k,e) = PD(S[t-k-d+1..t-k] | e[1..t]) where 0<k<=t
+
+
+let d = the order of Markov process, d>=1
+smoothing_ex[S,d,E](t,k,e)
+    = normalization ll(t-k,e) * bb(t-k+1,t,e)
+
+    proof:
+    ?PD(S[t-k-d+1..t-k] | e[1..t])
+    PD(S[t-k-d+1..t-k] | e[1..t])
+        = PD(S[t-k-d+1..t-k] | e[1..t-k], e[t-k+1..t])
+        = normalization1 PrV(S[t-k-d+1..t-k], e[1..t-k], e[t-k+1..t])
+        = normalization1 PrV(e[t-k+1..t], S[t-k-d+1..t-k], e[1..t-k])
+        = normalization1 PrV(e[t-k+1..t] | S[t-k-d+1..t-k], e[1..t-k]) * PrV(S[t-k-d+1..t-k], e[1..t-k])
+        = normalization1 PrV(e[t-k+1..t] | S[t-k-d+1..t-k]) * PrV(S[t-k-d+1..t-k], e[1..t-k])
+        = normalization1 PrV(e[t-k+1..t] | S[t-k-d+1..t-k]) * PD(S[t-k-d+1..t-k] | e[1..t-k]) *. Pr(e[1..t-k])
+        = normalization2 PrV(e[t-k+1..t] | S[t-k-d+1..t-k]) * PD(S[t-k-d+1..t-k] | e[1..t-k])
+        = normalization2 PrV(e[t-k+1..t] | S[t-k-d+1..t-k]) * filtering_ex[S,d,E](t-k,e)
+    PrV(e[t-k+1..t] | S[t-k-d+1..t-k])
+        = sum`` PrV(e[t-k+1..t] | s[t-k+1], S[t-k-d+1..t-k]) * PrV(s[t-k+1] | S[t-k-d+1..t-k]) ``{s[t-k+1]}
+        = sum`` PrV(e[t-k+1..t] | s[t-k+1], S[t-k-d+2..t-k]) * PrV(s[t-k+1] | S[t-k-d+1..t-k]) ``{s[t-k+1]}
+        = sum`` PrV(e[t-k+1], e[t-k+2..t] | s[t-k+1], S[t-k-d+2..t-k]) * PrV(s[t-k+1] | S[t-k-d+1..t-k]) ``{s[t-k+1]}
+        = sum`` Pr(e[t-k+1] | s[t-k+1]) .* PrV(e[t-k+2..t] | s[t-k+1], S[t-k-d+2..t-k]) * PrV(s[t-k+1] | S[t-k-d+1..t-k]) ``{s[t-k+1]}
+    def bb(t-k+1, t, e) = PrV(e[t-k+1..t] | S[t-k-d+1..t-k])
+        = sum`` Pr(e[t-k+1] | s[t-k+1]) .* bb(t-k+2, t, e) * PrV(s[t-k+1] | S[t-k-d+1..t-k]) ``{s[t-k+1]}
+        = BACKWORD bb(t-k+2, t, e) e[t-k+1]
+    def bb(t+1, t, e) = PrV(e[t+1..t] | S[...]) = 1_V
+    PD(S[t-k-d+1..t-k] | e[1..t])
+        = normalization2 bb(t-k+1,t,e) * filtering_ex[S,d,E](t-k,e)
+        = normalization2 filtering_ex[S,d,E](t-k,e) * bb(t-k+1,t,e)
+        = normalization3 ll(t-k,e) * bb(t-k+1,t,e)
+dynamic programming of smoothing_ex ==>> forward-backward algorithm
+    O(t)
+    a special case of the polytree propagation algorithm used with clustering methods
+
+fixed-lag smoothing
+

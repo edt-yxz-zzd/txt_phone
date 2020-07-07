@@ -1,0 +1,90 @@
+
+;; apply
+
+
+
+
+
+
+;; f a
+;;      f => (*` \# ...) | (\# ...) | id ... | cast T a ...
+;;          not:   fst | snd | cast T
+;; : => :: <:
+
+;; ::
+[context |- f a : t => t' :: set ==# ##` set'][context |- f :: set']
+    context |- f a :: set'
+
+;; <:
+[context |- f a => r :: set][context |- f :: set']
+    if[r === g b][context |- g :: set'']
+        [context |- super => h c][context |- g <: h][context |- b ==: c]
+            context |- f a <: super
+    else:
+        [context |- r <: super]
+            context |- f a <: super
+    [context |- sub <: r][sub =/= g b][context |- g :: set'']
+        context |- sub <: f a
+
+;; =>
+;; => (cast T)*
+[context |- f a : t][context |- f :: set]
+    [context |- f => \# depth term_id of2 cls, body]
+        [context |- body[term_id := a] => body']
+            context |- f a => body'
+    [context |- f => * \# depth term_id of2 cls, body]
+        [context |- body[term_id := a] => body']
+            context |- f a => body'
+    [context |- a => a']
+        [context |- f => g][g in VarID]
+            context |- f a => g a'
+        [context |- f => g b]
+            context |- f a => g b a'
+;; :
+[context |- f : \# depth term_id : T `[cs], body]
+    [context |- a : T][context |- cs[term_id := a]]
+        context |- f a : body[term_id := a]
+[context |- f : \# depth term_id :: T `[cs], body]
+    [context |- a ::<# T][context |- cs[term_id := a]]
+        context |- f a : body[term_id := a]
+
+
+;; === (cast T | let..)*
+[context |- f : *` s][f === \# 1# term_id : T `[cs], body]
+  [context |- t :: _][context, ([]; (term_id : T; cs)) |- body : t]
+    [context |- a : T][context |- cs[term_id := a]]
+        ;; t == s or *` s
+        context |- f a : t
+[context |- f : *` s][f === \# 1# term_id :: T `[cs], body]
+  [context |- t :: _][context, ([]; (term_id :: T; cs)) |- body : t]
+    [context |- a ::<# T][context |- cs[term_id := a]]
+        ;; t == s or *` s
+        context |- f a : t
+
+
+
+
+
+
+
+
+
+
+
+;; cast T a
+[context |- a :<: T]
+    context |- cast T a : T
+    [context |- T :: set ==# ##` set']
+        context |- cast T a :: set'  ;;  a :: s ==>> s > set' or set' <= s
+    [context |- a => cast t a']
+        context |- cast T a => cast T a'
+    [context |- b : t][context |- T <: t][context |- a <: b]
+        context |- cast T a <: b
+    [context |- b : t][context |- t <: T][context |- b <: a][b =/= cast _ _]
+        context |- b <: cast T a
+
+
+;; fst p
+[context |- p : Pair a b]
+
+

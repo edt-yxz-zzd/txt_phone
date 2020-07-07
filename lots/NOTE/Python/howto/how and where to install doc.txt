@@ -1,0 +1,75 @@
+
+where docs and examples:
+    <PY_HOME>/share/
+        doc/networkx-2.1
+        kivy-examples
+
+
+# how to build docs?
+1) Sphinx if docs/conf.py
+2) pandoc for markdown file: *.md
+    pandoc -f markdown -t html inputfile.md xxx*.md
+    pandoc -s -f markdown -t html inputfile.md xxx*.md -o xxx.html
+        -s - standalone; complete html file; otherwise only inner html node
+3) [docutils]rst2html.py for reStructuredText file: *.rst
+    py c:/pythin36/scripts/rst2html.py FAQ.txt FAQ.html
+    py c:/pythin36/scripts/rst2html.py FAQ.txt FAQ.html --math-output=MathML
+    see: "NOTE/python/rst/**"
+
+
+########## below for Sphinx
+py -3 -m pip download Sphinx -d .
+py -3 -m pip install Sphinx
+
+
+
+# we should download sources(.zip) instead of wheel(.whl)
+#   docs in sources
+#
+# example from setuptools
+<path/to/package/sources>/
+    ...
+    setup.py
+    docs/
+        Makefile
+        conf.py/
+            extensions = ['jaraco.packaging.sphinx', 'rst.linker']
+            source_suffix = '.txt'
+            master_doc = 'index'
+            latex_documents = [
+              ('index', 'Setuptools.tex', 'Setuptools Documentation',
+               'The fellowship of the packaging', 'manual'),
+            ]
+            ...
+
+
+0) below are optional, see "<path/to/package/sources>/docs/conf.py"
+    # e.g.
+    #   extensions = ['jaraco.packaging.sphinx', 'rst.linker']
+    #   source_suffix = '.txt'
+    #   master_doc = 'index'
+    py -3 -m pip download jaraco.packaging -d .
+    py -3 -m pip install jaraco.packaging
+    py -3 -m pip download rst.linker -d .
+    py -3 -m pip install rst.linker
+
+1):
+    >cd <path/to/package/sources>/docs
+2) make .html and .hhp:
+    * call make
+        # should use msys
+        # C:\MinGW\msys\1.0\msys.bat
+        # C:\mingw64\MSYS-20111123\msys\msys.bat
+        * >make htmlhelp
+        * >make htmlhelp latexpdf singlehtml SPHINXBUILD=/c/Python36/Scripts/sphinx-build.exe
+    * call sphinx directly
+        # C:\Python36\Scripts\sphinx-build.exe
+        # to avoid DOS command MKDIR, using mkdir.exe to refer gnu version
+          >mkdir.exe -p build/doctrees build/htmlhelp
+          #>sphinx-build -b htmlhelp -d build/doctrees -D latex_paper_size=a4 . build/htmlhelp
+          >sphinx-build -b htmlhelp -d build/doctrees . build/htmlhelp
+3) make .chm:
+    >"C:\Program Files (x86)\HTML Help Workshop\hhw.exe" build\htmlhelp\<package_name>.hhp
+    click menu:
+        File -> compile ...
+

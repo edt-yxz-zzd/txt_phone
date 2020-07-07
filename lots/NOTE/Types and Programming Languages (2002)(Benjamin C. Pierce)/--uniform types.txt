@@ -1,0 +1,153 @@
+
+uniform types
+-1) symbols
+    "\-/", "/-\", "\-\" - set union, intersection, exclude
+    "::"/"<-"           - type signature; "is element of"
+    "<:"                - "is subtype of"; "is subset of"
+    { ... }             - record
+        {a=1, b=()}
+    {{ ... }}           - set
+        {{1, 2}}
+        {{1, 2..}}
+        {{x | x <- SetX, x <- SetY, x :: Type}}
+0) NOTE:
+    `type` the label; `type` the type of label; ...
+    `type` the value; `type` the type of value; ...
+    type is set, set is type
+        a type is a set of values of the type
+        a set is a type whose values are elements of the set
+    type is value, value is type
+        "type is value" ==>> "type has its type"
+        !! "value is type" <==> "every value is a set"
+            -- here, value is a set satisfies some constaints.
+    !! value is function
+        record <==> function
+1) Type = type_expr
+            where frees(type_expr) === {{ }} -- i.e. closed
+    type_expr
+        = Variable
+        | type_expr type_expr               -- application
+        | type_expr "\-/" type_expr         -- union their values
+        | "{" assignments "}" "<" len ">"   -- basic constructor
+        | "let" Variable "=" type_expr "in" type_expr
+                                            -- recur type
+        | "case" type_expr "of" "{:" (branch ";")*":}"
+    len = Integer | "~"
+    assignments = assignment1s ?
+    assignment1s = assignment ("," assignment)*
+    concat = "~"
+    assignment = label_set "->" value_set
+    label_set = concat* type_expr   -- these two sets are not a value
+    value_set = concat* type_expr   -- in this type system
+    assignment = concat* type_expr "=" concat* type_expr
+        concats1 type_expr1 "=" concats2 type_expr2 ::=
+            concats1 "{{" type_expr1 "}}" "->" concats2 "{{" type_expr2 "}}"
+            -- ~{{ type_expr }} = type_expr
+        i.e.
+        assignment  = label_type "->" value_type
+                    | label_type "->" "~" value_type_type
+                    | "~" label_type_type "->" value_type
+                    | "~" label_type_type "->" "~" value_type_type
+                    | ...
+                where
+                    label_type = type_expr
+                    value_type = type_expr
+                    label_type_type = type_expr
+                    value_type_type = type_expr
+                    ...
+    branch = value_pattern "->" type_expr
+    value_pattern = ""
+    explain:
+        1) type T1 = {a =~ Ta, b=~ Tb, c=~ Tc}<2>
+            a Type
+            its "named" labels are {{ a, b, c }}
+            a value assigned to label "a" should be a value of type Ta.
+            "<2>" - a value of this type should contain at least 2 named labels.
+            [va :: Ta][vb :: Tb] ==>> [{a=va, b=vb} :: T1]
+        2) "{...}<~>"
+            every named label of the type should present in any value of this type.
+            {a=~ Ta}<~> === {a=~ Ta}<1>
+        3) type T2 = {~X = a}<~>
+            the named label set of T2 is X.
+            the value should be "a"
+            that is:
+                T2 <==> X -> {{ a }}
+            f :: X -> {{ a }}
+            f _ = a
+
+    ------------- alias
+    -- record
+    let {...} = {...}<~>
+    -- tuple
+    let (T0, ~T1, ...) = {0=T0, 1= ~T1, ...}
+        (T0,) = {0=T0}
+        -- we will encode Integer later
+    -- arrow
+    let (X -> Y) = {~X = ~Y}
+    -- union
+    let <...> = {...}<1>
+
+    -- Top/Bot
+    Top = () = {} = {}<0>
+    Bot = <> = {}<1> = let x = x in x = undefined
+
+    explain-more:
+        4) {a=v, others...}
+            = {{ {a=v, o...} | {o...} <- {others...}  }}
+        5) {a=~T, others...}
+            = {{ {a=v, o...} | v <- T, {o...} <- {others...}  }}
+        6) {~X=v, others...}
+            = {{ {a=v, o... | a <- X} | {o...} <- {others...}  }}
+        7) {~X=~T, others...}
+            = {{ {a=f a, o... | a <- X} | f <- (X->T), {o...} <- {others...}  }}
+2) value constructor
+    -- constant
+    [] ==>> [{a=va} :: {a=va}]
+    -- normal record
+    [va :: Ta] ==>> [{a=va} :: {a=~Ta}]
+    -- poly
+    [va :: Ta][Ta :: TTa] ==>> [{a=va} :: {a=~~TTa}]
+    -- function
+    [va :: Ta] ==>> [{~Tx=va} :: {~Tx=Ta}] ==>> [{~Tx=va} :: Tx -> Ta}]
+
+
+    -- now we have:
+        () :: () , <> :: <>
+        () :: Type , <> :: Type
+        [() <: Type <: Top === ()] ==>> [Type === ()]
+            i.e. Type is the universal set
+        [] ==>> [<> === {{ <> }}]
+        [] ==>> [() === {{ <>, (), ... }}]
+3) "<:" -- is subtype of
+    X <: Y ::= X is subset of Y
+4) "<-" -- is element of
+3) LabelInteger
+    -- type is value!
+    rec type LabelIntegerValue = <() = (), {()=()} = LabelIntegerValue>
+    -- alias
+    let '0 = `{()=()}
+        '1 = <{()=()}='0>
+        '(n+1) = <{()=()}='n>
+
+    type LabelInteger = {LabelIntegerValue .= ()}
+    let ''0 = {'0 = ()}
+        ''1 = {'1 = ()}
+        ''n = {'n = ()}
+4) LabelString
+    type LabelString = LabelInteger -- we encode a string into integer
+5) Label
+    type BasicLabel = <'0=LabelInteger, '1=LabelString, '2=Type>
+    let 0 = {'0 = ''0}
+        1 = {'0 = ''1}
+        n = {'0 = ''n}
+        "str" = {'1 = encode "str"}
+6) UserDataType
+    normal data type will have form:
+        {a = Ta, ...}<n>
+        where (a :: BasicLabel)
+7) HaskellDataType
+    "type T a1 a2 a3 = A0 | A1 a1 | A2 a2 a3"
+        <==> (\a1 a2 a3 -> {"T" = <"A0" = (), "A1" = (a1,), "A2" = (a2, a3)>})
+            :: Type -> Type -> Type -> Type
+
+

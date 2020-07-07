@@ -1,0 +1,209 @@
+
+PEP483 review
+==============
+
+# PEP 483 -- The Theory of Type Hints
+PEP483 defines "type", "is_subtype_of" and "is_consistent_with".
+Here I'm to redefine them and introduce some concepts:
+    StaticUnion         v.s. DynamicUnion
+    StaticIntersetion   v.s. DynamicIntersection
+    BoundedStaticAny    v.s. BoundedDynamicAny
+    BoundedStaticAnyEx  v.s. BoundedDynamicAnyEx
+    require              v.s. forbid
+
+
+
+In PEP483, a type is a pair: (value_set, function_set).
+But in C++, there are converting constructor
+and user-defined conversion function.
+Hence a type indeed contains two set of values:
+    input_value_set
+    output_value_set
+
+In PEP483, subtype's value_set <= supertype's value_set,
+subtype's function_set >= supertype's function_set.
+A supertype have not so much control over its subtypes.
+What if I want to forbid some functions? A supertype might contain
+possible function_sets for subtypes instead of a required function_set.
+
+
+------------------------------------------
+-- redefine: Type, is_subtype_of, is_consistent_with
+-- satisfied with all "<="
+
+
+data Type = Type{ output_value_set, input_value_set :: Set Object
+                , output_memberss, input_memberss :: Set (Set String)
+                }
+
+A `is_subtype_of` B =
+    output_value_set A <= output_value_set B
+    && input_value_set A <= input_value_set B
+    && output_memberss A <= output_memberss B
+    && input_memberss A <= input_memberss B
+
+A `is_consistent_with` B =
+    output_value_set A <= input_value_set B
+    && output_memberss A <= input_memberss B
+
+-- [A `is_consistent_with` B][a:A] |- [b:B = a]
+-- ['f' <- intersection (output_memberss A)][a:A] |- [(a.f) : Object]
+-- NOTE: intersection the_empty_set == the_universe
+
+-- normal class A should have:
+--      [output_value_set A <= input_value_set A]
+--      [output_memberss A <= input_memberss A]
+-- Though there is private copy constructor in C++,
+--  we consider reference only.
+
+
+
+------------------------------------------
+
+
+
+-- redefine some types in the "typing" module
+--      Top, Bottom, DynamicAny, StaticUnion
+
+-- Top == Object
+Top = Type
+    { output_value_set = input_value_set = the_universe
+    , output_memberss = input_memberss = the_power_set}
+
+Bottom = Type
+    { output_value_set = input_value_set = the_empty_set
+    , output_memberss = input_memberss = the_empty_set}
+
+-- DynamicAny == typing.Any
+DynamicAny = Type
+    { output_value_set = the_empty_set
+    , input_value_set = the_universe
+    , output_memberss = the_empty_set
+    , input_memberss = the_power_set}
+
+
+
+-- to distinguish:
+--      StaticIntersetion/StaticUnion
+--      DynamicIntersection/DynamicUnion
+
+-- StaticUnion A B == typing.Union[A,B]
+StaticUnion A B = Type
+    { output_value_set = output_value_set A \/ output_value_set B
+    , input_value_set = input_value_set A \/ input_value_set B
+    , output_memberss = output_memberss A \/ output_memberss B
+    , input_memberss = input_memberss A \/ input_memberss B
+    }
+-- replace \/ by /\ gives "StaticIntersetion A B"
+
+DynamicUnion A B = Type
+    { output_value_set = output_value_set A /\ output_value_set B
+    , input_value_set = input_value_set A \/ input_value_set B
+    , output_memberss = output_memberss A /\ output_memberss B
+    , input_memberss = input_memberss A \/ input_memberss B
+    }
+-- similarly, there is DynamicIntersection
+
+# compare DynamicUnion and StaticUnion
+def cds(d:DynamicUnion[A,B], s:StaticUnion[A,B]):
+    a:A = d
+    d = a
+    b:B = d
+    d = b
+
+    a:A = s     # ERROR
+    s = a       # ok
+    b:B = s     # ERROR
+    s = b       # ok
+
+# compare DynamicIntersection and StaticIntersection
+def cds(d:DynamicIntersection[A,B], s:StaticIntersection[A,B]):
+    a:A = d     # ERROR
+    d = a       # ERROR
+    b:B = d     # ERROR
+    d = b       # ERROR
+
+    a:A = s     # ok
+    s = a       # ERROR
+    b:B = s     # ok
+    s = b       # ERROR
+
+
+
+-- to distinguish:
+--      BoundedDynamicAny and BoundedStaticAny
+BoundedDynamicAny B T = Type
+    { output_value_set = output_value_set B
+    , input_value_set = input_value_set T
+    , output_memberss = output_memberss B
+    , input_memberss = input_memberss T
+    }
+    where B `is_subtype_of` T
+-- DynamicAny == BoundedDynamicAny Bottom Top
+
+BoundedStaticAny B T = Type
+    { output_value_set = output_value_set T
+    , input_value_set = input_value_set B
+    , output_memberss = output_memberss T
+    , input_memberss = input_memberss B
+    }
+    where B `is_subtype_of` T
+-- T == BoundedStaticAny[T,T]
+-- const_reference<T> == BoundedStaticAny[Bottom,T]
+--  e.g.
+--      t : T = None
+--      x : BoundedStaticAny[Bottom,T] = t
+--      x = t # ERROR
+
+# compare BoundedDynamicAny and BoundedStaticAny
+def cbb(lsD : List[BoundedDynamicAny[B,T]]
+       ,lsS : List[BoundedStaticAny[B,T]]):
+    assert issubclass(B, T)
+    t:T = lsD[0]
+    lsD[0] = t
+    b:B = lsD[0]
+    lsD[0] = b
+
+    t:T = lsS[0]    # ok
+    lsS[0] = t      # ERROR
+    b:B = lsS[0]    # ERROR
+    lsS[0] = b      # ok
+
+-- extend BoundedStaticAny and BoundedDynamicAny
+BoundedStaticAnyEx [B1,B2] [T1,T2] =
+    BoundedStaticAny (StaticIntersetion B1 B2) (StaticUnion T1 T2)
+BoundedDynamicAnyEx [B1,B2] [T1,T2] =
+    BoundedDynamicAny (DynamicUnion B1 B2) (DynamicUnion T1 T2)
+
+
+
+
+-- what does "require" and "forbid" mean?
+-- simply remove member_sets.
+class A(B):
+    @require
+    def f(self):pass
+A == Type
+    { output_value_set = {v | v <- output_value_set B, isinstance(v,A)}
+    , input_value_set = {v | v <- input_value_set B, isinstance(v,A)}
+    , output_memberss = {s | s <- output_memberss B, 'f' in s}
+    , input_memberss = {s | s <- input_memberss B, 'f' in s}
+    }
+
+class C(D):
+    @forbid
+    def f(self):pass
+C == Type
+    { output_value_set = {v | v <- output_value_set D, isinstance(v,C)}
+    , input_value_set = {v | v <- input_value_set D, isinstance(v,C)}
+    , output_memberss = {s | s <- output_memberss D, 'f' not in s}
+    , input_memberss = {s | s <- input_memberss D, 'f' not in s}
+    }
+
+
+
+# eof
+
+
+
+

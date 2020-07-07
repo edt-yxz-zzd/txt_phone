@@ -1,0 +1,30 @@
+time(primes_lt(N)) = O(NlogN)
+
+lhs = SUM N/p {p <- Prime | p < N}
+    = N * SUM 1/p {p <- Prime | p < N}
+    <= N * SUM 1/n {n <- PInt | n < N}
+    = O(N * log N)
+    = rhs
+
+space(output) = |{p <- Prime | p < N}| = O(N/logN)
+time(primes_lt__via_copy(N)) = space(output) = O(N/logN)
+time(primes_lt(N)) = time(primes_lt__via_copy(N)) * (logN)^2
+
+def list_prime_numbers_lt(prime_upper_bound):
+    # -> [p] # increasing
+    L = prime_upper_bound
+    uint2is_prime = [False, False] # uint2is_prime
+    uint2is_prime.extend(True for _ in range(L-2))
+    assert len(uint2is_prime) == L or L < 2
+
+    for u in range(L):
+        if uint2is_prime[u]:
+            # bug: for j in range(u+u, L):
+            for j in range(u+u, L, u):
+                uint2is_prime[j] = False
+
+    primes = [u for u, is_prime in enumerate(uint2is_prime) if is_prime]
+    return primes
+
+
+

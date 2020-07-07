@@ -1,0 +1,128 @@
+n matrix
+(n+1)-gon
+type Weight = Integer
+type Vertex = Int -- [0..n]
+all_vertices :: [Vertex]
+all_vertices = [0..n]
+all_sides :: {Side}
+all_sides = {side<v-1, v> | v <- [1..n]}
+
+w :: Map Vertex Weight
+V :: [Vertex]
+V[i] for i in [0..n]
+    sorted vertices, by w[V[i]]
+    e.g. w[V[0]] = min {w[V[i]] | i in [0..n]}
+arc<v,u> = diagonal<v,u> | side<v,u>
+    arc<v,u> is arc<u,v>
+
+
+let a +% b = (a + b) % (n+1)
+let a -% b = (a - b) % (n+1)
+the l-optimum partition
+    the unique l-optimum (lexicographically smallest optimum) partition
+the fan partition
+    the partition: {arc<V[0],V[i]> | i <- [1..n]} \-\ all_sides
+    # error: or the partition: {arc<V[0], v> | v <- [0..V[0]-2] ++ [V[0]+2..n]}
+    or the partition: {arc<V[0], v> | v <- [0..n], v != V[0], v != V[0]+%1, v != V[0]-%1}
+local maximum vertex
+    {v | for any side<v,u>: invV[v] > invV[u]}
+    # can not be {v | for any side<v,u>: w[v] > w[u]}
+    # otherwise bounded_subpolygon may not be monotone
+local minimum vertex
+    {v | for any side<v,u>: invV[v] < invV[u]}
+monotone polygon
+    len local_maximum_vertices == 1
+    && len local_minimum_vertices == 1
+
+basic polygon
+    side<V[0], V[1]>
+    && side<V[0], V[2]>
+    since we can split polygon by
+        diagonal<V[0], V[1]>
+        && diagonal<V[0], V[2]>
+    ==>> consider basic polygon only
+monotone basic polygon
+    if w[V[0]] == w[V[1]], see pre txt, we can split until
+        w[V[0]] < w[V[1]]
+        || w[V[0]] == w[V[n]]
+    consider monotone polygon only ==>> consider monotone basic polygon only
+
+the_l_optimum_partition = v_arcs \+/ h_arcs
+    proof...
+potential_h_arcs |>=| h_arcs_in_the_l_optimum_partition == (h_arcs & the_l_optimum_partition)
+    proof...
+[the_l_optimum_partition & potential_h_arcs == {}]
+    ==>> [the_l_optimum_partition == v_arcs]
+    ==>> [the_l_optimum_partition == the_fan_partition]
+
+let arc1 / arc2 = arc1 `above` arc2
+[consider monotone basic polygon only]
+    [arc1, arc2 <- potential_h_arcs]
+        ==>> [arc1 `above` arc2] or [arc2 `above` arc1]
+        [arc1 / arc2]
+            def bounded_subpolygon<arc1, arc2> -- of monotone basic polygon
+            ==>> bounded_subpolygon<arc1, arc2> is monotone polygon (not basic)
+            [arc3 is a potential_h_arc of a bounded_subpolygon of a monotone_basic_polygon] ==>> [arc3 is a potential_h_arc of the monotone_basic_polygon]
+
+    cost_as_H0(monotone_polygon)
+        = Fan(w[V[0]] | w[V[0]+%1],...,w[V[0]+%n])
+        = fan(V[0] | V[0]+%1,...,V[0]+%n)
+        = fan(V[0] | vertices<V[0], V[n], V[0]>)
+        = w[V[0]] * sum` w[V[0]+%i]*w[V[0]+%(i+1)] `{i<-[1..n-1]}
+        = w[V[0]] * wV``(V[0]+%1 : V[0]+%n)
+        = w[V[0]] * wV``vertices<V[0], V[n], V[0]>
+    cost_as_H0(monotone_basic_polygon)
+        = w[V[0]] * wV``(V[1] : V[2])
+        -- {V[0]+%1, V[0]+%n} == {V[1], V[2]}
+
+    Cost(w[v[1]], ..., w[v[k]])
+        =[def]= cost(v[1],...,v[k])
+        =[def]= the cost of optimum partition
+
+    fan_between(ph2,ph1) = cost_as_H0(bounded_subpolygon<ph2,ph1>)
+    cost_above(ph) = cost(bounded_subpolygon<hn,ph>)
+    cost_via(ph2,ph1) = cost_above(ph2) + fan_between(ph2,ph1)
+    cost(monotone_polygon)
+        = min {cost_as_H0(monotone_polygon)
+                , cost_via(ph, h0) for ph in potential_h_arcs in monotone_polygon
+                }
+    better:
+        assume ph1,ph2,ph3 <- potential_h_arcs
+        assume hn / ph3 / ph2 / ph1 (ph1 may be h0)
+        ph3 `better` ph2 = any ph1: cost_via(ph3,ph1) < cost_via(ph2,ph1)
+        ph2 `better` ph3 = any ph1: cost_via(ph2,ph1) <= cost_via(ph3,ph1)
+        ?[ph2 `better` ph3] or [ph3 `better` ph2]?
+        [cost_via(ph3,ph1) < cost_via(ph2,ph1)]
+            <==> cost_above(ph3) + fan_between(ph3,ph1) < cost_above(ph2) + fan_between(ph2,ph1)
+            <==> fan_between(ph3,ph1) - fan_between(ph2,ph1) < cost_above(ph2) - cost_above(ph3)
+            fan_between(ph3,ph1) - fan_between(ph2,ph1)
+                = w[ph1_min] * (w[ph2_a]...w[ph3_a]~w[ph3_b]...w[ph2_b]) - w[ph1_min]*w[ph2_a]*w[ph2_b]
+            <==> w[ph1_min] < (cost_above(ph2) - cost_above(ph3)) / ((w[ph2_a]...w[ph3_a]~w[ph3_b]...w[ph2_b]) - w[ph2_a]*w[ph2_b])
+                =[def]= pop_low(ph3,ph2) -- divmod; if not int, then +0.5
+            def lr_sides(ph3, ph2)
+                = (w[ph2_a]...w[ph3_a]~w[ph3_b]...w[ph2_b]) - w[ph3_a]*w[ph3_b]
+                = (w[ph2_a]...w[ph3_a]) + (w[ph3_b]...w[ph2_b])
+        ERROR: binary op better!
+        trinary op better:
+        redefine better
+        better ph3 ph2 ph1 = cost_via(ph3,ph1) < cost_via(ph2,ph1)
+            -- no "better ph2 ph3 ph1" use "not (better ph3 ph2 ph1)" instead
+            = w[ph1_min] < pop_low(ph3,ph2)
+        after process ph2,
+            we push pair (ph2, pop_low(ph3,ph2), cost_above(ph2), lr_sides(ph3,ph2), lr_sides(hn,ph2))
+        when process ph1,
+            init: lr_sides(ph2,ph1) = ... -- by definition
+            we verify (better ph3 ph2 ph1) via stack.top:
+            if yes:
+                stack.pop()
+                -- now ph3 become ph2
+                lr_sides(ph2,ph1) += lr_sides(ph3,ph2)
+                recur process ph1
+            else:
+                lr_sides(hn,ph1) = lr_sides(hn,ph2) + lr_sides(ph2,ph1)
+                cost_via(ph2,ph1)
+                    = cost_above(ph2) + fan_between(ph2,ph1)
+                    = cost_above(ph2) + w[ph1_min]*(lr_sides(ph2,ph1)+w[ph2_a]*w[ph2_b]-w[ph1_min]*w[ph1_min_above]-[ph1 is h0]w[ph1_min]*w[ph1_min_above2])
+                fan_between(hn,ph1) = w[ph1_min]*(lr_sides(hn,ph1)-...like above...)
+                cost_above(ph1) = min {cost_via(ph2,ph1), fan_between(hn,ph1)}
+                push (ph1, pop_low(ph2,ph1), cost_above(ph1), lr_sides(ph2,ph1), lr_sides(hn,ph1))

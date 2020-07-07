@@ -1,0 +1,55 @@
+
+The Definitive Guide to SQLite(2010)
+    :: CHAPTER 4 Advanced SQL for SQLite
+    :: Storage Classes
+    [page 101]
+
+-- same column but diff types
+A single column in SQLite may contain different values of different storage classes.
+
+
+--------------------
+sqlite> select typeof(3.14), typeof('3.14'), typeof(314), typeof(x'3142'), typeof(NULL);
+typeof(3.14) typeof('3.14') typeof(314) typeof(x'3142') typeof(NULL)
+------------ -------------- ----------- --------------- ------------
+real text integer blob null
+
+
+
+----------------------------
+* integer
+    Integer values are whole numbers (positive and negative).
+    They can vary in size: 1, 2, 3, 4, 6, or 8 bytes.
+    The maximum integer range (8 bytes) is {-9223372036854775808,-1,0,1, 9223372036854775807}.
+    SQLite automatically handles the integer sizes based on the numeric value.
+    -0x8000_0000_0000_0000
+    +0x7fff_ffff_ffff_ffff
+* real
+    Real values are real numbers with decimal values. SQLite uses 8-byte floats to store real numbers.
+* text
+    Text is character data. SQLite supports various character encodings, which include UTF-8 and UTF-16 (big and little endian). The maximum string value in SQLite is adjustable at compile time and at runtime and defaults to 1,000,000,000 bytes.
+* blob
+    Binary large object (BLOB) data is any kind of data. The maximum size for BLOBs in SQLite is adjustable at compile time and at runtime and defaults to 1,000,000,000 bytes.
+* NULL
+    NULL represents missing information. SQLite has full support for NULL handling.
+
+
+
+-------------------
+SQLite infers a value’s type from its representation. The following inference rules are used to do this:
+    -- "xxx" ==>> text
+    -- 'xxx' ==>> text
+    *  A value specified as a literal in SQL statements is assigned class text if it is enclosed by single or double quotes.
+    -- 123 ==>> integer
+    *  A value is assigned class integer if the literal is specified as an unquoted number with no decimal point or exponent.
+    -- 12.3 ==>> real
+    -- 123E1 ==>> real
+    *  A value is assigned class real if the literal is an unquoted number with a decimal point or an exponent.
+    -- NULL ==>> NULL
+    *  A value is assigned class NULL if its value is NULL.
+    -- x'23ABCDEF' ==>> blob
+    *  A value is assigned class blob if it is of the format x'ABCD', where ABCDare hexadecimal numbers. The xprefix and values can be either uppercase or lowercase.
+
+The typeof() SQL function returns the storage class of a value based on its representation. Using this function, the following SQL illustrates type inference in action:
+
+

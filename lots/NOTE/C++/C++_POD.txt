@@ -1,0 +1,342 @@
+safely reinterpret_cast ? union of PODs?
+what is POD? what is layout-compatible?
+how to initialize POD?
+
+
+safely reinterpret_cast : use <T&> for "lvalue" of "nonbase" POD object
+what is POD?
+    can be created with std::malloc, copied with std::memmove, etc, and can be exchanged with C libraries directly, in its binary form. 
+    what:
+        ScalarType (non-reference builtin types)
+        array of POD
+        or struct/union of:
+            all non-static-data-member should be public, of type POD
+            no user-defined copy assignment operator
+            no user-defined destructor
+            no user-declared constructors
+            no base classes
+            no virtual functions
+
+how to initialize POD?
+    1) POD obj = {...};
+    2) POD as base/member : use ":()/(POD&)" or assign/memcpy in ctor body
+
+
+
+c++11:
+  standard-layout class:
+        1. has no non-static data members that aren't standard-layout 
+        2. has no virtual functions and no virtual base classes 
+        3. has the same access control for all non-static data members // diff "all public"
+        4. has no base classes that aren't standard-layout // diff "not allow base"
+        // but only allows one nonempty base/most-derived class
+        5. either has no base class with non-static data members or has no non-static data members in the most derived class and only one base with them 
+        // ???
+        6. has no base classes of the same type as the first non-static data member
+        // allows ctors/dtor???????????????????????
+        // yeah, it can use for reinterpret_cast, but not compatible with C, not POD.
+  usage:
+    A pointer to a standard-layout class may be converted (with reinterpret_cast) to a pointer to its first non-static data member and vice versa. 
+    If a standard-layout union holds two or more standard-layout structs, it is permitted to inspect the common initial part of them. 
+    The macro offsetof can only be used with standard-layout classes. 
+    std::is_standard_layout<T>::value
+  
+  trivial type
+    scalar type
+    trivially copyable class with a trivial default constructor // dtor???
+        trivially copyable class :
+        1. Has no non-trivial copy constructors (this also requires no virtual functions or virtual bases) 
+        2. Has no non-trivial move constructors 
+        3. Has no non-trivial copy assignment operators 
+        4. Has no non-trivial move assignment operators 
+        5. Has a trivial destructor //  !!! trivial dtor!!!
+        copied with std::memcpy or serialized to/from binary files with std::ofstream::write()/std::ifstream::read()
+    array of such type/class
+  usage:
+    created by a call to std::malloc
+    std::is_trivial<T>::value 
+
+  POD = trivial + standard-layout
+  Objects of POD types are fully compatible with the C programming language. 
+  std::is_pod<T>::value 
+  
+
+
+
+
+
+///////////////////////////////////////////////
+reinterpret_cast, lvalue 75
+reinterpret_cast, reference 76
+
+// reinterpret_cast cannot change constness 
+2 The reinterpret_cast operator shall not cast away constness. [Note:see 5.2.11 for the definition of ¡®¡®casting away constness¡¯¡¯. Subject to the restrictions in this section, an expression may be cast to its own type using areinterpret_castoperator. ]
+// ?? what if lvalue?? see below, use reinterpret_cast<T&>
+3 The mapping performed by reinterpret_cast is implementation-defined. [Note:it might, or might not, produce a representation different from the original value. ]
+// rvalues are always unsafe!!!!!!!!!!!!!!!
+7 A pointer to an object can be explicitly converted to a pointer to an object of different type. Except that converting an rvalue of type ¡°pointer toT1¡± to the type ¡°pointer toT2¡± (whereT1andT2are object types and where the alignment requirements ofT2are no stricter than those ofT1) and back to its original type yields the original pointer value, the result of such a pointer conversion is unspecified.
+9 An rvalue of type ¡°pointer to member ofXof typeT1¡± can be explicitly converted to an rvalue of type ¡°pointer to member ofYof typeT2¡± ifT1andT2are both function types or both object types. The null member pointer value (4.11) is converted to the null member pointer value of the destination type. The result of this conversion is unspecified, except in the following cases:
+¡ª converting an rvalue of type ¡°pointer to member function¡± to a different pointer to member function type and back to its original type yields the original pointer to member value.
+¡ª converting an rvalue of type ¡°pointer to data member ofXof typeT1¡± to the type ¡°pointer to data mem-ber ofYof typeT2¡± (where the alignment requirements ofT2are no stricter than those ofT1) and back to its original type yields the original pointer to member value.
+// ?? where is POD??
+// we should always use reinterpret_cast<T&>
+1 The result of the expression reinterpret_cast<T>(v)is the result of converting the expression vto type T. If Tis a reference type, the result is an lvalue; otherwise, the result is an rvalue and the lvalue-to-rvalue (4.1), array-to-pointer (4.2), and function-to-pointer (4.3) standard conversions are performed on the the expression v. Types shall not be defined in a reinterpret_cast. 
+10 An lvalue expression of type T1 can be cast to the type ¡°reference toT2¡± if an expression of type ¡°pointer to T1¡± can be explicitly converted to the type ¡°pointer toT2¡± using areinterpret_cast. That is, a reference cast reinterpret_cast<T&>(x) has the same effect as the conversion *reinterpret_cast<T*>(&x)with the built-in&and*operators. The result is an lvalue that refers to the same object as the source lvalue, but with a different type. No temporary is created, no copy is made, and constructors (12.1) or conversion functions (12.3) are not called.
+
+
+
+
+/////////////////////////////////////////////////
+layout
+    access specifier and object 181
+    bit-field 163
+    class object 157, 168
+layout-compatible type 53
+POD
+    class type 82
+    type 53
+    type 82
+POD-struct 153
+aggregate class 
+constructor (12.6.2), cleanup (12.4), and storage layout (9.2, 11.1).
+layout (3.7)
+/////////////////////////////////////////////////////////////////////
+class object 157 -> 9.2 Class members
+
+// access-specifier free the layout!!!
+12 Nonstatic data members of a (non-union) class declared without an intervening access-specifier are allo-cated so that later members have higher addresses within a class object. The order of allocation of nonstatic data members separated by anaccess-specifieris unspecified (11.1). Implementation alignment require-ments might cause two adjacent members not to be allocated immediately after each other; so might requirements for space for managing virtual functions (10.3) and virtual base classes (10.1).
+
+// layout-compatible of POD
+14 Two POD-struct (clause 9) types are layout-compatible if they have the same number of nonstatic data members, and corresponding nonstatic data members (in order) have layout-compatible types (3.9).
+15 Two POD-union (clause 9) types are layout-compatible if they have the same number of nonstatic data members, and corresponding nonstatic data members (in any order) have layout-compatible types (3.9).
+// common initial sequence
+16 If a POD-union contains two or more POD-structs that share a common initial sequence, and if the POD-union object currently contains one of these POD-structs, it is permitted to inspect the common initial part of any of them. Two POD-structs share a common initial sequence if corresponding members have layout-compatible types (and, for bit-fields, the same widths) for a sequence of one or more initial members.
+// reinterpret_cast to initial member
+17 A pointer to a POD-struct object, suitably converted using reinterpret_cast, points to its initial member (or if that member is a bit-field, then to the unit in which it resides) and vice versa. [Note:There might therefore be unnamed padding within a POD-struct object, but not at its beginning, as necessary to achieve appropriate alignment. 
+
+
+/////////////////////////////////////////////////////////////////////
+class object 168
+
+// unordered base class addresses
+3 The order in which the base class subobjects are allocated in the most derived object (1.8) is unspecified.
+[Note:a derived class and its base class sub-objects can be represented by a directed acyclic graph (DAG) where an arrow means ¡°directly derived from.¡± ADAGof sub-objects is often referred to as a ¡°sub-object lattice.¡±
+
+// base clase has been changes layout!!!!!
+5 [Note:A base class subobject might have a layout (3.7) different from the layout of a most derived object of the same type. A base class subobject might have a polymorphic behavior (12.7) different from the poly-morphic behavior of a most derived object of the same type. A base class subobject may be of zero size (clause 9); however, two subobjects that have the same class type and that belong to the same most derived object must not be allocated at the same address (5.10). ]
+
+
+2 [Note:the order of derivation is not significant except as specified by the semantics of initialization by con-structor (12.6.2), cleanup (12.4), and storage layout (9.2, 11.1). ]
+
+
+
+////////////////////////////////////////////////////////////////////////
+access specifier and object 181 -> 11.1 Access specifiers
+
+2 The order of allocation of data members with separateaccess-specifierlabels is unspecified (9.2).
+
+
+///////////////////////////////////////////////////////////////////////
+layout-compatible type + POD type 53 -> 3.9 Types
+
+// object type
+9 An object type is a (possibly cv-qualified) type that is not a function type, not a reference type, and not a void type.
+// scalar type and POD type
+10 Arithmetic types (3.9.1), enumeration types, pointer types, and pointer to member types (3.9.2), and cv-qualified versions of these types (3.9.3) are collectively called scalar types. Scalar types, POD-struct types, POD-union types (clause 9), arrays of such types andcv-qualifiedversions of these types (3.9.3) are collec-tively called POD types.
+// layout-compatible type + 7.2 + 9.2.
+11 If two types T1 and T2 are the same type, then T1 and T2 are layout-compatible types. [Note:Layout-compatible enumerations are described in 7.2. Layout-compatible POD-structs and POD-unions are described in 9.2. ]
+
+
+// "nonbase!" POD object -> bytes copyable
+2 For any object (other than a base-class subobject) of POD typeT, whether or not the object holds a valid value of typeT, the underlying bytes (1.7) making up the object can be copied into an array of charor unsigned char. If the content of the array of charorunsigned charis copied back into the object, the object shall subsequently hold its original value.
+3 For any POD typeT, if two pointers to Tpoint to distinctTobjectsobj1andobj2, where neither obj1 norobj2is a base-class subobject, if the value of obj1is copied into obj2, using the memcpylibrary function,obj2shall subsequently hold the same value asobj1. 
+
+
+///////////////////////////////////////////////////////////
+POD type + class type 82
+
+// POD type may not be initialized!!!! "new T;"
+15 A new-expression that creates an object of type T initializes that object as follows:
+    ¡ª If thenew-initializeris omitted:
+        ¡ª If T is a (possibly cv-qualified) non-POD class type (or array thereof), the object is default-initialized (8.5). If Tis a const-qualified type, the underlying class type shall have a user-declared default constructor.
+        ¡ª Otherwise, the object created has indeterminate value. 
+
+
+////////////////////////////////////////////////////////////////
+POD-struct 153
+
+// what is POD
+//     all non-static-data-member should be of type POD - reference;
+//     no user-defined copy assignment operator
+//     no user-defined destructor
+//     but can it has base classes??? what is aggregate class ? NO!!!
+//     should be aggregate (see below, initial like array):
+//         no user-declared constructors
+//         all non-static-data-member should be public
+//         no base classes
+//         no virtual functions
+
+4 A structure is a class defined with the class-key struct; its members and base classes (clause 10) are public by default (clause 11). A union is a class defined with the class-key union; its members are public by default and it holds only one data member at a time (9.5). [Note:aggregates of class type are described in 8.5.1. ] A POD-structis an aggregate class that has no non-static data members of type non-POD-struct, non-POD-union (or array of such types) or reference, and has no user-defined copy assignment operator and no user-defined destructor. Similarly, a POD-union is an aggregate union that has no non-static data members of type non-POD-struct, non-POD-union (or array of such types) or reference, and has no user-defined copy assignment operator and no user-defined destructor. A POD class is a class that is either a POD-struct or a POD-union.
+
+
+/////////////////////////////////////////////////////////////////////
+aggregate 147
+
+// what is aggregate 
+1 An aggregate is an array or a class (clause 9) with no user-declared constructors (12.1), no private or protected non-static data members (clause 11), no base classes (clause 10), and no virtual functions (10.3).
+2 When an aggregate is initialized theinitializer can contain an initializer-clause consisting of a brace-enclosed, comma-separated list ofinitializer-clauses for the members of the aggregate, written in increasing subscript or member order. If the aggregate contains subaggregates, this rule applies recursively to the members of the subaggregate.
+7 If there are fewer initializers in the list than there are members in the aggregate, then each member not explicitly initialized shall be value-initialized (8.5).
+
+
+//////////////////////////////////////////////////////
+702 -> [diff.class]  C.1.7 Clause 9: classes
+9.1 [see also 7.1.3]
+
+
+//////////////////////////////////////////////////////
+49 -> 3.8 Object Lifetime 
+
+// POD is the space
+2 [Note:the lifetime of an array object or of an object of POD type (3.9) starts as soon as storage with proper size and alignment is obtained, and its lifetime ends when the storage which the array or object occupies is reused or released. 12.6.2 describes the lifetime of base and member subobjects. ]
+
+
+
+///////////////////////////////////////////////////////////////
+constructor (12.6.2), cleanup (12.4)
+
+// but how to init a POD base?
+2 When an aggregate (whether class or array) contains members of class type and is initialized by a brace-enclosed initializer-list (8.5.1), each such member is copy-initialized (see 8.5) by the corresponding assignment-expression. If there are fewer initializers in theinitializer-list than members of the aggregate, each member not explicitly initialized shall be value-initialized (8.5). [Note:8.5.1 describes how assignment-expressions in aninitializer-listare paired with the aggregate members they initialize. ] 
+3 [Note:if Tis a class type with no default constructor, any declaration of an object of type T(or array thereof) is ill-formed if noinitializeris explicitly specified (see 12.6 and 8.5). ]
+
+// POD not in mem-initializer-list is not initialized
+// but... why nonaggregate class with default ctor init POD mem while I try????????????
+4 If a given nonstatic data member or base class is not named by a mem-initializer-id(including the case where there is no mem-initializer-list because the constructor has no ctor-initializer), then
+    ¡ª If the entity is a nonstatic data member of (possibly cv-qualified) class type (or array thereof) or a base class, and the entity class is a non-POD class, the entity is default-initialized (8.5). If the entity is a non-static data member of a const-qualified type, the entity class shall have a user-declared default construc-tor.
+    ¡ª Otherwise, the entity is not initialized. If the entity is of const-qualified type or reference type, or of a (possibly cv-qualified) POD class type (or array thereof) containing (directly or indirectly) a member of a const-qualified type, the program is ill-formed.
+  After the call to a constructor for classXhas completed, if a member ofXis neither specified in the constructor¡¯smem-initializers, nor default-initialized, nor value-initialized, nor given a value during execu-tion of the body of the constructor, the member has indeterminate value.
+
+// NO way to initialize a POD base!! except default or copy!!!
+    struct POD
+    {
+        int a;
+        int b;
+    };
+    
+    struct B{};
+    struct A:POD, B
+    {
+        A():B() // not allows : POD(0,0)/POD={0,0}/POD{0,0}/POD({0,0})
+        {
+            // after this call, POD is not initialized!!!
+        }
+        // not allows: A(int){(POD&)*this = {0,0};}
+    };
+    
+    #include <iostream>
+    using namespace std;
+    int main()
+    {
+        A a;
+        cout << a.a << a.b << endl;
+        
+    }
+
+
+// nodefault ctor; not mentioned POD member will not be initialized!!!
+    struct B
+    {
+        int b;
+        B():b(){}
+    };
+    struct A
+    {
+        // not mention == call default constructor
+        int a; // POD default constructor == trivial constructor == no actions
+        B b; // default constructor init....
+        
+        // A is aggregate??? but I provide a ctor, although trival
+        // no, A is not aggregate;
+        // see D
+        A() // not mention a
+        {
+            // after call, a is not initialized!!!!
+            // b is initialized!!
+        }
+    };
+    struct C:B 
+    {
+        int a; // why???????????? but default ctor for int is trivial! why?
+        // default ctor; all members initialized?? why
+    };
+    
+    
+    
+    struct D
+    {
+        int a;
+        B b;
+        D():b(){} // not mention a, a is not initialized!!!!
+    };
+    
+    struct E:B
+    {
+        int a;
+        E():B(){} // not mention a, a is not initialized!!!!
+    };
+    
+    #include <iostream>
+    using namespace std;
+    int main()
+    {
+        A a;
+        cout << a.a << endl;    // not initialized
+        cout << a.b.b << endl;  // 0
+        
+        C c;
+        cout << c.a << endl;    // 0
+        cout << c.b << endl;    // 0    
+        D d;
+        cout << d.a << endl;    // not initialized
+        cout << d.b.b << endl;    // 0    
+        E e;
+        cout << e.a << endl;    // 0 / -1 not initialized
+        cout << e.b << endl;    // 0
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

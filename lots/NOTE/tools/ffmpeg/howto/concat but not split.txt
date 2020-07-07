@@ -1,0 +1,40 @@
+
+* concat:
+    # work!!
+    ffmpeg -f concat -safe 0 -i mylist.txt -c copy 20516451.flv
+    where "mylist.txt":
+    # not file "20516451-1-15.flv"
+    file '20516451-1-15.flv'
+    file '20516451-2-15.flv'
+    file '20516451-3-15.flv'
+    file '20516451-4-15.flv'
+
+    concat_videos 20516451-1-15.flv 20516451-2-15.flv -o 2.flv
+
+    ####################### it seems below command donot work!! ##########
+    ffmpeg -i "concat:input1.mpg|input2.mpg|input3.mpg" -c copy output.mpg
+    ffmpeg -i "concat:20516451-1-15.flv|20516451-2-15.flv|20516451-3-15.flv|20516451-4-15.flv" -c copy 20516451.flv
+    ffmpeg -i concat:20516451-1-15.flv^|20516451-2-15.flv^|20516451-3-15.flv^|20516451-4-15.flv -c copy 20516451.flv
+
+* split # BAD!!! should avoid split!!!! or try "-vframe" instead of "-t/-to"
+    # https://superuser.com/questions/138331/using-ffmpeg-to-cut-up-video
+    # https://stackoverflow.com/questions/5651654/ffmpeg-how-to-split-video-efficiently
+
+    ffmpeg -ss 00:08:00 -i Video.mp4 -ss 00:01:00 -t 00:01:00 -c copy VideoClip.mp4
+
+        # The first -ss seeks fast to (approximately) 8min0sec, and then the second -ss seeks accurately to 9min0sec, and the -t 00:01:00 takes out a 1min0sec clip.
+
+
+
+    ffmpeg -v quiet -y -i input.ts \
+    #or ffmpeg -i input.ts \
+        -vcodec copy -acodec copy -ss 00:00:00.0 -t 00:30:00.000 -q:v 0 -c copy -sn test3.mkv \
+        -vcodec copy -acodec copy -ss 00:00:00 -t 00:30:00.0 -q:v 0 -c copy -sn test4.mkv
+        #or -q:v 0 -vcodec copy -acodec copy -ss 00:00:00 -to 01:00:00.0 -q:v 0 -c copy -sn test4.mkv
+        #   use "-to" instead of "-t"
+
+    # not good enough!
+    ffmpeg -i 20516451.flv -q:v 0 -vcodec copy -acodec copy -ss 0 -t 6 -sn 0_6.flv -q:v 0 -vcodec copy -acodec copy -ss 6 -t 3 -sn 6_9.flv
+    concat_videos 0_6.flv 6_9.flv -o 0_9.flv
+        # 0_9.flv is discontinued at the 6 second!!!
+

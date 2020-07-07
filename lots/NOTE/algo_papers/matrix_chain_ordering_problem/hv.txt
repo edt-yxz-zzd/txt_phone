@@ -1,0 +1,131 @@
+vertical arc -- indeed diagonal
+horizontal arc -- indeed diagonal
+quadrilateral:
+    let arcX in a given partition
+        ==>> arcX is a common side of exactly two 3-gon
+        ==>> arcX is a diagonal of a 4-gon
+    sub-4-polygon
+        4 vertices: {0',1',2',3'}
+        4 sides: 0'-1'-2'-3'-0'
+        2 diagonals: 0'-2', 1'-3'
+        let diagonal<0',2'> = arcX
+    def diagonal<0',2'> is v_arc iff
+        min{w[0'],w[2']} < min{w[1'], w[3']}
+        || (min{w[0'],w[2']} == min{w[1'], w[3']}
+            && max{w[0'],w[2']} <= max{w[1'], w[3']})
+        <==> sorted[w[0'], w[2']] <= sorted[w[1'], w[3']]
+    def diagonal<0',2'> is h_arc iff
+        min{w[0'],w[2']} > min{w[1'], w[3']}
+        && max{w[0'],w[2']} < max{w[1'], w[3']}
+        <==> min{w[1'], w[3']} < min{w[0'],w[2']} <= max{w[0'],w[2']} < max{w[1'], w[3']}
+        -- diagonal<1',3'> is v_arc
+
+    diagonal<0',2'> is neither h_arc nor v_arc:
+        (min{w[0'],w[2']} == min{w[1'], w[3']}
+        && max{w[0'],w[2']} > max{w[1'], w[3']})
+        -- diagonal<1',3'> is v_arc
+    || (min{w[0'],w[2']} > min{w[1'], w[3']}
+        && max{w[0'],w[2']} >= max{w[1'], w[3']}
+        -- diagonal<1',3'> is v_arc
+
+    any diagonal cannot be both h_arc && v_arc
+    at most one diagonal is h_arc
+    at least one diagonals are v_arc
+    both diagonals are both v_arc:
+        {w[0'], w[2']} == {w[1'], w[3']}
+
+    possibles:
+        v_arc & v_arc
+            {w[0'], w[2']} == {w[1'], w[3']}
+        v_arc & h_arc
+            # h_arc ==>> another v_arc
+            min{w[0'],w[2']} < min{w[1'], w[3']}
+            && max{w[0'],w[2']} > max{w[1'], w[3']}
+        v_arc & neither
+            # neither ==>> another v_arc
+                (min{w[0'],w[2']} == min{w[1'], w[3']}
+                && max{w[0'],w[2']} < max{w[1'], w[3']})
+            || (min{w[0'],w[2']} < min{w[1'], w[3']}
+                && max{w[0'],w[2']} <= max{w[1'], w[3']}
+
+
+        neither & v_arc
+            # neither ==>> another v_arc
+                (min{w[0'],w[2']} == min{w[1'], w[3']}
+                && max{w[0'],w[2']} > max{w[1'], w[3']})
+            || (min{w[0'],w[2']} > min{w[1'], w[3']}
+                && max{w[0'],w[2']} >= max{w[1'], w[3']}
+        h_arc & v_arc
+            # h_arc ==>> another v_arc
+            min{w[0'],w[2']} > min{w[1'], w[3']}
+            && max{w[0'],w[2']} < max{w[1'], w[3']}
+
+    +-------------------------------+--------+-------+--------+
+    |               \max02 <?> max13|   <    |   =   |   >    |
+    |min02 <?> min13 \              |        |       |        |
+    +===============================+========+=======+========+
+    |       <                       |   v&n  |  v&n  |  v&h   |
+    +-------------------------------+--------+-------+--------+
+    |       =                       |   v&n  |  v&v  |  n&v   |
+    +-------------------------------+--------+-------+--------+
+    |       >                       |   h&v  |  n&v  |  n&v   |
+    +-------------------------------+--------+-------+--------+
+
+[arcX <- optimum_partition] ==>> [arcX is h_arc] or [arcX is v_arc]
+    [arcX is neither] ==>> [arcX is not stable] ==>> [arcX !<- optimum_partition]
+
+-- if from == to then rotate ordered_all_sides
+def sides<from, to, ?ordered_all_sides> = end $ begin ordered_all_sides
+    begin sides@(side<a,b> : tail) = if a == from then sides else begin tail
+    end [] = end ordered_all_sides
+    end (h@(side<a,b>) : tail) = h : if b == to then [] else end tail
+
+-- if side<from, to> then []
+-- if from==to then rotate ordered_all_vertices exclude to
+def vertices'<from, to> = tail $ fsts ss
+    ss = sides<from, to>
+    fsts [] = []
+    fsts (side<v,_> : tail) = v : fsts tail
+
+-- exclude from/to, include 'include'
+def vertices<from, include, to>
+    | from == include || to == include = undefined
+    | otherwise = if include in vs then vs else us
+        where
+            vs = vertices'<from, to>
+            us = vertices'<to, from>
+
+[arcX == diagonal<0', 2'>][arcX is h_arc][arcX <- the_l_optimum_partition][
+    vertices<0',1',2'> != vertices<0',3',2'>][
+    w[1'] == min {w[v] | v <- vertices<0',1',2'>}][
+    w[3'] == min {w[v] | v <- vertices<0',3',2'>}][
+    invV[0'] < invV[2']][invV[1'] < invV[3']]:
+    ==>> [w[1'] < w[0'] <= w[2'] < w[3']]
+    ==>> [invV[1'] < invV[0'] < invV[2'] < invV[3']]
+        proof:
+            cut vertices<0',1',2'> until only one vertices
+                rename the only vertex as 1' too!
+                -- cut while diagonal<0',2'> is h_arc
+            now w[1'] < w[0'] <= w[2'] are the three smallest weights remain
+            so w[3'] is the 4th smallest
+            the condition that choose arc<0',2'> instead of arc<1',3'> gives result
+
+potential h-arc
+diagonal<u,v> is potential_h_arc iff
+    exist x,y s.t.
+        vertices<u,x,v> != vertices<u,y,v>
+        invV[x] < invV[u] < invV[v] < invV[y]
+        invV[x] == min {invV[z] | z <- vertices<u,x,v>}
+        invV[y] == min {invV[z] | z <- vertices<u,y,v>}
+
+All potential h-arcs are compatible.
+    i.e. two potential_h_arc cannot cross each other.
+
+local maximum vertex (in sence of invV)
+    if the V[0] is not its neighbor, then the arc cut off the local maximum vertex is a potential_h_arc.
+one sweep algorithom:
+    cut the max vertex (in sence of invV) untill triangles.
+    those diagonals |>=| all_potential_h_arcs |>=| (h_arcs & the_l_optimum_partition) == all_h_arcs_in_the_l_optimum_partition
+
+
+

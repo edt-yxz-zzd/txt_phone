@@ -1,0 +1,185 @@
+
+big-O notation must contain units
+    unless talking the uint itself
+
+why define unit as basic machine operations?
+    we can imagine:
+        increase the input size
+        run the algorithm in a machine with bigger word
+        assume correspondant basic machine operations of the machines consume same time
+    ==>> we cannot assume len(array) < some constant.
+        but we can assume len(array).'+' is O(1)
+        that is confusing!!!!
+        so, we need unit!
+        len(array).'+' is O(1)*machine_word.'+' instead of O(1)
+
+uint:
+    basic operations
+
+    machine_basic_operation
+        pointer.operation
+            pointer.dereference
+        machine_word.'+ -'
+        machine_word.'* / %'
+        machine_word.'>>1 <<1'
+        machine_word.'>> <<'
+        machine_word.'== <= <'
+
+machine_word.'bit_length'
+    # may or may not basic operation
+    * O(bit_size_of(machine_word)) * (machine_word.'>>1', machine_word.'==')
+        = O(bit_size_of(machine_word)) * machine_basic_operation
+        = O(1) * machine_basic_operation
+
+collectionO1_basic_operation
+    # O(1) * machine_basic_operation
+    # donot depend on element operation
+    #   like order_set __contains__ O(log(n))*element.'<'
+    array_basic_operation
+        array.'index'
+        array.'assign'
+    stack_basic_operation
+        stack.'push'
+        stack.'pop'
+        stack.'top'
+        stack.'is_empty'
+        stack.'init0' # create empty stack
+array<size>.'init' = O(size)*array_basic_operation
+    # create an array of length "size"
+    # not basic operation
+
+
+uint.'bit_length'
+    # not basic operation
+    * O(1)*machine_word.'bit_length' # + O(1)*pointer_dereference
+        # uint :: array[machine_word]
+        # uint :: big_endian_list[BIT]
+    * O(1)*machine_word.'bit_length' + O(1)*machine_word.'*' # + O(1)*machine_word.'+'
+        # uint :: big_endian_sized_list[machine_word]
+    * O(self.bit_length())*machine_basic_operation
+        # uint :: list[machine_word]
+    * O(self.bit_length()) * (uint.'>>1' + uint.'==')
+        = O(self.bit_length()**2) * machine_basic_operation
+
+uint.'- + * / %'
+uint.'>>1 >> == <'
+uint[:upper_bound].'- + * / %'
+    <==> uint[..upper_bound-1].'...'
+    # 0 <= self < upper_bound
+    # 0 <= other < upper_bound
+    # 0 <= result < upper_bound
+uint<num_bits==power>.'- + * / %'
+    <==> uint[:2**power].'- + * / %'
+    # 0 <= self < 2**power
+
+callable.'init'
+    # init the closure
+    # O(1)??
+
+
+
+class VirtualArrayOps:
+    # the basic operation here is not O(1)*machine_basic_operation
+    Array :: UInt -> a -> *
+    array_init
+        :: (size <- UInt)
+        -> (generator <- uint[:size] -> a)
+        -> Array size a
+    array_get :: uint[:size] -> Array size a -> a
+    array_set :: uint[:size] -> a -> Array size a -> a
+    array_free :: Array size a -> ()
+
+class VirtualStackOps:
+    # the basic operation here is not O(1)*machine_basic_operation
+    Stack :: a -> *
+    stack_init :: Stack a
+    stack_push :: a -> Stack a -> ()
+    stack_pop :: Stack a -> a
+    stack_top :: Stack a -> a
+    stack_is_empty :: Stack a -> Bool
+    stack_free :: Stack a -> ()
+
+
+
+
+
+
+comparison_sort
+    comparison_sort :: Ord a => (input <- [a]) -> (output <- [a])
+    let n = len(input)
+    * O(n*log(n)) * a.'<' + ???
+        # heap_sort
+        # merge_sort
+        # Tim sort???TODO
+
+
+
+bucket_sort
+    # using basic array and stack
+    #   may use VirtualArrayOps and VirtualStackOps
+    #   then the result 
+    bucket_sort
+        # :: (step <- PInt)
+        # :: (lower_bound <- UInt)
+        :: (upper_bound <- UInt) # 0 <= key < upper_bound
+        -> (get_key <- a -> uint[0..upper_bound-1])
+        -> [a] -> [a]
+    bucket_sort upper_bound get_key input =
+        collect_size = upper_bound
+            # (upper_bound - lower_bound)//step
+
+        # 1. O(collect_size)*stack.'init0' + O(1)*array<collect_size>.'init'
+        collect = [[] for _ in range(collect_size)]
+        n = len(input)
+
+        # O(n) * (...)
+        for a in input:
+            # 'get_key'
+            key = get_key a
+            idx = key # (key - lower_bound)//step
+            # array_basic_operation + stack_basic_operation
+            collect[idx].append(a)
+        # ==>>
+        # 2. O(n) * ('get_key' + array_basic_operation + stack_basic_operation)
+
+        # 3. O(collect_size) * array_basic_operation + O(n) * stack_basic_operation + O(1)*array<n>.'init'
+        return chains(collect)
+
+        # total:
+        # 1. O(collect_size)*stack.'init0' + O(1)*array<collect_size>.'init'
+        # 2. O(n) * ('get_key' + array_basic_operation + stack_basic_operation)
+        # 3. O(collect_size) * array_basic_operation + O(n) * stack_basic_operation + O(1)*array<n>.'init'
+        # ==>> O(n) * 'get_key' + O(2n+collect_size)*stack_basic_operation + O(2n+2collect_size) * array_basic_operation
+        # ==>> O(n) * 'get_key' + O(4n+3collect_size) * collectionO1_basic_operation
+    ==>> O(len(input)) * 'get_key' + O(len(input)+upper_bound) * collectionO1_basic_operation
+
+    get_key_ex
+        :: (step <- PInt)
+        -> (lower_bound <- UInt)
+        -> (upper_bound <- UInt)
+        -> (get_key <- a -> uint[lower_bound, lower_bound+step..upper_bound-1])
+        -> (new_get_key <- a -> [0..(upper_bound-1-lower_bound)//step])
+        # new_upper_bound = (upper_bound-1-lower_bound)//step+1
+    get_key_ex step lower_bound upper_bound get_key a =
+        ((get_key a) - lower_bound)//step
+        # O(1) * ('get_key' + uint[:upper_bound].'-' + uint[:upper_bound-lower_bound].'//')
+
+    bucket_sort_ex
+        :: (step <- PInt)
+        -> (lower_bound <- UInt)
+        -> (upper_bound <- UInt)
+        -> (get_key <- a -> uint[lower_bound, lower_bound+step..upper_bound-1])
+        -> [a] -> [a]
+    bucket_sort_ex step lower_bound upper_bound get_key input =
+        bucket_sort new_upper_bound new_get_key input
+        # O(len(input)) * 'new_get_key' + O(len(input)+new_upper_bound) * collectionO1_basic_operation
+      where
+        # O(???)
+        # O(1) * callable.'init'
+        new_get_key = get_key_ex step lower_bound upper_bound get_key
+        # O(1) * (uint[:upper_bound].'+-' + uint[:upper_bound-lower_bound].'//')
+        new_upper_bound = (upper_bound-1-lower_bound)//step+1
+    ==>> O(1) * callable.'init' + O(len(input)+(upper_bound-lower_bound)//step) * collectionO1_basic_operation + O(len(input)) * 'get_key' + O(len(input)) * (uint[:upper_bound].'+-' + uint[:upper_bound-lower_bound].'//')
+
+
+

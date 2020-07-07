@@ -1,0 +1,142 @@
+
+TextTree = Comment {content :: String}
+         | LeafNode {content :: String}
+         | NonLeafNode
+                { content :: String
+                , children :: [TextTree]
+                }
+
+
+how to repr tree structure?
+    use indent/dedent
+    example: # <...> are metalanguish symbol
+        <node content>
+            <1st child node content>
+            <2nd child node content>
+        <sibling node content>
+        <sibling node content>
+
+how to repr node content?
+    comment node:
+        # xxxxxxx
+    leaf node:
+        ' xxxxxxx
+    nonleaf node:
+        " xxxxxxx
+
+let ContentOp = '# ' | "' " | '" '
+
+how to repr newline?
+    use '; ' to repr "one" newline
+    ContentOp 1st line
+    ; 2nd line
+    ; 3rd line
+
+how to break long line?
+    use regex'\\-* ' to continue the above line without newline
+    ContentOp 1st line
+    \ part of 1st line
+    \ part of 1st line
+    ; 2nd line
+    \ part of 2nd line
+    \------ part of 2nd line
+
+let PayloadOp = ContentOp | regex"\\-* " | "; "
+let EscapedPayloadOp =
+        "#^ "
+        "'^ "
+        ""^ "
+        ";^ "
+        regex"\^-* "
+how to escape character?
+    use regex"\\[^()\\]*\([^()]*\)" in payload of EscapedPayloadOp
+        unicode "\U(U+hex)"
+        unicode "\u(hex)"
+        unicode "\ud(dec)"
+        ascii "\a(hex)"
+        ascii "\ad(dec)"
+        c languish style: "\c(\n)" # i.e. newline "\n"
+        the escape character "\()" or "\c(\\)" # i.e. "\\"
+        no character "\([])" i.e. ""
+    escape the payload only, donot affect continuation
+    EscapedPayloadOp \u(2a)\a(fb)
+
+    example of "A\n\\c(\\n)"
+        ' A
+        \^ \c(\n)
+        \ \c(\n)
+
+how comment anywhere instead of obay indent rule?
+    use "! " and "!^ "
+    this kind of comment will be removed as white line at preprocess
+        before verify the indent rule
+    since there may be many "! ",
+        to prevent "\\ " or "; " or so on,
+        we intruduce
+            "."
+            ".."
+            "..~"
+            "..."
+            "^^^"
+            "...[#'"]"
+            "^^^[#'"]"
+    example:
+        <node>
+        .
+        ..
+      ! xxxxxx
+      ! xxxxxx
+      ! xxxxxx
+      ! xxxxxx
+      ! xxxxxx
+      ! xxxxxx
+      ! xxxxxx
+
+how to dedent a block?
+    use regex"<* " and regex">* "
+    the payload should match
+    payload will be discarded
+    example:
+            <node>
+                <child1>
+        <<<<<<<<< dedent block A
+        <child2>
+        <child3>
+        >>>>>>>>> dedent block A
+                <child4>
+    would translate to:
+        how to shift dedent block back use ".."?
+            <node>
+                <child1>
+                ..
+                <child2>
+                <child3>
+                ..
+                <child4>
+    where ".." is a op, see below.
+
+    ".." forbid:
+        let op = '; ' | '\\ ' | ';^ ' | '\\ '
+        1) forbid child2 merge to child1
+            <node>
+            ..
+            op xxxx
+        2) forbid child4 be a child of child3
+            <node>
+            ..
+                <child>
+
+what is nop?
+    "[]"
+    use it to create a body and cause nobody error or indent error
+    example [] create a body:
+        ' leaf
+            []
+            ! error! leaf can not have a body
+    example [] cause indent error:
+        " node
+            []
+          []
+
+
+

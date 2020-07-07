@@ -1,0 +1,138 @@
+
+
+
+#symbol ::= connected planar cubic undirected multigraph with loops
+#G_n_k_S/ML/L0_BL = connected planar [n,k)-degree undirected simple graph/multigraph with/without loops, [bridgeless]
+
+
+GCPU ::= connected planar undirected graph or empty graph ''
+G_n_k ::= [n,k)-degree GCPU # each vertex v in G_n_k, n <= degree(v,G_n_k) < k
+G_3_4_S ::= 3-degree simple GCPU
+G_n_k_M ::= [n,k)-degree GCPU, multigraph without loop
+G_n_k_ML ::= [n,k)-degree GCPU, multigraph with loop
+G_n_k_ML0 ::= [n,k)-degree GCPU, multigraph with loop, or graph 'O'
+
+G_3_4_S_BL ::= bridgeless G_3_4_S
+
+
+let 'O' == ''
+symbol ::= G_3_4_ML0
+
+g is a graph
+vs = vertices[G]
+es = edges[G]
+V = size(vs)
+E = size(es)
+
+if g is cubic
+    assert 3*V == 2*E
+    assert E%3 == V%2 == 0
+
+if g is a G_3_4_ML0
+    if V == 0:
+        g == 'O'
+    elif V == 2:
+        g == 'CD' or 'O-O' # 0[0]=2; 0[0]-2-0[0]
+    elif V == 4:
+        g == 'ED', 'CD-O', 'O=O', 'O-O-O' or '*-(O,O,O)' # 2[0]=2, 2[0]-2-0[0], 2[1]=2, 2[1]-2-0[0]
+    ...
+    
+
+case *-(A,B,C):
+    (A,A,A): 'CD'
+    (A,A,B): '-O', 'u-O-v'(u!=v) or '-CD'
+    (A,B,C): 'E'
+
+
+def map_multiedges_and_loop_to_vertex(g3ml):
+    assert g3ml is a G_3_4_ML0
+    g04s = ''
+    while g04s != g3ml
+        g04s = g3ml
+        replace ? in g3ml by:
+            {'O', 'CD'} -> '*'
+            {'-O', '-CD'} -> '-*'
+            {'u-O-v'(u!=v)} -> 'u-*-v'
+    
+    assert g04s is a G_0_4_S
+    return g04s
+
+
+
+def take_away_multiedges_and_loop(g3ml):
+    assert g3ml is a G_3_4_ML0
+    g3s = ''
+    while g3s != g3ml:
+        g3s = g3ml
+        replace ? in g3ml by:
+            {'O', 'CD'} -> ''
+            {'O-C', 'CD-C'} -> 'C'
+            {'-O-'} -> '-'
+    
+    assert g3s is a G_3_4_S
+    return g3s
+
+    
+def take_away(e, g3s):
+    assert g3s is a G_3_4_S
+    assert e in g3s
+    u = source(e, g3s)
+    v = target(e, g3s)
+    for p in [u,v]:
+        vas = []
+        for q in adjacent_vertices(p, g3s):
+            if q not in [u,v]:
+                vas.append(q)
+                
+        assert len(vas) == 2    # degree(p, g3s) == 3 and # so no new loops
+        assert vas[0] != vas[1] # no multiedges
+        add_edge(vas[0], vas[1], g3s)
+    
+    for p in [u,v]:
+        clear_vertex(p, g3s)
+        remove_vertex(p, g3s)
+    
+    dg3m = g3s
+    assert each component in dg3m is a G_3_4_M # no loops
+    return dg3m
+
+
+??? if g3sbl is a G_3_4_S_BL and not 'ED',
+    does exists e in g3sbl, s.t. g = take_away(e, g3sbl) is a G_3_4_S_BL ???
+    
+    assume that for any e in g3sbl, g = take_away(e, g3sbl) contains multiedges
+    let e == (u,v), u-(w,x,v), v-(y,z,u)
+        u not in {w,x,v}    since no loops in g3sbl
+        v not in {y,z,u}
+        3 == card({y,z,u})  since no multiedges in g3sbl
+        3 == card({w,x,v})
+        case card({w,x,y,z}):
+            == 1:
+                ERROR for y != z
+            == 2:
+                let w == y != x == z
+                let w-(u,v,s), x-(u,v,t)
+                #!!!!
+                let g3sbl == {u-v, w-(u,v,s), v-(u,v,t), s-(a,b), t-(a,b), a-b}
+                then the answer for the question above is NO
+    xxxxxxxxxxxxxxxx
+    
+        
+
+
+    if e in G3:
+        g = take_away(e, G3)
+        assert g is a planar cubic multigraph, may disconnected, with no loops
+        let e == (u,v)
+        1) exists x,y, s.t. x-u, x-v, y-u, y-v, x!=y
+        or 2) exists w, x, y, z, s.t. w-u, x-u, y-v, z-v, w-x, y-z
+        or 3) exists x, y, z, s.t. x-z, y-z, x-y, (z=u or z=v)
+        => 'CD', 'CD-', '-O-' may in any component
+        => G3 may contains 'ED', '-CD-', 'ED-', 'CE'
+        
+        
+        #The Euler characteristic can be defined for connected planar graphs by the same  formula as for polyhedral surfaces, where F is the number of faces in the graph, including the exterior face. 
+        #The Euler characteristic of any planar connected graph G is 2.
+        if G3 is bridgeless and is not 'ED',
+        then exists e, s.t. g = take_away(e,G3) is bridgeless and is simple
+    

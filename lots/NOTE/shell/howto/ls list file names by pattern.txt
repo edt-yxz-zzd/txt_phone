@@ -1,0 +1,74 @@
+
+https://unix.stackexchange.com/questions/277522/listing-files-with-pattern-with-starting-and-ending
+ls | grep -x "abc.*\.zip"
+    Use "grep -i" for case insensitive search.
+find . -name "abc*.zip"
+    It should probably be noted that find will look for those files in subdirectories as well.
+    to restrict to the current directory:
+        * find . ! -name . -prune -name 'abc*.zip' -print
+        * find . -maxdepth 1 -name 'abc*.zip'
+            if your find supports -maxdepth like on GNU or BSD
+        * find . -depth 1 -name 'abc*.zip'
+            if your find supports a -depth <n> like on some BSDs
+
+
+ls abc*.zip
+    * DOS not support
+    * This however will fail if there are too many files (there is a limit to shell expansion in term of how many arguments it can expand to).
+        Note that that limit is not a shell limit. It's a kernel limit in the execve() system call.
+
+====================
+ls doesn't do pattern matching on file names. It just lists the content of the directories and the files it is being given as arguments.
+
+Your shell on the other hand has a feature called globbing or filename generation that expands a pattern into a list of files matching that pattern.
+
+
+non-MS-DOS
+    * printf '%s\n' abc*.zip
+        (we need -d because if any of those files are of type directory, ls would list their content otherwise).
+    * ls -ld abc*.zip
+
+    To unzip to extract them if only "unzip" could extract more than one file at a time. Unfortunately it doesn't, so you'd need either to use "xargs -n1" or a "for" loop:
+        * printf '%s\0' abc*.zip | xargs -r0n1 unzip
+        * for file in abc*.zip; do unzip "$file"; done
+
+        But in fact, "unzip" being more like a port of a MS-DOS command, "unzip" itself would treat its argument as a glob. In other words, "unzip 'abc*.zip'" will not unzip the file called "abc*.zip" (a perfectly valid file name on Unix, not on Microsoft operating systems), but the files matching the "abc*.zip" pattern, so you'd actually want:
+            * unzip 'abc*.zip'
+        (Actually our xargs and for approach above would be wrong, because if there's a file called "abc*.zip" for instance, unzip would treat it as a pattern! See "bsdtar" for a more unixy way to extract zip archives)
+
+For case insensitive matching, you'd use [aA][bB][cC]*.[zZ][iI][pP] portably. Some shells have extended globbing operators for case insensitive matching:
+
+    zsh:
+
+    setopt extendedglob
+    ls -ld (#i)abc*.zip
+
+    Or:
+
+    ls -ld ((#i)abc)*.zip
+
+    if you only want the abc part to be case insensitive.
+
+    ksh93:
+
+    ls -ld ~(i)abc*.zip
+
+    or:
+
+    ls -ld ~(i:abc)*.zip
+
+    with bash.
+
+    shopt -s nocaseglob
+    ls -ld abc*.zip
+
+    (no way to have only parts of the globs case sensitive there other than by using the portable syntax).
+
+    with yash:
+
+    set +o case-glob
+    ls -ld abc*.zip
+
+    same remark as for bash above.
+
+

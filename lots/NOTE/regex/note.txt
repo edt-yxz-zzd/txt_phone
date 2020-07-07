@@ -1,0 +1,125 @@
+ref:
+    * https://swtch.com/~rsc/regexp/regexp1.html
+        file:///E:/book/computer/paper/regex/Regular%20Expression%20Matching%20Can%20Be%20Simple%20And%20Fast.htm
+            Regular Expression Matching Can Be Simple And Fast.htm
+    * Efficient submatch addressing for regular expressions (2001)
+
+
+#########################
+
+Modified Thompson's construction
+    FA - finite automaton
+    DFA - deterministic FA; deterministic finite automaton
+    NFA - nondeterministic FA; nondeterministic finite automaton
+    TNFA - tagged NFA; tagged nondeterministic finite automaton
+
+    i - the initial_state # one and only one
+        no "s -> i"
+        to avoid repeat another alternation
+    f - the final_state # one and only one
+        no "f -> s"
+    i != f
+
+    # __str__ to ascii art
+
+    * null_without_tag
+        i -[null]-> f
+    * null_with_tag
+        i -[null/variable]-> f
+        # each variable appear at most once
+        # store (high_level_position, low_level_reference) to variable
+        # high_level_position :: UInt
+        #   per terminal ==>> high_level_position += 1
+        # low_level_reference may not be integer, e.g. pointer or tree iterator
+        #   if low_level_reference is integer:
+        #       * may be not UInt
+        #       * step may be not 1
+        #           e.g. utf8-encoding file_byte_position:
+        #               char may occupy more than one byte
+        #
+    * single_terminal / terminal_set
+        i -[terminal_set]-> f
+        # terminal_set may be empty ==>> dead
+        # terminal_set use a block_set/block_map when terminal is total ordering
+        # e.g. character classes
+        #
+    * concatenation eL eR
+        # eL ++ eR
+        (iL -L-> fL) ++ (iR -R-> fR) ==>>
+            i -[null]-> (iL -L-> fL -[null]-> iR -R-> fR) -[null]-> f
+          or:
+            i -L-> m -R-> f
+            where i == iL, fL == m == iR, f = fR
+        # so, before NFA construction, i and f are selected
+        #
+    * alternation eL eR
+        # eL | eR
+        (iL -L-> fL) | (iR -R-> fR) ==>>
+               /-[null]-> (iL -L-> fL) -[null]-\
+            i -|                               |-> f
+               \-[null]-> (iR -R-> fR) -[null]-/
+          or:
+               /-L-\
+            i -|   |-> f
+               \-R-/
+    * one_or_more e
+        # e+
+        (iE -E-> fE)+ ==>>
+            i -[null]-> iE ---E---> fE -[null]-> f
+                         \<-[null]-/
+        # NOTE: i has no income, f has no outcome
+        #       so i cannot be iE, f cannot be fE
+        #
+        # for tag in e: each tag -> stack<position>
+        #
+
+    ############ non-basic construction
+    * zero_or_one e
+        # e?
+        e? = alternation e null_without_tag = (e | null_without_tag)
+    * zero_or_more e
+        # e*
+        e* = zero_or_one . one_or_more $ e = (e+)?
+    * counted_repetition
+        assume 0 <= n <= m
+        e{0,0} = null_without_tag
+        e{n,m} if [0<=n<=m] e{n,n} ++ e?{m-n,m-n}
+            e{2,5} ==>> eee?e?e? ==>> e{2} e?{3}
+            # rename all tags in e to distinguish them
+            #   tag ==>> (tag, 0), (tag, 1), ..., (tag, 4)
+            #
+
+        e{0,} ==>> e?
+        e{1,} ==>> e+
+        e{n,} ==>> [n>1] e{n-1,n-1} ++ e+
+            #   tag ==>> (tag, 0), (tag, 1), ...
+submatch extraction
+    "...(?P<capture>...)..."
+unanchored matches
+    e ==>> ".*(?P<main>e)"
+greedy/non-greedy operators
+    # e> greedy
+    # e< non-greedy
+    for all regex, not only for counted_repetition
+    means longest/shortest match take priority
+    symmetry operators for search on both directions
+
+assertions
+    ^ $ \b \B
+reversable
+    non-symmetry: leftmost longest
+        since when search from left to right
+            all variables are assigned from left to right
+            when we need to merge states:
+                we can only merge those assigned variables
+                hence we cannot merge the rightmost variables
+            when search on reverse direction:
+                we can not do the same merge.
+                hence non-symmetry
+    symmetry: longest/shortest
+        we can first use reversed NFA to reverse search
+        find out the longest/shortest match string
+        and then use NFA to search the result string
+        and then submatch extraction ...
+
+

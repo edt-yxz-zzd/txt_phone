@@ -1,0 +1,79 @@
+
+
+question:
+    template <typename T> struct C;
+
+    template <typename T> struct C
+    {
+        // impl C<T>
+    };
+    template <template A> struct C<vector<A> >
+    {
+        // impl C<vector<T> >
+        //how to use the C<T> impl?
+    };
+
+    template <> struct C<vector<int> >
+    {
+        // impl C<vector<int> >
+        //how to use the C<vector<T> > impl?
+    };
+
+
+
+1)
+    template <typename T> struct C;
+    template <typename T> struct C_impl
+    {
+        // impl C<T>
+    };
+    template <typename T> struct C : C_impl<T>{};
+
+    template <template A> struct C_vector_impl
+    {
+        // impl C<vector<T> >
+        //how to use the C<T> impl?
+        // use C_impl<T> instead
+    };
+    template <template A> struct C<vector<A> > : C_vector_impl<A>{};
+
+    template <> struct C<vector<int> >
+    {
+        // impl C<vector<int> >
+        //how to use the C<vector<T> > impl?
+        // use C_vector_impl<int> instead
+    };
+
+
+2)
+    template <typename, typename> struct PlaceHolder; // no definition
+
+    template <typename T, bool SKIP> struct C;
+
+    template <typename T, bool _>
+    struct C<T, _>
+    {
+        // impl C<T>
+        // both SKIP = true|false
+    };
+
+    template <typename T>
+    struct C<vector<T>, false> : C<vector<T>, true>
+    {
+        // impl C<vector<T> >
+        //how to use the C<T> impl?
+        //use C<T, true> instead
+    };
+
+    template <>
+    struct C<vector<int>, false> : C<vector<int>, true>
+    {
+        // impl C<vector<int> >
+        //how to use the C<vector<T> > impl?
+        //use C<#1, true> [#1=vector<T>] instead
+        //not what I want!!!!
+    };
+
+
+
+

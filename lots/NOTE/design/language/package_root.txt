@@ -1,0 +1,236 @@
+
+input:
+    1) include paths
+        { root_dirs :: [path], root_dirss :: [parent_path]
+        , root_files :: [path], root_filess :: [path]
+        }
+    2) filesystem
+folder organization:
+    -- without .rt .rts .pkg
+    <root_dir>/ =
+        __root__/
+        __apis__/ ?
+        __roots__/ ?
+        *<package_dir/> -- with same contents as package_dir/
+        {- using redirect...
+        __implements__/ ?
+            __impl_relation__.rel
+            <impl_ver>/
+                ...
+        -}
+    __root__/ =
+        __root__.u8.id
+        <alias>.<encoding>.id *
+    __apis__/ =
+        __api_relation__.rel
+        <api_ver>.api +  -- api version instead of implement version
+        <module_name|pkg_name>/ *
+            *<__apis__/>
+    __roots__/ =
+        <external_root_local_alias>/
+            __root__/
+            __apis__/
+    <package_dir>/ =
+        __/ ?
+        __visible__.vls ? -- __friends__??
+        __bottomup_redirect__.map ?
+        __topdown_redirect__.map ?
+        __common__.inject ?
+        __module__.m ?
+        <module_file>.m *
+    __/ =
+        *<package_dir/>
+
+file_format:
+    .<encoding>.id
+        a binary file used as identity
+        can be decoded by encoding
+            but not a txt file!!
+    .rel -- ver relationship; DAG; lattic; Top Bot
+        content =
+            top_line
+            line*
+        top_line = <top_ver>
+        line = <ver> : <ver> +
+    .api
+        decl exported symbols
+    .vls -- who can see which
+        content = see_which *
+        see_which =
+            <select which>
+            (<indent> <select who>)+
+    .map -- redirect
+    .rts
+    .rt
+    .pkg
+    .m -- module
+
+
+
+
+
+search paths
+    when execute, assume paths...
+    -I<file>.rt -- root_file.rt as dir
+    -I<file>.rts -- roots_file.rts as dir/*
+    -I<dir>   -- the dir maybe a root
+    -I<dir/*> -- the subdirs maybe roots
+    if a dir contains "__root__.id", then it is a root
+    each "__root__.id" should be unique globally.
+        -- (compare bytes in file)
+
+    -- after '.' is a redirected import
+    -- after '/' is a nonredirected import
+    -- let pkg* = "" | pkg* [/.] pkg [/.]
+    -- let pm = module | pkg
+    -- let ids = (to Xxx)? ('(' id+ ')' | *<ver> ('hiding' '(' id+ ')')?)
+    -- first pm redirected import
+        -- import /pkg*pm ids
+        -- import xxx/pkg*pm ids
+        -- import .(__module__)? ids
+        -- import ..(__module__)? ids
+        -- import .pkg*pm ids
+        -- import ..pkg*pm ids
+    -- first pm none redirected import
+        -- import //pkg*pm ids
+        -- import xxx//pkg*pm ids
+        -- import ./(__module__)? ids
+        -- import ../(__module__)? ids
+        -- import ./pkg*pm ids
+        -- import ../pkg*pm ids
+    -- if without (to Xxx), then using id directly
+        -- all ids imported and ids defined should not overlaps
+    -- if with (to Xxx), then Xxx.id
+        -- all ids imported to namespace Xxx should not overlaps
+    -- if ver, then APIs are known locally, so allow star import
+    -- pkg is a dir, __module__.m defines the module
+    -- module is a file, but it can be pkg, pkg in file!!
+    -- module import should form DAG
+    -- forbidden:
+    --      path/__module__/
+    --          __module__ should not be a package dir
+    --              , since it was the module of path
+    --      both path/XXX and path/XXX.pkg
+    --      both path/XXX.m and path/XXX.pkg
+    --      both path/XXX.m and path/XXX
+    --          if XXX is pkg then move XXX.m to path/XXX/__module__.m
+
+
+curr_root/
+    __root__/
+        <ver>.u8.id
+        <ver>.<encoding>.id
+        -- this file says: this dir is a root; the root pkg
+        -- used:
+        --  import /pkg.pkg.module
+        -- type: bytes; binary file; and can be decoded by utf8
+        -- can have multi different __root__ files
+    [__module__.m]
+    __/
+        -- private package for packages under parent
+    __visible__.ls
+    __apis__/
+        __relation__.rel
+            -- ver <- ver*
+            -- require Top -- the first version
+            -- require Bot -- the latest version
+        <ver>.api
+        <ver>.api
+            -- for /__module__.m
+        <module>/ ...
+            -- for /<module>.m
+        <module>/
+            <ver>.api
+            <ver>.api
+            -- reexport ids from other modules
+            -- 1) as implemented in self
+                -- may turn to 2) in later version
+                -- will conflict with original ids if imported same time
+            -- 2) as reexport ids forever from other module<ver>
+                -- will not conflict with original ids
+        <pkg>/
+            <ver>.api
+            <ver>.api
+                -- for /<pkg>/__module__.m
+            <module>/<ver>.api
+            <pkg>/ ...
+    __roots__/
+        -- external roots
+        -- should form DAG
+        xxx/
+            __root__.<encoding>.id
+                -- only one __root__ file, different with __root__/
+                --      version is not important
+                -- import xxx/pkg.module
+                -- search the unique root path that contains __roots__.id
+                --  the same as xxx.id
+            __apis__/
+                <ver>.api
+    -- redirect
+    --  redirect import directives
+    --  go up to root and then go down
+    --  first redirected by __bottomup_redirect__ until root
+    --  second redirected by __topdown_redirect__ until target
+    __bottomup_redirect__.map
+        why?
+            locally configure
+            switch local import directives to other pkgs
+            e.g. debug-version, older-version
+            since import directives fetch the newest implement version
+                -- the "*<ver>" specify the api version
+                --                  not the implement version
+                if we want to use older-version, we have to config locally.
+        all redirect import directives inside curr_pkg will
+            be redirected by this file first
+    __common__.inject
+        -- inject into *.m
+        module-selector:
+            {-# LANGUAGE GADTs #-}
+            import Control.Arrow
+            import Control.Category
+            import Prelude hiding ((.), id)
+
+    __topdown_redirect__.map
+        why?
+            ADT/ is pkg
+            long time over, there are many ADTs
+            so we may want to classify them
+            ADT/
+                ArrowADT/
+                    ...
+                OpADT/
+                    ...
+                NumADT/
+                    ...
+            since we refactor the structure
+                we should redirect the user import directives
+        -- this file occurs under root and any packages
+        -- to redirect pkg or module
+        -- .pkg.pkg -> .pkg.pkg -- under same pkg
+        -- .pkg.pkg -> ..pkg.pkg
+        -- .pkg.pkg -> /pkg.pkg
+        -- .pkg.pkg -> xxx/pkg.pkg
+
+
+module_file.m
+    module module_file
+        exports...
+    where
+    ...
+root_file.rt
+    -- like package_file.pkg but is root dir
+roots_file.rts
+    -- like roots_file.rt but is parent dir for root_files
+package_file.pkg
+    -- mimic folder structure
+    -- could offer other file under pkg dir
+    module __module__
+        exports...
+    where
+    ...
+    module submodule where
+        module __module__ where
+        ...
+        module subsubmodule where
+    module submodule/subsubmodule where
+

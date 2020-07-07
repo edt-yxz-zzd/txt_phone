@@ -1,0 +1,66 @@
+
+problem:
+    y = inv_mod_pow(x, B, k) ::=
+        given x, gcd(x, B**k) == 1, B>=2, k>=1, find out y s.t. y*x % B**k == 1
+
+
+assume we know ans when k==1
+    since we can call invmod
+
+assume x >= 2
+    since:
+        * if x < 0, y = -inv_mod_pow(-x, B, k)
+        * x != 0
+        * if x == 1, y == 1
+
+
+
+x_digits = little_endian_digits_of(x, B)
+inv_x' = invmod(x_digits[0], B)
+power' = 1
+
+while True:
+    assert inv_x' * x % B**power' == 1
+    assert inv_x' < B**power'
+    inv_x := inv_x'
+
+    # find out exact power
+    product = inv_x * x
+    product_digits = little_endian_digits_of(product)
+    assert product_digits[0] == 1
+    power = 1+count_head_0s(product_digits[1:])
+    assert inv_x < B**power
+    assert power >= power'
+    if k <= power: return inv_x
+
+    # q = digitsLE2uint(product_digits[power:]) # product >>= power (base B)
+    q, r = divmod(product, B**power)
+    assert r == 1
+    assert q%B > 0
+    # product = inv_x * x = q*B**power + 1
+
+    s = (-q)%B**power
+    assert s + q%B**power == B**power
+    [mod B**(power*2)]:
+        inv_x * x =-= q%B**power * B**power + 1
+                        == (B**power - s) * B**power + 1
+                        == B**(power*2) - s*B**power + 1
+                  =-= -s*B**power + 1
+        inv_x * x * B**power =-= (-s*B**power + 1) * B**power
+                             =-= -s*B**(power*2) + B**power
+                             =-= B**power
+        s*(inv_x * x * B**power) =-= s*B**power
+        inv_x * x + s*(inv_x * x * B**power) =-= 1
+        (1 + s*B**power) * inv_x * x =-= 1
+        ((1 + s*B**power) * inv_x) * x =-= 1
+
+    power' = power*2
+    inv_x' = ((1 + s*B**power) * inv_x) % B**power'
+
+
+
+
+
+
+
+

@@ -1,0 +1,72 @@
+universal reference or forwarding reference?
+perfect forwarding
+    std::forward
+    std::move
+reference collapsing
+    A& & becomes A&     // though not called as "reference collapsing"
+    A& && becomes A&
+    A&& & becomes A&
+    A&& && becomes A&&
+
+
+example:
+    template<class T>
+    void Fwd(T &&v) { Call(std::forward<T>(v)); }
+        // here T&& is "universal reference"
+    * void Call(int);
+    * void Call(int&);
+    * void Call(int const&);
+    * void Call(int&&);
+    int i; int const k;
+    call Fwd with different Call on:
+        Fwd(i); Fwd(k);
+        Fwd(std::move(i)); Fwd(std::move(k));
+    ------------ details ----------------------
+    see: "reference collapsing.cpp"
+
+
+
+---------------- source from www ----------------
+https://stackoverflow.com/questions/13725747/concise-explanation-of-reference-collapsing-rules-requested-1-a-a-2
+
+
+
+The reference collapsing rules (save for A& & -> A&, which is C++98/03) exist for one reason: to allow perfect forwarding to work.
+
+"Perfect" forwarding means to effectively forward parameters as if the user had called the function directly (minus elision, which is broken by forwarding). There are three kinds of values the user could pass: lvalues, xvalues, and prvalues, and there are three ways that the receiving location can take a value: by value, by (possibly const) lvalue reference, and by (possibly const) rvalue reference.
+
+Consider this function:
+
+template<class T>
+void Fwd(T &&v) { Call(std::forward<T>(v)); }
+
+By value
+
+If Call takes its parameter by value, then a copy/move must happen into that parameter. Which one depends on what the incoming value is. If the incoming value is an lvalue, then it must copy the lvalue. If the incoming value is an rvalue (which collectively are xvalues and prvalues), then it must move from it.
+
+If you call Fwd with an lvalue, C++'s type-deduction rules mean that T will be deduced as Type&, where Type is the type of the lvalue. Obviously if the lvalue is const, it will be deduced as const Type&. The reference collapsing rules mean that Type & && becomes Type & for v, an lvalue reference. Which is exactly what we need to call Call. Calling it with an lvalue reference will force a copy, exactly as if we had called it directly.
+
+If you call Fwd with an rvalue (ie: a Type temporary expression or certain Type&& expressions), then T will be deduced as Type. The reference collapsing rules give us Type &&, which provokes a move/copy, which is almost exactly as if we had called it directly (minus elision).
+By lvalue reference
+
+If Call takes its value by lvalue reference, then it should only be callable when the user uses lvalue parameters. If it's a const-lvalue reference, then it can be callable by anything (lvalue, xvalue, prvalue).
+
+If you call Fwd with an lvalue, we again get Type& as the type of v. This will bind to a non-const lvalue reference. If we call it with a const lvalue, we get const Type&, which will only bind to a const lvalue reference argument in Call.
+
+If you call Fwd with an xvalue, we again get Type&& as the type of v. This will not allow you to call a function that takes a non-const lvalue, as an xvalue cannot bind to a non-const lvalue reference. It can bind to a const lvalue reference, so if Call used a const&, we could call Fwd with an xvalue.
+
+If you call Fwd with a prvalue, we again get Type&&, so everything works as before. You cannot pass a temporary to a function that takes a non-const lvalue, so our forwarding function will likewise choke in the attempt to do so.
+By rvalue reference
+
+If Call takes its value by rvalue reference, then it should only be callable when the user uses xvalue or rvalue parameters.
+
+If you call Fwd with an lvalue, we get Type&. This will not bind to an rvalue reference parameter, so a compile error results. A const Type& also won't bind to an rvalue reference parameter, so it still fails. And this is exactly what would happen if we called Call directly with an lvalue.
+
+If you call Fwd with an xvalue, we get Type&&, which works (cv-qualification still matters of course).
+
+The same goes for using a prvalue.
+std::forward
+
+std::forward itself uses reference collapsing rules in a similar way, so as to pass incoming rvalue references as xvalues (function return values that are Type&& are xvalues) and incoming lvalue references as lvalues (returning Type&).
+
+

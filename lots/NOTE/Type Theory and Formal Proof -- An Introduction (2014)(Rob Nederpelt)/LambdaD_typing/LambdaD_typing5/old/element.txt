@@ -1,0 +1,80 @@
+
+term :: term_set
+    ;; term_id
+    [assumes |- term_set <# super][term_id not in assumes]
+        assumes, term_id :: term_set |- term_id :: super
+        assumes, term_id :: term_set |- term_id : #` term_id
+        assumes, term_id :: term_set |- term_id <: term_id
+
+    ;; #`
+    [assumes |- term :: term_set]
+        assumes |- #` term :: Term
+        assumes |- #` term :: ##` term_set
+
+    ;; term
+    [assumes, id `op3` cls |- term :: Term][assumes |- Term <# set]
+        assumes |- (\id `op3` cls, term) :: set
+    {-
+    [assumes |- term1 `op3` cls][assumes, id `op3` cls |- term2 :: Term]
+      [assumes |- Term <# set]
+        assumes |- </ id `op3` cls = term1, term2 /> :: set
+    -}
+
+    ;; type
+    [assumes, id `op3` cls |- type :: Type][assumes |- Type <# set]
+        assumes |- (id `op3_` cls) -> type :: set
+        ;; assumes |- (id `op3_` cls, type) :: set
+
+    ;; sort
+    [assumes |- set <# Sort][assumes, term_id :: cls |- sort :: set]
+        assumes |- (@@ term_id :: cls, sort) :: set
+    [assumes |- Type <# set][assumes, term_id :: cls |- sort :: Sort]
+        assumes |- (@@ term_id :: cls, sort) :: set
+
+    ;; app
+    [assumes |- f : (id `op3_` cls) -> type][assumes |- a `op3` cls]
+        [assumes, id `op3` cls |- type :: ##` set][assumes |- set <# Term]
+            assumes |- f a :: set
+    ;; fst/snd
+    [assumes |- p : (id :: cls, type)][assumes |- cls <# set]
+        assumes |- fst p :: set
+    [assumes |- p : (id : cls, type)][assumes |- cls :: ##` set]
+        assumes |- fst p :: set
+    [assumes |- p : (id <: cls, type)][assumes |- cls :: set]
+        assumes |- fst p :: set
+
+    [assumes |- p : (id `op3_` cls, type)]
+        [assumes, id `op3` cls |- type :: ##` set][assumes |- set <# Term]
+        assumes |- snd p :: set
+
+    ;; cast
+    [assumes |- term : type <: super][assumes |- super :: ##` set]
+        assumes |- cast super term :: set
+
+    ;; env
+    ;; 'defined_term_id
+    [env,,assumes |- conclusion][env,,[] |- def : type]['id not in env]
+        env, 'id : type = def,, assumes |- conclusion
+    [env,,assumes |- 'Term <# 'Term][('id : type = def) in env]
+        [env,,assumes |- def : t]
+            env,,assumes |- 'id : t ;; type / #` def
+        [env,,assumes |- term : def]
+            env,,assumes |- term : 'id
+        [env,,assumes |- def :: set]
+            env,,assumes |- 'id :: set
+        [env,,assumes |- def <: super]
+            env,,assumes |- 'id <: super ;; ==>> 'id <: def
+        [env,,assumes |- sub <: def]
+            env,,assumes |- sub <: 'id   ;; ==>> def <: 'id
+        env,,assumes |- 'id <: 'id
+    ;; ?defined_term_id
+    [env,,assumes |- conclusion][env,,[] |- type :: Type][?id not in env]
+        env, ?id : type,, assumes |- conclusion
+    [env,,assumes |- 'Term <# 'Term][(?id : type) in env]
+        env,,assumes |- ?id : type
+        [env,,assumes |- type :: ##` set]
+            env,,assumes |- ?id :: set
+        env,,assumes |- ?id <: ?id
+
+
+

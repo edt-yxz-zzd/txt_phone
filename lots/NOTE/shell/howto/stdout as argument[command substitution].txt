@@ -1,0 +1,57 @@
+
+command substitution
+
+https://en.wikipedia.org/wiki/Command_substitution
+https://unix.stackexchange.com/questions/108782/pass-the-output-of-previous-command-to-next-as-an-argument
+
+bash:
+    echo `ls`
+    echo $(ls)
+
+    #This will count the lines in the output of ls
+        * Passing input by stdin:
+            ls | wc -l
+
+        * Passing input by command line arguments:
+            wc -l $(ls)
+
+    #########
+    To simulate the output of command1 I am using this echo statement:
+        $ echo -e "Foo\nrate (10%) - name: value - 10Kbps\nBar"
+        $ alias command1='echo -e "Blah\nrate (10%) - name: value - 10Kbps\nBlag"'
+    A quick test:
+        $ command1
+        Blah
+        rate (10%) - name: value - 10Kbps
+        Blag
+
+    Thats all good, so lets parse it out:
+        $ command1 | grep 'rate'
+        rate (10%) - name: value - 10Kbps
+    So we get the line we want out of command1, lets pass that into command2:
+        $ alias command2='echo'
+        $ command2 -t="rate was "$(command1 | grep 'rate')
+        -t=rate was rate (10%) - name: value - 10Kbps
+    I'm expecting "rate was "$(command1 | grep 'rate') to concatenate automatically. If that doesn't work because of whitespace, you should be able to pass the input like so instead:
+        $ alias command2='echo'
+        $ command2 -t=$(echo '"rate was ' $(command1 | grep 'rate') '"')
+        -t="rate was rate (10%) - name: value - 10Kbps "
+
+Dos:
+    xargs
+
+    $ echo abc | xargs echo w x
+    w x abc
+
+    but fail:
+        xargs set path=
+
+PowerShell:
+    $MyVariable = (ls)
+    echo $MyVariable
+
+
+
+#Process substitution
+    #diff <(cat file1) <(sort file2)
+

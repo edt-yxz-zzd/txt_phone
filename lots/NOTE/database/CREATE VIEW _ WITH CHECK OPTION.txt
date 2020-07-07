@@ -1,0 +1,37 @@
+CREATE VIEW _ WITH CHECK OPTION
+
+sqlite3 donot support!!!
+    https://sqlite.org/lang_createview.html
+
+
+https://stackoverflow.com/questions/41923298/sql-view-with-with-check-option
+
+#create view xxx as select * from table where status = 1 with check option
+create view xxx as select * from table where status = 1
+update table set status = 2 where id = 3
+    #update using the table (ok):
+update xxx set status = 2 where id = 3
+    #update using the view (not ok):
+    #and if you would do this, it would make the row disappear
+
+---------------------------
+https://dev.mysql.com/doc/refman/5.6/en/view-check-option.html
+CREATE TABLE t1 (a INT);
+CREATE VIEW v1 AS SELECT * FROM t1 WHERE a < 2
+    WITH CHECK OPTION;
+CREATE VIEW v2 AS SELECT * FROM v1 WHERE a > 0
+    WITH LOCAL CHECK OPTION;
+        ^^^^^^^
+CREATE VIEW v3 AS SELECT * FROM v1 WHERE a > 0
+    WITH CASCADED CHECK OPTION;
+         ^^^^^^^
+==>>
+mysql> INSERT INTO v2 VALUES (2);
+Query OK, 1 row affected (0.00 sec)
+mysql> INSERT INTO v3 VALUES (2);
+ERROR 1369 (HY000): CHECK OPTION failed 'test.v3'
+
+Here the v2 and v3 views are defined in terms of another view, v1.
+v2 has a LOCAL check option, so inserts are tested only against the v2 check.
+v3 has a CASCADED check option, so inserts are tested not only against its own check, but against those of underlying views.
+

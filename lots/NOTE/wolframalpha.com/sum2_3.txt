@@ -1,0 +1,102 @@
+
+[x,y<-CC][k,m,n<-ZZ][k>=0][[x!=0] or [m==n] or [m,n>=0]]:
+    sum2_3(x,y,k,m,n)
+        = sum x^i*(i+y)^k {i=m->n}
+        = [m<n]sum x^i*(i+y)^k {i=m..n-1} - [m>n]sum x^i*(i+y)^k {i=n..m-1}
+        = (C3(x,y,k,n)-C3(x,y,k,0)) - (C3(x,y,k,m)-C3(x,y,k,0))
+        = C3(x,y,k,n) - C3(x,y,k,m)
+
+        = [x==1]1/(k+1) * sum C(k+1,j)*B[j]* (n+y)^(k+1-j) {j=0..k}
+        + [x!=1](x^n (-1)^0 C(k,0) (n+y)^(k-0) (x - 1)^(k-0) S(x,0)
+                + x^(n+1) sum (-1)^j C(k,j) (n+y)^(k-j) (x - 1)^(k-j) S(x,j) {j=1..k}
+                )/(x - 1)^(k + 1)
+        - C3(x,y,k,m)
+    where
+        # C/B/S = ... # see below
+        S(x,j) = (sum x^e * Eulerian_1st(j,e) {e=0..j})
+        Eulerian_1st(n,k)
+            = Eulerian<n,k> = Eulerian<n-1,k-1>*(n-k) + Eulerian<n-1,k>*(k+1)
+            Eulerian<0,k> = [k==0]
+        # B = Bernoulli numbers
+        B[d] = [d=0] - 1/(d+1) * sum C(d+1,k) B[k] {k=0..d-1}
+        C(n,k) = binomial(n,k) = n!/(k!*(n-k)!)
+=======================================
+
+##############################################
+###### from "sum2_2.txt"
+
+[x<-CC][k,m,n<-ZZ][k>=0][[m,n>=0] or [m==n] or [x!=0]]:
+    s(x,k,m,n) = [x==1](-s1k0(k,m) + s1k0(k,n)) + [x!=1](-sxk0(x,k,m) + sxk0(x,k,n))
+    where
+        s(x,k,m,n) =[def]= sum x^i*i^k {i=m->n}
+            = [m<n]sum x^i*i^k {i=m..n-1} - [m>n]sum x^i*i^k {i=n..m-1}
+        s1k0(k,n) =[def]= 1/(k+1) * sum C(k+1,j)*B[j]* n^(k+1-j) {j=0..k}
+        sxk0(x,k,n) =[def]=
+                (x^n (-1)^0 C(k,0) n^(k-0) (x - 1)^(k-0) S(x,0)
+                + x^(n+1) sum (-1)^j C(k,j) n^(k-j) (x - 1)^(k-j) S(x,j) {j=1..k}
+                - x (-1)^k S(x,k)
+                )/(x - 1)^(k + 1)
+        # C/B/S = ... # see below
+        S(x,j) = (sum x^e * Eulerian_1st(j,e) {e=0..j})
+        Eulerian_1st(n,k)
+            = Eulerian<n,k> = Eulerian<n-1,k-1>*(n-k) + Eulerian<n-1,k>*(k+1)
+            Eulerian<0,k> = [k==0]
+        # B = Bernoulli numbers
+        B[d] = [d=0] - 1/(d+1) * sum C(d+1,k) B[k] {k=0..d-1}
+        C(n,k) = binomial(n,k) = n!/(k!*(n-k)!)
+##############################################
+##############################################
+##############################################
+
+# sum x^i*(i+y)^k {i=m->n} = ???
+sum x^i*(i+y)^k {i=m->n}
+    = x^(-y) sum x^(i+y)*(i+y)^k {i=m->n}
+    = x^(-y) sum x^(i+y)*(i+y)^k {i+y=m+y->n+y}
+    = x^(-y) sum x^i*i^k {i=m+y->n+y}
+    = [x==1](-s1k0(k,m+y) + s1k0(k,n+y))
+    + [x!=1]x^(-y)*(-sxk0(x,k,m+y) + sxk0(x,k,n+y))
+
+[x==1]:
+    sum x^i*(i+y)^k {i=m->n}
+        = -s1k0(k,m+y) + s1k0(k,n+y)
+
+    s1k0(k,n+y)
+        = 1/(k+1) * sum C(k+1,j)*B[j]* (n+y)^(k+1-j) {j=0..k}
+
+    sum x^i*(i+y)^k {i=m->n}
+        = 1/(k+1) * sum C(k+1,j)*B[j]* (n+y)^(k+1-j) {j=0..k}
+        - 1/(k+1) * sum C(k+1,j)*B[j]* (m+y)^(k+1-j) {j=0..k}
+        = 1/(k+1) * sum C(k+1,j)*B[j]* (n+y)^(k+1-j) {j=0..k}
+        - C1(1,y,k,m)
+
+[x!=1]:
+    sum x^i*(i+y)^k {i=m->n}
+        = x^(-y)*(-sxk0(x,k,m+y) + sxk0(x,k,n+y))
+
+    x^(-y)*sxk0(x,k,n+y)
+        =   (x^n (-1)^0 C(k,0) (n+y)^(k-0) (x - 1)^(k-0) S(x,0)
+            + x^(n+1) sum (-1)^j C(k,j) (n+y)^(k-j) (x - 1)^(k-j) S(x,j) {j=1..k}
+            - x^(1-y) (-1)^k S(x,k)
+            )/(x - 1)^(k + 1)
+
+    sum x^i*(i+y)^k {i=m->n}
+        =   (x^n (-1)^0 C(k,0) (n+y)^(k-0) (x - 1)^(k-0) S(x,0)
+            + x^(n+1) sum (-1)^j C(k,j) (n+y)^(k-j) (x - 1)^(k-j) S(x,j) {j=1..k}
+            - x^m (-1)^0 C(k,0) (m+y)^(k-0) (x - 1)^(k-0) S(x,0)
+            - x^(m+1) sum (-1)^j C(k,j) (m+y)^(k-j) (x - 1)^(k-j) S(x,j) {j=1..k}
+            )/(x - 1)^(k + 1)
+        =   (x^n (-1)^0 C(k,0) (n+y)^(k-0) (x - 1)^(k-0) S(x,0)
+            + x^(n+1) sum (-1)^j C(k,j) (n+y)^(k-j) (x - 1)^(k-j) S(x,j) {j=1..k}
+            )/(x - 1)^(k + 1)
+            - C2(x,y,k,m)
+
+sum2_3(x,y,k,m,n)
+    = sum x^i*(i+y)^k {i=m->n}
+    = [x==1]1/(k+1) * sum C(k+1,j)*B[j]* (n+y)^(k+1-j) {j=0..k}
+    + [x!=1](x^n (-1)^0 C(k,0) (n+y)^(k-0) (x - 1)^(k-0) S(x,0)
+            + x^(n+1) sum (-1)^j C(k,j) (n+y)^(k-j) (x - 1)^(k-j) S(x,j) {j=1..k}
+            )/(x - 1)^(k + 1)
+    - C3(x,y,k,m)
+
+
+

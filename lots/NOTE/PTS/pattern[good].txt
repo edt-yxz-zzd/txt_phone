@@ -1,0 +1,94 @@
+
+
+########## version1
+## early example, see below instead
+
+# f -> lambda_expr
+# lambda_expr -> (f, x, y)
+
+f = Ord X => \x:X. \y:Y. \z:Z. lambda_expr x y z
+pattern<f,y> (lambda_expr_x_y_z) = (x, z)
+    but how??
+def pattern<f,y> = \expr : AnyLambda.
+    builtin_pattern<...>
+    X = get_type...
+    require Ord X
+    require pattern<y,...>
+    ...
+    x,z = ...
+    assert f x y z == lambda_expr_x_y_z
+    return (x,z)
+
+
+
+#################### version2
+abstract:
+    pattern match process = runtime pattern match | compile time pattern match
+    runtime pattern match = induction principle; should (and only) known the type a compile time
+    compile time pattern match = analyze the value a compile time to derive some arguments
+    compile time pattern constructor = bidirectional pattern constructor | unidirectional pattern constructor
+    bidirectional pattern constructor = a compile time macro, not a function, named by "'Name"
+    unidirectional pattern constructor = not a compile time macro, not a function, named by "''Name"
+
+there are two types of pattern match
+1) runtime pattern match
+    it should be a complete pattern match
+        1) used to match against a variable in abstract input
+            pair@@(=x,=y) : (@X,@Y)
+            \(=x,=y)<-(@X,@Y). y
+            \input@@(=x,(=y,=z))<-(@X,(@Y,@Z)). y
+        2) in "case .. of" expr
+            case ls of
+                [] -> ...
+                ls@@(a:ls) -> ...
+    it equivalence to an induction principle.
+    since we never assume induction principle of a sort, pattern match against a type should never be a complete pattern match!
+        why no induction principle of a sort?
+            we can easily introduce new type(or sort) to be a term of a given sort.
+    we may never assume induction principle of a function.
+        [f:(X->Y)] ==xx==>> f@@(\x:X. y)
+2) compile time pattern match
+    it is a partial pattern match
+    the pattern match may fail, so should be detected at compile time
+    1) match to derive the type (a sort may have no type)
+        (f::F) # f ==>> F
+    2) used to match against a type (of some sort) to perticular type constructor to derive the arguments and ensure the type constructor.
+        T@(X->Y)        # T ==>> ('(@ : .)', X, \_:X. Y) # ==>> Y
+        S@(@x:X. P x)   # S ==>> ('(@ : .)', X, P)
+    3) used to match against a lambda or other builtins constructor
+        f@(\x:X.y)
+        f@(\_:X.y) # y not depend on _
+    1+2+3 ==>> [f::F@(X->Y)]
+    4) used to match against a virtual constructor
+        virtual constructor is a variable
+        \c:C. \x=(c a b). x@(c a' b') # x ==>> (c, a, b)
+    5) used to match against a user defined pattern constructor
+        1) bidirectional pattern constructor
+            let 'Pat X Y = X -> X -> Y
+            f@('Pat X Y) # f ==>> (X, Y); f = X->X->Y; is "=" not ":"
+            f@('Pat X ('Pat Y X)) # f ==>> (X, Y); f = X->X->Y->Y->X
+
+            the constructor is a compile time macro too, but not a function.
+                we have ('Pat X Y) as a value
+                we have no ('Pat X) as a value
+
+            may be we want to use 'Pat(X,Y) instead
+                f   ('Pat ('Pat X Y) Z)
+                f   g@('Pat h@('Pat X Y) Z)
+              vs
+                f   'Pat('Pat(X, Y), Z)
+                f   g@('Pat(h@('Pat(X, Y)), Z))
+              vs
+                f   g@'Pat(h@'Pat(X, Y), Z)
+        2) unidirectional pattern constructor # 单行道
+            let ''Pat X Y = X->Y->Z
+            f@(''Pat X X) # f ==>> (X,) # f = X->X->A->B
+
+            the constructor is neither a compile time macro nor function
+                we have no (''Pat X Y)
+    NOTE:
+        compile time macro is not function, because it's arguments have definition a compile time.
+        but function's arguments have type known only
+        so partial applied bidirectional pattern is not a value
+
+

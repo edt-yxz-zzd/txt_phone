@@ -1,0 +1,87 @@
+The Art of Multiprocessor Programming
+Chapter 4 Foundations of Shared Memory
+[page 72] // timestamp - unbounded
+    The problem with timestamps is that they grow without bound, and eventually overflow any fixed-size variable. Bounded solutions (such as the one in Section 2.7 of Chapter 2) are (arguably) more intellectually satisfying, and we encourage readers to investigate them further through the references provided in the chapter notes. Here, however, we focus on simpler, unbounded constructions, because they illustrate fundamental principles of concurrent programming with less danger of becoming distracted by technicalities.
+
+Chapter 3 Concurrent Objects
+[page 45]
+    While all notions of correctness for concurrent objects are based on some notion of equivalence with sequential behavior, different notions are appropriate for different systems. We examine three correctness conditions. Quiescent consistency is appropriate for applications that require high performance at the cost of placing relatively weak constraints on object behavior. Sequential consistency is a stronger condition, often useful for describing low-level systems such as hardware memory interfaces. Linearizability, even stronger, is useful for describing higher-level systems composed from linearizable components.
+
+
+[page 60]
+
+[Progress Conditions]
+    The wait-free property is attractive because it guarantees that every thread that takes steps makes progress. However, wait-free algorithms can be inefficient, and sometimes we are willing to settle for a weaker nonblocking property.
+    A method is lock-free if it guarantees that infinitely often some method call finishes in a finite number of steps. Clearly, any wait-free method implementation is also lock-free, but not vice versa. Lock-free algorithms admit the possibility that some threads could starve. As a practical matter, there are many situations in which starvation, while possible, is extremely unlikely, so a fast lock-free algorithm may be more attractive than a slower wait-free algorithm.
+
+    // wait-free nonblocking progress inefficient
+    // lock-free nonblocking starve   fast
+
+
+
+[Dependent Progress Conditions]
+    the deadlock-free and starvation-free properties.
+    These properties are dependent progress conditions: 
+        progress occurs only if the underlying platform (i.e., the operating system) provides certain guarantees. 
+    In principle, the deadlock-free and starvation-free properties are useful when the operating system guarantees that every thread eventually leaves every critical section. 
+    In practice, these properties are useful when the operating system guarantees that every thread eventually leaves every critical section in a timely manner.
+
+    // why progress?? <<== does thread leave critical section? how long?
+    // every thread eventually leaves every critical section (in a timely manner)
+    // 
+
+
+
+[absolute progress condition] v.s. [dependent progress condition]
+    Picking a progress condition for a concurrent object implementation depends on both the needs of the application and the characteristics of the underlying platform. 
+        The absolute wait-free and lock-free progress properties have good theoretical properties, they work on just about any platform, and they provide real-time guarantees useful to applications such as music, electronic games, and other interactive applications. 
+        The dependent obstruction-free, deadlock-free, and starvation-free properties rely on guarantees provided by the underlying platform. 
+        Given those guarantees, however, the dependent properties often admit simpler and more efficient implementations.
+
+
+Chapter 5 The Relative Power of Primitive Synchronization Operations
+
+[page 105]
+Corollary5.2.1. It is impossible to construct a wait-free implementation of any object with consensus number greater than 1 using atomic registers.
+    The aforementioned corollary is perhaps one of the most striking impossibility results in Computer Science. 
+    It explains why, if we want to implement lock-free concurrent data structures on modern multiprocessors, our hardware must provide primitive synchronization operations other than loads and stores (reads-writes).
+
+[page 115]
+Theorem5.7.1. Any RMW register in Common2 has consensus number (exactly) 2.
+    Very informally, here is why RMW registers in Common2 cannot solve 3-thread consensus. 
+        The first thread (the winner) can always tell it was first, and each of the second and third threads (the losers) can each tell that they were losers. 
+        However, because the functions defining the state following operations in Common2 commute or overwrite, a loser thread cannot tell which of the others went first (was the winner), and because the protocol is wait-free, it cannot wait to find out. 
+
+
+
+
+
+
+7.1 Welcome to the Real World
+[page 143]
+    Alarmingly, however, we may discover that the counter's final value maybe slightly off from the expected million mark. Proportionally, the error is probably tiny, but why is there any error at all? Somehow, it must be that both threads are occasionally in the critical section at the same time, even though we have proved that this cannot happen.
+    Most programming languages preserve program order for each individual variable, but not across multiple variables.
+    How then does one program multiprocessors given such weak memory consistency guarantees? To prevent the reordering of operations resulting from write buffering, modern architectures provide a special memory barrier instruction (sometimes called a memory fence) that forces outstanding operations to take effect.
+
+
+
+
+
+This notion of local spinning, where threads repeatedly reread cached values instead of repeatedly using the bus, is an important principle critical to the design of efficient spin locks.
+
+
+
+
+
+
+This lock shares the advantages of the CLHLock, in particular, the property that each lock release invalidates only the successor's cache entry. It is better suited to cache-less NUMA architectures because each thread controls the location on which it spins. Like the CLHLock, nodes can be recycled so that this lock has space complexity O(L+n). One drawback of the MCSLock algorithm is that releasing a lock requires spinning. Another is that it requires more reads, writes, and compareAndSet() calls than the CLHLock algorithm.
+    // better: each thread controls the location on which it spins
+    // drawback: releasing a lock requires spinning
+
+
+
+
+[page 237] 10.6 Memory Reclamation and the ABA Problem
+    We ignore the remote possibility that the stamp could wrap around and cause an error.
+    // use int as stamp
+

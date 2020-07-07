@@ -1,0 +1,151 @@
+Type Theory and Formal Proof -- An Introduction (2014)(Rob Nederpelt)[good]
+[A Modern Perspective on Type Theory -- From its Origins until Today (2005)(Fairouz Kamareddine)]
+
+syntax
+    ;; untyped lambda
+    VarID
+    LambdaTerm = VarID | \VarID. LambdaTerm | LambdaTerm LambdaTerm
+
+
+    ;; free occurrences, bound occurrences and binding occurrences
+    \x. x y
+    \x.         x       y
+    binding     bound   free
+
+;; free variables
+FV : LambdaTerm -> Set VarID
+    FV (f a) = FV f \-/ FV a
+    FV (\id. term) = FV term \\ {id}
+    [id in VarID]
+        FV id = {id}
+
+;; binding variables
+BV : LambdaTerm -> Set VarID
+    BV (f a) = BV f \-/ BV a
+    BV (\id. term) = BV term \-/ {id}
+    [id in VarID]
+        BV id = {}
+
+;; variables
+vars : LambdaTerm -> Set VarID
+    vars term = FV term \-/ BV term
+
+subterms_of : LambdaTerm -> Set LambdaTerm
+    subterms_of (f a) = subterms_of f \-/ subterms_of a \-/ {(f a)}
+    subterms_of (\x. body) = subterms_of body \-/ {(\x.body)} ;; no ?? \-/ {x}
+    [x in VarID]
+        subterms_of x = {x}
+
+;; renaming-all
+    LambdaTerm{VarID := VarID}
+        (f a){id := id'} = f{id := id'} a{id := id'}
+        (\id. body){id := id'} = \id'. body{id := id'}
+        id{id := id'} = id'
+        [x /= id]
+            (\x. body){id := id'} = \x. body{id := id'}
+            [x in VarID]
+                x{id := id'} = x
+;; renaming-frees
+    LambdaTerm{VarID -> VarID}
+        require:
+            [id' not in BV(term)][id', id in VarID] ==>> term{id -> id'}
+
+        [id' not in BV(term)][id not in FV(term)]
+            term{id -> id'} = term
+        [id' not in BV(f a)]
+            (f a){id -> id'} = f{id -> id'} a{id -> id'}
+        [id' not in BV(\id. body)]
+            (\id. body){id -> id'} = \id. body
+        id{id -> id'} = id'
+        [id' not in BV(\x. body)] ;; ==>> x /= id'
+            [x /= id]
+                (\x. body){id -> id'} = \x. body{id -> id'}
+                [x in VarID]
+                    x{id -> id'} = x
+;; renaming-abs
+    [y not in vars(\x. body)] ;; ==>> y /= x
+        (\x. body){-> y} = \y. (body{x -> y})
+;; substitute
+    LambdaTerm[VarID := LambdaTerm]
+        (f a)[id := term] = f[id := term] a[id := term]
+        (\id. body)[id := term] = \id. body
+        id[id := term] = term
+        [x /= id]
+            [x in VarID]
+                x[id := term] = x
+            [x not in FV(term)] ;; ==>> x not in FV(term)\-/{id}
+                (\x. body)[id := term] = \x. (body[id := term])
+            [x in FV(term)]
+                [y not in FV(term)\-/{id}][y in VarID]
+                    (\x. body)[id := term] = (\x. body){x:=y}[id := term]
+
+
+
+alpha-conversion or alpha-equivalence
+    [y not in vars(\x. body)]
+        \x. body =[alpha]= \y. (body{x->y})
+    [A =[alpha]= A']
+        f A =[alpha]= f A'
+        A a =[alpha]= A' a
+        [x in VarID]
+            \x. A =[alpha]= \x. A'
+    +Reflexivity Symmetry Transitivity
+beta-delta-confluence, 220
+beta-delta-conversion, 203
+beta-normal form, 19, 63
+delta-confluence in (λD, Δ →), 220
+delta-conversion, 197, 199
+delta-normal form, 200
+delta-reduction, 199
+
+
+beta-reduction
+    one-step beta-reduction, -[beta]->
+        (\x. body) a -[beta]-> body[x := a]
+        fst (id=term1, term2) -[(,)]-> term1
+        snd (id=term1, term2) -[(,)]-> term2[id := term1]
+        [x -[beta]-> x']
+            f x -[beta]-> f x'
+            x a -[beta]-> x' a
+            [z in VarID]
+                \z. x -[beta]-> \z. x'
+    beta-reduction, -[beta]->>
+        [x is lambda term]
+            x -[beta]->> x
+        [x -[beta]->> x'][x' -[beta]-> x'']
+            x -[beta]->> x''
+beta-conversion
+    [a -[beta]->> r <<-[beta]- b]
+        a =[beta]= b
+    [a =[beta]= r =[beta]= b]
+        a =[beta]= b
+
+eta-reduction
+    [x not in FV(f)]
+        \x. f x -[eta]-> f
+?? gamma-reduction
+delta-reduction ;; one-step unfold def
+    [(x : T = t) in context]
+        x -[delta:context]-> t
+    [x -[delta:context]-> x']
+        f x -[delta:context]-> f x'
+        x a -[delta:context]-> x' f
+        [z in VarID]
+            \z. x -[delta:context]-> \z. x'
+II-reduction, 181,237
+    (@ x : I, O) i =[II]=> O[x := i]
+II-conversion,
+subject reduction
+subject reduction, 66, 122, 137, 139, 212,237
+    [page 212]
+    [context |- subject : T][subject =[beta]=> subject']
+        context |- subject' : T
+    [context |- subject : T][subject =[delta]=> subject']
+        context |- subject' : T
+    [context |- subject : T][subject =[beta,delta]=> subject']
+        context |- subject' : T
+
+axiom of reducibility, 72–75
+local beta-reduction, 229
+local definition, 238, 258, 261
+parallel reduction, 208

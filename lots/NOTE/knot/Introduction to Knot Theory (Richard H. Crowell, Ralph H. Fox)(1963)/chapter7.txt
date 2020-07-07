@@ -1,0 +1,317 @@
+
+[group ring]
+    ZZ - Ring(ZZ) - ring of integer
+    type J[G] = G->ZZ
+    J[G] ::= {f:G->ZZ | card f^-1(R\{0}) < oo} s.t.
+        (f + h) g = f g + h g
+        (f * h) g = sum f u * h (u^-1 * g) {u in G}
+    
+        (n*f) = n * (f g)
+    
+    I :: G->J[G]
+    I :: G->(G->ZZ)
+    I g u = [g==u]
+    
+    [product-preserving]
+        ?? <==> f(x)*f(y) = f(x*y) ??
+        (I[s] * I[t]) g 
+            = sum I[s] u * I[t] (u^-1 * g) {u in G}
+            = sum [s==u] * [t == u^-1 * g] {u in G}
+            // u == s
+            = [t == s^-1 * g]
+            = [s*t==g]
+            = I[s*t] g
+        ==>> I is product-preserving
+        
+        (I[s]*h) g = sum [s==u] * h(u^-1 * g) {u in G} = h(s^-1 * g)
+        (f*I[t]) g = sum f(u) * [t==u^-1 * g] {u in G} = f(g * t^-1)
+        
+        [the image of any product-preserving mapping of a group into a ring is a group]
+        ==>> I(G) is a multiplicative group
+    
+    I is one-one ==>> G ~=~ I(G)
+        I[e[G]] != o[J[G]] = \g->0
+        (I[e[G]]*h) g = h(e[G]^-1 * g) = h g
+        (h*I[e[G]]) g = h(g * e[G]^-1) = h g
+        ==>> I[e[G]] = e[J[G]] = 1[J[G]]
+    
+    
+    f in J[G], f g = n, I[g] g = 1
+    ==>> f g = sum f u * I[u] g {u in G}
+             = sum (f u * I[u]) g {u in G}
+             = sum f u * I[u] {u in G} g
+             = sum f u * I[u] {u in f^-1(R\{0})} g
+    ==>> f = sum f u * I[u] {u in f^-1(R\{0})}
+    ==>> J[G] = {sum n[i] * I[u[i]] {i in [0..L-1]} | L :: NN, u :: G^L, n :: ZZ^L} // G^L is L-tuple
+    group homomorphism h : G->H ==>> unique ring homomorphism ex(h) : J[G]->J[H]
+    
+    
+    abelianizer: G->G/[G,G]
+    trivializer: G->ZZ // ?? but ZZ is not a multiplicative group ??
+        U = unit_group(ZZ) = group_gerenrate<*; -1>
+        t :: G->ZZ // ?? map into unit_group(ZZ) ??
+        t :: G->U
+        t g = 1
+        card(G) < oo <==> t in J[G]
+        
+        
+        ex(t) :: J[G]->J[ZZ] // ?? -> J[U]
+        ex(t) :: J[G]->J[U]
+            J[U] = {n*I[-1[U]] | n in ZZ} ~=~ ZZ
+            
+            ex(t) I[g] = I[t g] = I[1[U]]
+            ex(t) J(g) = ex(t) sum n[i] * I[u[i]] {i in [0..L-1]} // L in NN, u[i] in G
+                = sum n[i] * ex(t) I[u[i]] {i in [0..L-1]}
+                = sum n[i] * I[t u[i]] {i in [0..L-1]}
+                = sum n[i] * I[1[U]] {i in [0..L-1]}
+                = m * I[1[U]]
+                = -m * I[-1[U]]
+                = m[J[U]] where m = sum n[i] {i...}
+        exZZ(t) :: J[G]->ZZ // since J[U]~=~ ZZ
+        exZZ(t) = Nature(J[U]<->ZZ) . ex(t)
+
+    recall: I :: G->J[G]
+    Z[G] :: ZZ->J[G]
+    Z[G] n = n*I[e[G]]
+    
+    T = exZZ(t) :: J[G]->ZZ
+    T I[g] = Nature(J[U]<->ZZ) . ex(t) $  I[g]
+        = Nature(J[U]<->ZZ) I[1[U]]
+        = 1[ZZ]
+[free calculus]
+[derivative]
+    // D :: Derivative[G]
+    D :: J[G]->J[G]
+    D (x+y) = D x + D y
+    D (x*y) = D x * T y + x * D y
+        where T = exZZ(t)
+        <==> D (I[g]*I[h]) = D I[g] * T I[h] + I[g] * D I[h]
+        <==> D I[g*h] = D I[g] + I[g] * D I[h] for g,h in G
+
+    e.g.
+        D0 I[g] = 0[J[G]] ==>> D0 x = 0[J[G]]
+        D_1 I[g] = I[g] - 1[J[G]] = I[g] - I[e[G]]
+            prove:
+            left = D_1 I[g*h] = I[g*h] - I[e[G]]
+            right = D_1 I[g] + I[g] * D I[h]
+                = I[g] - I[e[G]] + I[g] * (I[h] - I[e[G]])
+                = I[g] - I[e[G]] + I[g*h] - I[g]
+                = I[g*h] - I[e[G]]
+                = left
+
+        	D_1 (I[g]+I[h]) = D_1 I[g] + D_1 I[h] = I[g] + I[h] - 2 * I[e[G]]
+                != I[g] + I[h] - I[e[G]]
+            D_1 (n*I[g]) = sum D_1 I[g] {i=1..n} = n*I[g] - n*I[e[G]]
+            D_1 sum n[i]*I[g[i]] {i} = sum D_1 (n[i]*I[g[i]]) {i}
+                = sum n[i]*I[g[i]] - n[i]*I[e[G]] {i}
+                = sum n[i]*I[g[i]] {i} - sum n[i] {i}*I[e[G]]
+        ==>> D_1 x = x - T x * I[e[G]]
+        
+    [derivative Da][derivative Db] ==>> [derivative (Da+Db)]
+        where (Da+Db) I[g] = Da I[g] + Db I[g]
+        prove:
+        left = (Da+Db) I[g*h] = Da I[g*h] + Db I[g*h]
+        right = (Da+Db) I[g] + I[g] * (Da+Db) I[h]
+            = Da I[g] + Db I[g] + I[g] * (Da I[h] + Db I[h])
+            = Da I[g] + Db I[g] + I[g] * Da I[h] + I[g] * Db I[h]
+            = (Da I[g] + I[g] * Da I[h]) + (Db I[g] + I[g] * Db I[h])
+            = Da I[g*h] + Db I[g*h]
+            = left
+    [derivative D][v in J[G]] ==>> [derivative D.v]
+        where (D.v) I[g] = D I[g] * v
+        prove:
+        left = (D.v) I[g*h] = D I[g*h] * v
+        right = (D.v) I[g] + I[g] * (D.v) I[h]
+            = D I[g] * v + I[g] * D I[h] * v
+            = (D I[g] + I[g] * D I[h]) * v
+            = D I[g*h] * v
+
+    [derivative D]
+        [D e[J[G]] = D I[e[G]] = 0[J[G]]]
+            D I[e[G]] = D I[e*e] = D I[e] + I[e] * D I[e] = 2 * D I[e]
+            ==>> D I[e[G]] = 0[J[G]]
+        [D I[g^-1] = - I[g^-1] * D I[g]]
+            0[J[G]] = D I[e[G]] = D I[g^-1*g] = D I[g^-1] + I[g^-1] * D I[g]
+            D I[g^-1] = - I[g^-1] * D I[g]
+
+        
+    def gs(g, n) = (I[g^n] - I[e[G]])/(I[g]-I[e[G]]) = sum I[g^i] {i=0->n}
+    ==>> D I[g^n] = gs(g, n) * D I[g]
+        prove:
+        D I[g^0] = 0[J[G]] = gs(g, 0) * D I[g]
+        
+        n > 0:
+        left = D I[g^n] = D I[g*g^(n-1)] 
+            = D I[g] + I[g] * D I[g^(n-1)]
+            = D I[g] + I[g] * gs(g, n-1) * D I[g]
+            = D I[g] + I[g] * sum I[g^i] {i=0->n-1} * D I[g]
+            = D I[g] + sum I[g^(i+1)] {i=0->n-1} * D I[g]
+            = I[e[G]] * D I[g] + sum I[g^i] {i=1->n} * D I[g]
+            = sum I[g^i] {i=0->n} * D I[g]
+            = gs(g, n) * D I[g]
+            = right
+        n < 0:
+        left = D I[g^n] = D I[g^-1*g^(n+1)] 
+            = D I[g^-1] + I[g^-1] * D I[g^(n+1)]
+            = D I[g^-1] + I[g^-1] * gs(g, n+1) * D I[g]
+            = D I[g^-1] + I[g^-1] * sum I[g^i] {i=0->n+1} * D I[g]
+            = D I[g^-1] + sum I[g^(i-1)] {i=0->n+1} * D I[g]
+            = - I[g^-1] * D I[g] + sum I[g^i] {i=-1->n} * D I[g]
+            = (- I[g^-1] + sum I[g^i] {i=-1->n}) * D I[g]
+            = (- I[g^-1] - sum I[g^i] {i=n->-1}) * D I[g]
+            = (- I[g^-1] - sum I[g^i] {i=n..-1-1}) * D I[g]
+            = (- sum I[g^i] {i=n..-1}) * D I[g]
+            = (- sum I[g^i] {i=n->0}) * D I[g]
+            = sum I[g^i] {i=0->n} * D I[g]
+            = gs(g, n) * D I[g]
+            = right
+
+[G is free]
+    let G = F[X]
+    J[F[X]] = {sum n[i] * I[II f(i,j)^e(i,j) {j}] {i=0..L-1} | L in NN, f : (NN, NN)->X, e : (NN, NN)->{-1,+1}}
+        set of [free polynomial]
+    
+    [free polynomial]
+        fp(X) = sum n[i]*I[u[i]] {i=0..L-1} for u[i] in F[X]
+            word in F[X]
+            fp(X) in J[F[X]]
+        def fp(1) ::= T fp(X) * I[e[F[X]]] :: J[F[X]]
+            // (J[F[X]]->ZZ) J[F[X]] * J[F[X]]
+    
+    ?? exists {derivative d[u]: J[F[X]]->J[F[X]] | u in X}
+        and bijection w2D : (X->J[F[X]]) <-> Derivative[F[X]]
+        s.t. let D = w2D(w)
+            w : X->J[F[X]]
+            derivative D: J[F[X]]->J[F[X]]  
+            D I[u] = w(u) for any u in X
+            D fp(X) = sum d[u] fp(X) * D I[u] {u in X}
+                    = sum d[u] fp(X) * w(u) {u in X}
+                    = sum (d[u].w(u)) fp(X) {u in X}
+                    = sum d[u].w(u) {u in X} fp(X)
+            D = sum d[u].w(u) {u in X}
+            w(x) = D I[x] = sum d[u].w(u) {u in X} I[x] 
+            ==>> d[u] I[x] * w(u) = [x==u]*w(u)
+            ==>> d[u] I[x] = [x==u] * I[e[F[X]]] for u, x in X
+            
+        // hence we can just define D on X??
+    
+    def d[x] I[y] = [x==y] * I[e[F[X]]] for x, y in X
+    [d[x] is a derivative]
+        prove:
+            d[x] I[e[F[X]]] = 0[F[X]]
+            // [D I[g^-1] = - I[g^-1] * D I[g]]
+            def d[x] I[y^-1] = -I[y^-1] * d[x] I[y] for y in X
+                = -I[y^-1] * [x==y] = -[x==y] * I[x^-1]
+            def d[x] I[y*h] = d[x] I[y] + I[y] * d[x] I[h] for y in X
+            ==>> d[x] I[h] = d[x] I[y*y^-1*h] = d[x] I[y] + I[y] * d[x] I[y^-1*h] 
+                d[x] I[y^-1*h] = I[y^-1] * (d[x] I[h] - d[x] I[y])
+                    = I[y^-1] * d[x] I[h] - I[y^-1] * d[x] I[y]
+                    = d[x] I[y^-1] + I[y^-1] * d[x] I[h]
+            ==>> d[x] I[y*h] = d[x] I[y] + I[y] * d[x] I[h] for y in X|X^-1
+            
+            ?? d[x] I[g*h] = d[x] I[g] + I[g] * d[x] I[h]
+            1) g = e[F[X]]; len(g) = 0
+                d[x] I[e*h] =?= d[x] I[e] + I[e] * d[x] I[h] 
+                                = 0[F[X]] + d[x] I[h] 
+                                = d[x] I[h] ; yes
+            2) g = u*y, y in X|X^-1; len(g) > 0
+                d[x] I[g*h] = d[x] I[u*y*h] 
+                = d[x] I[u] + I[u] * d[x] I[y*h]
+                = d[x] I[u] + I[u] * (d[x] I[y] + I[y] * d[x] I[h])
+                = d[x] I[u] + I[u] * d[x] I[y] + I[u] *  I[y] * d[x] I[h]
+                = d[x] I[u*y] + I[u*y] * d[x] I[h]
+                = right
+
+
+    [d[x] I[word] = sum I[word[:i]] * d[x] I[word[i]] {i=0..len(word)-1}]
+        prove:
+        let L = len(word)
+        [L = 0]
+            d[x] I[""] =?= sum ... {i=0..-1}
+            d[x] I[e[F[X]]] =?= 0[J[F[x]]]
+            yes
+        [L > 1] for y in X|X^-1
+            d[x] I[g*y] = d[x] I[g] + I[g] * d[x] I[y]
+            = sum I[g[:i]] * d[x] I[g[i]] {i=0..len(g)-1} + I[g] * d[x] I[y]
+            = sum I[word[:i]] * d[x] I[word[i]] {i=0..L-2} + I[word[:L-1]] * d[x] I[word[L-1]]
+            = sum I[word[:i]] * d[x] I[word[i]] {i=0..L-1}
+            yes
+        
+        
+    ==>> d[x] I[word] = 
+        = sum I[word[:i]] * [x == word[i]] {i=0..len(word)-1}
+        + sum I[word[:i]] * [x^-1 == word[i]] * (-I[word[i]^-1]) {i=0..len(word)-1}
+        = sum I[word[:i]] * [x == word[i]] {i=0..len(word)-1}
+        - sum I[word[:i+1]] * [x^-1 == word[i]] {i=0..len(word)-1}
+        
+    ==>> j-th exponent sum of word ::= T $ d[x[j]] I[word] 
+            = T sum I[word[:i]] * [x[j] == word[i]] {i=0..len(word)-1}
+            - T sum I[word[:i+1]] * [x[j]^-1 == word[i]] {i=0..len(word)-1}
+            = count(word, 'x[j]') - count(word, 'x[j]^-1')
+            = exponent_sum(word, x[j])
+    
+    [fundamental formula]
+        D fp(X) = sum d[x] fp(X) * D I[x] {x in X}
+        D_1 fp(X) = sum d[x] fp(X) * D_1 I[x] {x in X}
+        ==>> fp(X) - fp(1) = fp(X) - T fp(X) * I[e[F[X]]] = sum d[x] fp(X) * (I[x] - I[e[F[X]]]) {x in X}
+    
+    
+[Alexander matrix of group presentation]
+    group presentation (X:R)
+    abelianizer ab[G] : G->G/[G,G] 
+        ab[(X:R)] :: (X:R) -> (X:R+{xy=yx| for x,y in X})
+        AB = ex(ab[(X:R)]) :: J[(X:R)] -> J[(X:R+{xy=yx| for x,y in X})]
+        
+    div[G,H] : G->G/H
+        let q = div[F[X], consequence[F[X]](R)] :: F[X]->(X:R)
+        let Q = ex(q) :: J[F[X]]->J[(X:R)]
+    Alexander matrix [a[i][i]] of (X:R) ::= 
+        a[i][j] = AB . Q . d[x[j]] $ I[r[i]]
+        AB . Q is an immense simplification
+        commutative ring ==>> determinant
+
+[elementary ideal]
+    R - commutative ring with 0 != 1
+    Mx[R, m, n] - m by n Matrix over R
+    E[k](Mx[R, m, n]) - k-th elementary ideal, k in NN
+        0 <= k < n-m -> {0}
+        max(0, n-m) <= k < n -> the ideal generated by the determinants of all (n - k) by (n - k) submatrices of Mx[R, m, n]
+        k >= n -> R
+    E[k] <= E[k+1]
+[elementary ideal of finite group presentation]
+    k-th elementary ideal of (x : r) = k-th elementary ideal of Alexander matrix of (x : r)
+    [elementary ideal v.s. knot polynomial]
+        elementary ideals are defined for any finite presented groups
+        knot polynomials exist and unique only for a more restricted class of groups
+            >= any tame knot group
+        invariance of latter can be characterized in terms of the former
+        even where the polynomials do exist, the ideals contain more information.
+            exist knots not distinguishable by their polynomials, but which do have different elementary ideals.
+
+(4.5) THE INVARIANCE OF THE ELEMENTARY IDEALS.
+    presentation equivalence f : (X:R)->(Y:S)
+    f(E[k] (x : r)) == E[k] (Y:S) // onto
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

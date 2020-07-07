@@ -1,0 +1,121 @@
+input_symbols = [terminal]
+
+bsymbol = terminal | nonterminal
+xsymbol = terminal | nonterminal | _L
+    # end marker
+    _L <==> $
+
+input_xsymbols = input_symbols ++ [_L]
+
+state
+    circled numbers
+    S
+
+instruction = the machine's directed line
+    * state -[xsymbol]-> state
+        # <xsymbol>-transition from state
+        # state -[read xsymbol]-> goto state
+
+        st2 -[X]-> st4 # X-transition from st2
+        the X labelling the directed line between states 2 and 4 means:
+            If, when in state 2, the next input symbol is an X,
+                make a transition to state 4 by stacking a 4
+                    and putting the machine in state 4;
+                then read the next input symbol
+                    to determine what the next applicable instruction is.
+                    # the next picked symbol ==>> reduce or shift
+
+    # def:
+        <xsymbol>-successor of state
+            st4 is a X-successor of st2
+        <xsymbols>-successor of state
+            <[xsymbol]>-successor of state
+
+    * state -> legend
+        # conditional reduction at state
+        # state -[pick xsymbol]-> (reduce by production | ACCEPT)
+
+        st1 -> "ACCEPT if {_L}"
+        st5 -> "E -> E + T if {+, _L}"
+        the legend "E -> E + T if {+, _L}" labelling the arrow
+            leading out of state 5 means:
+            If, when in state 5, the head of the remaining input string
+                is + or _L:
+                make a reduction corresponding to "E->E + T" by:
+                    (1) popping as many items as there are
+                        in the right-hand side of "E->E + T" (i.e., 3)
+                        from the stack;
+                    (2) stacking the E-successor
+                        (E being the left-hand side of "E->E + T")
+                        of the state now at the top of the stack;
+                    (3) putting the machinein this E-successor state.
+                The head of the remaining input string stays unchanged
+                    and is again referred to to determine the next instruction.
+
+
+contexts of X-transition from st2 is {X}
+contexts of conditional reduction at st5 is {+, _L}
+    ?????
+contexts_of transition<begin_st, read_xsymbol, end_st> = {read_xsymbol}
+contexts_of reduction<at_st, pick_xsymbols, production> = pick_xsymbols
+
+read_action<state, xsymbol> = transition<state, xsymbol, state'>
+    the action for the input symbol X at state S
+        = the X-transition from S to X-successor of S
+pick_action<state, xsymbol> = reduction<state, xsymbol, (production|ACCEPT)>
+
+###################################### original LR(1)
+production = (nonterminal, [bsymbol])
+    (left_hand_side, right_hand_side)
+    left-hand side
+    right-hand side
+marked_production = (production, idx)
+    idx <- [0..len(production.right_hand_side)]
+configuration = (marked_production, terminal)
+    (???, context)
+    .scanned_symbol = .rhs[.idx] if .idx < len(.rhs) else raise
+    .tail_string = .rhs[.idx+1:] if .idx < len(.rhs) else raise
+state = {configuration}
+
+#an immediate successor of configuration
+immediate_successors_of :: configuration -> {configuration}
+immediate_successors_of configuration = if .idx == len(.rhs) then {} else
+    if .scanned_symbol is terminal then {} else
+    {configuration(production, idx=0, context)
+    |production <- CFG[.scanned_symbol]
+    ,context <- calc_firsts_of(.rhs[.idx+1:]++[.context])
+    }
+closure of {configuration} -- immediate_successors_of
+transition successor
+    configuration -> configuration(..., idx+=1)
+    <X>-successor
+
+###################################### Minimal LR(1)
+#config group
+config_group = (marked_production, {terminal})
+    (???, context_set)
+    a config_group of state
+config_groups_of :: {configuration} -> {config_group}
+    # NOTE: state = {configuration}
+
+#nucleus
+nucleus_configurations_of :: {configuration} -> {configuration}
+nucleus_config_groups_of :: {config_group} -> {config_group}
+nucleus_configurations_of = filter $ \configuration -> configuration.idx > 0
+
+#core
+core_of :: {configuration} -> {marked_production}
+core_of :: {config_group} -> {marked_production}
+core_of = map (.marked_production)
+
+
+
+ordered_config_groups_of :: {configuration} -> [config_group]
+    nucleus config_group before non-nucleus config_group
+    i.e. [config_group | .idx > 0] ++ [config_group | .idx == 0]
+CG i state = index i $ ordered_config_groups_of state
+CT i state = (CG i state).context_set
+
+######################################
+######################################
+######################################

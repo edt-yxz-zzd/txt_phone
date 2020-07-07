@@ -1,0 +1,193 @@
+
+what is a tree text?
+    a text file which represent a text tree
+    encoding?
+        donot assume encoding
+        cannot have a encoding declaration
+        so we begin with a string!!
+    newline?
+        newline = "\n"
+        no other case
+        lines = text.split("\n")
+        if text[-1] == newline: assert lines[-1] == ''
+            though empty lines are ignored
+    indent?
+        must be spaces = regex" *"
+    spaces at the end of line?
+        should not be removed!!
+
+what is a text tree?
+    tree is a node set with edges
+    leaf node is a leaf comment (a string)
+    a content of a nonleaf node is a string
+    children of a nonleaf node is a list of both nodes
+
+    data RealNode
+            = LeafComment
+                { content           :: String
+                , indent            :: Int # number of spaces
+                }
+            | NonLeafNode
+                { content           :: String
+                , indent            :: Int # number of spaces
+                , children          :: [RealNode]
+                }
+
+0) ops
+    op in ['#! ', '# ', r'\\-* ', '\.$', '\.\.$', '; ', "' ",   "<* ", ">* "]
+1) indent
+    # nodeB is child of nodeA
+    # nodeA itself is its content
+    nodeA
+        nodeB
+
+    # nodeB is child of nodeA
+    contentA
+        heading_commentA
+        contentB
+        following_commentB
+        ...
+    following_commentA
+
+
+2) virtual node
+    what are the indents before the text file?
+        no assumes
+        max the possibility
+        so, we use virtual node
+
+    data FirstChildOfVirtualNode # may or may not virtual
+            = FRealNode RealNode
+            | FVirtualNode
+                # no content
+                { indent
+                , first_child       :: FirstChildOfVirtualNode
+                , other_children    :: [RealNode]
+                }
+    data Root = Root # virtual
+                # no indent; no content
+                { first_child       :: FirstChildOfVirtualNode
+                , other_children    :: [RealNode]
+                }
+
+    at the beginning of the text file, we have a root node R.
+    when the first real node occur, let it the first child of the root node temporarily.
+        now let F names the first child of the root node.
+            it may be virtual
+    when a uncle U (must real) of F occur,
+        we create a new virtual node P to be new root
+            # let P be root
+            R.indent := U.indent # become nonroot virtual node
+            R.parent := P
+            U.parent := P
+            P.children := [R,U]
+
+            F := R
+            R := P
+            del U, P
+
+    hence the root is virtual,
+        it's first child and so on may be virtual too.
+        other node should be real
+
+3) free comment # not tree node
+    leaf comment is fit into the whole tree.
+    that is too strict to use
+    here is the single line free comment
+        regex'^ *#! .*$'
+        NOTE: "#! " not "#!"
+        NOTE: r" *" not r"\s*"
+    before tokenization, remove all white lines and free comment lines
+
+4) line continuation
+    a logic line <==> a line in final string (content/comment)
+
+
+    <indent> + regex"\\-* .*$"
+        # line continuation
+        NOTE: "\\ " not "\\"
+        # two characters instead of just one
+        # using same indent of the logic line, no more indent
+    <indent> + regex"\.$"
+        stop line continuation
+        allow:
+            repeat occur or not follow a line continuation op
+            has no effects, except indent rule
+
+
+    single line node - a single logic line
+        <indent> + regex"' .*$"
+        NOTE: "' " not "'"
+        content of the node is a string without newline
+            nodeA and nodeB:
+                ' a b
+                \ c
+                ' d
+                #
+            nodeA.content = "a bc"
+            nodeB.content = "d"
+
+    <indent> + regex"\.\.$"
+        stop multi-line node, e.g. "; " and "# "
+        allow:
+            repeat occur or not follow "; " or "# "
+            has no effects, except indent rule
+    multi-line node and leaf comment - multi-continuous-logic lines
+        content of multi-line node and leaf comment will contain newline
+        n logic line <==> final string contains (n-1) newline
+
+        multi-line node
+            <indent> + regex"; .*$"
+                NOTE: "; " not ";"
+
+            node example: nodeA and nodeB:
+                ; a b
+                \---- c
+                ; d
+                .
+                ; ef
+                #
+            nodeA.content = "a bc\nd"
+            nodeB.content = "ef"
+
+        leaf comment
+            <indent> + regex"# .*$"
+                NOTE: "# " not "#"
+            <indent> + regex"#$"
+            leaf comment must be seperated by node,
+                so no: <indent>+regex"\.$"
+            leaf comment example:
+                # a b
+                \-- c
+                # d
+            the above comment = "a bc\nd"
+
+5) block dedent
+    let X = <new_indent>
+    let tag = regex".*$"
+        X + regex"<+ " + tag
+        X + regex">+ " + tag
+        those two paired ops dedent the whole block body of some a node
+            whole??
+            can not have sibling node
+            the up and down one op should have smaller indent
+            should not undo block dedent too early, see examples below
+            undo should be after merge continuation and content/comment
+    single line, not allow line continuation
+
+    example:
+        ; nodeA
+      <<<<<<< some tag
+      ' nodeB
+      >>>>>>> some tag
+        ; nodeC
+        .
+    nodeB is a child of nodeA, nodeC is a sibling of nodeA
+    even without the nodeB line, should not merge nodeA and nodeC
+        ; nodeA
+      <<<<<<< some tag
+      >>>>>>> some tag
+        ; nodeC
+        .
+
+

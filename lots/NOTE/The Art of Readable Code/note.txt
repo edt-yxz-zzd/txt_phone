@@ -1,0 +1,909 @@
+Code Should Be Easy to Understand
+    [The Fundamental Theorem of Readability]
+        Code should be written to minimize the time it would take for someone else to understand it.
+    [understand]
+        For someone to fully understand your code, they should be able to 
+            make changes to it, 
+            spot bugs, 
+            and understand how it interacts with the rest of your code.
+
+
+
+
+
+
+Surface-Level Improvements
+    // picking good names, writing good comments, and formatting your code neatly
+    Packing Information into Names
+        ? Choosing specific words
+            Finding More ¡°Colorful¡± Words
+                Word Alternatives
+                send deliver, dispatch, announce, distribute, route
+                find search, extract, locate, recover
+                start launch, create, begin, open
+                make create, set up, build, generate, compose, add, new
+            It's better to be clear and precise than to be cute.
+        ? Avoiding generic names (or knowing when to use them)
+            Avoid Generic Names Like tmp and retval
+            pick a name that describes the entity's value or purpose
+            The name tmp should be used only in cases when being short-lived and temporary is the most important fact about that variable.
+            Loop Iterators
+                Names like i, j, iter, and itare commonly used as indices and loop iterators. 
+                (club_i,  members_i,  users_i) or, more succinctly (ci,  mi,  ui)
+        ? Using concrete names instead of abstract names
+            Prefer Concrete Names over Abstract Names
+                DISALLOW_EVIL_CONSTRUCTORS ==>> DISALLOW_COPY_AND_ASSIGN
+                
+        ? Attaching extra information to a name, by using a suffix or prefix
+            Attaching Extra Information to a Name
+                // Attach important details
+                string hex_id; // Example: "af84ef845cd8"
+                
+                Values with Units
+                    delay ¡ú delay_secs
+                    size ¡ú size_mb
+                    limit ¡ú max_kbps
+                    angle ¡ú degrees_cw
+                
+                Encoding Other Important Attributes
+                    untrustedUrl      trustedUrl 
+                    unsafeMessageBody safeMessageBody
+                    plaintext_password
+                    unescaped_comment
+                    html_utf8 // Bytes of html have been converted to UTF-8
+                    data_urlenc // Incoming data has been ¡°url encoded¡±
+                
+                You shouldn't use attributes like unescaped_ or _utf8 for everyvariable in your program. 
+                They're most important in places where a bug can easily sneak in if someone mistakes what the variable is, especially if the consequences are dire, as with a security bug. 
+                Essentially, if it's a critical thing to understand, put it in the name.
+        
+        ? Deciding how long a name should be
+            Shorter Names Are Okay for Shorter Scope
+            Typing Long Names¡ªNot a Problem Anymore
+                ¡°word completion¡±
+                    1. Type the first few characters of the name.
+                    2. Trigger the word-completion command (see below).
+                    3. If the completed word is not correct, keep triggering the command until the correct name appears.
+        
+                    Editor Command
+                    Vi Ctrl-p
+                    Emacs Meta-/(hit ESC, then /)
+                    Eclipse Alt-/
+                    IntelliJ IDEA Alt-/
+                    TextMate ESC
+        
+            Acronyms and Abbreviations
+                project-specific abbreviations are usually a bad idea
+                would a new teammate understand what the name means?
+                    For example, it's fairly common for programmers to use 
+                        eval instead of evaluation, 
+                        doc instead of document, 
+                        str instead of string. 
+                    So a new teammate seeing FormatStr() will probably understand what that means. 
+                    However, he or she probably won't understand what a BEManager is.
+            Throwing Out Unneeded Words
+                ConvertToString() ==>> ToString()
+                DoServeLoop() ==>> ServeLoop()
+            
+            
+            
+        ? Using name formatting to pack extra information
+            Having different formats for different entities is like a form of syntax highlighting¡ªit helps you read the code more easily.
+                using CamelCase for class names
+                    ¡°constructors¡± (functions intended to be called with new) should be capitalized
+                using lower_separated for variable names
+                    using lower_separated_member_ for class member variables
+                using kConstantName for constant values
+                    ordinary functions should start with a lowercase letter
+                using MACRO_NAME for #define macros
+                
+                $jQuery_result
+                    prefix jQuery results with $
+                <div id="middle_column" class="main-content">
+                    use underscores to separate words in IDs and dashes to separate words in classes
+
+
+
+    Names That Can't Be Misconstrued
+        Actively scrutinize your names by asking yourself, ¡°What other meanings could someone interpret from this name?¡±
+        
+        filter is an ambiguous word. 
+            It's unclear whether it means ¡°to pick out¡± or ¡°to get rid of.¡±
+            select() <<== ¡°to pick out¡±
+            exclude() <<== ¡°to get rid of¡±
+        Clip(text, length)
+            ? It removes length from the end
+            ? It truncates to a maximum length
+
+
+            max_length still leaves multiple interpretations:
+            ? A number of bytes
+            ? A number of characters
+            ? A number of words
+
+
+        Prefer min and max for (Inclusive) Limits
+            The clearest way to name a limit is to put max_ or min_ in front of the thing being limited.
+        Prefer first and last for Inclusive Ranges
+        Prefer begin and end for Inclusive/Exclusive Ranges
+        
+        Naming Booleans
+            When picking a name for a boolean variable or a function that returns a boolean, be sure it's clear what trueand falsereally mean.
+
+            bool read_password = true; ==>>
+                need_password <<== We needto read the password
+                user_is_authenticated <<== The password has already been read
+            SpaceLeft() // return a number or boolean??
+                ==>> HasSpaceLeft()
+            avoid negatedterms in a name
+                bool disable_ssl= false; ==>> bool use_ssl= true;
+        
+        Matching Expectations of Users
+            get*() 
+                Many programmers are used to the convention that methods starting with get are ¡°lightweight accessors¡± that simply return an internal member.
+                 getMean() ==>> computeMean()
+        
+            list::size() // O(n)??
+
+
+
+
+    Aesthetics
+        ? Use consistent layout, with patterns the reader can get used to.
+        ? Make similar code look similar.
+        ? Group related lines of code into blocks.
+    
+        Rearrange Line Breaks to Be Consistent and Compact
+            public class PerformanceTester {
+                // TcpConnectionSimulator(throughput, latency, jitter, packet_loss)
+                //                            [Kbps]     [ms]    [ms]    [percent]
+                public static final TcpConnectionSimulator wifi =
+                    new TcpConnectionSimulator(500,      80,     200,       1);
+                public static final TcpConnectionSimulator t3_fiber =
+                    new TcpConnectionSimulator(45000,    10,     0,         0);
+                public static final TcpConnectionSimulator cell =
+                    new TcpConnectionSimulator(100,      400,    250,       5);
+            }
+    
+        Use Methods to Clean Up Irregularity
+            void CheckFullName(string partial_name,
+                               string expected_full_name,
+                               string expected_error) {
+                // database_connection is now a class member
+                string error;
+                string full_name = ExpandFullName(database_connection, partial_name, &error);
+                assert(error == expected_error);
+                assert(full_name == expected_full_name);
+            }
+            
+            ? It eliminates a lot of the duplicated code from before, making the code more compact.
+            ? The important parts of each test case (the names and error strings) are now by themselves, in plain sight. Before, these strings were interspersed with tokens like database_connection and error, which made it hard to take in the code in one eyeful.
+            ? Adding new tests should be much easier now.
+        
+        
+        
+        Use Column Alignment When Helpful
+            CheckFullName("Doug Adams"  , "Mr. Douglas Adams" , "");
+            CheckFullName(" Jake Brown ", "Mr. Jake Brown III", "");
+            CheckFullName("No Such Guy" , ""                  , "no match found");
+            CheckFullName("John"        , ""                  , "more than one result");
+        
+        Pick a Meaningful Order, and Use It Consistently
+            Whatever the order, you should use the same order throughout your code. It would be confusing to change the order later on
+        
+        Organize Declarations into Blocks
+            class FrontendServer {
+                public:
+                FrontendServer();
+                ~FrontendServer();
+                
+                // Handlers
+                void ViewProfile(HttpRequest* request);
+                void SaveProfile(HttpRequest* request);
+                void FindFriends(HttpRequest* request);
+                
+                // Request/Reply Utilities
+                string ExtractQueryParam(HttpRequest* request, string param);
+                void ReplyOK(HttpRequest* request, string html);
+                void ReplyNotFound(HttpRequest* request, string error);
+                
+                // Database Helpers
+                void OpenDatabase(string location, string user);
+                void CloseDatabase(string location);
+            };
+        
+        
+        Break Code into ¡°Paragraphs¡±
+            ? It's a way to group similar ideas together and set them apart from other ideas.
+            ? It provides a visual stepping stone-- without it, it's easy to lose your place on the page.
+            ? It facilitates navigation from one paragraph to another.
+
+            def suggest_new_friends(user, email_password):
+                # Get the user's friends' email addresses.
+                friends = user.friends()
+                friend_emails = set(f.email for f in friends)
+                
+                # Import all email addresses from this user's email account.
+                contacts = import_contacts(user.email, email_password)
+                contact_emails = set(c.email for c in contacts)
+                
+                # Find matching users that they aren't already friends with.
+                non_friend_emails = contact_emails - friend_emails
+                suggested_friends = User.objects.select(email__in=non_friend_emails)
+
+                # Display these lists on the page.
+                display['user'] = user
+                display['friends'] = friends
+                display['suggested_friends'] = suggested_friends
+                
+                return render("suggested_friends.html", display)
+            
+            Notice that we also added a summary comment to each paragraph, which also helps the reader skim through the code.
+
+        
+        Personal Style versus Consistency
+            Consistent style is more important than the ¡°right¡± style.
+
+
+
+
+    Knowing What to Comment
+        The purpose of commenting is to help the reader know as much as the writer did.
+            When you're writing code, you have a lot of valuable information in your head. 
+            When other people read your code, that information is lost¡ªall they have is the code in front of them.
+        
+        ? Knowing what not to comment
+        ? Recording your thoughts as you code
+        ? Putting yourself in the readers' shoes, to imagine what they'll need to know
+        
+        
+        What NOT to Comment
+            Don't comment on facts that can be derived quickly from the code itself.
+            
+                # remove everything after the second '*'
+                name = '*'.join(line.split('*')[:2])
+                    Technically, this comment doesn't present any ¡°new information¡± either. 
+                    If you look at the code itself, you'll eventually figure out what it's doing. 
+                    But for most programmers, reading the commented code is much faster than understanding the code without it.
+            
+            
+            Don't Comment Just for the Sake of Commenting
+                // Find a Node with the given 'name' or return NULL.
+                // If depth <= 0, only 'subtree' is inspected.
+                // If depth == N, only 'subtree' and N levels below are inspected.
+                Node* FindNodeInSubtree(Node* subtree, string name, int depth);
+            
+            Don't Comment Bad Names¡ªFix the Names Instead
+                good code > bad code + good comments
+            
+            
+        Recording Your Thoughts
+            Include ¡°Director Commentary¡±
+                Insights about why code is one way and not another
+                
+                // Surprisingly, a binary tree was 40% faster than a hash table for this data.
+                // The cost of computing a hash was more than the left/right comparisons.
+                This comment teaches the reader something and stops any would-be optimizer from wasting their time.
+                
+                // This heuristic might miss a few words. That's OK; solving this 100% is hard.
+                Without this comment, the reader might think there's a bug and might waste time trying to come up with test cases that make it fail, or go off and try to fix the bug.
+            
+            Comment the Flaws in Your Code
+                Code is constantly evolving and is bound to have flaws along the way.
+                
+                noting when improvements should be made:
+                    // TODO: use a faster algorithm
+                when code is incomplete:
+                    // TODO(dustin): handle other image formats besides JPEG
+                There are a number of markers that have become popular among programmers:
+                    Marker Typical meaning
+                    TODO: Stuff I haven't gotten around to yet
+                    FIXME: Known-broken code here
+                    HACK: Admittedly inelegant solution to a problem
+                    XXX: Danger! major problem here
+                TODO: might be reserved for show-stopping issues. If so, then for more minor flaws you could use something like todo:(lower case) or maybe-later: instead.
+            
+                The important thing is that you should always feel free to comment on your thoughts about 
+                    how the code should change in the future. 
+                    
+                    Comments like these  
+                        give readers valuable insight into the quality and state of the code 
+                        and might even give them some direction on how to improve it.
+            
+            Comment on Your Constants
+                When defining a constant, there is often a ¡°story¡± for 
+                    what that constant does or why it has that specific value.
+                
+                how to adjust that value
+                    NUM_THREADS = 8  # as long as it's >= 2 * num_processors, that's good enough.
+                sometimes the exact value of a constant isn't important at all. 
+                    // Impose a reasonable limit - no human can read that much anyway.
+                    const int MAX_RSS_SUBSCRIPTIONS = 1000;
+                Sometimes it's a value that's been highly tuned, and probably shouldn't be adjusted much:
+                    image_quality = 0.72;  // users thought 0.72 gave the best size/quality tradeoff
+                some constants that don't need a comment, because their name is clear enough
+                    SECONDS_PER_DAY
+                
+
+        Put Yourself in the Reader's Shoes
+            imagine what your code looks like to an outsider
+            
+            Anticipating Likely Questions
+                Huh? What's this all about?
+                
+                struct Recorder {
+                    vector<float> data;
+                    ...
+                    void Clear() {
+                        // Force vector to relinquish its memory (look up "STL swap trick")
+                        vector<float>().swap(data);// Huh? Why not just data.clear()?
+                    }
+                };
+                
+                it turns out that this is the only way to force a vector to truly relinquish its memory to the memory allocator. It's a C++ detail that isn't well known.
+            
+        
+            Advertising Likely Pitfalls
+                What is surprising about this code? How might it be misused?
+                
+                // Calls an external service to deliver email. (Times out after 1 minute.)
+                void SendEmail(string to, string subject, string body);
+                
+                // Runtime is O(number_tags * average_tag_depth), so watch out for badly nested inputs.
+                def FixBrokenHtml(html): ...
+        
+        
+            ¡°Big Picture¡± Comments
+                how classes interact, how data flows through the whole system, and where the entry points are.
+                Consider this thought experiment:  someone new just joined your team, she's sitting next to you, and you need to get her familiar with the codebase.
+            
+                Don't get overwhelmed by the thought that you have to write extensive, formal documentation. 
+                A few well-chosen sentences are better than nothing at all.
+        
+            Summary Comments
+                It's especially helpful to have these summary comments in longer functions where there are a few large ¡°chunks¡± inside:
+                    def GenerateUserReport():
+                        # Acquire a lock for this user
+                        ...
+                        # Read user's info from the database
+                        ...
+                        # Write info to a file
+                        ...
+                        # Release the lock for this user
+            
+        Final Thoughts¡ªGetting Over Writer's Block
+            1. Write down whatever comment is on your mind.
+            2. Read the comment, and see what (if anything) needs to be improved.
+            3. Make improvements.
+
+
+
+    Making Comments Precise and Compact
+        Comments should have a high information-to-space ratio.
+        
+        Keep Comments Compact
+            Here's an example of a comment for a C++ type definition:
+                // The int is the CategoryType.
+                // The first float in the inner pair is the 'score',
+                // the second is the 'weight'.
+                typedef hash_map<int, pair<float, float> > ScoreMap;
+            
+            But why use three lines to explain it, when you can illustrate it in just one line?
+                // CategoryType -> (score, weight)
+                typedef hash_map<int, pair<float, float> > ScoreMap;
+        Avoid Ambiguous Pronouns
+            // Insert the data into the cache, but check if it's too big first.
+            ==>> // Insert the data into the cache, but check if the data is too big first.
+            ==>> // If the data is small enough, insert it into the cache.
+        
+        Polish Sloppy Sentences
+            # Depending on whether we've already crawled this URL before, give it a different priority.
+            ==>> # Give higher priority to URLs we've never crawled before.
+        
+        Describe Function Behavior Precisely
+            // Return the number of lines in this file.
+            int CountLines(string filename) { ... }
+                there are a lot of ways to define a line:
+                    ? ""(an empty file) -- 0 or 1 line?
+                    ? "hello" -- 0 or 1 line?
+                    ? "hello\n" -- 1 or 2 lines?
+                    ? "hello\n world" -- 1 or 2 lines?
+                    ? "hello\n\r cruel\n world\r" -- 2, 3, or 4 lines?
+                The simplest implementation is to count the number of newline (\n) characters. (This is the way the Unix command wcworks.) 
+            // Count how many newline bytes ('\n') are in the file.
+            int CountLines(string filename) { ... }
+        
+        Use Input/Output Examples That Illustrate Corner Cases
+            a carefully chosen input/output example can be worth a thousand words.
+            
+            // Remove the suffix/prefix of 'chars' from the input 'src'.
+            String Strip(String src, String chars) { ... }
+                ? Is charsa whole substring that is to be removed, or effectively just an unordered set of letters?
+                ? What if there are multiples of charson the end of src?
+            // ...
+            // Example: Strip("abba/a/ba", "ab") returns "/a/"
+            String Strip(String src, String chars) { ... }
+
+
+            // Rearrange 'v' so that elements < pivot come before those >= pivot;
+            // Then return the largest 'i' for which v[i] < pivot (or -1 if none are < pivot)
+            int Partition(vector<int>* v, int pivot);
+                This comment is actually very precise, but a little bit hard to visualize. 
+            // ...
+            // Example: Partition([8 5 9 8 2], 8) might result in [5 2 | 8 9 8] and return 1
+            int Partition(vector<int>* v, int pivot);
+                There are a number of points to mention about the specific example input/output we chose:
+                    ? The pivotis equal to elements in the vector to illustrate that edge case.
+                    ? We put duplicates in the vector (8) to illustrate that this is an acceptable input.
+                    ? The resulting vector is not sorted -- if it were, the reader might get the wrong idea.
+                    ? Because the return value was 1, we made sure 1wasn't also a value in the vector -- that would be confusing.
+
+
+        State the Intent of Your Code
+            commenting is often about telling the reader what you were thinking about when you wrote the code. 
+                Unfortunately, many comments end up just describing what the code does in literal terms, without adding much new information.
+
+                void DisplayProducts(list<Product> products) {
+                    products.sort(CompareProductByPrice);
+                    
+                    // Iterate through the list in reverse order
+                    for (list<Product>::reverse_iterator it = products.rbegin(); it != products.rend();
+                    ++it)
+                        DisplayPrice(it->price);
+                    ...
+                }
+            All this comment does is just describe the line below it.
+            
+                // Display each price, from highest to lowest
+                for (list<Product>::reverse_iterator it = products.rbegin(); ... )
+            This comment explains what the program is doing at a higher level. 
+            Interestingly, there is a bug in this program! The CompareProductByPricefunction (not shown) already sorts higher-priced items first. The code is doing the opposite of what the author intended.
+            This is a good reason why the second comment is better.
+
+
+        ¡°Named Function Parameter¡± Comments
+            Connect(10, false);
+            
+            def Connect(timeout, use_encryption): ...
+            # Call the function using named parameters
+            Connect(timeout = 10, use_encryption = False)
+            
+            void Connect(int timeout, bool use_encryption) { ... }
+            // Call the function with commented parameters
+            Connect(/* timeout_ms = */10, /* use_encryption = */false);
+            
+            // Don't do this!
+            Connect( ... , false /* use_encryption */);
+            // Don't do this either!
+            Connect( ... , false /* = use_encryption */);
+                In these examples, it's unclear whether false means use encryption or don't us encryption.
+            
+            Most function calls don't need comments like these, but it's a handy (and compact) way to explain mysterious-looking arguments.
+
+        Use Information-Dense Words
+            there are specific words or phrases that have been developed to describe typical programming situations/patterns/idioms
+
+            // This class contains a number of members that store the same information as in the
+            // database, but are stored here for speed. When this class is read from later, those
+            // members are checked first to see if they exist, and if so are returned; otherwise the
+            // database is read from and that data stored in those fields for next time.
+            ==>> // This class acts as a caching layerto the database.
+            
+            
+            // Remove excess whitespace from the street address, and do lots of other cleanup
+            // like turn "Avenue" into "Ave." This way, if there are two different street addresses
+            // that are typed in slightly differently, they will have the same cleaned-up version and
+            // we can detect that these are equal.
+            ==>> // Canonicalizethe street address (remove extra spaces, "Avenue" -> "Ave.", etc.)
+
+
+
+
+Simplifying Loops and Logic
+    Every time you see a complicated loop, a giant expression, or a large number of variables, this adds to the mental baggage in your head.
+
+    Making Control Flow Easy to Read
+        Make all your conditionals, loops, and other changes to control flow as ¡°natural¡± as possible¡ªwritten in a way that doesn¡¯t make the reader stop and reread your code.
+
+        The Order of Arguments in Conditionals
+            if (10 <= length) ==>> if (length >= 10)
+            while (bytes_expected > bytes_received) ==>> while (bytes_received < bytes_expected)
+            
+            Left-hand side : The expression ¡°being interrogated,¡± whose value is more in flux.
+            Right-hand side : The expression being compared against, whose value is more constant.
+            
+            This guideline matches English usage¡ª
+                it¡¯s pretty natural to say, 
+                    ¡°if you make at least $100K/year¡± or ¡°if you are at least 18 years old.¡± 
+                It¡¯s unnatural to say, 
+                    ¡°if 18 years is less than or equal to your age.¡±
+
+        The Order of if/else Blocks
+            ? Prefer dealing with the positivecase first instead of the negative¡ªe.g., if (debug)instead of if (!debug).
+            ? Prefer dealing with the simplercase first to get it out of the way. This approach might also allow both the ifand the elseto be visible on the screen at the same time, which is nice.
+            ? Prefer dealing with the more interesting or conspicuous case first.
+            
+            Sometimes these preferences conflict, and you have to make a judgment call. But in many cases, there is a clear winner.
+
+            here¡¯s a situation where the negative case isthe simpler and more interesting/dangerous one, so we deal with it first:
+                if not file:
+                    # Log the error ...
+                else:
+                    # ...
+
+        The ?: Conditional Expression (a.k.a. ¡°Ternary Operator¡±)
+            In C-like languages, you can write a conditional expression as  cond ? a : b, which is essentially a compact way to write if (cond) { a } else { b }
+
+            Instead of minimizing the number of lines, a better metric is to minimize the time needed for someone to understand it.
+                By default, use an if/else. The ternary  ?:should be used only for the simplest cases.
+
+
+        Avoid do/while Loops
+            Typically, logical conditions are abovethe code they guard¡ªthis is the way it works with if, while, and forstatements. 
+                Because you typically read code from top to bottom, this makes  do/while a bit unnatural. 
+                Many readers end up reading the code twice.
+            
+            the continue statement can be confusing inside it. 
+                For instance, what does this code do?
+                    do {
+                        continue;
+                    } while (false);
+                Does it loop forever or just once? Most programmers have to stop and think about it. 
+                (It should loop just once.)
+        
+
+        Returning Early from a Function
+            public boolean Contains(String str, String substr) {
+                if (str == null || substr == null) return false;
+                if (substr.equals("")) return true;
+            ...
+            }
+            Implementing this function without these guard clauses would be very unnatural.
+
+            One of the motivations for wanting a single exit point is so that all the cleanup code at the bottom of the function is guaranteed to be called. 
+            But modern languages offer more sophisticated ways to achieve this guarantee:
+                Language        Structured idiom for cleanup code
+                C++             destructors
+                Java, Python    try finally
+                Python          with
+                C#              using
+            In pure C, there is no mechanism to trigger specific code when a function exits. 
+                So if there's a large function with a lot of cleanup code, returning early may be difficult to do correctly. 
+                In this case, other options include refactoring the function (what about call _**_impl()?) or even judicious use of goto cleanup;
+
+        The Infamous goto
+            The simplest, most innocent use of gotois with a single exitat the bottom of a function:
+                    if (p == NULL) goto exit;
+                    ...
+                exit:
+                    fclose(file1);
+                    fclose(file2);
+                    ...
+                    return;
+            
+            The problems can come when there are multiple  goto targets, especially when their paths cross.
+                In particular, gotos that go upward can make for real spaghetti code, and they can surely be replaced with structured loops. 
+                Most of the time, gotoshould be avoided.
+
+
+        Minimize Nesting
+            Look at your code from a fresh perspective when you¡¯re making changes. Step back and look at it as a whole.
+            
+            Removing Nesting by Returning Early
+            Removing Nesting Inside Loops
+                Inside a loop, the analogous technique to returning early is to continue
+
+
+
+        Can You Follow the Flow of Execution?
+            This chapter has been about low-level control flow: how to make loops, conditionals, and other jumps easy to read. 
+            But you should also think about the flow of your program at a high level.
+                Ideally, it would be easy to follow the entire execution path of your programyoud start at main() and mentally step through the code, as one function calls another, until the program exits.
+
+
+            Programming construct                       How high-level program flow gets obscured
+            threading                                   It's unclear what code is executed when.
+            signal/interrupt handlers                   Certain code might be executed at any time.
+            exceptions                                  Execution can bubble up through multiple function calls.
+            function pointers & anonymous functions     It's hard to know exactly what code is going to run because that isn't known at compile time.
+            virtual methods                             object.virtualMethod() might invoke code of an unknown subclass.
+
+            Some of these constructs are very useful, and they can even make your code more readable and less redundant. 
+
+    Breaking Down Giant Expressions
+        Break down your giant expressions into more digestible pieces.
+        
+        Explaining Variables
+            username= line.split(':')[0].strip()
+            if username== "root":
+            ...
+        
+        Summary Variables
+            final boolean user_owns_document = (request.user.id == document.owner_id);
+            if (user_owns_document) {
+                // user can edit this document...
+            }
+        
+        Using De Morgan¡¯s Laws
+            if (!(file_exists && !is_protected))
+            ==>> if (!file_exists || is_protected)
+
+        Abusing Short-Circuit Logic
+            Beware of ¡°clever¡± nuggets of code¡ªthey¡¯re often confusing when others read the code later.
+        Breaking Down Giant Statements
+            DRY¡ªDon¡¯t Repeat Yourself¡ªprinciple
+                summary variables
+                macro
+        
+        
+    Variables and Readability
+        1. The more variables there are, the harder it is to keep track of them all.
+        2. The bigger a variables scope, the longer you have to keep track of it.
+        3. The more often a variable changes, the harder it is to keep track of its current value.
+        
+        Eliminating Variables
+            Useless Temporary Variables
+            Eliminating Intermediate Results
+                complete the task as quickly as possible.
+            Eliminating Control Flow Variables
+                boolean done= false;
+                while (/* condition */ && !done) {
+                    ...
+                    if (...) {
+                        done= true;
+                        continue;
+                    }
+                }
+        
+                Code like this is often trying to satisfy some unspoken rule that you shouldn¡¯t break out of the middle of a loop. There is no such rule!
+                ==>>
+                while (/* condition */) {
+                    ...
+                    if (...) {
+                        break;
+                    }
+                }
+        
+        Shrink the Scope of Your Variables
+            Make your variable visible by as few lines of code as possible.
+                scope/access levels, including module, class, function, and block scope. 
+                
+                make as many methods static as possible. Static methods are a great way to let the reader know these lines of code are isolated from those variables.
+                
+                break the large class into smaller classes. This approach is helpful only if the smaller classes are in fact isolated from each other. If you were to create two classes that access each others members, you havent really accomplished anything.
+                    The same goes for breaking up large files into smaller files or large functions into smaller functions. 
+                    A big motivation for doing so is to isolate data (i.e., variables).
+            
+            if Statement Scope in C++
+                if (PaymentInfo* info = database.ReadPaymentInfo()) {
+                    cout << "User paid: " << info->amount() << endl;
+                }
+                
+            Creating ¡°Private¡± Variables in JavaScript
+                var submit_form = (function () {
+                    var submitted= false; // Note: can only be accessed by the function below
+                    return function (form_name) {
+                        if (submitted) {
+                            return; // don't double-submit the form
+                        }
+                        ...
+                        submitted= true;
+                    };
+                }());
+            
+            JavaScript Global Scope
+                x = 1 instead of var x = 1, the variable is put into the global scope
+                always define variables using the var keyword
+        
+            No Nested Scope in Python and JavaScript
+                Languageslike C++ and Java have block scope
+        
+            Moving Definitions Down
+                The original C programming language required all variable definitions to be at the top of the function or block.
+                (C99 and C++ removed this requirement.)
+            
+        Prefer Write-Once Variables
+             use of const in C++ and final in Java
+             immutable types
+             
+             The more places a variable is manipulated, the harder it is to reason about its current value.
+            
+
+
+
+
+Reorganizing Your Code
+    ? Extract ¡°unrelated subproblems¡± that aren¡¯t related to the primary goal of your program.
+    ? Rearrange your code so its doing only one task at a time.
+    ? Describe your code in words first, and use this description to help guide you to a cleaner solution.
+
+
+    Extracting Unrelated Subproblems
+        aggressively identify and extract unrelated subproblems
+            1. Look at a given function or block of code, and ask yourself, ¡°What is the high-level goal of this code?¡±
+            2. For each line of code, ask, ¡°Is it working directlyto that goal? Or is it solving an unrelated subproblemneeded to meet it?¡±
+            3. If enough lines are solving an unrelated subproblem, extract that code into a separate function.
+    
+        Pure Utility Code
+            In general, if you find yourself thinking, ¡°I wish our library had an XYZ()function,¡± go ahead and write it! (Assuming it doesn¡¯t already exist.) Over time, you¡¯ll build up a nice collection of utility code that can be used across projects.
+        Create a Lot of General-Purpose Code
+            General-purpose code is great because it¡¯s completely decoupled from the rest of your project.
+        Project-Specific Functionality
+        Simplifying an Existing Interface
+            you should never have to settle for an interface that¡¯s less than ideal
+        Reshaping an Interface to Your Needs
+        
+        Taking Things Too Far
+            We say ¡°aggressively¡± because most coders aren¡¯t aggressive enough. 
+            But it¡¯s possible to get overexcited and take things too far.
+        
+        
+
+    One Task at a Time
+        Code should be organized so that it¡¯s doing only one task at a time.
+        ¡°defragmenting¡± your code
+        
+        1. List out all the ¡°tasks¡± your code is doing. We use the word ¡°task¡± very loosely¡ªit could be as small as ¡°make sure this object is valid¡± or as vague as ¡°iterate through every node in the tree.¡±
+        2. Try to separate those tasks as much as you can into different functions or at least different sections of code.
+        
+        Tasks Can Be Small
+        Extracting Values from an Object
+
+
+    Turning Thoughts into Code
+        You do not really understand something unless you can explain it to your grandmother. ¡ªAlbert Einstein
+        
+        1. Describe what code needs to do, in plain English, as you would to a colleague.
+        2. Pay attention to the key words and phrases used in this description.
+        3. Write your code to match this description.
+        
+        Describing Logic Clearly
+        Knowing Your Libraries Helps
+        
+    Writing Less Code
+        The most readable code is no code at all.
+        
+        Don¡¯t Bother Implementing That Feature¡ªYou Won¡¯t Need It
+            We optimistically estimate how long it will take to implement a crude prototype 
+                but forget how much extra time is involved in future maintenance, documentation, and the added ¡°weight¡± to the codebase.
+    
+        Question and Break Down Your Requirements
+            Not all programs need to be fast, 100% correct, and able to handle every possible input. 
+
+        Keeping Your Codebase Small
+            keep your codebase as small and lightweight as possible
+            
+            ? Create as much generic ¡°utility¡± code as possible to remove duplicated code. 
+            ? Remove unused code or useless features. 
+            ? Keep your project compartmentalized into disconnected subprojects.
+            ? Generally, be conscious of the weight of your codebase. Keep it light and nimble.
+        
+        Be Familiar with the Libraries Around You
+            every once in a while, spend 15 minutes reading the names of all the functions/modules/types in your standard library.
+            The goal isn¡¯t to memorize the whole library. It¡¯s just to get a sense of what¡¯s available, so that next time you¡¯re working on new code you¡¯ll think, ¡°Wait, this sounds similar to something I saw in the API¡­.¡± 
+        
+        Reusing Libraries
+            A commonly cited statistic is that the average software engineer produces ten shippable lines of code a day.
+        Using Unix Tools Instead of Coding
+
+
+
+Selected Topics
+    Testing and Readability
+        Make Tests Easy to Read and Maintain
+            Test code should be readable so that other coders are comfortable changing or adding tests.
+
+            When test code is big and scary, here¡¯s what happens:
+                ? Coders are afraid to modify the real code. 
+                    Oh, we dont want to mess with that codeupdating all the tests would be a nightmare!
+                ? Coders dont add new testswhen they add new code. 
+                    Over time, less and less of your module is tested, and you are no longer confident that it all works.
+
+        Making This Test More Readable
+            hide less important details from the user, so that more important details are most prominent.
+            
+            Creating the Minimal Test Statement
+            Implementing Custom ¡°Minilanguages¡±
+            
+        Making Error Messages Readable
+            Using Better Versions of assert()
+                BOOST_REQUIRE_EQUAL
+                unittest.TestCase.assertEqual
+            Hand-Crafted Error Messages
+
+        Choosing Good Test Inputs
+            pick the simplest set of inputs that completely exercise the code.
+            
+            Simplifying the Input Values
+                Prefer clean and simple test values that still get the job done.
+            Multiple Tests of Functionality
+                Rather than construct a single ¡°perfect¡± input to thoroughly exercise your code, 
+                    it¡¯s often easier, more effective, and more readable to write multiple smaller tests.
+
+        Naming Test Functions
+            ? The class being tested (if any)
+            ? The function being tested
+            ? The situation or bug being tested
+            
+            Test_<FunctionName>_<Situation>()
+            Don¡¯t be afraid of having a long or clunky name here. This isn¡¯t a function that will be called throughout your codebase, so the reasons for avoiding long function names don¡¯t apply.
+            
+        Test-Friendly Development
+            you start designing your code so that it¡¯s easy to test!
+
+            Characteristics of less testable code
+                Use of global variables
+                Code depends on a lot of external components
+                Code has nondeterministic behavior
+            Characteristics of more testable code
+                Classes have little or no internal state
+                Classes/functions only do one thing
+                Classes depend on few other classes; high decoupling
+                Functions have simple, well-defined interfaces
+        
+        Going Too Far
+            ? Sacrificing the readability of your real code, for the sake of enabling tests.
+                if you have to insert lots of ugly plumbing into your real code just so you can test it, something¡¯s wrong.
+            ? Being obsessive about 100% test coverage.
+                That last 10% might involve user interface, or dumb error cases, where the cost of the bug isn¡¯t really that high and the effort to test it just isn¡¯t worth it.
+            ? Letting testing get in the way of product development.
+            
+            
+            
+            
+            
+
+
+
+¡ªyou¡¯d
+ ¡°flow¡± 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

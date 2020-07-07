@@ -1,0 +1,117 @@
+combinatory logic
+    ::= predefined combinators + application
+    ::= primitive functions + application
+    # without abstraction
+    # eliminate quantified variables in logic
+    #
+
+https://en.wikipedia.org/wiki/Combinatory_logic
+A combinator is a higher-order function that uses only function application and earlier defined combinators to define a result from its arguments.
+It is easy to transform lambda expressions into combinator expressions, and combinator reduction is much simpler than lambda reduction.
+
+
+
+extensionally equal
+intensionally equal
+
+extensional equality
+    two functions are equal if they always produce the same results for the same arguments.
+intensional equality
+    two functions are equal only if they have identical implementations up to the expansion of primitive combinators when these ones are applied to enough arguments.
+
+Completeness of the S-K basis
+S f g x = f x (g x)
+K x y = x
+I = S K K
+
+T[x] => x
+T[(E1 E2)] => (T[E1] T[E2])
+T[\x.E] => (K T[E]) (if x does not occur free in E) [optional]
+T[\x.E x] => T[E] (if x does not occur free in E) [optional]
+T[\x.x] => I (= S K K)
+T[\x.\y.E] => T[\x.T[\y.E]] (if x occurs free in E)
+T[\x.(E1 E2)] => (S T[\x.E1] T[\x.E2]) (if x occurs free in E1 or E2)
+
+or T[\x.E] = [x]E where
+    [x]E = K E # if x not in frees(E)
+    [x]x = I
+    [x]\y.E = [x]([y]E)
+    [x](E1 E2) = S ([x]E1) ([x]E2)
+
+
+len(T[E]) = o(len(E)**3)
+    ???
+    well there are only S&K
+    I expect o(len(E)) if S,K,I,B,C
+
+
+one-point basis
+    X or X_ or ...(infinite...)
+
+    X = \x. x S K
+    K = X (X (X X))
+    S = X (X (X (X X)))
+
+    X (X (X X))
+        = X (X (X S K))
+        = X (X (S S K K))
+        = X (X (S K (K K)))
+        = X (S K (K K) S K)
+        = X (K S (K K S) K)
+        = X (S K)
+        = S K S K
+        = K K (S K)
+        = K
+    X (X (X (X X)))
+        = X K
+        = K S K
+        = S
+
+    T[X] = [x](x S K)
+        = S [x](x S) [x]K
+        = S (S [x]x [x]S) [x]K
+        = S (S I (K S)) (K K)
+        = S (S (S K K) (K S)) (K K)
+    #verify result of T[X]:
+    X x = S (S (S K K) (K S)) (K K) x
+        = S (S K K) (K S) x (K K x)
+        = S K K x (K S x) K
+        = K x (K x) S K
+        = x S K
+
+    X_ = \x.(x K S K)
+    K = (X_ X_) X_
+    S = X_ (X_ X_)
+
+    X_ X_ = X_ K S K
+        = K K S K S K
+        = K K S K
+        = K K
+    (X_ X_) X_
+        = K K X_
+        = K
+    X_ (X_ X_)
+        = X_ (K K)
+        = K K K S K
+        = K S K
+        = S
+
+    T[X_] = [x](x K S K)
+        = S [x](x K S) [x]K
+        = S (S [x](x K) [x]S) [x]K
+        = S (S (S [x]x [x]K) [x]S) [x]K
+        = S (S (S I (K K)) (K S)) (K K)
+    #verify result of T[X_]:
+    X_ x = S (S (S I (K K)) (K S)) (K K) x
+        = (S (S I (K K)) (K S) x) (K K x)
+        = (S I (K K) x) (K S x) K
+        = (I x (K K x)) S K
+        = x K S K
+
+(I x) = (x)
+(C f g x) = ((f x) g)
+(B f g x) = (f (g x))
+    I = (S K K)
+    B = (S (K S) K)
+    C = (S (S (K (S (K S) K)) S) (K K))
+

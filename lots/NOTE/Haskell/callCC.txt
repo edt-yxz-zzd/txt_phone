@@ -1,0 +1,59 @@
+callCC :: ((r -> m _any_) -> m r) -> m r
+r - final result
+(r -> m _any_) - exit; set the final result; cancel following computation
+(exit -> m r) - compute with exit
+callCC - offer exit
+
+-- arr final_result input middle_out
+--   case1:
+--      i->o  - exist
+--      o->r  - hole
+--      i->r  - i->o >>> o->r
+--   case2:
+--      i->o  - __any__
+--      o->r  - __any__
+--      i->r  - exist
+-- func :: arr r i r
+-- ar i r === arr r i r
+-- data :: arr r () r
+-- m r === arr r () r
+Arr ar r i o = Either (ar i r) (ar i o)
+id :: arr r a a -- r -> arr a a
+id = Right id
+(>>>) :: arr r i x -> arr r x o -> arr r i o
+Left i2r >>> _ = Left i2r
+Right i2x >>> Left x2r = Left $ i2x >>> x2r
+Right i2x >>> Right x2o = Right $ i2x >>> x2o
+
+-- set_result :: arr r ix ox -> arr r i o -> arr r i o
+arr :: (i -> o) -> arr r i o
+arr i2o = Right i2o
+exitA :: arr r i r -> arr r i y
+exitA (Left i2r) = Left i2r
+exitA (Right i2r) = Left i2r
+switch :: arr r i o -> arr o i r
+switch (Left i2r) = Right i2r
+switch (Right i2o) = Left i2o
+exit :: r -> arr r i y
+exit = exitA . arr . const
+
+callCC :: ((r -> arr r i y) -> arr r i r) -> arr r i r
+callCC f = f exit
+
+
+
+computation: a -> b, b -> c, c -> d
+
+compute :: a -> d
+embed :: (b -> c) -> (a -> d)
+embed_end :: (b -> d) -> (a -> d)
+embed_embed :: ((c -> d) -> (b -> d)) -> (a -> d)
+embed_embed_ex :: (a->b) -> (c->d) -> ((c -> d) -> (b -> d)) -> (a -> d)
+embed_embed_ex a2b c2d c2d_to_b2d = a2b >>> c2d_to_b2d c2d
+
+c2d_to_b2d :: (c->d) -> (b->d)
+c2d_to_b2d_ex :: c -> (b -> Maybe d) -> ((c->d) -> (b->d))
+c2d_to_b2d c b2md exit b = case b2md b of
+    Nothing -> exit c
+    Just d -> d
+

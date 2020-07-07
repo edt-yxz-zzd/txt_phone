@@ -1,0 +1,257 @@
+
+mapping: a->b
+    but there are group/ring homomorphism/isomorphism, injection/surjection/bijecion
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+-- from E:\my_data\program_source\haskell\group.hs    
+    
+{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE UndecidableInstances #-}
+
+
+
+--import Prelude hiding (neg)
+--import qualified Prelude as P
+
+class Boxed w e | w->e where
+    box :: e -> w
+    unbox :: w -> e
+    -- [box . unbox == id == unbox . box]
+
+{-
+instance Monad (Boxed w) where
+    return = box
+    wx >>= f = box . f $ unbox wx
+class Collection e g
+    -- g :: * is a collection of e :: *
+-}
+
+class Boxed g e => Countable g e where
+    -- g :: * has finite or countable infinite elements
+    elements :: [g]
+
+type Fst a b = a
+--data Fst a b = JustT a
+--unjustt (JustT a) = a
+class Countable g e => Finite g e where
+    -- g :: has finite elements
+    -- [total = length elements]
+    total :: Fst Integer g
+
+
+
+
+class Boxed g e => Semigroup g e where
+    -- associative law
+    -- [mul a (mul b c) == mul (mul a b) c]
+    mul :: g -> g -> g
+    
+
+
+class Semigroup g e => CommutativeSemigroup g e where
+    -- commutative law
+    -- [mul a b == mul b a]
+class Semigroup g e => SemigroupWithIdentity g e where
+    -- identity law
+    -- [mul a identity == a == mul identity a]
+    identity :: g
+class Semigroup g e => SemigroupWithZero g e where
+    -- zero law
+    -- [mul a zero == zero == mul zero a]
+    zero :: g
+class (SemigroupWithZero g e, SemigroupWithIdentity g e) => 
+      DivisionSemigroupWithZeroIdentity g e where
+    -- G={0} is a group otherwise G\{0} is a group
+    -- division law
+    -- [safe_inv zero = Nothing]
+    -- [a /= zero -->> [safe_inv a = Maybe b][mul a b = identity = mul b a]]
+    safe_inv :: g -> Maybe g
+
+
+class (Semigroup g e, SemigroupWithIdentity g e) => Group g e where
+    -- [mul a (inv a) == identity == mul (inv a) a]
+    inv :: g -> g
+    
+
+
+
+-- abelian group
+class (CommutativeSemigroup g e, Group g e) => CommutativeGroup g e where
+    -- pass
+instance (CommutativeSemigroup g e, Group g e) => CommutativeGroup g e
+
+
+class (CommutativeGroup ring_add e, SemigroupWithZero r e) => 
+      Ring r ring_add e | r->ring_add, ring_add->r where
+    -- distributive law
+    -- [a `mul` add b c = mul a b `add` mul a c]
+    -- [add a b `mul` c = mul a c `add` mul b c]
+    -- zero :: r
+    -- zero = ring_add2ring (identity :: ring_add)
+        -- `zero' is not a (visible) method of class `Ring'
+        -- ?? fix me
+        -- zero should be defined in instance SemigroupWithZero r e
+        
+
+    neg :: r -> r
+    neg = ring_add2ring . inv . ring2ring_add
+    add :: r -> r -> r
+    add a b = ring_add2ring $ mul (ring2ring_add a) (ring2ring_add b)
+instance Ring r ring_add e => SemigroupWithZero r e where
+    zero = ring_add2ring identity
+    -- really ?? SemigroupWithZero=>Ring=>SemigroupWithZero
+
+ring2ring_add :: Ring r ring_add e => r -> ring_add
+ring2ring_add = box . unbox
+ring_add2ring :: Ring r ring_add e => ring_add -> r
+ring_add2ring = box . unbox
+
+
+
+
+class (Ring r gr re, SemigroupWithIdentity r re) => 
+      RingWithIdentity r gr re
+class (Ring r gr re, CommutativeSemigroup r re) =>
+      CommutativeRing r gr re
+class (Ring r gr re, DivisionSemigroupWithZeroIdentity r re) =>
+      DivisionRing r gr re
+class (DivisionRing r gr re, CommutativeRing r gr re) =>
+      Field r gr re
+
+
+instance (Ring r gr re, SemigroupWithIdentity r re) => 
+      RingWithIdentity r gr re
+instance (Ring r gr re, CommutativeSemigroup r re) =>
+      CommutativeRing r gr re
+instance (Ring r gr re, DivisionSemigroupWithZeroIdentity r re) =>
+      DivisionRing r gr re
+instance (DivisionRing r gr re, CommutativeRing r gr re) => 
+    Field r gr re
+
+instance (DivisionRing r gr re, Finite r re) => 
+    CommutativeSemigroup r re
+
+
+
+
+
+class Mapping f a b | f->a b where
+    call :: f -> a->b
+    -- [x == y -->> call x == call y]
+    
+    {-
+    -- type image = b
+    image :: f -> *
+    image f = b
+    domain f = a
+    -}
+    
+    -- safe_inv :: f -> b->[a]
+    -- [[exist a: call f a = b] -->> [get_safe_arbitrary_inv f b = Just c][call f c = b]]
+    get_safe_arbitrary_inv :: f -> b -> Maybe a
+
+class Mapping f a b => Injection f a b where
+    -- [call f x == call f y -->> x == y]
+    -- [exist left_inv: left_inv . call f = id]
+    get_safe_left_inv :: f -> b -> Maybe a
+    get_safe_left_inv = get_safe_arbitrary_inv
+    
+class Mapping f a b => Surjection f a b where
+    -- [image f == b]
+    -- [exist right_inv: call f . right_inv = id]
+    get_arbitrary_right_inv :: f -> b->a
+    get_arbitrary_right_inv f b = maybe undefined id $ get_safe_arbitrary_inv f b
+
+class (Injection f a b, Surjection f a b) => Bijecion f a b where
+    -- pass
+    get_inv :: f -> b->a
+    get_inv = get_arbitrary_right_inv
+        
+instance Bijecion f a b =>  Injection f a b where
+    get_safe_left_inv f = Just . get_inv f
+
+{-
+class (mapping f eg eh, Boxed g eg, Boxed h eh, 
+       structure g eg, structure h eh) => 
+      Homomorphism f g h eg eh where
+      homo :: f->g->h
+      homo f = box . call f . unbox
+-}
+
+
+class (Mapping f eg eh, Boxed g eg, Boxed h eh) => 
+      Homomorphism f g h eg eh where
+      homo :: f->g->h
+      homo f = box . call f . unbox
+      -- Surjection => OntoHomomorphism
+class (Bijecion f eg eh, Homomorphism f g h eg eh) => 
+      Isomorphism f g h eg eh where
+      homo_inv :: f->h->g
+      homo_inv f = box . get_inv f . unbox
+instance (Mapping f eg eh, Boxed g eg, Boxed h eh) => 
+      Homomorphism f g h eg eh
+instance (Bijecion f eg eh, Homomorphism f g h eg eh) => 
+      Isomorphism f g h eg eh
+
+
+
+
+
+class (Mapping f eg eh, Semigroup g eg, Semigroup h eh,
+       Homomorphism f g h eg eh) => 
+      SemigroupHomomorphism f g h eg eh where
+    -- [call (mul a b) == call a `mul` call b]
+class (Mapping f eg eh, Group g eg, Group h eh, 
+       SemigroupHomomorphism f g h eg eh) => 
+      GroupHomomorphism f g h eg eh where
+    -- pass
+class (Mapping f er es, Ring r gr er, Ring s gs es,
+       SemigroupHomomorphism f r s er es,
+       GroupHomomorphism f gr gs er es) => 
+      RingHomomorphism f r s gr gs er es where
+    -- [call (add a b) == call a `add` call b]
+
+
+
+
+
+
+
+
+
+    
+    
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

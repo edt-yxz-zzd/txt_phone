@@ -1,0 +1,335 @@
+
+
+-------------------------
+inherit:
+    extend - "is a"
+    mixin - "delegate", "has a"
+------------------------------------------------
+
+
+
+inset_type or data_type:
+    exist a global set contains all instances
+        1) immutable in the sense of "=="
+        2) if eq, than are in same eq partition set
+        why to make type a set?
+        because: int, PositiveInt, EvenInt, PrimeInt, SquareFreeInt...
+    so, "==" like "is" in sense of set:
+        a == a
+        b == a ==>> a == b and hash(a) == hash(b)
+        a == b == c ==>> a == c
+        these are domain laws 
+        (and there are package/module rules, class theoroms, 
+        laws , rules and theoroms are used to simplify code before excuted.
+        i.e. ---::=-; --+::=+; 1/(1/a)::=a; (a//b, a%b)::=divmod)
+        
+    if class Derived(Base1, Base2):
+        [Derived d][Base1 b1][Base2 b2]
+        [b1 == d == b2] ==>> [b1 == b2]
+            ==>> Base1 and Base2 have same instance at d
+            ==>> only one comparable virtual base class allowed
+            ==>> inherit like java, extend one concrete type
+    provide a method : normalize
+        [a == b]? ::= [a.normalize()==b.normalize()]?
+        hash(a) ::= hash(a.normalize())
+    and a class method : __contains__
+        obj is a type ::= obj in SET(type) = obj in type
+        type may be simply a set
+        or def __contains__(self, obj) = obj.is_a(type)
+    some_a_type ==>> 4if
+        some_a_type(set_) ::= the type t which SET(t)==set_
+        # laws about some_a_type:
+        1) void is some_a{} 
+            # void == some_a{some_a{<rec...>}} 
+            # void is not an obj at all
+            usage:
+                def -is-a-(obj, void, type) = isinstance(obj, type)
+                obj is a type == obj is void a type
+                    == obj.-is-a-(obj, , type)
+        2) some_a{some_a{a...}, b...} = some_a{a..., b...}
+            some_a{a, ..., void} = some_a{a,...}
+            obj == some_a{obj} # "==" not "is"
+            None == some_a{None} # None is an valid_obj
+
+        3) [a == some_a{b, c}] == some_a{a==b, a==c}
+            [a == void] == void
+            [a == some_a{a, b}] == some_a{a==a, a==b}
+                == void if a is void 
+                == True elif b is void or a == b
+                == some_a{True, False} if a != b and a,b is not void
+            both ::= some_a{True, False}
+        4) not some_a{a, b} == some_a{not a, not b}
+            not void == void
+            not both == both
+        
+        6 if branches: # 
+            the above 4 results of "==": True/False/void/both,
+                and plus: yet/exception
+            1) yet:
+                halt-problem, "is the iterable infinite (in haskell/python)?"
+                resource_out, time_out, is_prime, graph_isomophism...
+            2) exception:
+                bug in program logic not related to the problem
+                NotImplemented
+            3) void:
+                no answer
+                ["this statement is wrong"]??
+            yet ::= some_a{void, True, False, both, #exception#}
+                = some_a{both, #exception#}
+            ifTrue f():...
+            elifFalse:...
+            elifboth:...
+            elifvoid:...
+            elifyet:...
+            except:...
+            
+        usage:
+        1) for virtual_values:
+            virtual_one = some_a{[left/right]one in semigroup} 
+                = {1, (1 mod polynomial), eye_matrix(m,n), 
+                    identity_transform, ...}
+            virtual_zero = some_a{...}
+            so, sum() ::= virtual_zero
+            duck_type(0) == case_<duck_type>(virtual_zero)
+        2) inexactly value:
+            real number: x = range(lower, upper)
+            
+    == ==>> no multi-inherit
+duck_type:
+    implement a protocal/interface/contact/abstract-class
+    offer certain methods.
+    what it can do is not what it is.
+    so, we cannot use duck_type for ==.
+    python.Integral is too heavy.
+    there are lots of ints which neednot so many operations.
+    PrimeInt cannot add. CounterInt only ++ --.
+    
+    to say some a object is a integral is to check [obj in SET(int)]
+    object = virtual-value(data_type part) + algorithm (duck_type part)
+    in most cases, virtual-value includes (type,) or (type, address)
+    
+
+
+
+
+
+------------------------------------------------
+
+eq ==>> eq hash ==>> isinstance
+    SqrtNumber is not subclass of Integral
+    x = SqrtNumber('sqrt(2*sqrt(5)+6) - sqrt(5)')
+    x == 1 ==>> hash(x) == hash(1)
+    isinstance(x, Integral) should be true.
+    a type T is a set that contains all its instances
+    if an object x eq an intance of the type,
+    then x "is in" the type's instance set.
+    so x is an instance of type.
+    but x need not to support the type operations.
+    not duck types. but x may be required to convert to T.
+    
+    there are two type systems.
+        one concrete duck type system.
+        isinstance means "is of a duck type", and we can perform certain operations.
+        int(x) return a concrete "int" object
+        
+        another is virtual one.
+        isinstance means "is in the virtual type's instance set"
+        Integral(x) return some a Integral object
+            not like "int()", since int/int ==>> float
+            maybe we want Integral/Integral ==>> Rational
+            or Integral/Integral ==>> Integral but require "divides"
+        but.. even x is an Integral object
+            if x is a CounterInt:
+                then it only supports ++ --, no + - * /
+            if x is a FactoredInt:
+                then it only supports * / (where x/y ==>> [y divides x]) << >> no + - ++ --
+                and x.factor() x.is_prime()
+            # prime with/wo certifican
+            if x is a RadixInt:
+                it does not support x.factor() x.is_prime()
+            if x is a RationalInt:
+                then / is supported for every divisor except 0.
+    
+    
+------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+element/set/bool
+is_in/is_subset
+
+
+
+type-concept ::=
+    T ::= (E,F,A)
+    E = { e: e is of type T}
+    F = { functions about T}
+    A = { axioms about T}
+
+group-concept ::= 
+    G ::= (E,F,A)
+    E = {?}
+    F = {mul}
+    A = {
+        1) 1 in E;
+        2) for any a in E, mul(a,1) == mul(1,a) == a;
+        3) for any a in E, exists b in E, such that mul(a,b) == 1;
+        4) for any a,b in E, mul(a,b) in E;
+    }
+
+
+group<S3> ::= (E,F,A)
+    E = {(), (1,2), (1,3), (2,3), (1,2,3), (1,3,2)}
+    F = {mul}
+        def mul(a,b):...
+    A = group-concept.A
+
+
+t1 is a subtype of t2 under map M iff
+    M == (fe, ff, fa)
+    fe: t1.E -> t2.E, let Fe(x) = fe(x) if x in t1.E otherwise x
+    Ff: t2.F -> t1.F
+    fa: t2.A -> t1.A
+    for any f in f2.F, f(x1,x2...) == Fe(Ff(f)(Fe(x1), Fe(x2)...))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+def <type_name> <instance_name>;
+def <return_type name> <function_name>(<input_type_name> <instance_name>,...);
+def instance_struct<type t>
+{
+    t* px;
+    Type* pt = &t;
+};
+
+def Type ::=
+{
+    .E, .F, .A, .M, .C, .ME, .CE
+};
+
+Type.E = {t: c(t) any c in A for any t};
+Type.F = {is_subtype, is_a_Type}
+Type.A = Union{cthis, cs, cf, ca, cmc, cmce}
+Type.M = Type.C = Type.ME = Type.CE = {}
+
+bool Type.F.is_a_Type(?t? x){ return is_in(x, Type.E);}
+bool Type.F.is_subtype(Type t1, Type t2){ return is_subset(t1.E, t2.E) and is_subset(t2.F, t1.F) and is_subset(t2.A, t1.A);}
+
+Type.A.cthis = {this.F contains is_subtype, is_of_type, get_type}
+Type.A.cs = {e contains e.E, e.F, e.A, e.M, e.C, e.ME, e.CE for any e in this.E};
+Type.A.cf = {} # e.F contains some named functions
+Type.A.ca = {c is true for any c in e.A for any e in this.E}
+Type.A.cmc = { e.M can build upon e.F, e.C can be deduced from e.A for any e in this.E}
+Type.A.cmce = { e.ME can build upon e.F and e.E, e.CE can be deduced from e.A and e.E for any e in this.E}
+
+
+def Instance_type ::=
+{
+    .E = {itx: it = instance_struct<t>{.px=&x, .pt=&t} for any x in t.E for any t in Type.E}
+    .F = {get_type, get_value}
+    .A = {
+        1) is_subtype(get_type(x), Type)
+        2) is_of_type(get_value(x), get_type(x)) == true for any x in .E
+        }
+    .M = {is_of_type}
+    
+};
+
+bool Instance_type.F.is_of_type(typeX x, type t){ return is_subtype(get_type(x), t);}
+Type Instance_type.F.get_type(typeX x){ return *x.pt;}
+?t? get_value(typeX x){ return *x.px;}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+a type is a set of 3 elements: E, F, A:
+    E is a set of values;
+    F is a set of functions;  # for type identity
+    A is a set of conditions; #axioms# for type identity 
+    
+    M/ME is a set of functions, is a superset of F;  # for practical application
+    C/CE is a set of conditions, is a superset of B; # for practical application
+    M,C can be deduced from {F,A};
+    ME,CE can be deduced from {E,F,A};
+    
+def type T ::= 
+{
+    A = {is_type}
+    F = {}
+    E = {t: is_type(t) for any t}
+};
+
+a value of a type t is an element of t.E;
+a function is a sequence of operations over some named instances which are io or internal variables of certain types or concepts;
+a condition is a theorem about the type(or E or F of the type);
+an instance is a variable, holds an element of a type;
+a concept of some types ts is a type such that:
+    E = { t in T.E:  c(t, ts) for any c in A}
+    F = {}
+    A = {cf, ca}
+    bool cf(T t, T ts...){return t.F contains some certain functions about t and ts}
+    bool ca(T t, T ts...){return t.A contains some certain conditions about t and ts}
+
+
+type itself is a concept; # recur...
+type t is of concept ct if t in ct.E
+
+type t1 is a subtype of type t2 if:
+    t1.E is a subset of t2.E
+    t1.F is a superset of t2.F
+    t1.A is a superset of t2.A
+
+concept ct1 is a subconcept of concept ct2 if:
+    ct1.E is a subset of ct2.E
+
+
+
+def buildin-type bool ::=
+{
+    E = {true, false};
+    F = {not, and, or}
+    A = {not false, not not true, ...}# since we uses bool here, bool should be a buildin type?
+    M = {equal}
+};
+
+
+

@@ -1,0 +1,86 @@
+ScopedTypeVariables !!!!!!!!!!!
+    ExplicitForAll is not enough!!
+forall a b. (C a b...) => ... instead of (forall a b. C a b...) => ...
+
+NOTE:
+    error:
+    f :: a -> b
+    f = g where
+        g :: a -> b
+        g = ...
+    correct:
+    f :: forall a b. a -> b
+    f = g where
+        g :: forall. a -> b
+        g = ...
+
+
+
+GHCi
+    -- forall . C a b => a -> b -- are "a" "b" already scoped??
+    :set -XScopedTypeVariables
+    let x = Nothing :: forall a. Maybe a
+    let x = Nothing :: forall . Maybe a -- ERROR: Not in scope: type variable `a'
+    let x = Nothing :: forall . Eq a => Maybe a -- ERROR: see above
+
+
+
+
+
+
+f :: forall a. (a->a) -> a -> a -- :: (a->a) -> a -> a ; has same meaning but sometimes diff usage see below "forall -> scope"
+g :: (forall x. x->x) -> a -> a -- :: forall a. (forall x. x->x) -> a -> a
+
+caller:
+    f (+1)  -- input Int->Int
+    g id    -- input x->x, i.e. (forall x. x->x)
+callee:
+    f a2a .. = a2a a  -- can only apply on a
+    g x2x .. = x2x 'c', x2x 1 ... -- apply to anything
+
+
+second is illegal and meaningless
+  g :: (Ord a => a -> a) -> Int
+           -- MEANS the illegal type
+  g :: forall a. (Ord a => a -> a) -> Int
+           -- NOT
+  g :: (forall a. Ord a => a -> a) -> Int
+
+
+
+
+
+
+
+The explicit forall type signature brings the type variable a into scope
+    so explicit and implicit are diff!!!!!!!!!!!
+    
+    g :: [a] -> [a]
+    g (x:xs) = xs ++ [ x :: a ] -- ERROR: <==> x :: forall a. a
+
+    g :: forall a. [a] -> [a]
+    g (x:xs) = xs ++ [ x :: a ] -- RIGHT: <==> x :: a -- "a" is scoped by forall
+
+
+    -- diff usages ==>> whether brings "a" into scope
+    f1 :: forall a. [a] -> [a]
+    f1 (x:xs) = xs ++ [ x :: a ]   -- OK; here, f1 is a function binding
+    
+    f2 :: forall a. [a] -> [a]
+    f2 = \(x:xs) -> xs ++ [ x :: a ]   -- OK; here, f2 binds a bare variable
+    
+    f3 :: forall a. [a] -> [a]
+    Just f3 = Just (\(x:xs) -> xs ++ [ x :: a ])   -- Not OK! here, f3 is a pattern binding, and so its type signature does not bring a into scope
+
+forall FIX the variable name
+    e0 :: Monad m => m a
+    e0 = undefined
+    e1 :: Monad m => m a
+    e1 = e0 -- correct
+    -- e1 = e0 :: m a -- ERROR: this m is a new m that not in sig of e1
+    --            <==> forall m. m a
+    -- e2 :: Monad m => m Int
+    -- e2 = e0 :: m Int -- ERROR: see above
+    
+    e3 :: forall m a. Monad m => m a
+    e3 = e0 :: m a -- SUCCESS: this m is the m in sig of e3

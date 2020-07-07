@@ -1,0 +1,89 @@
+
+:h pattern
+:h :s
+*pattern* 
+*/ordinary-atom*
+6.  Ordinary atoms					*pattern-atoms*
+
+
+magic -- v.s. python re flag
+      \v     \m       \M          \V
+ very magic  magic    nomagic   very nomagic
+      $       $        $          \$        matches end-of-line
+      .       .        \.         \.        matches any character
+      *       *        \*         \*        any number of the previous atom
+      ()      \(\)     \(\)       \(\)      grouping into an atom
+      |       \|       \|         \|        separating alternatives
+      \a      \a       \a         \a        alphabetic character
+      \\      \\       \\         \\        literal backslash
+      \.      \.       .          .         literal dot
+      \{      {        {          {         literal '{'
+      a       a        a          a         literal 'a'
+
+    recommended to always keep the 'magic' option
+
+
+
+pattern = branch ("\|" branch)*
+branch = concat ("\&" concat)*
+concat = piece*
+piece = atom multi?
+atom = ordinary_atom
+     | "\(" pattern "\)"
+     | "\%(" pattern "\)"
+     | "\z(" pattern "\)"
+
+anchor
+    ^
+    $
+    \<
+    \>
+
+
+
+multi = "\*"
+      | "\+" -- same as "\{0,}"
+      | "\=" -- same as "\?"
+      | "\?" -- same as "\{,1}"
+      | "\{n,m}"
+      | "\{n}"
+      | "\{n,}"
+      | "\{,m}"
+      | "\{}" -- same as "\*"
+      -- non-greedy
+      | "\{-n,m}"
+      | "\{-n}" -- same as "\{n}"
+      | "\{-n,}"
+      | "\{-,m}"
+      | "\{-}"
+
+      -- anchor -- NOTE: piece = atom multi; so atom "\+" "\@<=" is wrong
+      | "\@<=" -- a (a) "\@<=" b <==> a(?<=(a))b
+      | "\@=" -- a (b) "\@=" b <==> a(?=(b))b
+      | "\@!" -- a (a) "\@!" b <==> a(?!(a))b
+      | "\@<!" -- a (b) "\@<!" b <==> a(?<!(b))b
+      
+      -- not anchor!!
+      | "\@>" -- a (c) "\@>" b ==>> once c matched, no retry on c if b fail
+        -- (a*) "\@>" a ==>> empty regex
+        -- while (a*)a is not empty regex
+      
+      example:
+        to search "reco" exclude "nullable_reco" and "nonnull_reco"
+            # grep [:alpha:]\+_recognizer -r . > ../xxx.txt
+            # \v - very magic
+            \v(nullable_|nonnull_)@<!reco
+
+|/\@>|	\@>	\@>	1, like matching a whole pattern (*)
+|/\@=|	\@=	\@=	nothing, requires a match |/zero-width| (*)
+|/\@!|	\@!	\@!	nothing, requires NO match |/zero-width| (*)
+|/\@<=|	\@<=	\@<=	nothing, requires a match behind |/zero-width| (*)
+|/\@<!|	\@<!	\@<!	nothing, requires NO match behind |/zero-width| (*)
+
+
+
+
+
+
+
+

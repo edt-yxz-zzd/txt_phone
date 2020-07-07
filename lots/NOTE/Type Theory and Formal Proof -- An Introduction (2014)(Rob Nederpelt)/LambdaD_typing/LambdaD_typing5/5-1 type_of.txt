@@ -1,0 +1,32 @@
+
+;; #`
+
+;; =[eval_basic_nontyped]=>
+;; #`* term_id :: set
+[context |- term :: set]
+    [(term :: _) in context]
+        context |- term =[eval_basic_nontyped]=> term
+    [context |- term =[eval_basic_nontyped]=> term']
+        context |- #` term =[eval_basic_nontyped]=> #` term'
+
+[context |- term :: set]
+    context |- #` term :: ##` set
+[context |- term : type]
+    ;; #` term : ??
+    if[context |- type =[eval_basic_nontyped]=> type']
+        context |- #` term => type'
+        context |- #` term : #` type'
+        [context |- term <: super : supertype]
+            context |- #` term <: supertype
+    else:
+        assert [type =/= #` _term]
+        ;; type =/= #` ... ;; so we have "=>"
+        [context |- type => type']
+            context |- #` term => type'
+        [context |- type : sort]
+            context |- #` term : sort
+        [context |- type <: supertype]
+            context |- #` term <: supertype
+        [context |- subtype <: type][subtype =/= #` _]
+            context |- subtype <: #` term
+

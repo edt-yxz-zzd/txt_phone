@@ -1,0 +1,134 @@
+
+see also: anti_substring.txt
+
+definitions:
+    x <- y
+        x is an element of set y
+    NN
+        the natural number set
+    [x..y]
+        [x..y] = {n <- NN | x <= n <= y}
+    alphabet^len
+        if alphabet is a set and len <- NN, then
+            alphabet^len = the set of strings of length len
+    str[begin:end]
+        if str is a string, begin <- NN, end <- NN, then
+            str[begin:end] = [str[i] | i <- [begin..end-1]]
+    len str
+        if str is a string, then
+            len str = the length of str
+    UInt
+        UInt = NN
+    PInt
+        PInt = {x <- NN | x > 0}
+    Size
+        Size is the size of the Alphabet
+        Size <- NN
+        Size >= 2
+    Alphabet
+        Alphabet = [0..Size-1]
+    String
+        set of all string
+        String = Alphabet*
+    String1
+        set of all string except empty string
+        String1 = Alphabet+
+    SepLen
+        length of the seperator string
+        SepLen <- PInt
+    Sep
+        the seperator string
+        Sep <- Alphabet^SepLen <= String1
+    numSepChar
+        number of different charactors used in Sep
+        numSepChar = len(set(Sep))
+        0 < numSepChar <= SepLen
+    State
+        State = [0..SepLen-1]
+    SquareMx set len
+        SquareMx set len = [0..len-1] -> [0..len-1] -> set
+    StateV
+        StateV : State -> UInt
+        # matrix (SepLen * 1)
+        # how many prefix strings is of state State?
+    StateTF
+        StateTF : SquareMx UInt SepLen
+        StateTF : State -> State -> UInt
+        # matrix (SepLen * SepLen)
+        StateTF[row][col]
+            = |how many chars lead state col to state row?|
+            = |{char <- Alphabet | row == longest_overlap_len_of (Sep[:col]++[char]) Sep}|
+        if row == col+1:
+            StateTF[row][col] = 1
+        if row > col+1:
+            StateTF[row][col] = 0
+        if row > 0:
+            StateTF[row][col] <= 1
+        Size = sum StateTF[row][col] {row} + [col==SepLen-1]
+
+
+
+
+    ###
+    # prefix/border/suffix/substr/overlap
+    is_prefix_of :: String -> String -> Bool
+    is_suffix_of :: String -> String -> Bool
+    is_border_of :: String -> String -> Bool
+    is_substr_of :: String -> String -> Bool
+    sub `is_prefix_of` str = sub == str[:len sub]
+    sub `is_suffix_of` str = sub == str[len str - len sub:]
+    sub `is_border_of` str = is_prefix_of sub str && is_suffix_of sub str
+    sub `is_substr_of` str = any (is_prefix_of sub) (tails str)
+    longest_proper_prefix_of :: String1 -> String
+    longest_proper_suffix_of :: String1 -> String
+    longest_proper_border_of :: String1 -> String
+    longest_proper_prefix_of str = str[:-1]
+    longest_proper_suffix_of str = str[1:]
+    longest_proper_border_of str = f (len str - 1) where
+        f L = if str[:L] `is_border_of` str then str[:L] else f (L-1)
+    longest_overlap_of :: String -> String -> String
+    longest_overlap_len_of :: String -> String -> UInt
+    longest_overlap_of left right = f left where
+        f left = if is_prefix_of left right then left else f $ tail left
+    longest_overlap_len_of left right = len $ longest_overlap_of left right
+problem:
+    num_avoid_substr :: UInt -> UInt
+    num_avoid_substr_with_suffix :: UInt -> UInt
+    num_avoid_substr_with_prefix :: State -> UInt -> UInt
+    num_avoid_substr_with_prefix state L
+        = |{str <- Alphabet^L
+            | not (is_substr_of Sep $ Sep[:state]++str)}|
+    num_avoid_substr L
+        = |{str <- Alphabet^L | not (is_substr_of Sep str)}|
+        = num_avoid_substr_with_prefix 0 L
+    num_avoid_substr_with_suffix L
+        = |{str <- Alphabet^L
+            | not (is_substr_of Sep $ str++longest_proper_prefix_of Sep)}|
+        = |{str <- Alphabet^L
+            | not (is_substr_of Sep $ str++longest_proper_border_of Sep)}|
+        = num_avoid_substr_with_prefix{Sep = reverse Sep}
+            (len $ longest_proper_border_of Sep) L
+
+    # from now on, we consider num_avoid_substr_with_prefix only
+    num_avoid_substr_with_prefixes :: StateV -> UInt -> StateV
+    num_avoid_substr_with_prefixes v L = StateTF^L * v
+    num_avoid_substr_with_prefix state L
+        = sum $ num_avoid_substr_with_prefixes (\s->[s==state]) L
+    # from now on, we consider StateTF only
+
+
+StateTF = ?
+    1) Sep = 'a'*SepLen
+        StateTF row col = [row==col+1] + [row==0]*(Size-1)
+    2) Sep = 'a'*La + 'b'*Lb
+        where La + Lb == SepLen; b != a; La > 0; Lb > 0;
+        # (b[i] == b[j] or not)
+        StateTF row col
+            = [row==col+1] + [row==0][col<La]*(Size-1)
+            + [row==0][col==La]*(Size-2)
+            + [row==La][col==La]
+            + [row==0][col>La]*(Size-2)
+            + [row==1][col>La]
+            [row==0][col==La]*(Size-2)
+
+

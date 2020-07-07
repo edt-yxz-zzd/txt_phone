@@ -1,0 +1,78 @@
+{-
+[assumes |- conclusion][valid "assumes, assume"]
+    ==>> [assumes, assume |- conclusion]
+    ;; "assumes, assume" should form a valid "assumes"
+    ;;      i.e. each id occur once, used after defined
+-}
+
+
+-----------------
+
+
+
+----------------------
+
+subterm <: term
+    ;; term_id
+    [assumes |- term :: Term][term_id not in assumes]
+        assumes, term_id <: term |- term_id <: term_id
+    [assumes |- term <: super][term_id not in assumes]
+        assumes, term_id <: term |- term_id <: super
+    [assumes |- term :: Term][assumes |- term : type][term_id not in assumes]
+        assumes, term_id <: term |- term_id : type
+    ;; #`
+    [assumes |- subterm <: term]
+        assumes |- #` subterm <: #` term
+
+    ;; term
+    [assumes |- (\id1 `op2` cls1, term1) :: Term]
+     [assumes |- (\id2 `op2` cls2, term2) :: Term]
+      [assumes, id1 `op2` cls1, id2 `op2` cls2 |- term1 <: term2]
+        [assumes |- cls2 <: cls1]
+            assumes |- (\id1 `op2` cls1, term1) <: (\id2 `op2` cls2, term2)
+    [assumes |- </ term11 `op2` cls1, term12 :: Term /> ]
+     [assumes |- </ term21 `op2` cls2, term22 :: Term /> ]
+      [assumes |- term11 <: term21][assumes |- term12 <: term22]
+        [assumes |- cls1 <: cls2]
+            assumes |- </ term11 `op2` cls1, term12 />
+                    <: </ term21 `op2` cls2, term22 />
+
+    [assumes |- (\id1 :: cls1, term1) :: Term]
+     [assumes |- (\id2 :: cls2, term2) :: Term]
+      [assumes, id1 :: cls1, id2 :: cls2 |- term1 <: term2]
+        [assumes |- cls2 <# cls1]
+            assumes |- (\id1 :: cls1, term1) <: (\id2 :: cls2, term2)
+    [assumes |- </ term11 :: cls1, term12 /> :: Term]
+     [assumes |- </ term21 :: cls2, term22 /> :: Term]
+      [assumes |- term11 <: term21][assumes |- term12 <: term22]
+        [assumes |- cls1 <# cls2]
+            assumes |- </ term11 :: cls1, term12 />
+                    <: </ term21 :: cls2, term22 />
+
+
+
+;; TODO
+    ;; type
+    [assumes |- sort :: Sort][assumes, id `op2` cls |- type : sort]
+        assumes |- (id `op2_` cls) -> type : sort
+        assumes |- (id `op2_` cls, type) : sort
+    [assumes, id :: cls |- type :: Type][assumes, id :: cls |- type : sort]
+        assumes |- (id -:: cls) -> type : @@ id :: cls, sort
+        assumes |- (id -:: cls, type) : @@ id :: cls, sort
+
+    ;; sort
+    [assumes, term_id :: cls |- sort :: Sort]
+        assumes |- (@@ term_id :: cls, sort) : #` (@@ term_id :: cls, sort)
+        assumes |- (?? term_id :: cls, sort) : #` (?? term_id :: cls, sort)
+
+    ;; app
+    [assumes |- f : (id `op3_` cls) -> type][assumes |- a `op3` cls]
+            assumes |- f a : type[id := a]
+
+    ;; assert
+    [assumes |- term `op3` cls][assumes |- term : type]
+        assumes |- (term `op3` cls) : type
+
+
+
+

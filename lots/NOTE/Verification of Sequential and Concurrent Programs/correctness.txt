@@ -1,0 +1,54 @@
+
+
+correctness : {p} S {q}
+    partial correctness
+        # conf - configure
+        {<S, conf>|p(conf)} -[transition]*-> {_L} \_/ s where s <= {<END, conf'> | q(conf')}
+    total correctness
+        # == partial correctness && termination
+        {<S, conf>|p(conf)} -[transition]*-> s where s <= {<END, conf'> | q(conf')}
+
+# soundness     : true under proof symtem ==>> true
+# completeness  : true ==>> true under proof symtem
+soundness    : {p}S -[deduce]->> {q} ==>> {p}S -[proof]->> {q}
+completeness : {p}S -[proof]->> {q} ==>> {p}S -[deduce]->> {q}
+where
+    # see [page 139-140] Theorem 4.1. (Soundness of Proofs from Assumptions)
+    # see [page 141] Theorem 4.3. (Soundness of Proofs from Assumptions)
+    (-[deduce]->>) ::= deduce by the proof system
+                    === (-[transition]*->) set version
+                    === (|-)
+    (-[proof]->>) ::= truth of "{p}S{q}" i.e. total correctness
+                    === (|=[tot])
+    (-[partial]->>) ::= partial correctness of "{p}S{q}"
+                    === (|=)
+
+[deduce_seq]
+    <S, conf> -[transition]-> <S', conf'> ... -[transition]-> <END, conf''>
+    <S, conf> -[transition]-> <S', conf'> ... -[transition]-> _L # infinite
+    NOTE: there are lots of deduce_seqs beginswith <S, conf>
+    NOTE: deduce_seqs can be infinite long, i.e. _L
+
+[transition]
+    [<S, conf> -[transition]-> <END, conf'>] -->> [<S;T, conf> -[transition]-> <T, conf'>]
+    <skip, conf> -[transition]-> <END, conf>
+    <if B then S else T fi, conf> -[transition]-> <S, conf/\B>
+    <if B then S else T fi, conf> -[transition]-> <T, conf/\~B>
+    <while B do S od, conf> -[transition]-> <END, conf/\~B>
+    <while B do S od, conf> -[transition]-> <S; while B do S od, conf/\B>
+    <x:=y, conf> -[transition]-> <END, conf[x:=y]>
+
+
+# in the book, MM = PartialDeduce, MM_tot = TotalDeduce
+PartialDeduce[[S]](conf) = {conf' | <S, conf> -[transition]*-> <END, conf'>}
+TotalDeduce[[S]](conf) = PartialDeduce[[S]](conf) \_/ {_L | S can diverge from conf}
+
+[[p]] = {conf | p(conf)} where p is a bool_expr # no _L
+partial correctness of {p}S{q} ::= PartialDeduce[[S]]([[p]]) |<= [[q]]
+total correctness of {p}S{q} ::= TotalDeduce[[S]]([[p]]) |<= [[q]]
+
+
+
+
+
+

@@ -1,0 +1,63 @@
+Learn_You_a_Haskell_for_Great_Good
+
+do  x <- monad_x
+    return x
+    let g = ... -- without "in"
+    monad_y
+
+<==>
+
+    monad_x >>= \x -> 
+    return x >> 
+    let g = ... in -- with "in"
+    monad_y
+
+
+
+
+class Monad m where
+    return :: a -> m a
+    (>>=) :: m a -> (a -> m b) -> m b
+    
+    (>>) :: m a -> m b -> m b
+    x >> y = x >>= \_ -> y
+    
+    fail :: String -> m a
+    fail msg = error msg
+
+instance Monad [] where
+    return x = [x]
+    xs >>= f = concat (map f xs)
+    fail _ = []
+instance MonadPlus [] where
+    mzero = []
+    mplus = (++)
+
+
+instance Monad m => Functor m where
+    fmap f ma = do
+        a <- ma
+        return (f a)
+
+
+foo :: Maybe String
+foo = Just 3   >>= (\x ->
+      Just "!" >>= (\y ->
+      Just (show x ++ y)))
+
+foo = do
+        x <- Just 3
+        y <- Just "!"
+        Just (show x ++ y)
+
+
+
+
+
+
+
+
+
+
+
+

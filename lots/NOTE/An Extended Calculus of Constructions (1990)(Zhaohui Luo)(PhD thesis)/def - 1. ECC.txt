@@ -1,0 +1,177 @@
+ref:
+    "An Extended Calculus of Constructions (1990)(Zhaohui Luo)(PhD thesis).pdf"
+
+short:
+    Prop ~<~ Universe 0 ~<~ Universe 1 ...
+    @x:A:KA. (B:KB) : Prop if KB is Prop else max(KA, KB)
+    ?x:A:KA. (B:KB) : max(Universe 0, KA, KB)
+    #or extend: ?x:A:KA. (B:KB) : max(KA, KB)
+
+
+
+2.1 A Formal Presentation of ECC
+UInt
+VarName
+DeclVarName
+    # DeclVarName = Maybe VarName
+    # if we want to support "_" as DeclVarName, which is not a valid VarName
+Term
+    # sorts
+    = Prop | Universe UInt
+    # variables
+    | Var VarName
+    # non-sort types
+    | All DeclVarName TypeTerm Term | Some DeclVarName TypeTerm Term
+    # other terms
+    | Abs DeclVarName TypeTerm Term | Pair TypeTerm Term Term
+    | App Term Term | Fst Term | Snd Term
+    where TypeTerm = Term
+
+    # NOTE: All/Some/Abs are quantifiers
+    # Term = ... | Quantification Quantifier DeclVarName TypeTerm Term
+    # Quantifier = All | Some | Abs
+    #
+    # PTS.sorts :: Set Kind
+    # PTS.axioms :: Set (Kind, Kind) # [[] |- K1:K2]
+    # PTS.rules :: Set (Kind, Kind, Kind) # [@x:I:K1. (O:K2) : K3]
+    # PTS.quantifiers = {All}
+    # now we extend the PTS.quantifiers
+    #   hence we should extend PTS.rules
+    #   PTS.quantifiers = {All, Some, Abs}
+    #   PTS.quantifier2rules :: Set Quantifier (K, K, K)
+    #   PTS.quantifier2num_input_lifting = {All:2, Some:2, Abs:2}
+    #   PTS.quantifier2num_output_lifting = {All:1, Some:1, Abs:2}
+    # quantification vs definition
+    #   what about let-expr and Pair<...>(,) constructor?
+    #
+
+
+cumulativity relation
+    ~<=~
+    see: "def - 1.2. substitution.txt"
+
+Context = [(DeclVarName, TypeTerm)]
+    # if we add "definition", then Context = [(x:type)|(x=term:type)]
+    #   Context = [Either (DeclVarName, TypeTerm) (DeclVarName, Term, TypeTerm)]
+    #
+    FV_trm :: Term -> Set VarName
+    FV_ctx :: Context -> Set VarName # DeclVarName->VarName
+    FV_trm term = ...
+    FV_ctx ctx = {x | (x, type) <- ctx, return $ {x} \-/ FV_trm type}
+Judgement = (Context, Term, TypeTerm)
+    # [Context |- M:A]
+
+
+inference rules of ECC
+  # context validity
+    Ax: # the only axiom
+        [[] |- Prop : Universe 0]
+        emtpy context validity
+    C: # context
+        [L |- A : Universe i][x not in FV_ctx L] ==>> [L++[x:A] |- Prop : Universe 0]
+            # ??A:Prop??
+            # since A:Prop ==>> A:Universe 0, omit A:Prop??
+        nonempty context validity
+
+  # term kinding/typing
+    T: # in the original thesis, "Universe i" is written as "Type i"
+        [L |- Prop : Universe 0][i <- UInt] ==>> [L |- Universe i : Universe (i+1)]
+        universe kinding
+    var:
+        [L++[x:A]++L2 |- Prop : Universe 0] ==>> [L++[x:A]++L2 |- x : A]
+        variable typing
+    all1:
+        [L++[x:A] |- P : Prop] ==>> [L |- @x:A. P : Prop]
+        impredicate all kinding
+        # NOTE: @x:Prop:Universe 0. P : Prop
+    all2:
+        [L |- A : Universe i][L++[x:A] |- B : Universe i] ==>> [L |- @x:A. B : Universe i]
+        predicate all kinding
+    abs:
+        [L++[x:A] |- M : B] ==>> [L |- \x:A. M : @x:A. B]
+        abstract typing
+    app:
+        [L |- M : @x:A. B][L |- N : A] ==>> [L |- M N : [N/x]B]
+        application typing
+
+    exist:
+        [L |- A : Universe i][L++[x:A] |- B : Universe i] ==>> [L |- ?x:A. B : Universe i]
+        predicate exist kinding
+        # no "impredicate exist kinding"
+        #   since inconsistency
+        #OK: [L |- A : Prop][L++[x:A] |- B : Prop] ==>> [L |- ?x:A. B : Prop]
+        #bad: [L++[x:A] |- B : Prop] ==>> [L |- ?x:A. B : Prop]
+        #   why bad or OK? see below "footnote"
+        #
+    pair:
+        [L |- ?x:A. B : K][L |- M : A][L |- N : [M/x]B] ==>> [L |- Pair<?x:A.B>(M, N)]
+        pair typing
+        # Pair<?x:A.B x>(M,N) is too heavy
+        #   what about ([x = M], [N :: B x]) : ([x <- A], B x)
+        #                          ^^^^
+        #   what about ([x = M], B x >- N) : ([x <- A], B x)
+        #   what about [x = M]B x >- [y = N]C x y >- O : ([x <- A], [y <- B x], C x y)
+        #   what about [x = M] >- [y = N : B x] >- [O : C x y] : ([x <- A], [y <- B x], C x y)
+
+    fst:
+        [L |- M : ?x:A.B] ==>> [L |- fst M : A]
+    snd:
+        [L |- M : ?x:A.B] ==>> [L |- snd M : [(fst M)/x]B]
+    cum: # ~<=~ # cumulativity
+        # type conversion rule ==>> full cumulativity rule
+        #
+        [L |- M : A][L |- A2 : Universe i][A ~<=~ A2] ==>> [L |- M : A2]
+            # ??"A2 : Prop"??
+            #   [A2:Prop ==>> A2 : Universe 0]??
+            # [A2:Prop][Prop:Universe 0][Prop ~<=~ Prop] ==>> [A2:Universe 0]
+        #bad: [L |- M : A][L |- N : B][M |> N] ==>> [L |- M : B]
+        #   where [M |> N] =[def]= M reduce to N
+        #   see: Theorem 3.2.8(subject reduction)
+        #       [L |- M : A][M |> N] ==>> [L |- N : A]
+
+    # NOTE: all vs exist
+    #   Prop ~<~ Universe 0 ~<~ Universe 1 ...
+    #   @x:A:K1. (B:K2) : K3
+    #       K3 = max(K1, K2) if K2 != Prop else Prop
+    #   ?x:A:K1. (B:K2) : K3
+    #       K3 = max(Universe 0, K1, K2)
+    #       K3 = max(K1, K2) # if "OK" rule added
+
+2.2 Informal Explanations
+    Prop - the only impredicative universe
+        proof : proposition : Prop
+        proposition is type
+            but type may not by proposition
+            only type in Prop is proposition
+            tuple is not proposition
+                (exist, SUM-type, dependent strong sum type)
+                but how to repr (A /\ B)?
+                @R:Prop. (A -> B -> R) -> R : Prop
+
+        types:
+            * logical formulas - propositions
+            * data types - non-propositional types
+                represent arbitrary sets
+
+2.2.4 Lifting of propositions and SUM-types as subsets
+    (*): # bad, inconsistent
+        [L++[x:A] |- B : Prop] ==>> [L |- ?x:A. B : Prop]
+    footnote:
+        A simple and intuitive argument to see this problem is that, if rule (*) were allowed, then we would be able to derive [L |- ?x:Prop.() : Prop], where () stands for a non-empty type, say unit type. Then, we have [?x:Prop.()] is 'isomorphic' to Prop, which shows that we would essentially have [Prop : Prop]. If we add a premise [L |- A : Prop] to rule (*), the rule would become of no problem; it is the rule for small SUM-types. We do not have small SUM-types in ECC, not because it can not be added, but because we do not see its necessity.
+        #OK: [L |- A : Prop][L++[x:A] |- B : Prop] ==>> [L |- ?x:A. B : Prop]
+
+2.2.5 Conversion and full cumulativity
+    The cumulativity relation ~<=~ defined in definition 2.1.3 is "not" completely contravariant for dependent product: for [@x:A1.A2] to be less than or equal to [@x:B1.B2], A1 is required to be convertible to B1 instead of B1 ~<=~ A1. One may take the latter decision and the proof-theoretic properties will still hold. The only difference from the proof-theoretic point of view is that some terms would get more types. For example, [\x:Universe 1.x] would not only have types [Universe 1 -> Universe i] but have [Prop -> Universe 3] and [Universe 0 -> Universe i] (i >= 1) as its types as well. The algorithm for type inference remains the same except that the basic relation is changed. However, from a set-theoretic semantic point of view, the type inclusions with a cumulativity relation being completely contravariant would be reflected by coercions instead of by set inclusions if we think of functions as relations.
+    # allow to extend (~<=~):
+    #   [A2 ~<=~ A1][B1 ~<=~ B2] ==>> [@x:A1.B1 ~<=~ @x:A2.B2]
+
+
+3.3 Principal Types
+    Lemma 3.3.3 (diamond property of (~<=~))
+        [L |- M : A][L |- M : B] ==>> [?C:Term. [L |- M : C][C ~<=~ A][C ~<=~ B]]
+    [A is a principal type of M under L] =[def]= [L |- M : A][@A2. [L |- M : A2] <==> ?K. [K is kind][L |- A2 : K][A ~<=~ A2]]
+
+    T<L>(M) =[def]= principal type of M under L
+
+
+

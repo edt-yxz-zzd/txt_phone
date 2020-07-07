@@ -1,0 +1,118 @@
+
+"[Planar_Graph_Isomorphism_1974]Linear time algorithm for isomorphism of planar graphs[good].pdf"
+
+
+updated/reduce ugraph by:
+    * contract "directed" edge
+        store (2 hweights, additional data) to clockwise next hedge
+            # not next aedge
+            # since we want recover it from hedge
+    * move edge to new position
+    * ...
+
+algo: canon_label_hweighted_connected_ugraph_planar_embedding
+    O(N*logN)
+    classify many planar ugraphs in O(n)
+    but O(N*logN) for canon labelling
+
+input:
+    # num_vertices >= 1
+    # if num_aedges == 0, then only single isolated vertex
+    connected_ugraph
+    connected_ugraph_planar_embedding
+        :: (Map Vertex HEdge, Map HEdge HEdge)
+        # vertex2arbitrary_hedge
+        # hedge2clockwise_next_hedge_around_face
+    hedge2hweight :: Map HEdge HWeight
+output:
+    ugraph_label :: Map Vertex NewVertex
+
+while True:
+    0. if ugraph is n-star/n-flower/n-cycle/n-bond:
+        # final_ugraph case 1
+        #   where final_ugraph.num_hedges == O(n)
+        #
+        # vertex_degree/face_degree == 1/2
+        # 1-star == 1-bond == single nonloop edge
+        # 1-flower == 1-cycle == single loop edge
+        # 2-cycle == 2-bond
+        break
+    1. if any vertex_degree-1 vertices:
+        for v in all vertex_degree-1 vertices at this time:
+            contract(v->?)
+        continue
+    2. if any face_degree-1 faces:
+        for f in all face_degree-1 faces at this time:
+            contract(f.aedge in clockwise)
+        continue
+    3. if any vertex_degree-2 vertices:
+        for line in maximum lines at this time:
+            replace line by a new aedge
+        continue
+    4. if any face_degree-2 faces:
+        for bond in maximum bonds at this time:
+            replace bond by a new aedge
+        continue
+
+    ##############
+    5. if any vertex_degree-3 vertices and all neighbor vertex_degree are not 3:
+        move aedges: 3-star ==>> 3-gon
+        continue
+    6. like 5. but vertex_degree-4
+    7. like 5. but vertex_degree-5
+
+
+    ##############
+    8. if any vertex_degree-3 vertices and not all neighbor vertex_degree are 3:
+        select a v->?
+        contract(v->?)
+            # merge v into ? where v.vertex_degree is lesser
+            # ?.vertex_degree can be O(n)!!
+        continue
+    9. like 8. but vertex_degree-4 and handle special case
+        special case: + ==>> N
+              x
+              |
+           -4-4-4-
+              |
+              x
+            # NOTE: 4s can form a line, a cycle, a 1-cycle
+        ==>>
+              x
+             /|
+           -? | ?-
+              |/
+              x
+    10. like 8. but vertex_degree-5
+
+
+
+    ##############
+    # now regular-vertex_degree-3/4/5-ugraph
+    # to handle face_degree around vertex
+    11. ...
+    ...
+    ...
+
+    #############
+    # now regular-vertex_degree regular-face_degree ugraph
+    # final_ugraph case 2
+    #   finite possible ugraphs
+    #   final_ugraph.num_hedges == O(1)
+    break
+
+if final_ugraph case 2:
+    num_hedges == O(1)
+    each hedge is possible root hedge
+    dfs final_ugraph planar_embedding begins with each hedge
+    find out the min dfs
+    find out final_ugraph.root_hedge
+else:
+    final_ugraph case 1
+    num_hedges == O(n)
+    use RMQ.SA_LCP.find_min_period to find out final_ugraph.root_hedge
+final_ugraph.root_hedge ==>> original_ugraph.root_hedge
+dfs original_ugraph planar_embedding begins with original_ugraph.root_hedge
+==>> the result canon labelling
+
+

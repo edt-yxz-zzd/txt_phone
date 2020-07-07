@@ -1,0 +1,178 @@
+
+[A simplification of Girard's paradox]hurkens95tlca.pdf
+
+
+
+System U-
+    **, [], <>
+    ** :: [] :: <>
+    (**, **, **), ([], [], []), ([], **, **),   (<>, [], [])
+
+    <>     <>
+        \
+    []  -  []
+        \
+    **  -  **
+
+
+ps S === (S -> **) : []
+PS = \s <- {[], <>}. \t:s. ((t -> **) : [])
+ps1 = PS []
+ps2 = PS <>
+psps1 = ps1 . ps1
+psps2 = ps1 . ps2
+    psps X : []
+    ps X : []
+U = @X : []. (psps1 X -> X) -> psps1 X : []
+    psps1 X : []
+    X : []
+    psps1 X -> X : []
+    (psps1 X -> X) -> psps1 X : []
+    @X : [] : <>. (O : []) : []  # (<>, [], [])
+    U : []
+
+T = \ppu:psps1 U. \X:[]. \ppx2x : psps1 X -> X. \px : ps1 X. ppu \u:U. px (ppx2x (u X ppx2x))
+T = (\ppu:psps1 U:[].
+        (\X:[]:<>.
+            (\ppx2x : psps1 X -> X : [].
+                (\px : ps1 X : [].
+                    (ppu
+                        (\u:U:[].
+                            (px (ppx2x (u X ppx2x : psps1 X) : X) : ** : [])
+                        : U -> ** : [])
+                    : ** : [])
+                : ps1 X -> ** : [])
+            : (psps1 X -> X) -> (ps1 X -> **) : [])
+            #: (psps1 X -> X) -> psps1 X : []
+            #: U X
+        : U : [])
+    : psps1 U -> U : [])
+    T : psps1 U -> U : []
+Q = \u : @X:[]. (psps1 X -> X) -> psps1 X. u U T
+Q = (\u :
+        (@X:[]:<>.
+            ((psps1 X -> X : []) -> psps1 X : []))
+        : []    # (<>, [], [])
+    . (u U T : psps1 U : [])
+    : (@X:[]. (psps1 X -> X) -> psps1 X) -> psps1 U
+    : [])
+Q = \u:U. u U T
+    Q : U -> psps1 U : []
+    T : psps1 U -> U : []
+    # T = \ppu.\X.\ppx2x.\px. ppu \u. (px . ppx2x $ u X ppx2x)
+    T.Q = \u. T (Q u) = \u. T (u U T)
+        = \u. \X.\ppx2x.\px. u U T \u. (px . ppx2x $ u X ppx2x)
+
+_L = @z : **. z
+_L = (@z : ** : []. (z : **)
+     : **)
+    _L : **
+not = \a : **. a -> _L
+not = (\a : ** : []. ((a : **) -> (_L : **) : ** : [])
+      : [])
+      not : []
+ND= \u:U. @pu:ps1 U. Q u pu -> pu T`Q` u
+D = \u:U. not @pu:ps1 U. Q u pu -> pu T`Q` u
+D = (\u:U. not (@pu : ps1 U : []. (Q u pu : **) -> (pu (T`Q` u : U) : **) : **)
+    : U -> ** : [])
+    D : ps1 U : []
+    D = \u. not @pu. Q u pu -> (pu.T.Q) u
+    D = \u. not (ND u)
+O = T \pu:ps1 U. @u:U. Q u pu -> pu u
+O = (T
+        (\pu:ps1 U:[].
+            (@u:U:[]. ((Q u pu : **) -> (pu u : **) : **) : ** : [])
+        : ps1 U -> ** : [])
+        #: psps1 U : []
+    : U : [])
+    O : U : []
+    O = T \pu. @u. Q u pu -> pu u
+        # T = \ppu.\X.\ppx2x.\px. ppu \u. (px . ppx2x $ u X ppx2x)
+      = \X. \ppx2x. \px. (\pu. @u. Q u pu -> pu u) \u. (px . ppx2x $ u X ppx2x)
+      = \X. \ppx2x. \px. @u. Q u (...) -> (...) u
+        # (...) == \u. (px . ppx2x $ u X ppx2x)
+      = \X. \ppx2x. \px. @u. Q u (\u. (px . ppx2x $ u X ppx2x)) -> (px . ppx2x $ u X ppx2x)
+
+
+
+# noreturn : _L = term1 term2
+noreturn : _L =
+    # term1
+    (\0 : (@pu : ps1 U. (@u:U. Q u pu -> pu u) -> pu O).
+        0 D
+            (\u:U. \2 : Q u D. \3 : ND u.
+                3 D 2 \pu:ps1 U. 3 \u:U. pu T`Q` u)
+            (\pu:ps1 U. 0 \u:U. pu T`Q` u)
+    )
+    # term2
+    (\pu:ps1 U. \1:(@u:U. Q u pu -> pu u). 1 O \u:U. 1 T`Q` u)
+ =
+    (\0 : (@pu : ps1 U. (@u:U. Q u pu -> pu u) -> pu O).
+        (((0 D : (@u:U. Q u D -> D u) -> D O)
+            (\u:U. \2 : Q u D. \3 : ND u.
+                # 3 D 2 \pu. 3 (pu.T.Q)
+                # 3 (pu.T.Q) : (Q u (pu.T.Q) -> (pu.T.Q.T.Q) u)
+                # D = \u. not @pu. Q u pu -> (pu.T.Q) u : ps1 U
+                # 3 D : Q u D -> (D.T.Q) u
+                # 3 D 2 : (D.T.Q) u
+                # \pu. 3 (pu.T.Q) : @pu. (Q u (pu.T.Q) -> (pu.T.Q.T.Q) u)
+                # (D.T.Q) u = not @pu. Q (T`Q` u) pu -> (pu.T.Q) (T`Q` u)
+                #               # see proof below
+                #           = not @pu. Q u (pu.T.Q) -> (pu.T.Q) (T`Q` u)
+                #           = not @pu. Q u (pu.T.Q) -> (pu.T.Q.T.Q) u
+                (3 D 2 \pu:ps1 U. 3 \u:U. pu T`Q` u : _L)
+            : @u:U. @2:Q u D. @3:ND u. _L)
+            #: @u:U. @2:Q u D. D u
+            #: @u:U. Q u D -> D u
+        : D O)
+        # T = \ppu.\X.\ppx2x.\px. ppu \u. (px . ppx2x $ u X ppx2x)
+        # O = T \pu. @u. Q u pu -> pu u
+        # O = \X. \ppx2x. \px. @u. Q u (\u. (px . ppx2x $ u X ppx2x)) -> (px . ppx2x $ u X ppx2x)
+        # Q O = O U T = \px. @u. Q u (\u. (px . T $ u U T)) -> (px . T $ u U T)
+        #     = \px. @u. Q u (px.T.Q) -> (px.T.Q) u
+        # D = \u. not @pu. Q u pu -> (pu.T.Q) u : ps1 U
+        # D O = not @pu. Q O pu -> (pu.T.Q) O
+        #     = not @pu. (Q O) pu -> (pu.T.Q) O
+        #     = not @pu. (@u. Q u (pu.T.Q) -> (pu.T.Q) u) -> (pu.T.Q) O
+            (\pu:ps1 U. 0 (\u:U. (pu T`Q` u : **) : ps1 U)
+                # \pu. 0 (pu.T.Q)
+            : (@pu : ps1 U. (@u:U. Q u (pu.T.Q) -> (pu.T.Q) u) -> (pu.T.Q) O))
+            #: (@pu  @u. (Q u (pu.T.Q) -> (pu.T.Q) u) -> (pu.T.Q) O)
+        : _L)
+    : (@pu : ps1 U. (@u:U. Q u pu -> pu u) -> pu O) -> _L
+    )
+
+    (\pu:ps1 U:[]. \1:(@u:U:[]. (Q u pu : **) -> (pu u : **)):**.
+        # 1 O (1.T.Q)
+        ((1 (O:U) : Q O pu -> pu O)
+            (\u:U. 1 (T`Q` u : U) : @u:U. Q`T`Q`u pu -> pu T`Q` u)
+        : pu O)
+    : @pu:ps1 U. (@u:U. Q u pu -> pu u) -> pu O)
+    where
+        Q = \u:U. u U T
+        O = T \pu:ps1 U. @u:U. Q u pu -> pu u
+        T = \ppu:psps1 U. \X:[]. \ppx2x : psps1 X -> X. \px : ps1 X. ppu \u:U. px (ppx2x (u X ppx2x))
+        Q = \u. u U T
+        O = T \pu. @u. Q u pu -> pu u
+        T = \ppu.\X.\ppx2x.\px. ppu \u. (px . ppx2x $ u X ppx2x)
+        proof [Q O pu === @u:U. Q`T`Q` u pu -> pu T`Q` u]
+        Q O pu = O U T pu = T (\pu. @u. Q u pu -> pu u) U T pu
+            = (\X. \ppx2x. \px. (...) \u. px . ppx2x $ u X ppx2x) U T pu
+            = (...) \u. (pu . T $ u U T)
+            = (...) \u. (pu . T $ Q u)
+            = (...) (pu . T . Q)
+            = (\pu. @u. Q u pu -> pu u) (pu . T . Q)
+            = @u. Q u (pu . T . Q) -> (pu . T . Q) u
+            = @u. Q u (pu . T . Q) -> pu T`Q` u
+            = @u. Q u (pu . T . Q) -> pu T`Q` u
+            =?= @u. Q`T`Q` u pu -> pu T`Q` u
+            <==> Q u (pu.T.Q) =?= Q`T`Q` u pu
+        proof [Q u (pu.T.Q) === Q (T`Q` u) pu]
+        right
+            = Q`T`Q`u pu = T`Q`u U T pu = T (Q` u) U T pu
+            = (Q` u) \u. pu (T (u U T))
+            = Q u \u. pu (T (Q u))
+            = Q u (pu . T . Q)
+            = left
+
+

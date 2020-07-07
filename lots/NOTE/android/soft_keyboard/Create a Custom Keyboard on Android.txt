@@ -1,0 +1,372 @@
+
+https://code.tutsplus.com/tutorials/create-a-custom-keyboard-on-android--cms-22615
+
+Create a Custom Keyboard on Android
+by Ashraff Hathibelagal
+Dec 2014
+
+Most Android devices don't have a physical keyboard. Instead, they rely on a virtual or soft keyboard to accept user input. If you're into Android personalization, knowing how to build a custom, soft keyboard can take your hobby to a whole new level.
+
+Using the Android SDK, you can quickly create a soft keyboard with surprisingly few lines of code, because the SDK takes care of a lot of the low level tasks, such as recognizing key touches, drawing the keyboard, and establishing connections between the keyboard and input fields.
+
+In this tutorial, you will learn how to create a fully functional soft keyboard that can serve as your Android device's default keyboard.
+Premium Option
+
+If you're in a hurry, check out Android Keyboard Themes, a ready-to-use solution from Envato Market.
+
+The app gives you the flexibility to choose one of the 22 built-in keyboard themes or create your own custom theme.
+
+Or you could hire a freelancer on Envato Studio. Just browse through our Mobile & Apps section and you're sure to find an expert who can help you.
+
+If you prefer to build your own, read on to find out how.
+
+
+
+1. Prerequisites
+
+You will need the Eclipse ADT Bundle installed. You can download it from the Android Developer website.
+
+
+
+2. Create a New Project
+
+Fire up Eclipse and create a new Android application. Call this application, SimpleKeyboard. Make sure you choose a unique package name. Set the minimum required SDK to Android 2.2 and set the target SDK to Android 4.4.
+This app will have no activities so deselect Create Activity and click Finish.
+    App Name:       SimpleKeyboard_app_name11111
+    Project Name:   SimpleKeyboard_proj_name22222
+    Package Name:   com.x33333.simplekeyboard_pkg_name33333
+    min API 8
+    target API lastest
+    compile API lastest
+    no activities at all
+
+
+3. Edit the Manifest
+
+A soft keyboard is considered as an Input Method Editor (IME) by the Android operating system. An IME is declared as a Service in AndroidManifest.xml that uses the BIND_INPUT_METHOD permission, and responds to the action android.view.InputMethod.
+
+Add the following lines to the application tag of the manifest:
+
+    <service android:name=".SimpleIME_svc_name44444"
+        android:label="@string/simple_ime_svc_label55555"
+        android:permission="android.permission.BIND_INPUT_METHOD"
+        >
+        <meta-data android:name="android.view.im" android:resource="@xml/method_xml_name66666"/>
+        <intent-filter>
+            <action android:name="android.view.InputMethod" />
+        </intent-filter>
+    </service>
+
+4. Create method_xml_name66666.xml
+
+The service tag in the manifest file containes a meta-data tag that references an XML file named method_xml_name66666.xml. Without this file, the Android operating system won't recognize our Service as a valid IME service. The file contains details about the input method and its subtypes. For our keyboard, we define a single subtype for the en_US locale. Create the directory res/xml if it doesn't exist, and add the file method_xml_name66666.xml to it. The contents of the file should be:
+
+    <?xml version="1.0" encoding="utf-8"?>
+    <input-method xmlns:android="https://schemas.android.com/apk/res/android">
+        <subtype
+            android:label="@string/subtype_en_US77777"
+            android:imeSubtypeLocale="en_US"
+            android:imeSubtypeMode="keyboard" />
+    </input-method>
+
+5. Edit strings.xml
+
+The strings that this app uses are defined in the res/values/strings.xml file. We're going to need three strings:
+
+    the name of the app
+    the label of the IME
+    the label of the IME's subtype
+
+Update your strings.xml so that it has the following contents:
+
+    <resources>
+        <string name="app_name">SimpleKeyboard_app_name11111</string>
+        <string name="simple_ime_svc_label55555">Simple IME 55555</string>
+        <string name="subtype_en_US77777">English (US)</string>
+    </resources>
+
+6. Define the Keyboard Layout
+
+The layout of our keyboard contains only a KeyboardView. The layout_alignParentBottom attribute is set to true so that keyboard appears at the bottom of the screen.
+
+Create a file named res/layout/keyboard99999.xml and replace its contents with the following:
+
+    <?xml version="1.0" encoding="UTF-8"?>
+    <android.inputmethodservice.KeyboardView
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        android:id="@+id/keyboard99999"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:keyPreviewLayout ="@layout/preview88888"
+    />
+
+The keyPreviewLayout is the layout of the short-lived pop-up that shows up whenever a key on the keyboard is pressed. It contains a single TextView. Create a file named res/layout/preview88888.xml and add the following to it:
+
+    <?xml version="1.0" encoding="utf-8"?>
+    <TextView xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:background="#ffff00"
+        android:textStyle="bold"
+        android:textSize="30sp"
+        >
+    </TextView>
+
+6. Define the Keyboard Keys
+
+The details of the keyboard keys and their positions are specified in an XML file. Every key has the following attributes:
+
+    keyLabel: This attribute contains the text that is displayed on the key.
+    codes: This attribute contains the unicode values of the characters that the key represents.
+
+For example, to define a key for the letter A, the codes attribute should have the value 97 and the keyLabel attribute should be set to A.
+
+If more than one code is associated with a key, then the character that the key represents will depend on the number of taps the key receives. For example, if a key has the codes 63, 33, and 58:
+
+    a single tap on the key results in the character ?
+    two taps in quick succession results in the character !
+    three taps in quick succession results in the character :
+
+A key can also have a few optional attributes:
+
+    keyEdgeFlags: This attribute can take the value left or right. This attribute is usually added to the leftmost and rightmost keys of a row.
+    keyWidth: This attribute defines the width of a key. It's usually defined as a percentage value.
+    isRepeatable: If this attribute is set to true, long-pressing the key will repeat the action of the key multiple times. It is usually set to true for the delete and spacebar keys.
+
+The keys of a keyboard are grouped as rows. It's good practice to limit the number of keys on a row to a maximum of ten, with each key having a width equal to 10% of the keyboard. The height of the keys is set to 60dp in this tutorial. This value can be adjusted, but values less than 48dp are not recommended. Our keyboard will have five rows of keys.
+
+We can now go ahead and design the keyboard. Create a new file named res/xml/qwerty00000.xml and replace its contents with the following:
+
+    <Keyboard xmlns:android="http://schemas.android.com/apk/res/android"
+        android:keyWidth="10%p"
+        android:horizontalGap="0px"
+        android:verticalGap="0px"
+        android:keyHeight="60dp"
+    >
+        <Row>
+            <Key android:codes="49" android:keyLabel="1" android:keyEdgeFlags="left"/>
+            <Key android:codes="50" android:keyLabel="2"/>
+            <Key android:codes="51" android:keyLabel="3"/>
+            <Key android:codes="52" android:keyLabel="4"/>
+            <Key android:codes="53" android:keyLabel="5"/>
+            <Key android:codes="54" android:keyLabel="6"/>
+            <Key android:codes="55" android:keyLabel="7"/>
+            <Key android:codes="56" android:keyLabel="8"/>
+            <Key android:codes="57" android:keyLabel="9"/>
+            <Key android:codes="48" android:keyLabel="0" android:keyEdgeFlags="right"/>
+        </Row>
+        <Row>
+            <Key android:codes="113" android:keyLabel="q" android:keyEdgeFlags="left"/>
+            <Key android:codes="119" android:keyLabel="w"/>
+            <Key android:codes="101" android:keyLabel="e"/>
+            <Key android:codes="114" android:keyLabel="r"/>
+            <Key android:codes="116" android:keyLabel="t"/>
+            <Key android:codes="121" android:keyLabel="y"/>
+            <Key android:codes="117" android:keyLabel="u"/>
+            <Key android:codes="105" android:keyLabel="i"/>
+            <Key android:codes="111" android:keyLabel="o"/>
+            <Key android:codes="112" android:keyLabel="p" android:keyEdgeFlags="right"/>
+        </Row>
+        <Row>
+            <Key android:codes="97" android:keyLabel="a" android:keyEdgeFlags="left"/>
+            <Key android:codes="115" android:keyLabel="s"/>
+            <Key android:codes="100" android:keyLabel="d"/>
+            <Key android:codes="102" android:keyLabel="f"/>
+            <Key android:codes="103" android:keyLabel="g"/>
+            <Key android:codes="104" android:keyLabel="h"/>
+            <Key android:codes="106" android:keyLabel="j"/>
+            <Key android:codes="107" android:keyLabel="k"/>
+            <Key android:codes="108" android:keyLabel="l"/>
+            <Key android:codes="35,64" android:keyLabel="\# \@" android:keyEdgeFlags="right"/>
+        </Row>
+        <Row>
+            <Key android:codes="-1" android:keyLabel="CAPS" android:keyEdgeFlags="left"/>
+            <Key android:codes="122" android:keyLabel="z"/>
+            <Key android:codes="120" android:keyLabel="x"/>
+            <Key android:codes="99" android:keyLabel="c"/>
+            <Key android:codes="118" android:keyLabel="v"/>
+            <Key android:codes="98" android:keyLabel="b"/>
+            <Key android:codes="110" android:keyLabel="n"/>
+            <Key android:codes="109" android:keyLabel="m"/>
+            <Key android:codes="46" android:keyLabel="."/>
+            <Key android:codes="63,33,58" android:keyLabel="\? ! :" android:keyEdgeFlags="right"/>
+        </Row>
+        <Row android:rowEdgeFlags="bottom">
+            <Key android:codes="44" android:keyLabel="," android:keyWidth="10%p"  android:keyEdgeFlags="left"/>
+            <Key android:codes="47" android:keyLabel="/" android:keyWidth="10%p" />
+            <Key android:codes="32" android:keyLabel="SPACE" android:keyWidth="40%p" android:isRepeatable="true"/>
+            <Key android:codes="-5" android:keyLabel="DEL" android:keyWidth="20%p" android:isRepeatable="true"/>
+            <Key android:codes="-4" android:keyLabel="DONE" android:keyWidth="20%p" android:keyEdgeFlags="right"/>
+        </Row>
+    </Keyboard>
+
+You may have noticed that some keys have negative values for the codes attribute. Negative values are equal to predefined constants in the Keyboard class. For example, the value -5 is equal to the value of Keyboard.KEYCODE_DELETE.
+
+7. Create a Service Class
+
+Create a new Java class and call it SimpleIME_svc_name44444.java. The class should extend InputMethodService class and implement the OnKeyboardActionListener interface. The OnKeyboardActionListener interface contains the methods that are called when keys of the soft keyboard are tapped or pressed.
+
+The SimpleIME_svc_name44444 class should have three member variables:
+
+    a KeyboardView referencing the view defined in the layout
+    a Keyboard instance that is assigned to the KeyboardView
+    a boolean telling us if the caps lock is enabled
+
+After declaring these variables and adding the methods of the OnKeyboardActionListener interface, the SimpleIME_svc_name44444 class should look like this:
+
+    public class SimpleIME_svc_name44444 extends InputMethodService
+        implements OnKeyboardActionListener{
+
+        private KeyboardView kv;
+        private Keyboard kbd;
+
+        private boolean caps = false;
+
+        @Override
+        public void onKey(int primaryCode, int[] keyCodes) {
+
+        }
+
+        @Override
+        public void onPress(int primaryCode) {
+        }
+
+        @Override
+        public void onRelease(int primaryCode) {
+        }
+
+        @Override
+        public void onText(CharSequence text) {
+        }
+
+        @Override
+        public void swipeDown() {
+        }
+
+        @Override
+        public void swipeLeft() {
+        }
+
+        @Override
+        public void swipeRight() {
+        }
+
+        @Override
+        public void swipeUp() {
+        }
+    }
+
+When the keyboard is created, the onCreateInputView method is called. All the member variables of the Service can be initialized here. Update the implementation of the onCreateInputView method as shown below:
+
+    @Override
+    public View onCreateInputView() {
+        this.kv = (KeyboardView)this.getLayoutInflater().inflate(R.layout.keyboard99999, null);
+        this.kbd = new Keyboard(this, R.xml.qwerty00000);
+        this.kv.setKeyboard(this.kbd);
+        this.kv.setOnKeyboardActionListener(this);
+        return this.kv;
+    }
+
+Next, we create a method that plays a sound when a key is pressed. We use the AudioManager class to play the sounds. The Android SDK includes a few default sound effects for key presses and those are used in the playClick method.
+
+    private void playClick(int keyCode){
+        AudioManager am = (AudioManager)this.getSystemService(Context.AUDIO_SERVICE);
+        switch(keyCode){
+        case 32:
+            am.playSoundEffect(AudioManager.FX_KEYPRESS_SPACEBAR);
+            break;
+        case Keyboard.KEYCODE_DONE:
+        case 10:
+            am.playSoundEffect(AudioManager.FX_KEYPRESS_RETURN);
+            break;
+        case Keyboard.KEYCODE_DELETE:
+            am.playSoundEffect(AudioManager.FX_KEYPRESS_DELETE);
+            break;
+        default: am.playSoundEffect(AudioManager.FX_KEYPRESS_STANDARD);
+        }
+    }
+
+Finally, update the onKey method so that our keyboard app can communicate with input fields (usually EditText views) of other applications.
+
+The getCurrentInputConnection method is used to get a connection to the input field of another application. Once we have the connection, we can use the following methods:
+
+    commitText to add one or more characters to the input field
+    deleteSurroundingText to delete one or more characters of the input field
+    sendKeyEvent to send events, like KEYCODE_ENTER, to the external application
+
+Whenever a user presses a key on the soft keyboard, the onKey method is called with the unicode value of the key as one of its parameters. Based on this value, the keyboard performs one of the following actions:
+
+    If the code is KEYCODE_DELETE, one character to the left of the cursor is deleted using the deleteSurroundingText method.
+    If the code is KEYCODE_DONE, a KEYCODE_ENTER key event is fired.
+    If the code is KEYCODE_SHIFT, the value of the caps variable is changed and the shift state of the keyboard is updated using the setShifted method. The keyboard needs to be redrawn when the state changes so that the labels of the keys are updated. The invalidateAllKeys method is used to redraw all keys.
+    For all other codes, the code is simply converted into a character and sent to the input field. If the code represents a letter of the alphabet and the caps variable is set to true, then the character is converted to uppercase.
+
+Update the onKey method so that it looks like this:
+
+    @Override
+    public void onKey(int primaryCode, int[] keyCodes) {
+        InputConnection ic = this.getCurrentInputConnection();
+        this.playClick(primaryCode);
+        switch(primaryCode){
+        case Keyboard.KEYCODE_DELETE :
+            ic.deleteSurroundingText(1, 0);
+            break;
+        case Keyboard.KEYCODE_SHIFT:
+            this.caps = !this.caps;
+            this.kbd.setShifted(this.caps);
+            this.kv.invalidateAllKeys();
+            break;
+        case Keyboard.KEYCODE_DONE:
+            ic.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_ENTER));
+            break;
+        default:
+            char code = (char)primaryCode;
+            if(Character.isLetter(code) && this.caps){
+                code = Character.toUpperCase(code);
+            }
+            ic.commitText(String.valueOf(code),1);
+        }
+    }
+
+8. Testing the Keyboard
+
+The soft keyboard is now ready to be tested. Compile and run it on an Android device. This app doesn't have an Activity, which means that it won't show up in the launcher. To use it, it should first be activated in the device's Settings.
+
+After activating Simple IME, open any app that allows text input (for example, any messaging app) and click on one of its input fields. You should see a keyboard icon appear in the notifications area. Depending on your device, you can either click on that icon or drag the notification bar down and select Simple IME as the input method. You should now be able to type using your new keyboard.
+
+Conclusion
+
+In this tutorial, you have learned how to create a custom keyboard app from scratch. To change the look and feel of your keyboard, all you have to do is add extra styling to the res/layout/keyboard99999.xml and res/layout/preview88888.xml files. To change the positions of the keys, update the res/xml/qwerty00000.xml file. To add more features to your keyboard, refer to the developer documentation.
+
+
+================= head
+
+package com.x33333.simplekeyboard_pkg_name33333;
+
+/*
+  (in project's build.gradle)
+        allprojects {
+            gradle.projectsEvaluated {
+                tasks.withType(JavaCompile) {
+                    options.compilerArgs << "-Xlint:unchecked" << "-Xlint:deprecation"
+                }
+            }
+        }
+// it seems android.inputmethodservice.* are all deprecated
+// try to use android.view.inputmethod.InputMethod instead
+ */
+import android.inputmethodservice.InputMethodService;
+import android.inputmethodservice.KeyboardView.OnKeyboardActionListener;
+import android.inputmethodservice.KeyboardView;
+import android.inputmethodservice.Keyboard;
+// [deprecation]
+
+import android.view.View;
+import android.view.inputmethod.InputConnection;
+import android.view.KeyEvent;
+import android.content.Context;
+import android.media.AudioManager;
+
+

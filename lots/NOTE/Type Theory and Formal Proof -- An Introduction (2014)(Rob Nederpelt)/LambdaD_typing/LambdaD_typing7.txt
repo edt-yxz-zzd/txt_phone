@@ -1,0 +1,190 @@
+
+
+
+* : *
+
+Term= term_id
+    | "Sort"
+        ;; *
+    | @ term_id : Term, Term
+    ;; decl
+    | \ term_id : Term, Term
+    ;; def
+    | \ term_id (: Term)? = Term, Term
+    | Term Term
+    | fst Term
+    | snd Term
+    ;; shorthands
+    {-
+    ;; locals(context) === _, args:types
+    ;; term_id [args] : Term === term_id : (\arg_id : type,)* Term
+    | @ term_id [arg_id*] : Term, Term
+    | \ term_id [arg_id*] : Term, Term
+    | \ term_id [arg_id*] (: Term)? = Term, Term
+        ;; arg_id in decls
+    | term_id...
+        ;; (term_id [arg_id*]) in context ==>> term_id... === term_id arg_id*
+    | ? term_id : Term, Term
+        ;; == @ R : Sort, @ _ : (@ term_id : Term1, @ _ : Term2, R), R
+    | (term_id -: Term) -> Term ;; == @ term_id : Term, Term
+    | (term_id -: Term, Term)   ;; == ? term_id : Term, Term
+    | (term_id (: Term)? = Term, Term)
+        ;; == \ R : Sort, \ f : (@ term_id : type_of(Term1), @ _ : type_of(Term2), R), f Term1 Term2
+    -}
+
+
+
+keywords:
+    Sort
+    let in
+    \ @ ? : , fst snd
+    -> (,) -:
+    []
+    =
+    ;;
+    _
+    ...
+
+context ::= [def|decl]
+    def ::= term_id : type = term
+    decl ::= term_id : type
+
+
+
+[A Modern Perspective on Type Theory -- From its Origins until Today (2005)(Fairouz Kamareddine)]
+[page 117][page 235]
+    diff:
+        (* : #) ==>> (Sort : Sort)
+        s3 in II ==>> no sort in arrow
+        s in lambda ==>> no sort in lambda
+        ==>> new lambda-def ;; let in
+
+
+;; with def/letin
+;; Sort
+axiom:
+    []
+        [] |- Sort : Sort
+;; term_id
+start:
+    [context |- T : Sort][x not in DOM(context)]
+        context, x : T |- x : T
+start-def:
+    {-
+    [context, x : T |- x : T][context |- t : T]
+        context, x : T = t |- x : T
+    -}
+    ;; to be used in flag-format
+    [context |- T : Sort][x not in DOM(context)][context |- t : T]
+        context, x : T = t |- x : T
+
+;; derived
+weak:
+    {-
+    [context, x : T |- x : T][context |- term : type]
+        context, x : T |- term : type
+    -}
+    [context |- T : Sort][x not in DOM(context)][context |- term : type]
+            context, x : T = t |- term : type
+weak-def:
+    {-
+    [context, x : T = t |- x : T][context |- term : type]
+        context, x : T = t |- term : type
+    -}
+    [context |- T : Sort][x not in DOM(context)][context |- term : type]
+        [context |- t : T]
+            context, x : T = t |- term : type
+
+;; @:
+arrow:
+    [context, x : I |- O : Sort]
+        context |- (@ x : I, O) : Sort
+;; \:=
+lambda-def:
+    [context, x : I = i |- O : T]
+        context |- (\ x : I = i, O) : (\ x : I = i, T)
+;; \:
+lambda:
+    [context, x : I |- body : O]
+        context |- (\ x : I, body) : (@ x : I, O)
+
+;; t1 t2
+apply:
+    [context |- f : @ x : I, O][context |- a : I]
+        context |- f a : O[x := a]
+    [context |- (@ x : I, O) : Sort][context |- a : I]
+        context |- (@ x : I, O) a : Sort
+
+apply-def:
+    {-
+    ;; apply-lambda-def:
+    [context, x : T = def |- term : type]
+        context |- (\ x : T, term) def : (@ x : T, type) def
+    ;; apply-arrow-def:
+    [context, x : T = def |- term : Sort]
+        context |- (@ x : T, term) def : Sort
+    -}
+    [context, x : T = def |- term : type][op in {"\", "@"}]
+        context |- (op x : T, term) def : type[x := def]
+
+conv:
+    [context |- t : T][context |- T' : Sort][context |- T =[beta-def]= T']
+        context |- t : T'
+
+
+
+
+
+;; internal def of =[beta-def]=
+beta-def:
+    ;; by-beta
+    [context |- T =[beta]= T']
+        context |- T =[beta-def]= T'
+    ;; by-sub
+    [context |- T : _][context |- T' =[beta-def]= T'']
+        [x in FV(T)][(x : T = t) in context][T'' === T[x{1 free} := t]]
+            context |- T =[beta-def]= T'
+    ;; by-def
+    [context |- A : _][A === \ x : I = i, A']
+        [context |- B : _][B' === B[x{free or not} := fresh_id()]]
+            [context, x : I = i |- A' =[beta-def]= B']
+                context |- A =[beta-def]= B
+
+    ;; equivalence
+    [context |- T : _]
+        context |- T =[beta-def]= T
+    [context |- T =[beta-def]= T']
+        context |- T' =[beta-def]= T
+    [context |- T =[beta-def]= T' =[beta-def]= T'']
+        context |- T =[beta-def]= T''
+
+
+
+
+
+
+
+
+-----------------------
+;; without def/letin
+    axiom:
+        []
+            [] |- Sort : Sort
+    start:
+        [context |- T : Sort][x not in DOM(context)]
+            context, x : T |- x : T
+    weak:
+        [context, x : T |- x : T][context |- term : type]
+            context, x : T |- term : type
+    @:
+        [context |- I : Sort][context, x : I |- O : Sort]
+            context |- (@ x : I, O) : Sort
+    \:
+        [context, x : I |- body : O][context |- (@ x : I, O) : Sort]
+            context |- (\ x : I, body) : (@ x : I, O)
+    apply:
+        [context |- f : @ x : I, O][context |- a : I]
+            context |- f a : O[x := a]
+    conv:
+        [context |- t : T][context |- T' : Sort][T =[beta]= T']
+            context |- t : T'

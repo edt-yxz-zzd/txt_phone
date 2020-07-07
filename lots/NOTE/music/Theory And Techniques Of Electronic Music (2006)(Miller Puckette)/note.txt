@@ -1,0 +1,143 @@
+
+-- sample
+type Sample = RealNumber
+sample :: Sample
+type Signal = [Sample]
+digital_audio_signals :: Signal
+type SampleNumber = Integer
+sample_number :: SampleNumber
+type SampleRate = Hz RealNumber
+sample_rate :: SampleRate
+type Sec = Second RealNumber
+time :: Sec
+time_at sample_rate sample_number = sample_number / sample_rate
+sample_number_at sample_rate time = sample_rate * time
+r2t = time_at
+t2r = sample_number_at
+
+{-
+sinusoid:
+    x[n] = a * cos(w * n + phi)
+    x(t) = a * cos(2*pi*f * t + f0)
+    where
+        a is the amplitude
+        w is the angular_frequency
+        phi is the initial phase
+        f is the real_time_frequency
+        f = w*sample_rate / (2*pi)
+        w = 2*pi*f / sample_rate
+-}
+type Freq = Hz RealNumber
+type Angl = Radian RealNumber
+real_time_frequency :: Freq
+angular_frequency :: Angl
+pi :: Angl
+f2w sample_rate real_time_frequency = 2*pi*real_time_frequency / sample_rate
+w2f sample_rate angular_frequency = angular_frequency*sample_rate/(2*pi)
+
+
+-- decibel
+type Level_dB = RealNumber
+decibel_level :: Level_dB
+type Amplitude = Complex / RealNumber
+amplitude_decibel :: Amplitude -> Amplitude -> Level_dB
+amplitude_decibel a0 a = 20 * log10 (a/a0)
+power_decibel :: Power -> Power -> Level_dB
+power_decibel p0 p = 10 * log10 (p/p0) -- since power ~ a*a
+
+
+
+--
+oscillator :: SampleRate -> Freq -> SampleNumber -> Amplitude
+oscillator rate freq n = sin (f2w rate freq * n)
+    -- max amplitude = 1
+    -- phi0 = 0
+
+type AmplitudeControlFunction = SampleNumber -> Amplitude
+amplitude_control_function, envelope_generator
+    :: AmplitudeControlFunction
+ramp_line_segment
+    :: SampleNumber -> PInt -> Amplitude -> Amplitude
+    -> AmplitudeControlFunction
+ramp_line_segment begin window_size from to n = f n where
+    f n | n < begin = from
+    f n | n >= begin + window_size = to
+    f n = from + (to - from)*(n - begin)/window_size
+
+covariance :: SampleNumber -> PInt -> Signal -> Signal -> Amplitude
+covariance begin window_size x y
+    = sum [x[n]*y[n] | i <- [0..window_size-1], n = begin+i]
+        / window_size
+
+{-
+power(x) = sum x[i]^2 {i}
+power(x +. y) = power x + power y + 2*covariance(x,y)
+-}
+
+
+sample_period :: SampleNumber
+sample_period = sample_rate / real_time_frequency
+sinusoid_sample_period w = 2*pi/w -- sample_rate / f
+
+harmonic series
+    harmonics w n = n*w
+    harmonic_series = 0, 1200, 1902, 2400, 2786, 3102, 3369, 3600, ...
+    w[i] = w0 * (2^(harmonic_series[i]/1200)) = w0*(i+1)
+    ==>> harmonic_series i = log2 (i+1) * 1200
+    [0.0, 1200.0, 1901.9550008653873, 2400.0, 2786.3137138648344, 3101.9550008653873, 3368.825906469125, 3600.0, 3803.9100017307746, 3986.3137138648344]
+    fundamental: w0
+
+    Fourier linear: w0*n
+    v.s. human exp: w0*2^i
+
+
+
+-- sampling
+wavetable :: Signal
+sawtooth_wave :: SampleNumber -> SampleNumber -> Amplitude
+sawtooth_wave period n = (n mod period) / period
+{-
+    L = len(wavetable)
+    wr = wavetable_sample_rate
+    T = sawtooth_wave_period_in_second :: Second
+        -- assume T cover exact L
+    f = sawtooth_wave_freq -- unit:Hz
+        = 1/T
+    or = output_sample_rate
+    D = sawtooth_wave_period_in_samples :: SampleNumber
+        = or * T = or/f
+
+    -- gap between two samplings
+    output_sample_gap = 1/or
+    ratio = output_sample_gap / T = 1/(or*T)
+    wavetable_total_time = L / wr
+    new_wave_sample_gap = wavetable_total_time * ratio = L / (wr*or*T)
+    new_wave_sample_rate = 1/new_wave_sample_gap
+        = wr*or*T/L = wr*D/L
+        = wr*or/(f*L)
+
+    transposition_factor
+        = L/D
+        = L*f/output_sample_rate
+        = wavetable_sample_rate / new_wave_sample_rate
+        -- why not inverse??
+        = (output_sample_rate / new_wave_sample_rate)
+            / (output_sample_rate / wavetable_sample_rate)
+        = visible_freq / visible_freq_without_sawtooth
+
+    freq2pitch(new_wavetable_sample_rate, wave_sample_rate)
+        = 12 * log2 (wavetable_sample_rate/new_wave_sample_rate)
+        = 12 * log2 (L*f/output_sample_rate)
+        -- why not use wave_sample_rate as base freq???
+    L*f = output_sample_rate * 2^ (freq2pitch(new_wave_sample_rate, wave_sample_rate)/12)
+    L*f = output_sample_rate * 2^ (freq2pitch(visible_freq_without_sawtooth, visible_freq)/12)
+-}
+
+type HalfStep = Pitch
+type Pitch = RealNumber
+freq2pitch :: Freq -> Freq -> HalfStep
+    -- f = f0*(2^(pitch/12))
+freq2pitch f0 f = 12 * log2 (f/f0)
+
+
+

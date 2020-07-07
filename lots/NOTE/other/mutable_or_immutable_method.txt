@@ -1,0 +1,250 @@
+
+unify usage of mutable and immutable objects
+
+Hi!
+    I write a '<'-based immutable set class.
+    But it is quit different from the standard set class.
+    I wish collections.abc.Set be more friendly to immutable tree sets or
+    Python add new syntax to unify such difference.
+
+
+good example:
+    a = []
+    a += a  # "a" is the original list
+
+    a = ()
+    a += a  # "a" is a new tuple
+
+bad example:
+    a = set()
+    a.add(1)        # return None; "a" changed
+    e = a.pop();
+
+    a = frozen_tree_set()
+    a = a.add(1)    # return another set;
+    e, a = a.ipop() # return two objects instead of one!
+
+solution I used:
+    a <<= 1         # <==> a = a.add(1)
+    but "a.ipop()" ....
+my current solution is to write a wrapper class
+    to turn immutable set into mutable set, 
+    but it is so noisy to box and unbox.
+
+
+solution that I wish:
+    a :=.add(1)      # "=." mimic "+="; return the result object
+    e ~ a :=.pop()
+
+    d[key] :=.add(1) # in dict
+
+
+
+if only python add following features:
+1) modify the original object
+    1-0)
+        1) define:
+        def .method(self):...
+        # "." means "intend to modify self"
+        #       return any thing
+        # to avoid immutable method
+        #       which was intended to return new object
+        #       leave self unchanged
+
+        2) invoke:
+        r = a..method();
+    1-1) ignore result
+        # no matter what returned, discard it
+        a.-.method();           # <==> [a..method(), None][-1]
+    1-2) return self
+        # no matter what returned, return self
+        a.>.method().>.method();# <==> [a..method(), a..method(), a][-1]
+
+
+2) create new object
+    2-0)
+        1) define
+        # intend to return (result, new object)
+        def ^method():...
+
+        2)invoke:
+        r, a' = a.^method();
+    2-1) return other, discard result
+        a.-^method().-^method();# <==> a.^method()[1].^method()[1];
+    2-2) assign other to original variable
+        a=^method();            # <==> a = a.^method()[1];
+
+3) unify both:
+    a :=.method();
+    # if   defined ".method" then "a..method();"
+    # elif defined "^method" then "a = a.^method()[1];"
+    # elif defined  "method" then "a.method();"
+    # else error
+
+    r ~ a :=.method();
+    # if   defined ".method" then "r = a..method();"
+    # elif defined "^method" then "r, a = a.^method();"
+    # elif defined  "method" then "r = a.method();"
+    # else error
+
+
+
+
+
+Take a look at the following function in Haskell (GHC) Data.Set
+    minView :: Set a -> Maybe (a, Set a)
+We always want the new set after a immutable set pop().
+    "e = a.pop()" is fine for mutable set, but not for immutable case.
+    we need "e, a = a.pop()" to update "a".
+
+
+
+To keep the fresh immutable object up-to-date is not easy.
+To carry state arround, Haskell ends up with Monad.
+
+
+Pop tuple/frozenset(standard one) gain no benefit. # O(n)
+It is a different story for balanced tree. # O(log n)
+
+
+
+
+
+1) coverting to set or list is O(n) in time
+2) if I have to keep the old copy,
+    standard set solution will be O(n) both in time and space!
+
+working examples:
+    1) priority queue:
+        insert and pop occur
+    2) share immutable data to difference subroutines:
+        each one can modify local copy safely and concurrency.
+
+
+
+
+
+What I want are such interfaces (no matter with standard set):
+    class IDynSet:
+        # "Dyn" means it have methods like ipop_both
+        def ipop_both(self):
+            if hasattr(self, 'pop_mutable'):
+                elem = self.pop_mutable()
+            elif hasattr(self, 'ipop_immutable'):
+                elem, self = self.ipop_immutable()
+            else: raise
+            return elem, self
+
+    class IMutableDynSet(IDynSet):
+        def pop_mutable(self):
+            return self.pop()
+
+    class IImutableDynSet(IDynSet):
+        def ipop_immutable(self):
+            elem, new = self.ipop() # ipop not pop
+            return elem, new
+
+
+
+
+
+
+
+
+
+a working example:
+    # bound_names is a immutable tree set
+
+    def _collect_frees(expr, bound_names, output):
+        expr.___frees___(bound_names, output)
+
+    class NamedVariable:
+        def ___frees___(self, bound_names, output):
+            if self.name not in bound_names:
+                output.add(self.name)
+    class Application:
+        def ___frees___(self, bound_names, output):
+            _collect_frees(self.func, bound_names, output)
+            # Note: bound_names should not be changed!!
+            _collect_frees(self.arg, bound_names, output)
+
+    class Abstraction:
+        # Version 1: bound_names is immutable
+        def ___frees___(self, bound_names, output):
+            bound_names = bound_names.add(self.name)
+            _collect_frees(self.body, bound_names, output)
+
+        # Version 2: bound_names is mutable
+        def ___frees___(self, bound_names, output):
+            bound = self.name in bound_names
+            if not bound:
+                bound_names.add(self.name)
+            if True:
+                _collect_frees(self.body, bound_names, output)
+            if not bound:
+                bound_names.pop(self.name)
+
+        # everything is fine if we don't mix up the two things
+        # but Python is duck type
+        # Version 3: bound_names is any "set"
+        def ___frees___(self, bound_names, output):
+            bound = self.name in bound_names
+            if not bound:
+                # it is intended for builtin set to return None to
+                #     distinguish immutable ones
+                # so I use iadd
+                bound_names = bound_names.iadd(self.name)
+                # or bound_names |= {self.name}
+            if True:
+                _collect_frees(self.body, bound_names, output)
+            if not bound:
+                bound_names.pop(self.name)
+
+
+
+
+
+
+
+
+
+5) to support curry and monad:
+    g = curry lambda x, y, z: f();
+    g(x)(y)(z) === g(x,y)(z) === g(x,y,z)
+
+    g = Curry(3, lambda x,y,z: f())
+    class Curry:
+        def __init__(self, num_args:int, f, *args):
+            self.func = f
+            self.num_args = num_args # exclude args
+            self.args_ls = [args]
+        def __call__(self, *args):
+            L = len(args)
+            if L > self.num_args:
+                raise ...
+            if L == self.num_args:
+                return self.func(*[].join(self.args_ls+[args]))
+            return Curry(self.num_args-L, self.func, self.args_ls + [args])
+
+
+
+
+
+1) create new object or modify the original one? result is None?
+    None,   self
+    result, self
+    None,   self'
+    result, self'
+    None,   self, other
+    result, self, other
+
+2) if modify the original object, return None or self?
+3) if create new object, return it or assign to the variable that invoke the method(a stmt or expr? if expr then return None or new or old?)?
+
+
+
+can we support:
+    a.setXX(xx) # mutable, a.xx = xx # modify object "a"
+    b = a^.setXX(xx) # immutable # return a new object
+    a =.setXX(xx) # mutable or immutable # modify variable
+

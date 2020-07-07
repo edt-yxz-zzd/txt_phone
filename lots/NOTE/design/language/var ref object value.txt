@@ -1,0 +1,80 @@
+
+var vs ref
+    var
+        a variable object to hold the reference to object/value
+    ref
+        the immutable reference to object/value
+        ref<object> itself is a object
+            # has same address to object
+            ref<object> is ref<ref<object>> # is object
+        ref<value> itself is a dynamic internal value
+            ref<ref<value>> === ref<ref<value>>
+            ??unbox-data-type?? like 'int/char' in C??
+            boxed-or-unboxed, determined by compiler
+
+    builtin operator:
+        'is'
+            # compare address
+            var<object> or ref<object>
+        '==='
+            # unconditional equal
+            var<object> or ref<object>
+                <==> 'is'
+            var<value> or ref<value>
+                <==> value_abstract_structure_equal
+                    # take care of recur type
+                    #   infinite sized value
+                    #   O(N*M)??
+                    # ls1 = 1:ls1
+                    # ls2 = 1:1:ls2
+                    # assert ls1 === ls2
+        ':=='
+            var<object> or var<value>
+            as-if reset the underlying reference
+            post-condition: '==='
+    used-defined operator:
+        '=='
+            # "user-defined equivalence class" testing
+            var<object> or ref<object>
+            var<value> or ref<value>
+            # for ref/var<ref/var<object/value>>
+            #   using ref/var<object/value> '==='
+        ':='
+            var<object> or ref<object>
+            assume post-condition: '=='
+            # for ref/var<var<object/value>>
+            #   using ref/var<object/value> ':=='
+    var/ref<ref<object/value>> === var/ref<object/value>
+        middle single 'ref' can omit
+
+
+object vs value
+    object has address
+    value has no
+    # but both can has reference
+
+    value is immutable/hashable/reprable/persistable
+    object may or may not be immutable
+
+    object
+        can contain object/value as sub-part via 'var'/'ref'.
+            'ref<object/value>' means 'subobject' # composition
+            'var<object/value>' means "pointer to" # aggregation
+    value
+        can contain only value as sub-part via 'ref'.
+            'ref<value>' means "pointer to" # aggregation
+        ref<ref<value>>
+
+
+boxed/unboxed object/value
+nullable
+    var/ref<object>
+neednot GC:
+    non_recur_value
+        type may recur, but value not recur
+        but not allow "ls = 1:ls"
+        non-lazy
+        or proofable-lazy
+    non_recur_object
+        type should not recur to avoid dynamic contain self
+GC version

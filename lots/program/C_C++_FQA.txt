@@ -1,0 +1,206 @@
+
+only ==, != is well-defined, not <, <=...(for the two of same integer-type or pointer in same array)(separate address spaces)
+    // a virtual member function, the result is unspecified
+
+bool, true, false // <stdbool.h> C99
+true == 1, false == 0
+
+
+
+CHAR_BIT == ? // MAY NOT BE 8
+one char is one byte in C; but byte in C is not standard byte!!!
+'byte' depens on memory model; the minimum addressable unit(and at least 8 bits) is called byte.
+
+char vs signed char vs unsigned char
+    three different types
+    just note that char objects represent single characters in some encoding.
+    the reason why the STL uses char as the default type is because the standard streams are meant for reading and/or writing streams of characters, represented by char objects, not integers (signed char and unsigned char). The use of char versus the numeric value is a way of separating concerns.
+ 
+
+
+int type: // N bits
+unsigned ~ mod 2**N                     
+    // no undefined behaviors
+signed ~ -2**(N-1)+1 <= ? <= 2**(N-1)-1 
+    // sign-bit may be sign(-1*?), -2**N or -(2**N-1)
+    // no -2**(N-1); no -0!!
+    // any result out of this range will lead to undefined behaviors.
+        // NOTE: bit-operater
+        // NOTE: ++, --
+        // NOTE: +, -, *, /, %.....
+        // NOTE: unsigned2signed
+        // NOTE: bigsigned2smallsigned!!!!
+mix up these two, causing signed2unsigned
+    // NOTE: compare
+
+regardless 'int', intN_t is two's complement!!! 
+    // but does it work like mod 2**N ??
+
+modulo operation vs remainder operation
+    modular arithmetic: // in math nothing to do with program languages
+        modulus > 0 => "a===b(modulo modulus) iff modulus|(a-b)"
+        m = a mod b (b!=0) => sign(m) = sign(b) if m != 0, abs(m) < abs(b)
+        r = a rem b (b!=0) => sign(r) = sign(a), abs(r) < abs(b)
+        why? for mod, result should be in {0..b-1} or {b+1..0}
+             for rem, we just want to keep the sign of dividend!
+    The % operator is not the canonical modulus operator, it is the remainder operator. 
+    1) divisor != 0
+    2) Dividend = quotient * divisor + remainder
+    3) abs(remainder) < abs(Dividend)
+    4) if remainder != 0 => two possible choices for the remainder
+    sign(remainder) ?
+        c90,c++98 = Implementation defined or + if + = sign(D) = sign(d)
+        c99,c++11 = sign(Dividend) // quotient is "rounded towards zero" // floored division
+    Euclidean division // q = sign(d)*floored_div(D,abs(d)), 0 <= r < abs(d) r-"Always positive"
+    floored division   // q = floored_div(D,d), sign(r) = sign(d)  // Python
+    truncated division // q = truncated_div(D,d), sign(r) = sign(D) // Java, C99, C++11, 
+    quotient round half to even // q = round_half_to_even_div(D,d), r-"Closest to zero"
+
+
+
+
+
+pointer:
+    pointer to void
+        NULL == ((void*)0) == 0 // integer constant 0 but not integer 0
+    pointer to object type <-> ptr to other object type <-> ptr to void
+        if A is an object, ((char-type*)&A) is a ptr to char-type array of size sizeof(A) 
+    pointer to function <-> ptr to other function
+    integer -> pointer // but ptr -> integer is undefined
+        // object pointer <-> [intptr_t|uintptr_t], but they're optional...
+    only for pointers inside the same array is it well-defined to take their difference
+        // size_t for array index
+        // ptrdiff_t for diff of two pointers both in same array
+        // for a array A[S], only (A + i) is well-defined where 0 <= i < S 
+        // C++ allows (A + S) but not C? // C allows too...???
+        // how to check whether a valid pointer inside an array?
+        //        only loop! otherwise may use {T*,size_t index} instead of any pointer
+
+
+offsetof 
+    macro for legacy C compatibility
+    only for POD by the C++ standard
+    besides virtual base class, an implementation could use a lookup table also to find the public, protected and private sections of a class instance. Or make the lookup completely dynamic (use a hash table for fields), etc.
+
+in C++, two distinct objects of the same type always have different addresses
+
+
+flexible array member(C99) vs alignof(C++11)
+    struct header {
+        ...;
+        T data[];
+    };
+    struct header *my_header
+        = malloc(offsetof(struct header, data) + n * sizeof my_header->data);
+
+    but [] not in C++!!
+    note header{H h; T p[1];/*here is invisualable data M m*/}
+    m may be important for header(such as vtable*), or trap representation!
+
+    struct head_t; char pad[pad_size]; struct data_t[];
+    hs = sizeof(head_t)
+    da = alignof(data_t)
+    pad_size =  (da-hs%da)%da
+
+
+static_cast<T>(S) ::= class T{explicit T(S);}
+
+
+std::vector<char> vs. std::string
+    std::string ~ may copy-on-write(not thread safe), may not retain capacity assigned, may be not contiguous(C++03)
+    std::vector ~ a wrapper for array
+    => a character buffer <- vector, not string
+    
+    std::string has more string-related functions and char_traits<char> may ????.
+    vector<bool> is not vector: may be not contiguous; reference is a proxy class; iterator may not satisfy the ForwardIterator(not necessarily meet all Container or SequenceContainer requirements)
+
+
+
+void* in C vs in C++
+    In C, pointer conversions to and from void* were always implicit.
+    In C++, conversions from T* to void* are implicit, but void* to anything else requires a cast.
+void* vs char*
+    Before the invention of type void, char* was used instead.
+    Most pointer conversions to and from void* can be done without a cast.
+    worthwhile to be able to express your intent: points to something of unspecified type.
+void* vs void**
+    One points at a black hole.
+    The other points at the thing pointing at the black hole.
+    void* p; // error : *p; p++;
+    void** pp; // correct: *pp; pp++;
+void* vs NULL
+    null pointer is a value, while void pointer is a type.
+    Null pointer is a special reserved value of a pointer. Each specific pointer type has its own dedicated null-pointer value. Conceptually, when a pointer has that null value it is not pointing anywhere.
+    Void pointer is a specific pointer type - void * - a pointer that points to some data location in storage, which doesn't have any specific type.
+
+
+calloc, malloc vs ralloc
+    clear-alloc // zero-initializes the buffer
+    memory-alloc // leaves the memory uninitialized
+    re-alloc
+    calloc != malloc+memset: for find a pre-zeroed block that OS zeros at idle CPU time.
+
+free (void* ptr) vs delete(const void* p)
+    what if show(const char* p){delete p;}
+    or write(char* p, int i){free(p);} ?
+    read/write/free are different!!!!!
+
+
+
+
+%d vs %i in printf and scanf
+    %d == %i in printf
+    but in scanf:
+        %d: signed decimal number
+        %i: hexadecimal if preceded by "0x"
+            octal if preceded by "0"
+            decimal otherwise
+
+
+How Many default methods does a class have?
+In C++03 there are 4:
+    Default constructor: Declared only if no user-defined constructor is declared. Defined when used
+    Copy constructor - declared only if the user hasn't declared one. Defined if used
+    Copy-assignment operator same as above
+    Destructor same as above
+In C++0x there are two more:
+    Move constructor 
+    Move-assignment operator 
+
+
+
+template<typename Concept_Name, typename Class_Name>
+struct concept
+{
+    const bool is_this_concept = false;
+};
+
+struct equal_concept{}
+struct less_than_concept{}
+struct comparable_concept{}
+class T;
+template<>struct concept<equal_concept, T>
+{
+    const bool is_this_concept = true;
+    bool equal(const T&, const T&);
+};
+
+template<>struct concept<less_than_concept, T>
+{
+    const bool is_this_concept = true;
+    bool less_than(const T&, const T&);
+};
+
+template<>struct concept<comparable_concept, T> : public ......
+{
+    const bool is_this_concept = true;
+    bool equal(const T&, const T&);
+    bool less_than(const T&, const T&);
+    int comparable_concept(const T&, const T&); // -1/0/+1
+};
+
+
+
+
+
+    

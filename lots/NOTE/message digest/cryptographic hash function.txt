@@ -1,0 +1,396 @@
+
+cryptographic hash function
+    <: one-way function
+cryptographic hash function
+    :: "message" -> fixed size "hash value"/"hash"/"message digest"/"fingerprint"/"checksum"
+
+application:
+    * information-security applications:
+        verification of message integrity
+            the hashes are posted on a site authenticated by HTTPS.
+                # a chain of trust
+            download file and verify locally with the authenticated hash
+        digital_signature
+            see below
+        password_verification
+            see below
+        proof_of_work
+            see below
+        message authentication codes (MACs)
+            see HMAC
+            like digital_signature
+            but use symmetric cryptography with pairwise private key
+            instead of asymmetric cryptography
+        build block ciphers
+        build pseudorandom number generators (PRNGs)
+        build stream ciphers
+        other forms of authentication
+    * file or data identifier
+        detect duplicate data or uniquely identify files
+        lookup/index data in hash tables
+    * as checksums to detect accidental data corruption
+
+properties/criteria:
+    * pre-image resistance
+        preimage attack
+        difficult? h -> m where hash(m) == h
+    * second pre-image resistance
+        second-preimage attack
+        difficult? m1 -> m2 where hash(m2) == hash(m1)
+    * collision resistance
+        birthday attack
+        difficult? () -> (m1, m2) where hash(m2) == hash(m1)
+        pair (m1, m2) is called a cryptographic hash collision.
+        This property requires a hash value at least twice as long as that required for pre-image resistance.
+
+length-extension attack:
+    (?m. (hash(m), len(m))#unkown m) -> ?m'. hash(m++m')
+
+    HMAC = keyed-hash message authentication code
+        key = a private key that is known only to that specific server and that specific client
+            how?
+                client send (message, HMAC hash key message) to server
+                server evalue (HMAC hash key message) to cmp with the received one
+        hash = iterative hash function
+        hash.block_size = how to pad and break input message
+        hash.output_size = len(hash(""))
+        assert hash.output_size <= hash.block_size
+
+        HMAC hash key message = step opad $ step ipad message
+            where
+                step pad message = hash ((k' xor pad) ++ message)
+                k   | length key > hash.block_size  = hash key
+                    | otherwise                     = key
+                k' = k ++ '\0'*(hash.block_size - length k)
+                opad = '\x5c'*hash.block_size
+                ipad = '\x36'*hash.block_size
+
+In addition to collision resistance, it should be impossible for an adversary to find two messages with substantially similar digests; or to infer any useful information about the data, given only its digest.
+Checksum algorithms, such as CRC32 and other cyclic redundancy checks, are designed to meet much weaker requirements, and are generally unsuitable as cryptographic hash functions.
+
+[proof_of_work]
+    A proof-of-work system (or protocol, or function) is an economic measure to deter denial-of-service attacks and other service abuses such as spam on a network by requiring some work from the service requester, usually meaning processing time by a computer.
+    A key feature of these schemes is their asymmetry: the work must be moderately hard (but feasible) on the requester side but easy to check for the service provider.
+    e.g. The sender is required to find a message whose hash value begins with a number of zero bits.
+        # with a given message prefix and suffix?????
+        () ---> server
+            server:
+                prefix := random(..)
+                suffix := random(..)
+        client <--- (prefix, suffix, server.num_zero_bits)
+            client:
+                n := num_zero_bits
+                zeros := [0]*n
+                for message <- random(..):
+                    digest := hash(prefix+message+suffix)
+                    if digest[:n] == zeros: break
+        (message) ---> server
+            server:
+                n := num_zero_bits
+                zeros := [0]*n
+                digest := hash(prefix+message+suffix)
+                if digest[:n] == zeros: done!
+                else: deny
+
+
+
+[digital_signature]
+    key generation algorithm
+        :: random -> (private key, public key)
+    signing algorithm
+        :: message -> private key -> signature
+        # message := (message, public key, user_name, date)??
+        message digest := cryptographic hash function(message)
+        signature := asymmetric cryptography encrypt(private key, (message digest, padding))
+    signature verifying algorithm
+        :: message -> public key -> signature -> bool
+        (digest', padding') := asymmetric cryptography decrypt(public key, signature)
+        ??padding' == padding??
+        ??digest' == cryptographic hash function(message)??
+
+[password_verification]
+password hash function :: salt -> password -> hash
+    def password_verification(user, password):
+        (salt, hash) = password_database[user]
+        return password_hash_function(salt++password) == hash
+key derivation function :: non-secret parameter -> secret value -> [derived key]
+    prevent an attacker who obtains a derived key from learning useful information about either the input secret value or any of the other derived keys.
+    it is generally recommended that the key derivation function be made deliberately slow so as to frustrate brute-force attack or dictionary attack on the password
+
+    key_stretching:
+        # store (salt, num_iterations)
+        password_hash_function (salt, num_iterations) password
+            = (key_derivation_function salt password)[num_iterations]
+    key_strengthening:
+        # store num_iterations but not salt
+        temp_salt <- [0..]:
+            password_hash_function num_iterations password
+                = (key_derivation_function temp_salt password)[num_iterations]
+            any result match the stored_hash???
+
+        key stretching techniques are used to make a possibly weak key, typically a password, more secure against a brute-force attack by increasing the resources it takes to test each possible key.
+
+
+
+my design:
+    # over time, the iteration count "num_iterations" can be increased to make it slower
+    register:
+        (request register) ---> server
+            server:
+                public_salt := random(0, server.max_public_salt)
+                num_iterations := random(min_num_iterations, max_num_iterations)
+                temp_salt_lowerbound := random(...)
+                temp_salt_upperbound := temp_salt_lowerbound+server.temp_salt_indetermine_range
+                temp_salt_rng := (temp_salt_lowerbound, temp_salt_upperbound)
+        client <--- (public_salt, num_iterations, temp_salt_rng)
+            client:
+                for temp_salt <- temp_salt_rng:
+                    salt := client.id++public_salt++temp_salt
+                    sample_hashs := key_derivation_function(salt, client.password)[1, 2, 2^2, 2^3, .., < N//2,< N-2^2, num_iterations-1, num_iterations] from 0
+                        # proof of work!!???client's work >= server.work/2???
+                    sample_hashss.append(sample_hashs)
+        (client.id, sample_hashss) without client.password ---> server
+            server:
+                temp_salt := random(*temp_salt_rng)
+                sample_hashs := sample_hashss[temp_salt-temp_salt_lowerbound]
+                salt := client.id++public_salt++temp_salt
+                verify sample_hashs using (salt, num_iterations)
+                    fail: deny
+
+                stored_hash := sample_hashs[-1]
+                server.database[client.id] := ((public_salt, num_iterations, temp_salt_rng), stored_hash)
+
+    verification/login:
+        (request login client.id) ---> server
+            server:
+                ((public_salt, num_iterations, temp_salt_rng), stored_hash) := server.database[client.id]
+                random_num_iterations := random(num_iterations/2, num_iterations-1)
+                    # proof of work!!???client's work >= server.work???
+                random_later_num_iterations := random(num_iterations-100, num_iterations-1)
+        client <--- (public_salt, temp_salt_rng, random_num_iterations, random_later_num_iterations)
+            client:
+                for temp_salt <- temp_salt_rng:
+                    salt := client.id++public_salt++temp_salt
+                    middle_hash := key_derivation_function(client.id++salt, client.password)[random_num_iterations] from 0
+                    later_hash := key_derivation_function(client.id++salt, client.password)[random_later_num_iterations] from 0
+                    hash_pairs.append((middle_hash, later_hash))
+        (hash_pairs) ---> server
+            server:
+                for ((middle_hash, later_hash), temp_salt) <- zip(hash_pairs, range(*temp_salt_rng)):
+                    salt := client.id++public_salt++temp_salt
+                    final_hash := key_derivation_function(salt, later_hash)[num_iterations-random_later_num_iterations] from random_later_num_iterations
+                    if final_hash != stored_hash: continue
+
+                    final_hash := key_derivation_function(salt, middle_hash)[num_iterations-random_num_iterations] from random_num_iterations
+                    if final_hash != stored_hash: continue
+                    else: login
+                else:
+                    deny
+
+
+https://www.tutorialspoint.com/cryptography/block_cipher_modes_of_operation.htm
+block cipher mode of operation
+    ECB CBC CFB OFB CTR
+A block cipher processes the data blocks of fixed size. Usually, the size of a message is larger than the block size. Hence, the long message is divided into a series of sequential message blocks, and the cipher operates on these blocks one at a time.
+unambiguously length padded
+a unique binary sequence, often called an initialization vector (IV), for each encryption operation.
+
+message -> [block]
+    message is padded and then divided
+
+block_cipher :: key -> plaintext_block -> ciphertext_block
+mode of operation of block cipher
+    :: block_cipher -> key -> [plaintext_block] -> [ciphertext_block]
+    assert len ciphertext_block == len plaintext_block
+
+Electronic Code Book (ECB) Mode
+    :: block_cipher -> key -> [plaintext_block] -> [ciphertext_block]
+    assert len block_cipher.block_size == len plaintext_block
+    ECB block_cipher key plaintext_blocks
+        = map (block_cipher key) plaintext_blocks
+
+Cipher Block Chaining (CBC) Mode
+    :: block_cipher -> key -> initialization_vector -> [plaintext_block] -> [ciphertext_block]
+    assert len initialization_vector == len plaintext_block
+    assert len block_cipher.block_size == len plaintext_block
+    CBC block_cipher key initialization_vector (plaintext_block:ps)
+        = ciphertext_block : CBC block_cipher key ciphertext_block ps
+        where
+            ciphertext_block = block_cipher key (initialization_vector xor plaintext_block)
+
+Cipher Feedback (CFB) Mode
+    :: block_cipher -> key -> initialization_vector -> [plaintext_block] -> [ciphertext_block]
+    assert len initialization_vector > len plaintext_block > 1
+    assert len block_cipher.block_size == initialization_vector
+    # IV need not be secret
+    CFB block_cipher key initialization_vector plaintext_blocks
+        = ciphertext_blocks
+        where
+            _IV_ciphertext = initialization_vector ++ ciphertext
+            ciphertext = chain ciphertext_blocks
+            ciphertext_blocks = f _IV_ciphertext plaintext_blocks
+            n = len initialization_vector
+            s = <len plaintext_block> # const!!
+            f _IV_ciphertext (plaintext_block:ps)
+                = ciphertext_block : f _IV_ciphertext[s:] ps
+                where
+                    _IV = _IV_ciphertext[:n]
+                    _IV' = block_cipher key _IV
+                    ciphertext_block = plaintext_block xor _IV'[:s]
+
+Output Feedback (OFB) Mode
+    :: block_cipher -> key -> initialization_vector -> [plaintext_block] -> [ciphertext_block]
+    assert len initialization_vector == len plaintext_block
+    assert len block_cipher.block_size == initialization_vector
+    # IV need not be secret
+    # key-stream generator
+    OFB block_cipher key initialization_vector plaintext_blocks
+        = [mask xor plaintext_block
+          | (mask, plaintext_block)
+          <- zip mask_stream plaintext_blocks]
+        where
+            mk_mask_stream _IV = mask : mk_mask_stream mask
+                where
+                    mask = block_cipher key _IV
+            mask_stream = mk_mask_stream initialization_vector
+
+Counter (CTR) Mode
+    :: block_cipher -> key -> counter -> [plaintext_block] -> [ciphertext_block]
+    assert len block_cipher.block_size == len plaintext_block
+    # This shared counter is not necessarily a secret value
+    # but challenge is that both sides must keep the counter synchronized
+    # ??what if counter overflow the block_cipher.block_size??
+    CTR block_cipher key counter plaintext_blocks
+        = [mask xor plaintext_block
+          | (mask, plaintext_block)
+          <- zip mask_stream plaintext_blocks]
+        where
+            n = block_cipher.block_size
+            mk_mask_stream counter = mask : mk_mask_stream (counter+1)
+                where
+                    mask = block_cipher key (int2bytes n counter)
+            mask_stream = mk_mask_stream counter
+
+==========================================
+hash functions based on block cipher
+    block cipher mode of operation
+    a unique binary sequence, often called an initialization vector (IV), for each encryption operation.
+unambiguously length padded
+one-way compression function
+    In cryptography, a one-way compression function is a function that transforms two fixed-length inputs into a fixed-length output.
+
+The methods resemble the block cipher modes of operation usually used for encryption. Many well-known hash functions, including MD4, MD5, SHA-1 and SHA-2 are built from block-cipher-like components designed for the purpose, with feedback to ensure that the resulting function is not invertible.
+
+related-key attacks
+
+Merkle-Damgard hash construction
+    :: block_size -> one-way compression function -> finalisation -> initialization_vector -> (plaintext -> digest)
+    assert w :: bytearray<len _IV> -> bytearray<len block_size> -> bytearray<len _IV>
+    assert f :: bytearray<len _IV> -> bytearray<len digest>
+    assert len _IV >= len digest
+_Merkle_Damgard_hash_construction n w f _IV txt
+    = g _IV plaintext_blocks
+    where
+        plaintext_blocks = pad_and_cut txt
+        g _IV (plaintext_block:ps) = g (w _IV plaintext_block) ps
+        g _IV [] = f _IV
+narrow-pipe hash design # bad!!!!!!!!
+    the size of hash output is equal to the internal state size (between each compression step)
+    This design causes many inherent flaws, including length-extension, multicollisions, long message attacks, generate-and-paste attacks, and also cannot be parallelized
+    e.g. _Merkle_Damgard_hash_construction
+wide-pipe hash design
+    e.g.
+        truncating the output of a longer hash: SHA-512/256
+        tweaks of the Merkle-Damgard construction
+        sponge construction
+        HAIFA construction
+[9]
+[11]
+
+
+Just as block ciphers can be used to build hash functions, hash functions can be used to build block ciphers
+Luby-Rackoff construction == Feistel construction
+    :: n -> round_function -> (key -> [round_sub_key]) -> block_cipher
+    # round_function need not be invertible
+    assert round_function :: round_sub_key -> bytearray<n> -> bytearray<n>
+    assert block_cipher.block_size == n*2
+_Luby_Rackoff_construction__encrypt n f mk_subkeys key plaintext_block
+    = left' ++ right'
+    where
+        subkeys = mk_subkeys key
+        (left, right) = split n plaintext_block
+        self left right (subkey:subkeys) = self right (xor left $ f subkey right) subkeys
+        self left right [] = (left, right)
+        (left', right') = self left right subkeys
+_Luby_Rackoff_construction__decrypt n f mk_subkeys
+    = _Luby_Rackoff_construction__encrypt n f mk_subkeys'
+    where
+        mk_subkeys' key = reverse $ mk_subkeys key
+
+Pseudorandom number generators (PRNGs) can be built using hash functions
+    This is done by combining a (secret) random seed with a counter and hashing it.
+
+stream ciphers can also be built from fixed-length digest hash functions
+    Often this is done by first building a cryptographically secure pseudorandom number generator and then using its stream of random bytes as keystream
+
+Concatenating outputs from multiple hash functions provides collision resistance as good as the strongest of the algorithms included in the concatenated result.
+
+
+my design:
+    consider _Merkle_Damgard_hash_construction
+        state0 :: state
+        feed :: state -> plaintext_block -> state
+        finalisation :: state -> digest
+        where
+            state0 is initialization_vector which has fixed-size
+            digest has fixed-size
+            plaintext_block has fixed-size
+    1) state
+        let n be the number of bytes fed until now
+        if we add n to state, then O(len state) = O(log n) instead of O(1)
+    2) digest
+        look at sha256, sha512, we may configure the size of digest for the whole hash process.
+    3) plaintext_block.block_size
+        if len plaintext_block < len digest:
+            I think it is harder to find collision.
+            since block space << digest space
+            , enumerate all the value of the last block you may not find one collision.
+            you should change last several blocks to find collisions.
+            those the search space are the same O(2^digest)
+            , but require multi "feed" step.
+        we can change the plaintext_block dynamically
+    let D := len digest
+    hash<D,C,T> -- constant, tail blocks
+        assert 1 <= T <= D < C
+        state0<D,C,T> :: state
+        feed<D,C,T> :: st@state -> plaintext_block<st.feed_size> -> state
+        finalisation<D,C,T> :: state -> digest<D>
+        state = State {n::uint, _IV::bytearray<C + log2 (1+n)>, feed_size::uint_mod<D//T>}
+            1 <= feed_size <= D//T
+
+        bytes2uint :: [byte] -> uint
+        bytes2uint bs = uint_from_big_endian ('\x01':bs)
+
+        state0<D,C,T> = State{0, [(D+i)%256 |i <- [1..C]], 1+(D%(D//T))}
+        finalisation<D,C,T> State{n, _IV, feed_size} = _IV[:D]
+        feed<D,C,T> State{n, _IV, feed_size} txt
+            = State{n', _IV', feed_size'}
+            where
+                n' = n+1
+                next_IV_size = C + log2 (1+n')
+
+                a = bytes2uint (_IV++"\xbf")
+                b = bytes2uint (txt++"\xdf")
+                x = 2
+                y = 7
+                assert x >= 1
+                assert y >= 1
+                mod = bytes2uint $ '\0'*(x+next_IV_size+y)
+                a' = power a b mod
+                _IV' = (uint2bytes_big_endian (a'+mod))[x+1:-y]
+                assert len _IV' == next_IV_size
+
+                b' = power b a mod
+                feed_size' = 1 + (b' % (D//T))
+
+

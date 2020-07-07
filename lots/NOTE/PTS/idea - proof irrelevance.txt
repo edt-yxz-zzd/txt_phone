@@ -1,0 +1,58 @@
+
+
+[=x=]
+[:A:]
+
+define equivalence class type for proof irrelevance:
+    # [:A:] =[def]= {{x| x :: A}} if {x|x :: A} is not empty else {}
+    # len([:A:]) <= 1
+    #   use [:A:] to repr whether a proof exists
+    #
+    [A : K][K is a kind] |- [[:A:] : K]
+    [x : A] |- [[=x=] : [:A:]]
+
+properties of [:A:]
+    axiom: [[:[:A:]:] =[reduce]= [:A:]]
+    axiom: [x,y : [:A:]] ==>> [x == y]
+        [at_most_1(A) : [x:A] -> [y:A] -> (x==y)]
+        exists at most 1
+        E[<=1]
+    [K is kind] but [:K:] is not kind
+    [A is type] but [=A=] is not type
+
+    ######### constructor
+    [a :: A] ==>> [[=a=] :: [:A:]]
+    axiom: [[=[=a=]=] =[reduce]= [=a=]]
+
+
+    ################## inductive
+    [equivalence_class_induction(k,s) = ... : @A:k. @P:[:A:]->s. @a:[:A:]. P a -> @x:[:A:]. P x]
+    [equivalence_class_induction(k,s) = ... : [A:k] -> [P:[:A:]->s] -> [a:[:A:]] -> P a -> [x:[:A:]] -> P x]
+    [equivalence_class_induction(k,s)
+        = [A:k][P:[:A:]->s][a:[:A:]][pa:P a][x:[:A:]] (at_most_1 a x pa :: P x)
+        : [A:k] -> [P:[:A:]->s] -> [a:[:A:]] -> P a -> [x:[:A:]] -> P x
+    ]
+
+    ##################
+    axiom: [[:@x:A. B:] =[reduce]= @x:A. [:B:]]
+    [f :: [:A -> B:]][a :: [:A:]] ==>> [f a :: [:B:]]
+                            ^^^^^
+        vs above [[:@x:A. B:] == @x:A. [:B:]]
+        [f :: [:@x:A. P x:]][a :: A] ==>> [f a :: [:P a:]]
+                                  ^^^
+        [::] is not a Monad for we can not do any application
+            only non-dependent arrow are allowed
+
+    ################## /\
+    ?x:A. [:B:] is useful
+    [:?_:A. B:] is useful
+    [:?x:A. B:] is almost useless
+        [pair :: [:?x:A. B:]] ==>> [fst pair :: [:A:]]
+        [pair :: [:?_:A. B:]] ==>> [snd pair :: [:B:]]
+                    ^^^             ^^^^
+
+    ################# \/
+    axiom: [[:A|B:] =[reduce]= ([:A:]|[:B:])]
+
+
+

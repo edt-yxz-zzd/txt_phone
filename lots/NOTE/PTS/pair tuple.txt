@@ -1,0 +1,47 @@
+
+
+@x:X. Y = (x<-X) -> Y = [x<-X] -> Y = X -> Y
+\x:X. y = ...
+
+?x:X. Y = (x<-X, Y) = (@X, @Y) = X /\ Y       # ?? \/
+(x=x, y) = (_=x, y) = (=x, =y)
+
+let (x,y) = (@x,@y) | (=x,=y) # ambiguous
+
+
+tuple index
+    primitive:
+        # always success
+        .0 :: (a,b) -> a
+        # may fail
+        .1 :: (a,b) -> MayError b  # escape scope error
+
+    tuple = (x,y,z,a) = (x,(y,(z,a)))
+    tuple.0 = fst tuple = x
+    tuple.1 = snd tuple = (y,z,a)
+    tuple.1.0 = y
+    tuple.2.0 = z
+    tuple.3 = tuple.1.1.1 = a
+    tuple[2] = z
+    tuple[3] = ERROR
+
+    tuple[0] = tuple.0
+    tuple[i+1] = tuple.(i+1).0
+
+
+
+permutation to avoid dependency
+    primitive:
+        # always success
+        .[index].rotateL :: (a, (b,c)) -> ((a,b), c)
+        .[index].rotateR :: ((a,b), c) -> (a, (b,c))
+
+        # may fail
+        .[index].swap :: (a, b) -> MayError (b, a)
+
+    (a, (b,c)).[1].swap == (a, (c, b))
+
+
+
+
+

@@ -1,0 +1,61 @@
+
+@x:A. P x === All A P
+?x:A. P x === Any A P = Exists A P = Some A P
+
+@x:A. M === forall x:A. M === pi x:A. M === Product x:A. M
+?x:A. M === exists x:A. M === sigma x:A. M === Sum x:A. M
+    === @R: * . (@x:A. M -> R) -> R
+
+{ET?} => @A: * . @P:A -> * .
+    A -> ?x:A. (P x -> @x:A. P x)
+    -- drinker: one drink, all drink
+@A,B: * . @P:A -> * .
+    ((?x:A. P x) -> B) <=> (@x:A. (P x -> B))
+    -- Another way of looking at the minimality principle for dependent
+
+
+proof: {ET?} => {@A: * . @P:A -> * . A -> ?x:A. (P x -> @x:A. P x)}
+    [A: *; P:A -> *; x:A]
+        goal : * = ?x:A. (P x -> @x:A. P x)
+                 = @R: * . (@x:A. (P x -> @x:A. P x) -> R) -> R
+
+        either: (@x:A. P x) \/ (not @x:A. P x) = ET?(?x:A. P x)
+        [e: @x:A. P x]
+            ;; goal1 = find x, st. P x -> @x:A. P x
+            f : P x -> @x:A. P x = \_. e
+            done1 : goal = \R. \x2f2R. x2f2R x f ;; exists_in(x, f)
+            ;del f
+        left : (@x:A. P x) -> goal = \e. done1
+        [n: not @x:A. P x]
+            ;; goal2 = find x, st. P x -> @x:A. P x
+            eNot : ?x:A. not (P x) = !@<=>?!_elim1(n)
+            [y:A; notPy: not (P y)]
+                f : P y -> @x:A. P x = \Py. notPy Py (@x:A. P x)
+                done2' : goal = \R. \y2f2R. y2f2R y f
+            done2 : goal = eNot goal (\y. \notPy. done2'(y,notPy))
+            ;del f eNot done2'
+        right : (not @x:A. P x) -> goal = \n. done2
+        _ : goal = either goal left right
+        ;del left right done1 done2 either
+
+
+
+
+proof: @A,B: * . @P:A -> * . ((?x:A. P x) -> B) <=> (@x:A. (P x -> B))
+    [A,B: *; P:A -> *]
+        goal1 = ((?x:A. P x) -> B) => (@x:A. (P x -> B))
+        goal2 = (@x:A. (P x -> B)) => ((?x:A. P x) -> B)
+
+        ;; goal1
+        [f:(?x:A. P x) -> B; x:A; u:P x] ;; goal B
+            e : ?x:A. P x = \R. \x2Px2R. x2Px2R x u
+            b1 : B = f e
+        g1 : goal1 = \f. \x. b1(f,x)
+
+        ;; goal2
+        [f:@x:A. (P x -> B); e:(?x:A. P x)] ;; goal B
+            ;; R == B
+            b2 : B = e B f
+        g2 : goal2 = \f. \e. b2(f,e)
+        <=>_in(g1, g2) : goal1 /\ goal2
+

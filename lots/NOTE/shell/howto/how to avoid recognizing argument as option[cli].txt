@@ -1,0 +1,42 @@
+
+how to avoid recognizing argument as option[cli]?
+
+partial solution:
+    Two hyphen-minus characters without following letters (--) may indicate that the remaining arguments should not be treated as options, which is useful for example if a file name itself begins with a hyphen, or if further arguments are meant for an inner command (e.g., sudo).
+
+    ??'-' for stdin/stdout??
+
+e.g.
+    > echo_argv a b c
+    ['a', 'b', 'c']
+
+    > echo_argv a b c -h
+    usage: echo_argv ARG... [-h ARG...]
+
+    > echo_argv a_string --another_string_too
+    ???????????
+
+    expected output:
+        ['a_string', '--another_string_too']
+    but cli parser will treat "--another_string_too" as a flag, hence error.
+
+    a possible [partial] solution is that:
+        > echo_argv -- a_string --another_string_too
+        ['a_string', '--another_string_too']
+
+        but what if:
+        > copy_file -i "--input_fname.txt" -o "--output_fname.txt"
+
+    a possible solution[min] is that add prefx"-:" to args:
+        > echo_argv a_string -:--another_string_too
+        ['a_string', '--another_string_too']
+
+        > echo_argv -:a_string -:--another_string_too
+        ['a_string', '--another_string_too']
+
+        what do you think??
+
+
+
+
+

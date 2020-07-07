@@ -1,0 +1,75 @@
+__all__:
+    resultant
+    the_Sylvester_matrix_of
+    the_minimal_polynomial_of
+    normalize_polynomial
+
+
+see:
+    # this whole text was copied from it:
+    NOTE/LibreCAD/MyCAD/"how to rationalize radical denominator.txt"
+
+https://en.wikipedia.org/wiki/Resultant
+https://en.wikipedia.org/wiki/Sylvester_matrix
+
+
+-- univariate or multivariate polynomial
+[resultant(z, f, g)==0] <==> [zeros(z, f)/-\zeros(z, g)!={}]
+[resultant(z, a1*II:(z-r1[i1])^e1[i1]:{i1}
+            , a2*II:(z-r2[i2])^e2[i2]:{i2})
+    == a1^SUM:e1[i1]:{i1}
+     * a2^SUM:e2[i2]:{i2}
+     * II:(r1[i1]-r2[i2])^(e1[i1]*e2[i2]):{(i1,i2)}
+    ]
+
+resultant :: Indeterminate -> (UInt, Polynomial) -> (UInt, Polynomial) -> Polynomial
+resultant x f g = resultant_ex x (0,f) (0,g)
+resultant_ex :: Indeterminate -> (UInt, Polynomial) -> (UInt, Polynomial) -> Polynomial
+resultant_ex x (delta_deg_x_f, f) (delta_deg_x_g, g) = determinant mx
+    where
+        -- leading coeffient may be 0
+        deg_x_f = delta_deg_x_f + leading_degree_of_about x f
+        deg_x_g = delta_deg_x_g + leading_degree_of_about x g
+        get_coeffients x deg_x_f f = [coeffient_polynomial_of_about x d f | d <- [0..deg_x_f]]
+        coeffs_f = get_coeffients x deg_x_f f
+        coeffs_g = get_coeffients x deg_x_g g
+
+        mx = the_Sylvester_matrix_of coeffs_f coeffs_g
+        the_Sylvester_matrix_of coeffs1 coeffs2
+            = Matrix (n,n) (mk_rows coeffs1 n2 ++ mk_rows coeffs2 n1)
+            where
+                n1 = len coeffs1
+                n2 = len coeffs2
+                n = n1+n2
+                mk_rows coeffs1 n2 = [[0]*i++coeffs1++[0]*(n2-1-i) | i<-[0..n2-1]]
+
+field K
+field extension K[s]:K
+the_minimal_polynomial_of :: (T<-FieldType) -> Indeterminate -> (s<-FieldElement) -> Polynomial
+the_minimal_polynomial_of K x s
+
+normalize_polynomial K ss s xs f
+    = resultant z fz (the_minimal_polynomial_of K z s)
+    where
+        -- precondition: f <- K[ss...][s][xs...]
+        z = new Indeterminate(xs)
+        fz = f[s:=z]
+        -- assert fz <- K[ss...][z, xs...]
+        -- assert result <- K[ss...][xs...]
+
+example:
+    * rationalizing: f(x,y) = sqrt(2)*x+nth_root(3,3)*y
+        normalize_polynomial QQ [nth_root(3,3)] sqrt(2) [x,y] f(x,y)
+        == resultant z (z*x+nth_root(3,3)*y) (the_minimal_polynomial_of QQ z sqrt(2))
+        == resultant z (z*x+nth_root(3,3)*y) (z^2-2)
+        == determinant [[x, nth_root(3,3)*y, 0], [0, x, nth_root(3,3)*y], [1, 0, -2]]
+        == -2*x^2 + nth_root(3,3)^2*y^2
+
+        normalize_polynomial QQ [] nth_root(3,3) [x,y] (-2*x^2 + nth_root(3,3)^2*y^2)
+        == resultant z (-2*x^2 + z^2*y^2) (the_minimal_polynomial_of QQ z nth_root(3,3))
+        == resultant z (-2*x^2 + z^2*y^2) (z^3-3)
+        == determinant [[y^2, 0, -2*x^2, 0, 0], [0, y^2, 0, -2*x^2, 0], [0, 0, y^2, 0, -2*x^2], [1, 0, 0, -3, 0], [0, 1, 0, 0, -3]]
+        == 9*y^6 - 8*x^6
+
+
+

@@ -1,0 +1,85 @@
+
+quadratic_irrational <==> quadratic_surd
+    (a+b*sqrt(N))/d
+    requires:
+        sqrt(N) is irrational
+            i.e. N is non_perfect_square (but not necessarily square-free)
+            # 8 is non_perfect_square, but not square_free
+
+# regular continued_fraction_digits
+periodic_continued_fraction
+    continued_fraction_digits = non_periodic_digits ++ repeat periodic_digits
+purely_periodic_continued_fraction
+    non_periodic_digits = []
+    continued_fraction_digits = repeat periodic_digits
+
+
+Periodic Continued Fraction
+http://mathworld.wolfram.com/PeriodicContinuedFraction.html
+
+n :: Integer
+continued_fraction_of sqrt(n) = [a0] | [a0]++(ls++[2*a0])*(+oo)
+    -- [a0] <==> [a0] + [+oo]*(+oo)
+    where
+        ls :: [PInt]
+        ls = reverse(ls)
+
+[n is not square]:
+    [all (\a-> 1<= a < 2*sqrt(n)) $ continued_fraction_of sqrt(n)]
+
+length_of_period_of_continued_fraction_of sqrt(N) = O(ln N * N)
+
+
+https://en.wikipedia.org/wiki/Periodic_continued_fraction
+
+[x :: Real]:
+    # by Lagrange
+    [x is quadratic_irrational]
+        <==> [x is periodic_continued_fraction]
+        # Davenport, H. (1982). "The Higher Arithmetic". Cambridge University Press: 104.
+
+    # by Galois
+    [x is reduced_quadratic_surd]
+        <==> [x is purely_periodic_continued_fraction]
+    # by Galois
+    [x is reduced_quadratic_surd]:
+        [(reverse . periodic_digits $ continued_fraction_digits x) == (periodic_digits $ continued_fraction_digits (-1/conjugate x))]
+
+    # by Lagrange
+    [x is rational][x > 0][sqrt(x) is irrational]:
+        [?d0:PInt. ?ls:[PInt].
+            [is_palindromic ls] # i.e. reverse ls == ls
+            [continued_fraction_digits sqrt(x)
+                == (if x < 1 then [0] else [])
+                ++ [d0] ++ ls ++ [2*d0]
+            ]
+        ]
+
+    # length of the repeating block
+    # length of the periodic_digits
+    [max (partial_denominators (Quadratic_surd P D Q)) < 2*sqrt(D)]
+    [length (periodic_digits $ continued_fraction_digits (Quadratic_surd P D Q)) = O(ln(D)*sqrt(D)) < 2*D]
+
+    # by me:
+    #   proof see:
+    #       proof_about_continued_fraction_of_quadratic_irrational.txt
+    #       compute_about_continued_fraction_of_quadratic_irrational.txt
+    #
+    [sqrt(D) is irrational][C `divs` D - B^2]:
+        [len(periodic_digits_of (B+sqrt(D))/C) <= floor_sqrt(D)*(floor_sqrt(D)+1)]
+    # my guess:
+        [len(periodic_digits_of (B+sqrt(D))/C) <= D*2/3]
+
+
+-- quadratic_surd
+[P,D,Q :: Integer][D>0][Q!=0][sqrt(D) is irrational]:
+    Quadratic_surd P D Q = (P+sqrt(D))/Q
+conjugate (Quadratic_surd P D Q)
+    = (P-sqrt(D))/Q = Quadratic_surd (-P) D (-Q)
+is_reduced_quadratic_surd quadratic_surd
+    = quadratic_surd > 1 && -1 < conjugate quadratic_surd < 0
+
+proof:
+    https://ocw.mit.edu/courses/mathematics/18-781-theory-of-numbers-spring-2012/lecture-notes/MIT18_781S12_lec20.pdf
+    "Lecture 20 - Periodic Continued Fractions, Quadratic Irrationalities.pdf"
+

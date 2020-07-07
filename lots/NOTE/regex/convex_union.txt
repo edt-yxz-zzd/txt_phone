@@ -1,0 +1,377 @@
+
+
+class Newtype e ne | ne -> e where
+    pack :: e -> ne
+    unpack :: ne -> e
+// not a monad: instance Newtype e ne => Monad ??n 
+
+
+class EnumFirst elem where
+    -- maynot be the smallest element, e.g. 0 for integer
+    enum_first :: elem
+instance Bounded elem => EnumFirst elem where
+    enum_first = Prelude.minBound
+
+class (Enum elem, EnumFirst elem) => CountableType elem where
+    list_all :: [elem]
+    list_all = [enum_first..]
+class (Enum elem, Bounded elem) =>
+      FiniteType elem
+    total :: Integer
+    total = toInteger $ length (list_all :: [elem])
+
+
+class Ord a => Range a where
+    nondata :: Bool
+    nondata = False -- "a" should have at least one value; to avoid "_L" case
+    enumable :: Bool
+    close_max :: Maybe a
+    close_min :: Maybe a
+    succ :: a -> a -- defined if enumable && close_max /= Just a
+    prev :: a -> a -- defined if enumable && close_min /= Just a
+    
+    
+    data BoundLeft a = CloseLeftMin | CloseLeft a | OpenLeft a | OpenLeftMax
+    data BoundRight a = OpenRightMin | OpenRight a | CloseRight a | CloseRightMax
+    
+    -- OpenRightMin == min-e == OpenRight min < CloseLeftMin == min <= OpenRight a == a-e < CloseLeft a == a == CloseRight a < a+e == OpenLeft a <= max == CloseRightMax < OpenLeft max == max+e == OpenLeftMax
+    type CloseBound a = (BoundLeft a, BoundRight a)
+    -- [a, b]
+    
+    is_empty_range :: CloseBound a -> Bool
+    is_empty_range (CloseLeftMin, rb) = rb == OpenRightMin
+    is_empty_range (OpenLeftMax, _) = True
+    is_empty_range (_, OpenRightMin) = True
+    is_empty_range (lb, CloseRightMax) = lb == OpenLeftMax
+    is_empty_range (CloseLeft a, CloseRight b) = a > b
+    is_empty_range (CloseLeft a, OpenRight b) = a >= b
+    is_empty_range (OpenLeft a, CloseRight b) = a >= b
+    is_empty_range (OpenLeft a, OpenRight b) = a >= b || (enumable && succ a == b)
+
+instance Eq (BoundRight a) where
+    OpenRight a == OpenRight b = a == b
+    CloseRight a == CloseRight b = a == b
+    OpenRightMax == OpenRightMax = True
+    OpenRightMin == OpenRightMin = True
+    
+    CloseRight a == OpenRight b = enumable && a < b && a == prev b
+    
+    OpenRightMin == OpenRight a = False
+    OpenRightMin == CloseRight a = False
+    
+    CloseRightMax == OpenRight a = False
+    CloseRightMax == CloseRight a = close_max == Just a
+    CloseRightMax == OpenRightMin = False
+    
+    a == b = b == a
+instance Eq (BoundLeft a) where
+    OpenLeft a == OpenLeft b = a == b
+    CloseLeft a == CloseLeft b = a == b
+    OpenLeftMax == OpenLeftMax = True
+    CloseLeftMin == CloseLeftMin = True
+
+    OpenLeft a == CloseLeft b = enumable && a < b && succ a == b
+    -- CloseLeftMin <= Close a < OpenLeft a
+    CloseLeftMin == OpenLeft a = False
+    CloseLeftMin == CloseLeft a = close_min == Just a
+    
+    OpenLeftMax == OpenLeft a = False
+    OpenLeftMax == CloseLeft a = False
+    OpenLeftMax == CloseLeftMin = False
+    
+    a == b = b == a
+
+instance Ord (BoundRight a) where
+    OpenRight a `compare` OpenRight b = a `compare` b
+    CloseRight a `compare` CloseRight b = a `compare` b
+    OpenRightMax `compare` OpenRightMax = EQ
+    OpenRightMin `compare` OpenRightMin = EQ
+    
+    CloseRight a `compare` OpenRight b = if b <= a then GT
+        else if enumable && a == prev b then EQ
+        else LT
+    
+    OpenRightMin `compare` OpenRight a = LT
+    OpenRightMin `compare` CloseRight a = LT
+    
+    CloseRightMax `compare` OpenRight a = GT
+    CloseRightMax `compare` CloseRight a = if close_max == Just a then EQ else GT
+    CloseRightMax `compare` OpenRightMin = GT
+    
+    a `compare` b = reverse_ordering $ b `compare` a
+instance Ord (BoundLeft a) where
+    OpenLeft a `compare` OpenLeft b = a `compare` b
+    CloseLeft a `compare` CloseLeft b = a `compare` b
+    OpenLeftMax `compare` OpenLeftMax = EQ
+    CloseLeftMin `compare` CloseLeftMin = EQ
+
+    OpenLeft a `compare` CloseLeft b = if b <= a then GT else
+        else if enumable && succ a == b then EQ
+        else LT
+    -- CloseLeftMin <= Close a < OpenLeft a
+    CloseLeftMin `compare` OpenLeft a = LT
+    CloseLeftMin `compare` CloseLeft a = if close_min == Just a then EQ else LT
+    
+    OpenLeftMax `compare` OpenLeft a = GT
+    OpenLeftMax `compare` CloseLeft a = GT
+    OpenLeftMax `compare` CloseLeftMin = GT
+    
+    a `compare` b = reverse_ordering $ b `compare` a
+
+reverse_ordering :: Ordering -> Ordering
+reverse_ordering GT = LT
+reverse_ordering LT = GT
+reverse_ordering EQ = EQ
+
+class Countable elem container | container -> elem where
+    iter :: container -> [elem]
+
+class Countable elem container => Finite elem container where
+    size :: container -> Integer
+    size = toInteger . length . iter
+
+
+
+
+class BasicSET set where
+    empty_set :: set
+    union, diff, intersect :: set -> set -> set
+    is_subset :: set -> set -> Bool
+    
+    split :: set -> set -> (set, set, set)
+    split a b = (diff a b, intersect a b, diff b a)
+    
+    equals :: set -> set -> Bool
+    equals a b = is_subset a b && is_subset b a
+    
+    is_empty :: set -> Bool
+    is_empty a = is_subset a empty_set
+    
+    unions :: [set] -> set
+    unions = foldl union empty_set
+    
+    
+class BasicSET set => SET elem set | set -> elem where
+    singleton :: elem -> set
+    
+    get_arbitrary_element :: set -> Maybe elem
+    contains :: set -> elem -> Bool
+    contains s e = singleton e `is_subset` s
+    -- is_empty a == get_arbitrary_element a == Nothing
+
+    add :: set -> elem -> set
+    from_list :: [elem] -> set
+    from_list = foldl add empty_set
+
+
+
+
+class (SET elem set, Countable elem set) => CountableSET elem set where
+    iter :: set -> [elem]
+    iter s = case get_arbitrary_element s of
+        Nothing -> []
+        Just e -> e : iter (diff s $ singleton e)
+
+-- instance CountableSET elem set => Monad set
+
+class (CountableSET elem set, Finite elem set) => FiniteSET elem set
+
+
+class SET elem set => ComplementableSET elem set where
+    complement :: set -> set
+    universal_set :: set
+    universal_set = complement empty_set
+
+
+
+class (Intersectable elem block, SET elem block_union) => 
+      DisjointBlockUnion elem block block_union | block_union -> block where
+    -- contains u e == (to_block u e != Nothing)
+    to_block :: block_union -> elem -> Maybe block
+    
+    newtype std_block_union = STD block_union
+    std_merged :: block_union -> std_block_union
+
+class DisjointBlockUnion elem block block_union =>
+      FiniteDisjointBlockUnion elem block block_union where
+    -- id == unions . iter_disjoint_nonempty_blocks
+    iter_disjoint_nonempty_blocks :: block_union -> [block]
+    
+    -- finite blocks, but may not finite elements for each block
+    num_blocks :: Integer
+    num_blocks = toInteger . length . iter_disjoint_nonempty_blocks
+
+class FiniteSET key set => FiniteMap key set map | map -> set where
+    empty_map :: map value
+    
+    key_set :: map value -> set
+    key2value :: map value -> key -> Maybe value
+    size :: map value -> Integer
+    size = size . key_set
+    
+    keys :: map value -> [key]
+    keys = iter . key_set
+    values :: map value -> [value]
+    values m = [unjust $ key2value m key | key <- keys m]
+
+// CountableType symbol, Ord symbol
+class (Eq symbol,
+       FiniteDisjointBlockUnion symbol symbol_block symbol_block_union,
+       FiniteDisjointBlockUnion symbol symbol_block_union symbol_block_union_union,
+       FiniteSET partial_state partial_state_set,
+       FiniteMap partial_state partial_state_map
+       ) =>
+      NFSM symbol symbol_block symbol_block_union partial_state partial_state_set nfsm 
+      | nfsm -> symbol_block_union partial_state_set where
+    -- transition
+    newtype complete_total_state = Complete partial_state_set
+    newtype incomplete_total_state = Incomplete partial_state_set
+
+    
+    -- all_partial_states :: nfsm -> partial_state_set // maybe too huge, 2^(len(regex))
+    all_symbols :: symbol_block_union
+    initial_incomplete_total_state :: nfsm -> incomplete_total_state
+    final_partial_state_set :: nfsm -> partial_state_set
+    incomplete_null_step_table :: nfsm -> partial_state_map incomplete_total_state
+    incomplete_step_table_table :: nfsm -> partial_state_map (partial_state_map symbol_block_union)
+    
+    
+    incomplete_step_table :: nfsm -> partial_state -> partial_state_map symbol_block_union
+    incomplete_step_table nfsm from = table where
+        table_table = incomplete_step_table_table nfsm
+        table = case key2value table_table from of
+            Nothing -> empty_map
+            Just table -> table
+    
+    -- maybe: self not in unpack (incomplete_null_step nfsm self)
+    incomplete_null_step :: nfsm -> partial_state -> incomplete_total_state
+    incomplete_null_step nfsm from = result where
+        table = incomplete_null_step_table nfsm
+        result = case key2value table from of
+            Nothing -> empty_set
+            Just set -> set
+    incomplete_step :: nfsm -> partial_state -> symbol -> incomplete_total_state
+    incomplete_step nfsm from symbol = pack $ from_list [to | to <- keys, reach to] where
+        table = incomplete_step_table nfsm from
+        keys = iter $ key_set table
+        reach to = case key2value table to of
+            Nothing -> False
+            Just set -> contains set symbol
+            
+    -- maybe: empty_set == unpack (null_step nfsm s) & next_partial_states nfsm s
+    -- next_partial_states nfsm ps == unions [unpack (incomplete_step nfsm ps symbol) | symbol <- all_symbols]
+    next_partial_states :: nfsm -> partial_state -> partial_state_set
+    next_partial_states nfsm from = pack $ from_list [to | to <- keys, reach to] where
+        table = incomplete_step_table nfsm from
+        keys = iter $ key_set table
+        reach to = case key2value table to of
+            Nothing -> False
+            Just set -> not $ is_empty set
+    -- next_symbols nfsm from to = from_list [symbol | symbol <- all_symbols, incomplete_step nfsm from symbol == to]
+    next_symbols :: nfsm -> partial_state -> partial_state -> symbol_block_union
+    next_symbols nfsm from to = arms to where
+        table = incomplete_step_table nfsm from
+        keys = iter $ key_set table
+        arms to = case key2value table to of
+            Nothing -> empty_set
+            Just set -> set
+    
+    -- complete nfsm . complete nfsm = complete nfsm
+    complete :: nfsm -> incomplete_total_state -> complete_total_state
+    complete nfsm ic = pack . complete_star $ unpack ic where
+        complete_1 :: partial_state_set -> partial_state_set
+        complete_1 pss = unions $ do
+            ps <- iter pss
+            let pss_1 = unpack $ incomplete_null_step nfsm ps
+            return add pss_1 ps
+        complete_star :: partial_state_set -> partial_state_set
+        complete_star pss = let r = complete_1 pss in
+            if r == pss then r else complete_star r
+        
+    step :: nfsm -> partial_state -> symbol -> complete_total_state
+    step nfsm partial_state = complete . incomplete_step nfsm partial_state
+    -- assert: self not in unpack (null_step nfsm self)
+    null_step :: nfsm -> partial_state -> complete_total_state
+    null_step nfsm partial_state = complete . incomplete_null_step nfsm
+    
+    -- completed total_state
+    transition :: nfsm -> complete_total_state -> symbol -> complete_total_state
+    transition nfsm c symbol = complete . pack . unions $ do
+        ps <- iter $ unpack c
+        let pss = unpack $ step nfsm ps symbol
+        return pss
+        
+    
+    
+    is_final_partial_state :: nfsm -> partial_state -> Bool
+    is_final_partial_state nfsm ps = contains (final_partial_state_set nfsm) ps
+    is_final :: nfsm -> complete_total_state -> Bool
+    is_final nfsm c = any (is_final_partial_state nfsm) (iter $ unpack c)
+    initial_complete_total_state :: nfsm -> complete_total_state
+    initial_complete_total_state = complete initial_incomplete_total_state
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+convex_disjoint_union
+// but complement of convex may not be convex
+
+class Intersectable a c | c->a where
+    get_arbitrary_element :: c -> Maybe a
+    contains :: c -> a -> Bool
+    intersect_ex :: c -> c -> (c, c, c)
+    
+    intersect :: c -> c -> c
+    intersect lhs rhs = case intersect_ex lhs rhs of
+        (_, r, _) -> r
+    difference :: c -> c -> c
+    difference lhs rhs = case intersect_ex lhs rhs of
+        (r, _, _) -> r
+    
+
+instance Intersectable a (Container a)
+
+data (Intersectable a c =>) DisjointUnion a c ~ set c where c is container of a, any c1,c2 in set are disjoint 
+data DisjointUnionContainer a = DisjointSet a $ Container a
+
+
+data (Intersectable a c =>) DisjointMap a c v = 
+data (Finite state =>) NFA state symbol = Map state . DisjointMap symbol (Container symbol) $ Set state
+
+
+-- a in c
+getKey :: DisjointMap a c v -> a -> Maybe c
+getPair :: DisjointMap a c v -> a -> Maybe (c, v)
+getPair m a = do c <- getKey m a
+                 return (c, getValue m c)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,408 @@
+F = fibonacci
+min_fib_div_idx(m) = min {n>0| F[n] = 0 (mod m)} if m != 0 else 0
+
+
+
+-----------------
+NT n k = n choose k with min period n
+    001001 is not counted in (NT 6 2), since it has a period 3
+    [n>=0] ==>> NT n k = NT n (n-k)
+    [k<0] ==>> NT n k = 0
+    [n>0] ==>> [n\(NT n k)], since 10000 -> 01000 -> 00100 -> ... are diff with each other
+    
+    [n>=0] ==>> 
+        NT n 0 = [n=0] + [n=1]
+        NT n 1 = [n>=0]n
+        NT n 2 = C(n,2) - [2\n](NT n/2 1) = C(n,2) - [2\n][n>=0]n/2
+            = [n>=0]((n-1) - [2\n])n/2
+            = [n>=0](n-1)//2 * n
+
+    [period\n][(n/period)\k] ==>> [(n/period)\n] ==>> [(n/period)\gcd(n,k)]
+        [(n/gcd(n,k))\period]
+        ==>> min period = n/gcd(k,n)
+    
+    C(n, k) = sum NT (n/d) (k/d) {d\gcd(n,k)}
+    [k _L n] ==>> 
+        NT n k = C(n,k)
+        C(n*g, k*g) = sum NT (n*d) (k*d) {d\g}
+    
+        let CN n k g = C(n*g,k*g), NTN n k g = NT (n*g) (k*g)
+        CN n k = DS (NTN n k)
+        ==>> NTN n k = DSM (CN n k) = \x:sum Mu d * CN n k (x/d) {d\x}
+        NT (n*g) (k*g) = NTN n k g = sum Mu d * CN n k (g/d) {d\g}
+            = sum Mu d * C(n*g/d, k*g/d) {d\g}
+    
+    NT n k = sum Mu d * C(n/d, k/d) {d\gcd(n,k)}    for [(n,k)!=(0,0)]
+        = sum Mu d * C(n/d, k/d) [d\n] {d\k}
+        NT 1 0 =?= Mu 1 * C(1/1, 0) = 1; True
+        [n>0] ==>> NT n 0 =?= sum Mu d * C(n/d, 0) {d\n} = sum Mu d {d\n} = [n=1]; True
+        [n<0] ==>> now define...
+        [k != 0] ==>> NT 0 k =?= sum Mu d * C(0, k/d) {d\k} = 0; True
+        leave NT 0 0 undefined
+    
+    
+    NT (-n) k = sum Mu d * C(-n/d, k/d) {d\gcd(n,k)} for [n>0][k>=0]
+        = sum Mu d * C(n/d+k/d-1, k/d) (-1)**(k/d) {d\gcd(n,k)}
+        // [n+k > 0] ==>> [n != -k]
+        = sum Mu d * C(n/d+k/d, k/d) n/d/(n/d+k/d) (-1)**(k/d) {d\gcd(n,k)}
+        = n/(n+k) sum Mu d * C(n/d+k/d, k/d) (-1)**(k/d) {d\gcd(n,k)}
+        // if [! 2\gcd(n,k)]
+            = n/(n+k) sum Mu d * C(n/d+k/d, k/d) {d\gcd(n,k)}
+            = (-1)**k n/(n+k) NT (n+k) k
+        // if [4\k]
+            = n/(n+k) NT (n+k) k
+        // if [2\gcd(n,k)][! 4\k] ==>> [2\n]
+            = n/(n+k) sum Mu d * C(n/d+k/d, k/d) (-1)**(k/d) {d:2\d\gcd(n,k)}
+            + n/(n+k) sum Mu d * C(n/d+k/d, k/d) (-1)**(k/d) {d:2 !\ d\gcd(n,k)}
+            = n/(n+k) sum Mu (2d) * C(n/(2d)+k/(2d), k/(2d)) (-1)**(k/(2d)) {d:d\gcd(n/2,k/2)}
+            + n/(n+k) sum Mu d * C(n/d+k/d, k/d) (-1)**(k/d) {d:d\gcd(n,k/2)}
+            = n/(n+k) sum -Mu (d) * C((n/2)/d+(k/2)/d, (k/2)/d) (-1) {d:d\gcd(n/2,k/2)}
+            + n/(n+k) sum Mu d * C(n/d+k/d, k/d) 1 {d:d\gcd(n/2,k/2)}
+            = n/(n+k) NT ((n+k)/2) (k/2)
+            + ????
+            
+        
+        
+    
+    [n>=3] ==>> NT n 3 = sum Mu d * C(n/d, 3/d) {d\gcd(n,3)}
+        = C(n,3) - [3\n]C(n/3,1) = C(n,3) - [3\n]n/3
+        = n((n-1)(n-2) - 2[3\n])/6
+        = n(n**2-3n+2 - 2[3\n])/6
+        = n(n**2-3n+2[! 3\n])/6
+        = (n-1)(n-2)//6 n
+        = C(n,3)//n * n
+    [n>=4] ==>> NT n 4 = sum Mu d * C(n/d, 4/d) {d\gcd(n,4)}
+        = C(n, 4) - [2\n]C(n/2, 2)
+        = C(n, 4) - [2\n](n/2)(n/2-1)/2
+        = C(n, 4) - [2\n]n(n-2)/8
+        = ((n-1)(n-3)-3[2\n])/4! n(n-2)
+        // [2\n] ==>> ((n-1)(n-3)-3[2\n]) = (n**2-4n) == 0 mod 4     // n=2k: 2k(2k-4) = 4k(k-2)
+        // [! 2\n] ==>> ((n-1)(n-3)-3[2\n]) = (n-1)(n-3) == 0 mod 4  // n=2k+1: 2k(2k-2) = 4k(k-1)
+        = (n-1)(n-3)//4 n(n-2)/3!
+        // n = 2k+i, i=0..1 ==>>
+        // i=0: (kk - 2k) 2k 2(k-1)/6 = 2k(k-2)(k-1)k/3
+        // i=1: k(k-1) (2k+1)(2k-1)/6 = C(2k+1, 4)
+
+    [n>=5] ==>> NT n 5 = sum Mu d * C(n/d, 4/d) {d\gcd(n,5)}
+        = C(n, 5) - [5\n]C(n/5, 1)
+        = (C(n,5)/n - [5\n]/5) * n
+        // since [n\(NT n 5)]
+        = floor(C(n,5)/n) * n
+        = C(n,5)//n * n
+    [prime p][n>=p] ==>> NT n p = sum Mu d * C(n/d, p/d) {d\gcd(n,p)}
+        = C(n, p) - [p\n]C(n/p, 1)
+        = (C(n,p)/n - [p\n]/p) * n
+        // since [n\(NT n p)]
+        = floor(C(n,p)/n) * n
+        = C(n,p)//n * n        
+    [prime p][n>=p**2] ==>> NT n p**2 = C(n, p*p) - [p\n]C(n/p, p)
+            = C(n, p*p) - [p\n](n/p)(n/p-1)...(n/p-p+1) /p!
+            = fall(n, p*p)/(p*p)! - [p\n](n)(n-p)...(n-(p-1)p)/p**p /p!
+            = (fall(n, p*p)/((n)(n-p)...(n-(p-1)p)) - [p\n](p*p)!/p**p /p!)
+            * (n)(n-p)...(n-(p-1)p)/(p*p)!
+            // (p*p)!/p**p /p! = II i {i=p+1..p*p|[! p\i]} = [int (p*p)!/p**p /p!]
+            // [[.n**0](fall.../...) = (p*p)!/p**p /p!]
+            // [p\n] ==>> (fall.../... - [p\n]...) (mod p*p) 
+            //      // only x*n**1 term
+            //      == 0*n**0 + (??)n**2 + n* ((p*p)!/p**p /p!)sum 1/i {i:[! p\i][i=1..p*p]}
+            //      == n/p*p (...) sum i {i:[! p\i][i=1..p*p]}
+            //      == p (some-a-int) (sum i {i=1..p*p} - sum i {i=p,2p..p*p})
+            //      == p (some-a-int) ((1+p*p)p*p/2 - p*p(p+1)/2)
+            //      == (some-a-int) p**3 (p*p-p)/2 + (??)p**2 == 0
+            // [! p\n] ==>> let r[i] = n+i*p (mod p*p), for i=0..(p-1)
+            //         (fall.../... - [p\n]...) 
+            //      = II(n-r[i]){i=0..(p-1)}(???) 
+            //      = p**(2+(p-1)) (??)
+            //      = p**(p+1) (mod p*p)
+            = C(n, p*p) - [p\n](n)(n-p)...(n-(p-1)p)/p**p /p!
+        
+    [prime p][k>=2][n>=p**k] ==>> NT n p**k = C(n, p**k) - [p\n]C(n/p, p**(k-1))
+            = C(n, p**k) - [p\n](n/p)(n/p-1)...(n/p-p**(k-1)+1) /(p**(k-1))!
+    
+    [n>=6] ==>> NT n 6 = C(n, 6) - [2\n]C(n/2, 3) - [3\n]C(n/3, 2) + [6\n]C(n/6, 1)
+        = ((n-1)(n-2)(n-3)(n-4)(n-5) - [2\n]/2(n/2-1)(n/2-2)6*5*4 - [3\n]/3(n/3-1)6!/2! + [6\n]6!/6) n/6!
+        = ((n-1)(n-2)(n-3)(n-4)(n-5) - [2\n](n-2)(n-4)*15 - [3\n](n-3)5!/3 + [6\n]5!) n/6!
+        // - [3\n](n-3)5!/3 + [6\n]5! = -[3\n]5!/3((n-3) - [2\n]3)
+        // (n-1)(n-2)(n-3)(n-4)(n-5) - [2\n](n-2)(n-4)*15 = (n-2)(n-4)((n-1)(n-3)(n-5) - [2\n]15)
+
+
+
+
+
+ 
+
+    it seems [CMath page363]7.70 is right but deduce is wrong.
+    let n=m=L=2, that is n (1-m)'s = (2 * -1) and (m*n+L-n) +1's = (4 * +1)
+    NT 6 2 = sum Mu d * C(6/d, 2/d) {d\2} = Mu 1 * C(6,2) + Mu 2 * C(3,1)
+        = 15 - 3 = 12
+    NT 3 1 = 3
+    (NT 6 2)/6 * 2/(6/6) + (NT 3 1)/3 * 2/(6/3)= 5 =?= C(6,2)*2/6; True
+
+    
+    num of circles of "01" of len (m*n+L) with n 1's without period: 
+        (NT (m*n+L) n)/(m*n+L)
+
+    num of circles of "01" of len (m*n+L) with n 1's:
+        sum (NT ((m*n+L)/d) (n/d))/((m*n+L)/d) * L/d {d\gcd(m*n+L,n)} =?= C(m*n+L, n)*L/(m*n+L)
+        left = L/(m*n+L) sum (NT ((m*n+L)/d) (n/d)) {d\gcd(L,n)} = right
+
+
+
+
+
+    ----------
+    sum d * NT (n/d) (k/d) {d\gcd(n,k)} = ?
+    sum n/d * NT (n/d) (k/d) {d\gcd(n,k)} = ?
+
+
+    [(n,k)!=(0,0)] ==>> sum d * NT (n/d) (k/d) {d\gcd(n,k)}
+        = sum d * sum Mu g * C(n/d/g, k/d/g) {g\gcd(n/d,k/d)} {d\gcd(n,k)}
+        = sum sum d * Mu g * C(n/d/g, k/d/g) {g\gcd(n/d,k/d)} {d\gcd(n,k)}
+        = sum Mu g * sum d * C(n/d/g, k/d/g) {d\(gcd(n,k)/g)} {g\gcd(n,k)}
+        = sum d * Mu g * C(n/d/g, k/d/g) {d,g:(g*d)\gcd(n,k)}
+
+        sum d * C(n/d, k/d) {d:d\gcd(n,k)}
+
+
+
+-------------------
+source: exclude given string / [CMath]8.4 FLIPPING COINS
+
+true_period str = min {d | [d\len(str)][str[d:]=str[:len(str)-d]]}
+fake_period str = 0 if [len(str)=0] else min {d>0 | [str[d:]=str[:len(str)-d]]}
+
+num_notproper_trueperiod_types L = 1[when T=L] + sum [! T\L](num_period_types (L mod T)) {T=1..L} for [L>0]
+num_period_types L = sum [T\L](num_notproper_trueperiod_types T) {T=1..L} for [L>0]
+num_notproper_trueperiod_types 0 = 1
+num_period_types 0 = 1
+
+
+def NDIV n = sum 1 {d\n}
+
+NPT L = num_period_types L = DS NNPTPT L
+NNPTPT L = num_notproper_trueperiod_types L = 1 + sum NPT (L%d) {d=1..L} - sum NPT (L%d) {d\L}
+    = 1 + sum (NPT r) sum [d>r] {d\(L-r)} {r=1..L-1}
+NPT L = sum NNPTPT T {T\L} 
+    = sum 1 + sum (NPT r) sum [d>r] {d\(T-r)} {r=1..T-1} {T\L}
+    = NDIV L + sum sum (NPT r) sum [d>r] {d\(T-r)} {r=1..T-1} {T\L}
+
+
+
+int size -> [(int T, int times)] # times>0; T>sum(T*times for T after T) or T=sum... and next_T>sum...
+def num_strs_of_period_type alphabet_size period_type
+def str2period_type
+def period_type2std_str
+def period_type2std_num
+
+
+
+------
+str mul / concate
+
+Z=XY=YX
+    g=gcd(len(X),len(Y))
+    C=Z[:g]
+    let A[i]=Z[g*i:g*(i+1)]
+    x=len(X)/g, y=len(Y)/g
+    if x==y:
+        x=y=[0 or 1]
+        X=Y=C
+        Z=C**2
+        
+    assume x < y
+    if x==0:
+        X=''
+        Y=C
+        Z=C
+    else:
+        A[x+i] = Y[g*i:g*(i+1)] = (YX)[g*i:g*(i+1)] = A[i], for i=0..y-1
+        Y=A[:y] ==>> g is a period of Y
+    
+    all solutions:
+        for [int x,y >= 0]
+        X=C**x
+        Y=C**y
+        Z=C**(x+y)
+
+XYZ=ZXY
+    T=XY
+    TZ=ZT
+    XY=T=C**t
+    Z=C**z
+    X=C**x A
+    Y=B C**y
+    C=AB
+    
+    all solutions:
+        X=(AB)**x A
+        Y=B(AB)**y
+        Z=(AB)**z
+
+AX = XB ==>> X = A**-1 X B ? yes
+    assert len(A)==len(B)
+    if len(X)>len(A):
+        let X=AX' ==>> AAX'=AX'B ==>> AX'=X'B
+    let X=A**q R, where r = len(R)=len(X) mod len(A) < len(A)
+    AR=RB
+    R = A[:r] = B[len(B)-r:]
+    let A = RD
+    AR = RDR = RB ==>> B=DR
+    
+    if exists (R,D), s.t. A=RD, B=DR, then have solutions: (RD)**q R
+    if R1D1=R2D2=A, B=D2R2=D1R1:
+        assume len(R1)<len(R2)
+        let R1=E, R2=EF, D1=FG, D2=G
+        let H=GE
+        B=GEF=FGE
+        G=(G'E')**x G'
+        E=E'(G'E')**y
+        F=(G'E')**z
+
+        A=EFG=(E'G')**(x+y)
+        B=(G'E')**(x+y)
+
+    all solutions:
+        factor A,B into (RD)**(n+1), (DR)**(n+1), for [int n>=0]
+        // A=((RD)**i R)(D(...)), for i=0..n
+        X=A**q ((RD)**i R) = (RD)**e R, for [int e>=0]
+Z = ABX = XBA ==>> at least one solution: X=(AB)**q A and Z=(AB)**(q+1) A
+
+
+
+
+
+Z = AX = YA
+    if len(X)>=len(A):
+        let X=Z'A
+        Y=AZ'
+        Z=AZ'A
+    elif 0<len(X)<len(A):
+        let A=A'X**(q+1), r=len(A')<len(X)
+        A'X**(q+1)X = YA'X**(q+1)
+        A'X=YA', with len(A')<len(X)
+        let X=Z'A'
+        A=A'(Z'A')**(q+1)
+        Z=AX = A'(Z'A')**(q+2)
+        Y=A'Z'
+    else:
+        len(X)=0
+        X=Y=''
+        Z=A
+
+    all solutions:
+
+        1) X=Y='', Z=A
+        2) any B, X=BA, Y=AB, Z=ABA
+        3) A = C(BC)**q, BC != ''
+            X=BC
+            Y=CB
+            Z=AX=C(BC)**(q+1)
+
+            factor A = C(BC)**q, [int q>=0]
+            for i in {i=1..len(A) | A[:i] = A[len(A)-i:]}:
+                len(BC) = i
+                len(C) = len(A) mod len(BC) // x mod 0 = x
+                C=A[:len(C)]
+                B=A[len(C):len(BC)]
+                
+                q = len(A)//len(BC)
+
+
+Z = AX = YB
+    if len(X) >= len(B) ==>> len(Y) >= len(A):
+        let X=CB
+        Y=AC
+        Z=ACB
+    if len(X) < len(B):
+        let A=YC
+        YCX=YB
+        CX=B
+        C=A[-L:]=B[:L]
+        
+        for L s.t. A[-L:]=B[:L]
+        X=B[-L:]
+        Y=A[:L]
+        Z=A[:L]B
+    all solutions:
+    1)  X=CB 
+        Y=AC
+        Z=ACB
+    2)  X= (C**-1)B
+        Y= A(C**-1)
+        Z= A(C**-1)C(C**-1)B
+
+Z = ABX = YBA
+
+    
+
+
+
+
+
+
+
+
+
+
+
+---------------------------
+source: S m n = sep [m,n] = C(m+n, n) if m>0,n>0
+law:
+    def S m n = S n m                  --------------- always True
+    def S m n = S (m-1) n + S m (n-1)  ---------------
+init data:
+    def S m 0 = 1/2 if [m<0]
+    def S m -m = [m=0]
+
+S m n = 0 if [(m+n)m*n < 0] or [n=-m != 0]
+S m n = C(m+n, n) if [m+n>=0]
+S m n = C(m+n, n)/2 if [m+n<0][m*n<=0][m<0] // <==> [-m>n>=0]
+    = (-1)**n C(-m-1, n)/2 
+    = (-1)**n C(-(m+1), -(m+n+1))/2
+    S m (-1-m) = (-1)**(m+1)/2 if [m<=-1]
+        S -1 0 = 1/2
+    S m (-2-m) = (-1-m)(-1)**(m+2)/2 if [m<=-2]
+        S -2 0 = 1/2
+
+[m<n<0] ==>> S m n = 0 = C(m+n, n)/2
+[m+n<0] <==> [m+n<0][max(m,n)>=0] or [m+n<0][max(m,n)<0]
+    <==> [-min(m,n)>max(m,n)>=0] or [min(m,n)<=max(m,n)<0]
+    ==>> S m n = [C(m+n, max(m,n))/2 or 0] = C(m+n, max(m,n))/2
+
+S m n = C(m+n, max(m,n))/2**[m+n<0]
+    obviously: S m n = S n m 
+    prove: S m n = S (m-1) n + S m (n-1)
+    right = (C(m+n-1, max(m-1,n))+C(m+n-1, max(m,n-1)))/2**[m+n-1<0]
+    assume m <= n
+    [m=n] ==>> 
+        right = C(2n-1, n) 2/2**[n<1]
+        left = C(2n, n)/2**[n<0]
+        [n<0] ==>> right = 0 = left
+        [n=0] ==>> right = 1 = left
+        [n>0] ==>> right = C(2n-1, n) 2 = 2(2n-1)!/n!/(n-1)! = C(2n, n) = left
+    [m<n] ==>>
+        right = (C(m+n-1, n)+C(m+n-1, n-1))/2**[m+n-1<0]
+            = C(m+n, n)/2**[m+n-1<0]
+        left = C(m+n, n)/2**[m+n<0]
+        [[m+n-1<0] != [m+n<0]] <==> [m+n=0] <==> [m=-n<n] ==>> [n>0]
+        [m+n=0] ==>> right = [n=0]/2 = 0 = left
+        [m+n != 0] ==>> [[m+n-1<0] == [m+n<0]] ==>> right = left
+
+sum S m n {m+n=N} = sum S m (N-m) {m} = 
+    [N>=0] ==>> left = 2**N
+    [N<0] ==>> left = 2*sum S m (N-m) {m>=0} = 2*sum C(N, m)/2 {m>=0}
+        = sum (-1)**m C(-(N-m+1), m) {m>=0}
+        = sum (-1)**m C(m-(N+1), m) {m>=0}
+        = not converge
+----
+[m+n<0][m<0][n>=0] ==>> [m<=m+n<0] ==>> 
+    (m+n)!/n!/m! = (m+n)!(m+n+1)...(0)/n!/(m!(m+1)...0)  * (m+1)...(m+n)
+        = 0!/n!/0! * (-1)**(n) fall(-(m+1), n)
+        = (-1)**(n) C(-(m+1), n)
+[m+n<0][m<0][n<0] ==>> [m+n<min(m,n)] ==>>
+    (m+n)!/n!/m! = (m+n)!(m+n+1)...(0)/n!/(m!(m+1)...0)  / ((m+n+1)...(m))
+        = 0!/(n!(n+1)...0)/0!  / ((m+n+1)...(m)) * ((n+1)...0)
+        = 0
+CC m n = (m+n)!/n!/m! = C(m+n, max(m,n))
+    but CC 0 0 = C(0,0) = 1 != 0 = 2 C(-1,0) = CC -1 0 + CC 0 -1
+

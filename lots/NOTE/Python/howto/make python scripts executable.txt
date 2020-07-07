@@ -1,0 +1,32 @@
+see also:
+    "make python scripts executable on Windows.txt"
+
+setuptools:
+    Windows:
+        script.py -> script.exe
+
+https://setuptools.readthedocs.io/en/latest/setuptools.html#automatic-script-creation
+Automatic Script Creation
+Packaging and installing scripts can be a bit awkward with the distutils. For one thing, there's no easy way to have a script's filename match local conventions on both Windows and POSIX platforms. For another, you often have to create a separate file just for the "main" script, when your actual "main" is a function in a module somewhere. And even in Python 2.4, using the -m option only works for actual .py files that aren't installed in a package.
+
+setuptools fixes all of these problems by automatically generating scripts for you with the correct extension, and on Windows it will even create an .exe file so that users don't have to change their PATHEXT settings. The way to use this feature is to define "entry points" in your setup script that indicate what function the generated script should import and run. For example, to create two console scripts called foo and bar, and a GUI script called baz, you might do something like this:
+
+setup(
+    # other arguments here...
+    entry_points={
+        'console_scripts': [
+            'foo = my_package.some_module:main_func',
+            'bar = other_module:some_func',
+        ],
+        'gui_scripts': [
+            'baz = my_package_gui:start_func',
+        ]
+    }
+)
+
+When this project is installed on non-Windows platforms (using "setup.py install", "setup.py develop", or by using EasyInstall), a set of foo, bar, and baz scripts will be installed that import main_func and some_func from the specified modules. The functions you specify are called with no arguments, and their return value is passed to sys.exit(), so you can return an errorlevel or message to print to stderr.
+
+On Windows, a set of foo.exe, bar.exe, and baz.exe launchers are created, alongside a set of foo.py, bar.py, and baz.pyw files. The .exe wrappers find and execute the right version of Python to run the .py or .pyw file.
+
+You may define as many "console script" and "gui script" entry points as you like, and each one can optionally specify "extras" that it depends on, that will be added to sys.path when the script is run. For more information on "extras", see the section below on Declaring Extras. For more information on "entry points" in general, see the section below on Dynamic Discovery of Services and Plugins.
+

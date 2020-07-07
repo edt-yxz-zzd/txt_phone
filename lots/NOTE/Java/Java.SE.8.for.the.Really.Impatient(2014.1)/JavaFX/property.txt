@@ -1,0 +1,165 @@
+
+JavaFX property
+    String getText()
+    void setText(String newValue)
+    Property<String> textProperty()
+    
+    
+    JavaBeans specification states that a property should be inferred from a getter/setter pair. 
+         For example, a class with methods 
+            String getText()
+            void setText(String newValue)
+         is deemed to have a text property.
+    The Introspector and BeanInfo classes in the java.beans package let you enumerate all properties of a class.
+
+
+    JavaBeans specification also defines bound properties, 
+        where objects emit property change events when the setters are invoked. 
+    JavaFX does not make use of this part of the specification. 
+        Instead, a JavaFX property has a third method, besides the getter and setter, 
+            that returns an object implementing the Property interface. 
+            For example, a JavaFX text property has a method 
+                Property<String> textProperty()
+            You can attach a listener to the property object. 
+            That's different from old-fashioned JavaBeans. 
+            In JavaFX, the property object, not the bean, sends out notifications. 
+
+boilerplate code for property
+    implementing a JavaFX property requires some boilerplate code, 
+        and there is unfortunately no way in Java to generate the code automatically. 
+    
+    // requirement "final"
+    // why not property be instance field? 
+    //    no final instance field??
+    public class Greeting {
+        private StringProperty text = new SimpleStringProperty("");
+        public final StringProperty textProperty() { return text; }
+        public final void setText(String newValue) { text.set(newValue); }
+        public final String getText() { return text.get(); }
+    }
+
+    creating the property objects lazily depending on whether anyone listens to it or not.
+
+abstract property classes
+    IntegerProperty
+    LongProperty
+    DoubleProperty
+    FloatProperty
+    BooleanProperty
+    
+    ListProperty
+    MapProperty
+    SetProperty
+    
+    ObjectProperty<T>
+    Property<T>
+
+concrete property subclasses
+    SimpleIntegerProperty
+    SimpleObjectProperty<T>
+    ...
+
+
+[get/set] vs [getValue/setValue]
+    for primitive types, they are different
+        get/set : primitive type
+        getValue/setValue : boxed type
+            used only in generic code
+
+
+listeners
+    [InvalidationListener] vs [ChangeListener]
+    A ChangeListener is notified when the property value has changed, 
+    an InvalidationListener is called when the property value may have changed. 
+    The distinction matters if a property is evaluated lazily.
+
+    ChangeListener callback tells you the old and new value, 
+        which means it has to compute the new value. 
+    InvalidationListener doesn't compute the new value,
+        but that means you might get a callback when the value hasn't actually changed.
+
+
+[numeric properties]
+    CAUTION: It is a bit tricky to use the ChangeListener interface for numeric properties. 
+    
+    // don't work
+    slider.valueProperty().addListener(
+        (property, oldValue, newValue) -> message.setFont(new Font(newValue)));
+    
+    // DoubleProperty implements Property<Number> and not Property<Double>
+    // newValue.doubleValue() instead of newValue
+    slider.valueProperty().addListener(
+        (property, oldValue, newValue) -> message.setFont(new Font(newValue.doubleValue())));
+
+
+
+
+binding
+    bind/bindBidirectional
+    unbind/unbindBidirectional
+    
+    self.textProperty().bind(other.textProperty());
+    self.textProperty().bindBidirectional(other.textProperty());
+
+    // centerX = scene.widthProperty()/2
+    circle.centerXProperty().bind(Bindings.divide(scene.widthProperty(), 2));
+
+    or: 
+        scene.widthProperty().divide(2)
+    or:
+        import static javafx.beans.binding.Bindings.*;
+        divide(scene.widthProperty(), 2)
+
+    // When the width is <= 0, the Smaller button is disabled.
+    smallerButton.disableProperty().bind(Bindings.lessThanOrEqual(gauge.widthProperty(), 0));
+
+    smallerButton.disableProperty().bind(
+        createBooleanBinding(
+            () -> gauge.getWidth() <= 0,
+            gauge.widthProperty()));
+
+    In the JavaFX Script language:
+        disable bind gauge.width <= 0
+
+
+[page 78..79] Table 4-1 Operators Supplied by the Bindings Class
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,68 @@
+
+:?
+:browse     -- see all definitions
+:i Integer  -- see information about names; better than ":t"
+:t (+)      -- see type of (+)
+:r :reload  -- if the current window is opened by double-click a *.hs file, 
+            --    then after editting that file, we call this cmd to reload
+
+
+
+
+NOTE:
+    don't define (..) since it is a operator for [a..b]
+    take care (a-b) (-b)
+
+
+
+-- import syntax
+import Text.ParserCombinators.Parsec    -- from xxx import *
+import Data.List (nub, sortBy)          -- from xxx import a, b, c
+import Data.Bits (shiftL, (.&.), (.|.)) -- import infix
+import Data.Monoid (Monoid(..))         -- import context??
+import qualified Prelude as P           -- hidden Prelude ; import xx as yy
+
+
+-- export syntax
+module Monoid2Monad 
+    ( ToMonad(..)
+    , TMState(..)
+    , TMValue(..)
+    ) where
+
+
+newtype NewName args... = Constructor Type(args...)
+    deriving (Show, Read, Eq, Ord)
+
+
+-- The User's Guide::Chapter 4. Using GHC::4.20.12. Language options
+-- (Use -XMultiParamTypeClasses to allow multi-parameter classes)
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE FunctionalDependencies #-}
+
+
+
+
+-- FunctionalDependencies
+{-# LANGUAGE FunctionalDependencies #-}
+class C a b | a -> b where ...
+{-# LANGUAGE TypeFamilies #-}
+class C a where
+    type A2B a :: *
+    type b = A2B a
+    ...
+instance C a where
+    type A2B a = ...
+
+
+
+7.6.3.3. Undecidable instances
+    sometimes you might want to use the following to get the effect of a "class synonym":
+      class (C1 a, C2 a, C3 a) => C a where { }
+      instance (C1 a, C2 a, C3 a) => C a where { }
+    
+    This allows you to write shorter signatures:
+      f :: C a => ...
+    instead of
+      f :: (C1 a, C2 a, C3 a) => ...

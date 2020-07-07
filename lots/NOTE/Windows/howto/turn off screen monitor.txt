@@ -1,0 +1,129 @@
+https://stackoverflow.com/questions/713498/turn-on-off-monitor
+    turn on screen monitor
+        user32.dll.SendMessage(-1,0x0112,0xF170,-1)
+    turn off screen monitor
+        user32.dll.SendMessage(-1,0x0112,0xF170,2)
+
+
+
+// SendMessage hWnd, WM_SYSCOMMAND, SC_MONITORPOWER, param
+int WM_SYSCOMMAND = 0x112;
+int SC_MONITORPOWER = 0xF170;
+
+[DllImport("user32.dll", CharSet = CharSet.Auto)]
+private static extern int SendMessage(IntPtr hWnd, int wMsg, IntPtr wParam, IntPtr lParam);
+
+public static void Main(string[] args)
+{
+    Form f = new Form();
+    bool turnOff = true;   //set true if you want to turn off, false if on
+    SendMessage(f.Handle, WM_SYSCOMMAND, (IntPtr)SC_MONITORPOWER, (IntPtr)(turnOff ? 2 : -1));
+}
+
+
+
+
+
+
+
+
+
+
+https://gallery.technet.microsoft.com/scriptcenter/Turn-off-screen-4d173e0a
+    https://answers.microsoft.com/en-us/windows/forum/windows_7-desktop/how-can-i-turn-off-the-monitor-ie-put-it-to-sleep/0ea689fd-bc46-4329-8f2c-bf9967d18114?auth=1
+    powershell (Add-Type '[DllImport(\"user32.dll\")]^public static extern int SendMessage(int hWnd, int hMsg, int wParam, int lParam);' -Name a -Pas)::SendMessage(-1,0x0112,0xF170,2)
+
+
+https://stackoverflow.com/questions/713498/turn-on-off-monitor
+namespace MonitorOff {
+
+    public enum MonitorState {
+        MonitorStateOn = -1,
+        MonitorStateOff = 2,
+        MonitorStateStandBy = 1
+    }
+
+    public partial class Form1 : Form {
+        [DllImport("user32.dll")]
+        private static extern int SendMessage(int hWnd, int hMsg, int wParam, int lParam);
+
+        public Form1() {
+            InitializeComponent();
+            SystemEvents.SessionSwitch += SystemEvents_SessionSwitch;
+        }
+
+        void SystemEvents_SessionSwitch(object sender, SessionSwitchEventArgs e) {
+            SetMonitorInState(MonitorState.MonitorStateOff);
+        }
+
+        private void button1_Click(object sender, EventArgs e) {
+            SetMonitorInState(MonitorState.MonitorStateOff);
+        }
+
+        private void SetMonitorInState(MonitorState state) {
+            SendMessage(0xFFFF, 0x112, 0xF170, (int)state);
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+using System;
+using System.Runtime.InteropServices;
+using System.Threading;
+using System.Windows.Forms;
+
+
+namespace monitor_on_off
+{
+    class Program
+    {
+        [DllImport("user32.dll")]
+        static extern IntPtr SendMessage(IntPtr hWnd, int msg, IntPtr wParam, IntPtr lParam);
+        [DllImport("user32.dll")]
+        static extern void mouse_event(Int32 dwFlags, Int32 dx, Int32 dy, Int32 dwData, UIntPtr dwExtraInfo);
+
+        private const int WmSyscommand = 0x0112;
+        private const int ScMonitorpower = 0xF170;
+        private const int MonitorShutoff = 2;
+        private const int MouseeventfMove = 0x0001;
+
+        public static void MonitorOff(IntPtr handle)
+        {
+            SendMessage(handle, WmSyscommand, (IntPtr)ScMonitorpower, (IntPtr)MonitorShutoff);
+        }
+
+        private static void MonitorOn()
+        {
+            mouse_event(MouseeventfMove, 0, 1, 0, UIntPtr.Zero);
+            Thread.Sleep(40);
+            mouse_event(MouseeventfMove, 0, -1, 0, UIntPtr.Zero);
+        }
+
+        static void Main()
+        {
+            var form = new Form();
+
+            while (true)
+            {
+                MonitorOff(form.Handle);
+                Thread.Sleep(5000);
+                MonitorOn();
+                Thread.Sleep(5000);
+            }
+        }
+    }
+}
+
+
+

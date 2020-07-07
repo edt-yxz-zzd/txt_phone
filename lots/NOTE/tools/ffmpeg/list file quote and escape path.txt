@@ -1,0 +1,66 @@
+class Global:
+    list_fname_encoding = 'utf8'
+    @classmethod
+    def quote_and_escape_path(cls, path):
+        # "'" -> r"'\''" # end quote "'" + escaped r"\'" + begin quote "'"
+        # "\\" -> r"'\\'" # end quote "'" + escaped r"\\" + begin quote "'"
+        # ^ -> "'" # begin quote "'"
+        # $ -> "'" # end quote "'"
+        path = path.replace("'", r"'\''")
+        path = path.replace("\\", r"'\\'")
+        return f"'{path!s}'"
+
+r'''
+ffmpeg -f concat -safe 0 -i mylist.txt -c copy 20516451.flv
+where "mylist.txt":
+# not file "20516451-1-15.flv"
+file '20516451-1-15.flv'
+file '20516451-2-15.flv'
+file '20516451-3-15.flv'
+file '20516451-4-15.flv'
+
+
+BUT:
+    does ffmpeg using utf8 to decode mylist.txt?
+    does ffmpeg escape "'" by r"\'"?
+    below "concat_videos" using assumption both "YES"
+
+
+
+########################################
+
+https://ffmpeg.org/ffmpeg-utils.html#Quoting-and-escaping
+2.1 Quoting and escaping
+    FFmpeg adopts the following quoting and escaping mechanism, unless explicitly specified. The following rules are applied:
+
+        "'" and "\" are special characters (respectively used for quoting and escaping). In addition to them, there might be other special characters depending on the specific syntax where the escaping and quoting are employed.
+        A special character is escaped by prefixing it with a "\".
+        All characters enclosed between "''" are included literally in the parsed string. The quote character "'" itself cannot be quoted, so you may need to close the quote and escape it.
+        Leading and trailing whitespaces, unless escaped or quoted, are removed from the parsed string. 
+
+    Note that you may need to add a second level of escaping when using the command line or a script, which depends on the syntax of the adopted shell language.
+
+    The function av_get_token defined in libavutil/avstring.h can be used to parse a token quoted or escaped according to the rules defined above.
+
+    The tool tools/ffescape in the FFmpeg source tree can be used to automatically quote or escape a string in a script.
+    2.1.1 Examples
+
+        Escape the string Crime d'Amour containing the ' special character:
+
+        Crime d\'Amour
+
+        The string above contains a quote, so the ' needs to be escaped when quoting it:
+
+        'Crime d'\''Amour'
+
+        Include leading or trailing whitespaces using quoting:
+
+        '  this string starts and ends with whitespaces  '
+
+        Escaping and quoting can be mixed together:
+
+        ' The string '\'string\'' is a string '
+
+        To include a literal "\" you can use either escaping or quoting:
+
+        'c:\foo' can be written as c:\\foo

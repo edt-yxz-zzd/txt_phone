@@ -1,0 +1,107 @@
+'metaclass confusion'
+
+what is "cls.mro" if isinstance(cls, type)?
+    if issubclass(cls, type):
+        # metaclass
+        cls.mro is a function
+    else:
+        cls.mro is a bound method
+
+we have to write "type(cls).mro(cls)" instead of "cls.mro()"
+    # or "type.mro(cls)" or "cls.__mro__"
+    since every class will become a base class of a metaclass
+    and such problems will occur.
+
+
+
+posssible solution:
+    let metaclass.mro  always be a bound method
+    let metaclass@.mro always be a function
+
+    split the __dict__ of cls to __type_dict__ and __object_dict__
+    split __getattr__ to __type_getattr__ and __object_getattr__
+    new syntax "cls@.f"  # use cls as a type
+    new syntax "obj@@.f" # avoid __object_dict__
+
+    obj.f == object_getattr(obj, 'f')
+        obj.__object_dict__['f'] or obj@@.f
+    obj@@.f == up_getattr(obj, 'f')
+        curry(type(obj)@.f, obj)
+        # a in b <==> b@@.__contains__(a)
+    "cls@.f" ==>>
+        for T in cls.__mro__:
+            if 'f' in T.__type_dict__:
+                return curry(T.__type_dict__['f'], cls)
+    dir(obj) ==>>
+        obj.__object_dict__.keys() + type(obj).__type_dict__.keys() + ...
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+why?
+(0) cls is a instance of metaclass,
+    if we store some data in cls.__dict__,
+    instances of cls will access to that data!
+
+
+
+(2) example1:
+    class B:
+        @property
+        def data(self):
+            return 1
+        def f(self):pass
+    class Meta(B, type):pass
+    class M(metaclass=Meta):pass
+    class C(M):pass
+    class D(B,M):pass
+    class E(B):pass
+    class F(M,B):pass
+    assert B.data is E.data is not D.data is F.data is     C.data == 1
+    assert B.f    is E.f    is     D.f    is F.f    is not C.f
+    # E@.data is not D.data is     C.data
+    # E@.f    is     D@.f   is not C.f
+
+
+
+
+
+
+
+
+
+
+(3) example2
+    class WithTimestamp:
+        def __init__(...):pass
+        def get_timestamp(self): pass
+    class Meta(type, WithTimestamp):
+        # instances of Meta are timestamped
+        pass
+
+
+    class C(WithTimestamp, metaclass=Meta):pass
+    obj = C()
+    obj.get_timestamp() # fine
+    C.get_timestamp() # ???
+    what is C.get_timestamp?
+        1) WithTimestamp.get_timestamp              # answer
+        or 2) curry(WithTimestamp.get_timestamp, C) # may expect
+
+    we may rename get_timestamp to __get_timestamp__,
+    but the problem remains:
+        every class will become a base class of a metaclass.
+        if we have to write: "type(obj).f(obj, ...)" for every method
+
+

@@ -1,0 +1,88 @@
+
+
+error:  super()[xxx]
+fine:   super().__getitem__
+    why?  since
+        super().__getitem__
+            ==>> type(super()).__getattribute__(super(), '__getitem__')
+                super.__getattribute__ is overrided to handle this
+        super()[xxx]
+            ==>> type(super()).__getitem__(super(), xxx)
+                but there are no super.__getitem__
+    hence
+        donot:
+            as input:
+                f(super())
+            use operator:
+                super() == other
+                super() + other
+                super()[xx] = ...
+
+error:  isinstance(super(), cls)
+    isinstance(obj, cls) ==>> type(cls).__instancecheck__(cls, obj)
+
+
+
+
+# dynamic super(): __mro__
+# reorderable method
+class D1(dict):
+    def __setitem__(self, key, value):
+        print('D1')
+        super().__setitem__(key, value)
+class D2(dict):
+    def __setitem__(self, key, value):
+        print('D2')
+        super().__setitem__(key, value)
+class D3(D2, D1):
+    def __setitem__(self, key, value):
+        print('D3')
+        super().__setitem__(key, value)
+        # will print 'D3 D2 D1'
+
+
+######## impl
+super(supercls, obj).f = partial(super(supercls, type(obj)).f, obj)
+super(supercls, cls).f = any(getattr(sscls, 'f', None) for sscls in cls.__mro__[cls.__mro__.index(supercls)+1:])
+super().f = super(type(self), self).f
+super(supercls) = super(supercls, self).f
+????
+    # super(supercls, obj) v.s. super(supercls, cls)
+    # it seems to treat as cls before obj
+    super(type, type)
+    super(type, ABCMeta)
+
+## https://rhettinger.wordpress.com/2011/05/26/super-considered-super/
+# reorderable method
+1) the method being called by super() needs to exist
+2) the caller and callee need to have a matching argument signature
+3) every occurrence of the method needs to use super()
+
+# How to Incorporate a Non-cooperative Class
+adapter class
+class Root:
+    def f(self, x, y):pass
+class B:
+    def f(self, x):pass
+class C(B,Root):
+    def f(self, x,y):...
+# error:
+    class D(B,Root):
+        def f(self, x,y):
+            # Error:
+            #   super().f(x,y)
+            #       # B.f(x,y) raise
+            #   super(B).f(x,y)
+            #       # if type(self)==E: super(B).f is Root.f instead of C.f
+class _B(B):
+    def f(self, x,y):
+        f = super().f
+        if f is B.f:
+            f = super(B).f
+        return f(x,y)
+class D(_B, Root):
+    def f(self, x,y):
+        return super().f(x,y)
+class E(D,C):pass
+
+

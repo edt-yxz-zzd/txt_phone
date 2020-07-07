@@ -1,0 +1,145 @@
+number
+structure
+map_uint2<type>
+
+
+mathematics
+computer science
+
+
+
+number in mathematics :
+    natural number ::= set N # = nonnegative integer = unsigned integer = uint
+    integer ::= set Z = { i : i in N or -i in N } # signed integer = sint
+    positive integer ::= N\{0} # = pint
+    residue<m> ::= { i in N : i < m} = the least nonnegative residues modulo m 
+        # m >= 1
+        # what is the least nonnegative residues modulo m?
+            # One of the most important tools in elementary number theory is modular arithmetic (or congruences). Suppose a, b and m are any integers with m not zero, then we say a is congruent to b modulo m if m divides a-b.
+            # Suppose a and m are any two integers with m not zero. We say r is a residue of a modulo m if a = r (mod m). This is the same as m divides a - r (see congruence), or a = r + qm for some integer q. The division algorithm tells us that there is a unique residue r satisfying 0 < r < |m|, and this remainder r is called the least nonnegative residue of a modulo m. 
+            # A set of integers form a complete system of residues modulo m if every integer is congruent modulo m to exactly one integer in the set. So a complete system of residues includes exactly one element from each congruence class modulo m. 
+            # if m is positive, then {0, 1, 2, 3,..., m-1} is a complete system of residues (called the least nonnegative residues modulo m). 
+        
+    boolean ::= {false, true} # = bool 
+        #### xxx = {0,1} = residue2 xxx
+        # for 0<->false, !0->true, but sint%2->{0, 1}
+        
+    Xint = uint | sint | pint 
+        
+structure in mathematics :
+    # of finite or infinite elements
+    set      # each element unique
+    multiset # 
+    tuple    # 
+    
+    STRUCT = set | multiset | tuple
+    STRUCT<n,k> = STRUCT of length in [n,k)
+        # 0 <= n <= length(.) < k, 2 <= k <= inf
+    STRUCTF = STRUCT of finite elements # = STRUCT<0,inf>
+    
+    STRUCTX = STRUCT | STRUCT<n,k>
+    STRUCTX<type_t> = STRUCTX of type type_t
+    STRUCTX_Xint = STRUCTX<Xint>
+
+    
+    tupleF_radix<m> ::= tupleF< residue<m> > 
+        # = tuple of finite radix-<m>-digits
+        # little-endian
+        # what is radix?
+            # In mathematical numeral systems, the radix or base is the number of unique digits, including zero, that a positional numeral system uses to represent numbers. For example, for the decimal system (the most common system in use today) the radix is ten, because it uses the ten digits from 0 through 9.
+            # In any numeral system (except unary, where radix is 1), the base will always be written as "10". For example, "10" represents the number ten in the decimal system; "10" represents the number two in a base two system.
+    
+    tuple_radix<m> ::= tuple< residue<m> >
+    tupleF_compact_radix<m> ::= tupleF< residue<m> >
+    tupleF_standard_radix<B> ::= tupleF< residue<B> > with .length == 0 or .[-1] != 0 
+        #### B >= 2
+    
+    
+
+
+
+
+map_uint2<type> in mathematics:
+    map_uint2sint ::= (uint+1)//2 * ( 1 - uint%2*2)
+        # 0->0, 1->-1, 2->1....
+    map_uint2pint ::= uint + 1
+        # 0->1, 1->2, 2->3
+    !map_uint2residue<m> ::= uint % m        # no inverse!!!
+    !map_uint2bool ::= uint == 0             # no inverse!!!
+    !map_STRUCT2bool ::= not empty(STRUCT)   # no inverse!!!
+    
+    map_uint2tupleF_compact_radix<m> ::= uint2tuple_radix<m>( . - psgs) [0:n]
+        for n == tupleF_compact_radix<m>_length(.)
+            psgs == 0 if n == 0
+                 == part_sum_geometric_series(m,n) otherwise
+        # uint->{(), (0),..(m-1), (0, 0),..(0, m-1), (1, 0),..(m-1, m-1), (0, 0, 0),...}
+                 
+    map_uint2tupleF_standard_radix<m> ::= uint2tuple_radix<m>( . ) [0:n]
+        for n == min{ i in N : m^i > .}
+        # uint->{(), (1),..(m-1), (1, 0),..(1, m-1), (2, 0),..(m-1, m-1), (1, 0, 0),...}
+        
+    map_uint2tuple<1,inf>< tupleF_compact_radix<m> > ::=
+        split( map_uint2tupleF_compact_radix<m+1>(.), m)
+        
+    map_uint2tuple<0,k>< tupleF_compact_radix<m> > ::= 
+        () if 0
+        t1i[0:k-2].append(map_uint2tuple<1,inf>< tupleF_compact_radix<m> >^-1(t1i[k-2:L])) if L >= k-1
+            for t1i = map_uint2tuple<1,inf>< tupleF_compact_radix<m> >(
+                        map_uint2pint^-1(.))
+                L = len(t1i)
+            
+    map_uint2tuple<n,k>< tupleF_compact_radix<m> > ::= 
+        [0]*(n - L)  + [t1i[0] + 1] + t1i[1:L] if 1 <= L <= n
+        [0]*n if L == 0
+        t1i otherwise
+        for t0k = map_uint2tuple<0,k>< tupleF_compact_radix<m> >(.)
+            L = len(t0k)
+            
+
+    --------------------------
+    tuple_radix<m>2uint ::= sum([ .[i] * m^i for i in N ])
+    uint2tuple_radix<m> ::= ([ . //m^i %m for i in N ])
+    part_sum_geometric_series( m, length) ::= sum( [m^i for i in [0:length] ] )
+    tupleN_compact_radix<m>_length ::= max{ i in N : part_sum_geometric_series(m,i) <= .}
+
+
+
+map_tuple_uint2STRUCT<Xint> in mathematics:
+    map_tuple_uint2tuple_Xint ::= ([ map_uint2Xint(u) for u in .])
+    map_tuple_uint2set_Xint ::= 
+        ()              if empty(.)
+        accumlate(tx)   otherwise
+            for tx = [map_uint2Xint(.[0])] + [1+u for u in .[1:]]
+
+    map_tuple_uint2multiset_Xint ::= 
+        ()              if empty(.)
+        accumlate(tx)   otherwise
+            for tx = [map_uint2Xint(.[0])] + .[1:]
+            
+    --------------------------
+    accumulate ::= ([sum(.[0:i]) for i in [1:len(.)+1]])
+
+
+
+
+
+
+
+number in computer science:
+    bit ~ math residue2 ~ xxx bool xxx
+    
+structure in computer science:
+    array<type_t,length> = type_t[length] ~ math tuple<type_t,n>
+    
+    # little-endian
+    byte = octet = bit[8] ~ residue256
+    word<n> = byte[n] ~ residue<256^n> ( n > 0)
+    
+    ordered_set # defined a 'less_than', a sorted array, each element unique
+    ordered_multiset
+    unsorted_tuple
+
+
+
+
+

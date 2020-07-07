@@ -1,0 +1,34 @@
+super key, candidate key, primary key, alternate key
+
+https://stackoverflow.com/questions/8337309/superkey-candidate-key-primary-key
+https://www.guru99.com/dbms-keys.html
+
+
+primary key <: candidate key <: super key
+alternate key <: candidate key
+
+
+all:
+    not NULL
+    UNIQUE
+    single/mulit-column
+
+key <: columns:
+    [is_key columns] =[def]=
+        [is_columns columns][[len(columns)>=1][all ("NOT NULL") columns]["UNIQUE" columns]]
+super key <: key:
+    [is_super_key columns] =[def]= [is_key columns]
+candidate key <: super key:
+    [is_candidate_key columns] =[def]=
+        [is_super_key columns][not . any is_super_key $ all remove [0..len columns - 1]]
+        where
+            -- remove i = columns[:i]++columns[i+1:]
+            remove i = take i columns ++ drop (i+1) columns
+
+primary key <: candidate key:
+    # the one that database designer designate
+    [is_primary_key columns] =[def]= [is_candidate_key columns]["PRIMARY KEY" columns]
+
+alternate key <: candidate key:
+    [is_alternate_key columns] =[def]= [is_candidate_key columns][not $ is_primary_key columns]
+

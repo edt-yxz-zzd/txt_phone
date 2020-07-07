@@ -1,0 +1,82 @@
+
+
+memory ordering : how to command the memory buffer/cache (i.e. working memory)
+    relaxed - donot care
+    acquire - reload my buffer from global memory(i.e. shared memory)
+    release - flush my buffer to global memory
+
+    consume - reload only the atomic from global memory to my buffer // but in fency version, since no address provided, ==>> acquire
+    
+    acq_rel - acquire -> modify -> release
+    seq_cst - using the global mutex
+
+    NOTE: 
+    physical model:
+        single global memory
+        each processor with a buffer
+        size(buffer) and size(buffer) or size(global memory) are uncomparable
+        
+        buffer may auto-reload any non-dirty bits at any time
+        buffer may auto-flush any dirty bits at any time
+    
+        operations:
+            reload part of buffer
+            reload whole buffer
+            flush whole buffer
+            
+    constraints C++ want to set up:
+        for each object, there should be at most one dirty copy in someone's buffer
+        // happen time:       non-dirty <= global < dirty
+        // number of copies:    many         1       0/1
+
+
+mutex
+    mutex.unlock() -[sw]-> mutex.lock()
+
+
+total order
+    [modification order of ONE atomic object] <<== (happens before)
+
+partial order
+    [inter-thread happens before] ::= (synchronizes with | dependency-ordered before | sequenced before)+ but not (.+ (dependency-ordered before) (sequenced before)+ | (sequenced before)+)
+    [sequenced before]
+
+DAG order
+    [happens before] ::= (inter-thread happens before) | (sequenced before)
+
+finite order
+    [synchronizes with] ::= fence(release)-[sb]->atomic.store(relaxed) -> atomic.load(relaxed)-[sb]->fence(acquire)
+    [dependency-ordered before] ::= release->consume (carries a dependency to)*
+
+
+visibility
+    visibility ==>> reading a later value ==xx==>> visibility
+
+
+conflict / data race
+    concurrency object(include atomic):
+        init should happen before other method calls from other threads
+            i.e. release before pass ptr to other threads
+        N3797::p1140 Concurrent access to the variable being initialized, even via an atomic operation, constitutes a data race.
+    non-concurrency object:
+        how to visible <<== happen before <<== synchronization operation <<== atomic operation | mutex operation | fence
+            from N3797::1.10.5
+        how to avoid data race <<== no ambiguity about the visible side effect
+            from N3797::1.10.13 - The value of a non-atomic scalar object or bit-field M , as determined by evaluation B, shall be the value stored by the visible side effect A.
+        modify should happen before/after other operations
+            i.e. as-if using read-write lock but without synchronize other objects
+
+            N3797::p1155 A mutex object facilitates protection against data races and allows safe synchronization of data between execution agents (30.2.5).
+
+    once_flag + call_once
+
+
+
+
+
+
+
+
+
+
+

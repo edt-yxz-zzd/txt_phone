@@ -1,0 +1,63 @@
+Developing Verified Programs with Dafny
+
+IV. FUNCTIONS
+A function in Dafny is a mathematical function. It is defined
+not by code but by an expression. Functions can be used in
+a functional style of programming, and they are often used in
+specifications of (possibly imperative) programs.
+Figure 2 defines a recursive function for exponentiating 2.
+As for a method, the precondition says when the function is
+allowed to be invoked.
+About the syntax, note that the function’s defining body
+is not terminated by a semi-colon. Also, whereas the if
+statement surrounds the then branch and the optional else
+branch in curly braces, the analogous if expression uses the
+keywords then and else and insists on both being present.
+
+
+---
+Note that the specification of Fill does not mention every
+interesting aspect of the method’s behavior. For example, the
+specification says nothing about the order or multiplicity of
+the tree elements copied into the array. How strong or weak
+to make a specification is an engineering choice—a trade-off
+between assurance and the price to obtain that assurance.
+
+
+---
+Classes offer a way to dynamically allocate mutable data
+structures. References (that is, pointers) to components of
+these data structures gives flexibility in programming, but
+generally also make specifications more complicated (though,
+arguably, also make verification more worthwhile). A common
+approach to specifying a class in Dafny is to use two sets
+of variables, some ghost variables that give a simple way to
+understand the behavior of the class and some physical (i.e.,
+non-ghost) variables that form an efficient implementation of
+the class. The relation between the two sets of variables is
+described in a class invariant [5], which in Dafny is typically
+coded into a boolean function (a predicate) called Valid
+that gets used in method specifications. The program updates
+both sets of variables, maintaining the validity condition,
+but the compiler emits only the physical variables into the
+executable code. The Dafny language embraces the idea of
+ghost constructs, not just for variables but also for other
+declarations and statements.
+
+
+----
+Dafny -- An Automatic Program Verifier for Functional Correctness
+
+First, Dafny builds a call graph from the
+syntactic declarations of functions. Then, for any function that may be (mutually) recursive, the language
+makes use of the termination metric supplied by the decreases clause. Such a metric is a lexicographic
+tuple whose components can be expressions of any type. Dafny enforces that any call between mutually
+recursive functions leads to a strictly smaller metric value. In doing the comparison, it first truncates
+the caller’s tuple and callee’s tuple to the longest commonly typed prefix. Integers are ordered as usual,
+false is ordered below true, null is ordered below all other references, sets are ordered by subset,
+sequences are ordered by their length, and algebraic datatypes are ordered by their rank (see Sec. 1.9).
+All of these are finite and naturally bounded from below, except integers, for which a lower bound of 0
+is enforced. The lower bound is checked of the caller’s decreases clause, but the check is performed at
+the time of a (mutually) recursive call, not on entry to the caller. This makes the specification of some
+decreases clauses more natural.
+

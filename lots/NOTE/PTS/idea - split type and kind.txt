@@ -1,0 +1,73 @@
+
+split type and kind
+
+in PTS, we use [M : A] to repr
+    both [term M has type A]
+    and  [type M has kind A]
+
+I try to split these 2 usages.
+    [term <- type]
+    [type <# kind]
+    #[subtype <: super_type]
+
+decl_type vs principal_types
+    principal_types are derived from the well typed term.
+        one term has many types
+    decl_type is declared type of variable of quantifier or user typed by hand.
+
+why?
+    type is type of function
+        i.e. how to form application
+        [M N : ?]
+    kind is kind of type
+        i.e. how to form type
+        [@x:A.B : ?]
+        [?x:A.B : ?]
+        ...
+
+    # type
+    (\x:A. M) x = M
+    (?x:A. M) x = M
+    (@x:A. M) x = M
+        # since they work the same way
+        ==>>
+        [M:B]
+            (\x:A. M) <- (@x:A. B)
+                # hence lambda/abstract is useless, can be replaced by one below:
+            (?x:A. M) <- (@x:A. B)
+            (@x:A. M) <- (@x:A. B)
+
+    #([x=M], N:P x) : (?x:A. P x)
+    #[x=M] >- [N:P x] : (?x:A. P x)
+    ([x=M], N:P x) .fst = M
+    ([x=M], N:P x) .snd = N
+        # treat ".fst"/".snd" as term!!
+        ==>>
+        ([x=M], N:P x) <- @x:{".fst", ".snd"}. {this .fst : A, this .snd : P (this .fst)}
+        i.e. treat (?x:A. P x) as an arrow too!!!!
+
+    [@x:A. (P x -> O)] <==> [(?x:A. P x) -> O]
+        we may denote as: [@x <- P. O]
+            i.e. treat (P:A->*) as subset of A
+            P is a term, now we treat it as a type
+        ??[P == (?x:A. P x)]??
+
+        since [P == (\x:A. P x)]
+            we have [(\x:A. P x) == (?x:A. P x)]
+            lambda and some are the same!!!!
+
+
+    #kind
+
+a term may have many types and have no unique minimum type.
+    every term is a lambda function.
+    every term is a type.
+    term [<- type1, <- type2..., <# kind1, <# kind2...]
+
+    old:
+        \A:*. \x:A. x : @A:*. @x:A. A : *
+    new:
+        \A:*. \x:A. x [<- @A:*. @x:A. A, <# *, <-/<# ???@A:*. *???]
+
+
+

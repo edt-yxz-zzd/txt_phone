@@ -1,0 +1,78 @@
+
+id
+Maybe/Nothing/Just
+Either/Left/Right/unEither
+UInt/Zero/Succ
+maybe_minus1/may_minus1/floor_div2/ceil_div2
+
+
+id : @R:*. @r:R. R
+id = \R:*. \r:R. r
+
+Maybe a = Nothing | Just a
+Maybe A = @R:*. (A -> R) -> R -> R
+Maybe : @A:*. *
+Maybe = \A:*. @R:*. (A -> R) -> R -> R
+
+Nothing = \A:*. \R:*. \a2r:(A->R). \r:R. r
+Nothing : @A:*. @R:*. (A -> R) -> R -> R
+Nothing : @A:*. Maybe A
+Nothing A : Maybe A
+#error: Nothing : Maybe
+#Maybe is a function, not a type
+
+Just A (a:A) : Maybe A
+Just : @A:*. @a:A. Maybe A
+Just = \A:*. \a:A. \R:*. \a2r:(A->R). \r:R. a2r a
+Just : @A:*. @a:A. @R:*. (A -> R) -> R -> R
+
+
+
+Either a b = Left a | Right b
+Either : @A:*. @B:*. *
+Either = \A:*. \B:*. @R:*. (A->R) -> (B->R) -> R
+Left : @A:*. @B:*. @a:A. Either A B
+Right : @A:*. @B:*. @b:B. Either A B
+Left = \A:*. \B:*. \a:A. \R:*. \a2r:(A->R). \b2r:(B->R). a2r a
+Right = \A:*. \B:*. \b:B. \R:*. \a2r:(A->R). \b2r:(B->R). b2r b
+unEither : @R:*. Either R R -> R
+unEither = \R:*. \either: Either R R. either R (id R) (id R)
+
+
+UInt = Zero | Succ UInt
+UInt = @R:*. (R->R) -> R -> R
+Zero = \R:*. \r2r:R->R. \r:R. r
+Zero : UInt
+Succ = \u:UInt. \R:*. \r2r:R->R. \r:R. r2r (u R r2r r)
+Succ : UInt -> UInt
+
+maybe_minus1 : UInt -> Maybe UInt
+#using Maybe
+#   Maybe UInt as [-1..]
+maybe_minus1 = \u:UInt.
+    let succ : Maybe UInt -> Maybe UInt
+        zero : Maybe UInt
+        neg1 : Maybe UInt
+        neg1 = Nothing UInt
+        zero = Just UInt Zero
+        succ = \maybe:Maybe UInt. maybe (Maybe UInt) (\u:UInt. Just UInt (Succ u)) zero
+    in  u (Maybe UInt) succ neg1
+
+may_minus1 : UInt -> UInt
+#may_minus1 u = max(0, u-1)
+may_minus1 = \u:UInt. maybe_minus1 u UInt (id UInt) Zero
+
+floor_div2 : UInt -> UInt
+ceil_div2 : UInt -> UInt
+#floor_div2 u = u//2
+#ceil_div2 u = (u+1)//2
+#using Either
+#   when move from Right to Left apply r2r
+ceil_div2 = \u:UInt. floor_div2 (Succ u)
+floor_div2 = \u:UInt. \R:*. \r2r:(R->R). \r:R.
+    let left = Left R R : R -> Either R R
+        right = Right R R : R -> Either R R
+        move : Either R R -> Either R R
+        move = \either : Either R R. either (Either R R) right (\r:R. left (r2r r))
+    in  unEither R (u (Either R R) move (left r))
+
