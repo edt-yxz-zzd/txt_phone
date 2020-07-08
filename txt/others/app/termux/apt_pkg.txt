@@ -1,4 +1,5 @@
 apt
+exit
 
 https://f-droid.org/packages/com.termux/
 	termux apk 67MB for android 7.0 > 6.0 my phone
@@ -7,6 +8,11 @@ $ apt update
 $ apt-get update
 $ apt list
 
+$ pkg install tsu
+	for:
+		#su wrapper for Termux
+		tsu - su
+		tsudo - sudo
 
 $ apt install curl
 $ apt upgrade wget
@@ -57,14 +63,55 @@ pip install bs4
 pip install Django
 
 
+
+
+
 #termux startup directory
+======
+bash alias
+	#https://www.gnu.org/software/bash/manual/html_node/Bash-Startup-Files.html
+	# ~ === $HOME
+	# $HOME/.bashrc --> "$PREFIX/etc/bash.bashrc"
+	~/.bash_profile
+		if [ -f ~/.bashrc ]; then . ~/.bashrc; fi
+	$BASH_ENV  #shell src path to run at startup
+		#Bash behaves as if the following command were executed:
+		if [ -n "$BASH_ENV" ]; then . "$BASH_ENV"; fi
+		#but as not run by "source", "alias" not visit???
+	$HOME/.bashrc
+		if [ -e $HOME/.bash_aliases ]; then
+			source $HOME/.bash_aliases
+		fi
+	$HOME/bash_aliases
+		#be loaded by $HOME/.bashrc
+		$ touch ~/.bash_aliases
+			alias ls='ls -F'
+			alias ll='ls -lh'
+	$ source ~/.bashrc
+		Not all distributions ship with pre-populated aliases, though. If you add aliases manually, then you must load them into your current Bash session:
+======
 	to auto:
 		cd ~/storage/shared/0my_files/git_repos/txt_phone/txt/
 		set up env ...
+	=====
+	!!!!!!!!!!
+		every file occur in /sdcard WILL auto owned by root:everybody, and -x!!!
+			hence cannot
+				"chown $(id -nu):$(id -nu) file"
+				"chmod +x file"
+		mv file between: ~/../usr/bin/ <--> ~/storage/downloads/
+			#after $ termux-setup-storage
+			we see:
+				ls -l file
+				--> "root" -x
+				<-- $(id)
+				lost +x !!!!!
+			==>> we cannot store +x script outside bin
 	========
 	$ termux-setup-storage
 		to mk symlink: ~/storage
-	vim /data/data/com.termux/files/usr/etc/bash.bashrc
+	$ mkdir ~/../usr/bin/my_sh/
+	#vim /data/data/com.termux/files/usr/etc/bash.bashrc
 	vim ~/../usr/etc/bash.bashrc
 		append
 			alias py=python
@@ -76,39 +123,137 @@ pip install Django
 			export my_home="$my_repos/txt_phone/"
 			export my_git_txt="$my_repos/txt_phone/"
 			export my_git_py="$my_repos/python3_src/"
-			export PYTHONPATH="$my_git_py:$PYTHONPATH"
-			echo $PYTHONPATH
 
 			export my_txt="$my_git_txt/txt/"
-			cd $my_git_py/
+
+
+			export my_git_sh="$my_git_py/bash_script/"
+			#PREFIX=/data/data/com.termux/files/usr
+			export my_sh="$PREFIX/bin/my_sh/"
+			export PATH="$my_sh:$PATH"
+			export PYTHONPATH="$my_git_py:$PYTHONPATH"
+			echo $PATH
+			echo $PYTHONPATH
+
+			#bug: export etc="~/../usr/etc/"
+			#export etc=~/../usr/etc/
+			export etc="$PREFIX/etc/"
+			export etc_sh="$etc/bash.bashrc"
+
+			cd $my_git_sh/
+			cd $my_sh/
 			cd $my_txt/
 
+	=====
+	$ vim $my_sh/mz.sh
+		# -----
+		#
+		# Ctrl+C to quit.
+		# beginwith:  http://127.0.0.1:8000/old/
+		# or:         http://127.0.0.1:8000/new/
+		# or:         http://127.0.0.1:8000/all/
+		# or:         http://127.0.0.1:8000/
+		# or:         http://127.0.0.1:8000/index/
+		py -m nn_ns.app.Django.mzitu_com.mzitu_com_project_main.manage runserver
+	$ vim $my_sh/py
+		python "$@"
+
+	$ cp $my_git_sh/mz.sh $my_sh/
+	$ chmod +x $my_sh/mz.sh
+	$ cp $my_git_sh/py $my_sh/
+	$ chmod +x $my_sh/mz.sh
 
 
 
 
 
-rem Ctrl+C to quit.
-rem beginwith:  http://127.0.0.1:8000/old/
-rem or:         http://127.0.0.1:8000/new/
-rem or:         http://127.0.0.1:8000/all/
-rem or:         http://127.0.0.1:8000/
-rem or:         http://127.0.0.1:8000/index/
-py -m nn_ns.app.Django.mzitu_com.mzitu_com_project_main.manage runserver
-	#cd ..... then: python manage.py migrate
 
 
 
-.../nn_ns/app/Django/mzitu_com/mzitu_com_project_main/mzitu_com_project/DATA.py
-new:
-	website_per_page_img_url_regex
-		<<== https://i3.mmzztt.com/2020/06/27b01.jpg
-#new: website_per_page_img_url_regex
-website_per_page_img_url_regex = re.compile(
-    r"https?://[^/]+/\d{4}/\d{2}/\d{2}[a-z](?P<IMG_NUMBER>\d{2})(?:-\w+)?[.]jpg"
-    )
-assert website_per_page_img_url_regex.fullmatch('https://i.meizitu.net/2015/02/03t01.jpg')
-assert website_per_page_img_url_regex.fullmatch(r"https://i3.mmzztt.com/2020/06/27b01.jpg")
+shell script
+	#  -------
+	#   work, too!!!!!
+	#   simply neednot first line!
+	#! /data/data/com.termux/files/usr/bin/bash
+	#   work!
+	#! $PREFIX/bin/env bash
+	#   mine
+	#   error!!!!!!!
+	#   ~ $ donot expand!!!
+	#   should use abspath
+	#   all script are hard coding by program
+	#   when create mannally, should let it empty
+	#! /usr/bin/env bash
+	# ^
+	#! /bin/bash
+	# ^
+	#! /bin/sh
+	# oldest
+	chmod +x /xxx/xxx.sh
+	which bash
+	x=$(echo txt)
+	echo "xxx".$x
+	echo $0
+	########
+	ls -l
+	id -nu
+	groups
+	chown <id_nu>:<group> <file>
+	chmod +x <file>
+	cd $(pwd)
+
+source xxx.sh
+	#vs --> source run in curr env
+	env bash xxx.sh
+	bash xxx.sh
+env
+touch <file>
+vim <file>
+view <file>
+cp <file> <to_dir>/
+mv <file> <to_dir>/
+mv -T <file> <to>
+rm <file>
+rm -rf <dir>
+mkdir <dir>
+rmdir <dir>
+ls -a
+ls -l
+apt list | grep ssh
+apt show tsu
+
+shift
+	echo "$@"
+	echo $1
+	shift
+	echo $1 $2
+	==>> output:
+		1 2 3
+		1
+		2 3
+
+
+
+    open new file and edit it: vim r.sh:
+
+    echo "params only 2    : ${@:2:1}"
+    echo "params 2 and 3   : ${@:2:2}"
+    echo "params all from 2: ${@:2:99}"
+    echo "params all from 2: ${@:2}"
+
+    run it:
+
+    $ chmod u+x r.sh
+    $ ./r.sh 1 2 3 4 5 6 7 8 9 10
+
+    the result is:
+
+    params only 2    : 2
+    params 2 and 3   : 2 3
+    params all from 2: 2 3 4 5 6 7 8 9 10
+    params all from 2: 2 3 4 5 6 7 8 9 10
+
+
 
 
 
