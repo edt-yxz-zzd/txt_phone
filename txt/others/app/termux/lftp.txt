@@ -1,0 +1,76 @@
+termux FTP <-> desktop
+$ pkg show lftp
+$ pkg show pure-ftpd
+pkg install lftp
+pkg install pure-ftpd
+desktop:
+	FileZilla Server
+		check "always connect to this server"
+		edit:
+			groups:
+				add: xx
+				shared folders:
+					add: E:\
+					files: read
+					directories: list, +subdirs (for "cd/ls")
+			users:
+				add: xxD | xxE
+				psw: 471589
+				shared folders:
+					add: D:\ | E:\
+					files: read
+					directories: list, +subdirs (for "cd/ls")
+			settings:
+				listen: 21
+				passive:
+					ip4:
+						use ip:
+							192.168.23.1 # from (My WIFI Router创建的)wifi连接 的 ip4属性
+							# 10.0.0.1
+							# 106.12.197.217
+	windows firewall
+		# open gui "FileZilla Server Interface.exe"
+		# but restrict background "FileZilla Server.exe"
+		入站规则 "FileZilla Server.exe"
+			协议类型 任何
+			作用域 任何ip
+			高级 专用
+	按键精灵
+		ctrl+4
+			Call Lib.API.运行程序("C:\Program Files (x86)\FileZilla Server\FileZilla Server.exe")
+			x = Lib.窗口.弹出对话框("wait FileZilla Server.exe",1,"wait",68)
+
+			Hwnd = Plugin.Window.Find("#32770", "Question")
+			If (Hwnd = 0) Then 
+				MsgBox "error"
+			Else 
+				// alt+Y
+				KeyDown 18, 1
+				KeyPress 89, 1
+				KeyUp 18, 1
+			End If
+
+			//Hwnd = Plugin.Window.Find("FileZilla Server Main Window", "FileZilla Server (127.0.0.1)")
+			Hwnd = Plugin.Window.Find("FileZilla Server Main Window", 0)
+			If (Hwnd = 0) Then
+				Call Lib.API.运行程序("C:\Program Files (x86)\FileZilla Server\FileZilla Server Interface.exe")
+			Else 
+				Call Plugin.Window.CloseEx(Hwnd)
+				x = Lib.窗口.弹出对话框("wait FileZilla Server.exe",1,"wait",68)
+				Call Lib.API.运行程序("C:\Program Files (x86)\FileZilla Server\FileZilla Server Interface.exe")
+			End If
+
+termux:
+	lftp
+		open xxE@192.168.23.1
+			open 192.168.23.1
+			user xxE
+		help
+		ls
+		cd xxx
+		get xxxx -o ~/tmp
+		ctrl+c #interrupt sub cmd
+		exit
+
+
+

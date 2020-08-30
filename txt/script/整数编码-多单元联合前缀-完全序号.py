@@ -61,6 +61,10 @@ st2st = st2st<0> + st2st<1> =
 (st2st^n)[0,mt-1]
 
 ====
+import sympy as sy
+from pathlib import Path
+path = Path.home() / 'txt/script/整数编码-多单元联合前缀-完全序号.py'
+exec(path.read_bytes())
 
 ====
 sm = \
@@ -74,8 +78,8 @@ sm = \
 
 ls = [*map(int, ''.join(sm))]
 from sympy import Matrix;
-m = Matrix(6, 6, ls)
-(P, D) = m.diagonalize()
+M = Matrix(6, 6, ls)
+(P, D) = M.diagonalize()
 >>> import sympy as sy
 >>> sp = sy.sympify
 >>> sf = sy.simplify
@@ -88,13 +92,13 @@ mul_mx(P, sy.diag(0,a,b,c,d,e), P.inv())
 
 =========usage:sympy
 >>> from sympy import Matrix
->>> m = Matrix(3, 3, [1, 2, 0, 0, 3, 0, 2, -4, 2])
->>> m
+>>> M = Matrix(3, 3, [1, 2, 0, 0, 3, 0, 2, -4, 2])
+>>> M
 Matrix([
 [1,  2, 0],
 [0,  3, 0],
 [2, -4, 2]])
->>> (P, D) = m.diagonalize()
+>>> (P, D) = M.diagonalize()
 >>> D
 Matrix([
 [1, 0, 0],
@@ -105,7 +109,7 @@ Matrix([
 [-1, 0, -1],
 [ 0, 0, -1],
 [ 2, 1,  2]])
->>> P.inv() * m * P
+>>> P.inv() * M * P
 Matrix([
 [1, 0, 0],
 [0, 2, 0],
@@ -122,41 +126,43 @@ def mk_st2st_0(mh, mt):
 	assert mh >= 2
 	assert mt >= 2
 	n = mh+mt
-	m = sy.zeros(n, n)
+	M = sy.zeros(n, n)
 	for i in range(mt):
-		m[i,i+1] = 1
+		M[i,i+1] = 1
 	for i in range(1, mh):
-		m[-i,0] = 1
-	m[-mh, -mh] = 1
+		M[-i,0] = 1
+	M[-mh, -mh] = 1
 	c = sy.ones(n, 1)
 	r = sy.ones(1, n)
-	assert m*c == c
-	assert (r*m)[0, mt] == 2
-	return m
+	assert M*c == c
+	assert (r*M)[0, mt] == 2
+	return M
 
 def mk_st2st_1(mh, mt):
 	assert mh >= 2
 	assert mt >= 2
 	n = mh+mt
-	m = sy.zeros(n, n)
+	M = sy.zeros(n, n)
 	for i in range(mt-1):
-		m[i,-1] = 1
-	m[mt-1, -mh] = 1
+		M[i,-1] = 1
+	M[mt-1, -mh] = 1
 	for i in range(1, mh):
-		m[-i,-i-1] = 1
-	m[-mh, -mh] = 1
+		M[-i,-i-1] = 1
+	M[-mh, -mh] = 1
 	c = sy.ones(n, 1)
 	r = sy.ones(1, n)
-	assert m*c == c
-	assert (r*m)[0, mt] == 3
-	return m
+	assert M*c == c
+	assert (r*M)[0, mt] == 3
+	return M
 
 def mk_st2st(mh, mt):
 	return mk_st2st_0(mh, mt) + mk_st2st_1(mh, mt)
 
 def _t(mh, mt):
-	m = mk_st2st(mh, mt)
-	(P, D) = m.diagonalize()
+	M = mk_st2st(mh, mt)
+	kw = dict(sort=True, normalize=True)
+	kw = {}
+	(P, D) = M.diagonalize(**kw)
 	n = mh+mt
 	ds = [D[i,i] for i in range(n)]
 	if not D == sy.diag(*ds):
@@ -168,7 +174,22 @@ def _t(mh, mt):
 	#(P*ddd*P.inv())[0, mt-1]
 	print('P=', P)
 	print('ds=', ds)
-	invP = P.inv() # noreturn???
+	if 1:
+		invP = P.inv() # noreturn??? too slow
+		invP = P.inv(method="LU")
+	else:
+		Mt = M.transpose()
+		assert M != Mt
+		(Pt, Dt) = Mt.diagonalize(**kw)
+		print('assert D == Dt')
+		assert D == Dt
+		eee = P*Pt
+		print('eee = sf(eee)')
+		eee = sf(eee)
+		print('eee=', eee)
+		assert eee == sy.eye(n) #fail!!!!!
+		invP = Pt
+
 	r = sy.zeros(1, n)
 	r[0,0] = 1
 	c = sy.zeros(n, 1)
