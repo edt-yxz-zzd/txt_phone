@@ -20,8 +20,10 @@ after_parse_CHISE_IDS.py
 
 cd /sdcard/0my_files/unzip/e_book/汉字分解/CHISE_IDS[67b94ff]/ids-67b94ff
 py ~/txt/script/parse_CHISE_IDS.py -o ~/tmp/ids_all_1.txt ./IDS-UCS-*.txt -se -f 2>~/tmp/ids_all_1_err.txt
+
 cd /sdcard/0my_files/unzip/e_book/汉字分解/chise-ids-ea97c5d[20200812]/ids-ea97c5d
 py ~/txt/script/parse_CHISE_IDS.py -o ~/tmp/ids_all_2.txt ./IDS-UCS-*.txt -se -f 2>~/tmp/ids_all_2_err.txt
+
 diff  ~/tmp/ids_all_1_err.txt ~/tmp/ids_all_2_err.txt
 
 less  ~/tmp/ids_all_1_err.txt

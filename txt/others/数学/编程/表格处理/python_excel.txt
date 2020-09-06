@@ -1,0 +1,156 @@
+https://zhuanlan.zhihu.com/p/115168402
+用Python处理Excel表格
+
+
+首发于
+日常学习
+用Python处理Excel表格
+IRONAnthony
+IRONAnthony
+路人甲
+
+Excel是Windows环境下流行而强大的电子表格程序。openpyxl模块可以让Python程序能读取和修改Excel表格文件。例如，你可能有一个无聊的任务，需要从一个表格中复制一些数据，粘贴到另一个表格中。或者可能需要从几千行中挑选出几行，并根据某个条件稍作修改。或者需要查看几百份部门预算电子表格，找到其中的赤字。这些无聊的任务都可以用Python完成。
+Excel文档
+
+一个Excel电子表格文件称为一个工作簿。一个工作簿保存在扩展名为.xlsx的文件中。每个工作簿可以包含多个表（也称为工作表）。用户当前查看的表（或关闭Excel前最后查看的表）称为活动表。每个表都有一些列（地址是从A开始的字母）和一些行（地址是从1开始的数字）。在特定行和列的翻个称为单元格。每个单元格都包含一个数字或文本值。单元格形成的网格和数据构成了表。
+安装openpyxl模块
+
+Python没有自带openpyxl，所以必须自己安装。打开命令行输入
+
+pip install openpyxl
+
+即可安装。
+读取Excel文档
+
+我们将使用名为example.xlsx的电子表格，可以在Automate the Boring Stuff with Python处找到并下载。如下图所示，有3个默认的表，名为Sheet1、Sheet2和Sheet3，这是Excel自动为新工作簿提供的（不同操作系统和电子表格程序，提供的默认表个数可能会不同）。
+
+
+用openpyxl模块打开Excel文档
+
+导入openpyxl模块后，就可以用openpyxl.load_workbook()函数打开Excel文档。
+
+
+openpyxl.load_workbook()函数接受文件名，返回一个workbook数据类型的值。这个workbook对象代表整个Excel文件（example.xlsx），类似File对象代表一个打开的文本文件。
+从工作簿中取得工作表
+
+通过workbook对象的sheetnames属性可以得到工作簿中所有表名的列表。
+
+
+每个表由一个Worksheet对象表示，可以通过向工作簿进行索引（用表名字符串）获得。可以通过Workbook对象的active属性取得工作簿的活动表。在取得Worksheet对象后，可以通过title属性取得它的名称。
+从表中取得单元格
+
+获取到了Worksheet对象后，就可以按名字访问Cell对象。
+
+
+Cell对象由一个value属性，它包含这个单元格中保存的值。Cell对象也有row、column和coordinate属性，提供该单元格的位置信息。
+
+如上图所示，访问单元格B1的Cell对象的value属性，得到字符串'Apples'。row属性给出的是整数1，column属性给出的是2，coordinate属性给出的是'B1'。
+
+调用表的cell()方法时，可以传入整数作为row和column关键字参数，也可以得到一个单元格。
+
+
+可以通过Worksheet对象的max_column和max_row属性，确定表的大小。
+
+sheet.max_column, sheet.max_row
+# (3, 7)
+
+列字母和数字之间的转换
+
+要从字母转换到数字，就调用openpyxl.utils.column_index_from_string函数。要从数字转换到字母，就调用openpyxl.utils.get_column_letter()函数。
+
+
+从openpyxl.utils模块引入这两个函数后，可以调用get_column_letter()，传入像27这样的整数，弄清楚第27列的字母是什么。函数column_index_string做的事情相反：传入一列的字母名称，它返回该列的数字是什么。
+从表中取得行和列
+
+可以将Worksheet对象切片，取到电子表格中一行、一列或一个矩形区域中的所有Cell对象。然后可以循环遍历这个切片中的所有单元格。
+
+
+这个元组包含3个元组：每个元组代表1行，从指定区域的顶部到底部。这3个内部元组中的每一个包含指定区域中一行的Cell对象，从最左边的单元格到最右边。工作表的这个切片包含了从A1到C3区域的所有Cell对象，从左上角的单元格到右下角的单元格。
+
+可以按照如下方式获取到表格中的一行或一列
+
+
+写入Excel文档
+
+openpyxl也提供了一些方法写入数据。这意味着你的程序可以创建和编辑电子表格文件。利用Python，创建一个包含几千行数据的电子表格是非常简单的。
+创建并保存Excel文档
+
+调用openpyxl.Workbook()函数，创建一个新的空Workbook对象。
+
+
+当修改Workbook对象或它的工作表和单元格时，电子表格文件不会保存，除非调用save()工作簿方法。
+
+wb.save('demo.xlsx')
+
+
+创建和删除工作表
+
+利用create_sheet()和remove_sheet()方法，可以在工作簿中添加或删除工作表。
+
+
+create_sheet()方法返回一个新的Worksheet对象，名为SheetX，它默认是工作簿的最后一个工作表。或者，可以利用index和title关键字参数，指定新工作表的索引或名称。
+
+
+remove()方法接受一个Worksheet对象作为其参数，而不是工作表名称的字符串。
+将值写入单元格
+
+将值写入单元格很像将值写入字典中的键。
+
+
+查看demo.xlsx文件，可以看到值已被写入到文件中
+
+
+项目：从电子表格中读取数据
+
+假设你有一张电子表格，里面包含了2010年美国人口普查数据。你有一个比较无聊的任务，要遍历表中的几千行，计算总的人口，以及每个县的普查区数目（普查区是一个地理区域，为了人口普查而定义的）。表格中的每一行表示一个人口普查区。表格名为censupopdata.xlsx，可以在Automate the Boring Stuff with Python处下载。
+
+
+censuspopdata.xlsx电子表格中只有一张表，名为“Population by Census Tract”。每一行都保存了一个普查区的数据。列分别是普查区的编号（A），州的简称（B），县的名称（C），普查区的人口（D）。
+
+在这个项目中，我们需要编写一个脚本，从人口普查电子表格中读取数据，并做以下几件事：
+
+    从Excel表格中读取数据计算每个县中普查区的数目计算每个县的总人口打印结果
+
+这意味着代码需要完成下列任务：
+
+    用openpyxl模块打开Excel文档并读取单元格计算所有普查区和人口数据，将它们保存到一个数据结构中利用pprint模块，将该数据结构写入一个扩展名为.py的文本文件中
+
+完整代码如下所示：
+
+import openpyxl, pprint
+
+# 用openpyxl模块打开Excel文档
+wb = openpyxl.load_workbook('censuspopdata.xlsx')
+sheet = wb['Population by Census Tract']
+# 存储普查区数目和人口数据
+countryData = {}
+
+for row in range(2,sheet.max_row+1):
+    state = sheet['B'+str(row)].value
+    country = sheet['C'+str(row)].value
+    pop = sheet['D'+str(row)].value
+
+    countryData.setdefault(state, {})
+
+    countryData[state].setdefault(country, {'tracts':0, 'pop':0})
+
+    countryData[state][country]['tracts'] += 1
+    countryData[state][country]['pop'] += int(pop)
+
+# 将数据存储到文件中
+resultFile = open('census2010.py', 'w')
+resultFile.write('allData = ' + pprint.pformat(countryData))
+resultFile.close()
+
+保存到census2010.py文件中的数据如下所示：
+
+
+参考
+
+    https://automatetheboringstuff.com/
+
+发布于 03-22
+Python
+Microsoft Excel
+openpyxl
+
