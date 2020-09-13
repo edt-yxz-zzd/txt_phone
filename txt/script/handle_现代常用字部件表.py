@@ -108,522 +108,523 @@ __all__ = """
 
 
 ##data##
+# 现代常用字部件的笔画顺序__依github_stroke_seq_MB #TODO
 现代常用字部件表_部件名称顺序 = r"""
 
-*昂字底【卬】ang2
-凹
-敖字旁
-奥字头
-+八
--倒八
-巴
-白
-百
-拜字边
-办
-半
-宝盖
-卑
-贝
-贲字腰
-本
-鼻字底
-+匕
--北字旁
-必
-敝字旁
-*番字头【釆】bian4
-丙
-秉
-病字框
-+卜
--卢字头
-不
-才
-曹字头
-草字头
-+册
--扁字心
--典字头
-曾字头 #pg1: 36-5
-叉
-产
-长
-厂
-车
-+臣
--临字旁
-辰
-丞
-承
-尺
-斥
-赤
-虫
-丑
-出
-+川
--荒字底
--巡字心
-串
-垂
-春字头
-*刺字旁【朿】ci4
-匆
-囱
-寸
-大
-+歹
--餐左角
-带字头
-丹
-单
-+刀
--刀中 # 班辨
--黎右角
--立刀 # 出现在右边
-登字头 #pg2: 73-12
-帝字头
-+弟
--弟省 # 第
-=点
-电
-刁
-丁
-鼎
-冬字头
-东
-兜
-斗
-豆
-段字旁
-而
-尔字头
-耳
-二
-发
-凡
-反字框
-+反文
--*敲字边【攴】pu1
-方
-飞
-非
-+丰
--寿字头
-+风
--风省
-缶
-夫
-*肺字边【巿】fu2
-弗
-甫
-父
-丐 #pg3: 110-16
-干
-尴字框
-甘
-高
-戈
-革
-个
-*根字边【艮】gen4
-庚字心
-更
-工
-弓
-骨字头
-谷
-瓜
-*决字边【夬】guai4
-*贯字头【毌】guan4
-广
-龟
-鬼
-果
-亥
-寒字腰 # 不含〖八〗
-号字底
-禾
-鹤字旁
-黑
-=*横【一】
-+=*横折弯钩【乙】
--=横钩
--=横折
--=横折钩
-后
-乎
-虎字头
-互
-户 #pg4: 147-19
-画字框
-奂
-黄
-惠字头
-+火
--横四点 # 灬
-击
-及
-即字旁
-几
-+己
--已
--以字旁 # 〖竖提〗+〖点〗
--巳
-*既字边【旡】ji4
-夹
-甲
-*假字边【叚】jia3
-兼
-+柬
--拣字边
-建之
-见
-+绞丝旁
--绞丝底 # 系紧
-角
-+*单耳【卩】jie2 # 却
--节字底
--仓字底
-*捷字边【疌】jie2
-巾
-斤
-今
-+金 # 鉴
--金旁 # 针
-*谨字边【堇】jin3
-京 #pg5: 184-28
-井
-*纠字边【丩】jiu1
-九
-久
-韭
-臼
-举字底
-句字框
-巨
-聚字底 # 似〖豕〗，少一撇，弯钩改竖
-具
-卷字头
-卡
-开
-可字框 # 〖丁〗？
-口
-来
-+老
--老省 # 者
-乐
-耒 #lei3
-离字底
-里
-力
-立
-吏
-丽
-隶
-*隔字边【鬲】li4
-+冰字旁【两点水】
--冬字底【两点】
-两
-尞字头
-了
-临右角
-临下角 # 〖下角〗特指〖右下角〗
-六 #pg6: 221-30
-龙
-卤
-录字头
-鹿
-旅下角
-卵
-仑
-罗字头
-马
-毛
-矛
-+卯
--留字头
-冒字头 # 似〖日〗，下两横不与其他笔画接触
-么
-眉字框
-门
-米
-免
-面
-民
-皿
-末
-母
-木
-目
-那字旁
-乃
-南
-囊字头
-内
-*逆字心【屰】ni4
-年
-廿
-+鸟
--鸟省
-+牛 #pg7: 258-32
--告字头
-农
-+弄字底
--共字底 # 三笔
-女
-+爿 #pan2，藏？
--将字旁
-皮
-片
-=撇
-+乒
--乓
-平
-七
-妻
-其
-气
-千
-前字头
-钱字边
-欠
-乔字底
-且
-青字头
-轻字边
-丘
-求
-区字框
-曲
-去
-+犬
--反犬旁
-冉
-+人
--单立人
--儿
--负字头 #pg8: 295-40
--卧人 # 每
-壬
-刃
-+日
--曰 # 似〖日〗，中间一横左触右不触
-入
-三
-伞
-丧字头 # 墙
-色
-山
-彡 #shan1
-商字头 # 滴，含框，商字框？
-上
-勺
-少
-舌
-申
-身
-升
-生
-尸
-失
-十
-石
-+食
--食旁
-史
-矢
-+豕
--豕省 #少顶横，毅缘
-士
-氏
-+示
--示旁 # 礼
-世
-事 #pg9: 332-45
-+手
--提手
-首
-*设字边【殳】shu1
-书
-鼠
-=竖
-+=竖折
--=竖弯钩
-术
-束
-衰字腰 # 〖中〗倾
-甩
-率字腰 # 仅四点，〖率夹腰〗？〖脊双角〗？
-双耳 # 要不要分左右？形、位 分离？
-双立人 # 行
-+水
--三点水
--水底 # 暴录
--益字头
-*私字边【厶】si1
-司
-丝
-四
-肆字旁
-叟字头
-肃
-太
-唐字心 # 不含〖口〗
-天
-田
-同字框
-头
-秃宝盖
-凸
-土
-屯 #tun2 #pg10: 369-50
-*托字边【乇】tuo1
-瓦
-丸
-万
-亡
-王
-*围字框【囗】wei2
-韦
-卫
-畏字底 # 不含〖一〗
-为
-未
-文
-我
-乌
-无
-五
-午
-舞字头 # 除双足
-兀
-勿
-戊
-+夕
--夜下角
-昔字头
-+西
--要字头
-习
-夏字头 # 仅两笔
-下
-乡
-向
-象
-+小
--尚字头 # 仅三笔，vs〖商字头〗
-卸字旁
-+心 #pg11: 406-53
--恭字底
--竖心
-辛
-囟 # xin4，傻瑙
-戌 # xu1
-玄字头 # 亩
-学字头 # 仅三笔
-穴
-+雪字底
--虐字底
-血
-熏
-讯字边
-丫
-牙
-亚
-焉字底 # 除〖正〗
-延字心
-严
-+言
--言旁 # 话
-央
-杨字边
-+羊
--美字头 # 盖
--养字头 # 除底两笔
-*幼字旁【幺】yao1
-夭
-尧字头
-也
-业
-页
-*拽字边【曳】ye4
-+衣 # 裹
--衣省 # 除顶两笔
--衣旁 # 补
-彝字头 # 仅三笔，含〖一〗，缘 #pg12: 443-61
-夷
-颐字旁
-*艾字底【乂】yi4
-*代字边【弋】yi4
-义
-亦
-殷字旁
-*枕字边【冘】yin2
-尹
-庸
-勇字头 # 仅两笔
-永
-用
-尤
-由
-酉
-又
-于
-鱼
-*愚字头【禺】yu2
-与
-予
-雨
-禹
-+玉
--斜玉 # 玻班
-*律字边【聿】yu4
-+*月【肉月】 # 胆
--肉
--青字底 # 肩
--然左角
-*越字心【戉】yue4
-云
-再
-乍 # zha3
-丈
-+爪 #pg13: 480-65
--印字旁
--爪头 # 采
-兆
-争
-正
-之
-直
-+止
--降下角
--足字底
--步字底
-至
-制字旁
-*豹字旁【豸】zhi4
-中
-重
-周字框
-舟
-州
-朱
-+竹
--竹头
-主
-专
-+追字心
--官字底
--师字旁 # 归帅
-*锥字边【隹】zhui1
-啄字边
-子
-姊字边
-自
-走之
-左字框 #pg14: 514-73
+*昂字底【卬】ang2 :xxxx
+凹 :xxxx
+敖字旁 :xxxx
+奥字头 :xxxx
++八 :xxxx
+-倒八 :xxxx
+巴 :xxxx
+白 :xxxx
+百 :xxxx
+拜字边 :xxxx
+办 :xxxx
+半 :xxxx
+宝盖 :xxxx
+卑 :xxxx
+贝 :xxxx
+贲字腰 :xxxx
+本 :xxxx
+鼻字底 :xxxx
++匕 :xxxx
+-北字旁 :xxxx
+必 :xxxx
+敝字旁 :xxxx
+*番字头【釆】bian4 :xxxx
+丙 :xxxx
+秉 :xxxx
+病字框 :xxxx
++卜 :xxxx
+-卢字头 :xxxx
+不 :xxxx
+才 :xxxx
+曹字头 :xxxx
+草字头 :xxxx
++册 :xxxx
+-扁字心 :xxxx
+-典字头 :xxxx
+曾字头 :xxxx #pg1: 36-5
+叉 :xxxx
+产 :xxxx
+长 :xxxx
+厂 :xxxx
+车 :xxxx
++臣 :xxxx
+-临字旁 :xxxx
+辰 :xxxx
+丞 :xxxx
+承 :xxxx
+尺 :xxxx
+斥 :xxxx
+赤 :xxxx
+虫 :xxxx
+丑 :xxxx
+出 :xxxx
++川 :xxxx
+-荒字底 :xxxx
+-巡字心 :xxxx
+串 :xxxx
+垂 :xxxx
+春字头 :xxxx
+*刺字旁【朿】ci4 :xxxx
+匆 :xxxx
+囱 :xxxx
+寸 :xxxx
+大 :xxxx
++歹 :xxxx
+-餐左角 :xxxx
+带字头 :xxxx
+丹 :xxxx
+单 :xxxx
++刀 :xxxx
+-刀中 :xxxx # 班辨
+-黎右角 :xxxx
+-立刀 :xxxx # 出现在右边
+登字头 :xxxx #pg2: 73-12
+帝字头 :xxxx
++弟 :xxxx
+-弟省 :xxxx # 第
+=点 :xxxx
+电 :xxxx
+刁 :xxxx
+丁 :xxxx
+鼎 :xxxx
+冬字头 :xxxx
+东 :xxxx
+兜 :xxxx
+斗 :xxxx
+豆 :xxxx
+段字旁 :xxxx
+而 :xxxx
+尔字头 :xxxx
+耳 :xxxx
+二 :xxxx
+发 :xxxx
+凡 :xxxx
+反字框 :xxxx
++反文 :xxxx
+-*敲字边【攴】pu1 :xxxx
+方 :xxxx
+飞 :xxxx
+非 :xxxx
++丰 :xxxx
+-寿字头 :xxxx
++风 :xxxx
+-风省 :xxxx
+缶 :xxxx
+夫 :xxxx
+*肺字边【巿】fu2 :xxxx
+弗 :xxxx
+甫 :xxxx
+父 :xxxx
+丐 :xxxx #pg3: 110-16
+干 :xxxx
+尴字框 :xxxx
+甘 :xxxx
+高 :xxxx
+戈 :xxxx
+革 :xxxx
+个 :xxxx
+*根字边【艮】gen4 :xxxx
+庚字心 :xxxx
+更 :xxxx
+工 :xxxx
+弓 :xxxx
+骨字头 :xxxx
+谷 :xxxx
+瓜 :xxxx
+*决字边【夬】guai4 :xxxx
+*贯字头【毌】guan4 :xxxx
+广 :xxxx
+龟 :xxxx
+鬼 :xxxx
+果 :xxxx
+亥 :xxxx
+寒字腰 :xxxx # 不含〖八〗
+号字底 :xxxx
+禾 :xxxx
+鹤字旁 :xxxx
+黑 :xxxx
+=*横【一】 :xxxx
++=*横折弯钩【乙】 :xxxx
+-=横钩 :xxxx
+-=横折 :xxxx
+-=横折钩 :xxxx
+后 :xxxx
+乎 :xxxx
+虎字头 :xxxx
+互 :xxxx
+户 :xxxx #pg4: 147-19
+画字框 :xxxx
+奂 :xxxx
+黄 :xxxx
+惠字头 :xxxx
++火 :xxxx
+-横四点 :xxxx # 灬
+击 :xxxx
+及 :xxxx
+即字旁 :xxxx
+几 :xxxx
++己 :xxxx
+-已 :xxxx
+-以字旁 :xxxx # 〖竖提〗+〖点〗
+-巳 :xxxx
+*既字边【旡】ji4 :xxxx
+夹 :xxxx
+甲 :xxxx
+*假字边【叚】jia3 :xxxx
+兼 :xxxx
++柬 :xxxx
+-拣字边 :xxxx
+建之 :xxxx
+见 :xxxx
++绞丝旁 :xxxx
+-绞丝底 :xxxx # 系紧
+角 :xxxx
++*单耳【卩】jie2 :xxxx # 却
+-节字底 :xxxx
+-仓字底 :xxxx
+*捷字边【疌】jie2 :xxxx
+巾 :xxxx
+斤 :xxxx
+今 :xxxx
++金 :xxxx # 鉴
+-金旁 :xxxx # 针
+*谨字边【堇】jin3 :xxxx
+京 :xxxx #pg5: 184-28
+井 :xxxx
+*纠字边【丩】jiu1 :xxxx
+九 :xxxx
+久 :xxxx
+韭 :xxxx
+臼 :xxxx
+举字底 :xxxx
+句字框 :xxxx
+巨 :xxxx
+聚字底 :xxxx # 似〖豕〗，少一撇，弯钩改竖
+具 :xxxx
+卷字头 :xxxx
+卡 :xxxx
+开 :xxxx
+可字框 :xxxx # 〖丁〗？
+口 :xxxx
+来 :xxxx
++老 :xxxx
+-老省 :xxxx # 者
+乐 :xxxx
+耒 :xxxx #lei3
+离字底 :xxxx
+里 :xxxx
+力 :xxxx
+立 :xxxx
+吏 :xxxx
+丽 :xxxx
+隶 :xxxx
+*隔字边【鬲】li4 :xxxx
++冰字旁【两点水】 :xxxx
+-冬字底【两点】 :xxxx
+两 :xxxx
+尞字头 :xxxx
+了 :xxxx
+临右角 :xxxx
+临下角 :xxxx # 〖下角〗特指〖右下角〗
+六 :xxxx #pg6: 221-30
+龙 :xxxx
+卤 :xxxx
+录字头 :xxxx
+鹿 :xxxx
+旅下角 :xxxx
+卵 :xxxx
+仑 :xxxx
+罗字头 :xxxx
+马 :xxxx
+毛 :xxxx
+矛 :xxxx
++卯 :xxxx
+-留字头 :xxxx
+冒字头 :xxxx # 似〖日〗，下两横不与其他笔画接触
+么 :xxxx
+眉字框 :xxxx
+门 :xxxx
+米 :xxxx
+免 :xxxx
+面 :xxxx
+民 :xxxx
+皿 :xxxx
+末 :xxxx
+母 :xxxx
+木 :xxxx
+目 :xxxx
+那字旁 :xxxx
+乃 :xxxx
+南 :xxxx
+囊字头 :xxxx
+内 :xxxx
+*逆字心【屰】ni4 :xxxx
+年 :xxxx
+廿 :xxxx
++鸟 :xxxx
+-鸟省 :xxxx
++牛 :xxxx #pg7: 258-32
+-告字头 :xxxx
+农 :xxxx
++弄字底 :xxxx
+-共字底 :xxxx # 三笔
+女 :xxxx
++爿 :xxxx #pan2，藏？
+-将字旁 :xxxx
+皮 :xxxx
+片 :xxxx
+=撇 :xxxx
++乒 :xxxx
+-乓 :xxxx
+平 :xxxx
+七 :xxxx
+妻 :xxxx
+其 :xxxx
+气 :xxxx
+千 :xxxx
+前字头 :xxxx
+钱字边 :xxxx
+欠 :xxxx
+乔字底 :xxxx
+且 :xxxx
+青字头 :xxxx
+轻字边 :xxxx
+丘 :xxxx
+求 :xxxx
+区字框 :xxxx
+曲 :xxxx
+去 :xxxx
++犬 :xxxx
+-反犬旁 :xxxx
+冉 :xxxx
++人 :xxxx
+-单立人 :xxxx
+-儿 :xxxx
+-负字头 :xxxx #pg8: 295-40
+-卧人 :xxxx # 每
+壬 :xxxx
+刃 :xxxx
++日 :xxxx
+-曰 :xxxx # 似〖日〗，中间一横左触右不触
+入 :xxxx
+三 :xxxx
+伞 :xxxx
+丧字头 :xxxx # 墙
+色 :xxxx
+山 :xxxx
+彡 :xxxx #shan1
+商字头 :xxxx # 滴，含框，商字框？
+上 :xxxx
+勺 :xxxx
+少 :xxxx
+舌 :xxxx
+申 :xxxx
+身 :xxxx
+升 :xxxx
+生 :xxxx
+尸 :xxxx
+失 :xxxx
+十 :xxxx
+石 :xxxx
++食 :xxxx
+-食旁 :xxxx
+史 :xxxx
+矢 :xxxx
++豕 :xxxx
+-豕省 :xxxx #少顶横，毅缘
+士 :xxxx
+氏 :xxxx
++示 :xxxx
+-示旁 :xxxx # 礼
+世 :xxxx
+事 :xxxx #pg9: 332-45
++手 :xxxx
+-提手 :xxxx
+首 :xxxx
+*设字边【殳】shu1 :xxxx
+书 :xxxx
+鼠 :xxxx
+=竖 :xxxx
++=竖折 :xxxx
+-=竖弯钩 :xxxx
+术 :xxxx
+束 :xxxx
+衰字腰 :xxxx # 〖中〗倾
+甩 :xxxx
+率字腰 :xxxx # 仅四点，〖率夹腰〗？〖脊双角〗？
+双耳 :xxxx # 要不要分左右？形、位 分离？
+双立人 :xxxx # 行
++水 :xxxx
+-三点水 :xxxx
+-水底 :xxxx # 暴录
+-益字头 :xxxx
+*私字边【厶】si1 :xxxx
+司 :xxxx
+丝 :xxxx
+四 :xxxx
+肆字旁 :xxxx
+叟字头 :xxxx
+肃 :xxxx
+太 :xxxx
+唐字心 :xxxx # 不含〖口〗
+天 :xxxx
+田 :xxxx
+同字框 :xxxx
+头 :xxxx
+秃宝盖 :xxxx
+凸 :xxxx
+土 :xxxx
+屯 :xxxx #tun2 #pg10: 369-50
+*托字边【乇】tuo1 :xxxx
+瓦 :xxxx
+丸 :xxxx
+万 :xxxx
+亡 :xxxx
+王 :xxxx
+*围字框【囗】wei2 :xxxx
+韦 :xxxx
+卫 :xxxx
+畏字底 :xxxx # 不含〖一〗
+为 :xxxx
+未 :xxxx
+文 :xxxx
+我 :xxxx
+乌 :xxxx
+无 :xxxx
+五 :xxxx
+午 :xxxx
+舞字头 :xxxx # 除双足
+兀 :xxxx
+勿 :xxxx
+戊 :xxxx
++夕 :xxxx
+-夜下角 :xxxx
+昔字头 :xxxx
++西 :xxxx
+-要字头 :xxxx
+习 :xxxx
+夏字头 :xxxx # 仅两笔
+下 :xxxx
+乡 :xxxx
+向 :xxxx
+象 :xxxx
++小 :xxxx
+-尚字头 :xxxx # 仅三笔，vs〖商字头〗
+卸字旁 :xxxx
++心 :xxxx #pg11: 406-53
+-恭字底 :xxxx
+-竖心 :xxxx
+辛 :xxxx
+囟 :xxxx # xin4，傻瑙
+戌 :xxxx # xu1
+玄字头 :xxxx # 亩
+学字头 :xxxx # 仅三笔
+穴 :xxxx
++雪字底 :xxxx
+-虐字底 :xxxx
+血 :xxxx
+熏 :xxxx
+讯字边 :xxxx
+丫 :xxxx
+牙 :xxxx
+亚 :xxxx
+焉字底 :xxxx # 除〖正〗
+延字心 :xxxx
+严 :xxxx
++言 :xxxx
+-言旁 :xxxx # 话
+央 :xxxx
+杨字边 :xxxx
++羊 :xxxx
+-美字头 :xxxx # 盖
+-养字头 :xxxx # 除底两笔
+*幼字旁【幺】yao1 :xxxx
+夭 :xxxx
+尧字头 :xxxx
+也 :xxxx
+业 :xxxx
+页 :xxxx
+*拽字边【曳】ye4 :xxxx
++衣 :xxxx # 裹
+-衣省 :xxxx # 除顶两笔
+-衣旁 :xxxx # 补
+彝字头 :xxxx # 仅三笔，含〖一〗，缘 #pg12: 443-61
+夷 :xxxx
+颐字旁 :xxxx
+*艾字底【乂】yi4 :xxxx
+*代字边【弋】yi4 :xxxx
+义 :xxxx
+亦 :xxxx
+殷字旁 :xxxx
+*枕字边【冘】yin2 :xxxx
+尹 :xxxx
+庸 :xxxx
+勇字头 :xxxx # 仅两笔
+永 :xxxx
+用 :xxxx
+尤 :xxxx
+由 :xxxx
+酉 :xxxx
+又 :xxxx
+于 :xxxx
+鱼 :xxxx
+*愚字头【禺】yu2 :xxxx
+与 :xxxx
+予 :xxxx
+雨 :xxxx
+禹 :xxxx
++玉 :xxxx
+-斜玉 :xxxx # 玻班
+*律字边【聿】yu4 :xxxx
++*月【肉月】 :xxxx # 胆
+-肉 :xxxx
+-青字底 :xxxx # 肩
+-然左角 :xxxx
+*越字心【戉】yue4 :xxxx
+云 :xxxx
+再 :xxxx
+乍 :xxxx # zha3
+丈 :xxxx
++爪 :xxxx #pg13: 480-65
+-印字旁 :xxxx
+-爪头 :xxxx # 采
+兆 :xxxx
+争 :xxxx
+正 :xxxx
+之 :xxxx
+直 :xxxx
++止 :xxxx
+-降下角 :xxxx
+-足字底 :xxxx
+-步字底 :xxxx
+至 :xxxx
+制字旁 :xxxx
+*豹字旁【豸】zhi4 :xxxx
+中 :xxxx
+重 :xxxx
+周字框 :xxxx
+舟 :xxxx
+州 :xxxx
+朱 :xxxx
++竹 :xxxx
+-竹头 :xxxx
+主 :xxxx
+专 :xxxx
++追字心 :xxxx
+-官字底 :xxxx
+-师字旁 :xxxx # 归帅
+*锥字边【隹】zhui1 :xxxx
+啄字边 :xxxx
+子 :xxxx
+姊字边 :xxxx
+自 :xxxx
+走之 :xxxx
+左字框 :xxxx #pg14: 514-73
 
 
 
