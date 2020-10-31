@@ -5,6 +5,10 @@ this file:
     search "TODO"
 
 
+see: 汉字笔顺规则表.txt
+  view /storage/emulated/0/0my_files/git_repos/python3_src/nn_ns/CJK/CJK_data/raw/汉字笔顺规则表.txt
+see: README[笔顺码分解].md
+  view /storage/emulated/0/0my_files/git_repos/python3_src/nn_ns/CJK/CJK_data/raw/汉字笔顺表\[20200913]/stroke-seq_MB-master\[汉字笔顺表]\[20200827]/README\[笔顺码分解].md
 =======
 
 
@@ -93,6 +97,7 @@ e /storage/emulated/0/0my_files/git_repos/txt_phone/笔顺码分解/0000.txt
         提子<=(孑)<=521
         举字底<=(穿土)<=112
       | (?基本块but笔顺码) #同字形不同笔顺
+        5211丑=丑字框_@<.(?十but21) #err:丑字框_@<.十
         4354为=4/@(?力but35)@-4 #53力 vs 4354为#35
         毋=(母字框-*.3)*1<=母省&(?左字框but31)<=5531
         12221丗=带字头&(2|2|2)6_i0Lz_i1Lz_i2Lz_9B1=带字头&(?(1.*--@廿)but12221) #no 山
@@ -420,6 +425,7 @@ here
       没有(〇u3007h)？？却有(㪳u3AB3h)
 
     bug of 单字_笔顺码_29685个[stroke-seq_MB][汉字笔顺表][20200827].txt
+        515515313112𢁅u22045h:313? seems like 113 or 131
         32121丘!=斤.-1<=3312
         154:>,(𠫓u20AD3h//)
             ???not bug

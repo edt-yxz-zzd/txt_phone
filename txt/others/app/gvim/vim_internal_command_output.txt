@@ -1,0 +1,78 @@
+vim_internal_command_output.txt
+
+:redir END tells Vim to end redirecting messages. See :h :redir
+
+
+
+
+
+=====
+https://vi.stackexchange.com/questions/8378/dump-the-output-of-internal-vim-command-into-buffer
+
+=====
+Dump the output of internal vim command into buffer
+command-line buffers
+
+How do I dump an internal vim command (not shell command) into a new buffer?
+
+For example, I want to dump a listing of all plugins into :enew from :scriptnames so that I can search it.
+=====
+=====
+
+:redir END tells Vim to end redirecting messages. See :h :redir
+
+You can use :redir to redirect the output to a variable, register, or file. Example of redirecting to the unnamed register:
+
+:redir @">|silent scriptnames|redir END|enew|put
+
+Alternatively Tim Pope's scriptease.vim provides the :Scriptnames command which will load :scriptnames into the quickfix list and :copen.
+
+If you find yourself redirecting many commands you may want to wrap up this up in a command:
+
+command! -nargs=+ -complete=command Redir let s:reg = @@ | redir @"> | silent execute <q-args> | redir END | new | pu | 1,2d_ | let @@ = s:reg
+
+Now you can use the :Redir command to redirect the output to a new buffer. e.g. :Redir scriptnames or :Redir ls.
+Vim 8+
+
+Vim 8 ships with the new execute() function. You can use the execute() function to instead of :redir to capture ex-command output.
+
+ :enew|pu=execute('scriptnames') 
+
+For more help see:
+
+:h :redir
+:h :silent
+:h :scriptnames
+:h :enew
+:h :put
+:h execute()
+=====
+=====
+
+
+For completeness, I want to present this awesome functions that I collected (stole) from romainl
+
+" redirect the output of a Vim or external command into a scratch buffer
+function! Redir(cmd)
+  if a:cmd =~ '^!'
+    execute "let output = system('" . substitute(a:cmd, '^!', '', '') . "')"
+  else
+    redir => output
+    execute a:cmd
+    redir END
+  endif
+  tabnew
+  setlocal nobuflisted buftype=nofile bufhidden=wipe noswapfile
+  call setline(1, split(output, "\n"))
+  put! = a:cmd
+  put = '----'
+endfunction
+command! -nargs=1 Redir silent call Redir(<f-args>)
+
+This will take normal or system command output and put it in a new tab. Feel free to change the line tabnew to vsplit or split etc.
+=====
+=====
+=====
+
+
+
