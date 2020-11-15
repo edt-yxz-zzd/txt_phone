@@ -1,0 +1,125 @@
+形式证明-如何在不同的整数编码间切换-命题变换-同态.txt
+view pattern
+data NatView a = Nil | NatView a
+  将自然数编码在类型a的值中
+  用于将关于自然数的命题转化为关于自然数编码的命题
+  @p. p Zero -> (@n. p n -> p (Succ n)) -> @n. p n
+  ?????nat2bits
+  well_func:
+    bits2nat_view
+    bits2nat bits === int(f'0x1{bits[::-1]}') - 1
+      0+0=1
+      00+00=11
+        0:0:1+0:0:1 -1
+        =1:0:1+0:0:1 -2
+        =1:(0:1+0:1 -1)
+        =1:(1:1+0:1 -2)
+        =1:1:(1+1 -1)
+        =1:1:1
+        =11
+  cofunc:
+    #err: result maybe _L, ie undefined
+    #   err since _L == not_return
+    #cofunc: result maybe 发散；惰性求值 必须返回
+    # uint 0..1 <-> 1.. bits
+    # [a] 1 <-> 1.. (FingerTree a)
+    #
+    # injection: uint -> bits
+    # cofunc: bits -> unit
+    #
+    bits2nat bits = case bits2nat_view bits of
+      Nil -> Zero
+      NatView bs -> Succ (bits2nat bs)
+
+  p n <<== p (bits2nat bits)
+    [@n. ?bits. (bits2nat bits == n)]
+    <==>
+    [@n. [?bits. (bits2nat bits == n)]
+      -> [?bits1. (bits2nat bits1 == Succ n)]
+    ][?bits. (bits2nat bits == Zero)]
+    <==>
+    [@n. @bits. (bits2nat bits == n)
+      -> [?bits1. (bits2nat bits1 == Succ n)]
+    ][?bits. (bits2nat bits == Zero)]
+    <<==
+    [@bits. ?bits1.
+      [NatView bits == bits2nat_view bits1]
+    ][?bits0. (Nil == bits2nat_view bits0)]
+  ##
+  p n <<== p (bits2nat bits)
+  p n <<== pb bits
+    <<==
+    pb = ?
+    [well_func bits2nat][pb = p . bits2nat]
+    [拆则降 bits2nat_view][pb = p . bits2nat]
+  ##
+  [@Bits. @bits2nat_view.
+    #@proof_互逆. @proof_拆则降.
+    [拆则降 bits2nat_view]
+    ->
+    [bits2nat := ...]:
+    @[succ_bits :: @bits. ?bits1.
+      [NatView bits == bits2nat_view bits1]
+    ]
+    -> @bits0.
+    [Nil == bits2nat_view bits0]
+    ->
+    [@p. [pb := p . bits2nat]:
+      [@bits. pb bits -> pb (succ_bits bits)]
+      -> pb bits0
+      -> @n. p n
+    ]
+  ]
+  ##如何 证明 类同态？ADT同态？abstract data type
+  (bits, ^+, ^*) <= (uint, +, *)
+  二元操作符同态:
+    (^/) <=< (/)
+    (<=<) :: @S. @B. (cofunc: S->B) -> @[(^/)::S->S->S] -> @[(/)::B->B->B] -> Proof
+    (<=<) = \S. \B. \s2b.
+      \[(^/)::S->S]. \[(/)::B->B].
+      # (^/) <=<[S,B] (/) =
+      @s0. @b0. [half_unsafe: s2b s0 == b0] ->
+      @s1. @b1. [half_unsafe: s2b s1 == b1] ->
+      [half_unsafe: s2b (s0 ^/ s1) == (b0 / b1)]
+
+data Co :: Type
+data Co =
+  | NotRecursive
+  | Inductive
+  | Coinductive
+data T :: Co -> Co -> Type -> Type
+data T x y a b =
+  | TC1 (co_set x a) b
+  | TC2 (co_set (not y) b)
+  | TC3 (co_set (co_get (T x y a b)) b)
+  | TC4 (T (not x) Coinductive a b))
+  | TC4 (co_set (not $ co_get (T x y a b)) (T y x a b))
+  | ...
+keyword:
+  co_set :: Co -> Type -> Type
+  co_set Coinductive t = coinductive<t>
+  co_set Inductive t = inductive<t>
+  co_set NotRecursive t = t
+
+  co_get :: Type -> Co
+
+
+
+let !a = co_set Inductive a
+let $a = co_set Coinductive a
+cofunc:
+  $i 0.. -> 1 $o
+  !i 0.. -> 0..1 !o
+  result cmp is unsafe
+    结果可能是 $o
+    除非相等比较的另一边是 !o，且使用惰性求值 #half_unsafe
+func:
+  $i 0.. -> 1 $o
+  !i 0.. -> 1 !o
+
+mapping: i 0.. -> 1 o
+injection: i 0..1 -> 1 o
+bijection: i 1 -> 1 o
+surjection: i 1.. -> 1 o
+
+

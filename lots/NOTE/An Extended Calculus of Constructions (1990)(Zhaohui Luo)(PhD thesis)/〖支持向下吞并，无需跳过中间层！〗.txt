@@ -1,0 +1,60 @@
+〖支持向下吞并，无需跳过中间层！〗.txt
+ECC 似乎并不支持 向下吞并？应当是支持的
+  有毛病！？
+  依 rule-cum，有:
+    [A:Prop]:
+      !! [Prop ~<=~Universe 0 ~<=~Universe 1]
+      [Prop ~<=~Universe 1]
+      !! [Universe 0 : Universe 1][Prop ~<=~Universe 1]
+      !! cum
+      [A:Universe 0]
+    [[A:Prop] -> [A:Universe 0]]
+    但是：rule-all1/all2 显然试图跳过中间层，bug!!
+    我认真想了一下，rule-all1/all2并没有试图跳过中间层，问题出在note.txt和另一本书，是它们强调要跳过中间层，且2.2.5 full cumulativity 似乎也在暗示要跳过中间层
+    其实all2本身存在的前提就是 支持 向下吞并
+ref:
+"NOTE/An Extended Calculus of Constructions (1990)(Zhaohui Luo)(PhD thesis)/"
+  def - 1. ECC.txt
+    rule-all1/all2/cum
+    rule-cum:
+      [L |- M : A][L |- A2 : Universe i][A ~<=~ A2] ==>> [L |- M : A2]
+    rule-all1:
+      [L++[x:A] |- P : Prop] ==>> [L |- @x:A. P : Prop]
+    rule-all2:
+      [L |- A : Universe i][L++[x:A] |- B : Universe i] ==>> [L |- @x:A. B : Universe i]
+    2.2.5 Conversion and full cumulativity
+       [A2 ~<=~ A1][B1 ~<=~ B2] ==>> [@x:A1.B1 ~<=~ @x:A2.B2]
+    2.2.4 Lifting of propositions and SUM-types as subsets
+      # bad, inconsistent: [L++[x:A] |- B : Prop] ==>> [L |- ?x:A. B : Prop]
+      #OK: [L |- A : Prop][L++[x:A] |- B : Prop] ==>> [L |- ?x:A. B : Prop]
+    exist:
+      [L |- A : Universe i][L++[x:A] |- B : Universe i] ==>> [L |- ?x:A. B : Universe i]
+  def - 1.2. substitution.txt
+    cumulativity relation ~<=~
+  note.txt
+    ECC[n] = max universe is (Universe n)
+    ECC = \-/~ ECC[n] ~{n}
+    [system is ECC[n]]
+        [Env |- x:A]
+            [A ~<~ Universe n]
+        [Env |- M : A]
+            [(Universe n) not occur in Env]
+            [(Universe n) not occur in M]
+            [[(Universe n) not occur in A]+[A === Universe n][M is not variable][[M is (Universe (n-1))/Prop]+[M is of form @x:A.B/?x:A.B]]]
+"NOTE/A Modern Perspective on Type Theory -- From its Origins until Today (2005)(Fairouz Kamareddine)/"
+  "4c Pure Type Systems.txt"
+    #  Luo's Extended Calculus of Constructions ECC (see [3])
+    def ECC = PTS with
+                Sorts = Natural                     # 0 is a sort
+                Axioms = {(n, n+1) | n <- Natural}  # n : (n+1)
+                Rules = {(m,0,0) | m <- Natural} \-/ {(i,o,f) | i,o,f <- Natural, f >= max(i,o)}
+    Theorem 4.40 (Strong Normalisation for ECC)Let A be a legal term in the Extended Calculus of Constructions. Then A is strongly normalising.
+
+
+
+
+
+
+
+
+

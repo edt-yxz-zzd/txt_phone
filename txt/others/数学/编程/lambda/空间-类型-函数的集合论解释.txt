@@ -1,0 +1,244 @@
+
+空间-类型-函数的集合论解释.txt
+
+
+
+
+@All
+?Some
+&Recur
+\Abstract
+$Let
+[proposition]
+->
+::
+<:
+
+well-found is not countable
+  WW = WZero | WNext WW | WLimit (NN -> WW)
+    NN = UInt = NZero | NSucc NN
+  Inductive Data Type Systems.pdf
+    ordinal def #bug at s:ord
+      pg 6/31
+    the (formal) addition of Brouwer’s ordinals:
+      pg 9/31
+    About Brouwer’s ordinals, note that only a suitable choice of f's provides a semantically correct ordinal notation and that, for such a correct notation, the above formal definition provides semantically correct ordinal addition.
+      pg 10/31
+
+  (+) :: WW -> WW -> WW
+  x + WZero = x
+  x + (WNext y) = WNext (x + y)
+  x + (WLimit f) = WLimit (\n -> x + f n)
+  #? 私以为
+    f0 NZero = WZero
+    f0 (NSucc u) = WNext (f0 u)
+    w0 = WLimit f0
+    第一:必须严格单调增
+    第二:f的选集，两两f必须可比较，存在n，使得之后的输出的比较结果不再改变
+      为何 震荡 不能当 相等？
+          [a=b][c=d][a+c<b+d]可能成立
+
+
+
+
+
+函数的集合论解释
+  f :: I -> O
+    f :: {I:O} <: {(I, O)}
+    f |<=| {(i,o) | [i<-I][o<-O]}
+    f <- 2^{(i,o) | [i<-I][o<-O]}
+  [I :: * :: **]:
+    [[O :: *] -> [I->O :: *]]
+      类型甲，类型乙 在 空间甲 内
+      => 类型甲*类型乙 在 空间甲 内  #pair/直积
+      => [(类型甲,类型乙)] 在 空间甲 内  #pair/直积
+      => 类型甲->类型乙 在 空间甲 内
+    [[O :: **] -> [I->O :: **]]
+    [[I -> * :: *] -> [* :: *]]
+  空间是类型的集合
+  空间本身是一个类型
+  类型有两种:空间，数据类型
+  空间是(空间及数据类型)的集合
+  数据类型是数据的集合
+  同一类型可以同时存在于不同空间
+  同一数据/函数可以有多个类型/签名
+    但不同签名会约束函数的应用，已达到全局目的
+  对象是类型或数据
+  ===
+  宇 是 所有空间的集合，唯一，不是类型
+  型 是 所有数据类型的集合，唯一，不是类型
+  数 是 所有数据的集合，唯一，不是类型
+  ===
+  类 是 所有类型的集合，唯一，不是类型
+    类 === 宇 \-/ 型
+  象 是 所有类型及所有数据的集合，唯一，不是类型
+    象 === 类 \-/ 数
+  ===
+  超 = {宇，型，数，类，象}
+  ===
+  以下『0XXX』表示集合XXX的某一个元素
+  #避免使用 <-
+  空间 = 0宇
+  数据类型 = 0型
+  数据 = 0数
+  类型 = 0类
+  对象 = 0象
+  超元 = 0超
+  ===右静态 的『<-』，即：右操作数 是 超元 立即数
+  #对象 <-- 超元 #混合表达
+    空间 *:: 宇
+    数据类型 .:: 型
+    数据 -:: 数
+    类型 %:: 类
+    对象 /:: 象
+  ===右动态 的『<-』
+  对象 ::% 类型  # ::
+    数据 ::. 数据类型
+    类型 ::* 空间
+  ===
+  类型 <:% 类型  # <:
+    数据类型 <:. 数据类型
+    空间 <:* 空间
+      [[s::*t] -> [s<:*t][s=/=t]]
+      [[s<:*t] -> @[a::*s] -> [a::*t]]
+        见下面: ECC 似乎并不支持 向下吞并？应当是支持的
+        #outdate: [[s<:*t][not[s<-无下]] -> @[a::*s] -> [a::*t]]
+          ?无下空间 的 数据类型 并不全部在 父空间 中，而是 零星散布于 所有更高层的空间
+            并不！
+
+  ===
+  空间 以上面的WW命名，运算
+  (*+) :: 宇 -> 宇 -> 宇 :: ?
+    全新的空间体系:
+      平面空间 是 数
+      平面宇 是 数据类型
+      立体空间 才是 空间
+
+@ vs \
+  both are func
+  ==>> func can be type
+  All ((\x::%I -> (f x::*S)) ::. I->S) ::* 1+max(I,S)
+  提升一次则需多标明一层类型
+  *对象需要无限上升的类型塔
+  *对象可有多种类型，特别是在高阶多态情况下，所需类型与能自动推导的类型不符(@x::I. f x 不可能自动找来f，因为有无数选择)
+  *不能自动推导的塔层必须有限(因为需要人工介入)
+  *有限的不能自动推导的塔层+无限的可自动推导的塔层 构成所需的无限上升塔层
+  *无限的可自动推导的塔层 分为:
+    *拥有工具用途语义的部分，有限
+    *拥有子类吞并空间语义的部分，无限
+      吞并除了无下空间之外的所有低级空间
+      可采用WW编码(Brouwer_ordinal)，它们 即是 空间
+      WNext sp
+      up<sp0,sp1>
+      up<sp> = WNext
+  *空间 是 无限的可自动推导的塔层 中 任意一层 的 元素
+  *空间 及其 无限的可自动推导的塔层 以及 它们所认可的 所有低层空间 构成一个类型『宇型』。
+    宇型 本身 不是 空间，不接受 其他人造工具类型
+    宇型 的 元素 是 空间
+    宇型中，指出任意有限个元素，均存在另一个元素，包含这些指定元素。
+    宇型 作为一个类型 『不必』处于 另一个空间体系
+    无限上升 其实只是 当前 可列的部分空间，『有限元素有共祖』的要求 并不夸张，故而 宇型 在可列极限的超空间里
+    宇型<sp0,sp1,...>
+    在运算过程中，是否会引入新的空间？
+      如果不会，其实只有可提前预知的有限个空间在线，直接假设并描述关系即可，无需 用到关于空间的运算(可有空间作为类型的的运算，而非明确地以空间身份进行运算)
+        按在签名中的出现顺序排？避免 人工 顺序 或 命名
+        #为何要命名？大多是 刚好 两参数的类型相同，从签名和函数用途无法确定参数的实际语义
+        #   缺点:妨碍 curry，复用
+        但定义时，可 在一个足够大的假设区里，同时定义许多对象，按名引用。输出时，各对象实际使用的空间按需分配，空间的输入次序 自动生成。反过来，假设区里引入外部对象时，可对它们的空间进行默认赋值。扁平化:从此以后 皆依此声明，body无需缩进。
+        3个特殊局部空间名:
+          顶，底，无下
+          顶 必然存在
+            隐含:[输入空间<:*顶]
+            当声明[s==顶]时，[任一输入空间<:*s]
+          底 可能不存在
+            当声明[s==底]时，[s<:*任一输入空间]
+          无下-最大的无下空间
+            用于 无下声明:
+              [s,... |<=| 无下]
+                声明s不含有 更低层空间
+              注意 不是 [s,... <:* 无下]
+                因为 无下 不含 更低层的空间
+            用于 兼容最大无下空间声明:
+              [无下 <:* t]
+            [s |<=| 无下]:
+              [I::*t][O::s]:
+                #t可以是 无下空间，包括s
+                [s<:*r][t<:*r]:
+                  [I->O ::* r]
+                [s<:*t][s<:*r]:
+                  [I->O ::* s] #all1
+                  [I->O ::* r] #提升
+                #outdate:必须跳过s至t的所有中间层
+                #
+          批量比较:
+            # n*m对比较
+              [{s,t} <:* {p,q}] # <=
+              [{s,t} ::* {p,q}] # <
+              [{s,t} <:* {p,q}][p,q <:* s,t] # ===
+              [{s,t} =/= {p,q}] # =/=
+            #n*(n-1)/2 对比较
+              [==={s,t,p,q}] # ===
+              [=/={s,t,p,q}] # =/=
+            # n对比较 #n==m
+              [(s,t) ::* (p,q)] # <
+
+
+
+〖支持向下吞并，无需跳过中间层！〗.txt
+ECC 似乎并不支持 向下吞并？应当是支持的
+  有毛病！？
+  依 rule-cum，有:
+    [A:Prop]:
+      !! [Prop ~<=~Universe 0 ~<=~Universe 1]
+      [Prop ~<=~Universe 1]
+      !! [Universe 0 : Universe 1][Prop ~<=~Universe 1]
+      !! cum
+      [A:Universe 0]
+    [[A:Prop] -> [A:Universe 0]]
+    但是：rule-all1/all2 显然试图跳过中间层，bug!!
+    我认真想了一下，rule-all1/all2并没有试图跳过中间层，问题出在note.txt和另一本书，是它们强调要跳过中间层，且2.2.5 full cumulativity 似乎也在暗示要跳过中间层
+    其实all2本身存在的前提就是 支持 向下吞并
+ref:
+"NOTE/An Extended Calculus of Constructions (1990)(Zhaohui Luo)(PhD thesis)/"
+  def - 1. ECC.txt
+    rule-all1/all2/cum
+    rule-cum:
+      [L |- M : A][L |- A2 : Universe i][A ~<=~ A2] ==>> [L |- M : A2]
+    rule-all1:
+      [L++[x:A] |- P : Prop] ==>> [L |- @x:A. P : Prop]
+    rule-all2:
+      [L |- A : Universe i][L++[x:A] |- B : Universe i] ==>> [L |- @x:A. B : Universe i]
+    2.2.5 Conversion and full cumulativity
+       [A2 ~<=~ A1][B1 ~<=~ B2] ==>> [@x:A1.B1 ~<=~ @x:A2.B2]
+    2.2.4 Lifting of propositions and SUM-types as subsets
+      # bad, inconsistent: [L++[x:A] |- B : Prop] ==>> [L |- ?x:A. B : Prop]
+      #OK: [L |- A : Prop][L++[x:A] |- B : Prop] ==>> [L |- ?x:A. B : Prop]
+    exist:
+      [L |- A : Universe i][L++[x:A] |- B : Universe i] ==>> [L |- ?x:A. B : Universe i]
+  def - 1.2. substitution.txt
+    cumulativity relation ~<=~
+  note.txt
+    ECC[n] = max universe is (Universe n)
+    ECC = \-/~ ECC[n] ~{n}
+    [system is ECC[n]]
+        [Env |- x:A]
+            [A ~<~ Universe n]
+        [Env |- M : A]
+            [(Universe n) not occur in Env]
+            [(Universe n) not occur in M]
+            [[(Universe n) not occur in A]+[A === Universe n][M is not variable][[M is (Universe (n-1))/Prop]+[M is of form @x:A.B/?x:A.B]]]
+"NOTE/A Modern Perspective on Type Theory -- From its Origins until Today (2005)(Fairouz Kamareddine)/"
+  "4c Pure Type Systems.txt"
+    #  Luo's Extended Calculus of Constructions ECC (see [3])
+    def ECC = PTS with
+                Sorts = Natural                     # 0 is a sort
+                Axioms = {(n, n+1) | n <- Natural}  # n : (n+1)
+                Rules = {(m,0,0) | m <- Natural} \-/ {(i,o,f) | i,o,f <- Natural, f >= max(i,o)}
+    Theorem 4.40 (Strong Normalisation for ECC)Let A be a legal term in the Extended Calculus of Constructions. Then A is strongly normalising.
+
+
+
+
+
+
+

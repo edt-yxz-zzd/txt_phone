@@ -1,0 +1,339 @@
+字符串内部转义.txt
+  <- 语法解析结果标记语言.txt
+    <- 可运行于任何平台的语言.txt
+  <- py_mk_sh.txt
+    python make shell-like env
+    e others/数学/编程/TODO_list/py_mk_sh.txt
+
+字符串内部转义
+\/:
+  转义内部 文本:
+    #err:{=名称=}  =>  文本
+    #   python 使用f'{}'
+    ( )  => 分隔前后文本
+    ([)  => 控制符:嵌套开始
+    (])  => 控制符:嵌套结束
+    (=)  => 普通文本:'(='，合并到前后文本中
+      bad: (= -> (=) -> (=)) -> (=)))
+      (= -> (=1: -> (=2: -> (=3:
+    (= )  => 普通文本:'( '，合并到前后文本中
+    (=[)  => 普通文本:'(['，合并到前后文本中
+    (=])  => 普通文本:'(]'，合并到前后文本中
+    (=@名称=)  =>  普通文本，合并到前后文本中
+      (=,名称=)  =>  普通文本，分隔前后文本中
+      (=,@名称=)  =>  普通文本，合并到后文本中
+      (=@,名称=)  =>  普通文本，合并到前文本中
+    (=!名称=)  =>  控制序列::[Either 控制符 文本]，文本不合并
+      (=~名称=)  => 合并到前后文本中，如果为空或唯一元素是文本，则合并前后文本
+      (=~!名称=)  => 如果开头是文本则开头合并到前文本中，空则分隔
+      (=!~名称=)  => 如果末尾是文本则末尾合并到后文本中，空则分隔
+    (=!]1[1:名称=)  =>  控制序列::[Either 控制符 文本]，文本不合并，编码数量，产生一个有效]及一个有效[
+    (=!]][[[:名称=)  =>  控制序列::[Either 控制符 文本]，文本不合并，直接数量
+      (=!:名称=)  =>  控制序列::[Either 控制符 文本]，文本不合并，不许产生有效[]
+        <==> (=!]0[0:名称=)
+    (=!]*[*:名称=)  =>  控制序列::[Either 控制符 文本]，文本不合并，产生任意有效]及任意有效[
+      <==> (=!名称=)
+  解析顺序:
+    +内部文本 -> 控制序列
+      regex'[^\\/]*' -> [Either 控制符 文本]
+    +控制序列 -> 嵌套结构
+      [Either 控制符 文本] -> 嵌套结构
+        嵌套结构 = [控制符|文本|嵌套结构]
+    +再进行其他操作
+
+
+
+
+
+
+
+
+
+
+
+
+文本编码方案:
+  设字符集s,t: s < t
+  依编码前及编码后的约束，分不同情况:
+    [s] -> [t]
+      如：
+        假设 文本行 不含 换行符
+        ，则 可用 换行符 作 转义符
+        ，即 行前缀转义，如：缩进
+    [t] -> [s]
+      常见情形
+      s一般为 可见字符+有限空白字符
+      t一般为 所有字符+控制符
+    有格式[t] -> [s]
+      即 输入 并非 无格式的自由随机文本
+      比如多种文本编码方案对同一文本不断编码
+        需要避免 转义符 复用太多次
+        考虑同一编码方案的多次编码情形:
+          避免：x -> x++y -> x++x++y
+          可用：x -> x++':' -> x++'0:' -> x++'1:'
+        考虑多编码方案的多次编码情形:
+          C 使用 『\』
+          HTML 使用『<』『&』
+          Python format string 使用 『{』『\』
+          由于常见语言多使用单字符作转义符
+          可考虑采用多字符转义前缀
+            如：『\[』
+            如：『"""[』
+
+  依应用处，分不同情况:
+    命令行本身
+      ls -l ~/'$home/xxx\n' 2>&1 | grep ... ;
+    命令行中的引号文本参数
+      '$home/xxx\n'
+    程序收到的参数
+      argv :: T
+      F = [(option, [arg])] #flatten
+      R = [(option, [Either arg R])] #recur
+      option = +str | -str
+      arg = str
+      理想:
+        T = R
+      实际:
+        T = F
+      需要将(Either arg R)编码为arg
+    编程语言中的引号文本
+      f'{id}xxx\n'
+    引号文本中的转义负载
+      \uxxxx -> uxxxx
+      \n -> n
+  =========================
+  =========================我的
+  =========================
+    pint=r'[1-9][0-9]*'
+    引号文本中的转义前缀:
+      \[
+        regex'\\\[{pint}:'
+        regex'\\\[(0|\D|$)'
+      编码时，只有 \[ 及 特别指定字符串 需要改动
+        #不同的外部引号，其他语言的转义符
+      解码时，只有 \[ 需要改动
+
+    引号文本中的转义单词:
+      \[.*?]/
+      转义负载 的 编码:见上面 字符串内部转义
+
+    将(Either arg R)编码为arg
+      R = [(option, [Either arg R])] #recur
+      option = +str | -str
+      arg = str
+      ====R -> [Either3 option arg R]
+      ====R -> [Either4 option arg open close]
+      ====Either4 -> str
+      #avoid for path: option -> "/{option}"
+      option -> "?{option}"
+      arg -> ":{arg}"
+      open -> "["
+      close -> "]"
+      Either4 ->
+        "\ /".join(map escape ...)
+        escape = arg/option avoid '\ /'
+        --> \ d+:
+      ====above ==>> R -> str
+      opts2cmd
+          see below
+      ====(Either arg R) -> arg
+      xarg2cmd
+          see below: xarg2cmd = str2quo/opts2cmd
+
+
+    命令行本身 的 转义:
+      [a] -> [(case, [a])]
+      ''
+      ""
+      [ ]
+      $
+        input:
+          option :: regex"\S*" /\ regex"[^$"']*"
+            unquo @option
+              不含$"'空格
+            quo %option =
+              escape _$"'空格
+              $ --> _cd
+              " --> _cw
+              ' --> _cy
+              空格 --> _cs
+              _ --> _e1x --> _e2x
+              unicode -> _u\X*h
+          ===
+          after argv or any R
+            ...$@option :: [(Either arg R)]
+              option 同名混合
+            ...$,ith@option :: [(Either arg R)]
+              第几个option
+            ...$*idx :: (Either arg R)
+              use option=''
+              <==> $@''$.idx
+            ...$,ith*idx :: (Either arg R)
+          after option/xargs or any [(Either arg R)]
+            ...$.idx :: (Either arg R)
+          after xarg or any (Either arg R)
+            ...$* :: R
+            ...$. :: arg
+          after env or any {str:str}
+            ...$:key :: str
+          after arg or str
+            ...$_ :: str
+              quo2str
+            ...$^ :: str
+              str2quo
+        output:
+          #how to unpack and inject into context
+          #context is cmd_whole/cmd_quote_str
+            $"" / $[] / $__
+              -> arg / R / xargs
+            arg/opts/xargs/xarg
+              <- str/R/[xarg]/(Either arg R)
+                R = [opt] #recur
+                opt=(option, [Either arg R])
+          #context is cmd_whole
+            arg/opts/xargs/xarg * $"" / $[] / $__
+          #context is cmd_quote_str
+            arg/opts/xargs/xarg * \$...$/
+          #funcs
+              quo2str
+              str2quo
+                #str2cmd
+
+              str2xargs
+                #inner_str2opts
+              xargs2cmd
+                #opts2cmd
+                #box_opts_to_mk_xargs
+                #xargs2quo
+                #opts2quo
+
+              flatten_opts_to_mk_xargs
+              parse_xargs_to_mk_opts
+
+              xarg2cmd
+                    #here funcs
+
+          ====
+          context is cmd_whole
+            before arg or any str
+              $""... :: arg
+                cmd_form:
+                  #result wrapped by ""
+                  repr by str2quo
+                    str2cmd . str2str ~=~ str2quo
+                    str2cmd ~=~ str2quo
+                memory:
+                  str2str = id
+                  perfect forward
+              $[]... :: R
+                #no $ unpack
+                cmd_form:
+                  <==> [ $__... ]
+                  opts2cmd . inner_str2opts $ s ~=~ f' [ {s} ] '
+                    opts2cmd = xargs2cmd . box_opts_to_mk_xargs
+                    xargs2cmd . box_opts_to_mk_xargs . inner_str2opts ~=~ wrap ' [ ' " ] "
+                    box_opts_to_mk_xargs opts = [Right opts]
+                memory:
+                  parsed by inner_str2opts
+                    inner_str2opts s = opts where
+                      [Right opts] = str2xargs (f" [ {s} ] ")
+
+              $__... :: xargs #unpack inplace
+                #no | > ;
+                cmd_form:
+                  xargs2cmd . str2xargs $ s ~=~ f' {s} '
+                memory:
+                  parsed by str2xargs
+
+            before argv or any R
+              $""... :: arg
+                cmd_form:
+                  repr by opts2quo
+                  #with [], result wrapped by ""
+                memory:
+                  opts2quo = xargs2quo . box_opts_to_mk_xargs
+                    = str2quo . xargs2cmd . box_opts_to_mk_xargs
+                    = str2quo .  opts2cmd
+
+              $[]... :: R
+                cmd_form:
+                  repr by opts2cmd
+                  <==> [ $__... ]
+                memory:
+                  perfect forward
+
+              $__... :: xargs #unpack inplace
+                not wrapped by []
+                cmd_form:
+                  xargs2cmd . flatten_opts_to_mk_xargs ~=~ unwrap ' [' "] " . opts2cmd
+                memory:
+                  flatten_opts_to_mk_xargs
+
+            before option/xargs or any [(Either arg R)]
+              $""... :: arg
+                cmd_form:
+                  repr by xargs2quo
+                  xargs2quo = str2quo . xargs2cmd
+                memory:
+                  xargs2cmd
+
+              $[]... :: R
+                <==> [ $__... ]
+                cmd_form:
+                  opts2cmd . parse_xargs_to_mk_opts ~=~ wrap ' [ ' " ] " . xargs2cmd
+                memory:
+                  parse_xargs_to_mk_opts
+
+              $__... :: xargs #unpack inplace
+                cmd_form:
+                  xargs2cmd
+                memory:
+                  perfect forward
+
+            before xarg or any (Either arg R)
+              $""... :: arg
+                cmd_form:
+                  str2quo . xarg2cmd
+                    Left -> str2quo . str2quo
+                      ###quo quo
+                    Right -> opts2quo
+                memory:
+                  xarg2cmd = str2quo/opts2cmd
+                    "" vs []
+
+          context is cmd_quote_str
+            only 1 case:
+              \$...$/
+              --> \$d+:
+            ====
+            before arg or any str
+              ${...$}
+                memory:
+                  f"{arg!s}"
+            before argv or any R
+              ${...$}
+                memory:
+                  f"{opts2cmd opts!s}"
+            before option/xargs or any [(Either arg R)]
+              ${...$}
+                memory:
+                  f"{xargs2cmd xargs!s}"
+            before xarg or any (Either arg R)
+              ${...$}
+                memory:
+                  f"{xarg2cmd xarg!s}"
+          $
+      | > < ; || && ( )
+      sugar:
+        ` ...
+          ==>> [ ... ]
+          #not beyond ; | >
+        +option -option
+          ==>> ?+option
+          ==>> ?"+option"
+
+      #??需要将(Either arg R)编码为arg
+
+
+
+

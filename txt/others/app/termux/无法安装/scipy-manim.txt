@@ -1,0 +1,107 @@
+
+注意:编译、+x脚本 均不得在storage即/sdcard/中进行，用户权限问题
+
+无法安装
+  py:
+    scipy
+    manim
+  termux:
+    libopenblas-dev liblapack-dev
+      也无法编译
+
+本手机
+  armv7-a 32bit
+    aarch == amd =?!= arm != x86
+  apt-get install libopenblas-dev liblapack-dev
+    none
+    无法安装scipy
+      无法安装manim
+
+
+======
+to remove/delete:
+  TODO
+  termux:
+    ~/src OpenBLAS-0.3.10/
+      120M
+      fail to link -lm_hard
+      m_hard.so? Android NDK?
+
+
+======
+pip3 install manim
+  pip3 install scipy
+    fail
+
+sudo apt-get install gcc gfortran python-dev libopenblas-dev liblapack-dev cython
+apt-get install libopenblas-dev liblapack-dev
+Unable to locate package libopenblas-dev
+cat ~/../usr/etc/apt/sources.list
+
+cat /etc/apt/sources.list
+##And make sure it includes these lines
+deb http://de.archive.ubuntu.com/ubuntu precise main restricted universe
+deb-src http://de.archive.ubuntu.com/ubuntu precise restricted main multiverse universe
+
+deb http://de.archive.ubuntu.com/ubuntu precise-updates main restricted universe
+deb-src http://de.archive.ubuntu.com/ubuntu precise-updates restricted main multiverse universe
+$ vim ~/../usr/etc/apt/sources.list
+$ apt update
+fore disabled by default.
+W: GPG error: http://de.archive.ubuntu.com/ubuntu precise Release: The following signatures couldn't be verified because the public key is not available: NO_PUBKEY 40976EAF437D05B5
+E: The repository 'http://de.archive.ubuntu.com/ubuntu precise Release' is not signed.
+N: Updating from such a repository can't be done securely, and is therefore disabled by default.
+N: See apt-secure(8) manpage for repository creation and user configuration details.
+=======
+$ pacman -S openblas
+The program pacman is not installed. Install it by executing:
+pkg install pacman4console, after running pkg in game-repo
+pkg install pacman4console
+====
+https://www.openblas.net/
+  http://github.com/xianyi/OpenBLAS/archive/v0.3.10.tar.gz
+    11.7MB -> 120M
+tar -xzf rebol.tar.gz
+  The result will be a new directory containing the files.
+$ tar -xzf OpenBLAS-0.3.10.tar.gz
+$ cd OpenBLAS-0.3.10/
+$ make
+"you must define ARMV5, ARMV6, ARMV7 or ARMV8"
+  https://github.com/xianyi/OpenBLAS/issues/1267
+  Strange error, it fails to create at least one of the configuration files and the "you must define" is just a consequence of that. Make sure that you have write permissions in rk_ws/OpenBLAS (e.g. the cause could be that you copied/unpacked the OpenBLAS source as a diferent user - possibly "root").
+
+#不能在storage编译，必须移动到termux/home
+mkdir ~/src
+cp -t ~/src OpenBLAS-0.3.10.tar.gz
+$ tar -xzf OpenBLAS-0.3.10.tar.gz
+$ cd OpenBLAS-0.3.10/
+$ make
+-mfpu=neon -march=armv7-a
+cc -c -O2 -DMAX_STACK_ALLOC=2048 -marm -Wall -DF_INTERFACE_GFORT -fPIC -DNO_LAPACK -DNO_LAPACKE -DSMP_SERVER -DNO_WARMUP -DMAX_CPU_NUMBER=4 -DMAX_PARALLEL_NUMBER=1 -DVERSION=\"0.3.10\" -mfpu=neon -march=armv7-a -UASMNAME -UASMFNAME -UNAME -UCNAME -UCHAR_NAME -UCHAR_CNAME -DASMNAME=csrot_k -DASMFNAME=csrot_k_ -DNAME=csrot_k_ -DCNAME=csrot_k -DCHAR_NAME=\"csrot_k_\" -DCHAR_CNAME=\"csrot_k\" -DNO_AFFINITY -I.. -UDOUBLE  -DCOMPLEX -DCOMPLEX -DCOMPLEX -UDOUBLE  ../kernel/arm/rot_vfp.S -o csrot_k.o
+cc -O2 -DMAX_STACK_ALLOC=2048 -marm -Wall -DF_INTERFACE_GFORT -fPIC -DNO_LAPACK -DNO_LAPACKE -DSMP_SERVER -DNO_WARMUP -DMAX_CPU_NUMBER=4 -DMAX_PARALLEL_NUMBER=1 -DVERSION=\"0.3.10\" -mfpu=neon -march=armv7-a -UASMNAME -UASMFNAME -UNAME -UCNAME -UCHAR_NAME -UCHAR_CNAME -DASMNAME= -DASMFNAME=_ -DNAME=_ -DCNAME= -DCHAR_NAME=\"_\" -DCHAR_CNAME=\"\" -DNO_AFFINITY -I..  -shared -o ../libopenblas_armv7p-r0.3.10.so \
+-Wl,--whole-archive ../libopenblas_armv7p-r0.3.10.a -Wl,--no-whole-archive \
+-Wl,-soname,libopenblas.so -lm -Wl,-lm_hard -lm -Wl,-lm_hard -lm
+/data/data/com.termux/files/usr/bin/arm-linux-androideabi-ld: cannot find -lm_hard
+  https://github.com/xianyi/OpenBLAS/commit/fa6a920caa09e60e24acfad7ad8acdf30e8a7f14
+    According to Android docs, we should link -lm_hard instead of -lm
+  =====so, maybe I should install sth like android-dev?
+  ====not found: Android NDK only for x86
+  http://android.cn-mirrors.com/tools/sdk/ndk/index.html
+    ARMv5TE machine code will run on all ARM-based Android devices. ARMv7-A will run only on devices such as the Verizon Droid or Google Nexus One that have a compatible CPU. The main difference between the two instruction sets is that ARMv7-A supports hardware FPU, Thumb-2, and NEON instructions. You can target either or both of the instruction sets — ARMv5TE is the default, but switching to ARMv7-A is as easy as adding a single line to the application's Application.mk file, without needing to change anything else in the file. You can also build for both architectures at the same time and have everything stored in the final .apk. Complete information is provided in the CPU-ARCH-ABIS.HTML in the NDK package.
+
+
+
+
+
+
+  scipy-1.5.4.tar.gz
+    https://github.com/scipy/scipy/releases
+      https://github.com/scipy/scipy/releases/download/v1.5.4/scipy-1.5.4.tar.xz
+
+      cd ~/tmp/wget_
+      curl --continue-at - -L --retry 99 -O https://github.com/scipy/scipy/releases/download/v1.5.4/scipy-1.5.4.tar.xz
+        16.8 MB
+      pip3 install scipy-1.5.4.tar.xz
+        fail!!!
+
+

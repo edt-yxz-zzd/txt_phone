@@ -1,0 +1,215 @@
+Python async/await Tutorial
+
+================================
+================================
+async/await <==> @asyncio.coroutine/yield from
+================================
+
+async def asynchronous_function(...)->coroutine_object:
+  x = await coroutine_object
+  async with coroutine_object as ...
+  return await coroutine_object
+  //?? async for ... in ...
+
+================================
+import asyncio
+loop = asyncio.get_event_loop()
+================================
+loop.run_until_complete(coroutine_object)
+loop.close()
+================================
+
+import signal
+import sys
+
+def signal_handler(signal, frame):
+    loop.stop()
+    client.close()
+    sys.exit(0)
+
+signal.signal(signal.SIGINT, signal_handler)
+
+asyncio.ensure_future(coroutine_object)
+asyncio.ensure_future(coroutine_object)
+loop.run_forever()
+
+================================
+================================
+https://stackabuse.com/python-async-await-tutorial/
+
+
+
+Stack Abuse
+Python async/await Tutorial
+By Scott Robinson • 0 Comments
+
+Asynchronous programming has been gaining a lot of traction in the past few years, and for good reason. Although it can be more difficult than the traditional linear style, it is also much more efficient.
+
+For example, instead of waiting for an HTTP request to finish before continuing execution, with Python async coroutines you can submit the request and do other work that's waiting in a queue while waiting for the HTTP request to finish. It might take a bit more thinking to get the logic right, but you'll be able to handle a lot more work with less resources.
+
+Even then, the syntax and execution of asynchronous functions in languages like Python actually aren't that hard. Now, JavaScript is a different story, but Python seems to execute it fairly well.
+
+Asynchronicity seems to be a big reason why Node.js so popular for server-side programming. Much of the code we write, especially in heavy IO applications like websites, depends on external resources. This could be anything from a remote database call to POSTing to a REST service. As soon as you ask for any of these resources, your code is waiting around with nothing to do.
+
+With asynchronous programming, you allow your code to handle other tasks while waiting for these other resources to respond.
+Coroutines
+
+An asynchronous function in Python is typically called a 'coroutine', which is just a function that uses the async keyword, or one that is decorated with @asyncio.coroutine. Either of the functions below would work as a coroutine and are effectively equivalent in type:
+
+import asyncio
+
+async def ping_server(ip):
+    pass
+
+@asyncio.coroutine
+def load_file(path):
+    pass
+
+These are special functions that return coroutine objects when called. If you're familiar with JavaScript Promises, then you can think of this returned object almost like a Promise. Calling either of these doesn't actually run them, but instead a coroutine object is returned, which can then be passed to the event loop to be executed later on.
+
+In case you ever need to determine if a function is a coroutine or not, asyncio provides the method asyncio.iscoroutinefunction(func) that does exactly this for you. Or, if you need to determine if an object returned from a function is a coroutine object, you can use asyncio.iscoroutine(obj) instead.
+Yield from
+
+There are a few ways to actually call a coroutine, one of which is the yield from method. This was introduced in Python 3.3, and has been improved further in Python 3.5 in the form of async/await (which we'll get to later).
+
+The yield from expression can be used as follows:
+
+import asyncio
+
+@asyncio.coroutine
+def get_json(client, url):
+    file_content = yield from load_file('/Users/scott/data.txt')
+
+As you can see, yield from is being used within a function decorated with @asyncio.coroutine. If you were to try and use yield from outside this function, then you'd get error from Python like this:
+
+  File "main.py", line 1
+    file_content = yield from load_file('/Users/scott/data.txt')
+                  ^
+SyntaxError: 'yield' outside function
+
+In order to use this syntax, it must be within another function (typically with the coroutine decorator).
+Async/await
+
+The newer and cleaner syntax is to use the async/await keywords. Introduced in Python 3.5, async is used to declare a function as a coroutine, much like what the @asyncio.coroutine decorator does. It can be applied to the function by putting it at the front of the definition:
+
+async def ping_server(ip):
+    # ping code here...
+
+To actually call this function, we use await, instead of yield from, but in much the same way:
+
+async def ping_local():
+    return await ping_server('192.168.1.1')
+
+Again, just like yield from, you can't use this outside of another coroutine, otherwise you'll get a syntax error.
+
+In Python 3.5, both ways of calling coroutines are supported, but the async/await way is meant to be the primary syntax.
+Subscribe to our Newsletter
+
+Get occassional tutorials, guides, and jobs in your inbox. No spam ever. Unsubscribe at any time.
+Newsletter Signup
+Running the event loop
+
+None of the coroutine stuff I described above will matter (or work) if you don't know how to start and run an event loop. The event loop is the central point of execution for asynchronous functions, so when you want to actually execute the coroutine, this is what you'll use.
+
+The event loop provides quite a few features to you:
+
+    Register, execute, and cancel delayed calls (asynchronous functions)
+    Create client and server transports for communication
+    Create subprocesses and transports for communication with another program
+    Delegate function calls to a pool of threads
+
+While there are actually quite a few configurations and event loop types you can use, most of the programs you write will just need to use something like this to schedule a function:
+
+import asyncio
+
+async def speak_async():
+    print('OMG asynchronicity!')
+
+loop = asyncio.get_event_loop()
+loop.run_until_complete(speak_async())
+loop.close()
+
+The last three lines are what we're interested in here. It starts by getting the default event loop (asyncio.get_event_loop()), scheduling and running the async task, and then closing the loop when the loop is done running.
+
+The loop.run_until_complete() function is actually blocking, so it won't return until all of the asynchronous methods are done. Since we're only running this on a single thread, there is no way it can move forward while the loop is in progress.
+
+Now, you might think this isn't very useful since we end up blocking on the event loop anyway (instead of just the IO calls), but imagine wrapping your entire program in an async function, which would then allow you to run many asynchronous requests at the same time, like on a web server.
+
+You could even break off the event loop in to its own thread, letting it handle all of the long IO requests while the main thread handles the program logic or UI.
+An example
+
+Okay, so let's see a slightly bigger example that we can actually run. The following code is a pretty simple asynchronous program that fetches JSON from Reddit, parses the JSON, and prints out the top posts of the day from /r/python, /r/programming, and /r/compsci.
+
+The first method shown, get_json(), is called by get_reddit_top() and just creates an HTTP GET request to the appropriate Reddit URL. When this is called with await, the event loop can then continue on and service other coroutines while waiting for the HTTP response to get back. Once it does, the JSON is returned to get_reddit_top(), gets parsed, and is printed out.
+
+import signal
+import sys
+import asyncio
+import aiohttp
+import json
+
+loop = asyncio.get_event_loop()
+client = aiohttp.ClientSession(loop=loop)
+
+async def get_json(client, url):
+    async with client.get(url) as response:
+        assert response.status == 200
+        return await response.read()
+
+async def get_reddit_top(subreddit, client):
+    data1 = await get_json(client, 'https://www.reddit.com/r/' + subreddit + '/top.json?sort=top&t=day&limit=5')
+
+    j = json.loads(data1.decode('utf-8'))
+    for i in j['data']['children']:
+        score = i['data']['score']
+        title = i['data']['title']
+        link = i['data']['url']
+        print(str(score) + ': ' + title + ' (' + link + ')')
+
+    print('DONE:', subreddit + '\n')
+
+def signal_handler(signal, frame):
+    loop.stop()
+    client.close()
+    sys.exit(0)
+
+signal.signal(signal.SIGINT, signal_handler)
+
+asyncio.ensure_future(get_reddit_top('python', client))
+asyncio.ensure_future(get_reddit_top('programming', client))
+asyncio.ensure_future(get_reddit_top('compsci', client))
+loop.run_forever()
+
+This is a bit different than the sample code we showed earlier. In order to get multiple coroutines running on the event loop, we're using asyncio.ensure_future() and then run the loop forever to process everything.
+
+To run this, you'll need to install aiohttp first, which you can do with PIP:
+
+$ pip install aiohttp
+
+Now just make sure you run it with Python 3.5 or higher, and you should get an output like this:
+
+$ python main.py
+46: Python async/await Tutorial (http://stackabuse.com/python-async-await-tutorial/)
+16: Using game theory (and Python) to explain the dilemma of exchanging gifts. Turns out: giving a gift probably feels better than receiving one... (http://vknight.org/unpeudemath/code/2015/12/15/The-Prisoners-Dilemma-of-Christmas-Gifts/)
+56: Which version of Python do you use? (This is a poll to compare the popularity of Python 2 vs. Python 3) (http://strawpoll.me/6299023)
+DONE: python
+
+71: The Semantics of Version Control - Wouter Swierstra (http://www.staff.science.uu.nl/~swier004/Talks/vc-semantics-15.pdf)
+25: Favorite non-textbook CS books (https://www.reddit.com/r/compsci/comments/3xag9e/favorite_nontextbook_cs_books/)
+13: CompSci Weekend SuperThread (December 18, 2015) (https://www.reddit.com/r/compsci/comments/3xacch/compsci_weekend_superthread_december_18_2015/)
+DONE: compsci
+
+1752: 684.8 TB of data is up for grabs due to publicly exposed MongoDB databases (https://blog.shodan.io/its-still-the-data-stupid/)
+773: Instagram's Million Dollar Bug? (http://exfiltrated.com/research-Instagram-RCE.php)
+387: Amazingly simple explanation of Diffie-Hellman. His channel has tons of amazing videos and only a few views :( thought I would share! (https://www.youtube.com/watch?v=Afyqwc96M1Y)
+DONE: programming
+
+Notice that if you run this a few times, the order in which the subreddit data is printed out changes. This is because each of the calls we make releases (yields) control of the thread, allowing another HTTP call to process. Whichever one returns first gets printed out first.
+Conclusion
+
+Although Python's built-in asynchronous functionality isn't quite as smooth as JavaScript's, that doesn't mean you can't use it for interesting and efficient applications. Just take 30 minutes to learn its ins and outs and you'll have a much better sense as to how you can integrate this in to your own applications.
+
+What do you think of Python's async/await? How have you used it in the past? Let us know in the comments!
+python,how to
+
+

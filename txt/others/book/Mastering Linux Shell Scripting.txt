@@ -1,0 +1,270 @@
+
+
+=====[begin basic
+${xxx}
+  == os.environ[xxx]
+${11}
+  == sys.argv[11]
+$(cmd arg)
+  == stdout of "cmd arg"
+
+x=$0
+  now $x == $0
+
+cmd 2>&1 1>/dev/null
+  1 - stdout
+  2 - stderr
+  discard all output except "$?"
+
+cmd1 | cmd2
+  cmd2.stdin := cmd1.stdout
+
+
+bool:
+  echo "$?"
+    0 - true
+    !0 - false
+  exit 0
+  test
+    test ...
+    [ ... ]
+  ||
+  &&
+
+.sh:
+  bash xxx.sh
+  chmod +x xxx.sh
+
+=====]end basic
+
+
+
+
+
+
+=====[begin chapter 1
+env
+  echo $BASH_VERSION
+  env - 'x=xxx' 'y=yyy' cmd a1 a2
+  export 'x=xxx'
+
+exec:
+  $ bash $HOME/bin/hello1.sh
+
+  #shebang:『#! /bin/bash』
+  $ chmod +x $HOME/bin/hello1.sh
+
+
+exit status:
+  ====
+  exit 0
+  ====
+  cmd1 || cmd2
+  cmd1 && cmd2
+  ====
+  echo $?
+  cmd1 || echo $?
+  ====
+
+
+export PATH=$PATH:.
+
+type of cmd:
+  • Alias
+  • Function
+  • Shell built in
+  • Keyword
+  • File
+    $PATH
+
+  $ type ls
+  ls is aliased to `ls --color=auto'
+
+  $ type -a ls
+  ls is aliased to `ls --color=auto'
+  ls is /bin/ls
+
+  $ type -t ls
+  alias
+
+  $ type ls quote pwd do id
+
+
+
+args:
+  $0
+    this.sh
+    py.abspath(sys.srgv[0])
+  $1 .. $9 ${10} ..
+    py.sys.srgv[i]
+  $# :: uint
+    total
+    py.len(sys.srgv[1:])
+  $*
+    all args
+    py.sys.srgv[1:]
+  ====
+  echo "$*"
+  echo "$1"
+
+
+quote:
+  sh.'$1 \$2' == py.r'$1 \$2'
+  sh."$1 \$2" == py.f'{sys.argv[1]} $2'
+  sh."$(basename $0)"
+    == sh."`basename $0`"
+    == py.f'{os.path.basename(sys.argv[0]})'
+  echo "$(basename /1/2.3) `basename /1/2.3`"
+    ==>> 『2.3 2.3』
+
+debug:
+  bash -v aaa.sh
+    #verbose
+  bash -x aaa.sh
+    #displays the commands as they get executed
+
+
+=====]end chapter 1
+=====[begin chapter 2
+
+comment:
+  #
+echo:
+  type -a echo
+  echo is a shell builtin
+  echo is /data/data/com.termux/files/usr/bin/echo
+
+  man echo
+
+  #suppress the new line
+  echo -n 'xxx'
+  echo -e 'xxx\c'
+
+read:
+  $ type -a read
+  read is a shell builtin
+
+  echo -n 'input:' && read && echo "$REPLY"
+    #!!!!!!!bug!!!!!!!when input -n
+      # echo does not interpret -- to mean the end of options.
+        #from "man bash"
+      # echo -e -E -e -E -n -n
+    # output: $REPLY
+      #no problem, since read is a shell builtin
+    # input --help is ok
+      #no problem, since echo is a shell builtin
+      # see below: echo vs ls
+      #     echo -n 'input:' && read && ls "$REPLY"
+
+  #########################################
+  #############  echo vs ls  ##############
+  #########################################
+  #ok
+  $ echo -n 'input:' && read && echo "$REPLY"
+  input:--help
+  --help
+
+  #bug
+  $ echo -n 'input:' && read && echo "$REPLY"
+  input:-n
+  $
+
+  $ echo -n 'input:' && read && echo -- "$REPLY"
+  input:x
+  -- x
+
+  $ echo -n 'input:' && read && echo -e "--\b\b$REPLY"
+  input:x\\c
+  x$
+
+  $ echo -n 'input:' && read && ls "$REPLY"
+  input:.
+  www.dizang.org
+
+  $ echo -n 'input:' && read && ls "$REPLY"
+  input:-a
+  .  ..  www.dizang.org
+
+  #########################################
+  #########################################
+
+read#2:
+  #prompt
+  read -p 'input: ' xxx && echo "$xxx"
+
+  #limiting the number of entered characters
+  read -n1 -p 'input: ' xxx && echo && echo "$xxx"
+
+  $ read -n1
+  x$
+
+  $ read -n1 -p 'input: ' xxx && echo && echo "$xxx"  input: x
+  x
+  $
+
+  #silent - visibility
+  read -sn1 -p 'password: ' xxx && echo && echo "$xxx"
+
+  #
+  test -d $HOME/$dir_name || mkdir -m 700 $HOME/$dir_name
+  #
+  find $HOME -path $HOME/$dir_name -prune -o \
+    -name "*$file_suffix" -exec cp {} $HOME/$dir_name/ \;
+    # -o : or
+    # -path $HOME/$dir_name -prune : no recur, i.e. skip target directory
+
+  # 2>&1 1>/dev/null
+  ping -c3 $server_addr 2>&1 > /dev/null || echo "Server dead"
+
+=====]end chapter 2
+
+=====[begin chapter 3
+
+command-line list:
+  ||
+  &&
+  ####
+  0 - true
+  ####
+  $ echo $?
+  $ test $PWD == $HOME || cd $HOME
+  $ [ $PWD == $HOME || cd $HOME ]
+
+
+if:
+  if [ $# -lt 1 ] ; then
+    echo "Usage: $0 <name>"
+    exit 1
+  else
+    name=$1
+  fi
+    echo "Hello $name"
+    exit 0
+
+  if condition; then
+    statement
+  elif condition; then
+    statement
+  else
+    statement
+  fi
+
+case:
+  case $2 in
+    [A-C]|[a-c]) echo "$1"
+    ;;
+    [Dd]) echo "$1"
+    ;;
+    [E-F]|[e-f]) echo "$1"
+    ;;
+    *) echo "Grade could not be evaluated for $1"
+  esac
+
+
+=====]end chapter 3
+
+
+
+
+=====[begin chapter 1
+=====]end chapter 1

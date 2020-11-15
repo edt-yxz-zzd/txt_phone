@@ -1,0 +1,248 @@
+
+py_mk_sh.txt
+  -> 字符串内部转义.txt
+    e others/数学/编程/永恒代码/字符串内部转义.txt
+
+py_mk_sh
+  python make shell-like env
+
+py_mk_sh
+py=>sh
+  call:
+    $!( cmd ... )
+      str(exit_code) as arg
+    $! cmd ...
+    ====
+    $( cmd ... )
+      stdout as arg
+    *$( cmd ... )
+      stdout as args
+    ***$( cmd ... )
+    +**$( cmd ... )
+    -**$( cmd ... )
+      stdout as xargs #see below
+    ===
+    $ cmd ...
+    *$ cmd ...
+    ***$ cmd ...
+    -**$ cmd ...
+    +**$ cmd ...
+    ===
+    f $ g $ h
+      === f $( g $( h ) )
+    ===
+    $$x
+      == $( ***$x )
+    $!$x
+      == $!( ***$x )
+    ===
+    $ g ... `f` $ h ...
+      === $ f $( g ... ) $( h ... )
+  抽象形式vs内存形式vs手写形式vs扁平化形式
+    抽象形式
+      [Either str str]
+      [(case, str)]
+      [(str, [str])]
+    手写形式
+      !cmd -k +: ' a"  :' a" 1 :1  $x :x *$x ***$x -**$x +**$x [ !g -:b `f` 3 ] ` :ls -a
+    内存形式
+      [ ' !cmd', ' -k', ' +:', ' a', '?0: a', '1', '1', xargs2arg_str(x), 'x', *xargs2arg_strs(x), *x, ' -:', *x, ' +:', *x, ' [', ' $(', ' !f', ' $(', ' !g', ' -:b', ' )', '3', ' )', ' ]', ' [', 'ls', ' -a', ' ]' ]
+    扁平化形式
+      \0/
+      r'\=[!cmd]/\ /\=[-k]/\ /\=[+:]/\ /\=[a]/\ / a\ /1\ /1 .......
+  变量名vs命令名vs直接常量
+    str: 'xxx" 先单后双
+      转义:
+        '"' ==>> [0:``] ==>> [1:``] ...
+        '"'*4 ==>> [0*4:``] ==>> [1*4:``] ...
+        ===
+        '\n' ==>> \~n/
+        '"' ==>> \~'/
+        '\\' ==>> \0/ ==>> \1/ ...
+        r'\\\\' ==>> \0*4/ ==>> \1*4/ ...
+        unicode <<== rex'\\~u[0-9A-F_]+h/'
+      ecstr = escaped content inside '..." # no "
+        ecstr = rex"([^\\]|\\(~['ntbfv]|0|[1-9]\d*([*][1-9]\d*)?|~u[0-9A-F_]+h)/)*"
+      qstr = 'ecstr" #quoted str
+
+  有无必要扁平化参数？
+    有限静态类型(C)vs动态类型(Python/Lisp)vs无限静态类型(Haskell)
+    *有限静态类型
+      ==>>转发 参数 时，必然需要 扁平化参数
+        如：用于转发参数的复杂数据结构: [,]
+          cmd [ x y -a -s z [ c ] ] [ ]
+        如：subcmd子命令
+          cmd -x ` sub -a ` subsub ...
+          ==>> cmd -x [ sub -a [ subsub ... ] ]
+      exit_code::int
+      arg::str
+      output:[str] or Iter str
+      input:[(str, [str])]
+      cmd :: input -> Iter str -> Out str -> Out str -> int
+      parse_cmd :: str -> [(case, str)]
+        case = op | xarg | xarg_var | | xargs_var
+        op = " ` [ ] | > < || && $( ) **$( )"
+        xarg = arg | option
+        option = rex" [-+](:.*|[^:].*)"
+        arg = rex"?(0|[1-9]\d*):.*"
+        arg_var = rex"$\w+"  # insert one arg
+        args_var = rex"*$\w+"  # insert args
+        xargs_var = rex"***$\w+" # insert 0.. xrgs
+        xargs_var = rex"[-+]**$\w+" # insert "-:"/"+:" first then insert 0.. xrgs
+
+  扁平化参数的原理:
+    扩展字符集，用旧字符串表达新字符串
+      # 如:kw->ss, i.e. {str:[str]} -> [str]
+      # 如:ss->str, i.e. [str] -> str
+    let a = int%m
+    let b = int%n
+    *1: 可逆一对多 [Either [a] [x]] 0..1 -> 1.. [[x]]
+      # 如:kw->ss, i.e. {str:[str]} -> [str]
+      #as - 编码 选项名/命令名...
+      #xs - 编码 直接文本
+      prefix:
+        as ==>> os++xs_
+        xs ==>> is++xs
+      escape: #include "prefix" case
+        as ==>> os_:xs_
+        xs:
+          os++_ ==>> is_:xs_
+          is++_ ==>> is_:xs_
+          _ ==>> xs
+        ====
+        xs:xxx <<== ?0:xxx
+        xs:?i:xxx <<== ?i+1:xxx
+        as <<== rex" .*"
+        ====
+        epstr = escaped piece str
+          epstr = rex" .*|?(0|[1-9]\d*):.*|[^ ?].*|"
+        ====
+        dpstr = direct piece str
+          dpstr -> epstr
+          direct str #not via $x $(...) **$x **$(...)
+          -k | ' -k" -> " -k"
+          [ | ' [" -> " ["
+          a -> err!!!! :a or $a
+          :a | 'a" -> "a" | "?0:a"
+          1 | :1 | '1" -> "1" | "?0:1"
+          :-k | '-k" -> "-k" | "?0:-k"
+          ::-k -> ":-k" | "?0::-k"
+          ?a | :?a | '?a" -> "?0:?a"
+          ?0:a | :?0:a | '?0:a" -> "?1:a" | "?0:?0:a"
+          ' a" -> " a"      #option
+          :' a" -> "?0: a"  #arg
+          ' ..." -> ' ..." # option not changed
+          :arg -> escape_arg arg
+
+          $x -> arg
+          *$x -> arg...
+          ***$x -> xarg...
+          +**$x -> " +:" xarg...
+          -**$x -> " -:" xarg...
+
+        ====
+        cmd -k a [ b ]
+          ==>> ['cmd', ' -k', 'a', ' [', 'b', ' ]']
+          ==>> ['?0:cmd', ' -k', '?0:a', ' [', '?0:b', ' ]']
+    *2: 可逆一对多 [Either a x] 0..1 -> 1.. [x]
+      # 如:ss->str, i.e. [str] -> str
+      a ==>> e:os++xs # escaped seq
+      x:
+        e ==>> e:is++xs
+        _ ==>> x
+      ====
+      e === "\\"
+      mmm === rex"[^\\/]*"
+      nnn === rex"[^\\/]+" && rex"\S+" && rex"[^0-9\\/{[(].*"
+      ==
+      err <<== rex"\\[0-9]+($|[^/])"
+      err <<== \mmm\
+        eg: \\/
+      xs:e <<== \0/ <<== \1/ <<== \2/ ...
+      xs:\i/ <<== \i+1/
+      xs: r"\\\\" <<== \0*4/ <<== \1*4/ ...
+      xs:e*k <<== \1*k/
+      xs:\i*k/ <<== \(i+1)*k/
+      xs:???=yield ~c <<== \~c/ # \" <<== ~' ; \n ~n; \t ~t
+        see above for \~u.../
+      xs:mmm <<== \={mmm}/
+      xs:???=yield {mmm} <<== \{mmm}/
+      xs:mmm <<== \(:mmm:)/
+      ####xs:mmm <<== \(xxxx:mmm:xxxx)/
+      as:mmm <<== \=[mmm]/
+      as:???=yield [mmm] <<== \[mmm]/
+      as:???=yield [[mmm]] <<== \,[mmm],[mmm],.../
+      as:???=yield nnn <<== \nnn/
+      as:a <<== \a/
+        as:, <<== \,/
+        as:" " <<== \ /
+        as:[ <<== \[/
+        as:] <<== \]/
+      ====
+      cmd -k a [ b ]
+        ###==>>test Either then parse Right (remove "?0:" or "?(i-1):" or assert not startswith ) then choose encoder
+        ###<<==split "\ /" then parse Either
+        ==>> ['cmd', ' -k', 'a', ' [', 'b', ' ]']
+          ==>> r'cmd\ /\=[-k]/\ /a\ /\[/\ /b\ /\]/'
+        ==>> ['?0:cmd', ' -k', '?0:a', ' [', '?0:b', ' ]']
+          err: ==>> r'?0:cmd\ /\=[-k]/\ /?0:a\ /\[/\ /?0:b\ /\]/'
+            "?0:" should be removed
+
+view ../lots/NOTE/unicode/valid\ code\ areas.txt
+    Noncharacters
+        66 noncharactercode points
+            32
+                U+FDD0..U+FDEF
+            34=17*2
+                :The last two code points of each plane are noncharacters:
+                    U+[00..10]FFF[E-F]
+
+  抽象形式:
+    ss := [str]
+      #cmd line#扁平化kw
+      #file
+        #len=0:no output/input
+        #or len=n>0,(n-1)newlines
+    kw := {str:(bool[-+], ss)} #args+kwargs
+      NOTE: key='+:...' ==>> append to prev
+      NOTE: key='-:...' ==>> replace prev
+      NOTE: key='+:'/'-:' ==>> args
+  手写形式:
+    问题:变量名vs文本常量，谁该被转义？
+      $文本变量
+      $$文本行变量
+      $$$文本表变量
+      $:参数映射变量
+      !命令名
+      `命令名`
+      :直接文本常量
+      '"
+      r'"
+      f'"
+      fr'"
+    !cmd :x $y :z -:k $a $b 'c' -$s ++: :u :w *$$args **$:kwargs
+
+
+
+    kw2str/ss2str := repr
+    str2kw/str2ss := literal_eval
+  kw2bss # add one pair: "[," and ",]"
+  bss2kw # remove one pair: "[," and ",]"
+    bss := ss # bracketed ss
+    item k:(+, ["[,", v, ",]"])
+      ==>> '+:k', "[,", "[,", v, ",]", ",]"
+  kw2ess # add "one" prefix '*'
+  ess2kw # remove "one" prefix '*'
+    ess := ss # escaped ss
+      NOTE: ess element: rex'[*]*[+-]?:.*'
+      NOTE: rex'[-+]:.*' ==>> key
+      NOTE: rex'[*]+[-+]:.*' ==>> arg
+  ss2s
+  s2ss
+  =====
+  stdout :: sss
+  cmd :: kw -> generator<int,str> #(int, iter_ss)
+    0 - true
+    !0 - false
+
+

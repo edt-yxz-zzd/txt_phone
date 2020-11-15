@@ -1,0 +1,294 @@
+
+Sketchy LISP -- An Introduction to Functional Programming in Scheme (3ed)(2008)(Nils M Holm).pdf
+
+
+
+
+purely applicative
+  no side-effect
+purely functional
+
+lexical scoping
+dynamic scoping
+  #隐参数！
+  f :: x -> a -> .k -> b -> c -> d
+  f x # not input .k yet
+  f x a # auto to detect context to lookup .k
+  (let .k=... in f) #bind ahead
+  ====
+  f :: .k => x -> a -> -> b -> c -> d
+  bind iff (let .k=... in f ...)
+
+statically typed language
+dynamic typing
+  boxed value
+    A valuethat carriesitstype information with it is also called a boxed value.
+
+
+let / let* / letrec
+  (let
+      (
+        ; let => name0 unbound for expr0/expr1 yet
+        ; let* => name0 unbound for expr0 yet, but bound for expr1
+        ; letrec => name0 bound for expr0/expr1
+        (name0 expr0)
+        (name1 expr1)
+        ...
+      )
+      result_expr
+  )
+
+lisp ():
+  (x y z)
+    = hs: [x, y, z] = x:y:z:[]
+    = (x . (y z))
+      dotted pair
+    = (x y . (z))
+    = (x y z . ())
+  (x y . z)
+    = hs: x:y:z
+    improper list
+    spec usage
+  (x . y z)
+    err?
+lisp list:
+  since (x y ...) is call
+  how to make list?
+  by (cons x (cons y (...'()...)))
+    py:tolist( (x,(y,(...()...))) )
+  by name:
+    '(x y ...)
+    py:'x y ...'.split()
+    quote
+      '(...)
+    quasiquote+unquote
+      `(... ,(...) ...)
+            call
+    unquote-splicing
+      `(... ,@(...) ...)
+            call then unbox/merge into parent
+  by value:
+    (list x y ...)
+    py:[x,y,...]
+    ===
+    (f ...)
+    <==> (apply f (list ...))
+      since apply call-by-value
+      (apply f (x y ...)) will call x
+    (f 'x 'y '...)
+    <==> (apply f '(x y ...))
+
+  =====
+    `x = 'x
+    `,x = x
+    `(x) = (list 'x)
+    `(,x) = (list x)
+    `(x ,x) = (list 'x x)
+    `(,@x) = (append x)
+          ; what is this?? (list x) or x ???
+    `(x ,x ,@x) = (append (list 'x) (list x) x)
+    `(,x ',x)) = (list x (list 'quote x))
+    ===
+    observations:
+      1) A quasiquoted list is an application of 『list』 to a series of quoted forms.
+      2) An unquoted form in a quasiquoted list is not quoted.
+      3) When 『,@』 occursin a quasiquoted list, the application of 『list』 is replaced by an application of 『append』, and 『list』 is applied to each subform except for those that will be spliced.
+
+metaprogramming
+  #rewrite rule
+  define-syntax + syntax-rule
+  quote + quasiquote + unquote
+    <==> quote + list + append
+  ((lambda (x) \ \ \(,x ',x)) '(lambda (x)\ \ \(,x ',x)))
+    #to print a copy of its own code
+    #name:quine
+  call/cc
+    call-with-current-continuation
+    =====
+    nonlocal exit
+    =====
+    暴露语言实现细节
+      =====
+      (call/cc (lambda (exit)
+        (#f (exit 'left-to-right)
+            (exit 'right-to-left))))
+      =====
+      (letrec ((x (call/cc list)))
+        (if (pair? x)
+          ((car x) (lambda () x))
+          (pair? (x))))
+      => #f
+
+      context = new context
+        letrec create context
+          before all rhs expr
+      context.x = _L
+      #if "let": create context0 after all rhs expr
+      #   _x = rhs # neednot context0
+      #       #exit jump to "_x="
+
+      first round:
+        context.x = pass context into (list exit) = `(,exit)
+          #exit jump to ".x="
+        #   context0 = new context
+        #   context0.x = _x
+        if #t ==>> (exit (lambda () `(,exit)))
+          err
+          should be:
+          (lambda () context.x)
+            # or context0.x
+            "now": context.x == `(,exit)
+            lambda.context is readonly
+            but context.x is not
+      second round:
+        #context.x = (lambda () `(,exit))
+        context.x = (lambda () context.x)
+          # or context0.x
+        #   context1 = new context
+        #   context1.x = _x
+        if #f ==>> (pair? context.x)
+        return => #f
+        #let => #t
+        #   if #f ==>> (pair? `(,exit))
+        #                   # context0.x
+        #   return => #t
+      =====
+
+  recur func:
+      combinator
+      Y = fixed point operator
+        g = Y f
+        [g `fixed_point_of` f] <==> [f g === g]
+        Y f = g = f g =.f (Y f) = f (f (f (f (...))))
+
+        #first curry f
+        #second def z: z z = f (z z)
+        #then y f = z z
+        f :: yf -> (i->o)
+        y :: f -> (i->o)
+        e = i->o  # expected
+        (f (y f)) = e = y f = f e
+        f :: e -> e
+        y :: (e -> e) -> e
+        e = z z = z2e z
+        z = z2e = z2e_2e = z2e_2e_2e
+          = ((...->e)->e)
+        y f = e = z z = f e = f (z z)
+          = h2hh z
+          = h2hh $ \z-> f (z z)
+          = h2hh $ \z-> f $ \i->(z z) i
+          where
+            h2hh h = h h
+        (define (Y r)
+          ((lambda (f) (f f))
+            (lambda (f) (r (lambda (x) ((f f) x))))))
+
+
+
+
+
+
+
+
+Lisp strict
+  (append a b)
+  c = reverse a
+  (reverse_append c b)
+  (reverse_append (cdr c) (cons (car c) b))
+    #tail-recur
+Haskell lazy
+  a++b
+  h:ts++b=h:(ts++b)
+    #not tail-recur
+    #but lazy evalue to weak-head, donot really deep into call stack
+
+not uniform in formal!
+  how can we merge them?????
+
+list fold repr
+  (a->r->r) -> r->r
+  概念完美，但永远是O(n)
+  \f r0 -> (f  ls[0] (f ls[1] (...(f ls[n-1] r0)...)))
+  考虑下如何实现reverse
+    ===
+    O(reverse<n>) = O(reverse<n-1> + append1<n-1>)
+      = O(sum~ append1<i> {i<-[0..n-1])
+      = O(n^2)
+    ===
+    append1 ls x = ls++[x]
+    O(append1<n>) = O(append1<n-1> + 1) = O(n)
+list pair repr
+  &recur=(a -> recur -> r) -> (()->r) -> r
+  拆包式，函数签名的表达有毛病，出现循环
+  \ht z -> (ht ls[0] (\ht z -> (ht ls[1] ....(\ht z -> (ht ls[n-1] (\ht z -> z ())))...)))
+
+
+
+
+
+
+
+
+
+
+
+tail call optimization
+  jump instead call
+  "return f(...)"
+    <==> clean curr call frame, then jump to f
+    iff 栈上局部变量 的 指针 没有暴露，没有奇怪的析构函数
+continuation
+  # past and future
+  continuation
+    the future of a computation
+  current continuation
+    the continuation of the current point in the process of an evaluation
+  ====eg
+    whole expr:
+      (f (g x))
+    at current point:
+      where/when (g x) returns
+    current continuation at current point:
+      \ _ -> (f _)
+  ====eg
+    (f (g x) (h y))
+    #assume call-args eval from left to right
+    x >-
+    \_->g _ >-
+    \_0->
+      y >-
+      \_->h _ >-
+      \_-> f _0 _
+    (>-) :: i -> (i->o) -> o
+    (>-) = flip ($)
+
+  call/cc
+    call-with-current-continuation
+    =====
+    nonlocal exit
+      no! <==> ?catch+throw?
+      exit knows where it will go to
+      throw unknown
+    =====
+    暴露语言实现细节
+    (call/cc (lambda (exit)
+      (#f (exit 'left-to-right)
+          (exit 'right-to-left))))
+    =====
+    callcc :: ((@y. r->y) -> r) -> r
+    callcc exit2r = r where
+      r =
+        | output-val from (r = exit2r exit)
+        | input-val from (y = exit r) inside (exit2r exit)
+
+    r2o = ...
+    f = \ exitI2r -> r2o (callcc exitI2r)
+    exitO2exitI = \ exitO -> f exitI2r
+      where
+        exitI2r = \ exitI -> exitO exitI
+    exitI = (callcc exitO2exitI)
+    问题: ???exitI === r2o??&
+
+
+
+

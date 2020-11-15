@@ -1,0 +1,124 @@
+通用汇编语言.txt
+
+tail call optimization
+  jump instead call
+  "return f(...)"
+    <==> clean curr call frame, then jump to f
+    iff 栈上局部变量 的 指针 没有暴露，没有奇怪的析构函数
+continuation
+  # past and future
+  continuation
+    the future of a computation
+  current continuation
+    the continuation of the current point in the process of an evaluation
+  ====eg
+    whole expr:
+      (f (g x))
+    at current point:
+      where/when (g x) returns
+    current continuation at current point:
+      \ _ -> (f _)
+  ====eg
+    (f (g x) (h y))
+    #assume call-args eval from left to right
+    x >-
+    \_->g _ >-
+    \_0->
+      y >-
+      \_->h _ >-
+      \_-> f _0 _
+    (>-) :: i -> (i->o) -> o
+    (>-) = flip ($)
+
+  call/cc
+    call-with-current-continuation
+    =====
+    nonlocal exit
+      no! <==> ?catch+throw?
+      exit knows where it will go to
+      throw unknown
+    =====
+    暴露语言实现细节
+    (call/cc (lambda (exit)
+      (#f (exit 'left-to-right)
+          (exit 'right-to-left))))
+    =====
+    callcc :: ((@y. r->y) -> r) -> r
+    callcc exit2r = r where
+      r =
+        | output-val from (r = exit2r exit)
+        | input-val from (y = exit r) inside (exit2r exit)
+
+    r2o = ...
+    f = \ exitI2r -> r2o (callcc exitI2r)
+    exitO2exitI = \ exitO -> f exitI2r
+      where
+        exitI2r = \ exitI -> exitO exitI
+    exitI = (callcc exitO2exitI)
+    问题: ???exitI === r2o??&
+
+
+
+通用汇编语言
+  *无限只读寄存器
+    由汇编器决定寄存器的实际分派
+    数组/对象 只能放在内存中
+    虚拟数组，虚拟对象:
+      其虚拟形式地址只在函数内部使用
+        ，不传给其他函数
+        ，只使用立即数索引/直接属性名引用
+      相当于只是对寄存器使用结构化的命名
+      可能允许可 宏模版伪函数/伪循环 进行特别展开
+    ===
+    *函数输入输出寄存器
+      ??输入输出大多数通过内存(调用约定)
+      ??但至少C是使用了一个输出寄存器
+      由各汇编函数独立声明:哪些用于输入，哪些用于输出，哪些绝对不用。剩下的寄存器都可自由使用，函数返回后，它们必须被表明为 未初始化。
+      库内部 可统一优化
+      库外露API？？采用 调用约定 固定套路？
+      *输入寄存器:
+        只读，由外部初始化
+      *输出寄存器:
+        只写
+    *临时寄存器:只读，有内部初始化，即：赋值一次，只有一次，必须一次
+    *循环用寄存器？？
+      可将循环体视为特殊函数
+        它的部分输出与部分输入绑定，形成反馈
+        它内部使用的变量，类似 函数调用，仍旧可视为 单循环只读，无需特殊考虑
+        它的输出结果需指定保存处
+      *退出寄存器
+        输出循环计算结果
+          内只写外只读
+          只写一次即初始化
+          初始化只发生在退出循环时
+        语句: break 循环名(反馈值...) --> (退出值...)
+      *反馈寄存器:
+        既是输入:必须在循环前就已初始化
+        也是输出:每次进入下一轮循环或退出循环时更新
+        语句: continue 循环名(反馈值...)
+      循环体语句:
+        loop 循环名(反馈寄存器...) -> (退出寄存器...):
+          if ...: break 循环名(反馈值...) --> (退出值...)
+          continue 循环名(反馈值...)
+      为何使用 循环名？
+        循环内部的循环:
+          由于可能不被执行，故其 反馈值+退出值 对于父循环之外的环境无效
+          故而 break/continue 可直接指定任一 祖先循环(包括 自己)
+  *内存读写:
+    *内部独占的内存
+      保存对象，属性读写
+      栈上对象 可能 实际上 保存在 几个空闲 寄存器 中
+    *通信用的内存
+      进程间通信
+  *字长
+    给出一个需求范围，即：上下限
+    可有多种字长类型
+  *指针
+    大小？空闲比特？
+
+
+
+
+
+
+
