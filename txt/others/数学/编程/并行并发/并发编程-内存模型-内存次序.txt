@@ -1,0 +1,1883 @@
+
+并发编程-内存模型-内存次序.txt
+====================================
+看了一本C++并行相关的书
+我感觉似乎把一件简单的事情搞复杂了
+是不是在说线程各有各的缓存，你修改的只是缓存，就算刷出，别人看到的可能也只是他缓存的内容？
+也可以将内存访问解释网络访问，即带有不确定性的网络延迟。
+我想的太简单了吗？
+
+
+
+==================================[ZZZ
+注意:原子变量的『原子』强调自身操作之间，与其他变量的操作无关，不论这些操作是否在同一线程中进行，不论该变量是否为原子变量。
+  比如恒星的颜色改变，所有人看到的颜色序列是一致的，但仅限于各个恒星自己。不同人看到的两个恒星的变化次序是不同的。
+#memory_order 指的是 同一线程内部的『两个』不同原子变量，甲的某次操作与乙的某次操作 是否可以 被随意安排执行次序。
+#memory order保证的不是可见性，是可见性的顺序
+
+==================================]ZZZ
+
+====================================
+==================================[ZZZ
++本线程指令执行次序
+  缓存更新
+  内存存取指令的执行次序
+  ==>>内存栅栏/内存次序
++多线程内存读写次序
+  内存竞争
+    只要可能同时『读写/写写』
+    #(『读读』应该没问题，比如，多读者同时获得读锁，并发访问)
+  必须使用原子类型/原子操作
+  ==>>原子类型/原子操作
+
+====
+内存栅栏(memory barrier)
+  LoadLoad
+    如:先判断状态，再读数据
+  StoreStore
+    如:先写数据，再写状态
+  LoadStore
+  StoreLoad
+
+例：生产-消费:
+  #注意: StoreLoad被无情抛弃
+  #注意:这里『无锁』，但！：
+  #注意: 『是否空』标记位『必须』是原子类型，否则双方读写『必然』是错的！
+  #这不就是锁吗？锁会死，会自动排列竞争线程。使用原子变量要自己手动循环。
+  #
+  生产loop:
+    读-空？       #acquire=LL+LS
+      LoadStore
+      写-数据
+      StoreStore
+      写-非空     #release=LS+SS
+  消费loop:
+    读-非空？     #acquire=LL+LS
+      LoadLoad
+      读-数据
+      LoadStore
+      写-空       #release=LS+SS
+====================================
+====
+广告公司(变量)多个
+村庄(线程)多个
+村布告栏(线程观察到的变量变迁史)一个/每村
+贴广告小哥(线程读操作)多个/每公司
+出钱打广告(线程写操作)多次/每村
+
+由于小哥个跑个的，即使是同一家公司为同一个村子作的广告，在该村布告栏上出现的顺序也与该村下单的顺序不同。
+#优化bug
+群众很不满，广告公司便耍了个花招:
+  让各村打的广告在该村布告板上按下单顺序出现
+消停一阵后，出村的人们发现，原来我们的布告栏和别的村不一样！抗议！
+但成本太高，这次广告公司就不干了。
+只有小部分公司站出来，声明，自家公司出品的广告保证以下单顺序出现在布告栏上。
+就管他们叫『严肃公司』
+后来人们发现，严肃公司之间根本没有合作，各管各的，不同严肃公司的广告还是无序。
+#relaxed
+编不下去了
+
+
+====================================
+原子操作间的关系
+sequenced-before
+happens-before =
+  | inter-thread happens before
+  | synchronize-with
+synchronizes-with
+  只能是指:『单个』原子变量的『两个操作』之间的先后关系
+https://zhuanlan.zhihu.com/p/45024624
+one-way release与acquire是one-way的，也就是说对于release语意，在这个release之上的操作不能够被reorder到release之下，在acquire之下的操作不能够被reorder到acquire之上。release语句只能向下移不能向上移，acquire语句只能向上移不能向下移。
+
+作者：三四
+链接：https://www.zhihu.com/question/24301047/answer/558907242
+来源：知乎
+著作权归作者所有。商业转载请联系作者获得授权，非商业转载请注明出处。
+刘子昂
+seq_cst不保证happens before，所有memory order本身都不保证happens before，它们只是可能保证(或不保证)多个变量修改顺序在每个核心上的可见性。memory order不是锁，同步必须开发者做
+http://senlinzhan.github.io/2017/12/04/cpp-memory-order/
+==================================]ZZZ
+
+
+====================================
+https://www.zhihu.com/question/24301047
+如何理解 C++11 的六种 memory order？
+====================================
+
+==================================[ZZZ
+知乎用户
+
+看了一下，觉得没有触及实质的回答，所以补充一下。
+
+这个问题的难点在于，很多人以为它们是限制多线程之间的执行顺序（包括我写这篇回答时的最高赞回答看起来也是这么认为的），然而其实不是。
+
+事实上，Sequentially-consistent ordering是目前绝大多数编译器的缺省设置。如果按照高赞回答的意思，那么多线程如果使用了atom操作，貌似就几乎变成了单线程（或者回合制）？真的吗？
+
+既然是多线程，那么线程之间的执行顺序就一定不是确定性的（你只能在某些点同步它们，但是在任何其它的地方是没有办法保证执行顺序的）。C++11所规定的这6种模式，其实并不是限制（或者规定）两个线程该怎样同步执行，而是在规定一个线程内的指令该怎样执行。
+
+是的，我知道这部分的文档（规定）以及给出的例子里面，满屏都是多线程。但是其实讨论的是单线程的问题。更为准确地说，是在讨论单线程内的指令执行顺序对于多线程的影响的问题。
+
+首先，什么是原子操作？原子操作就是对一个内存上变量（或者叫左值）的读取-变更-存储（load-add-store）作为一个整体一次完成。
+
+让我们考察一下普通的非原子操作：
+
+x++
+
+这个表达式如果编译成汇编，对应的是3条指令：
+
+mov（从内存到寄存器），add，mov（从寄存器到内存）
+
+那么在多线程环境下，就存在这样的可能：当线程A刚刚执行完第二条指令的时候，线程B开始执行第一条指令。那么就会导致线程B没有看到线程A执行的结果。如果这个变量初始值是0，那么线程A和线程B的结果都是1。
+
+如果我们想要避免这种情况，就可以使用原子操作。使用了原子操作之后，你可以认为这3条指令变成了一个整体，从而别的线程无法在其执行的期间当中访问x。也就是起到了锁的作用。
+
+所以，atom本身就是一种锁。它自己就已经完成了线程间同步的问题。这里并没有那6个memory order的什么事情。
+
+问题在于以这个原子操作为中心，其前后的代码。这些代码并不一定需要是原子操作，只是普通的代码就行。
+
+什么问题？比如还有另外一个变量y，在我们这个原子操作代码的附近，有一个
+
+y++
+
+那么现在的问题是，这个y++到底会在我们的x++之前执行，还是之后？
+
+注意这完全是单线程当中指令的执行顺序问题，与多线程风马牛不相及。但是，这个问题会导致多线程执行结果的不同。理解了这个，就理解了那6种memory order。
+
+为啥？因为我们对x进行原子操作的地方，锁定了线程间的关系，是一个同步点。那么，以这个点为基准，我们就可以得出两个线程当中其它指令执行先后顺序关系。
+
+比如，A线程先对x进行了自增操作。因为对x的访问是原子的，所以B线程执行该行代码（假设代码当中对x的访问只有这一处）的时间点必然在A完成之后。
+
+那么，如果在A线程当中，y++是在x++之前执行的，那么我们就可以肯定，对于B线程来说，在x++（同步点）之后所有对y的参照，必定能看到A线程执行了y++之后的值（注意对y的访问并非原子）
+
+但是有个问题。如果在程序当中y++紧靠x++，那么其实它到底是会先于x++执行（完毕），还是晚于x++执行（完毕），这个是没准儿的。
+
+为啥呢？首先编译器对代码可能进行指令重排。也就是说，编译器编译之后（特别是开了优化之后）的代码执行顺序，是不一定严格按照你写代码的顺序的。
+
+但是如果仅仅如此，也只是二进制（机器码）的顺序与源代码不同，还不至于导致A和B当中的指令执行顺序不同（因为A和B执行的是相同的机器码程序）。但是实际上，在非常微观的层面上，A和B也是可能不同的，甚至于，A每次执行到这里顺序都不见得一样。
+
+啥？...还真的是这样。原因在于当代CPU内部也有指令重排。也就是说，CPU执行指令的顺序，也不见得是完全严格按照机器码的顺序。特别是，当代CPU的IPC（每时钟执行指令数）一般都远大于1，也就是所谓的多发射，很多命令都是同时执行的。比如，当代CPU当中（一个核心）一般会有2套以上的整数ALU（加法器），2套以上的浮点ALU（加法器），往往还有独立的乘法器，以及，独立的Load和Store执行器。Load和Store模块往往还有8个以上的队列，也就是可以同时进行8个以上内存地址（cache line）的读写交换。
+
+是不是有些晕？简单来说，你可以理解当代CPU不仅是多核心，而且每个核心还是多任务（多指令）并行的。计算机课本上的那种一个时钟一条指令的，早就是老黄历了 （当然，宏观来看基本原理并没有改变）
+
+看到这里还没有晕的话，那么恭喜你，你快要理解什么是memory order了。所谓的memory order，其实就是限制编译器以及CPU对单线程当中的指令执行顺序进行重排的程度（此外还包括对cache的控制方法）。这种限制，决定了以atom操作为基准点（边界），对其之前的内存访问命令，以及之后的内存访问命令，能够在多大的范围内自由重排（或者反过来，需要施加多大的保序限制）。从而形成了6种模式。它本身与多线程无关，是限制的单一线程当中指令执行顺序。但是（合理的）指令执行顺序的重排在单线程环境下不会造成逻辑错误而在多线程环境下会，所以这个问题的目的是为了解决多线程环境下出现的问题。
+编辑于 05-20
+==================================]ZZZ
+
+
+
+
+==================================[ZZZ
+知乎用户
+
+从一个程序员角度的 Take away:
+
+虽然是六种类型，但是理解了四种同步的情形基本就差不多了。
+
+1. Relaxed ordering: 在单个线程内，所有原子操作是顺序进行的。按照什么顺序？基本上就是代码顺序（sequenced-before）。这就是唯一的限制了！两个来自不同线程的原子操作是什么顺序？两个字：任意。
+
+2. Release -- acquire: 来自不同线程的两个原子操作顺序不一定？那怎么能限制一下它们的顺序？这就需要两个线程进行一下同步（synchronize-with）。同步什么呢？同步对一个变量的读写操作。线程 A 原子性地把值写入 x (release), 然后线程 B 原子性地读取 x 的值（acquire）. 这样线程 B 保证读取到 x 的最新值。注意 release -- acquire 有个牛逼的副作用：线程 A 中所有发生在 release x 之前的写操作，对在线程 B acquire x 之后的任何读操作都可见！本来 A, B 间读写操作顺序不定。这么一同步，在 x 这个点前后， A, B 线程之间有了个顺序关系，称作 inter-thread happens-before.
+
+3. Release -- consume: 我去，我只想同步一个 x 的读写操作，结果把 release 之前的写操作都顺带同步了？如果我想避免这个额外开销怎么办？用 release -- consume 呗。同步还是一样的同步，这回副作用弱了点：在线程 B acquire x 之后的读操作中，有一些是依赖于 x 的值的读操作。管这些依赖于 x 的读操作叫 赖B读. 同理在线程 A 里面, release x 也有一些它所依赖的其他写操作，这些写操作自然发生在 release x 之前了。管这些写操作叫 赖A写. 现在这个副作用就是，只有 赖B读 能看见 赖A写. （卧槽真累）
+
+有人问了，说什么叫数据依赖（carries dependency）？其实这玩意儿巨简单：
+
+S1. c = a + b;
+S2. e = c + d;
+
+S2 数据依赖于 S1，因为它需要 c 的值。
+
+4. Sequential consistency: 理解了前面的几个，顺序一致性就最好理解了。Release -- acquire 就同步一个 x，顺序一致就是对所有的变量的所有原子操作都同步。这么一来，我擦，所有的原子操作就跟由一个线程顺序执行似的。
+
+评论里有很多关于x86内存模型的指正，放在这里：
+
+    Loads are not reordered with other loads.Stores are not reordered with other stores.Stores are not reordered with older loads.
+
+然后最重要的：
+
+    Loads may be reordered with older stores to different locations.
+
+因为 store-load 可以被重排，所以x86不是顺序一致。但是因为其他三种读写顺序不能被重排，所以x86是 acquire/release 语义。
+
+aquire语义：load 之后的读写操作无法被重排至 load 之前。即 load-load, load-store 不能被重排。
+
+release语义：store 之前的读写操作无法被重排至 store 之后。即 load-store, store-store 不能被重排。
+
+最简单的试试 relaxed ordering 的方法就是拿出手机。写个小程序，故意留个 race condition，然后放到 iPhone 或者安卓手机上调，不用 release -- acquire 保准出错。然而这种 bug 你在 x86 的 host 机上是调不出来的，即便拿模拟器也调不出来。
+编辑于 2018-01-05
+==================================]ZZZ
+
+
+
+
+
+
+
+==================================[ZZZ
+作者：satanson
+链接：https://www.zhihu.com/question/24301047/answer/1194812180
+来源：知乎
+著作权归作者所有。商业转载请联系作者获得授权，非商业转载请注明出处。
+
+memory order提供了两种作用:
+1.原子操作:  简单的就是cas, 计数器. 原子操作需要处理器支持, 比如cmpxchg, lr/sc.
+2. 同步语义:  写的前置写对读的后置读可见.
+
+同一个处理器访问同一个memory location, 存在data dependency,  是能够保证program order的.
+但是, 同一个处理器里, 访问不同的memory location, 可能会出现重排.
+重排有可能是编译器的重排指令引起, 也可能是处理器multiple issue+处理器内部引入store buffer和invalidate queue, 用以隐藏store/load生效的latency引起.
+问题来了, 我们怎么保证处理器P1写memory location A的结果, 对处理器P2读memory location A的操作可见呢?
+这就需要一个原子变量memory location B,  P1写A是写B的前置操作, P2读B是读A后置操作.
+如果P1写B的结果对P2读B的操作可见, 并且P1中写B的前置操作不重排到写B之后, P2中读B操作的后置读A操作不重排到读A之前. 当然P1写A对P2读A可见.
+问题来了?怎么保证写操作前置写和读操作的后置读, 不重排呢?
+这两类操作并没有data dependency啊, 使用memory order.
+0. relax: 单纯的原子操作, 一组操作执行的结果等效于没有其它操作穿插的执行结果, 并且保持因果关系, 不具有同步语意
+1. rel:  写原子操作的前置写操作不重排到该写操作的后面. 写barrier生效, 则前置写也生效.
+2. acq: 读原子操作的后置读操作不重排到该读操作的前面.读barrier生效, 也后置读也生效.rel_acq: 原子操作的前置写,不往后排, 后置读, 不往前排.
+3. seq_cst: 原子操作的前置读写, 不往后排, 后置读写, 不往前排.其实就是这么简单的道理.
+编辑于 05-08
+==================================]ZZZ
+
+
+
+
+
+
+
+==================================[ZZZ
+http://senlinzhan.github.io/2017/12/04/cpp-memory-order/
+
+Senlin's Blog
+理解 C++ 的 Memory Order
+2017-12-04   |   并发编程   |   10978
+为什么需要 Memory Order
+
+　　如果不使用任何同步机制（例如 mutex 或 atomic），在多线程中读写同一个变量，那么，程序的结果是难以预料的。简单来说，编译器以及 CPU 的一些行为，会影响到程序的执行结果：
+
+    即使是简单的语句，C++ 也不保证是原子操作。
+    CPU 可能会调整指令的执行顺序。
+    在 CPU cache 的影响下，一个 CPU 执行了某个指令，不会立即被其它 CPU 看见。
+
+　　原子操作说的是，一个操作的状态要么就是未执行，要么就是已完成，不会看见中间状态。例如，在 C++11 中，下面程序的结果是未定义的：
+
+
+          int64_t i = 0;     // global variable
+Thread-1:              Thread-2:
+i = 100;               std::cout << i;
+
+　　C++ 并不保证i = 100是原子操作，因为在某些 CPU Architecture 中，写入int64_t需要两个 CPU 指令，所以 Thread-2 可能会读取到i在赋值过程的中间状态。
+
+　　另一方面，为了优化程序的执行性能，CPU 可能会调整指令的执行顺序。为阐述这一点，下面的例子中，让我们假设所有操作都是原子操作：
+
+
+          int x = 0;     // global variable
+          int y = 0;     // global variable
+Thread-1:              Thread-2:
+x = 100;               while (y != 200)
+y = 200;                   ;
+                       std::cout << x;
+
+　　如果 CPU 没有乱序执行指令，那么 Thread-2 将输出100。然而，对于 Thread-1 来说，x = 100;和y = 200;这两个语句之间没有依赖关系，因此，Thread-1 允许调整语句的执行顺序：
+
+
+Thread-1:
+y = 200;
+x = 100;
+
+　　在这种情况下，Thread-2 将输出0或100。
+
+　　CPU cache 也会影响到程序的行为。下面的例子中，假设从时间上来讲，A 操作先于 B 操作发生：
+
+
+          int x = 0;     // global variable
+Thread-1:                      Thread-2:
+x = 100;    // A               std::cout << x;    // B
+
+　　尽管从时间上来讲，A 先于 B，但 CPU cache 的影响下，Thread-2 不能保证立即看到 A 操作的结果，所以 Thread-2 可能输出0或100。
+
+　　从上面的三个例子可以看到，多线程读写同一变量需要使用同步机制，最常见的同步机制就是std::mutex和std::atomic。然而，从性能角度看，通常使用std::atomic会获得更好的性能。
+　　C++11 为std::atomic提供了 4 种 memory ordering:
+
+    Relaxed ordering
+    Release-Acquire ordering
+    Release-Consume ordering
+    Sequentially-consistent ordering
+
+　　默认情况下，std::atomic使用的是 Sequentially-consistent ordering。但在某些场景下，合理使用其它三种 ordering，可以让编译器优化生成的代码，从而提高性能。
+Relaxed ordering
+
+　　在这种模型下，std::atomic的load()和store()都要带上memory_order_relaxed参数。Relaxed ordering 仅仅保证load()和store()是原子操作，除此之外，不提供任何跨线程的同步。
+　　先看看一个简单的例子：
+
+
+                   std::atomic<int> x = 0;     // global variable
+                   std::atomic<int> y = 0;     // global variable
+Thread-1:                                  Thread-2:
+r1 = y.load(memory_order_relaxed); // A    r2 = x.load(memory_order_relaxed); // C
+x.store(r1, memory_order_relaxed); // B    y.store(42, memory_order_relaxed); // D
+
+　　执行完上面的程序，可能出现r1 == r2 == 42。理解这一点并不难，因为编译器允许调整 C 和 D 的执行顺序。如果程序的执行顺序是 D -> A -> B -> C，那么就会出现r1 == r2 == 42。
+
+　　如果某个操作只要求是原子操作，除此之外，不需要其它同步的保障，就可以使用 Relaxed ordering。程序计数器是一种典型的应用场景：
+
+
+#include <cassert>
+#include <vector>
+#include <iostream>
+#include <thread>
+#include <atomic>
+std::atomic<int> cnt = {0};
+void f()
+{
+    for (int n = 0; n < 1000; ++n) {
+        cnt.fetch_add(1, std::memory_order_relaxed);
+    }
+}
+int main()
+{
+    std::vector<std::thread> v;
+    for (int n = 0; n < 10; ++n) {
+        v.emplace_back(f);
+    }
+    for (auto& t : v) {
+        t.join();
+    }
+    assert(cnt == 10000);    // never failed
+    return 0;
+}
+
+Release-Acquire ordering
+
+　　在这种模型下，store()使用memory_order_release，而load()使用memory_order_acquire。这种模型有两种效果，第一种是可以限制 CPU 指令的重排：
+
+    在store()之前的所有读写操作，不允许被移动到这个store()的后面。
+    在load()之后的所有读写操作，不允许被移动到这个load()的前面。
+
+　　除此之外，还有另一种效果：假设 Thread-1 store()的那个值，成功被 Thread-2 load()到了，那么 Thread-1 在store()之前对内存的所有写入操作，此时对 Thread-2 来说，都是可见的。
+　　下面的例子阐述了这种模型的原理：
+
+
+#include <thread>
+#include <atomic>
+#include <cassert>
+#include <string>
+std::atomic<bool> ready{ false };
+int data = 0;
+void producer()
+{
+    data = 100;                                       // A
+    ready.store(true, std::memory_order_release);     // B
+}
+void consumer()
+{
+    while (!ready.load(std::memory_order_acquire))    // C
+        ;
+    assert(data == 100); // never failed              // D
+}
+int main()
+{
+    std::thread t1(producer);
+    std::thread t2(consumer);
+    t1.join();
+    t2.join();
+    return 0;
+}
+
+　　让我们分析一下这个过程：
+
+    首先 A 不允许被移动到 B 的后面。
+    同样 D 也不允许被移动到 C 的前面。
+    当 C 从 while 循环中退出了，说明 C 读取到了 B store()的那个值，此时，Thread-2 保证能够看见 Thread-1 执行 B 之前的所有写入操作（也即是 A）。
+
+参考资料
+
+    C++ atomics and memory ordering
+    cppreference.com - std::memory_order
+    Atomic Usage examples
+    C++11 introduced a standardized memory model. What does it mean?
+    bRPC - Memory fence
+    Acquire and Release Semantics
+
+==================================]ZZZ
+
+
+
+
+==================================[ZZZ
+=================
+下面内容:
+  SC
+    顺序一致性内存模型（Sequential Consistency）
+      每个处理器的执行顺序和代码中的顺序一致
+      所有处理器都只能看到一个单一的操作执行顺序
+  TSO
+    全存储排序（Total Store Ordering）
+      增加写缓存，并不负责刷新
+  RM
+    松弛型内存模型（Relaxed memory models）
+      改变了程序的执行顺序，仅保证单线程的执行结果不变
+        需要 内存栅栏
+
+先后顺序:
+  sequenced-before
+    单线程内，两个操作的先后
+  happens-before
+  synchronizes-with
+=================
+https://www.codedump.info/post/20191214-cxx11-memory-model-1/
+
+codedump的网络日志
+C++11中的内存模型上篇 - 内存模型基础
+2019-12-14 多核 系统编程 系统设计
+
+前段时间花了些精力研究C++11引入的内存模型相关的操作，于是把相关的知识都学习了一下，将这个学习过程整理为两篇文档，这是第一篇，主要分析内存模型的一些基础概念，第二篇展开讨论C++11相关的操作。
+CPU架构的演进
+
+早期的CPU，CPU之间能共享访问的只有内存，此时的结构大体如图：
+
+memory
+
+随着硬件技术的发展，内存的访问已经跟不上CPU的执行速度，此时内存反而变成了瓶颈。为了加速读写速度，每个CPU也都有自己内部才能访问的缓存，结构变成了这样：
+
+multicore
+
+其中：
+
+    有多个CPU处理器，每个CPU处理器内部又有多个核心。
+    存在只能被一个CPU核心访问的L1 cache。
+    存在只能被一个CPU处理器的多个核心访问的L2 cache。
+    存在能被所有CPU处理器都能访问到的L3 cache以及内存。
+    L1 cache、L2 cache、L3 cache的容量空间依次变大，但是访问速度依次变慢。
+
+当CPU结构发生变化，增加了只能由内部才能访问的缓存之后，一些在旧架构上不会出现的问题，在新的架构上就会出现。而本篇的主角内存模型（memory model），其作用就是规定了各种不同的访问共享内存的方式，不同的内存模型，既需要编译器的支持，也需要硬件CPU的支持。
+
+我们从一个最简单的多线程访问变量问题谈起。
+简单的多线程访问数据问题
+
+假设在程序执行之前，A=B=0，有两个线程同时分别执行如下的代码：
+线程1 	线程2
+1. A=1 	3. B=2
+2. print(B) 	4. print(A)
+
+问上述程序的执行结果如何？
+
+这个问题是一个简单的排列组合问题，其结果有：
+
+    2（先选择A或B输出）* 2（输出修改前还是之后的结果）* 1（前面第一步选择了一个变量之后，现在只能选剩下的变量）* 2（输出修改前还是之后的结果） = 8
+
+其可能的结果包括：(0,0)、(1,0)、(0,2)、(1,2)、(0,1)、(2,0)、(2,1)。（这里只有7个结果，是因为有两个(0,0)，所以少了一个）。
+
+由于多个线程交替执行，可能有以下几种结果，下面来分别解析。
+两个线程依次执行
+
+最简单的情况，就是这两个线程依次执行，即一个线程执行完毕之后再执行另一个线程的指令，这种情况下有两种可能：
+
+    1->2->3->4
+
+这种情况先执行完毕线程1，再执行线程2，最后输出的结果是(0,1)。
+
+sc1
+
+    3->4->1->2
+
+这种情况先执行完毕线程2，再执行线程1，最后输出的结果是(0,2)。
+
+sc2
+
+两个线程交替执行
+
+这样情况下，先执行的可能是线程1或者线程2，来看线程1先执行的情况。
+
+    1->3->2->4
+
+这种情况下的输出是（2,1）。
+
+sc3
+
+    1->3->4->2
+
+这种情况下的输出是（1,2）。
+
+sc4
+
+以上是第一条指令先执行线程1执行的情况，同样地也有先执行线程2指令的情况（3-1->4->2和3->1->2-4），这里不再列出，有兴趣的读者可以自行画图理解。
+不可能出现的情况
+
+除了以上的情况之外，还有一种可能是输出(0,0)，但是这种输出在一般情况下不可能出现（我们接下来会解释什么情况下可能出现），下面来做解释。
+
+首先先来理解一个概念“happen-before（先于）”，比如对于变量A而言，其初始值是0，有如下两个操作：
+
+A = 1
+print(A)
+
+那么要对操作print(A)输出结果0，就要保证”print(A)“这个操作“happen-before（先于）”操作”A=1”。
+
+有了happen-before这个概念的初步印象，就可以进一步解释为什么在SC的要求之下，程序不可能输出(0,0)，在下面的讲解中，用箭头来表示两个操作之间的happen-before关系。
+
+由前面的分析可知，要求对变量A输出0，那么意味着”print(A)“操作happen-before修改变量A的赋值操作”A=1”。同样的，要求针对变量B的输出为0，那么意味着”print(B)“操作happen-before修改变量B的赋值操作”B=2”。
+
+用图来表示就是：
+
+happen-before
+
+由于输出结果(0,0)要求同时满足前面的两个分别针对变量A和B的happen-before关系，同时又不能违背程序顺序，因此出错了，见下图：
+
+00
+
+首先，根据前面分析的输出关系，必须保证“4 happen-before 1”以及“2 happen-before 3”。 同时，一个处理器内的执行顺序必须按照程序顺序（program order），因此也必须保证“1 happen before 2”以及“2 happen before 3”。
+
+当前面几个happen before关系合在一起，这个执行过程出现了死循环，不知道在哪里终止了。
+Sequential Consistency (顺序一致性）
+
+这里就可以引入最直白、简单的一种内存模型：顺序一致性内存模型（Sequential Consistency）了。
+
+Sequential Consistency（以下简称SC）由Lamport提出，其严格定义是：
+
+    “… the result of any execution is the same as if the operations of all the processors were executed in some sequential order, and the operations of each individual processor appear in this sequence in the order specified by its program.”
+
+这句话看起来很拗口，它对程序的执行结果有两个要求：
+
+    每个处理器的执行顺序和代码中的顺序（program order）一样。
+    所有处理器都只能看到一个单一的操作执行顺序。
+
+在要求满足SC内存模型的情况下，上面多线程执行中（0,0）是不可能输出的。
+
+我们以IM中的群聊消息作为例子说明顺序一致性的这两个要求。在这个例子中，群聊中的每个成员，相当于多核编程中的一个处理器，那么对照顺序一致性的两个要求就是：
+
+    每个人自己发出去的消息，必然是和ta说话的顺序一致的。即用户A在群聊中依次说了消息1和消息2，在群聊天的时候也必然是先看到消息1然后再看到消息2，这就是前面顺序一致性的第一个要求。
+    群聊中有多个用户参与聊天（多处理器），如果所有人看到的消息顺序都一样，那么就满足了前面顺序一致性的第二个要求了，但是这个顺序首先不能违背前面的第一个要求。
+
+顺序一致性的缺点
+
+从以上的分析可以看到，顺序一致性实际上是一种强一致性，可以想象成整个程序过程中由一个开关来选择执行的线程，这样才能同时保证顺序一致性的两个条件。
+
+sc-switch
+
+可以看到，这样实际上还是相当于同一时间只有一个线程在工作，这种保证导致了程序是低效的，无法充分利用上多核的优点。
+全存储排序（Total Store Ordering, 简称TSO）
+
+有一些CPU架构，在处理核心中增加写缓存，一个写操作只要写入到本核心的写缓存中就可以返回，此时的CPU结构如图所示（图中并没有画出三级cache）：
+
+tso
+
+在这种结构下，SC所不允许的一些操作可能会出现。
+
+还是以前面分析SC的程序例子来说明：
+线程1 	线程2
+1. A=1 	3. B=2
+2. print(B) 	4. print(A)
+
+在新的CPU架构下，写一个值可能值写到本核心的缓冲区中就返回了，接着执行下面的一条指令，因此可能出现以下的情况：
+
+multicore-2
+
+    执行操作1，core 1写入A的新值1到core 1的缓冲区中之后就马上返回了，还并没有更新到所有CPU都能访问到的内存中。
+    执行操作3，core 2写入B的新值2到core 2的缓冲区中之后就马上返回了，还并没有更新到所有CPU都能访问到的内存中。
+    执行操作2，由于操作2访问到本core缓冲区中存储的B值还是原来的0，因此输出0。
+    执行操作4，由于操作4访问到本core缓冲区中存储的A值还是原来的0，因此输出0。
+
+可以看到，在引入了只能由每个core才能访问到的写缓冲区之后，之前SC中不可能出现的输出(0,0)的情况在这样的条件下可能出现了。
+松弛型内存模型（Relaxed memory models）
+
+以上已经介绍了两种内存模型，SC是最简单直白的内存模型，TSO在SC的基础上，加入了写缓存，写缓存的加入导致了一些在SC条件下不可能出现的情况也成为了可能。
+
+然而，即便如此，以上两种内存模型都没有改变单线程执行一个程序时的执行顺序。在这里要讲的松弛型内存模型，则改变了程序的执行顺序。
+
+在松散型的内存模型中，编译器可以在满足程序单线程执行结果的情况下进行重排序（reorder），来看下面的程序：
+
+int A, B;
+void foo() {
+  A = B + 1;
+  B = 0;
+}
+int main() {
+  foo();
+  return 0;
+}
+
+如果在不使用优化的情况下编译，gcc foo.c -S，foo函数中针对A和B操作的汇编代码如下：
+
+
+	movl	B(%rip), %eax
+	addl	$1, %eax
+	movl	%eax, A(%rip)
+	movl	$0, B(%rip)
+
+即先把变量B的值赋给寄存器eax，将寄存器eax加一的结果赋值给变量A，最后再将变量B置为0。
+
+而如果使用O2优化编译，gcc foo.c -S -O2 则得到下面的汇编代码：
+
+	movl	B(%rip), %eax
+	movl	$0, B(%rip)
+	addl	$1, %eax
+	movl	%eax, A(%rip)
+
+即先把变量B的值赋给寄存器eax，然后变量B置零，再将寄存器eax加一的结果赋值给变量A。
+
+其原因在于，foo函数中，只要将变量B的值暂存下来，那么对变量B的赋值操作可以被打乱而并不影响程序的执行结果，这就是编译器可以做的重排序优化。
+
+回到前面的例子中，在松弛型内存模型中，程序的执行顺序就不见得和代码中编写的一样了，这是这种内存模型和SC、TSO模型最大的差异。
+
+仍然以IM群聊消息为例子说明这个问题。假设有多人在群里聊天，如果A说的消息1与B说的消息2之间，没用明确的先后顺序，比如消息1是回复或者引用了消息2的话，那么其实在整个群聊视图里面，两者的先后顺序如何是无关紧要的。即参与群聊的两个用户，其中一个用户可能看到消息1在消息2之前，另一个用户看到的顺序相反，这都是无关大局的，因为两个消息之间没有关系。
+内存栅栏（memory barrier）
+
+讲完了三种内存模型，这里还需要了解一下内存栅栏的概念。
+
+由于有了缓冲区的出现，导致一些操作不用到内存就可以返回继续执行后面的操作，为了保证某些操作必须是写入到内存之后才执行，就引入了内存栅栏（memory barrier，又称为memory fence）操作。内存栅栏指令保证了，在这条指令之前所有的内存操作的结果，都在这个指令之后的内存操作指令被执行之前，写入到内存中。也可以换另外的角度来理解内存栅栏指令的作用：显式的在程序的某些执行点上保证SC。
+
+memorybarrier
+
+再次以前面的例子来说明这个指令，在X64下面，内存屏障指令使用汇编指令asm volatile ("pause" ::: "memory");来实现，如果将这个指令放到两个赋值语句之间：
+
+int A, B;
+void foo()
+{
+    A = B + 1;
+    asm volatile ("pause" ::: "memory");
+    B = 0;
+}
+int main() {
+  foo();
+  return 0;
+}
+
+那么再次使用O2编译出来的汇编代码就变成了：
+
+.LFB1:
+  .cfi_startproc
+  movl  B(%rip), %eax
+  addl  $1, %eax
+  movl  %eax, A(%rip)
+#APP
+# 6 "foo.c" 1
+  pause
+# 0 "" 2
+#NO_APP
+  movl  $0, B(%rip)
+
+可以看到，插入内存屏障指令之后，生成的汇编代码顺序就不会乱序了。
+小结
+
+以上，从引入一个多线程读写多个变量的例子出发，依次讲解了SC、TSO、Relaxed model三种内存模型，这三种内存模型其一致性要求依次减弱，其总结如下图：
+
+memorymodel
+  SC
+    顺序一致性内存模型（Sequential Consistency）
+      每个处理器的执行顺序和代码中的顺序一致
+      所有处理器都只能看到一个单一的操作执行顺序
+  TSO
+    全存储排序（Total Store Ordering）
+      增加写缓存，并不负责刷新
+  RM
+    松弛型内存模型（Relaxed memory models）
+      改变了程序的执行顺序，仅保证单线程的执行结果不变
+        需要 内存栅栏
+
+有了上面的介绍，下一篇介绍C++11之后引入的几种内存模型操作。
+参考资料
+
+    《A Primer on Memory Consistency and Cache Coherence》
+    《为什么程序员需要关心顺序一致性（Sequential Consistency）而不是Cache一致性（Cache Coherence？）》
+    《Memory Consistency Models: A Tutorial》
+    《Memory Ordering at Compile Time》
+
+Author codedump
+
+LastMod 2019-12-14
+
+License 本作品采用知识共享署名 4.0 国际许可协议进行许可。 转载时请注明原文链接，图片使用OmniGraffle进行绘制。
+==================================]ZZZ
+
+==================================[ZZZ
+==========
+https://www.codedump.info/post/20191214-cxx11-memory-model-2/
+
+C++11中的内存模型下篇 - C++11支持的几种内存模型
+2019-12-14 多核 系统编程 系统设计
+
+在本系列的上篇，介绍了内存模型的基本概念，接下来看C++11中支持的几种内存模型。
+几种关系术语
+
+在接着继续解释之前，先了解一下几种关系术语。
+
+sequenced-before
+sequenced-before用于表示单线程之间，两个操作上的先后顺序，这个顺序是非对称、可以进行传递的关系。
+
+它不仅仅表示两个操作之间的先后顺序，还表示了操作结果之间的可见性关系。两个操作A和操作B，如果有A sequenced-before B，除了表示操作A的顺序在B之前，还表示了操作A的结果操作B可见。
+
+happens-before
+与sequenced-before不同的是，happens-before关系表示的不同线程之间的操作先后顺序，同样的也是非对称、可传递的关系。
+
+如果A happens-before B，则A的内存状态将在B操作执行之前就可见。在上一篇文章中，某些情况下一个写操作只是简单的写入内存就返回了，其他核心上的操作不一定能马上见到操作的结果，这样的关系是不满足happens-before的。
+
+synchronizes-with
+synchronizes-with关系强调的是变量被修改之后的传播关系（propagate），即如果一个线程修改某变量的之后的结果能被其它线程可见，那么就是满足synchronizes-with关系的。
+
+显然，满足synchronizes-with关系的操作一定满足happens-before关系了。
+C++11中支持的内存模型
+
+从C++11开始，就支持以下几种内存模型：
+
+enum memory_order {
+    memory_order_relaxed,
+    memory_order_consume,
+    memory_order_acquire,
+    memory_order_release,
+    memory_order_acq_rel,
+    memory_order_seq_cst
+};
+
+与内存模型相关的枚举类型有以上六种，但是其实分为四类，如下图所示，其中对一致性的要求逐渐减弱，以下来分别讲解。
+
+c++model
+    memory_order_seq_cst
+    ===
+    memory_order_release,
+    memory_order_acquire,
+    memory_order_acq_rel,
+    ===
+    memory_order_consume,
+    ===
+    memory_order_relaxed,
+
+...太长 见下面 附录
+
+以上可以对比Acquire-Release以及Release-Consume两个内存模型，可以知道：
+
+    Acquire-Release能保证不同线程之间的Synchronizes-With关系，这同时也约束到同一个线程中前后语句的执行顺序。
+    而Release-Consume只约束有明确的carry-a-dependency关系的语句的执行顺序，同一个线程中的其他语句的执行先后顺序并不受这个内存模型的影响。
+==================================]ZZZ
+
+
+
+
+
+
+
+=================
+
+
+=================
+=================
+=================
+=================
+=================
+=================
+
+====================================
+====================================
+====================================
+====================================
+====================================
+
+
+
+====================================
+==================================[ZZZ
+https://cloud.tencent.com/developer/article/1005903
+
+
+当我们在谈论 memory order 的时候，我们在谈论什么
+2017-11-21阅读 2.7K评论 4
+
+    作者：陈聪捷
+
+
+    导语： C++ 11与JDK 1.9都新增了对memory order的支持，对于memory order这个概念，本文试图阐述清楚与它相关的问题的由来，概念定义以及c++ 11与jdk 1.9对其的支持。
+
+Memory Model
+
+在分析memory order之前，我们先讲一下为什么要考虑memory order问题，这里需要简单分析一下多线程编程环境中的内存模型。
+
+上图所示的是一个典型的多核CPU系统架构，它包含有2个CPU核，每个CPU核有一个私有的32KB 的 L1 cache，两个CPU 核共享 1MB的 L2 cache 以及 512MB的主存。
+
+在这个内存模型下，cpu写数据并不是立即写入RAM中，而是写入L1 cache，再从L1 cache存入(store) RAM中，读数据也是先从L1 cache中读，读不到再从RAM中读，这种读写数据的模式是能够提高数据存取效率的，但是在一些特殊情况下会导致程序出错，考虑以下这个例子。
+
+                    x=y=0;
+            Thread 1      Thread 2
+              x = 1;        y = 1;
+             r1 = y;       r2 = x;
+
+表面上看，r1==r2==0这种输出是不可能出现的，然而，有一种可能性是，由于r1不依赖于x，编译器可以把r1=y这步操作调整到x=1这步操作之前，同样，r2=x这步操作可以调整到y=1这步操作之前，这样一来，core 1可以先读取L1 cache中的y的值，core 2 才执行 y = 1的赋值操作，同理，r2 = x这步操作也可以在x=1这步赋值操作之前执行，这时候就会出现r1 == r2 ==0的输出结果。
+
+如何避免这种情况的出现呢？最简单的方案是给x, y变量操作加互斥锁，然而，我们都知道，互斥锁会导致代码执行效率降低，那么，有没有其他同步原语，既能保证程序的正确性，又能尽可能地提高程序执行效率呢？下面介绍4种 Memory Barrier 。
+Memory Barrier
+
+理论上讲，Memory Barrier有4类，如下图所示。
+
+下面分别进行分析。
+LoadLoad
+
+LoadLoad 这种内存栅栏(memory barrier)，顾名思义，就是阻止栅栏后面的load操作被调整到栅栏前面的load操作之前，类似于 git pull 或者 svn update 操作，如下图所示。
+
+LoadLoad 的主要作用是防止程序加载已经过期的数据，考虑以下代码：
+
+if (IsPublished)                   // Load and check shared flag
+{
+    LOADLOAD_FENCE();              // Prevent reordering of loads
+    return Value;                  // Load published value
+}
+
+LOADLOAD_FENCE 在其中的作用是阻止读取Value这步操作被reorder到读取IsPublished这步操作之前，这样，只有在IsPublished置位后，才会去读取Value的值。
+StoreStore
+
+类似于LoadLoad，StoreStore 这种内存栅栏用于阻止栅栏后面的store操作被调整到栅栏前面的store操作之前，类似于git push或者svn commit操作，如下图所示。
+
+同理，StoreStore可以避免将过期的数据写入内存。
+
+Value = x;                         // Publish some data
+STORESTORE_FENCE();
+IsPublished = 1;                   // Set shared flag to indicate availability of data
+
+LoadStore
+
+LoadStore 内存栅栏用于保证所有在这个栅栏之前的load操作一定会在这个栅栏之后的store操作之前执行。例如：
+
+IsPublished = X;           // Load X and set IsPublished
+LOADSTORE_FENCE();
+Value = 1;                // Publish some data
+
+在这里，Value = 1 这步操作可以被提前到读取X的值这步操作之前，之所以允许这种优化，是因为有时候在L1 cache中没有缓存X的值，而已经缓存了Value=1这步操作，这时候先执行store再执行load效率会更高。然而，LoadStore这种栅栏可以阻止这种情况的发生。
+StoreLoad
+
+StoreLoad 用于保证所有在这个栅栏之前的store操作一定会在这个栅栏之后的load操作之前执行，可以认为这是svn或者git中用户本地代码目录与central repository之间的一次同步操作，如下图所示。
+
+StoreLoad 可以解决前文所说的r1==r2==0的问题，考虑将程序改成如下这种形式。
+
+                    x=y=0;
+      Thread 1          Thread 2
+       x = 1;             y = 1;
+STORELOAD_FENCE();  STORELOAD_FENCE();
+       r1 = y;           r2 = x;
+
+在这种情况下，r1==r2==0这个情况是不会出现的。
+Acquire与Release语义
+
+Acquire与Release是无锁编程中最容易混淆的两个原语，它们是线程之间合作进行数据操作的关键步骤。在这里，借助前面对memory barrier的解释，对acquire与release的语义进行阐述。
+
+    acquire本质上是read-acquire，它只能应用在从RAM中read数据这种操作上，它确保了所有在acquire之后的语句不会被调整到它之前执行，如下图所示。
+
+用上面的memory barrier来描述，acquire等价于LoadLoad加上LoadStore栅栏。
+  ###依文字描述及图片，确实是LoadStore而非StoreLoad
+  ###这里+下面:StoreLoad被无情抛弃
+
+    release本质上是write-release，它只能应用在write数据到RAM中，它确保了所有在release之前的语句不会被调整到它之后执行，如下图所示。
+
+用上面的memory barrier来描述，release等价于LoadStore加上StoreStore栅栏。
+互斥锁(mutex)
+
+借助acquire与release语义，我们再重新来看一下互斥锁(mutex)如何用acquire与release来实现，实际上，mutex正是acquire与release这两个原语的由来，acquire的本意是acquire a lock，release的本意是release a lock，因此，互斥锁能保证被锁住的区域内得到的数据不会是过期的数据，而且所有写入操作在release之前一定会写入内存，如下图所示。
+
+以上关于memory barrier的背景和相关概念说明的部分，有很多参考自Preshing on Programming博客，有兴趣的同学可以前往该博客阅读其博文，上面有不少实验也非常地有趣。
+C++ 11中与memory order相关的同步操作
+
+C++ 11 在标准中提出了6种同步操作： memory_order_relaxed, memory_order_acquire, memory_order_consume, memory_order_release, memory_order_acq_rel, memory_order_seq_cst，关于C++ 11的memory order，
+
+    漫谈C++11多线程内存模型
+    C++并发无锁编程 之 memory order
+
+这两篇文章有比较详细的描述，结合上述对一些专有名词的解释，这两篇文章应该比较容易看懂，这里不再赘述。
+JDK 1.9中与memory order相关的同步操作
+
+为了与C++ 11对齐，jdk 1.9标准中也新增了与memory order相关的同步操作，新添加了VarHandle这个类来封装相关的方法。
+
+VarHandle类的设计目的是为了替代java.util.concurrent.atomic以及sun.misc.Unsafe这两个类中的一些方法，标准中指出这两个类的一些方法存在性能和可移植性问题，下面举例说明：
+
+    AtomicInteger类会带来额外的内存消耗以及因引用替换带来的新的并发问题。
+    原子化的FieldUpdaters操作通常会比原操作带来更多的开销
+    特定的JVM内置的sun.misc.Unsafe包里面的API可以高效地执行原子更新操作，但是这个包会损害安全性与可移植性。
+
+为了解决这些问题，JEP希望设计VarHandle这样一种变量类型，它能够支持在多种不同的访问模式下对变量进行读写操作，支持的变量类型包括对象域、静态域、数组元素以及一些不在堆上的用ByteBuffer描述的字节数组。
+
+VarHandle类的访问模式包括以下几类：
+
+    读模式，即以volatile内存访问顺序读变量（顺序读）；
+    写模式，即以release模式的内存访问顺序写变量（顺序写，防止乱序）；
+    对变量进行原子化地更新操作，例如在compare and set操作中，以volatile内存访问顺序读写变量；
+    对数字进行原子化地更新操作，例如在get and add操作中，对写操作使用普通的内存访问顺序，对读操作使用acquire内存访问顺序；
+    对bitset进行逐位的原子化更新操作，例如在get and bitwise add操作中，对写操作使用release内存访问顺序，对读操作使用一般的内存访问顺序。
+
+后面三种内存访问模式通常被称为read-modify-write模式。
+
+VarHandle类可以由MethodHandle类进行生产，代码示例如下：
+
+class Foo {
+    int i;
+
+    ...
+}
+
+...
+
+class Bar {
+    static final VarHandle VH_FOO_FIELD_I;
+
+    static {
+        try {
+            VH_FOO_FIELD_I = MethodHandles.lookup().
+                in(Foo.class).
+                findVarHandle(Foo.class, "i", int.class);
+        } catch (Exception e) {
+            throw new Error(e);
+        }
+    }
+}
+
+在获取并返回一个VarHandle实例之前，MethodHandle的Lookup方法会进行访问控制权限检查。
+
+如果要获取一个用于访问数组的VarHandle实例，可以采用以下方法。
+
+VarHandle intArrayHandle = MethodHandles.arrayElementVarHandle(int[].class);
+
+获取到VarHandle类实例后，如何用这个类去修改类的域呢？
+
+Foo f = ...
+boolean r = VH_FOO_FIELD_I.compareAndSet(f, 0, 1);
+int o = (int) VH_FOO_FIELD_I.getAndSet(f, 2);
+
+为了保证效率，VarHandle类的实例通常需要被声明为static final变量（其实就是常量），这样可以在编译期对它进行优化。
+
+用VarHandle类反射获取MethodHandle类的方法如下：
+
+Foo f = ...
+MethodHandle mhToVhCompareAndSet = MethodHandles.publicLookup().findVirtual(
+        VarHandle.class,
+        "compareAndSet",
+        MethodType.methodType(boolean.class, Foo.class, int.class, int.class));
+
+调用这个MethodHandle的代码如下：
+
+boolean r = (boolean) mhToVhCompareAndSet.invokeExact(VH_FOO_FIELD_I, f, 0, 1);
+
+MethodHandle mhToBoundVhCompareAndSet = mhToVhCompareAndSet
+        .bindTo(VH_FOO_FIELD_I);
+boolean r = (boolean) mhToBoundVhCompareAndSet.invokeExact(f, 0, 1);
+
+反射生成MethodHandle的另一种方案是：
+
+MethodHandle mhToVhCompareAndSet = MethodHandles.varHandleExactInvoker(
+        VarHandle.AccessMode.COMPARE_AND_SET,
+        MethodType.methodType(boolean.class, Foo.class, int.class, int.class));
+
+boolean r = (boolean) mhToVhCompareAndSet.invokeExact(VH_FOO_FIELD_I, f, 0, 1);
+
+关于MethodHandle的更多使用方法可以参考文章理解JDK中的MethodHandle。
+
+最后，陈列一下VarHandle类内部支持memory order的方法
+
+/**
+    * Ensures that loads and stores before the fence will not be
+    * reordered with loads and stores after the fence.
+    *
+    * @apiNote Ignoring the many semantic differences from C and
+    * C++, this method has memory ordering effects compatible with
+    * atomic_thread_fence(memory_order_seq_cst)
+    */
+   public static void fullFence() {}
+
+   /**
+    * Ensures that loads before the fence will not be reordered with
+    * loads and stores after the fence.
+    *
+    * @apiNote Ignoring the many semantic differences from C and
+    * C++, this method has memory ordering effects compatible with
+    * atomic_thread_fence(memory_order_acquire)
+    */
+   public static void acquireFence() {}
+
+   /**
+    * Ensures that loads and stores before the fence will not be
+    * reordered with stores after the fence.
+    *
+    * @apiNote Ignoring the many semantic differences from C and
+    * C++, this method has memory ordering effects compatible with
+    * atomic_thread_fence(memory_order_release)
+    */
+   public static void releaseFence() {}
+
+   /**
+    * Ensures that loads before the fence will not be reordered with
+    * loads after the fence.
+    */
+   public static void loadLoadFence() {}
+
+   /**
+    * Ensures that stores before the fence will not be reordered with
+    * stores after the fence.
+    */
+   public static void storeStoreFence() {}
+
+通过上面的背景描述，我们可以知道，对于读操作，fullFence强于acquireFence强于loadLoadFence，对于写操作，fullFence强于releaseFence强于storeStoreFence。
+
+JDK 1.9还提供了一种可达性屏障，定义在java.lang.ref.Reference类里面
+
+class java.lang.ref.Reference {
+   // add:
+
+   /**
+    * Ensures that the object referenced by the given reference
+    * remains <em>strongly reachable</em> (as defined in the {@link
+    * java.lang.ref} package documentation), regardless of any prior
+    * actions of the program that might otherwise cause the object to
+    * become unreachable; thus, the referenced object is not
+    * reclaimable by garbage collection at least until after the
+    * invocation of this method. Invocation of this method does not
+    * itself initiate garbage collection or finalization.
+    *
+    * @param ref the reference. If null, this method has no effect.
+    */
+   public static void reachabilityFence(Object ref) {}
+
+}
+
+总结
+
+program reorder这个问题其实在平时的开发中比较少会遇到，但是考虑到特定的cpu或者编译器在优化指令时会有重排序的情况，了解这些知识有助于调试一些疑难杂症。
+
+参考文献
+
+[1] Preshing on Programming博客
+[2] jdk 1.9 标准
+
+[3]C++ 11关于memory order的说明
+
+
+用户6794780 2019-11-30
+
+用上面的memory barrier来描述，acquire等价于LoadLoad加上LoadStore栅栏。 这里是否写错了？应该是等价于 LoadLoad加上StoreLoad吧？
+  #是你错了
+==================================]ZZZ
+
+====================================
+
+
+
+
+
+
+
+
+====================================
+==================================[ZZZ
+https://www.jianshu.com/p/298296e9a887
+C/C++并发编程（1）—— 并发/并行、多线程内存模型
+Eason_Ye
+0.432
+2017.11.02 09:40:32
+字数 2,025阅读 8,124
+
+最近看了《七周七并发模型》[1]，对自己熟悉的C/C++并发编程有了很多新的思考。在Google上搜索“C C++ 并发 编程”，结果主要是Anthony的《C++ Concurrency in Action》以及零散的一些博文。Anthony的书主要是教授C++最基础的线程与锁模型和无锁编程的知识，但是其它的并发模型书中并未提及。线程与锁模型因其资料丰富“简单易学”被广大C/C++程序员所使用。该模型导致的死锁、饥饿等等问题也是大家很头痛的事情。实际上对于C/C++并发模型，我们还有很多其它的选择，比如Actor、CSP、协程等，而这正是这个C/++并发编程系列要告诉大家的。开篇先说一下并发编程的基础知识，并发与并行的区别和C/C++多线程内存模型。
+并发与并行的区别？
+网络上有很多关于“并发”与“并行”的解释，大家比较认同的是Golang大神Rob Pike在“并发不是并行[3]”的技术分享上的解释：
+
+    Concurrency vs. parallelism
+    Concurrency is about dealing with lots of things at once.
+    Parallelism is about doing lots of things at once.
+    Not the same, but related.
+    Concurrency is about structure, parallelism is about execution.并发关乎结构，并行关乎执行。
+    Concurrency provides a way to structure a solution to solve a problem that may (but not necessarily) be parallelizable.并发提供了一种方式让我们能够设计一种方案将问题(非必须的)并行的解决。[2]
+
+按我个人对以上的理解，“并行”和“并发”的区别，可以简单理解为“并行 = 并发执行”。不管是多线程程序、多进程程序，在设计和实现阶段应该称之为“并发”，而运行时应该称之为“并行”。可以类比我们熟悉的“程序 vs. 进程”，运行时的程序称之为进程。它们都是对同一个事物处在不同阶段/状态时的定义。
+C/C++多线程内存模型
+
+以前我认为内存模型和内存布局是一回事，比如Linux下ELF可执行文件格式，堆、栈、.data段、.text段等等。实际上ELF这样的内存布局格式是Linux操作系统对可执行程序的规范，不管用什么编程语言生成了直接（依赖运行时“虚拟机”的语言除外）可运行的程序，最终都是ELF的内存布局。而内存模型是编程语言和计算机系统（包括编译器，多核CPU等可能对程序进行乱序优化的软硬件）之间的契约，它规定了多个线程访问同一个内存位置时的语义，以及某个线程对内存位置的更新何时能被其它线程看见[4]。
+在C11/C++11标准之前，C/C++语言没有内存模型的定义。在此期间，我们天真的认为程序是按顺序一致性（Sequential consistency）模型去运行的，而实际上编译器和多核CPU却是不满足顺序一致性模型的。Leslie在其论文[6]中定义了顺序一致性模型需要满足的两个条件：
+
+    Rl: Each processor issues memory requests in the order specified by its program.
+
+    R2: Memory requests from all processors issued to an individual memory module are serviced from a single FIFO queue. Issuing a memory request consists of entering the request on this queue.
+
+条件“R1”可以理解为“单个线程内指令的执行顺序和代码的顺序是一致的”，而条件“R2”则让多线程的指令执行顺序从全局来看是“串行”执行的。现代CPU的缓存、流水线和乱序执行机制以及编译器的代码优化、重排都无法满足顺序一致性模型。所以，机器实际执行的代码并不是你写的代码[9]。
+
+为了在性能和易编程性之间找到平衡，C++11提出了“sequential consistency for data race free programs”内存模型，即没有数据竞跑（data race）的程序符合顺序一致性。数据竞跑是指多个线程在没有同步的情况下去访问相同的内存位置[5]。所以，在C11/C++11后，我们只要对多线程之间需要同步的变量和操作，使用正确的同步原语进行同步，就能保证程序的执行符合顺序一致性。编译器、多核CPU能保证其优化措施不会破坏顺序一致性。
+理论有些晦涩，我引用个例子说明。如下：
+
+x = y = 0;
+Thread1    Thread2
+x = 1;     y = 1;
+r1 = y;    r2 = x;
+
+按照顺序一致性模型，会有以下5种可能的执行顺序
+
+从分析来看是不会出现“r1 = 0，r2 = 0”的情况的。但是C11/C++11之前并未规定多线程内存模型，也没有多线程的标准库。pthread多线程库是按照“单线程执行模型（Single thread execution model）”来实现的。从编译器的角度来看，不存在什么多线程这样的东西，程序就是一个代码序列。只要编译优化措施不影响顺序执行的结果，就可以执行这项优化。比如下面这种优化：
+
+6
+Thread1    Thread2
+r1 = y;
+           y = 1;
+           r2 = x;
+x = 1;
+
+r1 = 0，r2 = 0
+
+Thread1内的“r1 = y”被换到了“x = 1”之前，这在C11/C++11标准之前是可能发生的。因为按单线程执行模型，“给x赋值1”与“读取y赋值给r1”是两个不相关的事情，调换执行顺序不影响最终结果。而对于C11/C++11标准来说，因为这段代码不存在数据竞跑，只要使用标准库提供的线程操作来实现，其执行就符合顺序一致性，不会优化出现“6”这种情况。
+
+另外，C11/C++11标准还明确了“内存位置”的定义。
+
+    一个内存位置要么是标量，要么是一组紧邻的具有非零长度的位域。
+    两个线程可以互不干扰地对不同的内存位置进行读写操作
+
+比如有如下的结构体：
+
+struct
+{
+int a : 17;
+int b : 15;
+} x;
+
+两个线程分别读写a和b，是否会互相干扰呢？毕竟CPU是按32/64位来取操作数的，而不是按17/15位来的。C11/C++11之前这样的操作是未定义的，按C11/C++标准规定a和b则属于同一个内存位置。两个线程分别对a、b进行读写操作是会相互干扰的，需要进行同步。或者将a、b分割成两个内存位置：
+
+struct
+{
+int a : 17;    // 内存位置1
+int : 0;
+int b : 15;    // 内存位置2
+} x;
+
+这样编译器会自动自行内存对齐，保证两个线程分别读写a、b互不干扰。
+
+参考
+[1]《七周七并发模型》，Paul Butcher 著，黄炎 译
+[2] 也谈并发与并行，Tony Bai
+[3] Concurrency is not parallelism，Rob Pike
+[4] 浅析C++多线程内存模型，Guancheng (G.C.)
+[5] Race Condition vs. Data Race，John Regehr
+[6] How to Make a Multiprocessor Computer That Correctly Executes Multiprocess Programs，1979，Leslie Lamport
+[7] 《C++0x漫谈》系列之：多线程内存模型，刘未鹏
+[8] ISO/IEC JTC1 SC22 WG21 N3690，Programming Languages — C++
+[9] C++ Memory Model，Valentin .etc
+
+修订记录
+2017-11-01 AM：从网易博客迁移到简书
+2017-09-30 PM：完成初稿
+==================================]ZZZ
+
+
+
+
+
+
+
+
+====================================
+
+
+
+==================================[ZZZ
+====================================
+https://www.cnblogs.com/zifeiye/p/8194949.html
+
+子非也
+
+C++ 并行编程之memory_order
+一.如果只是简单地解决在多线程中对共享资源的读写并发问题,只需要用C++以下内容: 线程类 thread, 原子数据类模板 atomic<T> t, 互斥 mutex, 锁 lock, 条件变量 condition_variables.
+ 
+二.在此基础上,如果想在并行编程中获得更好的性能,尤其当使用的是一些弱内存顺序的平台(比如PowerPC)的话,设定原子操作间的内存顺序则很有必要.
+ 
+ 
+C++11 加入了支持并行编程的原子操作模块,而所有的原子操作都有一个参数 memory_order.
+1.内存模型 简介
+内存模型是一个硬件上的概念,表示机器指令是以什么样的顺序被处理器执行的 (现代的处理器不是逐条处理机器指令的) .
+复制代码
+
+#include <thread>
+#include <atomic>
+ 
+atomic<int> a;
+atomic<int> b;
+void threadHandle()
+{
+     int t = 1;
+     a = t;
+     b = 2; // b 的赋值不依赖 a
+}
+
+复制代码
+
+在上面的线程处理函数中的三行代码,在寄存器中实际执行顺序可能与代码写的顺序不一致.在不同的机器平台下,处理器有可能对指令周期的执行顺序优化(一个时钟周期发射多条指令),就是说它可能让 b 的赋值语句比 a 的赋值语句先执行.
+
+此时,如果有一个线程在循环地打印 a 和 b 的值,那么结果并不总是 a == 1 和 b == 2.
+
+ 
+
+2.如何保证指令执行顺序
+
+保证执行顺序会牺牲一些执行效率，因为这意味着放弃了编译器、处理器等的优化处理。
+
+强顺序的内存模型指: 代码顺序和寄存器实际执行的顺序一致
+
+弱顺序的内存模型指: 寄存器实际执行的顺序与代码顺序不一致,被处理器调整过
+
+ 
+
+ 
+
+3.C++ 并行编程: 设定 指令执行顺序
+复制代码
+
+typedef enum memory_order {
+    memory_order_relaxed,    // 不对执行顺序做保证
+    memory_order_acquire,    // 本线程中,所有后续的读操作必须在本条原子操作完成后执行
+    memory_order_release,    // 本线程中,所有之前的写操作完成后才能执行本条原子操作
+    memory_order_acq_rel,    // 同时包含 memory_order_acquire 和 memory_order_release
+    memory_order_consume,    // 本线程中,所有后续的有关本原子类型的操作,必须在本条原子操作完成之后执行
+    memory_order_seq_cst    // 全部存取都按顺序执行
+    } memory_order;
+
+复制代码
+
+ 
+
+测试: 下面的代码可能会打印出 a == 0; b == 2 这样的结果
+复制代码
+
+ 1  #include <iostream>
+ 2  #include <thread>
+ 3  #include <atomic>
+ 4  
+ 5  atomic<int> a{ 0 };
+ 6  atomic<int> b{ 0 };
+ 7  void SetValue()
+ 8  {// atomic类模板中的函数都是原子操作.  int temp = a.load();相当于 int temp = a的原子操作
+ 9      int t = 1;
+10      a.store(t, memory_order_relaxed); // 相当于 a = t的原子操作
+11      b.store(2, memory_order_relaxed); // 相当于 b = 2的原子操作
+12  }
+13  void Observer()
+14  {
+15      cout << a << b << endl;
+16  }
+17  
+18  int main()
+19  {
+20      thread T1(SetValue,0);
+21      thread T2(Observer, 0);
+22  
+23      T1.join(); // 主线程(调用方)等待子线程 T1 执行完成,才能继续执行,阻塞
+24      T2.join(); // 同上,执行这一行前: T1已经结束,T2很可能也结束了
+25  
+26      return 0;
+27  }
+
+参考：C++ 多线程与内存模型资料汇
+==================================]ZZZ
+
+
+
+
+
+
+
+
+====================================
+
+
+
+====================================
+
+
+
+
+
+
+
+
+
+====================================
+
+
+
+====================================
+
+
+
+
+
+
+
+
+
+====================================
+
+
+
+====================================
+
+
+
+
+
+
+
+
+
+====================================
+
+
+
+====================================
+
+
+
+
+
+
+
+
+
+====================================
+
+
+
+====================================
+
+
+
+
+
+
+
+
+
+====================================
+附录
+
+codedump的网络日志
+C++11中的内存模型下篇 - C++11支持的几种内存模型
+2019-12-14 多核 系统编程 系统设计
+
+在本系列的上篇，介绍了内存模型的基本概念，接下来看C++11中支持的几种内存模型。
+几种关系术语
+
+在接着继续解释之前，先了解一下几种关系术语。
+sequenced-before
+
+sequenced-before用于表示单线程之间，两个操作上的先后顺序，这个顺序是非对称、可以进行传递的关系。
+
+它不仅仅表示两个操作之间的先后顺序，还表示了操作结果之间的可见性关系。两个操作A和操作B，如果有A sequenced-before B，除了表示操作A的顺序在B之前，还表示了操作A的结果操作B可见。
+happens-before
+
+与sequenced-before不同的是，happens-before关系表示的不同线程之间的操作先后顺序，同样的也是非对称、可传递的关系。
+
+如果A happens-before B，则A的内存状态将在B操作执行之前就可见。在上一篇文章中，某些情况下一个写操作只是简单的写入内存就返回了，其他核心上的操作不一定能马上见到操作的结果，这样的关系是不满足happens-before的。
+synchronizes-with
+
+synchronizes-with关系强调的是变量被修改之后的传播关系（propagate），即如果一个线程修改某变量的之后的结果能被其它线程可见，那么就是满足synchronizes-with关系的。
+
+显然，满足synchronizes-with关系的操作一定满足happens-before关系了。
+C++11中支持的内存模型
+
+从C++11开始，就支持以下几种内存模型：
+
+1
+2
+3
+4
+5
+6
+7
+8
+
+	
+
+enum memory_order {
+    memory_order_relaxed,
+    memory_order_consume,
+    memory_order_acquire,
+    memory_order_release,
+    memory_order_acq_rel,
+    memory_order_seq_cst
+};
+
+与内存模型相关的枚举类型有以上六种，但是其实分为四类，如下图所示，其中对一致性的要求逐渐减弱，以下来分别讲解。
+
+c++model
+
+memory_order_seq_cst
+
+这是默认的内存模型，即上篇文章中分析过的顺序一致性内存模型，由于在上篇中的相关概念已经做过详细的介绍，这里就不再阐述了。仅列出引用自《C++ Concurrency In Action》的示例代码。
+
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+
+	
+
+#include <atomic>
+#include <thread>
+#include <assert.h>
+std::atomic<bool> x,y;
+std::atomic<int> z;
+void write_x()
+{
+    x.store(true,std::memory_order_seq_cst);
+}
+void write_y()
+{
+    y.store(true,std::memory_order_seq_cst);
+}
+void read_x_then_y()
+{
+    while(!x.load(std::memory_order_seq_cst));
+    if(y.load(std::memory_order_seq_cst))
+        ++z;
+}
+void read_y_then_x()
+{
+    while(!y.load(std::memory_order_seq_cst));
+    if(x.load(std::memory_order_seq_cst))
+        ++z;
+}
+int main()
+{
+    x=false;
+    y=false;
+    z=0;
+    std::thread a(write_x);
+    std::thread b(write_y);
+    std::thread c(read_x_then_y);
+    std::thread d(read_y_then_x);
+    a.join();
+    b.join();
+    c.join();
+    d.join();
+    assert(z.load()!=0);
+}
+
+由于采用了顺序一致性模型，因此最后的断言不可能发生，即在程序结束时不可能出现z为0的情况。
+memory_order_relaxed
+
+这种类型对应的松散内存模型，这种内存模型的特点是：
+
+    针对一个变量的读写操作是原子操作；
+    不同线程之间针对该变量的访问操作先后顺序不能得到保证，即有可能乱序。
+
+来看示例代码：
+
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+
+	
+
+#include <atomic>
+#include <thread>
+#include <assert.h>
+std::atomic<bool> x,y;
+std::atomic<int> z;
+void write_x_then_y()
+{
+    x.store(true,std::memory_order_relaxed);
+    y.store(true,std::memory_order_relaxed);
+}
+void read_y_then_x()
+{
+    while(!y.load(std::memory_order_relaxed));
+    if(x.load(std::memory_order_relaxed))
+        ++z;
+}
+int main()
+{
+    x=false;
+    y=false;
+    z=0;
+    std::thread a(write_x_then_y);
+    std::thread b(read_y_then_x);
+    a.join();
+    b.join();
+    assert(z.load()!=0);
+}
+
+在上面的代码中，对原子变量的访问都使用memory_order_relaxed模型，导致了最后的断言可能失败，即在程序结束时z可能为0。
+Acquire-Release
+
+    memory_order_acquire：用来修饰一个读操作，表示在本线程中，所有后续的关于此变量的内存操作都必须在本条原子操作完成后执行。
+
+read-acquire
+
+    memory_order_release：用来修饰一个写操作，表示在本线程中，所有之前的针对该变量的内存操作完成后才能执行本条原子操作。
+
+write-release
+
+    memory_order_acq_rel：同时包含memory_order_acquire和memory_order_release标志。
+
+来看示例代码：
+
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+
+	
+
+// 5.7.cpp
+#include <atomic>
+#include <thread>
+#include <assert.h>
+std::atomic<bool> x,y;
+std::atomic<int> z;
+void write_x()
+{
+    x.store(true,std::memory_order_release);
+}
+void write_y()
+{
+    y.store(true,std::memory_order_release);
+}
+void read_x_then_y()
+{
+    while(!x.load(std::memory_order_acquire));
+    if(y.load(std::memory_order_acquire))
+        ++z;
+}
+void read_y_then_x()
+{
+    while(!y.load(std::memory_order_acquire));
+    if(x.load(std::memory_order_acquire))
+        ++z;
+}
+int main()
+{
+    x=false;
+    y=false;
+    z=0;
+    std::thread a(write_x);
+    std::thread b(write_y);
+    std::thread c(read_x_then_y);
+    std::thread d(read_y_then_x);
+    a.join();
+    b.join();
+    c.join();
+    d.join();
+    assert(z.load()!=0);
+}
+
+上面这个例子中，并不能保证程序最后的断言即z!=0为真，其原因在于：在不同的线程中分别针对x、y两个变量进行了同步操作并不能保证x、y变量的读取操作。
+
+线程write_x针对变量x使用了write-release模型，这样保证了read_x_then_y函数中，在load变量y之前x为true；同理线程write_y针对变量y使用了write-release模型，这样保证了read_y_then_x函数中，在load变量x之前y为true。
+
+然而即便是这样，仍然可能出现以下类似的情况：
+
+5.7
+
+如上图所示：
+
+    初始条件为x = y = false。
+    由于在read_x_and_y线程中，对x的load操作使用了acquire模型，因此保证了是先执行write_x函数才到这一步的；同理先执行write_y才到read_y_and_x中针对y的load操作。
+    然而即便如此，也可能出现在read_x_then_y中针对y的load操作在y的store操作之前完成，因为y.store操作与此之间没有先后顺序关系；同理也不能保证x一定读到true值，因此到程序结束是就出现了z = 0的情况。
+
+从上面的分析可以看到，即便在这里使用了release-acquire模型，仍然没有保证z=0，其原因在于：最开始针对x、y两个变量的写操作是分别在write_x和write_y线程中进行的，不能保证两者执行的顺序导致。因此修改如下：
+
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+
+	
+
+// 5.8.cpp
+#include <atomic>
+#include <thread>
+#include <assert.h>
+std::atomic<bool> x,y;
+std::atomic<int> z;
+void write_x_then_y()
+{
+    x.store(true,std::memory_order_relaxed);
+    y.store(true,std::memory_order_release);
+}
+void read_y_then_x()
+{
+    while(!y.load(std::memory_order_acquire));
+    if(x.load(std::memory_order_relaxed))
+        ++z;
+}
+int main()
+{
+    x=false;
+    y=false;
+    z=0;
+    std::thread a(write_x_then_y);
+    std::thread b(read_y_then_x);
+    a.join();
+    b.join();
+    assert(z.load()!=0);
+}
+
+5.8
+
+如上图所示：
+
+    初始条件为x = y = false。
+    在write_x_then_y线程中，先执行对x的写操作，再执行对y的写操作，由于两者在同一个线程中，所以即便针对x的修改操作使用relaxed模型，修改x也一定在修改y之前执行。
+    在write_x_then_y线程中，对y的load操作使用了acquire模型，而在线程write_x_then_y中针对变量y的读操作使用release模型，因此保证了是先执行write_x_then_y函数才到read_y_then_x的针对变量y的load操作。
+    因此最终的执行顺序如上图所示，此时不可能出现z=0的情况。
+
+从以上的分析可以看出，针对同一个变量的release-acquire操作，更多时候扮演了一种“线程间使用某一变量的同步”作用，由于有了这个语义的保证，做到了线程间操作的先后顺序保证（inter-thread happens-before）。
+Release-Consume
+
+从上面对Acquire-Release模型的分析可以知道，虽然可以使用这个模型做到两个线程之间某些操作的synchronizes-with关系，然后这个粒度有些过于大了。
+
+在很多时候，线程间只想针对有依赖关系的操作进行同步，除此之外线程中的其他操作顺序如何无所谓。比如下面的代码中：
+
+1
+2
+
+	
+
+b = *a;
+c = *b;
+
+其中第二行代码的执行结果依赖于第一行代码的执行结果，此时称这两行代码之间的关系为“carry-a-dependency ”。C++中引入的memory_order_consume内存模型就针对这类代码间有明确的依赖关系的语句限制其先后顺序。
+
+来看下面的示例代码：
+
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+
+	
+
+// 5.10
+#include <string>
+#include <thread>
+#include <atomic>
+#include <assert.h>
+struct X
+{
+    int i;
+    std::string s;
+};
+std::atomic<X*> p;
+std::atomic<int> a;
+void create_x()
+{
+    X* x=new X;
+    x->i=42;
+    x->s="hello";
+    a.store(99,std::memory_order_relaxed);
+    p.store(x,std::memory_order_release);
+}
+void use_x()
+{
+    X* x;
+    while(!(x=p.load(std::memory_order_consume)))
+        std::this_thread::sleep_for(std::chrono::microseconds(1));
+    assert(x->i==42);
+    assert(x->s=="hello");
+    assert(a.load(std::memory_order_relaxed)==99);
+}
+int main()
+{
+    std::thread t1(create_x);
+    std::thread t2(use_x);
+    t1.join();
+    t2.join();
+}
+
+以上的代码中：
+
+    create_x线程中的store(x)操作使用memory_order_release，而在use_x线程中，有针对x的使用memory_order_consume内存模型的load操作，两者之间由于有carry-a-dependency关系，因此能保证两者的先后执行顺序。所以，x->i == 42以及x->s==“hello”这两个断言都不会失败。
+    然而，create_x中针对变量a的使用relax内存模型的store操作，use_x线程中也有针对变量a的使用relax内存模型的load操作。这两者的先后执行顺序，并不受前面的memory_order_consume内存模型影响，所以并不能保证前后顺序，因此断言a.load(std::memory_order_relaxed)==99真假都有可能。
+
+以上可以对比Acquire-Release以及Release-Consume两个内存模型，可以知道：
+
+    Acquire-Release能保证不同线程之间的Synchronizes-With关系，这同时也约束到同一个线程中前后语句的执行顺序。
+    而Release-Consume只约束有明确的carry-a-dependency关系的语句的执行顺序，同一个线程中的其他语句的执行先后顺序并不受这个内存模型的影响。
+
+参考资料
+
+    《C++ Concurrency In Action》
+    《The Purpose of memory_order_consume in C++11》
+    《The Synchronizes-With Relation》
+
+修改历史
+
+    2019-12-14：初稿。
+    2020-04-11：修改代码显示。
+
+Author codedump
+
+LastMod 2019-12-14
+
+License 本作品采用知识共享署名 4.0 国际许可协议进行许可。 转载时请注明原文链接，图片使用OmniGraffle进行绘制。
+
+

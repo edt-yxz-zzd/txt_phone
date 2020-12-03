@@ -1,0 +1,505 @@
+
+tokenize翻译-ast对比cst-降噪.txt
+
+
+tokenize翻译-ast对比cst-降噪.txt
+
+================
+https://www.zhihu.com/question/39279003
+现代汉语可怕的地方就是在于，双音节名词无论你怎么严肃，看起来都很难像一个术语，它会被试图解构，怎么看都像是一个临时组建出来的词组，而不会被和一个意义固定地联系起来。
+================
+
+字流 :: [a]
+  a=字=基本符号
+    char
+->划分词组->
+  词组=成词字串
+    word
+  scanner
+->划分词组并粗分类->
+  除非 划分词组 简单至 按空格进行划分 的级别，否则 必然与 分类 一起进行
+    分词（segment）
+    词性标注（label）
+  tokenizer包含scanner
+彩词流 :: [(rc, [a])]
+  彩词=标注单元=带划分级类别标注的词组
+    lexeme
+  rc=粗词类=粗词色
+->细分类并解释彩词->
+  lexer包含tokenizer
+义词流 :: [?fc. mg fc]
+  义词=语义单元=带语义级类别标注及相关语义属性的抽象单元
+    token
+  fc=细词类=细词色=词性
+  mg fc = 相应的语义属性
+  目标是 ast 则无需包含词组，cst 则依旧包含原词组
+->过滤噪声/降噪->
+  目标是 ast 则过滤，cst 则不过滤
+  noise_reducer/denoise
+重符流 :: [?tm. mg tm]
+  重符=带语义属性的句法单元=带阳符标注及相关语义属性的句法单元
+  tm=词性=右手终止符=阳符
+->句法分析->
+语法树 :: &t. {Leaf (?tm. mg tm) | NonLeaf nt rule [t]}
+  nt=短语=左手非终止符=阴符
+  rule=相应的语法规则
+  t=cst/ast=详尽语法树(具象语法树)/抽象语法树
+
+
+
+元语言vs句语言
+语法 是 元语言 的 句
+句法=句语法=语法
+句析器=句法分析器=语法分析器
+
+
+
+
+
+
+
+
+词法分析
+词法分析lexical analysis/scanning
+
+两种翻译:
+  lexeme=语素vs单词
+  token=单词vs词法单元
+    =（类别，语义内容/属性）
+
+
+token
+  单词
+  单词的属性字
+单词化（tokenization）
+输入流 :: [a]
+语素流 :: [[a]]
+语素 :: [a]
+单词=（语素的类型，值）
+评估器evaluator :: 语素->可选 单词 #过滤 噪声
+单词流
+
+token
+  令牌
+    令牌，代表执行某些操作的权利的对象
+    暗号，虎符
+  标记
+  单词
+  词例/词块/词条
+    token-词例， type-词型， class-词类
+  形符
+    #形声字中，形旁 声旁
+    汉字:
+      +记号
+      +音符
+      +意符
+        +义符
+        +形符
+tokenize
+  令牌化
+  标记化/标记解析/解析标记
+  单词化
+tokenizer
+  令牌解析器
+  标记解析器
+  分词器
+词法分析是lex
+词法分析器是lexer
+lexer vs tokenizer vs scanner
+  vs scanner
+    scanner有两种意思
+    一与lexer相同
+    二只是lexer的第一阶段
+  vs tokenizer
+    一与lexer相同
+    二比lexer少了进行语义解释的这一步
+
+parse tree vs abstract syntax tree
+  syntax tree == ast
+    逻辑概念上的语义对象及关系
+  parse tree == cst
+    实际语法中的句法对象及关系
+  ===
+  abstract syntax tree (ast)
+    忽略仅用于表达 树结构 的 无语义结构用重符
+    无 () 空格
+    Notice that parens are not present in the AST because the associations are derivable from the tree structure.
+  concrete syntax tree (cst)
+    The parse tree retains all of the information of the input.
+
+#classifier :: lexeme -> terminal
+scanner :: [char] -> Maybe (terminal, lexeme, [char])
+  EOS - end of stream
+lexeme = [char]
+evaluator :: (terminal, lexeme) -> Maybe meaning
+  filter out noise
+tokenize :: (terminal, lexeme) -> Maybe token
+token = (terminal, meaning/attributes)
+tokenizer :: [(terminal, lexeme)] -> [token]
+lexer :: [char] -> [token]
+###or filter out noise here between lexer and parser
+sentence = [token]
+parse_tree = Leaf token | NonLeaf nonterminal [parse_tree]
+parser :: sentence -> syntax_tree/ast
+  tokenize vs parser
+    almost the same
+
+
+nonterminal
+terminal
+
+
+
+词法分析器lexical analyzer==lexer==tokenizer
+  ==扫描器scanner
+语法分析器
+语言的词法规则
+源语言的文法grammar
+  源语言的语法规则
+
+编译(compilation , compile)
+编译=词法分析+语法分析+语义检查+中间代码生成+中间代码优化+目标代码生成
+  ====
+  源程序分析=词法分析+语法分析
+  ====
+  分析/前端=词法分析+语法分析+语义检查
+  合成/后端=中间代码生成+中间代码优化+目标代码生成
+  analysis分析；分解；验定，检验
+  syntheis合成/综合
+  front/back end
+
+
+
+
+
+
+
+======
+https://stackoverflow.com/questions/5967888/whats-the-difference-between-parse-trees-and-abstract-syntax-trees
+  ast vs cst
+======
+https://www.cnblogs.com/jintan/archive/2009/10/28/1591132.html
+  评论比正文有意思
+  翻译问题:设计模式 设计样例
+https://code-examples.net/en/q/2b60b9
+   parsing - parser - lexer vs tokenizer
+semantic=meaning
+
+https://stackoverflow.com/questions/380455/looking-for-a-clear-definition-of-what-a-tokenizer-parser-and-lexers-are
+Looking for a clear definition of what a "tokenizer", "parser" and "lexers" are and how they are related to each other and used?
+
+===
+No doubt "The Dragon Book" is a good book, but it does require the reader to have a good grounding in CS.
+  Some book with more practical appeal would be
+    "Writing Compilers and Interpreters" by Ronald Mak
+    , "Modern Compiler Implementation", Andrew Appel
+    ; "Compiler Construction", Niklaus Wirth
+    ; "Compiling with C# and Java"
+    and "Compilers and Compiler Generators: an Introduction with C++" by Pat Terry; and
+    , of course, "The Definitive ANTLR Reference" by Terrence Parr.
+  – Andre Artus Jun 8 '10 at 6:35
+
+===
+"Let's Build a Compiler" is here:
+    compilers.iecc.com/crenshaw.
+  I found the link from here:
+    prog21.dadgum.com/30.html
+  – Roger Lipscombe Jun 30 '14 at 14:08
+
+===
+Just to be sure, I am not knocking your recommendation.
+  "The Dragon Book" was my first book on compiler tech
+  , but it was hard going compared to
+  , say, Wirth's book, which is a book you can grok in a few hours.
+  Back then I had few options as it was the only book I could get my hands on (it being 1991, before Amazon and the WWW).
+  I had that and a collection of text files produced by Jack W. Crenshaw called "LET'S BUILD A COMPILER" (thanks Jack!).
+  This is still the book to get for a more complete understanding of the principles, but most programmers just need a pragmatic introduction.
+  – Andre Artus Jun 8 '10 at 17:54
+
+===
+I wouldn't agree that a parser /by definition/ produces an abstract syntax tree.
+  Parsers can produce all sorts of different outputs.
+  For example, it is common that a parser produces a sequence of calls to some builder interface -- see the Builder Pattern in the Gang of Four patterns book.
+  The key point is that the parser analyses a sequence of tokens to determine whether or not the sequence conforms to some (usually context free) grammar and may produce some output based on the sequence's grammatical structure.
+  – Theodore Norvell Feb 22 '13 at 22:02
+
+
+
+===
+Compilers and Compiler Generators: an Introduction with C++
+  by Pat Terry
+  cs.ru.ac.za/compilers/index.html
+Writing Compilers and Interpreters
+  by Ronald Mak
+Modern Compiler Implementation
+  Andrew Appel
+Compiler Construction
+  Niklaus Wirth
+Compiling with C# and Java
+The Definitive ANTLR Reference
+  by Terrence Parr
+Let's Build a Compiler
+  by Jack
+  compilers.iecc.com/crenshaw
+    <- prog21.dadgum.com/30.html
+
+===
+===
+===
+===
+  noise_reducer/denoise
+    anti-noise
+    noise-resistant
+    resistance noise
+    noise-reducing
+    noise reduction
+===
+
+
+https://blog.csdn.net/wangongxi/article/details/52662177?utm_medium=distribute.pc_relevant.none-task-blog-BlogCommendFromMachineLearnPai2-4.channel_param&depth_1-utm_source=distribute.pc_relevant.none-task-blog-BlogCommendFromMachineLearnPai2-4.channel_param
+  NLP常用术语解析
+
+ 自然语言处理，后者用英文称为：Natural Language Processing(NLP)包含一系列相对专业的术语，比如：命名实体识别、词性标注等。刚开始做NLP的时候，往往会搞不清这些术语的具体含义，尤其是看一些会议、期刊的论文的时候，英文的表达方式也比较多样，所以这里咱就梳理一下一些基本的概念，以举例子的方式来解释这些专业术语。
+
+NLP的里面一些比较经典的问题有：分词、词性标注、命名实体识别、句法分析、指代消解、情感识别、机器翻译、纠错等。这些词各自的含义大致如下：
+
+
+分词（Segment）：中英文都存在分词的问题，不过相对来说，英文单词与单词之间本来就有空格进行分割，所以处理起来相对方便。但是中文书写是没有分隔符的，所以分词的问题就比较突出。分词常用的手段可以是基于字典的最长串匹配，据说可以解决85%的问题，但是歧义分词很难。另外就是当下主流的统计机器学习的办法，利用HMM/CRF这一类的模型解决。
+
+
+词性标注（Label）：基于机器学习的方法里，往往需要对词的词性进行标注。标注的目的是，表征词的一种隐状态，隐藏状态构成的转移就构成了状态转移序列。例如：苏宁易购/n 投资/v 了/u 国际米兰/n。其中，n代表名词，v代表动词，n,v都是标注。以此类推。
+
+
+命名实体识别（Named Entity Recognition）：本质上还是标注问题的一种。只不过把标注细化了。比如，苏宁/cmp_s 易购/cmp_e 是/v B2C/n 电商/n。我们把苏宁易购 标注成cmp_s和cmp_e,分别表征公司名的起始和结束。这样，当遇上苏宁/云商/易购这种场景时，也可以完整得识别出它是一个公司名称。如果，按照传统的标注方式，苏宁/cmp 易购/cmp这样笼统地标注可能会有问题。
+
+
+句法分析（Syntax Parsing）：句法分析往往是一种基于规则的专家系统。当然也不是说它不能用统计学的方法进行构建，不过最初的时候，还是利用语言学专家的知识来构建的。句法分析的目的是解析句子的中各个成分的依赖关系。所以，往往最终生成的结果，是一棵句法分析树。句法分析可以解决传统词袋模型不考虑上下文的问题。比如，张三是李四的领导；李四是张三的领导。这两句话，用词袋模型是完全相同的，但是句法分析可以分析出其中的主从关系，真正理清句子的关系。
+
+
+指代消解(Anaphora Resolution)：中文中代词出现的频率很高，它的作用的是用来表征前文出现过的人名、地名等词。例如，苏宁易购坐落在南京，这家公司目前位于中国B2C市场前三。在这句话中，其实“苏宁易购”这个词出现了2次，“这家公司”指代的就是苏宁易购。但是出于中文的习惯，我们不会把“苏宁易购”再重复一遍。
+
+
+情感识别（Emotion Recognition）：所谓情感识别，本质上是分类问题。情感基本可以分类2类或者3类。正面、负面，有时再加上非正非负。一般来说，在电商企业，情感识别可以分析商品评价的好坏，以此作为下一个环节的评判依据。通常的做法，可以基于词袋模型+分类器，或者现在流行的词向量模型+RNN。经过测试后者比前者准确率略有提升。
+
+
+纠错（Correction）：自动纠错在搜索技术中利用得很多。由于用户的输入出错的可能性比较大，出错的场景也比较多。所以，我们需要一个纠错系统。具体做法有很多，可以基于N-Gram进行纠错，数据结构上，字典树、有限状态机可以考虑。
+
+
+问答系统（QA System）：这是一种类似机器人的人工智能系统。比较著名的有，IBM Watson，Google Allo，苹果Siri，微软小冰等等。问答系统往往需要语音识别、合成，自然语言理解、知识图谱等多项技术的配合才会实现得比较好。个人认为，QA系统是NLP从业者一个较难做好的产品。
+
+以上是我个人总结的一些NLP中常见的术语以及应用场景。从最早期的专家系统到现在的以统计机器学习为基础的做法，NLP在实用性上大大增强了。我自己接触到的NLP的常用的库有fNLP（复旦大学的NLP库），斯坦福的NLP库。经常利用的模型也是HMM、CRF这些主流模型。推荐大家看看《数学之美》，我觉得这是搞NLP和机器学习
+的入门书籍，吴军博士深入浅出的描述，会使我们大家都很受益。
+
+
+
+
+
+
+
+
+
+corpus语料库
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+================
+https://www.zhihu.com/question/39279003
+如何翻译token?
+想问一下，在中文NLP等论文中，应该如何翻译token这个词？ 现在有几种翻译方式：词例、词块。想问下有没有什么更好的翻译方法。
+
+知乎用户
+我是建议翻译称为词例的。
+因为token和type相对，我一般的做法是token-词例， type-词型， class-词类，当然还有如果category什么的，就很麻烦了。
+现代汉语可怕的地方就是在于，双音节名词无论你怎么严肃，看起来都很难像一个术语，它会被试图解构，怎么看都像是一个临时组建出来的词组，而不会被和一个意义固定地联系起来。
+尤其是在现代汉语双音节词有很多是近义的字叠一次形成的情形下。
+发布于 2016-11-12
+
+
+================
+百度百科
+形符
+
+形符，读音xíng fú，出处为《文字学概要》。广义指汉字（象形文字）的拼形字母。
+
+中文名
+    形符
+拼    音
+    xíng fú
+
+注    音
+    ㄒㄧㄥˊ ㄈㄨˊ
+出    处
+    《文字学概要》
+
+形符：1.汉字学术语，也称形旁或义（意）符，合体字的一个部分，与声旁相对；2.广义指汉字（象形文字）的拼形字母：构成汉字形状的基本单位，具有相对稳定性和不可分割性，可用于汉字编码的码元。
+裘锡圭在《文字学概要》中说到，文字的字符大体为三类，意符，音符和记号。意符又可以分为形符和义符。形符是作为象形符号使用的，通过自己的形象来起到表意作用；义符则是依靠字本身的字义去充当表义偏旁（在象形字上加注音符而成的形声字是一种例外） [
+
+
+================
+百度百科
+Token （计算机术语）
+
+在计算机身份认证中是令牌（临时）的意思，在词法分析中是标记的意思。一般作为邀请、登录系统使用。
+
+中文名
+    令牌，标记
+外文名
+    Token
+
+学    科
+    信息技术（IT）
+词    性
+    名词
+
+目录
+
+    1 令牌
+    2 标记
+    3 其它
+    ▪ 网络
+    ▪ 数据处理
+    4 相关术语
+
+令牌
+编辑
+（信息安全术语）
+Token, 令牌，代表执行某些操作的权利的对象
+访问令牌（Access token）表示访问控制操作主体的系统对象
+邀请码，在邀请系统中使用
+Token, Petri 网（Petri net）理论中的Token
+密保令牌（Security token），或者硬件令牌，例如U盾，或者叫做认证令牌或者加密令牌，一种计算机身份校验的物理设备
+会话令牌（Session token）,交互会话中唯一身份标识符
+令牌化技术 (Tokenization), 取代敏感信息条目的处理过程
+标记
+编辑
+（编译原理术语）
+词法分析是计算机科学中将字符序列转换为标记（token）序列的过程。从输入字符流中生成标记的过程叫作标记化（tokenization），在这个过程中，词法分析器还会对标记进行分类。
+其它
+编辑
+网络
+Token ring 即 令牌环网，网络技术里面的：
+令牌是一种能够控制站点占有媒体的特殊帧，以区别数据帧及其他控制帧。
+数据处理
+token其实说的更通俗点可以叫暗号，在一些数据传输之前，要先进行暗号的核对，不同的暗号被授权不同的数据操作。例如在USB1.1协议中定义了4类数据包：token包、data包、handshake包和special包。主机和USB设备之间连续数据的交换可以分为三个阶段，第一个阶段由主机发送token包，不同的token包内容不一样（暗号不一样）可以告诉设备做不同的工作，第二个阶段发送data包，第三个阶段由设备返回一个handshake包。
+相关术语
+编辑
+token相关的计算机术语很多，例如Token Passing、Token Ring、Token Bus等，具体参考一些计算机令牌方面的资料
+================
+
+百度百科
+词法分析
+词法分析（英语：lexical analysis）是计算机科学中将字符序列转换为单词（Token）序列的过程。进行词法分析的程序或者函数叫作词法分析器（Lexical analyzer，简称Lexer），也叫扫描器（Scanner）。词法分析器一般以函数的形式存在，供语法分析器调用。 完成词法分析任务的程序称为词法分析程序或词法分析器或扫描器。 [1]
+完成词法分析任务的程序称为词法分析程序或词法分析器或扫描器。从左至右地对源程序进行扫描，按照语言的词法规则识别各类单词，并产生相应单词的属性字。 [
+
+编译
+编译(compilation , compile) 1、利用编译程序从源语言编写的源程序产生目标程序的过程。 2、用编译程序产生目标程序的动作。 编译就是把高级语言变成计算机可以识别的2进制语言，计算机只认识1和0，编译程序把人们熟悉的语言换成2进制的。 编译程序把一个源程序翻译成目标程序的工作过程分为五个阶段：词法分析；语法分析；语义检查和中间代码生成；代码优化；目标代码生成。主要是进行词法分析和语法分析，又称为源程序分析，分析过程中发现有语法错误，给出提示信息。
+
+
+
+
+
+
+百度百科
+语法分析
+语法分析是编译过程的一个逻辑阶段。语法分析的任务是在词法分析的基础上将单词序列组合成各类语法短语，如“程序”，“语句”，“表达式”等等.语法分析程序判断源程序在结构上是否正确.源程序的结构由上下文无关文法描述.语法分析程序可以用YACC等工具自动生成。
+完成语法分析任务的程序称为语法分析器，或语法分析程序。 [1]  按照源语言的语法规则，从词法分析的结果中识别出相应的语法范畴，同时进行语法检查。
+
+源语言的文法grammar
+  源语言的语法规则
+
+语法范畴的表示
+
+
+
+
+
+
+

@@ -1,0 +1,2089 @@
+WGET(1)                            GNU Wget                            WGET(1)
+
+
+
+NNAAMMEE
+       Wget - The non-interactive network downloader.
+
+SSYYNNOOPPSSIISS
+       wget [_o_p_t_i_o_n]... [_U_R_L]...
+
+DDEESSCCRRIIPPTTIIOONN
+       GNU Wget is a free utility for non-interactive download of files from
+       the Web.  It supports HTTP, HTTPS, and FTP protocols, as well as
+       retrieval through HTTP proxies.
+
+       Wget is non-interactive, meaning that it can work in the background,
+       while the user is not logged on.  This allows you to start a retrieval
+       and disconnect from the system, letting Wget finish the work.  By
+       contrast, most of the Web browsers require constant user's presence,
+       which can be a great hindrance when transferring a lot of data.
+
+       Wget can follow links in HTML, XHTML, and CSS pages, to create local
+       versions of remote web sites, fully recreating the directory structure
+       of the original site.  This is sometimes referred to as "recursive
+       downloading."  While doing that, Wget respects the Robot Exclusion
+       Standard (_/_r_o_b_o_t_s_._t_x_t).  Wget can be instructed to convert the links in
+       downloaded files to point at the local files, for offline viewing.
+
+       Wget has been designed for robustness over slow or unstable network
+       connections; if a download fails due to a network problem, it will keep
+       retrying until the whole file has been retrieved.  If the server
+       supports regetting, it will instruct the server to continue the
+       download from where it left off.
+
+OOPPTTIIOONNSS
+   OOppttiioonn SSyynnttaaxx
+       Since Wget uses GNU getopt to process command-line arguments, every
+       option has a long form along with the short one.  Long options are more
+       convenient to remember, but take time to type.  You may freely mix
+       different option styles, or specify options after the command-line
+       arguments.  Thus you may write:
+
+               wget -r --tries=10 http://fly.srk.fer.hr/ -o log
+
+       The space between the option accepting an argument and the argument may
+       be omitted.  Instead of --oo lloogg you can write --oolloogg.
+
+       You may put several options that do not require arguments together,
+       like:
+
+               wget -drc <URL>
+
+       This is completely equivalent to:
+
+               wget -d -r -c <URL>
+
+       Since the options can be specified after the arguments, you may
+       terminate them with ----.  So the following will try to download URL --xx,
+       reporting failure to _l_o_g:
+
+               wget -o log -- -x
+
+       The options that accept comma-separated lists all respect the
+       convention that specifying an empty list clears its value.  This can be
+       useful to clear the _._w_g_e_t_r_c settings.  For instance, if your _._w_g_e_t_r_c
+       sets "exclude_directories" to _/_c_g_i_-_b_i_n, the following example will
+       first reset it, and then set it to exclude _/_~_n_o_b_o_d_y and _/_~_s_o_m_e_b_o_d_y.
+       You can also clear the lists in _._w_g_e_t_r_c.
+
+               wget -X " -X /~nobody,/~somebody
+
+       Most options that do not accept arguments are _b_o_o_l_e_a_n options, so named
+       because their state can be captured with a yes-or-no ("boolean")
+       variable.  For example, ----ffoollllooww--ffttpp tells Wget to follow FTP links
+       from HTML files and, on the other hand, ----nnoo--gglloobb tells it not to
+       perform file globbing on FTP URLs.  A boolean option is either
+       _a_f_f_i_r_m_a_t_i_v_e or _n_e_g_a_t_i_v_e (beginning with ----nnoo).  All such options share
+       several properties.
+
+       Unless stated otherwise, it is assumed that the default behavior is the
+       opposite of what the option accomplishes.  For example, the documented
+       existence of ----ffoollllooww--ffttpp assumes that the default is to _n_o_t follow FTP
+       links from HTML pages.
+
+       Affirmative options can be negated by prepending the ----nnoo-- to the
+       option name; negative options can be negated by omitting the ----nnoo--
+       prefix.  This might seem superfluous---if the default for an
+       affirmative option is to not do something, then why provide a way to
+       explicitly turn it off?  But the startup file may in fact change the
+       default.  For instance, using "follow_ftp = on" in _._w_g_e_t_r_c makes Wget
+       _f_o_l_l_o_w FTP links by default, and using ----nnoo--ffoollllooww--ffttpp is the only way
+       to restore the factory default from the command line.
+
+   BBaassiicc SSttaarrttuupp OOppttiioonnss
+       --VV
+       ----vveerrssiioonn
+           Display the version of Wget.
+
+       --hh
+       ----hheellpp
+           Print a help message describing all of Wget's command-line options.
+
+       --bb
+       ----bbaacckkggrroouunndd
+           Go to background immediately after startup.  If no output file is
+           specified via the --oo, output is redirected to _w_g_e_t_-_l_o_g.
+
+       --ee _c_o_m_m_a_n_d
+       ----eexxeeccuuttee _c_o_m_m_a_n_d
+           Execute _c_o_m_m_a_n_d as if it were a part of _._w_g_e_t_r_c.  A command thus
+           invoked will be executed _a_f_t_e_r the commands in _._w_g_e_t_r_c, thus taking
+           precedence over them.  If you need to specify more than one wgetrc
+           command, use multiple instances of --ee.
+
+   LLooggggiinngg aanndd IInnppuutt FFiillee OOppttiioonnss
+       --oo _l_o_g_f_i_l_e
+       ----oouuttppuutt--ffiillee==_l_o_g_f_i_l_e
+           Log all messages to _l_o_g_f_i_l_e.  The messages are normally reported to
+           standard error.
+
+       --aa _l_o_g_f_i_l_e
+       ----aappppeenndd--oouuttppuutt==_l_o_g_f_i_l_e
+           Append to _l_o_g_f_i_l_e.  This is the same as --oo, only it appends to
+           _l_o_g_f_i_l_e instead of overwriting the old log file.  If _l_o_g_f_i_l_e does
+           not exist, a new file is created.
+
+       --dd
+       ----ddeebbuugg
+           Turn on debug output, meaning various information important to the
+           developers of Wget if it does not work properly.  Your system
+           administrator may have chosen to compile Wget without debug
+           support, in which case --dd will not work.  Please note that
+           compiling with debug support is always safe---Wget compiled with
+           the debug support will _n_o_t print any debug info unless requested
+           with --dd.
+
+       --qq
+       ----qquuiieett
+           Turn off Wget's output.
+
+       --vv
+       ----vveerrbboossee
+           Turn on verbose output, with all the available data.  The default
+           output is verbose.
+
+       --nnvv
+       ----nnoo--vveerrbboossee
+           Turn off verbose without being completely quiet (use --qq for that),
+           which means that error messages and basic information still get
+           printed.
+
+       ----rreeppoorrtt--ssppeeeedd==_t_y_p_e
+           Output bandwidth as _t_y_p_e.  The only accepted value is bbiittss.
+
+       --ii _f_i_l_e
+       ----iinnppuutt--ffiillee==_f_i_l_e
+           Read URLs from a local or external _f_i_l_e.  If -- is specified as
+           _f_i_l_e, URLs are read from the standard input.  (Use ..//-- to read from
+           a file literally named --.)
+
+           If this function is used, no URLs need be present on the command
+           line.  If there are URLs both on the command line and in an input
+           file, those on the command lines will be the first ones to be
+           retrieved.  If ----ffoorrccee--hhttmmll is not specified, then _f_i_l_e should
+           consist of a series of URLs, one per line.
+
+           However, if you specify ----ffoorrccee--hhttmmll, the document will be regarded
+           as hhttmmll.  In that case you may have problems with relative links,
+           which you can solve either by adding "<base href="_u_r_l">" to the
+           documents or by specifying ----bbaassee==_u_r_l on the command line.
+
+           If the _f_i_l_e is an external one, the document will be automatically
+           treated as hhttmmll if the Content-Type matches tteexxtt//hhttmmll.
+           Furthermore, the _f_i_l_e's location will be implicitly used as base
+           href if none was specified.
+
+       ----iinnppuutt--mmeettaalliinnkk==_f_i_l_e
+           Downloads files covered in local Metalink _f_i_l_e. Metalink version 3
+           and 4 are supported.
+
+       ----kkeeeepp--bbaaddhhaasshh
+           Keeps downloaded Metalink's files with a bad hash. It appends
+           .badhash to the name of Metalink's files which have a checksum
+           mismatch, except without overwriting existing files.
+
+       ----mmeettaalliinnkk--oovveerr--hhttttpp
+           Issues HTTP HEAD request instead of GET and extracts Metalink
+           metadata from response headers. Then it switches to Metalink
+           download.  If no valid Metalink metadata is found, it falls back to
+           ordinary HTTP download.  Enables CCoonntteenntt--TTyyppee::
+           aapppplliiccaattiioonn//mmeettaalliinnkk44++xxmmll files download/processing.
+
+       ----mmeettaalliinnkk--iinnddeexx==_n_u_m_b_e_r
+           Set the Metalink aapppplliiccaattiioonn//mmeettaalliinnkk44++xxmmll metaurl ordinal NUMBER.
+           From 1 to the total number of "application/metalink4+xml"
+           available.  Specify 0 or iinnff to choose the first good one.
+           Metaurls, such as those from a ----mmeettaalliinnkk--oovveerr--hhttttpp, may have been
+           sorted by priority key's value; keep this in mind to choose the
+           right NUMBER.
+
+       ----pprreeffeerrrreedd--llooccaattiioonn
+           Set preferred location for Metalink resources. This has effect if
+           multiple resources with same priority are available.
+
+       ----xxaattttrr
+           Enable use of file system's extended attributes to save the
+           original URL and the Referer HTTP header value if used.
+
+           Be aware that the URL might contain private information like access
+           tokens or credentials.
+
+       --FF
+       ----ffoorrccee--hhttmmll
+           When input is read from a file, force it to be treated as an HTML
+           file.  This enables you to retrieve relative links from existing
+           HTML files on your local disk, by adding "<base href="_u_r_l">" to
+           HTML, or using the ----bbaassee command-line option.
+
+       --BB _U_R_L
+       ----bbaassee==_U_R_L
+           Resolves relative links using _U_R_L as the point of reference, when
+           reading links from an HTML file specified via the --ii/----iinnppuutt--ffiillee
+           option (together with ----ffoorrccee--hhttmmll, or when the input file was
+           fetched remotely from a server describing it as HTML). This is
+           equivalent to the presence of a "BASE" tag in the HTML input file,
+           with _U_R_L as the value for the "href" attribute.
+
+           For instance, if you specify hhttttpp::////ffoooo//bbaarr//aa..hhttmmll for _U_R_L, and
+           Wget reads ....//bbaazz//bb..hhttmmll from the input file, it would be resolved
+           to hhttttpp::////ffoooo//bbaazz//bb..hhttmmll.
+
+       ----ccoonnffiigg==_F_I_L_E
+           Specify the location of a startup file you wish to use instead of
+           the default one(s). Use --no-config to disable reading of config
+           files.  If both --config and --no-config are given, --no-config is
+           ignored.
+
+       ----rreejjeecctteedd--lloogg==_l_o_g_f_i_l_e
+           Logs all URL rejections to _l_o_g_f_i_l_e as comma separated values.  The
+           values include the reason of rejection, the URL and the parent URL
+           it was found in.
+
+   DDoowwnnllooaadd OOppttiioonnss
+       ----bbiinndd--aaddddrreessss==_A_D_D_R_E_S_S
+           When making client TCP/IP connections, bind to _A_D_D_R_E_S_S on the local
+           machine.  _A_D_D_R_E_S_S may be specified as a hostname or IP address.
+           This option can be useful if your machine is bound to multiple IPs.
+
+       ----bbiinndd--ddnnss--aaddddrreessss==_A_D_D_R_E_S_S
+           [libcares only] This address overrides the route for DNS requests.
+           If you ever need to circumvent the standard settings from
+           /etc/resolv.conf, this option together with ----ddnnss--sseerrvveerrss is your
+           friend.  _A_D_D_R_E_S_S must be specified either as IPv4 or IPv6 address.
+           Wget needs to be built with libcares for this option to be
+           available.
+
+       ----ddnnss--sseerrvveerrss==_A_D_D_R_E_S_S_E_S
+           [libcares only] The given address(es) override the standard
+           nameserver addresses,  e.g. as configured in /etc/resolv.conf.
+           _A_D_D_R_E_S_S_E_S may be specified either as IPv4 or IPv6 addresses, comma-
+           separated.  Wget needs to be built with libcares for this option to
+           be available.
+
+       --tt _n_u_m_b_e_r
+       ----ttrriieess==_n_u_m_b_e_r
+           Set number of tries to _n_u_m_b_e_r. Specify 0 or iinnff for infinite
+           retrying.  The default is to retry 20 times, with the exception of
+           fatal errors like "connection refused" or "not found" (404), which
+           are not retried.
+
+       --OO _f_i_l_e
+       ----oouuttppuutt--ddooccuummeenntt==_f_i_l_e
+           The documents will not be written to the appropriate files, but all
+           will be concatenated together and written to _f_i_l_e.  If -- is used as
+           _f_i_l_e, documents will be printed to standard output, disabling link
+           conversion.  (Use ..//-- to print to a file literally named --.)
+
+           Use of --OO is _n_o_t intended to mean simply "use the name _f_i_l_e instead
+           of the one in the URL;" rather, it is analogous to shell
+           redirection: wwggeett --OO ffiillee hhttttpp::////ffoooo is intended to work like wwggeett
+           --OO -- hhttttpp::////ffoooo >> ffiillee; _f_i_l_e will be truncated immediately, and _a_l_l
+           downloaded content will be written there.
+
+           For this reason, --NN (for timestamp-checking) is not supported in
+           combination with --OO: since _f_i_l_e is always newly created, it will
+           always have a very new timestamp. A warning will be issued if this
+           combination is used.
+
+           Similarly, using --rr or --pp with --OO may not work as you expect: Wget
+           won't just download the first file to _f_i_l_e and then download the
+           rest to their normal names: _a_l_l downloaded content will be placed
+           in _f_i_l_e. This was disabled in version 1.11, but has been reinstated
+           (with a warning) in 1.11.2, as there are some cases where this
+           behavior can actually have some use.
+
+           A combination with --nncc is only accepted if the given output file
+           does not exist.
+
+           Note that a combination with --kk is only permitted when downloading
+           a single document, as in that case it will just convert all
+           relative URIs to external ones; --kk makes no sense for multiple URIs
+           when they're all being downloaded to a single file; --kk can be used
+           only when the output is a regular file.
+
+       --nncc
+       ----nnoo--cclloobbbbeerr
+           If a file is downloaded more than once in the same directory,
+           Wget's behavior depends on a few options, including --nncc.  In
+           certain cases, the local file will be _c_l_o_b_b_e_r_e_d, or overwritten,
+           upon repeated download.  In other cases it will be preserved.
+
+           When running Wget without --NN, --nncc, --rr, or --pp, downloading the same
+           file in the same directory will result in the original copy of _f_i_l_e
+           being preserved and the second copy being named _f_i_l_e..11.  If that
+           file is downloaded yet again, the third copy will be named _f_i_l_e..22,
+           and so on.  (This is also the behavior with --nndd, even if --rr or --pp
+           are in effect.)  When --nncc is specified, this behavior is
+           suppressed, and Wget will refuse to download newer copies of _f_i_l_e.
+           Therefore, ""no-clobber"" is actually a misnomer in this
+           mode---it's not clobbering that's prevented (as the numeric
+           suffixes were already preventing clobbering), but rather the
+           multiple version saving that's prevented.
+
+           When running Wget with --rr or --pp, but without --NN, --nndd, or --nncc, re-
+           downloading a file will result in the new copy simply overwriting
+           the old.  Adding --nncc will prevent this behavior, instead causing
+           the original version to be preserved and any newer copies on the
+           server to be ignored.
+
+           When running Wget with --NN, with or without --rr or --pp, the decision
+           as to whether or not to download a newer copy of a file depends on
+           the local and remote timestamp and size of the file.  --nncc may not
+           be specified at the same time as --NN.
+
+           A combination with --OO/----oouuttppuutt--ddooccuummeenntt is only accepted if the
+           given output file does not exist.
+
+           Note that when --nncc is specified, files with the suffixes ..hhttmmll or
+           ..hhttmm will be loaded from the local disk and parsed as if they had
+           been retrieved from the Web.
+
+       ----bbaacckkuuppss==_b_a_c_k_u_p_s
+           Before (over)writing a file, back up an existing file by adding a
+           ..11 suffix (__11 on VMS) to the file name.  Such backup files are
+           rotated to ..22, ..33, and so on, up to _b_a_c_k_u_p_s (and lost beyond that).
+
+       ----nnoo--nneettrrcc
+           Do not try to obtain credentials from _._n_e_t_r_c file. By default
+           _._n_e_t_r_c file is searched for credentials in case none have been
+           passed on command line and authentication is required.
+
+       --cc
+       ----ccoonnttiinnuuee
+           Continue getting a partially-downloaded file.  This is useful when
+           you want to finish up a download started by a previous instance of
+           Wget, or by another program.  For instance:
+
+                   wget -c ftp://sunsite.doc.ic.ac.uk/ls-lR.Z
+
+           If there is a file named _l_s_-_l_R_._Z in the current directory, Wget
+           will assume that it is the first portion of the remote file, and
+           will ask the server to continue the retrieval from an offset equal
+           to the length of the local file.
+
+           Note that you don't need to specify this option if you just want
+           the current invocation of Wget to retry downloading a file should
+           the connection be lost midway through.  This is the default
+           behavior.  --cc only affects resumption of downloads started _p_r_i_o_r to
+           this invocation of Wget, and whose local files are still sitting
+           around.
+
+           Without --cc, the previous example would just download the remote
+           file to _l_s_-_l_R_._Z_._1, leaving the truncated _l_s_-_l_R_._Z file alone.
+
+           If you use --cc on a non-empty file, and the server does not support
+           continued downloading, Wget will restart the download from scratch
+           and overwrite the existing file entirely.
+
+           Beginning with Wget 1.7, if you use --cc on a file which is of equal
+           size as the one on the server, Wget will refuse to download the
+           file and print an explanatory message.  The same happens when the
+           file is smaller on the server than locally (presumably because it
+           was changed on the server since your last download
+           attempt)---because "continuing" is not meaningful, no download
+           occurs.
+
+           On the other side of the coin, while using --cc, any file that's
+           bigger on the server than locally will be considered an incomplete
+           download and only "(length(remote) - length(local))" bytes will be
+           downloaded and tacked onto the end of the local file.  This
+           behavior can be desirable in certain cases---for instance, you can
+           use wwggeett --cc to download just the new portion that's been appended
+           to a data collection or log file.
+
+           However, if the file is bigger on the server because it's been
+           _c_h_a_n_g_e_d, as opposed to just _a_p_p_e_n_d_e_d to, you'll end up with a
+           garbled file.  Wget has no way of verifying that the local file is
+           really a valid prefix of the remote file.  You need to be
+           especially careful of this when using --cc in conjunction with --rr,
+           since every file will be considered as an "incomplete download"
+           candidate.
+
+           Another instance where you'll get a garbled file if you try to use
+           --cc is if you have a lame HTTP proxy that inserts a "transfer
+           interrupted" string into the local file.  In the future a
+           "rollback" option may be added to deal with this case.
+
+           Note that --cc only works with FTP servers and with HTTP servers that
+           support the "Range" header.
+
+       ----ssttaarrtt--ppooss==_O_F_F_S_E_T
+           Start downloading at zero-based position _O_F_F_S_E_T.  Offset may be
+           expressed in bytes, kilobytes with the `k' suffix, or megabytes
+           with the `m' suffix, etc.
+
+           ----ssttaarrtt--ppooss has higher precedence over ----ccoonnttiinnuuee.  When
+           ----ssttaarrtt--ppooss and ----ccoonnttiinnuuee are both specified, wget will emit a
+           warning then proceed as if ----ccoonnttiinnuuee was absent.
+
+           Server support for continued download is required, otherwise
+           ----ssttaarrtt--ppooss cannot help.  See --cc for details.
+
+       ----pprrooggrreessss==_t_y_p_e
+           Select the type of the progress indicator you wish to use.  Legal
+           indicators are "dot" and "bar".
+
+           The "bar" indicator is used by default.  It draws an ASCII progress
+           bar graphics (a.k.a "thermometer" display) indicating the status of
+           retrieval.  If the output is not a TTY, the "dot" bar will be used
+           by default.
+
+           Use ----pprrooggrreessss==ddoott to switch to the "dot" display.  It traces the
+           retrieval by printing dots on the screen, each dot representing a
+           fixed amount of downloaded data.
+
+           The progress _t_y_p_e can also take one or more parameters.  The
+           parameters vary based on the _t_y_p_e selected.  Parameters to _t_y_p_e are
+           passed by appending them to the type sperated by a colon (:) like
+           this: ----pprrooggrreessss==_t_y_p_e::_p_a_r_a_m_e_t_e_r_1::_p_a_r_a_m_e_t_e_r_2.
+
+           When using the dotted retrieval, you may set the _s_t_y_l_e by
+           specifying the type as ddoott::_s_t_y_l_e.  Different styles assign
+           different meaning to one dot.  With the "default" style each dot
+           represents 1K, there are ten dots in a cluster and 50 dots in a
+           line.  The "binary" style has a more "computer"-like
+           orientation---8K dots, 16-dots clusters and 48 dots per line (which
+           makes for 384K lines).  The "mega" style is suitable for
+           downloading large files---each dot represents 64K retrieved, there
+           are eight dots in a cluster, and 48 dots on each line (so each line
+           contains 3M).  If "mega" is not enough then you can use the "giga"
+           style---each dot represents 1M retrieved, there are eight dots in a
+           cluster, and 32 dots on each line (so each line contains 32M).
+
+           With ----pprrooggrreessss==bbaarr, there are currently two possible parameters,
+           _f_o_r_c_e and _n_o_s_c_r_o_l_l.
+
+           When the output is not a TTY, the progress bar always falls back to
+           "dot", even if ----pprrooggrreessss==bbaarr was passed to Wget during invocation.
+           This behaviour can be overridden and the "bar" output forced by
+           using the "force" parameter as ----pprrooggrreessss==bbaarr::ffoorrccee.
+
+           By default, the bbaarr style progress bar scroll the name of the file
+           from left to right for the file being downloaded if the filename
+           exceeds the maximum length allotted for its display.  In certain
+           cases, such as with ----pprrooggrreessss==bbaarr::ffoorrccee, one may not want the
+           scrolling filename in the progress bar.  By passing the "noscroll"
+           parameter, Wget can be forced to display as much of the filename as
+           possible without scrolling through it.
+
+           Note that you can set the default style using the "progress"
+           command in _._w_g_e_t_r_c.  That setting may be overridden from the
+           command line.  For example, to force the bar output without
+           scrolling, use ----pprrooggrreessss==bbaarr::ffoorrccee::nnoossccrroollll.
+
+       ----sshhooww--pprrooggrreessss
+           Force wget to display the progress bar in any verbosity.
+
+           By default, wget only displays the progress bar in verbose mode.
+           One may however, want wget to display the progress bar on screen in
+           conjunction with any other verbosity modes like ----nnoo--vveerrbboossee or
+           ----qquuiieett.  This is often a desired a property when invoking wget to
+           download several small/large files.  In such a case, wget could
+           simply be invoked with this parameter to get a much cleaner output
+           on the screen.
+
+           This option will also force the progress bar to be printed to
+           _s_t_d_e_r_r when used alongside the ----oouuttppuutt--ffiillee option.
+
+       --NN
+       ----ttiimmeessttaammppiinngg
+           Turn on time-stamping.
+
+       ----nnoo--iiff--mmooddiiffiieedd--ssiinnccee
+           Do not send If-Modified-Since header in --NN mode. Send preliminary
+           HEAD request instead. This has only effect in --NN mode.
+
+       ----nnoo--uussee--sseerrvveerr--ttiimmeessttaammppss
+           Don't set the local file's timestamp by the one on the server.
+
+           By default, when a file is downloaded, its timestamps are set to
+           match those from the remote file. This allows the use of
+           ----ttiimmeessttaammppiinngg on subsequent invocations of wget. However, it is
+           sometimes useful to base the local file's timestamp on when it was
+           actually downloaded; for that purpose, the
+           ----nnoo--uussee--sseerrvveerr--ttiimmeessttaammppss option has been provided.
+
+       --SS
+       ----sseerrvveerr--rreessppoonnssee
+           Print the headers sent by HTTP servers and responses sent by FTP
+           servers.
+
+       ----ssppiiddeerr
+           When invoked with this option, Wget will behave as a Web _s_p_i_d_e_r,
+           which means that it will not download the pages, just check that
+           they are there.  For example, you can use Wget to check your
+           bookmarks:
+
+                   wget --spider --force-html -i bookmarks.html
+
+           This feature needs much more work for Wget to get close to the
+           functionality of real web spiders.
+
+       --TT sseeccoonnddss
+       ----ttiimmeeoouutt==_s_e_c_o_n_d_s
+           Set the network timeout to _s_e_c_o_n_d_s seconds.  This is equivalent to
+           specifying ----ddnnss--ttiimmeeoouutt, ----ccoonnnneecctt--ttiimmeeoouutt, and ----rreeaadd--ttiimmeeoouutt,
+           all at the same time.
+
+           When interacting with the network, Wget can check for timeout and
+           abort the operation if it takes too long.  This prevents anomalies
+           like hanging reads and infinite connects.  The only timeout enabled
+           by default is a 900-second read timeout.  Setting a timeout to 0
+           disables it altogether.  Unless you know what you are doing, it is
+           best not to change the default timeout settings.
+
+           All timeout-related options accept decimal values, as well as
+           subsecond values.  For example, 00..11 seconds is a legal (though
+           unwise) choice of timeout.  Subsecond timeouts are useful for
+           checking server response times or for testing network latency.
+
+       ----ddnnss--ttiimmeeoouutt==_s_e_c_o_n_d_s
+           Set the DNS lookup timeout to _s_e_c_o_n_d_s seconds.  DNS lookups that
+           don't complete within the specified time will fail.  By default,
+           there is no timeout on DNS lookups, other than that implemented by
+           system libraries.
+
+       ----ccoonnnneecctt--ttiimmeeoouutt==_s_e_c_o_n_d_s
+           Set the connect timeout to _s_e_c_o_n_d_s seconds.  TCP connections that
+           take longer to establish will be aborted.  By default, there is no
+           connect timeout, other than that implemented by system libraries.
+
+       ----rreeaadd--ttiimmeeoouutt==_s_e_c_o_n_d_s
+           Set the read (and write) timeout to _s_e_c_o_n_d_s seconds.  The "time" of
+           this timeout refers to _i_d_l_e _t_i_m_e: if, at any point in the download,
+           no data is received for more than the specified number of seconds,
+           reading fails and the download is restarted.  This option does not
+           directly affect the duration of the entire download.
+
+           Of course, the remote server may choose to terminate the connection
+           sooner than this option requires.  The default read timeout is 900
+           seconds.
+
+       ----lliimmiitt--rraattee==_a_m_o_u_n_t
+           Limit the download speed to _a_m_o_u_n_t bytes per second.  Amount may be
+           expressed in bytes, kilobytes with the kk suffix, or megabytes with
+           the mm suffix.  For example, ----lliimmiitt--rraattee==2200kk will limit the
+           retrieval rate to 20KB/s.  This is useful when, for whatever
+           reason, you don't want Wget to consume the entire available
+           bandwidth.
+
+           This option allows the use of decimal numbers, usually in
+           conjunction with power suffixes; for example, ----lliimmiitt--rraattee==22..55kk is
+           a legal value.
+
+           Note that Wget implements the limiting by sleeping the appropriate
+           amount of time after a network read that took less time than
+           specified by the rate.  Eventually this strategy causes the TCP
+           transfer to slow down to approximately the specified rate.
+           However, it may take some time for this balance to be achieved, so
+           don't be surprised if limiting the rate doesn't work well with very
+           small files.
+
+       --ww _s_e_c_o_n_d_s
+       ----wwaaiitt==_s_e_c_o_n_d_s
+           Wait the specified number of seconds between the retrievals.  Use
+           of this option is recommended, as it lightens the server load by
+           making the requests less frequent.  Instead of in seconds, the time
+           can be specified in minutes using the "m" suffix, in hours using
+           "h" suffix, or in days using "d" suffix.
+
+           Specifying a large value for this option is useful if the network
+           or the destination host is down, so that Wget can wait long enough
+           to reasonably expect the network error to be fixed before the
+           retry.  The waiting interval specified by this function is
+           influenced by "--random-wait", which see.
+
+       ----wwaaiittrreettrryy==_s_e_c_o_n_d_s
+           If you don't want Wget to wait between _e_v_e_r_y retrieval, but only
+           between retries of failed downloads, you can use this option.  Wget
+           will use _l_i_n_e_a_r _b_a_c_k_o_f_f, waiting 1 second after the first failure
+           on a given file, then waiting 2 seconds after the second failure on
+           that file, up to the maximum number of _s_e_c_o_n_d_s you specify.
+
+           By default, Wget will assume a value of 10 seconds.
+
+       ----rraannddoomm--wwaaiitt
+           Some web sites may perform log analysis to identify retrieval
+           programs such as Wget by looking for statistically significant
+           similarities in the time between requests. This option causes the
+           time between requests to vary between 0.5 and 1.5 * _w_a_i_t seconds,
+           where _w_a_i_t was specified using the ----wwaaiitt option, in order to mask
+           Wget's presence from such analysis.
+
+           A 2001 article in a publication devoted to development on a popular
+           consumer platform provided code to perform this analysis on the
+           fly.  Its author suggested blocking at the class C address level to
+           ensure automated retrieval programs were blocked despite changing
+           DHCP-supplied addresses.
+
+           The ----rraannddoomm--wwaaiitt option was inspired by this ill-advised
+           recommendation to block many unrelated users from a web site due to
+           the actions of one.
+
+       ----nnoo--pprrooxxyy
+           Don't use proxies, even if the appropriate *_proxy environment
+           variable is defined.
+
+       --QQ _q_u_o_t_a
+       ----qquuoottaa==_q_u_o_t_a
+           Specify download quota for automatic retrievals.  The value can be
+           specified in bytes (default), kilobytes (with kk suffix), or
+           megabytes (with mm suffix).
+
+           Note that quota will never affect downloading a single file.  So if
+           you specify wwggeett --QQ1100kk hhttttppss::////eexxaammppllee..ccoomm//llss--llRR..ggzz, all of the
+           _l_s_-_l_R_._g_z will be downloaded.  The same goes even when several URLs
+           are specified on the command-line.  However, quota is respected
+           when retrieving either recursively, or from an input file.  Thus
+           you may safely type wwggeett --QQ22mm --ii ssiitteess---download will be aborted
+           when the quota is exceeded.
+
+           Setting quota to 0 or to iinnff unlimits the download quota.
+
+       ----nnoo--ddnnss--ccaacchhee
+           Turn off caching of DNS lookups.  Normally, Wget remembers the IP
+           addresses it looked up from DNS so it doesn't have to repeatedly
+           contact the DNS server for the same (typically small) set of hosts
+           it retrieves from.  This cache exists in memory only; a new Wget
+           run will contact DNS again.
+
+           However, it has been reported that in some situations it is not
+           desirable to cache host names, even for the duration of a short-
+           running application like Wget.  With this option Wget issues a new
+           DNS lookup (more precisely, a new call to "gethostbyname" or
+           "getaddrinfo") each time it makes a new connection.  Please note
+           that this option will _n_o_t affect caching that might be performed by
+           the resolving library or by an external caching layer, such as
+           NSCD.
+
+           If you don't understand exactly what this option does, you probably
+           won't need it.
+
+       ----rreessttrriicctt--ffiillee--nnaammeess==_m_o_d_e_s
+           Change which characters found in remote URLs must be escaped during
+           generation of local filenames.  Characters that are _r_e_s_t_r_i_c_t_e_d by
+           this option are escaped, i.e. replaced with %%HHHH, where HHHH is the
+           hexadecimal number that corresponds to the restricted character.
+           This option may also be used to force all alphabetical cases to be
+           either lower- or uppercase.
+
+           By default, Wget escapes the characters that are not valid or safe
+           as part of file names on your operating system, as well as control
+           characters that are typically unprintable.  This option is useful
+           for changing these defaults, perhaps because you are downloading to
+           a non-native partition, or because you want to disable escaping of
+           the control characters, or you want to further restrict characters
+           to only those in the ASCII range of values.
+
+           The _m_o_d_e_s are a comma-separated set of text values. The acceptable
+           values are uunniixx, wwiinnddoowwss, nnooccoonnttrrooll, aasscciiii, lloowweerrccaassee, and
+           uuppppeerrccaassee. The values uunniixx and wwiinnddoowwss are mutually exclusive (one
+           will override the other), as are lloowweerrccaassee and uuppppeerrccaassee. Those
+           last are special cases, as they do not change the set of characters
+           that would be escaped, but rather force local file paths to be
+           converted either to lower- or uppercase.
+
+           When "unix" is specified, Wget escapes the character // and the
+           control characters in the ranges 0--31 and 128--159.  This is the
+           default on Unix-like operating systems.
+
+           When "windows" is given, Wget escapes the characters \\, ||, //, ::, ??,
+           "", **, <<, >>, and the control characters in the ranges 0--31 and
+           128--159.  In addition to this, Wget in Windows mode uses ++ instead
+           of :: to separate host and port in local file names, and uses @@
+           instead of ?? to separate the query portion of the file name from
+           the rest.  Therefore, a URL that would be saved as
+           wwwwww..xxeemmaaccss..oorrgg::44330000//sseeaarrcchh..ppll??iinnppuutt==bbllaahh in Unix mode would be
+           saved as wwwwww..xxeemmaaccss..oorrgg++44330000//sseeaarrcchh..ppll@@iinnppuutt==bbllaahh in Windows mode.
+           This mode is the default on Windows.
+
+           If you specify nnooccoonnttrrooll, then the escaping of the control
+           characters is also switched off. This option may make sense when
+           you are downloading URLs whose names contain UTF-8 characters, on a
+           system which can save and display filenames in UTF-8 (some possible
+           byte values used in UTF-8 byte sequences fall in the range of
+           values designated by Wget as "controls").
+
+           The aasscciiii mode is used to specify that any bytes whose values are
+           outside the range of ASCII characters (that is, greater than 127)
+           shall be escaped. This can be useful when saving filenames whose
+           encoding does not match the one used locally.
+
+       --44
+       ----iinneett44--oonnllyy
+       --66
+       ----iinneett66--oonnllyy
+           Force connecting to IPv4 or IPv6 addresses.  With ----iinneett44--oonnllyy or
+           --44, Wget will only connect to IPv4 hosts, ignoring AAAA records in
+           DNS, and refusing to connect to IPv6 addresses specified in URLs.
+           Conversely, with ----iinneett66--oonnllyy or --66, Wget will only connect to IPv6
+           hosts and ignore A records and IPv4 addresses.
+
+           Neither options should be needed normally.  By default, an
+           IPv6-aware Wget will use the address family specified by the host's
+           DNS record.  If the DNS responds with both IPv4 and IPv6 addresses,
+           Wget will try them in sequence until it finds one it can connect
+           to.  (Also see "--prefer-family" option described below.)
+
+           These options can be used to deliberately force the use of IPv4 or
+           IPv6 address families on dual family systems, usually to aid
+           debugging or to deal with broken network configuration.  Only one
+           of ----iinneett66--oonnllyy and ----iinneett44--oonnllyy may be specified at the same time.
+           Neither option is available in Wget compiled without IPv6 support.
+
+       ----pprreeffeerr--ffaammiillyy==nnoonnee//IIPPvv44//IIPPvv66
+           When given a choice of several addresses, connect to the addresses
+           with specified address family first.  The address order returned by
+           DNS is used without change by default.
+
+           This avoids spurious errors and connect attempts when accessing
+           hosts that resolve to both IPv6 and IPv4 addresses from IPv4
+           networks.  For example, wwwwww..kkaammee..nneett resolves to
+           22000011::220000::00::88000022::220033::4477ffff::ffeeaa55::33008855 and to 220033..117788..114411..119944.  When
+           the preferred family is "IPv4", the IPv4 address is used first;
+           when the preferred family is "IPv6", the IPv6 address is used
+           first; if the specified value is "none", the address order returned
+           by DNS is used without change.
+
+           Unlike --44 and --66, this option doesn't inhibit access to any address
+           family, it only changes the _o_r_d_e_r in which the addresses are
+           accessed.  Also note that the reordering performed by this option
+           is _s_t_a_b_l_e---it doesn't affect order of addresses of the same
+           family.  That is, the relative order of all IPv4 addresses and of
+           all IPv6 addresses remains intact in all cases.
+
+       ----rreettrryy--ccoonnnnrreeffuusseedd
+           Consider "connection refused" a transient error and try again.
+           Normally Wget gives up on a URL when it is unable to connect to the
+           site because failure to connect is taken as a sign that the server
+           is not running at all and that retries would not help.  This option
+           is for mirroring unreliable sites whose servers tend to disappear
+           for short periods of time.
+
+       ----uusseerr==_u_s_e_r
+       ----ppaasssswwoorrdd==_p_a_s_s_w_o_r_d
+           Specify the username _u_s_e_r and password _p_a_s_s_w_o_r_d for both FTP and
+           HTTP file retrieval.  These parameters can be overridden using the
+           ----ffttpp--uusseerr and ----ffttpp--ppaasssswwoorrdd options for FTP connections and the
+           ----hhttttpp--uusseerr and ----hhttttpp--ppaasssswwoorrdd options for HTTP connections.
+
+       ----aasskk--ppaasssswwoorrdd
+           Prompt for a password for each connection established. Cannot be
+           specified when ----ppaasssswwoorrdd is being used, because they are mutually
+           exclusive.
+
+       ----uussee--aasskkppaassss==_c_o_m_m_a_n_d
+           Prompt for a user and password using the specified command.  If no
+           command is specified then the command in the environment variable
+           WGET_ASKPASS is used.  If WGET_ASKPASS is not set then the command
+           in the environment variable SSH_ASKPASS is used.
+
+           You can set the default command for use-askpass in the _._w_g_e_t_r_c.
+           That setting may be overridden from the command line.
+
+       ----nnoo--iirrii
+           Turn off internationalized URI (IRI) support. Use ----iirrii to turn it
+           on. IRI support is activated by default.
+
+           You can set the default state of IRI support using the "iri"
+           command in _._w_g_e_t_r_c. That setting may be overridden from the command
+           line.
+
+       ----llooccaall--eennccooddiinngg==_e_n_c_o_d_i_n_g
+           Force Wget to use _e_n_c_o_d_i_n_g as the default system encoding. That
+           affects how Wget converts URLs specified as arguments from locale
+           to UTF-8 for IRI support.
+
+           Wget use the function "nl_langinfo()" and then the "CHARSET"
+           environment variable to get the locale. If it fails, ASCII is used.
+
+           You can set the default local encoding using the "local_encoding"
+           command in _._w_g_e_t_r_c. That setting may be overridden from the command
+           line.
+
+       ----rreemmoottee--eennccooddiinngg==_e_n_c_o_d_i_n_g
+           Force Wget to use _e_n_c_o_d_i_n_g as the default remote server encoding.
+           That affects how Wget converts URIs found in files from remote
+           encoding to UTF-8 during a recursive fetch. This options is only
+           useful for IRI support, for the interpretation of non-ASCII
+           characters.
+
+           For HTTP, remote encoding can be found in HTTP "Content-Type"
+           header and in HTML "Content-Type http-equiv" meta tag.
+
+           You can set the default encoding using the "remoteencoding" command
+           in _._w_g_e_t_r_c. That setting may be overridden from the command line.
+
+       ----uunnlliinnkk
+           Force Wget to unlink file instead of clobbering existing file. This
+           option is useful for downloading to the directory with hardlinks.
+
+   DDiirreeccttoorryy OOppttiioonnss
+       --nndd
+       ----nnoo--ddiirreeccttoorriieess
+           Do not create a hierarchy of directories when retrieving
+           recursively.  With this option turned on, all files will get saved
+           to the current directory, without clobbering (if a name shows up
+           more than once, the filenames will get extensions ..nn).
+
+       --xx
+       ----ffoorrccee--ddiirreeccttoorriieess
+           The opposite of --nndd---create a hierarchy of directories, even if
+           one would not have been created otherwise.  E.g. wwggeett --xx
+           hhttttpp::////ffllyy..ssrrkk..ffeerr..hhrr//rroobboottss..ttxxtt will save the downloaded file to
+           _f_l_y_._s_r_k_._f_e_r_._h_r_/_r_o_b_o_t_s_._t_x_t.
+
+       --nnHH
+       ----nnoo--hhoosstt--ddiirreeccttoorriieess
+           Disable generation of host-prefixed directories.  By default,
+           invoking Wget with --rr hhttttpp::////ffllyy..ssrrkk..ffeerr..hhrr// will create a
+           structure of directories beginning with _f_l_y_._s_r_k_._f_e_r_._h_r_/.  This
+           option disables such behavior.
+
+       ----pprroottooccooll--ddiirreeccttoorriieess
+           Use the protocol name as a directory component of local file names.
+           For example, with this option, wwggeett --rr hhttttpp::////_h_o_s_t will save to
+           hhttttpp//_h_o_s_t//...... rather than just to _h_o_s_t//.......
+
+       ----ccuutt--ddiirrss==_n_u_m_b_e_r
+           Ignore _n_u_m_b_e_r directory components.  This is useful for getting a
+           fine-grained control over the directory where recursive retrieval
+           will be saved.
+
+           Take, for example, the directory at
+           ffttpp::////ffttpp..xxeemmaaccss..oorrgg//ppuubb//xxeemmaaccss//.  If you retrieve it with --rr, it
+           will be saved locally under _f_t_p_._x_e_m_a_c_s_._o_r_g_/_p_u_b_/_x_e_m_a_c_s_/.  While the
+           --nnHH option can remove the _f_t_p_._x_e_m_a_c_s_._o_r_g_/ part, you are still stuck
+           with _p_u_b_/_x_e_m_a_c_s.  This is where ----ccuutt--ddiirrss comes in handy; it makes
+           Wget not "see" _n_u_m_b_e_r remote directory components.  Here are
+           several examples of how ----ccuutt--ddiirrss option works.
+
+                   No options        -> ftp.xemacs.org/pub/xemacs/
+                   -nH               -> pub/xemacs/
+                   -nH --cut-dirs=1  -> xemacs/
+                   -nH --cut-dirs=2  -> .
+
+                   --cut-dirs=1      -> ftp.xemacs.org/xemacs/
+                   ...
+
+           If you just want to get rid of the directory structure, this option
+           is similar to a combination of --nndd and --PP.  However, unlike --nndd,
+           ----ccuutt--ddiirrss does not lose with subdirectories---for instance, with
+           --nnHH ----ccuutt--ddiirrss==11, a _b_e_t_a_/ subdirectory will be placed to
+           _x_e_m_a_c_s_/_b_e_t_a, as one would expect.
+
+       --PP _p_r_e_f_i_x
+       ----ddiirreeccttoorryy--pprreeffiixx==_p_r_e_f_i_x
+           Set directory prefix to _p_r_e_f_i_x.  The _d_i_r_e_c_t_o_r_y _p_r_e_f_i_x is the
+           directory where all other files and subdirectories will be saved
+           to, i.e. the top of the retrieval tree.  The default is .. (the
+           current directory).
+
+   HHTTTTPP OOppttiioonnss
+       ----ddeeffaauulltt--ppaaggee==_n_a_m_e
+           Use _n_a_m_e as the default file name when it isn't known (i.e., for
+           URLs that end in a slash), instead of _i_n_d_e_x_._h_t_m_l.
+
+       --EE
+       ----aaddjjuusstt--eexxtteennssiioonn
+           If a file of type aapppplliiccaattiioonn//xxhhttmmll++xxmmll or tteexxtt//hhttmmll is downloaded
+           and the URL does not end with the regexp \\..[[HHhh]][[TTtt]][[MMmm]][[LLll]]??, this
+           option will cause the suffix ..hhttmmll to be appended to the local
+           filename.  This is useful, for instance, when you're mirroring a
+           remote site that uses ..aasspp pages, but you want the mirrored pages
+           to be viewable on your stock Apache server.  Another good use for
+           this is when you're downloading CGI-generated materials.  A URL
+           like hhttttpp::////ssiittee..ccoomm//aarrttiiccllee..ccggii??2255 will be saved as
+           _a_r_t_i_c_l_e_._c_g_i_?_2_5_._h_t_m_l.
+
+           Note that filenames changed in this way will be re-downloaded every
+           time you re-mirror a site, because Wget can't tell that the local
+           _X_._h_t_m_l file corresponds to remote URL _X (since it doesn't yet know
+           that the URL produces output of type tteexxtt//hhttmmll or
+           aapppplliiccaattiioonn//xxhhttmmll++xxmmll.
+
+           As of version 1.12, Wget will also ensure that any downloaded files
+           of type tteexxtt//ccssss end in the suffix ..ccssss, and the option was renamed
+           from ----hhttmmll--eexxtteennssiioonn, to better reflect its new behavior. The old
+           option name is still acceptable, but should now be considered
+           deprecated.
+
+           As of version 1.19.2, Wget will also ensure that any downloaded
+           files with a "Content-Encoding" of bbrr, ccoommpprreessss, ddeeffllaattee or ggzziipp
+           end in the suffix ..bbrr, ..ZZ, ..zzlliibb and ..ggzz respectively.
+
+           At some point in the future, this option may well be expanded to
+           include suffixes for other types of content, including content
+           types that are not parsed by Wget.
+
+       ----hhttttpp--uusseerr==_u_s_e_r
+       ----hhttttpp--ppaasssswwoorrdd==_p_a_s_s_w_o_r_d
+           Specify the username _u_s_e_r and password _p_a_s_s_w_o_r_d on an HTTP server.
+           According to the type of the challenge, Wget will encode them using
+           either the "basic" (insecure), the "digest", or the Windows "NTLM"
+           authentication scheme.
+
+           Another way to specify username and password is in the URL itself.
+           Either method reveals your password to anyone who bothers to run
+           "ps".  To prevent the passwords from being seen, use the
+           ----uussee--aasskkppaassss or store them in _._w_g_e_t_r_c or _._n_e_t_r_c, and make sure to
+           protect those files from other users with "chmod".  If the
+           passwords are really important, do not leave them lying in those
+           files either---edit the files and delete them after Wget has
+           started the download.
+
+       ----nnoo--hhttttpp--kkeeeepp--aalliivvee
+           Turn off the "keep-alive" feature for HTTP downloads.  Normally,
+           Wget asks the server to keep the connection open so that, when you
+           download more than one document from the same server, they get
+           transferred over the same TCP connection.  This saves time and at
+           the same time reduces the load on the server.
+
+           This option is useful when, for some reason, persistent (keep-
+           alive) connections don't work for you, for example due to a server
+           bug or due to the inability of server-side scripts to cope with the
+           connections.
+
+       ----nnoo--ccaacchhee
+           Disable server-side cache.  In this case, Wget will send the remote
+           server appropriate directives (CCaacchhee--CCoonnttrrooll:: nnoo--ccaacchhee and PPrraaggmmaa::
+           nnoo--ccaacchhee) to get the file from the remote service, rather than
+           returning the cached version. This is especially useful for
+           retrieving and flushing out-of-date documents on proxy servers.
+
+           Caching is allowed by default.
+
+       ----nnoo--ccooookkiieess
+           Disable the use of cookies.  Cookies are a mechanism for
+           maintaining server-side state.  The server sends the client a
+           cookie using the "Set-Cookie" header, and the client responds with
+           the same cookie upon further requests.  Since cookies allow the
+           server owners to keep track of visitors and for sites to exchange
+           this information, some consider them a breach of privacy.  The
+           default is to use cookies; however, _s_t_o_r_i_n_g cookies is not on by
+           default.
+
+       ----llooaadd--ccooookkiieess _f_i_l_e
+           Load cookies from _f_i_l_e before the first HTTP retrieval.  _f_i_l_e is a
+           textual file in the format originally used by Netscape's
+           _c_o_o_k_i_e_s_._t_x_t file.
+
+           You will typically use this option when mirroring sites that
+           require that you be logged in to access some or all of their
+           content.  The login process typically works by the web server
+           issuing an HTTP cookie upon receiving and verifying your
+           credentials.  The cookie is then resent by the browser when
+           accessing that part of the site, and so proves your identity.
+
+           Mirroring such a site requires Wget to send the same cookies your
+           browser sends when communicating with the site.  This is achieved
+           by ----llooaadd--ccooookkiieess---simply point Wget to the location of the
+           _c_o_o_k_i_e_s_._t_x_t file, and it will send the same cookies your browser
+           would send in the same situation.  Different browsers keep textual
+           cookie files in different locations:
+
+           "Netscape 4.x."
+               The cookies are in _~_/_._n_e_t_s_c_a_p_e_/_c_o_o_k_i_e_s_._t_x_t.
+
+           "Mozilla and Netscape 6.x."
+               Mozilla's cookie file is also named _c_o_o_k_i_e_s_._t_x_t, located
+               somewhere under _~_/_._m_o_z_i_l_l_a, in the directory of your profile.
+               The full path usually ends up looking somewhat like
+               _~_/_._m_o_z_i_l_l_a_/_d_e_f_a_u_l_t_/_s_o_m_e_-_w_e_i_r_d_-_s_t_r_i_n_g_/_c_o_o_k_i_e_s_._t_x_t.
+
+           "Internet Explorer."
+               You can produce a cookie file Wget can use by using the File
+               menu, Import and Export, Export Cookies.  This has been tested
+               with Internet Explorer 5; it is not guaranteed to work with
+               earlier versions.
+
+           "Other browsers."
+               If you are using a different browser to create your cookies,
+               ----llooaadd--ccooookkiieess will only work if you can locate or produce a
+               cookie file in the Netscape format that Wget expects.
+
+           If you cannot use ----llooaadd--ccooookkiieess, there might still be an
+           alternative.  If your browser supports a "cookie manager", you can
+           use it to view the cookies used when accessing the site you're
+           mirroring.  Write down the name and value of the cookie, and
+           manually instruct Wget to send those cookies, bypassing the
+           "official" cookie support:
+
+                   wget --no-cookies --header "Cookie: <name>=<value>"
+
+       ----ssaavvee--ccooookkiieess _f_i_l_e
+           Save cookies to _f_i_l_e before exiting.  This will not save cookies
+           that have expired or that have no expiry time (so-called "session
+           cookies"), but also see ----kkeeeepp--sseessssiioonn--ccooookkiieess.
+
+       ----kkeeeepp--sseessssiioonn--ccooookkiieess
+           When specified, causes ----ssaavvee--ccooookkiieess to also save session cookies.
+           Session cookies are normally not saved because they are meant to be
+           kept in memory and forgotten when you exit the browser.  Saving
+           them is useful on sites that require you to log in or to visit the
+           home page before you can access some pages.  With this option,
+           multiple Wget runs are considered a single browser session as far
+           as the site is concerned.
+
+           Since the cookie file format does not normally carry session
+           cookies, Wget marks them with an expiry timestamp of 0.  Wget's
+           ----llooaadd--ccooookkiieess recognizes those as session cookies, but it might
+           confuse other browsers.  Also note that cookies so loaded will be
+           treated as other session cookies, which means that if you want
+           ----ssaavvee--ccooookkiieess to preserve them again, you must use
+           ----kkeeeepp--sseessssiioonn--ccooookkiieess again.
+
+       ----iiggnnoorree--lleennggtthh
+           Unfortunately, some HTTP servers (CGI programs, to be more precise)
+           send out bogus "Content-Length" headers, which makes Wget go wild,
+           as it thinks not all the document was retrieved.  You can spot this
+           syndrome if Wget retries getting the same document again and again,
+           each time claiming that the (otherwise normal) connection has
+           closed on the very same byte.
+
+           With this option, Wget will ignore the "Content-Length" header---as
+           if it never existed.
+
+       ----hheeaaddeerr==_h_e_a_d_e_r_-_l_i_n_e
+           Send _h_e_a_d_e_r_-_l_i_n_e along with the rest of the headers in each HTTP
+           request.  The supplied header is sent as-is, which means it must
+           contain name and value separated by colon, and must not contain
+           newlines.
+
+           You may define more than one additional header by specifying
+           ----hheeaaddeerr more than once.
+
+                   wget --header='Accept-Charset: iso-8859-2' \
+                        --header='Accept-Language: hr'        \
+                          http://fly.srk.fer.hr/
+
+           Specification of an empty string as the header value will clear all
+           previous user-defined headers.
+
+           As of Wget 1.10, this option can be used to override headers
+           otherwise generated automatically.  This example instructs Wget to
+           connect to localhost, but to specify ffoooo..bbaarr in the "Host" header:
+
+                   wget --header="Host: foo.bar" http://localhost/
+
+           In versions of Wget prior to 1.10 such use of ----hheeaaddeerr caused
+           sending of duplicate headers.
+
+       ----ccoommpprreessssiioonn==_t_y_p_e
+           Choose the type of compression to be used.  Legal values are aauuttoo,
+           ggzziipp and nnoonnee.
+
+           If aauuttoo or ggzziipp are specified, Wget asks the server to compress the
+           file using the gzip compression format. If the server compresses
+           the file and responds with the "Content-Encoding" header field set
+           appropriately, the file will be decompressed automatically.
+
+           If nnoonnee is specified, wget will not ask the server to compress the
+           file and will not decompress any server responses. This is the
+           default.
+
+           Compression support is currently experimental. In case it is turned
+           on, please report any bugs to "bug-wget@gnu.org".
+
+       ----mmaaxx--rreeddiirreecctt==_n_u_m_b_e_r
+           Specifies the maximum number of redirections to follow for a
+           resource.  The default is 20, which is usually far more than
+           necessary. However, on those occasions where you want to allow more
+           (or fewer), this is the option to use.
+
+       ----pprrooxxyy--uusseerr==_u_s_e_r
+       ----pprrooxxyy--ppaasssswwoorrdd==_p_a_s_s_w_o_r_d
+           Specify the username _u_s_e_r and password _p_a_s_s_w_o_r_d for authentication
+           on a proxy server.  Wget will encode them using the "basic"
+           authentication scheme.
+
+           Security considerations similar to those with ----hhttttpp--ppaasssswwoorrdd
+           pertain here as well.
+
+       ----rreeffeerreerr==_u_r_l
+           Include `Referer: _u_r_l' header in HTTP request.  Useful for
+           retrieving documents with server-side processing that assume they
+           are always being retrieved by interactive web browsers and only
+           come out properly when Referer is set to one of the pages that
+           point to them.
+
+       ----ssaavvee--hheeaaddeerrss
+           Save the headers sent by the HTTP server to the file, preceding the
+           actual contents, with an empty line as the separator.
+
+       --UU _a_g_e_n_t_-_s_t_r_i_n_g
+       ----uusseerr--aaggeenntt==_a_g_e_n_t_-_s_t_r_i_n_g
+           Identify as _a_g_e_n_t_-_s_t_r_i_n_g to the HTTP server.
+
+           The HTTP protocol allows the clients to identify themselves using a
+           "User-Agent" header field.  This enables distinguishing the WWW
+           software, usually for statistical purposes or for tracing of
+           protocol violations.  Wget normally identifies as WWggeett//_v_e_r_s_i_o_n,
+           _v_e_r_s_i_o_n being the current version number of Wget.
+
+           However, some sites have been known to impose the policy of
+           tailoring the output according to the "User-Agent"-supplied
+           information.  While this is not such a bad idea in theory, it has
+           been abused by servers denying information to clients other than
+           (historically) Netscape or, more frequently, Microsoft Internet
+           Explorer.  This option allows you to change the "User-Agent" line
+           issued by Wget.  Use of this option is discouraged, unless you
+           really know what you are doing.
+
+           Specifying empty user agent with ----uusseerr--aaggeenntt=="""" instructs Wget not
+           to send the "User-Agent" header in HTTP requests.
+
+       ----ppoosstt--ddaattaa==_s_t_r_i_n_g
+       ----ppoosstt--ffiillee==_f_i_l_e
+           Use POST as the method for all HTTP requests and send the specified
+           data in the request body.  ----ppoosstt--ddaattaa sends _s_t_r_i_n_g as data,
+           whereas ----ppoosstt--ffiillee sends the contents of _f_i_l_e.  Other than that,
+           they work in exactly the same way. In particular, they _b_o_t_h expect
+           content of the form "key1=value1&key2=value2", with percent-
+           encoding for special characters; the only difference is that one
+           expects its content as a command-line parameter and the other
+           accepts its content from a file. In particular, ----ppoosstt--ffiillee is _n_o_t
+           for transmitting files as form attachments: those must appear as
+           "key=value" data (with appropriate percent-coding) just like
+           everything else. Wget does not currently support
+           "multipart/form-data" for transmitting POST data; only
+           "application/x-www-form-urlencoded". Only one of ----ppoosstt--ddaattaa and
+           ----ppoosstt--ffiillee should be specified.
+
+           Please note that wget does not require the content to be of the
+           form "key1=value1&key2=value2", and neither does it test for it.
+           Wget will simply transmit whatever data is provided to it. Most
+           servers however expect the POST data to be in the above format when
+           processing HTML Forms.
+
+           When sending a POST request using the ----ppoosstt--ffiillee option, Wget
+           treats the file as a binary file and will send every character in
+           the POST request without stripping trailing newline or formfeed
+           characters. Any other control characters in the text will also be
+           sent as-is in the POST request.
+
+           Please be aware that Wget needs to know the size of the POST data
+           in advance.  Therefore the argument to "--post-file" must be a
+           regular file; specifying a FIFO or something like _/_d_e_v_/_s_t_d_i_n won't
+           work.  It's not quite clear how to work around this limitation
+           inherent in HTTP/1.0.  Although HTTP/1.1 introduces _c_h_u_n_k_e_d
+           transfer that doesn't require knowing the request length in
+           advance, a client can't use chunked unless it knows it's talking to
+           an HTTP/1.1 server.  And it can't know that until it receives a
+           response, which in turn requires the request to have been completed
+           -- a chicken-and-egg problem.
+
+           Note: As of version 1.15 if Wget is redirected after the POST
+           request is completed, its behaviour will depend on the response
+           code returned by the server.  In case of a 301 Moved Permanently,
+           302 Moved Temporarily or 307 Temporary Redirect, Wget will, in
+           accordance with RFC2616, continue to send a POST request.  In case
+           a server wants the client to change the Request method upon
+           redirection, it should send a 303 See Other response code.
+
+           This example shows how to log in to a server using POST and then
+           proceed to download the desired pages, presumably only accessible
+           to authorized users:
+
+                   # Log in to the server.  This can be done only once.
+                   wget --save-cookies cookies.txt \
+                        --post-data 'user=foo&password=bar' \
+                        http://example.com/auth.php
+
+                   # Now grab the page or pages we care about.
+                   wget --load-cookies cookies.txt \
+                        -p http://example.com/interesting/article.php
+
+           If the server is using session cookies to track user
+           authentication, the above will not work because ----ssaavvee--ccooookkiieess will
+           not save them (and neither will browsers) and the _c_o_o_k_i_e_s_._t_x_t file
+           will be empty.  In that case use ----kkeeeepp--sseessssiioonn--ccooookkiieess along with
+           ----ssaavvee--ccooookkiieess to force saving of session cookies.
+
+       ----mmeetthhoodd==_H_T_T_P_-_M_e_t_h_o_d
+           For the purpose of RESTful scripting, Wget allows sending of other
+           HTTP Methods without the need to explicitly set them using
+           ----hheeaaddeerr==HHeeaaddeerr--LLiinnee.  Wget will use whatever string is passed to
+           it after ----mmeetthhoodd as the HTTP Method to the server.
+
+       ----bbooddyy--ddaattaa==_D_a_t_a_-_S_t_r_i_n_g
+       ----bbooddyy--ffiillee==_D_a_t_a_-_F_i_l_e
+           Must be set when additional data needs to be sent to the server
+           along with the Method specified using ----mmeetthhoodd.  ----bbooddyy--ddaattaa sends
+           _s_t_r_i_n_g as data, whereas ----bbooddyy--ffiillee sends the contents of _f_i_l_e.
+           Other than that, they work in exactly the same way.
+
+           Currently, ----bbooddyy--ffiillee is _n_o_t for transmitting files as a whole.
+           Wget does not currently support "multipart/form-data" for
+           transmitting data; only "application/x-www-form-urlencoded". In the
+           future, this may be changed so that wget sends the ----bbooddyy--ffiillee as a
+           complete file instead of sending its contents to the server. Please
+           be aware that Wget needs to know the contents of BODY Data in
+           advance, and hence the argument to ----bbooddyy--ffiillee should be a regular
+           file. See ----ppoosstt--ffiillee for a more detailed explanation.  Only one of
+           ----bbooddyy--ddaattaa and ----bbooddyy--ffiillee should be specified.
+
+           If Wget is redirected after the request is completed, Wget will
+           suspend the current method and send a GET request till the
+           redirection is completed.  This is true for all redirection
+           response codes except 307 Temporary Redirect which is used to
+           explicitly specify that the request method should _n_o_t change.
+           Another exception is when the method is set to "POST", in which
+           case the redirection rules specified under ----ppoosstt--ddaattaa are
+           followed.
+
+       ----ccoonntteenntt--ddiissppoossiittiioonn
+           If this is set to on, experimental (not fully-functional) support
+           for "Content-Disposition" headers is enabled. This can currently
+           result in extra round-trips to the server for a "HEAD" request, and
+           is known to suffer from a few bugs, which is why it is not
+           currently enabled by default.
+
+           This option is useful for some file-downloading CGI programs that
+           use "Content-Disposition" headers to describe what the name of a
+           downloaded file should be.
+
+           When combined with ----mmeettaalliinnkk--oovveerr--hhttttpp and ----ttrruusstt--sseerrvveerr--nnaammeess, a
+           CCoonntteenntt--TTyyppee:: aapppplliiccaattiioonn//mmeettaalliinnkk44++xxmmll file is named using the
+           "Content-Disposition" filename field, if available.
+
+       ----ccoonntteenntt--oonn--eerrrroorr
+           If this is set to on, wget will not skip the content when the
+           server responds with a http status code that indicates error.
+
+       ----ttrruusstt--sseerrvveerr--nnaammeess
+           If this is set, on a redirect, the local file name will be based on
+           the redirection URL.  By default the local file name is based on
+           the original URL.  When doing recursive retrieving this can be
+           helpful because in many web sites redirected URLs correspond to an
+           underlying file structure, while link URLs do not.
+
+       ----aauutthh--nnoo--cchhaalllleennggee
+           If this option is given, Wget will send Basic HTTP authentication
+           information (plaintext username and password) for all requests,
+           just like Wget 1.10.2 and prior did by default.
+
+           Use of this option is not recommended, and is intended only to
+           support some few obscure servers, which never send HTTP
+           authentication challenges, but accept unsolicited auth info, say,
+           in addition to form-based authentication.
+
+       ----rreettrryy--oonn--hhoosstt--eerrrroorr
+           Consider host errors, such as "Temporary failure in name
+           resolution", as non-fatal, transient errors.
+
+       ----rreettrryy--oonn--hhttttpp--eerrrroorr==_c_o_d_e_[_,_c_o_d_e_,_._._._]
+           Consider given HTTP response codes as non-fatal, transient errors.
+           Supply a comma-separated list of 3-digit HTTP response codes as
+           argument. Useful to work around special circumstances where retries
+           are required, but the server responds with an error code normally
+           not retried by Wget. Such errors might be 503 (Service Unavailable)
+           and 429 (Too Many Requests). Retries enabled by this option are
+           performed subject to the normal retry timing and retry count
+           limitations of Wget.
+
+           Using this option is intended to support special use cases only and
+           is generally not recommended, as it can force retries even in cases
+           where the server is actually trying to decrease its load. Please
+           use wisely and only if you know what you are doing.
+
+   HHTTTTPPSS ((SSSSLL//TTLLSS)) OOppttiioonnss
+       To support encrypted HTTP (HTTPS) downloads, Wget must be compiled with
+       an external SSL library. The current default is GnuTLS.  In addition,
+       Wget also supports HSTS (HTTP Strict Transport Security).  If Wget is
+       compiled without SSL support, none of these options are available.
+
+       ----sseeccuurree--pprroottooccooll==_p_r_o_t_o_c_o_l
+           Choose the secure protocol to be used.  Legal values are aauuttoo,
+           SSSSLLvv22, SSSSLLvv33, TTLLSSvv11, TTLLSSvv11__11, TTLLSSvv11__22, TTLLSSvv11__33 and PPFFSS.  If aauuttoo is
+           used, the SSL library is given the liberty of choosing the
+           appropriate protocol automatically, which is achieved by sending a
+           TLSv1 greeting. This is the default.
+
+           Specifying SSSSLLvv22, SSSSLLvv33, TTLLSSvv11, TTLLSSvv11__11, TTLLSSvv11__22 or TTLLSSvv11__33 forces
+           the use of the corresponding protocol.  This is useful when talking
+           to old and buggy SSL server implementations that make it hard for
+           the underlying SSL library to choose the correct protocol version.
+           Fortunately, such servers are quite rare.
+
+           Specifying PPFFSS enforces the use of the so-called Perfect Forward
+           Security cipher suites. In short, PFS adds security by creating a
+           one-time key for each SSL connection. It has a bit more CPU impact
+           on client and server.  We use known to be secure ciphers (e.g. no
+           MD4) and the TLS protocol. This mode also explicitly excludes non-
+           PFS key exchange methods, such as RSA.
+
+       ----hhttttppss--oonnllyy
+           When in recursive mode, only HTTPS links are followed.
+
+       ----cciipphheerrss
+           Set the cipher list string. Typically this string sets the cipher
+           suites and other SSL/TLS options that the user wish should be used,
+           in a set order of preference (GnuTLS calls it 'priority string').
+           This string will be fed verbatim to the SSL/TLS engine (OpenSSL or
+           GnuTLS) and hence its format and syntax is dependent on that. Wget
+           will not process or manipulate it in any way. Refer to the OpenSSL
+           or GnuTLS documentation for more information.
+
+       ----nnoo--cchheecckk--cceerrttiiffiiccaattee
+           Don't check the server certificate against the available
+           certificate authorities.  Also don't require the URL host name to
+           match the common name presented by the certificate.
+
+           As of Wget 1.10, the default is to verify the server's certificate
+           against the recognized certificate authorities, breaking the SSL
+           handshake and aborting the download if the verification fails.
+           Although this provides more secure downloads, it does break
+           interoperability with some sites that worked with previous Wget
+           versions, particularly those using self-signed, expired, or
+           otherwise invalid certificates.  This option forces an "insecure"
+           mode of operation that turns the certificate verification errors
+           into warnings and allows you to proceed.
+
+           If you encounter "certificate verification" errors or ones saying
+           that "common name doesn't match requested host name", you can use
+           this option to bypass the verification and proceed with the
+           download.  _O_n_l_y _u_s_e _t_h_i_s _o_p_t_i_o_n _i_f _y_o_u _a_r_e _o_t_h_e_r_w_i_s_e _c_o_n_v_i_n_c_e_d _o_f
+           _t_h_e _s_i_t_e_'_s _a_u_t_h_e_n_t_i_c_i_t_y_, _o_r _i_f _y_o_u _r_e_a_l_l_y _d_o_n_'_t _c_a_r_e _a_b_o_u_t _t_h_e
+           _v_a_l_i_d_i_t_y _o_f _i_t_s _c_e_r_t_i_f_i_c_a_t_e_.  It is almost always a bad idea not to
+           check the certificates when transmitting confidential or important
+           data.  For self-signed/internal certificates, you should download
+           the certificate and verify against that instead of forcing this
+           insecure mode.  If you are really sure of not desiring any
+           certificate verification, you can specify --check-certificate=quiet
+           to tell wget to not print any warning about invalid certificates,
+           albeit in most cases this is the wrong thing to do.
+
+       ----cceerrttiiffiiccaattee==_f_i_l_e
+           Use the client certificate stored in _f_i_l_e.  This is needed for
+           servers that are configured to require certificates from the
+           clients that connect to them.  Normally a certificate is not
+           required and this switch is optional.
+
+       ----cceerrttiiffiiccaattee--ttyyppee==_t_y_p_e
+           Specify the type of the client certificate.  Legal values are PPEEMM
+           (assumed by default) and DDEERR, also known as AASSNN11.
+
+       ----pprriivvaattee--kkeeyy==_f_i_l_e
+           Read the private key from _f_i_l_e.  This allows you to provide the
+           private key in a file separate from the certificate.
+
+       ----pprriivvaattee--kkeeyy--ttyyppee==_t_y_p_e
+           Specify the type of the private key.  Accepted values are PPEEMM (the
+           default) and DDEERR.
+
+       ----ccaa--cceerrttiiffiiccaattee==_f_i_l_e
+           Use _f_i_l_e as the file with the bundle of certificate authorities
+           ("CA") to verify the peers.  The certificates must be in PEM
+           format.
+
+           Without this option Wget looks for CA certificates at the system-
+           specified locations, chosen at OpenSSL installation time.
+
+       ----ccaa--ddiirreeccttoorryy==_d_i_r_e_c_t_o_r_y
+           Specifies directory containing CA certificates in PEM format.  Each
+           file contains one CA certificate, and the file name is based on a
+           hash value derived from the certificate.  This is achieved by
+           processing a certificate directory with the "c_rehash" utility
+           supplied with OpenSSL.  Using ----ccaa--ddiirreeccttoorryy is more efficient than
+           ----ccaa--cceerrttiiffiiccaattee when many certificates are installed because it
+           allows Wget to fetch certificates on demand.
+
+           Without this option Wget looks for CA certificates at the system-
+           specified locations, chosen at OpenSSL installation time.
+
+       ----ccrrll--ffiillee==_f_i_l_e
+           Specifies a CRL file in _f_i_l_e.  This is needed for certificates that
+           have been revocated by the CAs.
+
+       ----ppiinnnneeddppuubbkkeeyy==ffiillee//hhaasshheess
+           Tells wget to use the specified public key file (or hashes) to
+           verify the peer.  This can be a path to a file which contains a
+           single public key in PEM or DER format, or any number of base64
+           encoded sha256 hashes preceded by "sha256//" and separated by ";"
+
+           When negotiating a TLS or SSL connection, the server sends a
+           certificate indicating its identity. A public key is extracted from
+           this certificate and if it does not exactly match the public key(s)
+           provided to this option, wget will abort the connection before
+           sending or receiving any data.
+
+       ----rraannddoomm--ffiillee==_f_i_l_e
+           [OpenSSL and LibreSSL only] Use _f_i_l_e as the source of random data
+           for seeding the pseudo-random number generator on systems without
+           _/_d_e_v_/_u_r_a_n_d_o_m.
+
+           On such systems the SSL library needs an external source of
+           randomness to initialize.  Randomness may be provided by EGD (see
+           ----eeggdd--ffiillee below) or read from an external source specified by the
+           user.  If this option is not specified, Wget looks for random data
+           in $RANDFILE or, if that is unset, in _$_H_O_M_E_/_._r_n_d.
+
+           If you're getting the "Could not seed OpenSSL PRNG; disabling SSL."
+           error, you should provide random data using some of the methods
+           described above.
+
+       ----eeggdd--ffiillee==_f_i_l_e
+           [OpenSSL only] Use _f_i_l_e as the EGD socket.  EGD stands for _E_n_t_r_o_p_y
+           _G_a_t_h_e_r_i_n_g _D_a_e_m_o_n, a user-space program that collects data from
+           various unpredictable system sources and makes it available to
+           other programs that might need it.  Encryption software, such as
+           the SSL library, needs sources of non-repeating randomness to seed
+           the random number generator used to produce cryptographically
+           strong keys.
+
+           OpenSSL allows the user to specify his own source of entropy using
+           the "RAND_FILE" environment variable.  If this variable is unset,
+           or if the specified file does not produce enough randomness,
+           OpenSSL will read random data from EGD socket specified using this
+           option.
+
+           If this option is not specified (and the equivalent startup command
+           is not used), EGD is never contacted.  EGD is not needed on modern
+           Unix systems that support _/_d_e_v_/_u_r_a_n_d_o_m.
+
+       ----nnoo--hhssttss
+           Wget supports HSTS (HTTP Strict Transport Security, RFC 6797) by
+           default.  Use ----nnoo--hhssttss to make Wget act as a non-HSTS-compliant
+           UA. As a consequence, Wget would ignore all the
+           "Strict-Transport-Security" headers, and would not enforce any
+           existing HSTS policy.
+
+       ----hhssttss--ffiillee==_f_i_l_e
+           By default, Wget stores its HSTS database in _~_/_._w_g_e_t_-_h_s_t_s.  You can
+           use ----hhssttss--ffiillee to override this. Wget will use the supplied file
+           as the HSTS database. Such file must conform to the correct HSTS
+           database format used by Wget. If Wget cannot parse the provided
+           file, the behaviour is unspecified.
+
+           The Wget's HSTS database is a plain text file. Each line contains
+           an HSTS entry (ie. a site that has issued a
+           "Strict-Transport-Security" header and that therefore has specified
+           a concrete HSTS policy to be applied). Lines starting with a dash
+           ("#") are ignored by Wget. Please note that in spite of this
+           convenient human-readability hand-hacking the HSTS database is
+           generally not a good idea.
+
+           An HSTS entry line consists of several fields separated by one or
+           more whitespace:
+
+           "<hostname> SP [<port>] SP <include subdomains> SP <created> SP
+           <max-age>"
+
+           The _h_o_s_t_n_a_m_e and _p_o_r_t fields indicate the hostname and port to
+           which the given HSTS policy applies. The _p_o_r_t field may be zero,
+           and it will, in most of the cases. That means that the port number
+           will not be taken into account when deciding whether such HSTS
+           policy should be applied on a given request (only the hostname will
+           be evaluated). When _p_o_r_t is different to zero, both the target
+           hostname and the port will be evaluated and the HSTS policy will
+           only be applied if both of them match. This feature has been
+           included for testing/development purposes only.  The Wget testsuite
+           (in _t_e_s_t_e_n_v_/) creates HSTS databases with explicit ports with the
+           purpose of ensuring Wget's correct behaviour. Applying HSTS
+           policies to ports other than the default ones is discouraged by RFC
+           6797 (see Appendix B "Differences between HSTS Policy and Same-
+           Origin Policy"). Thus, this functionality should not be used in
+           production environments and _p_o_r_t will typically be zero. The last
+           three fields do what they are expected to. The field
+           _i_n_c_l_u_d_e___s_u_b_d_o_m_a_i_n_s can either be 1 or 0 and it signals whether the
+           subdomains of the target domain should be part of the given HSTS
+           policy as well. The _c_r_e_a_t_e_d and _m_a_x_-_a_g_e fields hold the timestamp
+           values of when such entry was created (first seen by Wget) and the
+           HSTS-defined value 'max-age', which states how long should that
+           HSTS policy remain active, measured in seconds elapsed since the
+           timestamp stored in _c_r_e_a_t_e_d. Once that time has passed, that HSTS
+           policy will no longer be valid and will eventually be removed from
+           the database.
+
+           If you supply your own HSTS database via ----hhssttss--ffiillee, be aware that
+           Wget may modify the provided file if any change occurs between the
+           HSTS policies requested by the remote servers and those in the
+           file. When Wget exists, it effectively updates the HSTS database by
+           rewriting the database file with the new entries.
+
+           If the supplied file does not exist, Wget will create one. This
+           file will contain the new HSTS entries. If no HSTS entries were
+           generated (no "Strict-Transport-Security" headers were sent by any
+           of the servers) then no file will be created, not even an empty
+           one. This behaviour applies to the default database file
+           (_~_/_._w_g_e_t_-_h_s_t_s) as well: it will not be created until some server
+           enforces an HSTS policy.
+
+           Care is taken not to override possible changes made by other Wget
+           processes at the same time over the HSTS database. Before dumping
+           the updated HSTS entries on the file, Wget will re-read it and
+           merge the changes.
+
+           Using a custom HSTS database and/or modifying an existing one is
+           discouraged.  For more information about the potential security
+           threats arose from such practice, see section 14 "Security
+           Considerations" of RFC 6797, specially section 14.9 "Creative
+           Manipulation of HSTS Policy Store".
+
+       ----wwaarrcc--ffiillee==_f_i_l_e
+           Use _f_i_l_e as the destination WARC file.
+
+       ----wwaarrcc--hheeaaddeerr==_s_t_r_i_n_g
+           Use _s_t_r_i_n_g into as the warcinfo record.
+
+       ----wwaarrcc--mmaaxx--ssiizzee==_s_i_z_e
+           Set the maximum size of the WARC files to _s_i_z_e.
+
+       ----wwaarrcc--ccddxx
+           Write CDX index files.
+
+       ----wwaarrcc--ddeedduupp==_f_i_l_e
+           Do not store records listed in this CDX file.
+
+       ----nnoo--wwaarrcc--ccoommpprreessssiioonn
+           Do not compress WARC files with GZIP.
+
+       ----nnoo--wwaarrcc--ddiiggeessttss
+           Do not calculate SHA1 digests.
+
+       ----nnoo--wwaarrcc--kkeeeepp--lloogg
+           Do not store the log file in a WARC record.
+
+       ----wwaarrcc--tteemmppddiirr==_d_i_r
+           Specify the location for temporary files created by the WARC
+           writer.
+
+   FFTTPP OOppttiioonnss
+       ----ffttpp--uusseerr==_u_s_e_r
+       ----ffttpp--ppaasssswwoorrdd==_p_a_s_s_w_o_r_d
+           Specify the username _u_s_e_r and password _p_a_s_s_w_o_r_d on an FTP server.
+           Without this, or the corresponding startup option, the password
+           defaults to --wwggeett@@, normally used for anonymous FTP.
+
+           Another way to specify username and password is in the URL itself.
+           Either method reveals your password to anyone who bothers to run
+           "ps".  To prevent the passwords from being seen, store them in
+           _._w_g_e_t_r_c or _._n_e_t_r_c, and make sure to protect those files from other
+           users with "chmod".  If the passwords are really important, do not
+           leave them lying in those files either---edit the files and delete
+           them after Wget has started the download.
+
+       ----nnoo--rreemmoovvee--lliissttiinngg
+           Don't remove the temporary _._l_i_s_t_i_n_g files generated by FTP
+           retrievals.  Normally, these files contain the raw directory
+           listings received from FTP servers.  Not removing them can be
+           useful for debugging purposes, or when you want to be able to
+           easily check on the contents of remote server directories (e.g. to
+           verify that a mirror you're running is complete).
+
+           Note that even though Wget writes to a known filename for this
+           file, this is not a security hole in the scenario of a user making
+           _._l_i_s_t_i_n_g a symbolic link to _/_e_t_c_/_p_a_s_s_w_d or something and asking
+           "root" to run Wget in his or her directory.  Depending on the
+           options used, either Wget will refuse to write to _._l_i_s_t_i_n_g, making
+           the globbing/recursion/time-stamping operation fail, or the
+           symbolic link will be deleted and replaced with the actual _._l_i_s_t_i_n_g
+           file, or the listing will be written to a _._l_i_s_t_i_n_g_._n_u_m_b_e_r file.
+
+           Even though this situation isn't a problem, though, "root" should
+           never run Wget in a non-trusted user's directory.  A user could do
+           something as simple as linking _i_n_d_e_x_._h_t_m_l to _/_e_t_c_/_p_a_s_s_w_d and asking
+           "root" to run Wget with --NN or --rr so the file will be overwritten.
+
+       ----nnoo--gglloobb
+           Turn off FTP globbing.  Globbing refers to the use of shell-like
+           special characters (_w_i_l_d_c_a_r_d_s), like **, ??, [[ and ]] to retrieve more
+           than one file from the same directory at once, like:
+
+                   wget ftp://gnjilux.srk.fer.hr/*.msg
+
+           By default, globbing will be turned on if the URL contains a
+           globbing character.  This option may be used to turn globbing on or
+           off permanently.
+
+           You may have to quote the URL to protect it from being expanded by
+           your shell.  Globbing makes Wget look for a directory listing,
+           which is system-specific.  This is why it currently works only with
+           Unix FTP servers (and the ones emulating Unix "ls" output).
+
+       ----nnoo--ppaassssiivvee--ffttpp
+           Disable the use of the _p_a_s_s_i_v_e FTP transfer mode.  Passive FTP
+           mandates that the client connect to the server to establish the
+           data connection rather than the other way around.
+
+           If the machine is connected to the Internet directly, both passive
+           and active FTP should work equally well.  Behind most firewall and
+           NAT configurations passive FTP has a better chance of working.
+           However, in some rare firewall configurations, active FTP actually
+           works when passive FTP doesn't.  If you suspect this to be the
+           case, use this option, or set "passive_ftp=off" in your init file.
+
+       ----pprreesseerrvvee--ppeerrmmiissssiioonnss
+           Preserve remote file permissions instead of permissions set by
+           umask.
+
+       ----rreettrr--ssyymmlliinnkkss
+           By default, when retrieving FTP directories recursively and a
+           symbolic link is encountered, the symbolic link is traversed and
+           the pointed-to files are retrieved.  Currently, Wget does not
+           traverse symbolic links to directories to download them
+           recursively, though this feature may be added in the future.
+
+           When ----rreettrr--ssyymmlliinnkkss==nnoo is specified, the linked-to file is not
+           downloaded.  Instead, a matching symbolic link is created on the
+           local filesystem.  The pointed-to file will not be retrieved unless
+           this recursive retrieval would have encountered it separately and
+           downloaded it anyway.  This option poses a security risk where a
+           malicious FTP Server may cause Wget to write to files outside of
+           the intended directories through a specially crafted .LISTING file.
+
+           Note that when retrieving a file (not a directory) because it was
+           specified on the command-line, rather than because it was recursed
+           to, this option has no effect.  Symbolic links are always traversed
+           in this case.
+
+   FFTTPPSS OOppttiioonnss
+       ----ffttppss--iimmpplliicciitt
+           This option tells Wget to use FTPS implicitly. Implicit FTPS
+           consists of initializing SSL/TLS from the very beginning of the
+           control connection. This option does not send an "AUTH TLS"
+           command: it assumes the server speaks FTPS and directly starts an
+           SSL/TLS connection. If the attempt is successful, the session
+           continues just like regular FTPS ("PBSZ" and "PROT" are sent,
+           etc.).  Implicit FTPS is no longer a requirement for FTPS
+           implementations, and thus many servers may not support it. If
+           ----ffttppss--iimmpplliicciitt is passed and no explicit port number specified,
+           the default port for implicit FTPS, 990, will be used, instead of
+           the default port for the "normal" (explicit) FTPS which is the same
+           as that of FTP, 21.
+
+       ----nnoo--ffttppss--rreessuummee--ssssll
+           Do not resume the SSL/TLS session in the data channel. When
+           starting a data connection, Wget tries to resume the SSL/TLS
+           session previously started in the control connection.  SSL/TLS
+           session resumption avoids performing an entirely new handshake by
+           reusing the SSL/TLS parameters of a previous session. Typically,
+           the FTPS servers want it that way, so Wget does this by default.
+           Under rare circumstances however, one might want to start an
+           entirely new SSL/TLS session in every data connection.  This is
+           what ----nnoo--ffttppss--rreessuummee--ssssll is for.
+
+       ----ffttppss--cclleeaarr--ddaattaa--ccoonnnneeccttiioonn
+           All the data connections will be in plain text. Only the control
+           connection will be under SSL/TLS. Wget will send a "PROT C" command
+           to achieve this, which must be approved by the server.
+
+       ----ffttppss--ffaallllbbaacckk--ttoo--ffttpp
+           Fall back to FTP if FTPS is not supported by the target server. For
+           security reasons, this option is not asserted by default. The
+           default behaviour is to exit with an error.  If a server does not
+           successfully reply to the initial "AUTH TLS" command, or in the
+           case of implicit FTPS, if the initial SSL/TLS connection attempt is
+           rejected, it is considered that such server does not support FTPS.
+
+   RReeccuurrssiivvee RReettrriieevvaall OOppttiioonnss
+       --rr
+       ----rreeccuurrssiivvee
+           Turn on recursive retrieving.    The default maximum depth is 5.
+
+       --ll _d_e_p_t_h
+       ----lleevveell==_d_e_p_t_h
+           Specify recursion maximum depth level _d_e_p_t_h.
+
+       ----ddeelleettee--aafftteerr
+           This option tells Wget to delete every single file it downloads,
+           _a_f_t_e_r having done so.  It is useful for pre-fetching popular pages
+           through a proxy, e.g.:
+
+                   wget -r -nd --delete-after http://whatever.com/~popular/page/
+
+           The --rr option is to retrieve recursively, and --nndd to not create
+           directories.
+
+           Note that ----ddeelleettee--aafftteerr deletes files on the local machine.  It
+           does not issue the DDEELLEE command to remote FTP sites, for instance.
+           Also note that when ----ddeelleettee--aafftteerr is specified, ----ccoonnvveerrtt--lliinnkkss is
+           ignored, so ..oorriigg files are simply not created in the first place.
+
+       --kk
+       ----ccoonnvveerrtt--lliinnkkss
+           After the download is complete, convert the links in the document
+           to make them suitable for local viewing.  This affects not only the
+           visible hyperlinks, but any part of the document that links to
+           external content, such as embedded images, links to style sheets,
+           hyperlinks to non-HTML content, etc.
+
+           Each link will be changed in one of the two ways:
+
+           +o   The links to files that have been downloaded by Wget will be
+               changed to refer to the file they point to as a relative link.
+
+               Example: if the downloaded file _/_f_o_o_/_d_o_c_._h_t_m_l links to
+               _/_b_a_r_/_i_m_g_._g_i_f, also downloaded, then the link in _d_o_c_._h_t_m_l will
+               be modified to point to ....//bbaarr//iimmgg..ggiiff.  This kind of
+               transformation works reliably for arbitrary combinations of
+               directories.
+
+           +o   The links to files that have not been downloaded by Wget will
+               be changed to include host name and absolute path of the
+               location they point to.
+
+               Example: if the downloaded file _/_f_o_o_/_d_o_c_._h_t_m_l links to
+               _/_b_a_r_/_i_m_g_._g_i_f (or to _._._/_b_a_r_/_i_m_g_._g_i_f), then the link in _d_o_c_._h_t_m_l
+               will be modified to point to _h_t_t_p_:_/_/_h_o_s_t_n_a_m_e_/_b_a_r_/_i_m_g_._g_i_f.
+
+           Because of this, local browsing works reliably: if a linked file
+           was downloaded, the link will refer to its local name; if it was
+           not downloaded, the link will refer to its full Internet address
+           rather than presenting a broken link.  The fact that the former
+           links are converted to relative links ensures that you can move the
+           downloaded hierarchy to another directory.
+
+           Note that only at the end of the download can Wget know which links
+           have been downloaded.  Because of that, the work done by --kk will be
+           performed at the end of all the downloads.
+
+       ----ccoonnvveerrtt--ffiillee--oonnllyy
+           This option converts only the filename part of the URLs, leaving
+           the rest of the URLs untouched. This filename part is sometimes
+           referred to as the "basename", although we avoid that term here in
+           order not to cause confusion.
+
+           It works particularly well in conjunction with ----aaddjjuusstt--eexxtteennssiioonn,
+           although this coupling is not enforced. It proves useful to
+           populate Internet caches with files downloaded from different
+           hosts.
+
+           Example: if some link points to _/_/_f_o_o_._c_o_m_/_b_a_r_._c_g_i_?_x_y_z with
+           ----aaddjjuusstt--eexxtteennssiioonn asserted and its local destination is intended
+           to be _._/_f_o_o_._c_o_m_/_b_a_r_._c_g_i_?_x_y_z_._c_s_s, then the link would be converted
+           to _/_/_f_o_o_._c_o_m_/_b_a_r_._c_g_i_?_x_y_z_._c_s_s. Note that only the filename part has
+           been modified. The rest of the URL has been left untouched,
+           including the net path ("//") which would otherwise be processed by
+           Wget and converted to the effective scheme (ie. "http://").
+
+       --KK
+       ----bbaacckkuupp--ccoonnvveerrtteedd
+           When converting a file, back up the original version with a ..oorriigg
+           suffix.  Affects the behavior of --NN.
+
+       --mm
+       ----mmiirrrroorr
+           Turn on options suitable for mirroring.  This option turns on
+           recursion and time-stamping, sets infinite recursion depth and
+           keeps FTP directory listings.  It is currently equivalent to --rr --NN
+           --ll iinnff ----nnoo--rreemmoovvee--lliissttiinngg.
+
+       --pp
+       ----ppaaggee--rreeqquuiissiitteess
+           This option causes Wget to download all the files that are
+           necessary to properly display a given HTML page.  This includes
+           such things as inlined images, sounds, and referenced stylesheets.
+
+           Ordinarily, when downloading a single HTML page, any requisite
+           documents that may be needed to display it properly are not
+           downloaded.  Using --rr together with --ll can help, but since Wget
+           does not ordinarily distinguish between external and inlined
+           documents, one is generally left with "leaf documents" that are
+           missing their requisites.
+
+           For instance, say document _1_._h_t_m_l contains an "<IMG>" tag
+           referencing _1_._g_i_f and an "<A>" tag pointing to external document
+           _2_._h_t_m_l.  Say that _2_._h_t_m_l is similar but that its image is _2_._g_i_f and
+           it links to _3_._h_t_m_l.  Say this continues up to some arbitrarily high
+           number.
+
+           If one executes the command:
+
+                   wget -r -l 2 http://<site>/1.html
+
+           then _1_._h_t_m_l, _1_._g_i_f, _2_._h_t_m_l, _2_._g_i_f, and _3_._h_t_m_l will be downloaded.
+           As you can see, _3_._h_t_m_l is without its requisite _3_._g_i_f because Wget
+           is simply counting the number of hops (up to 2) away from _1_._h_t_m_l in
+           order to determine where to stop the recursion.  However, with this
+           command:
+
+                   wget -r -l 2 -p http://<site>/1.html
+
+           all the above files _a_n_d _3_._h_t_m_l's requisite _3_._g_i_f will be
+           downloaded.  Similarly,
+
+                   wget -r -l 1 -p http://<site>/1.html
+
+           will cause _1_._h_t_m_l, _1_._g_i_f, _2_._h_t_m_l, and _2_._g_i_f to be downloaded.  One
+           might think that:
+
+                   wget -r -l 0 -p http://<site>/1.html
+
+           would download just _1_._h_t_m_l and _1_._g_i_f, but unfortunately this is not
+           the case, because --ll 00 is equivalent to --ll iinnff---that is, infinite
+           recursion.  To download a single HTML page (or a handful of them,
+           all specified on the command-line or in a --ii URL input file) and
+           its (or their) requisites, simply leave off --rr and --ll:
+
+                   wget -p http://<site>/1.html
+
+           Note that Wget will behave as if --rr had been specified, but only
+           that single page and its requisites will be downloaded.  Links from
+           that page to external documents will not be followed.  Actually, to
+           download a single page and all its requisites (even if they exist
+           on separate websites), and make sure the lot displays properly
+           locally, this author likes to use a few options in addition to --pp:
+
+                   wget -E -H -k -K -p http://<site>/<document>
+
+           To finish off this topic, it's worth knowing that Wget's idea of an
+           external document link is any URL specified in an "<A>" tag, an
+           "<AREA>" tag, or a "<LINK>" tag other than "<LINK
+           REL="stylesheet">".
+
+       ----ssttrriicctt--ccoommmmeennttss
+           Turn on strict parsing of HTML comments.  The default is to
+           terminate comments at the first occurrence of ---->>.
+
+           According to specifications, HTML comments are expressed as SGML
+           _d_e_c_l_a_r_a_t_i_o_n_s.  Declaration is special markup that begins with <<!!
+           and ends with >>, such as <<!!DDOOCCTTYYPPEE ......>>, that may contain comments
+           between a pair of ---- delimiters.  HTML comments are "empty
+           declarations", SGML declarations without any non-comment text.
+           Therefore, <<!!----ffoooo---->> is a valid comment, and so is <<!!----oonnee----
+           ----ttwwoo---->>, but <<!!----11----22---->> is not.
+
+           On the other hand, most HTML writers don't perceive comments as
+           anything other than text delimited with <<!!---- and ---->>, which is not
+           quite the same.  For example, something like <<!!------------------------>> works
+           as a valid comment as long as the number of dashes is a multiple of
+           four (!).  If not, the comment technically lasts until the next ----,
+           which may be at the other end of the document.  Because of this,
+           many popular browsers completely ignore the specification and
+           implement what users have come to expect: comments delimited with
+           <<!!---- and ---->>.
+
+           Until version 1.9, Wget interpreted comments strictly, which
+           resulted in missing links in many web pages that displayed fine in
+           browsers, but had the misfortune of containing non-compliant
+           comments.  Beginning with version 1.9, Wget has joined the ranks of
+           clients that implements "naive" comments, terminating each comment
+           at the first occurrence of ---->>.
+
+           If, for whatever reason, you want strict comment parsing, use this
+           option to turn it on.
+
+   RReeccuurrssiivvee AAcccceepptt//RReejjeecctt OOppttiioonnss
+       --AA _a_c_c_l_i_s_t ----aacccceepptt _a_c_c_l_i_s_t
+       --RR _r_e_j_l_i_s_t ----rreejjeecctt _r_e_j_l_i_s_t
+           Specify comma-separated lists of file name suffixes or patterns to
+           accept or reject. Note that if any of the wildcard characters, **,
+           ??, [[ or ]], appear in an element of _a_c_c_l_i_s_t or _r_e_j_l_i_s_t, it will be
+           treated as a pattern, rather than a suffix.  In this case, you have
+           to enclose the pattern into quotes to prevent your shell from
+           expanding it, like in --AA ""**..mmpp33"" or --AA ''**..mmpp33''.
+
+       ----aacccceepptt--rreeggeexx _u_r_l_r_e_g_e_x
+       ----rreejjeecctt--rreeggeexx _u_r_l_r_e_g_e_x
+           Specify a regular expression to accept or reject the complete URL.
+
+       ----rreeggeexx--ttyyppee _r_e_g_e_x_t_y_p_e
+           Specify the regular expression type.  Possible types are ppoossiixx or
+           ppccrree.  Note that to be able to use ppccrree type, wget has to be
+           compiled with libpcre support.
+
+       --DD _d_o_m_a_i_n_-_l_i_s_t
+       ----ddoommaaiinnss==_d_o_m_a_i_n_-_l_i_s_t
+           Set domains to be followed.  _d_o_m_a_i_n_-_l_i_s_t is a comma-separated list
+           of domains.  Note that it does _n_o_t turn on --HH.
+
+       ----eexxcclluuddee--ddoommaaiinnss _d_o_m_a_i_n_-_l_i_s_t
+           Specify the domains that are _n_o_t to be followed.
+
+       ----ffoollllooww--ffttpp
+           Follow FTP links from HTML documents.  Without this option, Wget
+           will ignore all the FTP links.
+
+       ----ffoollllooww--ttaaggss==_l_i_s_t
+           Wget has an internal table of HTML tag / attribute pairs that it
+           considers when looking for linked documents during a recursive
+           retrieval.  If a user wants only a subset of those tags to be
+           considered, however, he or she should be specify such tags in a
+           comma-separated _l_i_s_t with this option.
+
+       ----iiggnnoorree--ttaaggss==_l_i_s_t
+           This is the opposite of the ----ffoollllooww--ttaaggss option.  To skip certain
+           HTML tags when recursively looking for documents to download,
+           specify them in a comma-separated _l_i_s_t.
+
+           In the past, this option was the best bet for downloading a single
+           page and its requisites, using a command-line like:
+
+                   wget --ignore-tags=a,area -H -k -K -r http://<site>/<document>
+
+           However, the author of this option came across a page with tags
+           like "<LINK REL="home" HREF="/">" and came to the realization that
+           specifying tags to ignore was not enough.  One can't just tell Wget
+           to ignore "<LINK>", because then stylesheets will not be
+           downloaded.  Now the best bet for downloading a single page and its
+           requisites is the dedicated ----ppaaggee--rreeqquuiissiitteess option.
+
+       ----iiggnnoorree--ccaassee
+           Ignore case when matching files and directories.  This influences
+           the behavior of -R, -A, -I, and -X options, as well as globbing
+           implemented when downloading from FTP sites.  For example, with
+           this option, --AA ""**..ttxxtt"" will match ffiillee11..ttxxtt, but also ffiillee22..TTXXTT,
+           ffiillee33..TTxxTT, and so on.  The quotes in the example are to prevent the
+           shell from expanding the pattern.
+
+       --HH
+       ----ssppaann--hhoossttss
+           Enable spanning across hosts when doing recursive retrieving.
+
+       --LL
+       ----rreellaattiivvee
+           Follow relative links only.  Useful for retrieving a specific home
+           page without any distractions, not even those from the same hosts.
+
+       --II _l_i_s_t
+       ----iinncclluuddee--ddiirreeccttoorriieess==_l_i_s_t
+           Specify a comma-separated list of directories you wish to follow
+           when downloading.  Elements of _l_i_s_t may contain wildcards.
+
+       --XX _l_i_s_t
+       ----eexxcclluuddee--ddiirreeccttoorriieess==_l_i_s_t
+           Specify a comma-separated list of directories you wish to exclude
+           from download.  Elements of _l_i_s_t may contain wildcards.
+
+       --nnpp
+       ----nnoo--ppaarreenntt
+           Do not ever ascend to the parent directory when retrieving
+           recursively.  This is a useful option, since it guarantees that
+           only the files _b_e_l_o_w a certain hierarchy will be downloaded.
+
+EENNVVIIRROONNMMEENNTT
+       Wget supports proxies for both HTTP and FTP retrievals.  The standard
+       way to specify proxy location, which Wget recognizes, is using the
+       following environment variables:
+
+       hhttttpp__pprrooxxyy
+       hhttttppss__pprrooxxyy
+           If set, the hhttttpp__pprrooxxyy and hhttttppss__pprrooxxyy variables should contain the
+           URLs of the proxies for HTTP and HTTPS connections respectively.
+
+       ffttpp__pprrooxxyy
+           This variable should contain the URL of the proxy for FTP
+           connections.  It is quite common that hhttttpp__pprrooxxyy and ffttpp__pprrooxxyy are
+           set to the same URL.
+
+       nnoo__pprrooxxyy
+           This variable should contain a comma-separated list of domain
+           extensions proxy should _n_o_t be used for.  For instance, if the
+           value of nnoo__pprrooxxyy is ..mmiitt..eedduu, proxy will not be used to retrieve
+           documents from MIT.
+
+EEXXIITT SSTTAATTUUSS
+       Wget may return one of several error codes if it encounters problems.
+
+       0   No problems occurred.
+
+       1   Generic error code.
+
+       2   Parse error---for instance, when parsing command-line options, the
+           ..wwggeettrrcc or ..nneettrrcc...
+
+       3   File I/O error.
+
+       4   Network failure.
+
+       5   SSL verification failure.
+
+       6   Username/password authentication failure.
+
+       7   Protocol errors.
+
+       8   Server issued an error response.
+
+       With the exceptions of 0 and 1, the lower-numbered exit codes take
+       precedence over higher-numbered ones, when multiple types of errors are
+       encountered.
+
+       In versions of Wget prior to 1.12, Wget's exit status tended to be
+       unhelpful and inconsistent. Recursive downloads would virtually always
+       return 0 (success), regardless of any issues encountered, and non-
+       recursive fetches only returned the status corresponding to the most
+       recently-attempted download.
+
+FFIILLEESS
+       //uussrr//llooccaall//eettcc//wwggeettrrcc
+           Default location of the _g_l_o_b_a_l startup file.
+
+       ..wwggeettrrcc
+           User startup file.
+
+BBUUGGSS
+       You are welcome to submit bug reports via the GNU Wget bug tracker (see
+       <hhttttppss::////ssaavvaannnnaahh..ggnnuu..oorrgg//bbuuggss//??ffuunncc==aaddddiitteemm&&ggrroouupp==wwggeett>) or to our
+       mailing list <bbuugg--wwggeett@@ggnnuu..oorrgg>.
+
+       Visit <hhttttppss::////lliissttss..ggnnuu..oorrgg//mmaaiillmmaann//lliissttiinnffoo//bbuugg--wwggeett> to get more
+       info (how to subscribe, list archives, ...).
+
+       Before actually submitting a bug report, please try to follow a few
+       simple guidelines.
+
+       1.  Please try to ascertain that the behavior you see really is a bug.
+           If Wget crashes, it's a bug.  If Wget does not behave as
+           documented, it's a bug.  If things work strange, but you are not
+           sure about the way they are supposed to work, it might well be a
+           bug, but you might want to double-check the documentation and the
+           mailing lists.
+
+       2.  Try to repeat the bug in as simple circumstances as possible.  E.g.
+           if Wget crashes while downloading wwggeett --rrll00 --kkKKEE --tt55 ----nnoo--pprrooxxyy
+           hhttttpp::////eexxaammppllee..ccoomm --oo //ttmmpp//lloogg, you should try to see if the crash
+           is repeatable, and if will occur with a simpler set of options.
+           You might even try to start the download at the page where the
+           crash occurred to see if that page somehow triggered the crash.
+
+           Also, while I will probably be interested to know the contents of
+           your _._w_g_e_t_r_c file, just dumping it into the debug message is
+           probably a bad idea.  Instead, you should first try to see if the
+           bug repeats with _._w_g_e_t_r_c moved out of the way.  Only if it turns
+           out that _._w_g_e_t_r_c settings affect the bug, mail me the relevant
+           parts of the file.
+
+       3.  Please start Wget with --dd option and send us the resulting output
+           (or relevant parts thereof).  If Wget was compiled without debug
+           support, recompile it---it is _m_u_c_h easier to trace bugs with debug
+           support on.
+
+           Note: please make sure to remove any potentially sensitive
+           information from the debug log before sending it to the bug
+           address.  The "-d" won't go out of its way to collect sensitive
+           information, but the log _w_i_l_l contain a fairly complete transcript
+           of Wget's communication with the server, which may include
+           passwords and pieces of downloaded data.  Since the bug address is
+           publicly archived, you may assume that all bug reports are visible
+           to the public.
+
+       4.  If Wget has crashed, try to run it in a debugger, e.g. "gdb `which
+           wget` core" and type "where" to get the backtrace.  This may not
+           work if the system administrator has disabled core files, but it is
+           safe to try.
+
+SSEEEE AALLSSOO
+       This is nnoott the complete manual for GNU Wget.  For more complete
+       information, including more detailed explanations of some of the
+       options, and a number of commands available for use with _._w_g_e_t_r_c files
+       and the --ee option, see the GNU Info entry for _w_g_e_t.
+
+AAUUTTHHOORR
+       Originally written by Hrvoje Niksi'c <hniksic@xemacs.org>.
+
+CCOOPPYYRRIIGGHHTT
+       Copyright (c) 1996-2011, 2015, 2018-2019 Free Software Foundation, Inc.
+
+       Permission is granted to copy, distribute and/or modify this document
+       under the terms of the GNU Free Documentation License, Version 1.3 or
+       any later version published by the Free Software Foundation; with no
+       Invariant Sections, with no Front-Cover Texts, and with no Back-Cover
+       Texts.  A copy of the license is included in the section entitled "GNU
+       Free Documentation License".
+
+
+
+GNU Wget 1.20.3                   2019-12-01                           WGET(1)

@@ -1,0 +1,566 @@
+
+优化:
+  测量量 并不需要Monoid.m00
+    m00 以 Maybe v 给出
+
+
+最终约束
+  #由来 见下面safe
+  +[2 <= min nd <= max nd <= max dg -min dg]
+    约束甲
+    #错:其实可以放宽，因为达到(1+max dg)后，可以拆成多个Node，max dg 不用太大
+    #   单Node补充，单Node进位
+  +[min nd <= 2*min dg][nd值可以组成[2*min dg..]的所有值]
+    约束乙
+  变量说明:
+    nd 即 Node 的各种可能大小#下文给出[2..3]
+    dg 即 Digit 的各种可能大小#下文给出[1..4]
+  可选方案:
+    0: nd<-[2,3], dg <-[1..>=4]
+    1: nd<-[3,4], dg <-[3..>=7]
+    2: nd<-[2,5], dg <-[2..>=7]
+    3: nd<-[3,5], dg <-[4..>=9]
+    4: nd<-[3,4,5], dg <-[2..>=7]
+    5: nd<-[4,5,6,7], dg <-[2..>=9]
+        nd<-[4,5,6,7], dg <-[2..10]
+          2..5..7..10
+
+
+
+
+
+
+finger trees: a simple general-purpose data structure.pdf
+
+
+==================================[ZZZ
+class Monoid a where
+  m00 :: a
+  (++) :: a -> a -> a
+
+class Reduce f where
+  reducer :: (a -> b -> b) -> (f a -> b -> b)
+  reducel :: (b -> a -> b) -> (b -> f a -> b)
+
+instance Reduce [] where
+  reducer (*<) ls r = foldr (*<) r ls
+  reducel (>*) r ls = foldl (>*) r ls
+
+
+toList:: (Reduce f ) => f a -> [a]
+toList s = reducer (:) s []
+==================================]ZZZ
+
+
+
+
+
+
+==================================[ZZZ
+data Tree a = Zero a | Succ (Tree (Node a))
+data Node a = Node2 a a | Node3 a a a
+data FingerTree a
+  = Empty
+  | Single a
+  | Deep (Digit a) (FingerTree (Node a)) (Digit a)
+type Digit a = [a]
+data Digit a
+  = One a
+  | Two a a
+  | Three a a a
+  | Four a a a a
+
+
+instance Reduce Node where
+instance Reduce FingerTree where
+
+
+infixr 5 <|
+(<|):: a -> FingerTree a -> FingerTree a
+a <| Empty= Single a
+a <| Single b= Deep [a] Empty [b]
+a <| Deep [b,c,d,e] m sf = Deep [a,b] (Node3 c d e <| m) sf
+a <| Deep pr m sf= Deep ([a] ++ pr) m sf
+infixr 5 |>
+(|>):: FingerTree a -> a -> FingerTree a
+
+
+(<|^) :: (Reduce f ) => f a -> FingerTree a -> FingerTree a
+(<|^) = reducer (<|)
+(|>^) :: (Reduce f ) => FingerTree a -> f a -> FingerTree a
+(|>^) = reducel (|>)
+
+toTree:: (Reduce f ) => f a -> FingerTree a
+toTree s = s <|^ Empty
+==================================]ZZZ
+
+
+==================================[ZZZ
+data ViewL s a = NilL | ConsL a (s a)
+The left view of a sequence maps a sequence to this type:
+viewL:: FingerTree a -> ViewL FingerTree a
+viewL Empty= NilL
+viewL (Single x)= ConsL x Empty
+viewL (Deep pr m sf ) = ConsL (head pr) (deepL (tail pr) m sf )
+
+
+deepL :: [a] -> FingerTree (Node a) -> Digit a -> FingerTree a
+deepL [] m sf= case viewL m of
+  NilL -> toTree sf
+  ConsL a ts -> Deep (toList a) ts sf
+deepL pr m sf = Deep pr m sf
+
+
+#for strict language
+isEmpty:: FingerTree a -> Bool
+isEmpty x = case viewL x of
+  NilL -> True
+  ConsL h ts -> False
+headL :: FingerTree a -> a
+headL x= case viewL x of ConsL h ts -> h
+tailL :: FingerTree a -> FingerTree a
+tailL x= case viewL x of ConsL h ts -> ts
+
+
+
+ViewL viewL deepL headL tailL
+ViewR viewR deepR headR tailR
+==================================]ZZZ
+exist (<|) ==>> [min dg +min nd <= max dg +1 <= max dg +max nd]
+  [1 <= max nd][min nd <= 1+max dg -min dg]
+safe (<|) ==>> [1+ min dg +min nd <= max dg +1 <= -1+ max dg +max nd]
+  [2 <= max nd][min nd <= max dg -min dg]
+
+exist (viewL) ==>> [min dg -min nd <= min dg -1 <= max dg -max nd]
+  [1 <= min nd][max nd <= 1+max dg -min dg]
+safe (viewL) ==>> [1+ min dg -min nd <= min dg -1 <= -1+ max dg -max nd]
+  [2 <= min nd][max nd <= max dg -min dg]
+
+
+exist (<|)(viewL) ==>> [min dg -min nd <= min dg -1 <= max dg -max nd]
+  [1 <= min nd <= max nd <= 1+max dg -min dg]
+safe (<|)(viewL) ==>> [1+ min dg -min nd <= min dg -1 <= -1+ max dg -max nd]
+  [2 <= min nd <= max nd <= max dg -min dg]
+    约束甲
+
+
+app3.nodes 需将m个元素打包成Node（m>=2*min dg）
+  [min nd <= 2*min dg][nd值可以组成[2*min dg..]的所有值]
+    约束乙
+最终约束
+  [2 <= min nd <= max nd <= max dg -min dg]
+    约束甲
+  [min nd <= 2*min dg][nd值可以组成[2*min dg..]的所有值]
+    约束乙
+
+
+==================================[ZZZ
+Each deque operation may recurse down the spine of the finger tree, and thus take O(logn) time in the worst case.
+  However, it can be shown that these operations take only O(1) amortized time, even in a persistent setting.
+  The analysis is essentially the same as Okasaki’s for implicit deques (Okasaki, 1998).
+  We outline the main points here.
+We classify digits of two or three elements (which are isomorphic to elements of type Node a) as safe, and those of one or four elements as dangerous.
+  A deque operation may only propagate to the next level from a dangerous digit
+    , but in doing so it makes that digit safe
+    , so that the next operation to reach that digit will not propagate.
+  Thus, at most half of the operations descend one level, at most a quarter two levels, and so on.
+  Consequently, in a sequence of operations, the average cost is constant.
+==================================]ZZZ
+==================================[ZZZ
+inc<b>(x..y) = b进制数，从x，+1，至y 的过程中，修改的数字位的总数
+[b >= 2]
+[x <= y]
+
+[inc<b>(x..x) = 0]
+[0 <= y < b] ==>> [inc<b>(0..y) = y]
+[inc<b>(0..b) = 1+b]
+[inc<b>(0..b^(e+1)) = 1+b*inc<b>(0..b^e)]
+[inc<b>(0..b^e)
+  = 1+b+b^2+...+b^(e-1) + b^e*inc<b>(0..b^0)
+  = (b^(e+1)-1)/(b-1)
+]
+[inc<b>(0..y)
+  <= inc<b>(0..b^ceil_log<b>(y))
+  <= (b^(1+ceil_log<b>(y)) -1)/(b-1)
+  <= (y*b^2 -1)/(b-1)
+]
+[inc<b>(x..y)
+  中间可能出现的最长突变 + 其余平凡递增
+  <= floor_log<b>(y) +inc<b>(0..y-x)
+  <= floor_log<b>(y) + ((y-x)*b^2 -1)/(b-1)
+]
+
+
+====
+let b = len {1,2,3,4} = 4 # Digit
+O((<|^)<m,n>)
+  = O(inc<b>(n..n+m))
+  = O(floor_log<b>(n+m) + (m*b^2 -1)/(b-1))
+  = O(log<b>(n+m) + m*b^2/(b-1))
+O((<|^)<m,n>) = O(log<b>(n+m) + m*b^2/(b-1))
+
+==================================]ZZZ
+
+
+
+
+
+
+==================================[ZZZ
+app3:: FingerTree a -> [a] -> FingerTree a -> FingerTree a
+app3 Empty ls ys= ls <|^ ys
+app3 xs ls Empty= xs |>^ ls
+app3 (Single x) ls ys = x <| (ls <|^ ys)
+app3 xs ls (Single y) = (xs |>^ ls) |> y
+app3 (Deep pr1 m1 sf1) ls (Deep pr2 m2 sf2)
+= Deep pr1 (app3 m1 (nodes (sf1++ ls ++ pr2)) m2) sf2
+
+
+nodes:: [a] -> [Node a]
+nodes [a,b]= [Node2 a b]
+nodes [a,b,c]= [Node3 a b c]
+nodes [a,b,c,d]= [Node2 a b,Node2 c d]
+nodes (a : b : c : ts) = Node3 a b c : nodes ts
+
+instance Monoid FingerTree where
+  m00 = Empty
+  xs ++ ys = app3 xs [] ys
+==================================]ZZZ
+O(FingerTree.++) = O(log(min(nL,nR)))
+what about
+  nodes (a : b : ts) = Node2 a b : nodes ts
+
+O(app3<nL,m,nR>) =?
+  dg = 1..4 #Digit
+  b = 1 + max dg - min dg
+  nd = 2..3 >= 2 #Node3
+  m0 = m
+  m1 <= (dg+m0+dg +nd-1)//nd
+  moo = (dg+moo+dg +nd-1)//nd
+  (dg+moo+dg) <= moo*nd <= (dg+moo+dg +nd-1)
+  (2*dg) <= moo*(nd-1) <= (2*dg +nd-1)
+  (2*dg)/(nd-1) <= moo <= (2*dg)/(nd-1) +1
+  moo <= (2*dg)//(nd-1) +1
+  m[k] = moo
+  min k = ?
+    m1*nd <= (dg+m0+dg +nd-1)//nd
+    (dg+m0+dg) <= m1*nd <= (dg+m0+dg +nd-1)
+    m1*nd -(2*dg+nd-1) <= m0 <= m1*nd -2*dg
+    m[i] <= m[i+1]*nd -2*dg
+      <= (m[i+2]*nd -2*dg)*nd -2*dg
+      <= == m[i+2]*nd^2 -2*dg*(nd+1)
+      <= m[i+k]*nd^k -2*dg*(nd^k-1)/(nd-1)
+      ::同理
+      >= m[i+k]*nd^k -(2*dg+nd-1)*(nd^k-1)/(nd-1)
+    m0 <= moo*nd^k -2*dg*(nd^k-1)/(nd-1)
+      <= == nd^k *(moo -2*dg/(nd-1)) +2*dg/(nd-1)
+      <= nd^k +2*dg/(nd-1)
+      ::同理
+      >= 0 >= nd^k*(moo -(2*dg+nd-1)/(nd-1)) +(2*dg+nd-1)/(nd-1)
+    k >= log<nd>((m0 -2*dg/(nd-1)))
+    <<==
+    k >= log<nd>((m0)
+    ==>>
+  [k >= log<nd>((m0)] -> [m[k]==moo]
+
+  tree_depth<dg,nd>(n, d=0) = ?
+    | n < 2*dg = d
+    | n >= 2*dg = recur((n-2*dg+nd-1)//nd, d+1)
+    = max {d | n >= min_tree_size_of_depth<dg,nd>(d)}
+    = max {d | n >= 2*dg*(nd^d-1)/(nd-1)}
+    = max {d | 1+n*(nd-1)/(2*dg) >= nd^d}
+    = floor_log<nd>(1+n*(nd-1)/(2*dg))
+  min_tree_size_of_depth<dg,nd>(d) = ?
+    | d = 0 = 0
+    | d > 0 = 2*dg +nd*recur(d-1)
+    = 2*dg*(1+...nd^(d-1)) +nd^d*(1-1)
+    = 2*dg*(nd^d-1)/(nd-1)
+  ==
+  let k = max k = log<min nd>((m)
+  let d = max tree_depth(nn)
+      = tree_depth<min dg, min nd>(nn)
+      = floor_log<min nd>(1+nn*(min nd-1)/(2*min dg))
+  let mm = max(nL,nR)
+  let nn = min(nL,nR)
+  let b = 1 + max dg - min dg
+  let moo = max moo <= (2*max dg)//(min nd-1) +1
+  O(app3<nL,m,nR>)
+    <= sum (dg+m[i]+dg) {i=0..k})
+    + max(0,d-k)*m[k]
+    + d
+    + O((<|^)<m[d], ...>)
+    <= 2*dg*(k+1)+sum (m0+sum 2*dg*nd^j {j=0..i})/nd^i +1 {i=0..k}
+        #= (1+2*dg)*(k+1)+sum m0/nd^i +2*dg*(sum nd^j {j=0..i})/nd^i {i=0..k}
+        #< (1+2*dg)*(k+1)+ m0*nd/(nd-i) +2*dg*sum (nd^(i+1)-1)/(nd-1)/nd^i {i=0..k}
+        #< (1+2*dg)*(k+1)+ m0*nd/(nd-1) +2*dg/(nd-1) *nd*(1+k)
+        #< (1+2*dg*(2*nd-1)/(nd-1))*(k+1)+ m0*nd/(nd-1)
+    + d*moo
+    + d
+    + O((<|^)<m0+moo, mm>)
+    ###!! O((<|^)<m,n>) = O(log<b>(n+m) + m*b^2/(b-1))
+    <= (1+2*dg*(2*nd-1)/(nd-1))*(k+1)+ m0*nd/(nd-1)
+    + (moo+1)*d
+    + O(log<b>(mm+m0+moo) + (m0+moo)*b^2/(b-1))
+    #moo/dg/nd/b 常量
+    <= O(
+    + (1+2*dg*(2*nd-1)/(nd-1))*(k+1)
+      #k ~ log m
+    + m*nd/(nd-1)
+      #m
+    + (moo+1)*d
+      #d ~ log nn
+    + log<b>(mm+m+moo)
+      #log $ mm+m
+    + (m+moo)*b^2/(b-1)
+      #m
+    )
+    <= O(m+log(mm+m))
+O(app3<nL,m,nR>) = O(m+log(m+max(nL,nR)))
+
+
+
+
+
+
+
+
+
+=====
+==================================[ZZZ
+4 Annotated sequences
+Finger trees serve remarkably well as implementations of catenable deques.
+  In this section we shall present a modification of these trees
+    , which also provides positional and set-theoretic operations, such as
+      taking or dropping the first n elements of a sequence
+      or partitioning an ordered sequence around a pivot element.
+As a common characteristic, all of these operations involve searching for an element with a certain property.
+  For example, partitioning an ordered sequence involves searching for the minimum element that is larger than or equal to the pivot element.
+  Thus, if we want to implement the additional operations with reasonable efficiency, we must be able to steer this search.
+  To this end we augment the internal nodes of a finger tree by an additional field that contains positional or ordering information or both.
+==================================]ZZZ
+==================================[ZZZ
+class (Monoid v) => Measured a v where
+  [* *] :: a -> v
+
+#caching measurements
+data Node v a = Node2 v a a | Node3 v a a a
+instance (Monoid v) => Measured (Node v a) v where
+instance (Measured a v) => Measured (Digit a) v where
+data FingerTree v a
+  = Empty
+| Single a
+| Deep v (Digit a) (FingerTree v (Node v a)) (Digit a)
+
+#auto-fill
+deep :: (Measured a v)
+  => Digit a
+  -> FingerTree v (Node v a)
+  -> Digit a
+  -> FingerTree v a
+infixr 5 <|
+(<|) :: (Measured a v) => a -> FingerTree v a -> FingerTree v a
+==================================]ZZZ
+NOTE: <|, deepL, app3.nodes
+==================================[ZZZ
+data Split f a = Split (f a) a (f a)
+data MySplit f a = MySplit (f a) (f a)
+clasa (Reduce f) => MySplitable f where
+  my_splitL :: Measured a v => (v->Bool) -> v -> f a -> MySplit f a
+    #[MySplit lft rgh := my_splitL pred init whl]
+    #   ->  [[lft++rgh===whl
+    #       ][[not$null lft]->[not . pred $ init++[*lft*] ]
+    #       ][[not$null rgh]->[pred $ init++[*lft*]++[*head rgh*] ]
+    #       ]]
+    #
+
+takeUntil,dropUntil
+  :: (Measured a v)
+  => (v -> Bool)
+  -> FingerTree v a -> FingerTree v a
+takeUntil p = fst· split p
+dropUntil p = snd · split p
+
+lookupTree :: (Measured a v) => (v -> Bool) -> v -> FingerTree v a -> Maybe (v,a)
+
+==================================]ZZZ
+
+
+
+
+==================================[ZZZ
+4.5 Application: random-access sequences
+
+newtype Size = Size{getSize :: N}
+  deriving (Eq,Ord)
+instance Monoid Size where
+  m00 = Size 0
+  Size m ++ Size n = Size (m + n)
+
+newtype Elem a = Elem{getElem :: a}
+newtype Seq a = Seq (FingerTree Size (Elem a))
+instance Measured (Elem a) Size where
+  [* Elem *] = Size 1
+
+length:: Seq a -> N
+length (Seq xs) = getSize [* xs *]
+
+splitAt:: N -> Seq a -> (Seq a,Seq a)
+splitAt i (Seq xs) = (Seq l,Seq r)
+  where (l,r)= split (Size i <) xs
+
+(!):: Seq a -> N -> a
+Seq xs ! i= getElem x
+  where Split _ x _ = splitTree (Size i <) (Size 0) xs
+
+Exercise 5. Use Seq to def deque operations, noting that it is sometimes faster to recompute sizes using subtraction instead of addition.
+
+
+==================================]ZZZ
+
+
+
+==================================[ZZZ
+4.6 Application: max-priority queues
+
+data Prio a = MInfty | Prio a
+  deriving (Eq,Ord)
+instance (Ord a) => Monoid (Prio a) where
+  m00 = MInfty
+  MInfty ++ p= p
+  p ++ MInfty = p
+  Prio m ++ Prio n = Prio (m `max` n)
+
+newtype PQueue a = PQueue (FingerTree (Prio a) (Elem a))
+instance (Ord a) => Measured (Elem a) (Prio a) where
+  [* Elem x *] = Prio x
+
+extractMax:: (Ord a) => PQueue a -> (a,PQueue a)
+extractMax (PQueue q) = (x,PQueue (l ++ r))
+  where Split l (Elem x) r = splitTree ([*q*] <=) m00 q
+Exercise 6. Show that it is possible to find an element > any k in O(log(n)) time, and all m of them in O(mlog(n/m)) time.
+
+==================================]ZZZ
+==================================[ZZZ
+Interestingly, the type PQueue is quite close to 2-3-4 heaps (Cormen et al., 2001)
+  , which are priority queues based on 2-3-4 trees:
+    all the data is stored in the leaves;
+    the inner nodes hold the largest keys of their subtrees.
+  As is typical of heaps, there is no constraint on the order of the elements within the leaves.
+  Consequently, to insert an element we simply add it to the queue using (<|) or (|>).
+  Extracting the element with the largest key is implemented in terms of splitTree (we assume that the queue is non-empty).
+==================================]ZZZ
+
+
+
+
+==================================[ZZZ
+4.7 Application: ordered sequences
+  #ordered multiset
+  #priority queue
+
+data Key a = NoKey | Key a
+  deriving (Eq,Ord)
+instance Monoid (Key a) where
+  #last key
+  m00 = NoKey
+  k ++ NoKey = k
+  _ ++ k= k
+
+newtype OrdSeq a = OrdSeq (FingerTree (Key a) (Elem a))
+instance Measured (Elem a) (Key a) where
+  [*Elem x*] = Key x
+
+
+partition :: (Ord a) => a -> OrdSeq a -> (OrdSeq a,OrdSeq a)
+partition k (OrdSeq xs) = (OrdSeq l,OrdSeq r)
+  where (l,r) = split (> Key k) xs
+
+insert :: (Ord a) => a -> OrdSeq a -> OrdSeq a
+insert x (OrdSeq xs) = OrdSeq (l ++ (Elem x <| r))
+  where (l,r) = split (> Key x) xs
+
+deleteAll :: (Ord a) => a -> OrdSeq a -> OrdSeq a
+deleteAll x (OrdSeq xs) = OrdSeq (l ++ r)
+  where
+    (l, mr) = split (>= Key x) xs
+    (m ,r) = split (> Key x) mr
+
+
+merge :: (Ord a) => OrdSeq a -> OrdSeq a -> OrdSeq a
+merge (OrdSeq xs) (OrdSeq ys) = OrdSeq (merge_ xs ys)
+  where merge_ as bs = case viewL bs of
+    NilL-> as
+    ConsL h ts -> l ++ (h <| merge_ ts r)
+      #注意：merge_参数位置互换
+      where (l,r) = split (> [*h*]) as
+
+==================================]ZZZ
+==================================[ZZZ
+merge_
+  #注意：merge_参数位置互换
+The function partitions the two input sequences into the minimum number of segments that must be reordered to obtain an ordered output sequence.
+  The algorithm is similar to the merge of lists.
+  It is, however, more efficient since it uses exponential and binary search rather than linear search.
+  It can be shown that merge is asymptotically optimal:
+    it takes O(mlog(n/m)) amortized time where m and n are the lengths of the shorter and longer input sequences respectively (Moffat et al., 1992).
+  Furthermore, merge exhibits an adaptive behaviour:
+    for sequences xs and ys with max xs <= min ys (or vice versa) merging degenerates to concatenation.
+    So, in this favourable case we have a running time of O(logm).
+==================================]ZZZ
+==================================[ZZZ
+Exercise 7. In the above implementation, all the annotations stored in the tree have the form Key x, which suggests an optimization. Redefine splitTree, deep and the Measured instance for lists to avoid relying on m00 being the right identity of ++ so we can use the binary function \x y -> y instead.
+Exercise 8. Implement the intersection of two ordered sequences.
+Exercise 9. Combine sizes with split keys to get order statistics. The ith order statistic of a collection of n elements is the ith smallest element (Cormen et al., 2001).
+
+==================================]ZZZ
+
+
+
+
+==================================[ZZZ
+4.8 Application: interval trees
+
+Our final application augments finger trees to support query operations on sets of intervals:
+  we show how to find an interval that overlaps with a given interval in O(log(n)), and all m of them in O(mlog(n/m)) time.
+
+instance (Monoid a,Monoid b) => Monoid (a,b) where
+  m00 = (m00, m00)
+  (a,b) ++ (a0,b0) = (a ++ a0, b ++ b0)
+
+# closed interval
+data Interval = Interval{low :: R,high :: R}
+  #with low i <= high i.
+Two intervals i and j overlap when
+  low i <= high j && low j <= high i
+
+newtype IntervalTree = IntervalTree (FingerTree (Key R,Prio R) Interval)
+
+instance Measured Interval (Key R,Prio R) where
+  [*i*] = (Key (low i),Prio (high i))
+
+We order the intervals by their low endpoints, and additionally annotate with the maximum of the high endpoints.
+  Interval trees are an instance of priority search queues (McCreight, 1985)
+  , which simultaneously support dictionary operations on keys and priority queue operations on priorities.
+
+atleast,greater :: R -> (Key R,Prio R) -> Bool
+atleast k (_,m) = Prio k <= m
+greater k (n,_) = Key k < n
+
+
+intervalSearch:: IntervalTree -> Interval -> Maybe Interval
+intervalSearch (IntervalTree t) i
+  | atleast (low i) [*t*] && low x <= high i = Just x
+  | otherwise= Nothing
+  where Split _ x _ = splitTree (atleast (low i)) m00 t
+
+intervalMatch:: IntervalTree -> Interval -> [Interval]
+intervalMatch (IntervalTree t) i = matches (takeUntil (greater (high i)) t)
+  where matches xs = case viewL (dropUntil (atleast (low i)) xs) of
+    NilL-> []
+    ConsL h ts -> h : matches ts
+
+==================================]ZZZ
+==================================[ZZZ
+==================================]ZZZ
+
+
