@@ -1,0 +1,187 @@
+
+POD-and-union.txt
+
+
+https://stackoverflow.com/questions/1873219/strange-behaviour-class-objects-inside-union
+
+Strange Behaviour Class Objects Inside Union
+c++ unions
+
+Hi I wanted know the reasons of the following code
+
+void main()
+{
+  class test
+  {
+    public:
+      test(){}
+      int k;
+  };
+
+  class test1
+  {
+    public:
+      test1(){}
+      int k;
+  };
+
+  union Test
+  {
+    test t1;
+    test1 t2;   
+  };
+}
+
+For the Above code it gives error "error C2620: union 'Test' : member 't1' has user-defined constructor or non-trivial default constructor"
+
+class test
+{
+  public:
+  //test(){}
+  int k;
+};
+
+class test1
+{
+  public:
+  //test()1{}; 
+  int k;
+};
+
+union Test
+{
+  test t1;
+  test1 t2; 
+};
+
+For the Above, No Errors.
+
+I wanted to know the Reasons.
+
+Thank you in Advance. :)
+share improve this question
+asked Dec 9 '09 at 11:17
+Namratha Patil
+9,570●1818 gold badges●5353 silver badges●7070 bronze badges
+edited Apr 10 '13 at 4:53
+user1131435
+
+    1
+    As the answers have already been provided I would just like to tell you that your first code has a wrong return type for main. main() should always return an 'int' in C/C++. – Prasoon Saurav Dec 9 '09 at 11:33
+    1
+    Just for the record: C++0x will have support for classes with non-trivial constructor/destructors inside unions. – David Rodríguez - dribeas Dec 9 '09 at 12:11
+    Also in class test1 the ctor is named test instead of test1. – the_drow Dec 9 '09 at 12:12
+
+add a comment
+3 Answers
+order by
+Up vote
+18
+Down vote
+Accepted
+
+According to the C++ standard (§9.5.1, cited as well in other answers):
+
+    A union can have member functions (including constructors and destructors), but not virtual functions. A union shall not have base classes. A union shall not be used as a base class. An object of a class with a non-trivial constructor, a non-trivial copy-constructor, a non-trivial destructor, or a non-trivial copy assignment operator cannot be a member of a union, nor can an array of such objects. If a union contains a static data member, or a member of a reference type, the program is ill-formed.
+
+I first linked to the Wikipedia article about POD types which states:
+
+    A POD type in C++ is defined as either a scalar type or a POD class. POD class has no user-defined copy assignment operator, no user-defined destructor, and no non-static data members that are not themselves PODs. Moreover, POD class must be an aggregate, meaning it has no user-declared constructors, no private nor protected non-static data, no bases and no virtual functions. The standard includes statements about how PODs must behave in C++.
+
+and
+
+    In certain contexts, C++ allows only POD types to be used. For example, a union in C++ cannot contain a class that has virtual functions, or nontrivial constructors or destructors. This restriction is imposed because the compiler cannot know which constructor or destructor should be called for a union.
+
+The first sentence of the second paragraph might make you think C++ only allows POD types to be part of a union. This isn't exactly the case as it allows a class with private members to be part of a union:
+
+#include <iostream>
+using namespace std;
+
+class test1
+{
+  int i;
+};
+
+class test2
+{
+  int i;
+};
+
+union test
+{
+  test1 t1;
+  test2 t2;
+};
+
+int main()
+{
+  cout << __is_pod(test1) << endl;
+  cout << __is_pod(test2) << endl;
+  cout << __is_pod(test) << endl;
+
+  return 0;
+}
+
+The program above compiled with MSVC++ prints out:
+
+0
+0
+1
+
+share improve this answer
+answered Dec 9 '09 at 11:19
+Gregory Pakosz
+64.3k●1616 gold badges●132132 silver badges●162162 bronze badges
+edited Dec 9 '09 at 11:52
+
+    @Gregory: ignore my previous comment, as I'm now less certain about this. This is how I view the situation: the standard (in 9.5.1) doesn't explicitly forbid non-POD types in unions, but rather forbids types which have non-trivial constructors/destructors/assignment operators. This definition certainly overlaps with POD to an extent, but the definition of POD also forbids private member variables, which, as far as I can tell, are not excluded from unions. So it seems certain non-PODs are allowed in unions. But again, I'm not entirely certain about this. – Charles Salvia Dec 9 '09 at 11:40
+    indeed, union work with types having private member variables although those would not be considered as POD – Gregory Pakosz Dec 9 '09 at 11:43
+    @Charles: A class with private member attributes and trivial constructor is problematic (members would be uninitialized), so I cannot really think of a real world example where that would apply – David Rodríguez - dribeas Dec 9 '09 at 12:10
+    @dribeas: Yes, it would be odd. But the non-POD class could still have member functions which make use of those private member variables. – Charles Salvia Dec 9 '09 at 12:14
+    Is this valid for C++11 ?@GregoryPakosz – asheeshr Nov 19 '12 at 15:33
+
+add a comment
+Up vote
+9
+Down vote
+
+The C++ standard puts certain restrictions on the types of data which can be placed inside of a union. In 9.5.1 the standard reads:
+
+    An object of a class with a non-trivial constructor, a non-trivial copy-constructor, a non-trivial destructor, or a non-trivial copy assignment operator cannot be a member of a union, nor can an array of such objects. If a union contains a static data member, or a member of a reference type, the program is ill-formed.
+
+So your program doesn't work because you explicitly define a constructor, and therefore your object violates the non-trivial constructor restriction.
+share improve this answer
+answered Dec 9 '09 at 11:19
+Charles Salvia
+47.7k●1212 gold badges●118118 silver badges●138138 bronze badges
+edited Dec 9 '09 at 12:05
+
+Up vote
+5
+Down vote
+
+In C++, unions may not contain classes with (non-trivial) constructors or destructors. This is because the compiler has no means of telling which constructor or destructor to use when a union instance is created or destroyed.
+share improve this answer
+answered Dec 9 '09 at 11:20
+anon
+Your Answer
+Body
+
+    Add picture
+
+Log in
+or
+Name
+Email
+
+By clicking “Post Your Answer”, you agree to our terms of service, privacy policy and cookie policy
+meta chat tour help blog privacy policy legal contact us full site
+
+2020 Stack Exchange, Inc. user contributions under cc by-sa
+Stack Overflow requires external JavaScript from another domain, which is blocked or failed to load. Retry using another source.
+
+
+
+
+
+

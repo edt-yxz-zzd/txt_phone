@@ -1,0 +1,383 @@
+wait-free queue(2016)
+  A Wait-free Queue as Fast as Fetch-and-Add
+    Chaoran Yang, John Mellor-Crummey
+
+FAA = fetch_and_add
+CAS = compare_and_swap
+
+=====并发对象 分类
+  There are three levels of progress guarantees for non-blocking data structures. A concurrent object is:
+    - obstruction-free if a thread can perform an arbitrary operation in a finite number of steps when it executes in isolation
+    - lock-free if some thread performing an arbitrary operation on the object will complete in a finite number of steps
+    - wait-free if every thread can perform an arbitrary operation on the object in a finite number of steps
+
+====活锁livelock实例
+wait-free queue(2016)
+  无阻塞有活锁的队列
+    活锁 触发:
+      频繁出现 队列头指针乙 == 队列止指针丙
+      入队
+        初时1 ==
+        分配完2 <
+        暂停3 ==
+        CAS失败，循环
+      出队
+        初时2 <
+        分配完3 ==
+        CAS成功
+        暂停2 <
+        循环
+
+  初始化：
+    type 数据指针 = 自然数
+    type 泛数据指针一
+      = 指针值未初始化
+      | 真数据指针 数据指针
+    type 泛数据指针二
+      = 指针值未初始化
+      | 指针值不可覆盖
+      | 真数据指针 数据指针
+    无限长数组甲 :: [泛数据指针二]
+    无限长数组甲 = 重复 指针值未初始化
+    队列头指针乙 :: 数据指针
+    队列头指针乙 = 0
+    队列止指针丙 :: 数据指针
+    队列止指针丙 = 0
+
+    全局约束:
+      无限长数组甲 的 元素 只能 修改一次
+      @i. [队列头指针乙 <= i] -> [无限长数组甲[i] != 指针值不可覆盖]
+      @i. @a. [队列止指针丙 <= i] -> [无限长数组甲[i] != 真数据指针 a]
+      ==>> @i. [max 队列头指针乙 队列止指针丙 <= i] -> [无限长数组甲[i] == 指针值未初始化]
+
+  def 入队（数据指针子）:
+    #循环 定位/分配内存
+    1）var 原队列止指针丑 = 调用 FAA（&队列止指针丙，1）
+    2）var 是否成功寅 = 调用 CAS（目标=无限长数组甲+原队列止指针丑，旧值=指针值未初始化，新值=真数据指针 数据指针子）
+    3）成功则 返回，失败则 跳回1）
+
+  def 出队（）-> 泛数据指针一:
+    1）若 队列止指针丙 <= 队列头指针乙，则 返回 指针值未初始化
+    #循环 定位/消费内存
+    2）var 原队列头指针卯 = 调用 FAA（&队列头指针乙，1）
+    3）var 是否成功寅 = 调用 CAS（目标=无限长数组甲+原队列头指针卯，旧值=指针值未初始化，新值=指针值不可覆盖）
+    4）失败则 返回 无限长数组甲[原队列头指针卯]
+    5）跳回1）
+
+====活锁livelock实例，原文:
+an obstruction-free queue using an infinite array.
+  Queue = make_array(let ls = 丄 : ls in ls)
+  Head = 0
+  Tail = 0
+
+1 enqueue(x: var) {
+2   do t := FAA(&Tail, 1);
+3   while (!CAS(&Queue[t], 丄, x));
+4 }
+
+5 dequeue(): var {
+6   do h := FAA(&Head, 1);
+7   while (CAS(&Q[h], 丄, 丅) and Tail > h);
+8   return (Q[h] == 丅 ? EMPTY : Q[h]);
+9 }
+
+
+
+
+
+
+
+
+
+wait-free queue(2016)
+  A Wait-free Queue as Fast as Fetch-and-Add
+    Chaoran Yang, John Mellor-Crummey
+
+
+
+#Listing 2. Structures and auxiliary methods.
+
+struct EnqReq:
+  void *val;
+  struct { int pending : 1; int id : 63; } state;
+struct DeqReq:
+  int id : 64;
+  struct { int pending : 1; int idx : 63; } state;
+struct Cell:
+  void *val; EnqReq *enq; DeqReq *deq;
+struct Segment:
+  int id : 64; Segment *next; Cell cells[N];
+struct Queue:
+  Segment *Q; int T : 64; int H : 64;
+struct Handle:
+  Segment *tail, *head;
+  Handle *next;
+  struct { EnqReq req; Handle * peer; } enq;
+  struct { DeqReq req; Handle * peer; } deq;
+Segment *new_segment(int id):
+  Segment *s := new Segment;
+  s->id := id;
+  s->next := null;
+  for (i := 0; i < N; i++) s->cells[i] := (丄值, 丄入, 丄出);
+  return s;
+
+
+Cell *find_cell(Segment **sp, int cell_id):
+  s := *sp; // invariant: sp points to a valid segment
+  // traverse list to target segment with id cell_id/N
+  for (i := s->id; i < cell_id/N; i++) {
+    next := s->next;
+    if (next = null) {
+      // the list needs another segment.
+      // allocate one and try to extend the list.
+      tmp := new_segment(i + 1);
+      if (!CAS(&s->next, null, tmp)) {
+        free(tmp); // another thread extended the list
+      }
+      // invariant: a successor segment exists
+      next := s->next;
+    }
+    s := next;
+  }
+  // invariant: s is the target segment (cell_id/N)
+  *sp := s; // return target segment
+  return &s->cells[cell_id mod N]; // return target cell
+void advance_end_for_linearizability(int *E, int cid):
+  // ensure head or tail index (*E) is at or beyond cid
+  do e := *E; while (e < cid and !CAS(E, e, cid));
+
+
+
+
+
+##Listing 3. Pseudo code for wait-free enqueue. help enq is called by a dequeue on each cell from which it tries to obtain a value.
+
+void enqueue(Queue *q, Handle *h, void *v):
+  for (p := PATIENCE; p >= 0; p--)
+      {if (enq_fast(q, h, v, &cell_id)) return;}
+  enq_slow(q, h, v, cell_id); // use id from last attempt
+bool try_to_claim_req(int *s, int id, int cell_id):
+  return CAS(s, (1, id), (0, cell_id));
+void enq_commit(Queue *q, Cell *c, void *v, int cid):
+  advance_end_for_linearizability(&q->T, cid+1);
+  //似乎不仅无需，而且是错的:读写竞争？：c->val := v; // record value in claimed cell
+bool enq_fast(Queue *q, Handle *h, void *v, int *cid):
+  // obtain cell index and locate candidate cell
+  i := FAA(&q->T, 1); c := find_cell(&h->tail, i);
+  if (CAS(&c.val, 丄值, v) return true; // enq complete
+  *cid := i; return false; // fail, returning  cell id
+void enq_slow(Queue *q, Handle *h, void *v, int cell_id):
+  // publish enqueue request
+  r := &h->enq.req; r->val := v; r->state := (1, cell_id);
+  // use a local tail pointer to traverse because
+  // line87 may need to find an earlier cell.
+  tmp_tail := h->tail;
+  do {
+    // obtain new cell index and locate candidate cell
+    i := FAA(&q->T, 1); c := find_cell(&tmp_tail , i);
+    // Dijkstra’s protocol
+    if (CAS(&c->enq, 丄入, r) and c.val == 丄值) {
+      try_to_claim_req(&r->state, id, i); // for cell i
+      // invariant: request claimed (even if CAS failed)
+      break;
+    }
+  } while (r->state.pending);
+  // invariant: req claimed for a cell; find that cell
+  line87: id := r->state.id; c := find_cell(&h->tail, id);
+  enq_commit(q, c, v, id);
+  // invariant: req committed before enq_slow returns it has helped all other threads.
+void *help_enq(Queue *q, Handle *h, Cell *c, int i):
+  if (!CAS(&c->val, 丄值, 丅值) and c->val != 丅值) return c->val;
+  // c->val is 丅值, so help slow-path enqueues
+  if (c->enq == 丄入){ // no enqueue request in c yet
+    do { // two iterations at most
+      p := h->enq.peer; r := &p->enq.req; s := r->state;
+      // break if I haven't helped this peer complete
+      if (h->enq.id = 0 or h->enq.id = s.id) break;
+      // peer request completed; move to next peer
+      h->enq.id := 0; h->enq.peer := p->next;
+    } while (1);
+    // if peer enqueue is pending and can use this cell,
+    // try to reserve cell by noting request in cell
+    if (s.pending and s.id <= i and !CAS(&c->enq, 丄入, r))
+      // failed to reserve cell for req, remember req id
+      {h->enq.id := s.id;}
+    else
+      // peer doesn’t need help, I can’t help, or I helped
+      {h->enq.peer := p->next;} // help next peer next time
+    // if can’t find a pending request, write 丅入 to
+    // prevent other enq helpers from using cell c
+    if (c->enq = 丄入) CAS(&c->enq, 丄入, 丅入);
+  }
+  // invariant: cell’s enq is either a request or 丅入
+  if (c->enq == 丅入) // no enqueue will fill this cell
+    // EMPTY if not enough enqueues linearized before i
+    {return (q->T <= i ? EMPTY : 丅值);}
+  // invariant: cell’s enq is a request
+  r := c->enq; s := r->state; v := r->val;
+  if (s.id > i)
+    // request is unsuitable for this cell
+    // EMPTY if not enough enqueues linearized before i
+    {if (c->val == 丅值 and q->T <= i) return EMPTY;}
+  else if (try_to_claim_req(&r->state, s.id, i) or
+    // someone claimed this request; not committed
+    (s == (0,i) and c->val == 丅值))
+    {enq_commit(q, c, v, i);}
+  return c->val; // c->val is 丅值 or a value
+    ##c->val updated by enq_commit()
+
+
+
+
+
+
+
+
+
+
+
+
+##Listing 4. Pseudo code for wait-free dequeue.
+
+void *dequeue(Queue *q, Handle  *h):
+  for (p := PATIENCE; p >= 0; p--) {
+    v := deq_fast(q, h, &cell_id);
+    if (v != 丅值) break;
+  }
+  if (v == 丅值) v = deq_slow(q, h, cell_id);
+  // invariant: v is a value or EMPTY
+  if (v != EMPTY) { // got a value, so help peer
+    help_deq(q, h, h->deq.peer);
+    h->deq.peer := h->deq.peer->next; // move to next peer
+  }
+  return v;
+void *deq_fast(Queue *q, Handle *h, int *id):
+  // obtain cell index and locate candidate cell
+  i := FAA(&q->H, 1); c := find_cell(&h->head, i);
+  v := help_enq(q, h, c, i);
+  if (v == EMPTY) return EMPTY;
+  // the cell has a value and I claimed it
+  if (v != 丅值 and CAS(&c->deq, 丄出, 丅出)) return v;
+  // otherwise fail, returning cell id
+  *id := i; return 丅值;
+void *deq_slow(Queue *q, Handle *h, int cid):
+  // publish dequeue request
+  r := &h->deq.req; r->id := cid; r->state := (1, cid);
+  help_deq(q, h, h);
+  // find the destination cell & read its value
+  i := r->state.idx; c := find_cell(&h->head, i);
+  v := c->val;
+  advance_end_for_linearizability(&q->H, i+1);
+  return (v == 丅值 ? EMPTY : v);
+void help_deq(Queue *q, Handle *h, Handle *helpee):
+  // inspect a dequeue request
+  r := helpee->deq.req; s := r->state; id := r->id;
+  // if this request doesn’t need help, return
+  if (!s.pending or s.idx < id) return;
+  // ha: a local segment pointer for announced cells
+  line164: ha := helpee->head;
+  line165: s := r->state; // must read after reading helpee->head
+  prior := id; i := id; cand := 0;
+  while (true) {
+    // find a candidate cell, if I don’t have one
+    // loop breaks when either find a candidate
+    // or a candidate is announced
+    // hc: a local segment pointer for candidate cells
+    for (hc := ha; !cand and s.idx = prior;) {
+      c := find_cell(&hc, ++i);
+      v := help_enq(q, hc, c, i);
+      // it is a candidate if it help_enq return EMPTY
+      // or a value that is not claimed by dequeues
+      if (v == EMPTY or (v != 丅值 and c->deq = 丄出)) cand := i;
+      // inspect request state again
+      else s := r->state;
+    }
+    if (cand) {
+      // found a candidate cell, try to announce it
+      CAS(&r->state, (1,prior), (1,cand));
+      s := r->state;
+    }
+    // invariant: some candidate announced in s.idx
+    // quit if request is complete
+    if (!s.pending or r->id != id) return;
+    // find the announced candidate
+    c := find_cell(&ha, s.idx);
+    // if candidate permits returning EMPTY (c->val == 丅值)
+    // or this helper claimed the value for r with CAS
+    // or another helper claimed the value for r
+    if (c->val ==丅值 or CAS(&c->deq,丄出,r) or c->deq == r) {
+      // request is complete, try to clear pending bit
+      CAS(&r->state, s, (0, s.idx));
+      // invariant: r is complete; r->state.pending=0
+      return;
+    }
+    // prepare for next iteration
+    prior := s.idx;
+    // if announced candidate is newer than visited cell
+    // abandon "cand" (if any); bump i
+    if (s.idx >= i) { cand := 0; i := s.idx; }
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+##Listing 5. Pseudo code for memory reclamation
+
+struct Queue { ...,int I : 64; };
+struct Handle { ..., Segment * hzdp; };
+void enqueue(Queue *q, Handle *h, void *v):
+  h->hzdp := h->tail;
+  ...
+  h->hzdp := null;
+void * dequeue(Queue *q, Handle *h):
+  h->hzdp := h->head;
+  ...
+  h->hzdp := null;
+  cleanup(q, h);
+  return v;
+void help_deq(Queue *q, Handle *h, Handle *peer):
+  ...
+  h->hzdp := ha; // between line164 and line165
+  ...
+void cleanup(Queue *q, Handle *h):
+  i := q->I; e := h->head;
+  if (i = -1) return;
+  if (e->id- i < MAX_GARBAGE) return;
+  if (!CAS(&q->I, i, -1)) return;
+  s := q->Q; hds := []; j := 0;
+  for (p := h->next; p != h and e->id > i; p := p->next) {
+    verify(&e, p->hzdp);
+    update(&p->head, &e, p);
+    update(&p->tail, &e, p);
+    hds[j++] := p;
+  }
+  // reverse traversal
+  while (e->id > i and j > 0) verify(&e, hds[--j]->hzdp);
+  if (e->id <= i) { q->Q := s; return; }
+  q->Q := e; q->I := e->id;
+  free_list(s, e);
+void update(Segment **from, Segment **to, Handle *h):
+  n := *from
+  if (n->id < (*to)->id) {
+    if (!CAS(from, n, *to)) {
+      n := *from;
+      if (n->id < (*to)->id) *to := n;
+    }
+    verify(to, h->hzdp);
+  }
+void verify(Segment **seg, Segment *hzdp):
+  if (hzdp and hzdp->id < seg->id) *seg := hzdp;
+
+

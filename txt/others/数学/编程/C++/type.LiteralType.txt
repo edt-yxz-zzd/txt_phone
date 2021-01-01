@@ -1,0 +1,104 @@
+https://en.cppreference.com/w/cpp/named_req/LiteralType
+
+C++ named requirements: LiteralType
+ 
+C++
+ 
+C++ named requirements
+ 
+
+Specifies that a type is a literal type. Literal types are the types of constexpr variables and they can be constructed, manipulated, and returned from constexpr functions.
+
+Note: the standard doesn't define a named requirement with this name. This is a type category defined by the core language. It is included here as a named requirement only for consistency.
+Requirements
+
+A literal type is any of the following:
+
+    possibly cv-qualified void (so that constexpr functions can return void); 
+
+	(since C++14)
+
+    scalar type;
+    reference type;
+    an array of literal type;
+    possibly cv-qualified class type that has all of the following properties: 
+
+        has a trivial (until C++20)constexpr (since C++20) destructor,
+        is either 
+
+            an aggregate type,
+            a type with at least one constexpr (possibly template) constructor that is not a copy or move constructor, 
+
+            a closure type 
+
+	(since C++17)
+
+        for unions, at least one non-static data member is of non-volatile literal type,
+        for non-unions, all non-static data members and base classes are of non-volatile literal types. 
+
+	(since C++17)
+
+        all non-static data members and base classes are of non-volatile literal types. 
+
+	(until C++17)
+Example
+
+Literal type that extends string literals:
+Run this code
+
+#include <iostream>
+#include <stdexcept>
+ 
+class conststr
+{
+    const char* p;
+    std::size_t sz;
+public:
+    template<std::size_t N>
+    constexpr conststr(const char(&a)[N]) : p(a), sz(N - 1) {}
+ 
+    constexpr char operator[](std::size_t n) const
+    {
+        return n < sz ? p[n] : throw std::out_of_range("");
+    }
+    constexpr std::size_t size() const { return sz; }
+};
+ 
+constexpr std::size_t countlower(conststr s, std::size_t n = 0,
+                                             std::size_t c = 0)
+{
+    return n == s.size() ? c :
+           s[n] >= 'a' && s[n] <= 'z' ? countlower(s, n + 1, c + 1) :
+                                        countlower(s, n + 1, c);
+}
+ 
+// output function that requires a compile-time constant, for testing
+template<int n>
+struct constN
+{
+    constN() { std::cout << n << '\n'; }
+};
+ 
+int main()
+{
+    std::cout << "the number of lowercase letters in \"Hello, world!\" is ";
+    constN<countlower("Hello, world!")>(); // implicitly converted to conststr
+}
+
+Output:
+
+the number of lowercase letters in "Hello, world!" is 9
+
+
+Defect reports
+
+The following behavior-changing defect reports were applied retroactively to previously published C++ standards.
+DR 	Applied to 	Behavior as published 	Correct behavior
+CWG 1951 	C++11 (class type)
+C++14 (void) 	unclear if cv-qualified void and class types are literal types 	they are
+See also
+is_literal_type
+(C++11)(deprecated in C++17)(removed in C++20)
+	checks if a type is a literal type
+(class template)
+

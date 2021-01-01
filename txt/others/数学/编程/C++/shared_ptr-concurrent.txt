@@ -1,0 +1,301 @@
+
+shared_ptr concurrent
+
+
+==================================[ZZZ
+shared_ptr concurrent
+  shared_ptr<T>(new T)
+    3块 内存:
+      shared_ptr 本身
+      引用计数 控制块
+      T 本身
+  make_shared<T>(...)
+    2块 内存:
+      shared_ptr 本身
+      相邻{引用计数 控制块 + T 本身}
+  3 个逻辑块 中
+    ，只有 引用计数 控制块 是 并发安全的
+    ，当 各线程 复制/修改 自己独占的shared_ptr副本时，安全
+      ，哪怕这些副本 指向 同一引用计数逻辑块
+    ，但当 各线程 读写 同一 shared_ptr 时，就需要同步
+
+  1) shared_ptr本身 的 同步问题
+    1.1) 如果 多个线程 复制 同一 shared_ptr 到 本地副本
+      ，没有 线程 试图修改 该shared_ptr
+      ，那么 只有 一件事 需要 保证:
+        shared_ptr的初始化 先于 所有 复制 操作
+      ，比如：在 这些 线程启动前 完成初始化，在 这些 线程停止后 才析构
+    1.2) 如果 有线程 修改该shared_ptr，则需要:
+      *)
+        读线程:
+          local = atomic_load_explicit(&global, std::memory_order_acquire);
+          或:
+          local = atomic_load_explicit(&global, std::memory_order_consume);
+        写线程:
+          atomic_store_explicit(&global, make_shared<T>(), std::memory_order_release);
+      *) 或
+        atomY y = ...;
+        读线程:
+          Y old_y = ...;
+          while(1){
+            Y new_y = y.load(std::memory_order_consume);
+            if (old_y==new_y){
+              std::this_thread::sleep_for(std::chrono::microseconds(1));
+            }else{
+              old_y = new_y;
+              break;
+            }
+          }
+          local = atomic_load_explicit(&global, std::memory_order_relaxed);
+
+        写线程:
+          atomic_store_explicit(&global, make_shared<T>(), std::memory_order_relaxed);
+          y.store(new_y_value, std::memory_order_release);
+  2) shared_ptr指向的T对象 的 同步问题
+    ...
+
+==================================]ZZZ
+
+
+==================================[ZZZ
+https://stackoverflow.com/questions/14482830/stdshared-ptr-thread-safety
+
+
+std::shared_ptr thread safety
+c++ std shared-ptr
+
+I've read that
+
+    "Multiple threads can simultaneously read and write different shared_ptr objects, even when the objects are copies that share ownership." (MSDN: Thread Safety in the Standard C++ Library)
+
+Does that mean that changing shared_ptr object is safe ?
+For an instance, is the next code considered safe:
+
+shared_ptr<myClass> global = make_shared<myClass>();
+...
+
+//In thread 1
+shared_ptr<myClass> private = global;
+...
+
+//In thread 2
+global = make_shared<myClass>();
+...
+
+Can I be sure in that case that thread 1 private will have the original value of global or the new value which thread 2 assigned but either way it will have a valid shared_ptr to myClass?
+
+==EDIT==
+Just to explain my motivation. I want to have a shared pointer to hold my configuration and I have a thread pool to handle requests.
+so global is the global configuration.
+thread 1 is taking the current configuration as it start to handle a request.
+thread 2 is updating the configuration. (only apply to future requests)
+
+If it's work, I can update the configuration that way without breaking it in the middle of a request handling.
+    ========
+    Multiple threads can simultaneously read and write "different" shared_ptr objects, The key word is "different" – Alok Save
+    ========err:
+    @AlokSave of course you can read and write to different objects...
+    ========
+    It is not "offcourse".
+    The smart pointer is pointing to a common helper object implementing the reference counting.
+    With a naive implementation the reference counting on the helper object could go wrong.
+    ========
+    I have extended my company's shared_ptr implementation to support weak_ptr.
+    And I can tell you, there is no way of making it thread safe other than by using full fledged critical sections within methods that manipulate reference counts. (the key part is the plural here)
+    Standards shared_ptr use atomic inc/dec and cmp/xch in the release() method to check against 0 before deleting.
+    This is not thread safe due to the 2nd ref count (the weak ref count).
+    A weak ref could turn shared after the test has passed, and you have a dangling. boom. – v.oddou
+      ====??? weak_ptr.lock() 显然要先确定 强引用数x 大于0，然后CAS(&强引用数，期望=x，赋新值=x+1)，完全没有问题！
+
+
+========
+What you're reading isn't meaning what you think it means. First of all, try the msdn page for shared_ptr itself.
+
+Scroll down into the "Remarks" section and you'll get to the meat of the issue. Basically, a shared_ptr<> points to a "control block" which is how it keeps track of how many shared_ptr<> objects are actually pointing to the "Real" object. So when you do this:
+
+shared_ptr<int> ptr1 = make_shared<int>();
+
+While there is only 1 call to allocate memory here via make_shared, there are two "logical" blocks that you should not treat the same. One is the int which stores the actual value, and the other is the control block, which stores all the shared_ptr<> "magic" that makes it work.
+
+It is only the control block itself which is thread-safe.
+
+I put that on its own line for emphasis. The contents of the shared_ptr are not thread-safe, nor is writing to the same shared_ptr instance. Here's something to demonstrate what I mean:
+
+// In main()
+shared_ptr<myClass> global_instance = make_shared<myClass>();
+// (launch all other threads AFTER global_instance is fully constructed)
+
+//In thread 1
+shared_ptr<myClass> local_instance = global_instance;
+
+This is fine, in fact you can do this in all threads as much as you want. And then when local_instance is destructed (by going out of scope), it is also thread-safe. Somebody can be accessing global_instance and it won't make a difference. The snippet you pulled from msdn basically means "access to the control block is thread-safe" so other shared_ptr<> instances can be created and destroyed on different threads as much as necessary.
+
+//In thread 1
+local_instance = make_shared<myClass>();
+
+This is fine. It will affect the global_instance object, but only indirectly. The control block it points to will be decremented, but done in a thread-safe way. local_instance will no longer point to the same object (or control block) as global_instance does.
+
+//In thread 2
+global_instance = make_shared<myClass>();
+
+This is almost certainly not fine if global_instance is accessed from any other threads (which you say you're doing). It needs a lock if you're doing this because you're writing to wherever global_instance lives, not just reading from it. So writing to an object from multiple threads is bad unless it's you have guarded it through a lock. So you can read from global_instance the object by assigning new shared_ptr<> objects from it but you can't write to it.
+
+// In thread 3
+*global_instance = 3;
+int a = *global_instance;
+
+// In thread 4
+*global_instance = 7;
+
+The value of a is undefined. It might be 7, or it might be 3, or it might be anything else as well. The thread-safety of the shared_ptr<> instances only applies to managing shared_ptr<> instances which were initialized from each other, not what they're pointing to.
+
+To emphasize what I mean, look at this:
+
+shared_ptr<int> global_instance = make_shared<int>(0);
+
+void thread_fcn();
+
+int main(int argc, char** argv)
+{
+    thread thread1(thread_fcn);
+    thread thread2(thread_fcn);
+    ...
+    thread thread10(thread_fcn);
+
+    chrono::milliseconds duration(10000);
+    this_thread::sleep_for(duration);
+
+    return;
+}
+
+void thread_fcn()
+{
+    // This is thread-safe and will work fine, though it's useless.  Many
+    // short-lived pointers will be created and destroyed.
+    for(int i = 0; i < 10000; i++)
+    {
+        shared_ptr<int> temp = global_instance;
+    }
+
+    // This is not thread-safe.  While all the threads are the same, the
+    // "final" value of this is almost certainly NOT going to be
+    // number_of_threads*10000 = 100,000.  It'll be something else.
+    for(int i = 0; i < 10000; i++)
+    {
+        *global_instance = *global_instance + 1;
+    }
+}
+
+A shared_ptr<> is a mechanism to ensure that multiple object owners ensure an object is destructed, not a mechanism to ensure multiple threads can access an object correctly. You still need a separate synchronization mechanism to use it safely in multiple threads (like std::mutex).
+
+The best way to think about it IMO is that shared_ptr<> makes sure that multiple copies pointing to the same memory don't have synchronization issues for itself, but doesn't do anything for the object pointed to. Treat it like that.
+
+Kevin Anderson
+    ========
+    what you say in your first lines is false. make_shared exist for the very good side effect of being capable of nesting both the int and the ref counters class into the same memory block. (to avoid fragmentation and limit cache misses, also to avoid the slowness of calling 2 new). There is only one malloc and 2 placement news using make_shared. – v.oddou
+    ========
+    You need to read a little further: Then what's really happening is TWO different sections of memory are being allocated. It's done at one time, but it's two "logical" blocks. Thinking of it as two logical blocks is important to understand what is and is not thread safe. – Zero
+    ========
+    v.oddou is right i that there is only one memory allocation. Then again, Zero (and Kevin) are right in that, logically, there are two memory regions, and only one of them is thread safe. Still, I think it's important to point that make_shared performs only one memory allocation. – Shachar Shemesh
+    ========
+    I said that already, though maybe not the way you wanted: "It's done at one time, but it's two "logical" blocks." – Kevin Anderson
+
+
+========
+To add to what Kevin wrote, the C++14 spec has additional support for atomic access to shared_ptr objects themselves:
+
+    20.8.2.6 shared_ptr atomic access [util.smartptr.shared.atomic]
+
+    Concurrent access to a shared_ptr object from multiple threads does not introduce a data race if the access is done exclusively via the functions in this section and the instance is passed as their first argument.
+
+So if you do:
+
+//In thread 1
+shared_ptr<myClass> private = atomic_load(&global);
+...
+
+//In thread 2
+atomic_store(&global, make_shared<myClass>());
+...
+
+it will be thread safe.
+
+Chris Dodd
+    ========
+    And you could presumably optimize by using the _explicit forms, right?
+    ... = atomic_load_explicit(&global, std::memory_order_acquire);
+    atomic_store_explicit(&global, make_shared<myClass>(), std::memory_order_release);
+    On strongly ordered systems like x86, these explicit forms don't even require memory barriers, where the default usage (with seq_cst) would. – ShadowRanger
+
+
+========
+It means you will have a valid shared_ptr, and a valid reference counting.
+
+You're describing a race condition between 2 threads that are trying to read/assign to the same variable.
+
+Because this is undefined behavior in general (it only makes sense in the context and timing of the individual program) shared_ptr doesn't handle that.
+
+Yochai Timmer
+Guy Avraham
+
+
+========
+Read operations are not subject to data races among themselves, hence it is safe to share the same instance of the shared_ptr between threads as long as all threads use const methods only (this includes creating copies of it). As soon as one thread uses non-const method (as in "point it to another object") such use is no longer thread safe.
+
+The OP example is not thread safe and would require the use of atomic load in thread 1. and atomic store in thread 2 (section 2.7.2.5 in C++11) to make it thread safe.
+
+The key word in MSDN text is indeed different shared_ptr objects, as already stated in previous answers.
+
+Leon
+
+========
+here is my understanding of thread safety of shared_ptr. IMO, there are three aspects when it comes to thread safety of shared_ptr.
+
+The first one is shared_ptr itself. I would say shared_ptr itself is not thread safe, which means there is a data race when we try to access one shared_ptr object in multiple threads and one of the accesses is writing. For example, we have a data race in the following situation:
+
+# Main Thread
+shared_ptr<string> global_ptr = make_shared<string>();
+string str = *global_ptr;
+
+# Thread 1
+global_ptr.reset();
+
+The second aspect is the internal structure of shared_ptr. I would say it is thread safe. The result is there is no data race when accessing multiple shared_ptr objects and the objects point to the same managed object. For example, we don't have data race in the following situation:
+
+# Main Thread
+shared_ptr<string> global_ptr = make_shared<string>();
+string str = *global_ptr;
+
+# Thread 1
+shared_ptr<string> local_ptr = global_ptr;
+local_ptr.reset();
+
+The third aspect is that the managed object in the shared_ptr might or might not be thread safe. For example, I would say there is a data race in the following situation:
+
+# Main Thread
+shared_ptr<string> global_ptr = make_shared<string>();
+string str = *global_ptr;
+
+# Thread 1
+shared_ptr<string> local_ptr = global_ptr;
+(*local_ptr).clear();
+
+References
+
+https://gcc.gnu.org/onlinedocs/libstdc++/manual/memory.html#shared_ptr.thread
+
+https://en.cppreference.com/w/cpp/memory/shared_ptr/atomic
+
+Lujun Weng
+
+==================================]ZZZ
+
+
+==================================[ZZZ
+==================================]ZZZ
+==================================[ZZZ
+==================================]ZZZ
+==================================[ZZZ
+==================================]ZZZ
+==================================[ZZZ
+==================================]ZZZ

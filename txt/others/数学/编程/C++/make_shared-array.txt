@@ -1,0 +1,110 @@
+
+参见:
+  e others/数学/编程/C++/shared_ptr-concurrent.txt
+  e others/数学/编程/C++/C++容器.txt
+    array/tuple
+  e others/数学/编程/C++/make_shared比直接构建 shared_ptr更好.txt
+
+make_shared array
+  https://stackoverflow.com/questions/22795012/initialize-stdarray-with-make-shared
+  typedef std::array<T, 2> pair;
+  ===
+  std::make_shared<pair>( pair{fst, snd} );
+  ===
+  pair p = {fst, snd};
+  std::make_shared<pair>(p);
+
+  https://www.boost.org/doc/libs/1_60_0/libs/smart_ptr/make_shared_array.html
+  boost::make_shared<T[]>(n)
+  boost::make_shared<T[]>(n, value)
+
+    boost::shared_ptr<int[]> a1 = boost::make_shared<int[]>(size, 1);
+    boost::shared_ptr<int[][2]> a2 = boost::make_shared<int[][2]>(size, {1, 2});
+
+    boost::shared_ptr<int[8]> a1 = boost::make_shared<int[8]>(1);
+    boost::shared_ptr<int[4][2]> a2 = boost::make_shared<int[4][2]>({1, 2});
+
+  namespace boost {
+      #value-initialized
+      template<class U> // U is T[]
+      shared_ptr<U> make_shared(size_t size);
+        #===C++20.make_shared
+      #default-initialized
+      template<class U> // U is T[N]
+      shared_ptr<U> make_shared_noinit();
+        #=== C++20.make_shared_for_overwrite
+  }
+
+https://stackoverflow.com/questions/13061979/shared-ptr-to-an-array-should-it-be-used
+  bad:
+    shared_ptr<int> sp(new int[10]);
+  good:
+    std::shared_ptr<int> sp( new int[10], std::default_delete<int[]>() );
+    std::shared_ptr<std::array<int,10>> ...
+      #shared_ptr<vector<int>>
+
+    =====
+    #C++17 only
+    shared_ptr<int[]> sp(new int[10]);
+      delete[]
+
+  With C++17, shared_ptr can be used to manage a dynamically allocated array. The shared_ptr template argument in this case must be T[N] or T[].
+  Prior to C++17, shared_ptr could not be used to manage dynamically allocated arrays. By default, shared_ptr will call delete on the managed object when no more references remain to it. However, when you allocate using new[] you need to call delete[], and not delete, to free the resource.
+
+===Why does unique_ptr get that partial specialization but shared_ptr does not?
+
+In order to correctly use shared_ptr with an array, you must supply a custom deleter.
+
+template< typename T >
+struct array_deleter
+{
+  void operator ()( T const * p)
+  {
+    delete[] p;
+  }
+};
+
+Create the shared_ptr as follows:
+
+std::shared_ptr<int> sp(new int[10], array_deleter<int>());
+
+Now shared_ptr will correctly call delete[] when destroying the managed object.
+
+The custom deleter above may be replaced by
+
+    the std::default_delete partial specialization for array types
+
+    std::shared_ptr<int> sp(new int[10], std::default_delete<int[]>());
+
+    a lambda expression
+
+    std::shared_ptr<int> sp(new int[10], [](int *p) { delete[] p; });
+
+Also, unless you actually need share onwership of the managed object, a unique_ptr is better suited for this task, since it has a partial specialization for array types.
+
+std::unique_ptr<int[]> up(new int[10]); // this will correctly call delete[]
+
+Changes introduced by the C++ Extensions for Library Fundamentals
+
+Another pre-C++17 alternative to the ones listed above was provided by the Library Fundamentals Technical Specification, which augmented shared_ptr to allow it to work out of the box for the cases when it owns an array of objects. The current draft of the shared_ptr changes slated for this TS can be found in N4082. These changes will be accessible via the std::experimental namespace, and included in the <experimental/memory> header. A few of the relevant changes to support shared_ptr for arrays are:
+
+— The definition of the member type element_type changes
+
+    #outdated: typedef T element_type;
+
+     typedef typename remove_extent<T>::type element_type;
+
+— Member operator[] is being added
+
+     element_type& operator[](ptrdiff_t i) const noexcept;
+
+— Unlike the unique_ptr partial specialization for arrays, both shared_ptr<T[]> and shared_ptr<T[N]> will be valid and both will result in delete[] being called on the managed array of objects.
+
+     template<class Y> explicit shared_ptr(Y* p);
+
+    Requires: Y shall be a complete type. The expression delete[] p, when T is an array type, or delete p, when T is not an array type, shall be well-formed, shall have well defined behavior, and shall not throw exceptions. When T is U[N], Y(*)[N] shall be convertible to T*; when T is U[], Y(*)[] shall be convertible to T*; otherwise, Y* shall be convertible to T*.
+
+Praetorian
+
+
+

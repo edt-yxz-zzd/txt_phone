@@ -1,0 +1,40 @@
+static_cast会改变指针的值
+static_cast/dynamic_cast 指针值 会改变吗？
+  class C:B1,B2,B3{};
+  C c;
+  assert((void*)&c == (void*)(B2*)&c); #fire
+  确实会改变
+
+https://www.cnblogs.com/chenyangchun/p/6795923.html
+reinterpret_cast:
+  两种用法:
+    1）转出 再 转回
+    2）用作 散列值
+
+另外，static_cast和reinterpret_cast的区别主要在于多重继承，比如
+
+复制代码
+
+class A {
+    public:
+    int m_a;
+};
+
+class B {
+    public:
+    int m_b;
+};
+
+class C : public A, public B {};
+
+复制代码
+　　那么对于以下代码：
+　　
+
+C c;
+printf("%p, %p, %p", &c, reinterpret_cast<B*>(&c), static_cast <B*>(&c));
+
+
+ 　前两个的输出值是相同的，最后一个则会在原基础上偏移4个字节，这是因为static_cast计算了父子类指针转换的偏移量，并将之转换到正确的地址（c里面有m_a,m_b，转换为B*指针后指到m_b处），而reinterpret_cast却不会做这一层转换。
+　因此, 你需要谨慎使用 reinterpret_cast。
+

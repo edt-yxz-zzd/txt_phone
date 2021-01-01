@@ -1,0 +1,71 @@
+
+shared_ptr析构函数的错误代码.txt
+  参见:我的shared_ptr优化.txt
+
+
+==================================
+https://stackoverflow.com/questions/14881056/confusion-about-implementation-error-within-shared-ptr-destructor
+
+
+Confusion about implementation error within shared_ptr destructor
+c++ c++11 atomic lock-free memory-model
+
+I have just seen Herb Sutter's talk: C++ and Beyond 2012: Herb Sutter - atomic<> Weapons, 2 of 2
+
+He shows bug in implementation of std::shared_ptr destructor:
+
+if( control_block_ptr->refs.fetch_sub(1, memory_order_relaxed ) == 0 )
+    delete control_block_ptr; // B
+
+He says, that due to memory_order_relaxed, delete can be placed before fetch_sub.
+
+    At 1:25:18 - Release doesn't keep line B below, where it should be
+
+How that is possible? There is happens-before / sequenced-before relationship, because they are both in single thread. I might be wrong, but there is also carries-a-dependency-to between fetch_sub and delete.
+
+If he is right, which ISO items support that?
+
+
+
+
+
+==================================
+Let's start out with this simple type:
+
+struct foo
+{
+    ~foo() { std::cout << value; }
+    int value;
+};
+
+And we'll use this type in a shared_ptr, as follows:
+
+void runs_in_separate_thread(std::shared_ptr<foo> my_ptr)
+{
+    my_ptr->value = 5;
+    my_ptr.reset();
+}
+
+int main()
+{
+    std::shared_ptr<foo> my_ptr(new foo);
+    std::async(std::launch::async, runs_in_separate_thread, my_ptr);
+    my_ptr.reset();
+}
+
+Two threads will be running in parallel, both sharing ownership of a foo object.
+
+With a correct shared_ptr implementation (that is, one with memory_order_acq_rel), this program has defined behavior. The only value that this program will print is 5.
+
+With an incorrect implementation (using memory_order_relaxed) there are no such guarantees. The behavior is undefined because a data race of foo::value is introduced. The trouble occurs only for cases when the destructor gets called in the main thread. With a relaxed memory order, the write to foo::value in the other thread may not propagate to the destructor in the main thread. A value other than 5 could be printed.
+
+So what's a data race? Well, check out the definition and pay attention to the last bullet point:
+
+    When an evaluation of an expression writes to a memory location and another evaluation reads or modifies the same memory location, the expressions are said to conflict. A program that has two conflicting evaluations has a data race unless either
+
+        both conflicting evaluations are atomic operations (see std::atomic)
+        one of the conflicting evaluations happens-before another (see std::memory_order)
+
+In our program, one thread will write to foo::value and one thread will read from foo::value. These are supposed to be sequential; the write to foo::value should always happen before the read. Intuitively, it makes sense that they would be as the destructor is supposed to be the last thing that happens to an object.
+
+memory_order_relaxed does not offer such ordering guarantees though and so memory_order_acq_rel is required.

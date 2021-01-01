@@ -1,0 +1,263 @@
+C++容器
+  string/regex
+  map set unordered_multimap
+  array tuple pair
+  std::bitset vs vector<bool>
+  container adaptor = stack/queue/priority_queue
+  forward_list vs list
+  advance vs std::next
+  ？std::deque random-access constant time
+  deque vs vector
+  vector vs std::array
+  valarray vs vector
+
+==================================[ZZZ
+string wstring
+  <regex>
+  std::regex wregex
+  typedef basic_regex<char> regex;
+
+  Member constants
+  These member constants are aliases of the homonym constants under the std::regex_constants namespace (see regex_constants for more details):
+  flag*	effects on syntax	Notes
+  icase	Case insensitive	Regular expressions match without regard to case.
+  nosubs	No sub-expressions	The match_results structure will not contain sub-expression matches.
+  optimize	Optimize matching	Matching efficiency is preferred over efficiency constructing regex objects.
+  collate	Locale sensitiveness	Character ranges, like "[a-b]", are affected by locale.
+
+  ===
+  The regular expression follows one of these grammars.
+  One (and only one) of these six grammar flags needs to be set for the bitmask to have a valid value.
+    ECMAScript	ECMAScript grammar
+    basic	Basic POSIX grammar
+    extended	Extended POSIX grammar
+    awk	Awk POSIX grammar
+    grep	Grep POSIX grammar
+    egrep	Egrep POSIX grammar
+  https://www.cplusplus.com/reference/regex/ECMAScript/
+
+
+
+==================================]ZZZ
+==================================[ZZZ
+set map
+unordered_set
+unordered_map
+unordered_multimap
+  hash<Key>
+  equal_to<Key>
+    <functional>
+    template <class T> struct hash;
+    template <class T> struct equal_to;
+
+  pair<const Key,T>
+    vs tuple
+    std::pair
+      <utility>
+      template <class T1, class T2> struct pair;
+      first
+      second
+      make_pair
+
+
+==================================]ZZZ
+==================================[ZZZ
+#array tuple get tuple_element, tuple_element
+  make_tuple
+  std::tuple_element<2,T>::type
+  std::tuple_size<T>::value
+  std::get<2>(t)
+
+  template <size_t I, class Tpl> class tuple_element;
+  template <class Tpl> class tuple_size;
+
+
+
+  // arrays as tuples
+  #include <iostream>
+  #include <array>
+  #include <tuple>
+
+  int main ()
+  {
+    std::array<int,3> myarray = {10, 20, 30};
+    std::tuple<int,int,int> mytuple (10, 20, 30);
+
+    std::tuple_element<0,decltype(myarray)>::type myelement;  // int myelement
+
+    myelement = std::get<2>(myarray);
+    std::get<2>(myarray) = std::get<0>(myarray);
+    std::get<0>(myarray) = myelement;
+
+    std::cout << "first element in myarray: " << std::get<0>(myarray) << "\n";
+    std::cout << "first element in mytuple: " << std::get<0>(mytuple) << "\n";
+
+    return 0;
+  }
+
+
+
+==================================]ZZZ
+==================================[ZZZ
+
+std::bitset
+  vs vector<bool>
+    固定大小与否
+  <bitset>
+  template <size_t N> class bitset;
+
+==================================]ZZZ
+==================================[ZZZ
+container adaptor
+  std::stack ~ vector, deque, list
+    empty
+    size
+    back
+    push_back
+    pop_back
+  std::queue ~ deque, list
+    empty
+    size
+    front
+    back
+    push_back
+    pop_front
+  std::priority_queue ~ vector, deque
+    random access iterator
+      #priority_heap
+    empty
+    size
+    front
+    push_back
+    pop_back
+
+
+==================================]ZZZ
+==================================[ZZZ
+
+forward_list vs list
+  forward_list
+    singly-linked list
+    has no size()
+      the only one STL container
+      std::distance(begin, end) ~ O(n)
+  list
+    doubly-linked list
+    has size()
+  index ~ std::advance(begin, i) ~ O(n)
+    std::next
+  #include <iterator>
+    std::distance
+    std::advance
+      n - shall only be negative for random-access and bidirectional iterators
+
+==================================]ZZZ
+==================================[ZZZ
+advance vs std::next vs std::prev
+  #include <iterator>
+  https://stackoverflow.com/questions/15017065/whats-the-difference-between-stdadvance-and-stdnext
+  std::advance
+      modifies its argument
+      returns nothing
+      works on input iterators or better (or bi-directional iterators if a negative distance is given)
+  std::next
+      leaves its argument unmodified
+      returns a copy of the argument, advanced by the specified amount
+      works on forward iterators or better (or bi-directional iterators if a negative distance is given))
+
+
+
+==================================]ZZZ
+==================================[ZZZ
+
+？std::deque random-access constant time
+  https://stackoverflow.com/questions/47973673/is-stddeque-double-ended-queue-really-random-access-and-constant-time-insert
+  It's random access but the constant time insert and delete is only for the beginning and end of the sequence, in the middle it's O(n).
+  And it's O(1) to access an item but it's not as efficient an O(1) as for a vector. It's going to take the same number of calculations to figure out where an item is in a deque regardless of its position, even regardless of how many items are in the deque.
+
+==================================]ZZZ
+==================================[ZZZ
+
+deque vs vector
+  double ended queue
+
+  both random-access in constant time
+  deque
+    with efficient insertion and deletion of elements also at the beginning of the sequence, and not only at its end
+    not guaranteed to store all its elements in contiguous storage locations
+    不连续
+    分配极大数量元素比vector更快
+
+  vector
+    use a single array that needs to be occasionally reallocated for growth, the elements of a deque can be scattered in different chunks of storage, with the container keeping the necessary information internally to provide direct access to any of its elements in constant time and with a uniform sequential interface (through iterators).
+  Therefore, deques are a little more complex internally than vectors, but this allows them to grow more efficiently under certain circumstances, especially with very long sequences, where reallocations become more expensive.
+
+
+==================================]ZZZ
+==================================[ZZZ
+vector vs std::array
+  T* ~ vector.data() ~ array.begin()
+  ===
+  std::array is a template class that encapsulate a statically-sized array, stored inside the object itself
+    zero-overhead
+      no memory or time overhead
+    sequence
+    contiguous storage
+    fixed-size aggregate
+  std::vector is a template class that encapsulate a dynamic array1, stored in the heap, that grows and shrinks automatically if elements are added or removed
+    use more space
+      begin/end
+      allocator
+      reserved spaces in array
+  both the elements are stored contiguously
+    除了std::vector<bool>
+      std::vector<bool> class is silly. It's implemented as a condensed bitfield, not as an array.
+    除了 多维数组
+      A multidimensional std::array will have the elements packed in memory in all dimensions, just as a c style array is.
+      A multidimensional std::vector will not be packed in all dimensions.
+
+  It's 'just as fast" as using a dynamically-allocated built-in array. On the other hand, using an automatic array might have considerably different performance (and not only during allocation, because of locality effects).
+
+  small "array" (under 100 elements say) - (a typical stack is about 8MB, so don't allocate more than a few KB on the stack or less if your code is recursive)
+
+
+==================================]ZZZ
+==================================[ZZZ
+valarray vs vector
+======
+https://stackoverflow.com/questions/1602451/c-valarray-vs-vector
+======
+The C++11 standard says:
+
+    The valarray array classes are defined to be free of certain forms of aliasing, thus allowing operations on these classes to be optimized.
+
+See C++11 26.6.1-2.
+======
+Both std::vector and std::valarray store the data in a contiguous block. However, they access that data using different patterns, and more importantly, the API for std::valarray encourages different access patterns than the API for std::vector.
+怎样的数据访问模式更cache-friendly？
+
+The valarray specification allows for libraries to implement it with several efficiency optimizations, such as parallelization of certain operations, memory recycling or support for copy-on-reference / copy-on-write optimizations. Implementations may even replace valarray as the return type for standard functions described below, provided they behave as, and can be converted to, valarray objects.
+======
+valarray is kind of an orphan that was born in the wrong place at the wrong time. It's an attempt at optimization, fairly specifically for the machines that were used for heavy-duty math when it was written -- specifically, vector processors like the Crays.
+
+For a vector processor, what you generally wanted to do was apply a single operation to an entire array, then apply the next operation to the entire array, and so on until you'd done everything you needed to do.
+
+Unless you're dealing with fairly small arrays, however, that tends to work poorly with caching. On most modern machines, what you'd generally prefer (to the extent possible) would be to load part of the array, do all the operations on it you're going to, then move on to the next part of the array.
+
+valarray is also supposed to eliminate any possibility of aliasing, which (at least theoretically) lets the compiler improve speed because it's more free to store values in registers. In reality, however, I'm not at all sure that any real implementation takes advantage of this to any significant degree. I suspect it's rather a chicken-and-egg sort of problem -- without compiler support it didn't become popular, and as long as it's not popular, nobody's going to go to the trouble of working on their compiler to support it.
+
+There's also a bewildering (literally) array of ancillary classes to use with valarray. You get slice, slice_array, gslice and gslice_array to play with pieces of a valarray, and make it act like a multi-dimensional array. You also get mask_array to "mask" an operation (e.g. add items in x to y, but only at the positions where z is non-zero). To make more than trivial use of valarray, you have to learn a lot about these ancillary classes, some of which are pretty complex and none of which seems (at least to me) very well documented.
+
+Bottom line: while it has moments of brilliance, and can do some things pretty neatly, there are also some very good reasons that it is (and will almost certainly remain) obscure.
+
+Edit (eight years later, in 2017): Some of the preceding has become obsolete to at least some degree. For one example, Intel has implemented an optimized version of valarray for their compiler. It uses the Intel Integrated Performance Primitives (Intel IPP) to improve performance. Although the exact performance improvement undoubtedly varies, a quick test with simple code shows around a 2:1 improvement in speed, compared to identical code compiled with the "standard" implementation of valarray.
+
+So, while I'm not entirely convinced that C++ programmers will be starting to use valarray in huge numbers, there are least some circumstances in which it can provide a speed improvement.
+  ======
+  Is it specifically disallowed to store arbitrary object types inside valarray? – user541686
+  ======
+  @Mehrdad: Yes -- there's a (rather long) list of restrictions at [Numeric.Requirements]. For just a couple examples, all abstract classes and exceptions are prohibited. It also requires equivalence between (for example) copy construction and a sequence of default construction followed by assignment. – Jerry Coffin
+  ======
+==================================]ZZZ
+
+

@@ -1,0 +1,89 @@
+
+e others/book/Inductive Data Type Systems.txt
+
+
+
+defs:
+  df1.
+    II=set_of_inductive_types
+      i<-II
+    TT=set_of_types
+      t<-TT
+    datatype TT = I2T II | ARR TT TT
+    PPOS(t)=set_of_positive_positions_of_a_type
+    NPOS(t)=set_of_negative_positions_of_a_type
+    ===
+    PPOS(I2T i) = {''}
+    NPOS(I2T i) = {}
+    PPOS(ARR a b) = 1*NPOS(a) \-/ 2*PPOS(b)
+    NPOS(ARR a b) = 1*PPOS(a) \-/ 2*NPOS(b)
+    ===
+    occur_positively_in(i,t)::=[occur_in(i,t)][positions_in(i,t)<=PPOS(t)]
+    occur_strictly_positively_in(i,t)::=[positions_in(i,t)={"2"*n}<=PPOS(t)]
+      t=a[n]...a[1]->i
+      i not in a[k]
+
+  df2.
+    CC(i)=set_of_constructors_of_an_inductive_type
+      c<-CC(i)
+      type_of(c)=a[n]->a[n-1]->...(a[1]->i)
+        i<-II
+        n=arity_of(c)
+    depended(i,j)=le_II(i,j) ::= @c<-CC(j). i in type_of(c)
+      eg i=Integer, j=List Integer=Cons i j | Empty
+        CC(j)={Cons, Empty}
+        type_of(Cons)=i->j->j
+        type_of(Empty)=j
+    eq_II(i,j)::=[le_II(i,j)][le_II(j,i)]
+    lt_II(i,j)::=[le_II(i,j)][not le_II(j,i)]
+
+  df3.
+    is_positive_inductive_type(i)
+      ::=[@c<-CC(i). @k<-[1..arity_of(c)]. ?t==type_of(c).index("2"*(k-1)++"1"). [i not in t]or[occur_positively_in(i,t)]]
+    is_strictly_positive_inductive_type(i)
+      ::=[@c<-CC(i). @k<-[1..arity_of(c)]. ?t==type_of(c).index("2"*(k-1)++"1"). [i not in t]or[occur_strictly_positively_in(i,t)]]
+      i<-II
+      c<-CC(i)
+      n=arity_of(c)
+      type_of(c)=a[n]->a[n-1]->...(a[1]->i)
+      k<-[1..n]
+      [i not in a[k]]
+      or[i == a[k]]
+      or[a[k] == b[kn]->...(b[k1]->i)][i not in b[kk]]
+    is_basic_strictly_positive_inductive_type(i)
+      ::=[is_strictly_positive_inductive_type(i)][@c<-CC(i). @k<-[1..arity_of(c)]. ?t==type_of(c).index("2"*(k-1)++"1"). [t<-II]]
+      ::=[@c<-CC(i). [type_of(c)==j[n]->...j[1]->i][j[k]<-II]]
+
+    An inductive type s is said to be strictly positive if it does not occur or occurs strictly positively in the types of the arguments of its constructors, and no type I-equivalent to s occurs at a negative position in the types of the arguments of the constructors of s.
+    A strictly positive type is basic if its constructors have no functional arguments.
+    An inductive type is said to be positive if it occurs only at positive positions in the types of the arguments of its constructors
+      (the case of mutually inductive types is def i ned similarly, by requiring that any type equivalent to it occurs only at positive positions in the types of the arguments of its constructors).
+
+Assumption 1: We assume that lt_II is well-founded and that all inductive types are strictly positive.
+
+
+
+  df4. (function symbols)
+    FF^n = the set of function symbols of arity n
+    FF = the set of all function symbols
+  df5. (Terms)
+    XX(t) ::= set_of_variables_of_a_type
+    XX = \-/~ XX(t) {t<-TT}
+    UU = the set of untyped terms
+      u = x | \x. u | (u u) | f(u,u,...,u)
+      UU = Var XX | Abs XX UU | App UU UU | Fun FF [UU]
+      function-headed
+      if f is constructor, constructor-headed
+    VV(t) = the set of terms of type t
+      @x<-XX(t). Var x <- VV(t)
+      @x<-XX(ti). @u<-VV(to). Abs x u <- VV(ti->to)
+      @u <- VV(ti->to). @v<-XX(ti). App u v <-VV(to)
+      @f<-FF^n. [u[k]<-a[k]][type_of(f)==a[n]->...a[1]->t][f(u[n],...,u[1])<-VV(t)]
+    [u::t] ::= [u <- VV(t)]
+
+
+
+
+
+
+

@@ -1,0 +1,57 @@
+shared_ptr接口+内部两指针.txt
+  参见:
+    e others/数学/编程/C++/shared_ptr-concurrent.txt
+
+shared_ptr传播靠复制，而非再次由 原生指针 构造shared_ptr
+  若有从原生指针生成shared_ptr的需要，则继承enable_shared_from_this
+    #内部实现: 对象自己保存一个指向自己的weak_ptr
+
+shared_ptr含两个指针: 删除用指针/权指针，访问用指针/值指针
+  如：大对象指针，大对象的数据成员指针
+  无删除用指针-空shared_ptr-无权shared_ptr
+  无访问用指针-零shared_ptr-无值shared_ptr
+  std::shared_ptr<C> obj (new C);
+  std::shared_ptr<int> p9 (obj, obj->data);
+
+
+
+http://www.cplusplus.com/reference/memory/shared_ptr/
+Member functions:
+  operator=
+  swap
+  reset
+  get
+  operator*
+  operator->
+  use_count
+  unique
+      Check if unique
+  operator bool
+      Check if not null
+  owner_before
+      Owner-based ordering
+
+
+Specific functions:
+  make_shared
+  allocate_shared
+  static_pointer_cast
+  dynamic_pointer_cast
+  const_pointer_cast
+  get_deleter
+
+shared_ptr objects can only share ownership by copying their value: If two shared_ptr are constructed (or made) from the same (non-shared_ptr) pointer, they will both be owning the pointer without sharing it, causing potential access problems when one of them releases it (deleting its managed object) and leaving the other pointing to an invalid location.
+
+Additionally, shared_ptr objects can share ownership over a pointer while at the same time pointing to another object. This ability is known as aliasing (see constructors), and is commonly used to point to member objects while owning the object they belong to. Because of this, a shared_ptr may relate to two pointers:
+
+    A stored pointer, which is the pointer it is said to point to, and the one it dereferences with operator*.
+    An owned pointer (possibly shared), which is the pointer the ownership group is in charge of deleting at some point, and for which it counts as a use.
+
+
+Generally, the stored pointer and the owned pointer refer to the same object, but alias shared_ptr objects (those constructed with the alias constructor and their copies) may refer to different objects.
+
+A shared_ptr that does not own any pointer is called an empty shared_ptr. A shared_ptr that points to no object is called a null shared_ptr and shall not be dereferenced. Notice though that an empty shared_ptr is not necessarily a null shared_ptr, and a null shared_ptr is not necessarily an empty shared_ptr.
+
+shared_ptr objects replicate a limited pointer functionality by providing access to the object they point to through operators * and ->. For safety reasons, they do not support pointer arithmetics.
+
+

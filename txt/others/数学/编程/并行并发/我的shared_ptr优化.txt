@@ -1,0 +1,100 @@
+
+我的shared_ptr优化.txt
+  相关:shared_ptr析构函数的错误代码.txt
+
+疑问：
+  n个rel_acq，拆成n个rel+1个acq，能更快吗？
+
+
+看看std::shared_ptr的实现
+  view ~/../usr/include/c++/v1/memory
+    view /data/data/com.termux/files/usr/include/c++/v1/memory
+      permission denied
+  cp -t ~/tmp/src/ ~/../usr/include/c++/v1/memory
+    view /storage/emulated/0/0my_files/tmp/src/memory
+
+atomic_load()
+  竞争复制 非局部的共享指针 本身
+  atomic_load 使用 锁！
+    friend __sp_mut& __get_sp_mut(const void*);
+    输入 共享指针 的 指针，得到一个 锁？
+    内部 使用一个 映射表？为每个地址分配一个锁？
+    看来__get_sp_mut里面还得再用一个全局锁
+    全局锁 锁住的 关键代码 固定不变，耗时可知
+    而 返回的锁，则 被自由使用，耗时难测
+    所以 不能用 全局锁 直接保护 用户代码
+
+引用计数的加减
+  最终用:__atomic_add_fetch
+  __add_shared/__add_weak
+      __libcpp_atomic_refcount_increment
+        __ATOMIC_RELAXED
+  __release_shared
+      __libcpp_atomic_refcount_decrement
+        __ATOMIC_ACQ_REL
+  __shared_count<:__shared_weak_count* __cntrl_->计数控制块
+    ?weak_ptr.lock?
+    看不到 __shared_weak_count.lock() 的定义，只见声明
+    ，我觉得应该是用CAS实现
+  // NOTE: Relaxed and acq/rel atomics (for increment and decrement respectively)
+  // should be sufficient for thread safety.
+  // See https://bugs.llvm.org/show_bug.cgi?id=22803
+  因为 计数加一 时，绝不可能 发生析构
+    复制 发生在两个场景:
+      复制 局部共享指针
+        因为 同一线程 已经拥有 所有权
+        ，复制过程中 计数值必然大于零
+        ，绝对不会 发生析构
+        但 由于 多线程
+        ，加一 仍需 原子操作
+        ，只需relaxed。
+      复制 非局部共享指针
+        此时 用户必须使用 atomic_load
+        由于 atomic_load 使用锁，所以 复制过程 独占
+        #错:『甚至 加一 不需要 原子操作』
+        #   因为 保护的只是 单个共享指针本身
+        #   确保 该指针本身的完整性
+        #   引用计数区 仍是 多线程！
+  若 发生析构
+    ，则必先经过 所有曾拥有共享指针的线程 的同意
+    ，每一次 原子减一 都是『同意』
+    ，既然 同意 可能发生的析构
+    ，那就要
+    1）刷出脏值，以允许别的线程析构，rel
+    2）载入新值，以允许本线程析构，acq
+  优化一:
+    同一线程 同意 许多次显然浪费时间
+    ，故可以 在线程内部使用 单线程共享指针 共享 本线程复制进来的局部多线程共享指针
+    ，每线程 只需 同意 一次
+    。同意 意味着 原子操作，可能慢了50倍。
+  优化二.更正:
+    其实 减一 时 可以release
+      若 发现需要析构时
+      ，在析构前，再 载入新值 acq 也不迟
+    n个rel_acq，拆成n个rel+1个acq，能更快吗？
+  ？？优化二.有错:
+    ？？其实 减一 时 也可以relaxed
+      若 发现需要析构时
+      ，在析构前，再 载入新值 acq 也不迟
+      。
+      问：『别的线程 脏值未刷出，本线程 载入的自然也不是新值』？
+      ？？被删除对象 作为一块共享内存 必然 需要其他机制保护
+        ，逻辑上来讲 既然 做出修改，那么在 析构共享指针 之前『应该』有一次release
+        ，可从代码的角度上看，似乎不一定？
+      ？？？
+      在修改共享内存之后 虽然确实『必须』有一个release
+          #在 生产-消费 模式中，消费端 独占 结果，修改 甚至 不需要rel!!!
+      ，但 问题是 在这两者之间
+      ，用户 完全有可能 析构共享指针
+      ，并指望 共享指针 正确地 删除被管理对象
+      。这时 另一个线程 若析构共享指针
+      ，就会 突然间在 无任何保护机制的情况下
+      ，被要求删除不完整的对象
+      ，除非 删除动作 并不需要 读取对象的值
+      ，否则 必然是错的。
+
+
+
+
+
+

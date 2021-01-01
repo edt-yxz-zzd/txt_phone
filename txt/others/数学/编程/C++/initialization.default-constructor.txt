@@ -1,0 +1,148 @@
+default constructor
+https://en.cppreference.com/w/cpp/language/default_initialization
+
+
+
+
+Default initialization
+ 
+C++
+ 
+C++ language
+ 
+Initialization
+ 
+
+This is the initialization performed when an object is constructed with no initializer.
+Syntax
+T object ; 	(1) 	
+new T
+
+new T ( ) (until C++03)
+	(2) 	
+Explanation
+
+Default initialization is performed in three situations:
+1) when a variable with automatic, static, or thread-local storage duration is declared with no initializer;
+2) when an object with dynamic storage duration is created by a new-expression with no initializer or when an object is created by a new-expression with the initializer consisting of an empty pair of parentheses (until C++03);
+3) when a base class or a non-static data member is not mentioned in a constructor initializer list and that constructor is called.
+
+The effects of default initialization are:
+
+    if T is a non-POD (until C++11) class type, the constructors are considered and subjected to overload resolution against the empty argument list. The constructor selected (which is one of the default constructors) is called to provide the initial value for the new object;
+    if T is an array type, every element of the array is default-initialized;
+    otherwise, nothing is done: the objects with automatic storage duration (and their subobjects) are initialized to indeterminate values. 
+
+Only (possibly cv-qualified) non-POD class types (or arrays thereof) with automatic storage duration were considered to be default-initialized when no initializer is used. Scalars and POD types with dynamic storage duration were considered to be not initialized (since C++11, this situation was reclassified as a form of default initialization).
+	(until C++11)
+
+Prior to C++03 (which introduced value initialization), the expression new T() as well as a member initializer naming a base or a member with the initializer in the form of an empty pair of parentheses was classified as default initialization, but specified zero initialization for non-class types.
+	(until C++03)
+
+
+If T is a cv-qualified type, its cv-unqualified version is used for the purpose of default-initialization.
+	(until C++11)
+Default initialization of a const object
+
+If a program calls for the default-initialization of an object of a const-qualified type T, T shall be a const-default-constructible class type or array thereof.
+
+A class type T is const-default-constructible if default initialization of T would invoke a user-provided constructor of T (not inherited from a base class) (since C++11) or if
+
+    each direct non-static data member M of T is of class type X (or array thereof), X is const-default-constructible, and
+    T has no direct variant members, and 
+
+	(until C++11)
+
+    each direct non-variant non-static data member M of T has a default member initializer or, if M is of class type X (or array thereof), X is const-default-constructible,
+    if T is a union with at least one non-static data member, exactly one variant member has a default member initializer,
+    if T is not a union, for each anonymous union member with at least one non-static data member (if any), exactly one non-static data member has a default member initializer, and 
+
+	(since C++11)
+
+each potentially constructed base class of T is const-default-constructible.
+Read from an indeterminate byte
+
+Use of an indeterminate value obtained by default-initializing a non-class variable of any type is undefined behavior (in particular, it may be a trap representation), except in the following cases:
+
+    if an indeterminate value of type unsigned char or std::byte (since C++17) is assigned to another variable of type (possibly cv-qualified) unsigned char or std::byte (since C++17)(the value of the variable becomes indeterminate, but the behavior is not undefined);
+    if an indeterminate value of type unsigned char or std::byte (since C++17) is used to initialize another variable of type (possibly cv-qualified) unsigned char or std::byte (since C++17);
+    if an indeterminate value of type unsigned char or std::byte (since C++17) results from 
+
+        the second or third operand of a conditional expression,
+        the right operand of the comma operator,
+        the operand of a cast or conversion to (possibly cv-qualified) unsigned char or std::byte (since C++17),
+        a discarded-value expression. 
+
+int f(bool b)
+{
+    int x;               // OK: the value of x is indeterminate
+    int y = x;           // undefined behavior
+    unsigned char c;     // OK: the value of c is indeterminate
+    unsigned char d = c; // OK: the value of d is indeterminate
+    int e = d;           // undefined behavior
+    return b ? d : 0;    // undefined behavior if b is true
+}
+
+Notes
+
+Default initialization of non-class variables with automatic and dynamic storage duration produces objects with indeterminate values (static and thread-local objects get zero initialized)
+
+References and const scalar objects cannot be default-initialized.
+Example
+Run this code
+
+#include <string>
+ 
+struct T1 { int mem; };
+ 
+struct T2
+{
+    int mem;
+    T2() { } // "mem" is not in the initializer list
+};
+ 
+int n; // static non-class, a two-phase initialization is done:
+       // 1) zero initialization initializes n to zero
+       // 2) default initialization does nothing, leaving n being zero
+ 
+int main()
+{
+    int n;            // non-class, the value is indeterminate
+    std::string s;    // class, calls default ctor, the value is "" (empty string)
+    std::string a[2]; // array, default-initializes the elements, the value is {"", ""}
+//  int& r;           // error: a reference
+//  const int n;      // error: a const non-class
+//  const T1 t1;      // error: const class with implicit default ctor
+    T1 t1;            // class, calls implicit default ctor
+    const T2 t2;      // const class, calls the user-provided default ctor
+                      // t2.mem is default-initialized (to indeterminate value)
+}
+
+
+Defect reports
+
+The following behavior-changing defect reports were applied retroactively to previously published C++ standards.
+DR 	Applied to 	Behavior as published 	Correct behavior
+CWG 253 	C++98 	default initialization of a const object could not
+call an implicitly declared default constructor 	allowed if all subobjects are initialized
+CWG 616 	C++98 	lvalue to rvalue conversion of any uninitialized object was always UB 	indeterminate unsigned char is allowed
+CWG 1787 	C++98 	read from an indeterminate unsigned char cached in a register was UB 	made well-defined
+See also
+
+    converting constructor
+    default constructor
+    explicit
+    initialization
+        aggregate initialization
+        constant initialization
+        copy initialization
+        direct initialization
+        list initialization
+        reference initialization
+        value initialization
+        zero initialization 
+    new 
+
+
+
+

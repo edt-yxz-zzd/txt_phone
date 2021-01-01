@@ -1,0 +1,74 @@
+https://en.cppreference.com/w/cpp/named_req/StandardLayoutType
+
+
+
+
+C++ named requirements: StandardLayoutType
+ 
+C++
+ 
+C++ named requirements
+ 
+
+Specifies that a type is standard layout type. Standard layout types are useful for communicating with code written in other programming languages.
+
+Note: the standard doesn't define a named requirement with this name. This is a type category defined by the core language. It is included here as a named requirement only for consistency.
+Requirements
+
+    All non-static data members have the same access control
+    Has no virtual functions or virtual base classes
+    Has no non-static data members of reference type
+    All non-static data members and base classes are themselves standard layout types 
+
+    Either 
+
+        has no base classes with non-static data members, or
+        has no non-static data members in the most derived class and at most one base class with non-static data members 
+
+    Has no base classes of the same type as the first non-static data member (see empty base optimization) 
+
+	(until C++14)
+
+    Has no two (possibly indirect) base class subobjects of the same type 
+
+struct Q {};
+struct S : Q { };
+struct T : Q { };
+struct U : S, T { };  // not a standard-layout class: two base class subobjects of type Q
+
+    Has all non-static data members and bit-fields declared in the same class (either all in the derived or all in some base) 
+
+struct B { int i; };         // standard-layout class
+struct C : B { };            // standard-layout class
+struct D : C { };            // standard-layout class
+struct E : D { char : 4; };  // not a standard-layout class
+
+    None of the base class subobjects has the same type as 
+
+        for non-union types, as the first non-static data member (see empty base optimization), and, recursively, the first non-static data member of that data member if it has non-union class type, or all non-static data members of that data member if it has union type, or an element of that data member if it has array type, etc.
+        for union types, as any non-static data members, and, recursively, the first non-static data member of every member of non-union class type, and all non-static data members of all members of union type, and element type of all non-static data members of array type, etc.
+        for array types, as the type of the array element, and, recursively, the first non-static data member of the array element if it has non-union class type, or as any non-static data member of the array element if it has union type, or as the element type of the array element if it has array type, etc. 
+
+	(since C++14)
+Properties
+
+See Standard layout.
+Defect reports
+
+The following behavior-changing defect reports were applied retroactively to previously published C++ standards.
+DR 	Applied to 	Behavior as published 	Correct behavior
+CWG 1672 	C++14 	first non-static data member rule ignored existence of empty base classes 	first non-static data member rule made recursive
+CWG 1813 	C++14 	class with a member defined in an indirect base wasn't technically standard-layout 	all member declarations must be in the same class
+CWG 2120 	C++14 	array as first member wasn't considered when comparing the first element type with type of a base 	array members are considered
+See also
+is_standard_layout
+(C++11)
+	checks if a type is a standard-layout type
+(class template)
+
+
+
+
+
+
+

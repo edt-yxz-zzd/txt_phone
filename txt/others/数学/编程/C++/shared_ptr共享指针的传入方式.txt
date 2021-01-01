@@ -1,0 +1,56 @@
+shared_ptr共享指针的传入方式.txt
+
+
+https://stackoverflow.com/questions/3310737/should-we-pass-a-shared-ptr-by-reference-or-by-value
+  共享指针 的 传入方式
+  一般 传入 裸指针
+
+  传出：
+    非容器传出 共享指针 确保 存在
+    容器的元素移出函数传出 共享指针
+    容器的元素引用函数 直接传出 元素引用
+      除非 容器 保存的元素 就是 共享指针
+        这时候就有得选了
+        还是 传出 元素/共享指针 的 直接引用
+        要不要 复制 由外部决定
+  传入：
+    若需要复制（保存/传出）共享指针，则选用 传值 而非 只读引用
+      保存-比如：共享指针 的 容器、异步线程
+      传出-为什么传入的东西要传出？当然是作选择的时候。所以更准确的说是『可能传出』
+      #传值声明: shared_ptr<>&&
+
+      调用方 与 被调用方 皆可：
+        std::move
+      毕竟 迟早要复制，使用move还可能完全避免复制（当 调用方 使用move）
+      只有一种特殊情况，那就是『不必然复制』，比如：从传入的多个共享指针中选出一个保存/传出，这时，只读引用 才有用武之地
+    若不需要复制（保存/传出）共享指针，则直接传入 裸指针/裸引用
+
+  So the answer to this is: Do (almost) never pass by const shared_ptr<T>&.
+  Simply pass the underlying class instead.
+  Basically the only reasonable parameters types are:
+      shared_ptr<T> - Modify and take ownership
+      shared_ptr<const T> - Don't modify, take ownership
+      T& - Modify, no ownership
+      const T& - Don't modify, no ownership
+      T - Don't modify, no ownership, Cheap to copy
+
+  ====
+  const shared_ptr&     - 10ms
+  shared_ptr            - 281ms
+  ====
+  Following my test result, int32 atomic increment and decrement takes 2 or 40 times than non-atomic increment and decrement. I got it on 3GHz Core i7 with Windows 8.1. The former result comes out when no contention occurs, the latter when high possibility of contention occurs. I keep in mind that atomic operations are at last hardware based lock. Lock is lock. Bad to performance when contention occurs.
+
+  Experiencing this, I always use byref(const shared_ptr&) than byval(shared_ptr).
+  ====
+  It's a non-POD type, so in most ABIs even passing it "by value" actually passes a pointer. It's not the actual copying of bytes that's the issue at all. As you can see in the asm output, passing a shared_ptr<int> by value takes over 100 x86 instructions (including expensive locked instructions to atomically inc/dec the ref count). Passing by constant ref is the same as passing a pointer to anything (and in this example on the Godbolt compiler explorer, tail-call optimization turns this into a simple jmp instead of a call: 
+  ====
+  Here's Herb Sutter's take
+
+      Guideline: Don’t pass a smart pointer as a function parameter unless you want to use or manipulate the smart pointer itself, such as to share or transfer ownership.
+
+      Guideline: Express that a function will store and share ownership of a heap object using a by-value shared_ptr parameter.
+
+      Guideline: Use a non-const shared_ptr& parameter only to modify the shared_ptr. Use a const shared_ptr& as a parameter only if you’re not sure whether or not you’ll take a copy and share ownership; otherwise use widget* instead (or if not nullable, a widget&).
+
+
+

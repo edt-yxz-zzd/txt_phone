@@ -1,0 +1,242 @@
+
+CAS比较并交换.txt
+  ？似乎没有交换？
+  ？
+  确实没有交换
+  叫 compareAndSet 更合理
+  循环体中必须:
+    重读数据
+    重新计算
+  如果交换的话，重读可省
+Compare and swap, introduced on the IBM System 370, takes as arguments the address of a shared memory location, an expected value, and a new value. If the shared location currently holds the expected value, it is assigned the new value atomically. A Boolean return value indicates whether the replacement occurred.
+
+
+
+
+=====
+public final long incrementAndGet() {
+    for (;;) {
+        long current = get();
+        long next = current + 1;
+        if (compareAndSet(current, next))
+          return next;
+    }
+}
+
+=====
+volatile int value;
+boolean cas(int expectedValue, int newValue) {
+    if(value == expectedValue) {
+        value = newValue;
+        return true;
+    }
+    return false;
+}
+
+
+
+==================================
+
+https://en.m.wikipedia.org/wiki/Compare-and-swap
+
+Summary
+
+In computer science, compare-and-swap (CAS) is an atomic instruction used in multithreading to achieve synchronization.
+
+It compares the contents of a memory location with a given value and, only if they are the same, modifies the contents of that memory location to a new given value.
+This is done as a single atomic operation.
+The atomicity guarantees that the new value is calculated based on up-to-date information; if the value had been updated by another thread in the meantime, the write would fail.
+The result of the operation must indicate whether it performed the substitution; this can be done either with a simple boolean response (this variant is often called compare-and-set), or by returning the value read from the memory location (not the value written to it).
+
+
+
+
+
+
+
+
+Overview
+
+A compare-and-swap operation is an atomic version of the following pseudocode, where * denotes access through a pointer:
+
+This operation is used to implement synchronization primitives like semaphores and mutexes, as well as more sophisticated lock-free and wait-free algorithms. Maurice Herlihy (1991) proved that CAS can implement more of these algorithms than atomic read, write, or fetch-and-add, and assuming a fairly large amount of memory, that it can implement all of them. CAS is equivalent to load-link/store-conditional, in the sense that a constant number of invocations of either primitive can be used to implement the other one in a wait-free manner.
+
+Algorithms built around CAS typically read some key memory location and remember the old value. Based on that old value, they compute some new value. Then they try to swap in the new value using CAS, where the comparison checks for the location still being equal to the old value. If CAS indicates that the attempt has failed, it has to be repeated from the beginning: the location is re-read, a new value is re-computed and the CAS is tried again. Instead of immediately retrying after a CAS operation fails, researchers have found that total system performance can be improved in multiprocessor systems—where many threads constantly update some particular shared variable—if threads that see their CAS fail use exponential backoff—in other words, wait a little before retrying the CAS.
+
+Example application: atomic adder
+As an example use case of compare-and-swap, here is an algorithm for atomically incrementing or decrementing an integer. This is useful in a variety of applications that use counters. The function add performs the action *p ← *p + a, atomically (again denoting pointer indirection by *, as in C) and returns the final value stored in the counter. Unlike in the cas pseudocode above, there is no requirement that any sequence of operations is atomic except for cas.
+
+In this algorithm, if the value of *p changes after (or while!) it is fetched and before the CAS does the store, CAS will notice and report this fact, causing the algorithm to retry.
+
+ABA problem
+Some CAS-based algorithms are affected by and must handle the problem of a false positive match, or the ABA problem. It is possible that between the time the old value is read and the time CAS is attempted, some other processors or threads change the memory location two or more times such that it acquires a bit pattern which matches the old value. The problem arises if this new bit pattern, which looks exactly like the old value, has a different meaning: for instance, it could be a recycled address, or a wrapped version counter.
+
+A general solution to this is to use a double-length CAS (DCAS). E.g. on a 32-bit system, a 64-bit CAS can be used. The second half is used to hold a counter. The compare part of the operation compares the previously read value of the pointer and the counter, with the current pointer and counter. If they match, the swap occurs - the new value is written - but the new value has an incremented counter. This means that if ABA has occurred, although the pointer value will be the same, the counter is exceedingly unlikely to be the same (for a 32-bit value, a multiple of 2 operations would have to have occurred, causing the counter to wrap and at that moment, the pointer value would have to also by chance be the same).
+
+An alternative form of this (useful on CPUs which lack DCAS) is to use an index into a freelist, rather than a full pointer, e.g. with a 32-bit CAS, use a 16-bit index and a 16-bit counter. However, the reduced counter lengths begin to make ABA possible at modern CPU speeds.
+
+One simple technique which helps alleviate this problem is to store an ABA counter in each data structure element, rather than using a single ABA counter for the whole data structure.
+
+A more complicated but more effective solution is to implement safe memory reclamation (SMR). This is in effect lock-free garbage collection. The advantage of using SMR is the assurance a given pointer will exist only once at any one time in the data structure, thus the ABA problem is completely solved. (Without SMR, something like a freelist will be in use, to ensure that all data elements can be accessed safely (no memory access violations) even when they are no longer present in the data structure. With SMR, only elements actually currently in the data structure will be accessed).
+
+Costs and benefits
+CAS, and other atomic instructions, are sometimes thought to be unnecessary in uniprocessor systems, because the atomicity of any sequence of instructions can be achieved by disabling interrupts while executing it. However, disabling interrupts has numerous downsides. For example, code that is allowed to do so must be trusted not to be malicious and monopolize the CPU, as well as to be correct and not accidentally hang the machine in an infinite loop or page fault. Further, disabling interrupts is often deemed too expensive to be practical. Thus, even programs only intended to run on uniprocessor machines will benefit from atomic instructions, as in the case of Linux's futexes.
+
+In multiprocessor systems, it is usually impossible to disable interrupts on all processors at the same time. Even if it were possible, two or more processors could be attempting to access the same semaphore's memory at the same time, and thus atomicity would not be achieved. The compare-and-swap instruction allows any processor to atomically test and modify a memory location, preventing such multiple-processor collisions.
+
+On server-grade multi-processor architectures of the 2010s, compare-and-swap is cheap relative to a simple load that is not served from cache. A 2013 paper points out that a CAS is only 1.15 times more expensive than a non-cached load on Intel Xeon (Westmere-EX) and 1.35 times on AMD Opteron (Magny-Cours).
+
+
+
+
+
+
+
+
+
+
+
+Implementations
+
+Compare-and-swap (and compare-and-swap-double) has been an integral part of the IBM 370 (and all successor) architectures since 1970. The operating systems that run on these architectures make extensive use of this instruction to facilitate process (i.e., system and user tasks) and processor (i.e., central processors) parallelism while eliminating, to the greatest degree possible, the "disabled spin locks" which had been employed in earlier IBM operating systems. Similarly, the use of test-and-set was also eliminated. In these operating systems, new units of work may be instantiated "globally", into the global service priority list, or "locally", into the local service priority list, by the execution of a single compare-and-swap instruction. This substantially improved the responsiveness of these operating systems.
+
+In the x86 (since 80486) and Itanium architectures this is implemented as the compare and exchange (CMPXCHG) instruction (on a multiprocessor the LOCK prefix must be used).
+
+As of 2013, most multiprocessor architectures support CAS in hardware, and the compare-and-swap operation is the most popular synchronization primitive for implementing both lock-based and non-blocking concurrent data structures.
+
+The atomic counter and atomic bitmask operations in the Linux kernel typically use a compare-and-swap instruction in their implementation. The SPARC-V8 and PA-RISC architectures are two of the very few recent architectures that do not support CAS in hardware; the Linux port to these architectures uses a spinlock.
+
+Implementation in C
+Many C compilers support using compare-and-swap either with the C11 <stdatomic.h> functions, or some non-standard C extension of that particular C compiler, or by calling a function written directly in assembly language using the compare-and-swap instruction.
+
+The following C function shows the basic behavior of a compare-and-swap variant that returns the old value of the specified memory location; however, this version does not provide the crucial guarantees of atomicity that a real compare-and-swap operation would:
+
+old_reg_val is always returned, but it can be tested following the compare_and_swap operation to see if it matches oldval, as it may be different, meaning that another process has managed to succeed in a competing compare_and_swap to change the reg value from oldval.
+
+For example, an election protocol can be implemented such that every process checks the result of compare_and_swap against its own PID (= newval). The winning process finds the compare_and_swap returning the initial non-PID value (e.g., zero). For the losers it will return the winning PID.
+
+This is the logic in the Intel Software Manual Vol 2A. 
+
+
+
+
+
+
+
+
+
+
+Extensions
+
+Since CAS operates on a single pointer-sized memory location, while most lock-free and wait-free algorithms need to modify multiple locations, several extensions have been implemented.
+
+Double compare-and-swap (DCAS) Compares two unrelated memory locations with two expected values, and if they're equal, sets both locations to new values. The generalization of DCAS to multiple (non-adjacent) words is called MCAS or CASN. DCAS and MCAS are of practical interest in the convenient (concurrent) implementation of some data structures like dequeues or binary search trees. DCAS and MCAS may be implemented however using the more expressive hardware transactional memory present in some recent processors such as IBM POWER8 or in Intel processors supporting Transactional Synchronization Extensions (TSX). Double-wide compare-and-swap Operates on two adjacent pointer-sized locations (or, equivalently, one location twice as big as a pointer). On later x86 processors, the CMPXCHG8B and CMPXCHG16B instructions serve this role, although early 64-bit AMD CPUs did not support CMPXCHG16B (modern AMD CPUs do). Some Intel motherboards from the Core 2 era also hamper its use, even though the processors support it. These issues came into the spotlight at the launch of Windows 8.1 because it required hardware support for CMPXCHG16B. Single compare, double swap Compares one pointer but writes two. The Itanium's cmp8xchg16 instruction implements this, where the two written pointers are adjacent. Multi-word compare-and-swap Is a generalisation of normal compare-and-swap. It can be used to atomically swap an arbitrary number of arbitrarily located memory locations. Usually, multi-word compare-and-swap is implemented in software using normal double-wide compare-and-swap operations. The drawback of this approach is a lack of scalability.
+
+
+
+
+
+
+
+
+
+==================================
+https://dzone.com/articles/how-cas-compare-and-swap-java
+
+
+
+How CAS (Compare And Swap) in Java works
+·
+
+Before we dig into CAS (Compare And Swap) strategy and how is it used by atomic constructs like AtomicInteger, first consider this code:
+
+public class MyApp
+{
+    private volatile int count = 0;
+    public void upateVisitors() 
+    {
+       ++count; //increment the visitors count
+    }
+}
+
+This sample code is tracking the count of visitors to the application. Is there anything wrong with this code? What will happen if multiple threads try to update count? Actually the problem is simply marking count as volatile does not guarantee atomicity and ++count is not an atomic operations. To read more check this.
+
+Can we solve this problem if we mark the method itself synchronized as shown below:
+
+public class MyApp
+{
+    private int count = 0;
+    public synchronized void upateVisitors() 
+    {
+       ++count; //increment the visitors count
+    }
+}
+
+Will this work? If yes then what changes have we made actually?
+
+Does this code guarantee atomicity? Yes.
+
+Does this code guarantee visibility? Yes.
+
+Then what is the problem?
+
+It makes use of locking and that introduces lot of delay and overhead. Check this article. This is very expensive way of making things work.
+
+To overcome these problems atomic constructs were introduced. If we make use of an AtomicInteger to track the count it will work.
+
+public class MyApp
+{
+    private AtomicInteger count = new AtomicInteger(0);
+    public void upateVisitors() 
+    {
+       count.incrementAndGet(); //increment the visitors count
+    }
+}
+
+The classes that support atomic operations e.g. AtomicInteger, AtomicLong etc. makes use of CAS. CAS does not make use of locking rather it is very optimistic in nature. It follows these steps:
+
+    Compare the value of the primitive to the value we have got in hand.
+    If the values do not match it means some thread in between has changed the value. Else it will go ahead and swap the value with new value.
+
+Check the following code in AtomicLong class:
+
+public final long incrementAndGet() {
+    for (;;) {
+        long current = get();
+        long next = current + 1;
+        if (compareAndSet(current, next))
+          return next;
+    }
+}
+
+In JDK 8 the above code has been changed to a single intrinsic:
+
+public final long incrementAndGet() {
+        return unsafe.getAndAddLong(this, valueOffset, 1L) + 1L;
+}
+
+What advantage this single intrinsic have?
+
+Actually this single line is JVM intrinsic which is translated by JIT into an optimized instruction sequence. In case of x86 architecture it is just a single CPU instruction LOCK XADD which might yield better performance than classic load CAS loop.
+
+Now think about the possibility when we have high contention and a number of threads want to update the same atomic variable. In that case there is a possibility that locking will outperform the atomic variables but in realistic contention levels atomic variables outperform lock. There is one more construct introduced in Java 8, LongAdder. As per the documentation:
+
+    This class is usually preferable to AtomicLong when multiple threads update a common sum that is used for purposes such as collecting statistics, not for fine-grained synchronization control. Under low update contention, the two classes have similar characteristics. But under high contention, expected throughput of this class is significantly higher, at the expense of higher space consumption.
+
+So LongAdder is not always a replacement for AtomicLong. We need to consider the following aspects:
+
+    When no contention is present AtomicLong performs better.
+    LongAdder will allocate Cells (a final class declared in abstract class Striped64) to avoid contention which consumes memory. So in case we have a tight memory budget we should prefer AtomicLong.
+
+That's all folks. Hope you enjoyed it.
+
+
+
+
+
+==================================
+==================================
+==================================
+==================================
+==================================
+==================================

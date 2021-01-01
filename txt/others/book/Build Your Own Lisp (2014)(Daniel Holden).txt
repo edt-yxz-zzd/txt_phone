@@ -43,3 +43,93 @@ mpc.ast:
 
 
 
+
+=====bug:
+pg 65/195
+  内存泄漏？
+  lval* lval_eval_sexpr(lval* v) {
+    /* Evaluate Children */
+    for (int i = 0; i < v->count; i++) {
+      v->cell[i] = lval_eval(v->cell[i]);
+    }
+    ...
+  }
+  并没有，只不过lval_del(v)分散于lval_eval_sexpr(v)的各处子调用
+
+pg 69/195
+  realloc 输入NULL？
+  realloc 复制原内存数据？知道数据占地大小？
+  lval* lval_add(lval* v, lval* x) {
+    v->count++;
+    v->cell = realloc(v->cell, sizeof(lval*) * v->count);
+    v->cell[v->count-1] = x;
+    return v;
+  }
+  确实有问题，见下面第2点，未测试realloc失败返回NULL同时又不释放内存的情况
+  1. realloc失败的时候，返回NULL
+  2. realloc失败的时候，原来的内存不改变，不会释放也不会移动
+  3. 假如原来的内存后面还有足够多剩余内存的话，realloc的内存=原来的内存+剩余内存,realloc还是返回原来内存的地址; 假如原来的内存后面没有足够多剩余内存的话，realloc将申请新的内存，然后把原来的内存数据拷贝到新内存里，原来的内存将被free掉,realloc返回新内存的地址
+  4. 如果size为0，效果等同于free()。这里需要注意的是只对指针本身进行释放，例如对二维指针**a，对a调用realloc时只会释放一维，使用时谨防内存泄露。
+  5. 传递给realloc的指针必须是先前通过malloc(), calloc(), 或realloc()分配的
+  6.传递给realloc的指针可以为空NULL，等同于malloc。
+
+
+
+
+
+
+====================================
+/*
+====editline
+Build Your Own Lisp (2014)(Daniel Holden).pdf
+  pg 23/195
+
+pkg install libedit-dev
+  fail
+pkg install libedit
+  succ
+  /data/data/com.termux/files/usr/include/editline/readline.h
+    only one header
+    no history.h
+    but contains add_history
+
+cd /sdcard/0my_files/tmp/lisp/example/
+e /sdcard/0my_files/tmp/lisp/example/try_readline.c
+cc -std=c99 -Wall    -ledit     try_readline.c -o ~/1tmp/prompt
+chmod +x ~/1tmp/prompt
+
+*/
+
+  #include <stdio.h>
+  #include <stdlib.h> /* free */
+  #include <editline/readline.h>
+  // neednot: #include <editline/history.h>
+
+int _main(){
+  char* input = readline("lispy> ");
+  add_history(input);
+  free(input);
+  return 0;
+}
+
+int main(int argc, char** argv) {
+    /* Print Version and Exit Information */
+    puts("Lispy Version 0.0.0.0.1");
+    puts("Press Ctrl+c to Exit\n");
+    /* In a never ending loop */
+    while (1) {
+        /* Output our prompt and get input */
+        char* input = readline("lispy> ");
+        /* Add input to history */
+        add_history(input);
+        /* Echo input back to user */
+        printf("No you're a %s\n", input);
+        /* Free retrieved input */
+        free(input);
+    }
+    return 0;
+}
+
+
+
+
