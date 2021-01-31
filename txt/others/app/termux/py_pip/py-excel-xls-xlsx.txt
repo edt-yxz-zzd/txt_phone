@@ -154,3 +154,212 @@ xlWb.close()
 ===
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+=========
+import xlrd
+fnm = '/sdcard/0my_files/apk/游戏/街机/FC游戏列表(中英文).XLS'
+bk = xlrd.open_workbook(fnm)
+#with xlrd.open_workbook(fnm) as bk:
+nms = bk.sheet_names()
+#ls = bk.sheets()
+assert nms == ['Mesky_Down_Address']
+[shnm] = nms
+sh = bk.sheet_by_name(shnm)
+nr = sh.nrows
+nc = sh.ncols
+assert (nr, nc) == (1982, 2)
+cn2rom = {}
+for ri in range(nr):
+  row = []
+  for ci in range(nc):
+    ce = sh.cell(ri, ci)
+    #print(ce)
+    assert ce.ctype == 1 == xlrd.XL_CELL_TEXT
+    assert type(ce.value) is str
+    row.append(ce.value)
+  [游戏中文名, ROM压缩文件名] = row
+  """
+  text:'游戏名称'
+  text:'ROM 名称'
+  text:'100万美元-幻之帝王篇 (Maboroshi No Teiou Hen) 日版'
+  text:'100_Man_$_Kid-Maboroshi_No_Teiou_Hen(J).zip'
+  """
+  print(row)
+  cn2rom[游戏中文名] = ROM压缩文件名
+assert len(cn2rom) == nr
+del cn2rom['游戏名称']
+assert len(cn2rom) == 1981
+
+
+
+
+=========
+e script/extract_xls_game_rom_names.py
+view /sdcard/0my_files/apk/游戏/街机/FC游戏列表(中英文).XLS.out.txt
+view others/app/app.txt
+  http://m.rsdown.cn/game/25587.html
+    FC游戏完整版(合集)全集打包1981个rom游戏.rar
+      231 MB
+=========
+
+ifnm = '/sdcard/0my_files/apk/游戏/街机/FC游戏列表(中英文).XLS'
+ofnm = f'{ifnm}.out.txt'
+
+import xlrd
+from pprint import pprint
+#bk = xlrd.open_workbook(ifnm)
+with xlrd.open_workbook(ifnm) as bk:
+    nms = bk.sheet_names()
+    #ls = bk.sheets()
+    assert nms == ['Mesky_Down_Address']
+    [shnm] = nms
+    sh = bk.sheet_by_name(shnm)
+    nr = sh.nrows
+    nc = sh.ncols
+    assert (nr, nc) == (1982, 2)
+    cn2rom = {}
+    dup = {}
+    for ri in range(nr):
+      row = []
+      for ci in range(nc):
+        ce = sh.cell(ri, ci)
+        #print(ce)
+        assert ce.ctype == 1 == xlrd.XL_CELL_TEXT
+        assert type(ce.value) is str
+        row.append(ce.value)
+      [游戏中文名, ROM压缩文件名] = row
+      """
+      text:'游戏名称'
+      text:'ROM 名称'
+      text:'100万美元-幻之帝王篇 (Maboroshi No Teiou Hen) 日版'
+      text:'100_Man_$_Kid-Maboroshi_No_Teiou_Hen(J).zip'
+      """
+      print(row)
+      if 游戏中文名 in cn2rom:
+        if 游戏中文名 not in dup:
+          dup[游戏中文名] = [cn2rom[游戏中文名]]
+        dup[游戏中文名].append(ROM压缩文件名)
+      cn2rom[游戏中文名] = ROM压缩文件名
+#if dup: pprint(dup)
+assert len(dup) == 1
+assert dup == {
+    '未来小子 (Metal Fighter) 美版':
+        ['Metal Fighter.zip'
+        ,'Metal.Fighter(Unl)(Joy.Van)(Asia).zip']
+    }
+cn2rom.update({
+    '未来小子 (Metal Fighter) ':
+        'Metal Fighter.zip'
+    ,'未来小子 (Metal Fighter) 美版':
+        'Metal.Fighter(Unl)(Joy.Van)(Asia).zip'
+    })
+assert len(cn2rom) == nr
+del cn2rom['游戏名称']
+assert len(cn2rom) == 1981
+
+
+
+cn2rom
+ofnm
+from pprint import pprint
+from seed.for_libs.for_pprint.pprint1 import pprint1
+with open(ofnm, 'x', encoding='utf8') as fout:
+    print('cn2rom = \\', file=fout)
+    #pprint(cn2rom, stream=fout)
+    pprint1(cn2rom, file=fout)
+
+
