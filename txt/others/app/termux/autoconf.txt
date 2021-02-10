@@ -1,0 +1,189 @@
+
+
+
+
+pkg install autoconf
+pkg install automake
+  Generate Makefile.in for "./configure" from Makefile.am.
+
+======= I guess:
+  autoconf :: [./configure.ac|./configure.in] -> ./configure
+  automake :: [./configure.ac|./configure.in] -> ./makefile.am -> ./makefile.in
+  bash ./configure :: (./makefile.in, * ./xxx-h.in) -> (./makefile, * ./xxx.h)
+  make ./makefile :: () -> ...
+
+
+
+
+[[[
+autoconf例子：nauty在Android::termux上的安装过程
+
+nauty
+  http://users.cecs.anu.edu.au/~bdm/nauty/
+   tar xvzf nauty27r1.tar.gz
+   cd nauty27r1
+   ./configure
+   make
+
+==== 毛病
+毛病一
+$ ./configure
+-bash: ./configure: Permission denied
+  原因：共享存储区-不被允许 chmod +x xxx.sh
+  改为：
+    bash ./configure
+  或：
+     tar xvzf nauty27r1.tar.gz -C ~/src/
+     cd ~/src/nauty27r1
+     ./configure
+     make
+
+毛病二
+$ bash ./configure
+configure: error: cannot run /bin/sh ./config.sub
+$ ./configure
+-bash: ./configure: /bin/sh: bad interpreter: No such file or directory
+  原因：Android 没有 /bin/ 或 无访问权限 /sbin/
+  termux
+  $ which bash
+  /data/data/com.termux/files/usr/bin/bash
+
+
+./configure 文件 配置 出错，需重新 生成：
+  $ autoconf
+  === $ autoconf ./configure.ac
+  === or: $ autoconf ./configure.in
+  $ ./configure
+  === $ bash ./configure
+  === or $ sh ./configure
+
+
+毛病三
+$ ./configure
+checking build system type... config.guess: cannot create a temporary directory in /tmp
+configure: error: cannot guess build type; you must specify one
+
+
+==1
+$ ./configure --help
+$ ./configure --prefix=$HOME
+  错误未改变
+
+
+==2
+$ bash config.guess
+config.guess: cannot create a temporary directory in /tmp
+$ bash config.guess --help
+
+view others/app/termux/autoconf.txt
+  https://stackoverflow.com/questions/4810996/how-to-resolve-configure-guessing-build-type-failure
+
+$ which automake
+/data/data/com.termux/files/usr/bin/automake
+$ automake --version
+automake (GNU automake) 1.16.1
+Copyright (C...
+
+ls /data/data/com.termux/files/usr/share/automake-1.16/
+cp -t ./    /data/data/com.termux/files/usr/share/automake-1.16/config.guess    /data/data/com.termux/files/usr/share/automake-1.16/config.sub
+
+$ bash config.guess
+  错误未改变
+
+==3
+$ view config.guess
+line102 === ": ${TMPDIR=/tmp} ;"
+line102 ==>> ": ${TMPDIR=$HOME/tmp} ;"
+
+$ bash config.guess
+cat: -: No such file or directory
+armv7l-unknown-linux-gnueabi
+
+$ bash ./configure
+  成功！
+
+==4
+$ make
+gcc -c -O3  -march=native -o naututil.o naututil.c
+make: /bin/sh: Command not found
+make: *** [makefile:100: naututil.o] Error 127
+
+
+$ view makefile
+line4 === "SHELL=/bin/sh"
+
+
+make SHELL=bash
+  成功！
+
+
+]]]
+
+
+
+
+
+
+
+
+
+
+
+
+[[[
+更新：复制 或 下载 config.guess config.sub
+
+https://stackoverflow.com/questions/4810996/how-to-resolve-configure-guessing-build-type-failure
+=====
+How to resolve configure guessing build type failure?
+cygwin configure
+
+When I configure (under cygwin environment), an error occurred, Message are following:
+
+$ ./configure
+.................
+checking build system type... /bin/sh: ./config.guess: No such file or directory
+configure: error: cannot guess build type; you must specify one
+
+How to resolve it? Thanks!!
+=====
+
+
+search for /usr/share/automake*/config.guess
+
+check the latest version of automake
+
+$ which automake
+$ automake --version
+
+find the appropriate automake folder in /usr/share/automake.1.11.1/config.guess
+
+replace config.guess from your build tree with /usr/share/automake.1.11.1/config.guess
+
+(The same may/is usually needed for config.sub.)
+=====
+
+
+config.guess and config.sub routines are updated and kept on github; You'll get the web pointers when you run the script,
+
+./config.guess
+
+In my Mingw system, config.sub or .guess were not in the share/../automake-1.11/ tree, I needed to download the updated scripts which worked (when they replaced the old ones).
+=====
+
+
+
+for AUR based builds add the following command to the PKGBUILD (end of prepare section) to have proper config.guess automatically applied/overrided in the package:
+
+cp /usr/share/automake-`pacman -Q --info automake|grep -i version| awk -F ":" '{print $2}'| awk '{$1=$1};1'| awk -F "." '{print $1"."$2}'`/config.guess .
+=====
+]]]
+
+
+
+
+
+
+
+
+

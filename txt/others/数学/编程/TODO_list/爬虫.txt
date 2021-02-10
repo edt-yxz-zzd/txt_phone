@@ -1,0 +1,985 @@
+
+bs4
+简化版bs4爬虫语言设计
+  *小说
+  *图片
+
+网址输入
+标签定位:
+  单/第一个/唯一:
+    子
+    子孙
+    弟
+    叔
+    父
+    兄
+  多/全部/后续:
+
+提取:
+  提取文本
+  提取图片
+  提取网址
+  提取文件
+  提取网页源文件
+  提取音频等媒体资源
+
+
+
+
+e ../../python3_src/seed/internet/html_ast.py
+view ~/../usr/lib/python3.8/site-packages/bs4/__init__.py
+  class BeautifulSoup(Tag)
+view ~/../usr/lib/python3.8/site-packages/bs4/element.py
+  class Tag
+    def find_all
+    def _find_all
+
+
+
+
+from bs4 import BeautifulSoup
+BeautifulSoup(markup, "html.parser", multi_valued_attributes=None)
+doc.find(string="INSERT FOOTER HERE").replace_with(footer)
+  #old bs version kwarg: text -> string
+  #向后兼容，新版本仍可用text
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+=======
+from bs4 import BeautifulSoup
+soup = BeautifulSoup(html_doc, 'html.parser')
+print(soup.prettify())
+
+
+
+soup.title
+# <title>The Dormouse's story</title>
+
+soup.title.name
+# u'title'
+
+soup.title.string
+# u'The Dormouse's story'
+
+soup.title.parent.name
+# u'head'
+
+soup.p
+# <p class="title"><b>The Dormouse's story</b></p>
+
+soup.p['class']
+# u'title'
+
+soup.a
+# <a class="sister" href="http://example.com/elsie" id="link1">Elsie</a>
+
+soup.find_all('a')
+# [<a class="sister" href="http://example.com/elsie" id="link1">Elsie</a>,
+#  <a class="sister" href="http://example.com/lacie" id="link2">Lacie</a>,
+#  <a class="sister" href="http://example.com/tillie" id="link3">Tillie</a>]
+
+soup.find(id="link3")
+# <a class="sister" href="http://example.com/tillie" id="link3">Tillie</a>
+
+for link in soup.find_all('a'):
+    print(link.get('href'))
+# http://example.com/elsie
+# http://example.com/lacie
+# http://example.com/tillie
+
+print(soup.get_text())
+
+
+
+
+
+
+#multi_valued_attributes=None
+BeautifulSoup(markup, "html5lib")
+  接受的语法最宽松#html5
+  ===
+  速度非常慢
+  外部依赖，纯Python
+BeautifulSoup(markup, "html.parser")
+  速度合理
+  接受的语法比较宽松#html
+  无需外部依赖
+BeautifulSoup(markup, "lxml")
+  速度最快
+  接受的语法比较宽松#html
+  ===
+  外部依赖，纯C
+BeautifulSoup(markup, "lxml-xml") #=== BeautifulSoup(markup, "xml")
+  速度最快
+  接受的语法严格#xml
+  当前唯一支持的xml解析器
+  ===
+  外部依赖，纯C
+
+
+
+
+
+
+
+
+
+#write
+from bs4 import BeautifulSoup
+with open("index.html") as fp:
+    soup = BeautifulSoup(fp)
+soup = BeautifulSoup("<html>data</html>")
+
+BeautifulSoup("Sacr&eacute; bleu!")
+#<html><head></head><body>Sacré bleu!</body></html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#read
+soup = BeautifulSoup('<b class="boldest">Extremely bold</b>')
+tag = soup.b
+type(tag)
+# <class 'bs4.element.Tag'>
+
+
+
+
+
+tag.name
+# u'b'
+
+tag.name = "blockquote"
+tag
+# <blockquote class="boldest">Extremely bold</blockquote>
+
+
+
+
+
+tag['id']
+# u'boldest'
+
+tag.attrs
+# {u'id': 'boldest'}
+
+tag['id'] = 'verybold'
+tag['another-attribute'] = 1
+tag
+# <b another-attribute="1" id="verybold"></b>
+
+del tag['id']
+del tag['another-attribute']
+tag
+# <b></b>
+
+tag['id']
+# KeyError: 'id'
+print(tag.get('id'))
+# None
+
+tag.has_attr('class')
+
+
+
+
+
+
+
+multi-valued attributes¶
+
+HTML 4 defines a few attributes that can have multiple values.
+  HTML 5 removes a couple of them, but defines a few more.
+  The most common multi-valued attribute is class (that is, a tag can have more than one CSS class).
+  Others include rel, rev, accept-charset, headers, and accesskey.
+
+
+css_soup = BeautifulSoup('<p class="body"></p>')
+css_soup.p['class']
+# ["body"]
+
+css_soup = BeautifulSoup('<p class="body strikeout"></p>')
+css_soup.p['class']
+# ["body", "strikeout"]
+
+id_soup = BeautifulSoup('<p id="my id"></p>')
+id_soup.p['id']
+# 'my id'
+
+rel_soup = BeautifulSoup('<p>Back to the <a rel="index">homepage</a></p>')
+rel_soup.a['rel']
+# ['index']
+rel_soup.a['rel'] = ['index', 'contents']
+print(rel_soup.p)
+# <p>Back to the <a rel="index contents">homepage</a></p>
+
+no_list_soup = BeautifulSoup('<p class="body strikeout"></p>', 'html', multi_valued_attributes=None)
+no_list_soup.p['class']
+# u'body strikeout'
+
+id_soup.p.get_attribute_list('id')
+# ["my id"]
+
+xml_soup = BeautifulSoup('<p class="body strikeout"></p>', 'xml')
+xml_soup.p['class']
+# u'body strikeout'
+
+class_is_multi= { '*' : 'class'}
+xml_soup = BeautifulSoup('<p class="body strikeout"></p>', 'xml', multi_valued_attributes=class_is_multi)
+xml_soup.p['class']
+# [u'body', u'strikeout']
+
+from bs4.builder import builder_registry
+builder_registry.lookup('html').DEFAULT_CDATA_LIST_ATTRIBUTES
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#NavigableString
+
+tag.string
+# u'Extremely bold'
+type(tag.string)
+# <class 'bs4.element.NavigableString'>
+
+
+unicode_string = unicode(tag.string)
+unicode_string
+# u'Extremely bold'
+type(unicode_string)
+# <type 'unicode'>
+
+
+tag.string.replace_with("No longer bold")
+tag
+# <blockquote>No longer bold</blockquote>
+
+
+
+
+
+
+
+
+
+doc = BeautifulSoup("<document><content/>INSERT FOOTER HERE</document", "xml")
+footer = BeautifulSoup("<footer>Here's the footer</footer>", "xml")
+doc.find(text="INSERT FOOTER HERE").replace_with(footer)
+# u'INSERT FOOTER HERE'
+print(doc)
+# <?xml version="1.0" encoding="utf-8"?>
+# <document><content/><footer>Here's the footer</footer></document>
+
+
+soup.name
+# u'[document
+#   BeautifulSoup.name vs Tag.name
+
+
+
+
+
+
+
+
+
+
+markup = "<b><!--Hey, buddy. Want to buy a used parser?--></b>"
+soup = BeautifulSoup(markup)
+comment = soup.b.string
+type(comment)
+# <class 'bs4.element.Comment'>
+
+
+comment
+# u'Hey, buddy. Want to buy a used parser'
+
+
+print(soup.b.prettify())
+# <b>
+#  <!--Hey, buddy. Want to buy a used parser?-->
+# </b>
+
+
+from bs4 import CData
+cdata = CData("A CDATA block")
+comment.replace_with(cdata)
+
+print(soup.b.prettify())
+# <b>
+#  <![CDATA[A CDATA block]]>
+# </b>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#navigating the tree::going down
+
+soup.head
+# <head><title>The Dormouse's story</title></head>
+
+soup.title
+# <title>The Dormouse's story</title>
+
+soup.body.b
+# <b>The Dormouse's story</b>
+
+soup.a
+# <a class="sister" href="http://example.com/elsie" id="link1">Elsie</a>
+#       Using a tag name as an attribute will give you only the first tag by that name:
+soup.find_all('a')
+# [<a class="sister" href="http://example.com/elsie" id="link1">Elsie</a>,
+#  <a class="sister" href="http://example.com/lacie" id="link2">Lacie</a>,
+#  <a class="sister" href="http://example.com/tillie" id="link3">Tillie</a>]
+
+
+
+
+
+
+
+head_tag = soup.head
+head_tag
+# <head><title>The Dormouse's story</title></head>
+
+head_tag.contents
+[<title>The Dormouse's story</title>]
+
+title_tag = head_tag.contents[0]
+title_tag
+# <title>The Dormouse's story</title>
+title_tag.contents
+# [u'The Dormouse's story']
+
+
+
+
+tag.contents === list(tag.children)
+tag.children === iter(tag.contents)
+
+
+for child in title_tag.children: #iterator
+    print(child)
+for child in head_tag.descendants: #iterator
+    print(child)
+
+
+
+
+
+
+
+
+tag.string ===
+  | len(tag.contents) > 1 = None
+  | len(tag.contents) == 0 = ???
+  | otherwise = let the_only_child = tag.contents[0]
+                    t = type(the_only_child)
+                in
+                if t is NavigableString
+                then the_only_child
+                else if t is Tag
+                then the_only_child.string
+                else ???
+
+
+
+# .strings and stripped_strings
+# tend to have a lot of extra whitespace
+for string in soup.strings: #iterator
+    print(repr(string))
+
+
+# strings consisting entirely of whitespace are ignored, and whitespace at the beginning and end of strings is removed.
+for string in soup.stripped_strings:
+    print(repr(string))
+
+
+
+
+
+
+
+
+
+
+
+
+#navigating the tree::going up
+
+title_tag = soup.title
+title_tag
+# <title>The Dormouse's story</title>
+title_tag.parent
+# <head><title>The Dormouse's story</title></head>
+The title string itself has a parent: the <title> tag that contains it:
+
+title_tag.string.parent
+# <title>The Dormouse's story</title>
+
+
+html_tag = soup.html
+type(html_tag.parent)
+# <class 'bs4.BeautifulSoup'>
+
+
+print(soup.parent)
+# None
+
+
+
+
+link = soup.a
+link
+# <a class="sister" href="http://example.com/elsie" id="link1">Elsie</a>
+for parent in link.parents:
+    if parent is None:
+        print(parent)
+    else:
+        print(parent.name)
+# p
+# body
+# html
+# [document]
+# None
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#navigating the tree::going sideways
+
+sibling_soup.b.next_sibling
+# <c>text2</c>
+
+sibling_soup.c.previous_sibling
+# <b>text1</b>
+
+
+print(sibling_soup.b.previous_sibling)
+# None
+print(sibling_soup.c.next_sibling)
+# None
+
+
+
+
+
+for sibling in soup.a.next_siblings:
+    print(repr(sibling))
+# u',\n'
+# <a class="sister" href="http://example.com/lacie" id="link2">Lacie</a>
+# u' and\n'
+# <a class="sister" href="http://example.com/tillie" id="link3">Tillie</a>
+# u'; and they lived at the bottom of a well.'
+# None
+
+for sibling in soup.find(id="link3").previous_siblings:
+    print(repr(sibling))
+# ' and\n'
+# <a class="sister" href="http://example.com/lacie" id="link2">Lacie</a>
+# u',\n'
+# <a class="sister" href="http://example.com/elsie" id="link1">Elsie</a>
+# u'Once upon a time there were three little sisters; and their names were\n'
+# None
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#navigating the tree::going back and forth
+
+# visit via prefix
+previous_element
+next_element
+previous_elements
+next_elements
+
+
+
+for element in last_a_tag.next_elements:
+    print(repr(element))
+# u'Tillie'
+# u';\nand they lived at the bottom of a well.'
+# u'\n\n'
+# <p class="story">...</p>
+# u'...'
+# u'\n'
+# None
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#searching the tree
+
+# eq
+soup.find_all('b')
+# [<b>The Dormouse's story</b>]
+
+
+# re.search()
+import re
+for tag in soup.find_all(re.compile("^b")):
+    print(tag.name)
+# body
+# b
+
+for tag in soup.find_all(re.compile("t")):
+    print(tag.name)
+# html
+# title
+
+
+# or
+soup.find_all(["a", "b"])
+# [<b>The Dormouse's story</b>,
+#  <a class="sister" href="http://example.com/elsie" id="link1">Elsie</a>,
+#  <a class="sister" href="http://example.com/lacie" id="link2">Lacie</a>,
+#  <a class="sister" href="http://example.com/tillie" id="link3">Tillie</a>]
+
+
+# all
+for tag in soup.find_all(True):
+    print(tag.name)
+# html
+# head
+# title
+# body
+# p
+# b
+# p
+# a
+# a
+# a
+# p
+
+
+
+# predicator
+soup.find_all(tag2bool)
+soup.find_all(href=str2bool)
+
+
+
+
+
+
+
+
+
+
+find_all(name, attrs, recursive=True, string, limit, **kwargs)
+  soup.find_all(..., limit=4) === soup.find_all(...)[0:4]
+find(name, attrs, recursive, string, **kwargs)
+  soup.find(...) ===
+    case soup.find_all(..., limit=1) of
+      [] -> None
+      [tag] -> tag
+find_parents(name, attrs, string, limit, **kwargs)
+find_parent(name, attrs, string, **kwargs)
+find_next_siblings(name, attrs, string, limit, **kwargs)
+find_next_sibling(name, attrs, string, **kwargs)
+find_previous_siblings(name, attrs, string, limit, **kwargs)
+find_previous_sibling(name, attrs, string, **kwargs)
+ find_all_next(name, attrs, string, limit, **kwargs)
+find_next(name, attrs, string, **kwargs)
+ find_all_previous(name, attrs, string, limit, **kwargs)
+find_previous(name, attrs, string, **kwargs)
+
+
+
+
+soup.find_all("title")
+# [<title>The Dormouse's story</title>]
+
+soup.find_all("p", "title")
+# [<p class="title"><b>The Dormouse's story</b></p>]
+
+soup.find_all("a")
+# [<a class="sister" href="http://example.com/elsie" id="link1">Elsie</a>,
+#  <a class="sister" href="http://example.com/lacie" id="link2">Lacie</a>,
+#  <a class="sister" href="http://example.com/tillie" id="link3">Tillie</a>]
+
+soup.find_all(id="link2")
+# [<a class="sister" href="http://example.com/lacie" id="link2">Lacie</a>]
+
+import re
+soup.find(string=re.compile("sisters"))
+# u'Once upon a time there were three little sisters; and their names were\n'
+
+
+
+
+
+soup.find_all("a", limit=2)
+# [<a class="sister" href="http://example.com/elsie" id="link1">Elsie</a>,
+#  <a class="sister" href="http://example.com/lacie" id="link2">Lacie</a>]
+
+
+
+
+
+soup.html.find_all("title")
+# [<title>The Dormouse's story</title>]
+
+soup.html.find_all("title", recursive=False)
+# []
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+CSS selectors¶
+As of version 4.7.0, Beautiful Soup supports most CSS4 selectors via the SoupSieve project. If you installed Beautiful Soup through pip, SoupSieve was installed at the same time, so you don’t have to do anything extra.
+
+
+
+soup.select("title")
+# [<title>The Dormouse's story</title>]
+
+soup.select("p:nth-of-type(3)")
+# [<p class="story">...</p>]
+
+
+soup.select("body a")
+# [<a class="sister" href="http://example.com/elsie" id="link1">Elsie</a>,
+#  <a class="sister" href="http://example.com/lacie"  id="link2">Lacie</a>,
+#  <a class="sister" href="http://example.com/tillie" id="link3">Tillie</a>]
+
+soup.select("html head title")
+# [<title>The Dormouse's story</title>]
+
+
+
+
+
+# find tags "directly" beneath other tags
+
+soup.select("head > title")
+# [<title>The Dormouse's story</title>]
+
+soup.select("p > a")
+# [<a class="sister" href="http://example.com/elsie" id="link1">Elsie</a>,
+#  <a class="sister" href="http://example.com/lacie"  id="link2">Lacie</a>,
+#  <a class="sister" href="http://example.com/tillie" id="link3">Tillie</a>]
+
+soup.select("p > a:nth-of-type(2)")
+# [<a class="sister" href="http://example.com/lacie" id="link2">Lacie</a>]
+
+soup.select("p > #link1")
+# [<a class="sister" href="http://example.com/elsie" id="link1">Elsie</a>]
+
+soup.select("body > a")
+# []
+
+
+
+
+#find the siblings of tags:
+
+soup.select("#link1 ~ .sister")
+# [<a class="sister" href="http://example.com/lacie" id="link2">Lacie</a>,
+#  <a class="sister" href="http://example.com/tillie"  id="link3">Tillie</a>]
+
+soup.select("#link1 + .sister")
+# [<a class="sister" href="http://example.com/lacie" id="link2">Lacie</a>]
+
+
+#find tags by CSS class:
+
+soup.select(".sister")
+# [<a class="sister" href="http://example.com/elsie" id="link1">Elsie</a>,
+#  <a class="sister" href="http://example.com/lacie" id="link2">Lacie</a>,
+#  <a class="sister" href="http://example.com/tillie" id="link3">Tillie</a>]
+
+soup.select("[class~=sister]")
+# [<a class="sister" href="http://example.com/elsie" id="link1">Elsie</a>,
+#  <a class="sister" href="http://example.com/lacie" id="link2">Lacie</a>,
+#  <a class="sister" href="http://example.com/tillie" id="link3">Tillie</a>]
+
+
+#find tags by ID:
+
+soup.select("#link1")
+# [<a class="sister" href="http://example.com/elsie" id="link1">Elsie</a>]
+
+soup.select("a#link2")
+# [<a class="sister" href="http://example.com/lacie" id="link2">Lacie</a>]
+
+
+#find tags that match any selector from a list of selectors:
+
+soup.select("#link1,#link2")
+# [<a class="sister" href="http://example.com/elsie" id="link1">Elsie</a>,
+#  <a class="sister" href="http://example.com/lacie" id="link2">Lacie</a>]
+
+
+#test for the existence of an attribute:
+
+soup.select('a[href]')
+# [<a class="sister" href="http://example.com/elsie" id="link1">Elsie</a>,
+#  <a class="sister" href="http://example.com/lacie" id="link2">Lacie</a>,
+#  <a class="sister" href="http://example.com/tillie" id="link3">Tillie</a>]
+
+
+#find tags by attribute value:
+
+soup.select('a[href="http://example.com/elsie"]')
+# [<a class="sister" href="http://example.com/elsie" id="link1">Elsie</a>]
+
+soup.select('a[href^="http://example.com/"]')
+# [<a class="sister" href="http://example.com/elsie" id="link1">Elsie</a>,
+#  <a class="sister" href="http://example.com/lacie" id="link2">Lacie</a>,
+#  <a class="sister" href="http://example.com/tillie" id="link3">Tillie</a>]
+
+soup.select('a[href$="tillie"]')
+# [<a class="sister" href="http://example.com/tillie" id="link3">Tillie</a>]
+
+soup.select('a[href*=".com/el"]')
+# [<a class="sister" href="http://example.com/elsie" id="link1">Elsie</a>]
+
+
+
+
+soup.select_one(".sister")
+# <a class="sister" href="http://example.com/elsie" id="link1">Elsie</a>
+
+
+
+
+
+
+If you’ve parsed XML that defines namespaces, you can use them in CSS selectors.:
+
+from bs4 import BeautifulSoup
+xml = """<tag xmlns:ns1="http://namespace1/" xmlns:ns2="http://namespace2/">
+ <ns1:child>I'm in namespace 1</ns1:child>
+ <ns2:child>I'm in namespace 2</ns2:child>
+</tag> """
+soup = BeautifulSoup(xml, "xml")
+
+soup.select("child")
+# [<ns1:child>I'm in namespace 1</ns1:child>, <ns2:child>I'm in namespace 2</ns2:child>]
+
+soup.select("ns1|child", namespaces=namespaces)
+# [<ns1:child>I'm in namespace 1</ns1:child>]
+
+
+
+namespaces = dict(first="http://namespace1/", second="http://namespace2/")
+soup.select("second|child", namespaces=namespaces)
+# [<ns1:child>I'm in namespace 2</ns1:child>]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+tag.string = "New link text."
+  # all contents will be destroyed.
+
+
+
+soup = BeautifulSoup("<a>Foo</a>")
+soup.a.append("Bar")
+
+soup
+# <html><head></head><body><a>FooBar</a></body></html>
+soup.a.contents
+# [u'Foo', u'Bar']
+
+
+
+
+soup = BeautifulSoup("<a>Soup</a>")
+soup.a.extend(["'s", " ", "on"])
+
+soup
+# <html><head></head><body><a>Soup's on</a></body></html>
+soup.a.contents
+# [u'Soup', u''s', u' ', u'on']
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+##The SoupStrainer class takes the same arguments as a typical method from Searching the tree: name, attrs, string, and **kwargs. Here are three SoupStrainer objects:
+from bs4 import SoupStrainer
+only_a_tags = SoupStrainer("a")
+only_tags_with_id_link2 = SoupStrainer(id="link2")
+def is_short_string(string):
+  return len(string) < 10
+only_short_strings = SoupStrainer(string=is_short_string)
+##You can also pass a SoupStrainer into any of the methods covered in Searching the tree. This probably isn’t terribly useful, but I thought I’d mention it:
+soup = BeautifulSoup(html_doc)
+soup.find_all(only_short_strings)
+# [u'\n\n', u'\n\n', u'Elsie', u',\n', u'Lacie',
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
