@@ -162,6 +162,7 @@ __all__ = '''
 import networkx as nx
 from nn_ns.graph.graph_format_ascii_embedding import str2embedding as _tri_planar_str2embedding
 from seed.tiny import fprint
+from seed.text.escape_as_c_string import escape_as_c_string__narrow
 from pathlib import Path
 import re
 import subprocess
@@ -200,6 +201,7 @@ def c_quote(s):
     #if not max(s, default='0') < '\u0100': raise NotImplementedError
     if not re.fullmatch(r'[\[\]0-9 a-z,]*', s): NotImplementedError
     return s
+c_quote = escape_as_c_string__narrow
 
 def output_dot_png_svg__many__ipath(ipath, *, output_dir, exe, force):
     output_dir = Path(output_dir)
