@@ -71,14 +71,29 @@ moveto: mv -t /storage/emulated/0/0my_files/git_repos/txt_phone/txt/script/info_
 
 TODO: using:
     seed.io.savefile.SaveFile::aSaveFile__TuplePerBlock
-        replace infofile format
+        ver3 replace infofile ver1/ver2 format
             {info}\n# {simplified_info}\n
-    seed.mapping_tools.fdefault::set_fdefault
+        ver3:
+            assert  ',' < '0'
+            assert  ')' < '0'
+            assert  '_' > '0'
+            (tid=(nv, local_nth, global_nth), tri_planar_ename, tri_planar_embedding, canon=new_min_dfs, dedge_orbits::sorted_set<sorted_tuple<pair<vtx>>>, vtx_orbits::sorted_set<sorted_tuple<vtx>>, may_low_xename2miss_curr_dedge_orbit_mins::sorted_dict{(None|xename):sorted_set<min_dedge_per_orbit>})
+    seed.mapping_tools.fdefault::set_fdefault,add_new_item
         replace:
             if nv not in nv2canon2id:
                 nv2canon2id[nv] = {}
+        by:
+            set_fdefault(nv2canon2id, nv, dict)
+        replace:
+            canon2id[canon] = id
+        by:
+            add_new_item(canon2id, canon, id)
     ???
-TODO: argparse::subcmd
+TODO: subcmd
+    argparse::add_subparsers(parser_class=lambda *args, **args: ArgumentParser(*args, parents=..., **args))
+
+
+
 
 ===
 
@@ -199,6 +214,48 @@ def tri_planar_str2embedding(tri_planar_str):
     tri_planar_str = tri_planar_str.strip()
     return _tri_planar_str2embedding(tri_planar_str)
 #========]copy from draw_tri_planar_graphs.py
+
+
+def tri_planar_str2ename(tri_planar_str):
+    r'''->tri_planar_ename
+    ename = embedding str as name
+    vs:
+        tri_planar_str2ename
+        tri_planar_str2embedding
+        nth_tri_planar_str2file_base_name
+        ns_tri_planar_ename2xename
+    #'''
+    str_nv, str_mx = tri_planar_str.split()
+    tri_planar_ename = str_mx.replace(',', '_')
+    assert tri_planar_str == tri_planar_ename2str(tri_planar_ename)
+    return tri_planar_ename
+def tri_planar_ename2nv(tri_planar_ename):
+    nv = 1 + tri_planar_ename.count('_')
+    return nv
+def tri_planar_ename2str(tri_planar_ename):
+    str_mx = tri_planar_ename.replace('_', ',')
+    nv = tri_planar_ename2nv(tri_planar_ename)
+    tri_planar_str = f'{nv} {str_mx}'
+    return tri_planar_str
+
+def ns_tri_planar_ename2xename(nv, local_nth, global_nth, tri_planar_ename):
+    r'''->tri_planar_xename
+    xename = extened ename
+    #'''
+    assert nv == tri_planar_ename2nv(tri_planar_ename)
+    assert 0 <= local_nth <= global_nth
+    tri_planar_xename = f'{nv}_{local_nth}_{global_nth}_{tri_planar_ename}'
+    assert (nv, local_nth, global_nth, tri_planar_ename) == tri_planar_xename2ns_ename(tri_planar_xename)
+    return tri_planar_xename
+
+def tri_planar_xename2ns_ename(tri_planar_xename):
+    r'''->(nv, local_nth, global_nth, tri_planar_ename)
+    #'''
+    (nv, local_nth, global_nth, tri_planar_ename) = tri_planar_xename.split('_', 3)
+    (nv, local_nth, global_nth) = map(int, (nv, local_nth, global_nth))
+    return (nv, local_nth, global_nth, tri_planar_ename)
+
+
 
 
 def flip_planar_embedding(planar_embedding):
