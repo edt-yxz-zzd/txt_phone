@@ -1,0 +1,163 @@
+
+pip install purepng
+import png
+$ view /data/data/com.termux/files/usr/lib/python3.8/site-packages/png/png.py
+
+
+======
+py png read/write, 将图片设置为黑白，手动画图 黑色不黑！
+======
+view script/draw_tri_planar_graphs.py.data/hand_draw-readme.txt
+
+view script/pngs2blackwhite.py
+  png二值化
+  view others/app/termux/py_pip/purepng.txt
+
+======
+======
+
+import logging
+
+assert logging.getLogger() is logging.getLogger('')
+assert logging.getLogger() is not logging.getLogger('root')
+
+logging.disable()
+import png
+logging.disable(logging.NOTSET)
+
+
+import png
+
+idir = '/sdcard/0my_files/git_repos/txt_phone/draw-plantri-adc3m3/.'
+odir = '/sdcard/0my_files/tmp/graph/png/.'
+
+path_sq = f'{idir}/32_32_sq.png'
+path_035 = f'{idir}/035.png'
+opng35_fmt = '/sdcard/0my_files/tmp/tmp035_{}.png'
+
+r = png.Reader(path_sq).read()
+  (32, 32, <map object at 0xb66d8c10>, {'greyscale': False, 'alpha': True, 'planes': 4, 'bitdepth': 8, 'interlace': 0, 'size': (32, 32), 'text': {}})
+m = [*r[2]]
+len(m)
+  32
+len(m[0])
+  128 == 32*4 bytes
+
+r35 = png.Reader(path_035).read()
+  #(x-width-col, y-height-row)
+  (64, 32, <map object at 0xb66d8df0>, {'greyscale': False, 'alpha': True, 'planes': 4, 'bitdepth': 8, 'interlace': 0, 'size': (64, 32), 'text': {}})
+m35 = [*r35[2]]
+len(m35)
+  32 rows
+len(m35[0])
+  256 == 64*4  bytes cols*RGBA #0xff - 最饱和、最透明
+
+
+
+
+
+def rgba_to_bit(m, *, input_alpha):
+  def f(r,g,b,a):
+    return (r,g,b) == (0xff,0xff,0xff)
+  return rgba_to_xxx(f, m, input_alpha=input_alpha)
+
+def rgba_to_byte(m, *, input_alpha):
+  def f(r,g,b,a):
+    x = (r,g,b) == (0xff,0xff,0xff)
+    return 0xff * x
+  return rgba_to_xxx(f, m, input_alpha=input_alpha)
+
+def rgba_to_rgb_bw(m, *, input_alpha):
+  def f(r,g,b,a):
+    black = (0x00,0x00,0x00)
+    white = (0xff,0xff,0xff)
+    is_white = (r,g,b) == white
+    return white if is_white else black
+  return rgba_to_xxx(f, m, input_alpha=input_alpha)
+
+def rgba_to_xxx(f, m, *, input_alpha):
+  step = 4 if input_alpha else 3
+  xss = []
+  for row in m:
+    w = len(row)//step
+    assert w*step == len(row)
+    xs = []
+    for i in range(w):
+      rgbx = row[step*i:step*i+step]
+      if step == 4:
+        r,g,b,a = rgbx
+      else:
+        r,g,b = rgbx
+        a = None
+      x = f(r,g,b,a)
+      try:
+        it = iter(x)
+      except TypeError:
+        xs.append(x)
+      else:
+        xs.extend(it)
+    xss.append(xs)
+  return xss
+
+m35_bit = rgba_to_bit(m35, input_alpha=True)
+m35_byte = rgba_to_byte(m35, input_alpha=True)
+m35_rgb_bw = rgba_to_rgb_bw(m35, input_alpha=True)
+
+
+#png.Writer(width:num_columns, height:num_rows, greyscale=True, bitdepth=bbb,palette=[[int%2**bbb]{3|4}]).write(fout, [[int%2**bbb]{width}]{height})
+  "bitdepth < 8 only permitted with greyscale or palette"
+  "alpha and palette not compatible
+  "greyscale and palette not compatible"
+  palette=None|len<-[1..256]&&len(self[0])<)[3..4]
+
+with open(opng35_fmt.format('byte_grey'), 'xb') as fout:
+  png.Writer(64, 32, greyscale=True, bitdepth=8,palette=None,alpha=False).write(fout, m35_byte)
+  # => 172 B
+
+with open(opng35_fmt.format('bit_grey'), 'xb') as fout:
+  png.Writer(64, 32, greyscale=True, bitdepth=1,palette=None,alpha=False).write(fout, m35_bit)
+  # => 146 B
+
+with open(opng35_fmt.format('bit_palette'), 'xb') as fout:
+  png.Writer(64, 32, greyscale=False, bitdepth=1,palette=[(0,0,0), (0xff,0xff,0xff)],alpha=False).write(fout, m35_bit)
+    #竟然不是(1,1,1) !!! 而是 (0xff,0xff,0xff)
+  # => 164 B
+
+with open(opng35_fmt.format('bw_palette'), 'xb') as fout:
+  png.Writer(64, 32, greyscale=False, bitdepth=8,palette=[(0,0,0), (0xff,0xff,0xff)],alpha=False).write(fout, m35_bit)
+  # => 190 B
+
+with open(opng35_fmt.format('rgb_bw'), 'xb') as fout:
+  png.Writer(64, 32, greyscale=False, bitdepth=8,palette=None,alpha=False).write(fout, m35_rgb_bw)
+  # => 228 B
+
+
+
+from pathlib import Path
+
+def hand_draw_rgba_pngs_to_rgb_bw(odir, idir):
+  idir = Path(idir)
+  odir = Path(odir)
+  for ipng in idir.glob('*.png'):
+    opng = odir / ipng.name
+    (width, height, mx_rgba, attrs) = png.Reader(str(ipng)).read()
+    #(32, 32, <map object at 0xb66d8c10>, {'greyscale': False, 'alpha': True, 'planes': 4, 'bitdepth': 8, 'interlace': 0, 'size': (32, 32), 'text': {}})
+    if attrs['bitdepth'] == 8 and not attrs['greyscale']:pass
+    else:
+      raise NotImplementedError
+    input_alpha = attrs['alpha']
+    mx_rgb_bw = rgba_to_rgb_bw(mx_rgba, input_alpha=input_alpha)
+    with open(opng, 'xb') as fout:
+      png.Writer(width, height, greyscale=False, bitdepth=8,palette=None,alpha=False).write(fout, mx_rgb_bw)
+
+hand_draw_rgba_pngs_to_rgb_bw(odir, idir)
+
+
+
+mv -T '/sdcard/0my_files/tmp/graph/png/'    '/sdcard/0my_files/git_repos/txt_phone/draw-plantri-adc3m3-4d16d~sz306'
+mv -T     '/sdcard/0my_files/git_repos/txt_phone/draw-plantri-adc3m3-4d16d~sz306'  '/sdcard/0my_files/git_repos/txt_phone/hand_draw-plantri-adc3m3-4d16d~sz306+data/hand_draw-plantri-adc3m3-4d16d~sz306'
+mv -T    '/sdcard/0my_files/git_repos/txt_phone/draw-plantri-adc3m3'    '/sdcard/0my_files/tmp/graph/hand_draw-plantri-adc3m3-4d16d~sz306~[not_blackwhite]'
+
+
+
+
