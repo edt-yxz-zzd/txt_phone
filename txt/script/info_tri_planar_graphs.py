@@ -92,6 +92,8 @@ TODO: using:
 TODO: subcmd
     argparse::add_subparsers(parser_class=lambda *args, **args: ArgumentParser(*args, parents=..., **args))
 
+TODO: info_ver3 = info_ver2  +old2canon/or root_dedge  +is_symmetry  +fixed_point +fixed_dedge +mirror_edge
+    simplified:{low_level_canon: (is_symmetry, miss_edge:mirror_edge,fixed_dedge}
 
 
 
