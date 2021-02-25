@@ -91,6 +91,13 @@ TODO: using:
     ???
 TODO: subcmd
     argparse::add_subparsers(parser_class=lambda *args, **args: ArgumentParser(*args, parents=..., **args))
+    view ../../python3_src/useful.txt
+        from seed.for_libs.for_argparse.subcmd import Main4subcmd
+        _Main+main.Main(_Main, Main4subcmd)
+    see: 
+    example:
+        view script/欧路词典.py
+
 
 TODO: info_ver3 = info_ver2  +old2canon/or root_dedge  +is_symmetry  +fixed_point +fixed_dedge +mirror_edge
     simplified:{low_level_canon: (is_symmetry, miss_edge:mirror_edge,fixed_dedge}

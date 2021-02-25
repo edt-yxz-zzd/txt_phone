@@ -21,20 +21,26 @@ py script/欧路词典.py readline    -b 1046   -n '"@"'    -i  /sdcard/0my_file
 for i in ${ls}; do echo $i ; done
 
 cd /sdcard/0my_files/unzip/eudb_en/
-for i in $(ls) ; do py $my_txt/script/欧路词典.py readline    -b 1046   -n '"@"'    -i  $i ; done
-'汉语大辞典'
-'新世纪汉英科技大词典'
-'计算机词汇'
-'r'
-'中华成语大词典'
-'现代汉语词典'
-'新世纪英汉科技大词典'
+for i in $(ls) ; do echo $i ; py $my_txt/script/欧路词典.py readline    -b 1046   -n '"@"'    -i  $i ; done
+1317108648.eudb
+1046 '汉语大辞典'
+1522017926.eudb
+1046 '新世纪汉英科技大词典'
+1922908499.eudb
+1046 '计算机词汇'
+20017.eudb
+1046 'r'
+315772229.eudb
+1046 '中华成语大词典'
+375916128.eudb
+1046 '现代汉语词典'
+99569493.eudb
+
+py $my_txt/script/欧路词典.py readline    -b 0   -n '"\n"'    -i  20017.eudb -sz 7
 
 
 
 
-中华成语大词典
-计算机词汇
 
 
 ====
@@ -80,10 +86,13 @@ see:
 
 import codecs
 import ast
-from io import TextIOWrapper
+#from io import TextIOWrapper
+import io
 from pathlib import Path
+from itertools import islice
 from seed.iters.find import iter_search_subseq_on_stream
 from nn_ns.bin.stream_search import iter_search_all
+from seed.text.StepDecoder import StepDecoder__bytes2str, OutputCase_of_StepDecoderABC_feeds as _FOC
 
 
 
@@ -91,7 +100,7 @@ from nn_ns.bin.stream_search import iter_search_all
 r'''
 def iter_search_subseq_on_stream(istream, subseq, *, overlap:bool, last_pos2restart_pos=None, _ver=None, offset=0):
 def iter_search_all(key, file_obj):
-'''
+#'''
 
 def iter_search_1(fin, bs):
     return iter_search_all(bs, fin)
@@ -102,10 +111,65 @@ def iter_search_2(fin, bs):
 def iter_search_3(fin, bs):
     return _iter_search_2_3(3, fin, bs)
 
-  e /storage/emulated/0/0my_files/git_repos/python3_src/seed/text/StepDecoder.py
-def iter_read_lines_ex(bin_fin, pos, *, encoding, newline, **kwargs):
+if 0:
+#$ snippet 20017.eudb -c 1 -n 22 -b 1040
+    _g_bs = b''.join(
+[b'\xf8',
+ b'c',
+ b'\xbc',
+ b'\xf8',
+ b'\xca',
+ b'\xd2',
+ b'r',
+ b'\x9a',
+ b'\xe6',
+ b'+',
+ b'\xfc',
+ b'\xcf',
+ b'\x94',
+ b'\x03',
+ b'\xf1',
+ b'-',
+ b'\x16',
+ b'\xa3',
+ b'\xc7',
+ b'\x8d',
+ b'\x9f',
+ b'T']
+)
+    assert _g_bs == b'\xf8c\xbc\xf8\xca\xd2r\x9a\xe6+\xfc\xcf\x94\x03\xf1-\x16\xa3\xc7\x8d\x9fT'
+def iter_read_lines_ex(bin_fin, byte_offset, *, encoding, newline, keep_newline, **kwargs):
     '-> Iter (pos, line_without_NL)'
     # line donot contains newline at end
+    ########
+    #assert len(newline) == 1 #now neednot
+    if byte_offset < 0: raise ValueError
+    if 0:
+        bin_fin.seek(0); bin_fin.read(byte_offset)
+        assert byte_offset == bin_fin.tell()
+        ###
+        bin_fin = io.BytesIO(_g_bs)
+        encoding = 'u8'
+        print(_g_bs)
+    else:
+        pos = byte_offset
+        bin_fin.seek(pos)
+
+
+    not_keep_newline = not keep_newline
+    step_decoder = StepDecoder__bytes2str(encoding)
+    feeds_output = step_decoder.feeds__istream(bin_fin)
+    it = step_decoder.iter_lines__feeds_output(feeds_output, step_predicator=newline, step_builder=str)
+    for begin_pos, line, end_pos, case in it:
+        if not_keep_newline:
+            if case is _FOC.SUCC:
+                #print(f'{line!r}')
+                assert line[-1] in newline
+                line = line[:-1]
+        yield begin_pos, line
+    return
+
+    r"""
     assert len(newline) == 1
     bin_fin.seek(pos)
     Decoder = codecs.getincrementaldecoder(encoding)
@@ -179,31 +243,25 @@ def iter_read_lines_ex(bin_fin, pos, *, encoding, newline, **kwargs):
         raise
     #return iter(fin)
 
+    #"""
 
 
-if 0:
-    ifname = '/sdcard/0my_files/unzip/eudb_en/1922908499.eudb'
-    ifname = Path(ifname)
-    idir = ifname.dir()
 
 
-def main(args=None):
-    import argparse
-    from seed.for_libs.for_argparse.subcmd import ArgParserPrepare, mk_group
-    from seed.helper.get_args_kwargs import mk_GetArgsKwargs as G, xcall
 
-    parser = argparse.ArgumentParser(
-        description='search encoded bytes of text in binary file, output offset'
-        , epilog=''
-        , formatter_class=argparse.RawDescriptionHelpFormatter
-        )
 
+
+
+
+def _mk_subcmd2prepare():
+    from seed.for_libs.for_argparse.subcmd import ArgParserPrepare
+    from seed.helper.get_args_kwargs import mk_GetArgsKwargs as G
     定位词库名的位置 = ArgParserPrepare([], [
 
 
     G('-v', '--method_version', type=int, required=True
                         , choices=(1,2,3)
-                        , help='input file path')
+                        , help='search method impl version')
     ,G('-i', '--input', type=str, required=True
                         , help='input file path')
     ,G('-t', '--text', type=str, required=True
@@ -224,10 +282,67 @@ def main(args=None):
                         , help='line sep')
     ,G('-sz', '--num_lines', type=int
                         , default=1
-                        , help='num_lines to show; default 1; num_lines < 0 => all ')
+                        , help='num_lines to show; default 1; num_lines < 0 => all')
+    ,G('-k', '--keep_newline', action='store_true'
+                        , default = False
+                        , help='show line with newline')
         ], {})
+    subcmd2prepare = dict(search=定位词库名的位置, readline=读取词库名)
+    return subcmd2prepare
+
+
+
+
+
+
+
+
+if 0:
+    ifname = '/sdcard/0my_files/unzip/eudb_en/1922908499.eudb'
+    ifname = Path(ifname)
+    idir = ifname.dir()
+
+
+def main(args=None, *, ver):
+    if ver == 1:
+        return main_1(args)
+    elif ver == 2:
+        return main_2(args)
+    else:
+        raise logic-err
+
+class _Main:
+    def on_subcmd__search(sf, subcmd_name, parsed_args):
+        return _main_subcmd_search(parsed_args)
+    def on_subcmd__readline(sf, subcmd_name, parsed_args):
+        return _main_subcmd_readline(parsed_args)
+    def on_no_subcmd(sf, subcmd_name, parsed_args):
+        raise NotImplementedError
+    @classmethod
+    def _mk_option_config_(cls):
+        '-> ([parent::ArgParserPrepare], [common_option::GetArgsKwargs], {group_name:{subcmd:ArgParserPrepare}})'
+        return [], [], {'subcmd':_mk_subcmd2prepare()}
+def main_2(args=None):
+    from seed.for_libs.for_argparse.subcmd import Main4subcmd
+    class Main(_Main, Main4subcmd):
+      pass
+    return Main(description=_g_description, subcmd_dest_name='subcmd').main(args)
+
+_g_description='search encoded bytes of text in binary file, output offset'
+def main_1(args=None):
+    import argparse
+    from seed.for_libs.for_argparse.subcmd import ArgParserPrepare, mk_group
+
+    parser = argparse.ArgumentParser(
+        description=_g_description
+        , epilog=''
+        , formatter_class=argparse.RawDescriptionHelpFormatter
+        )
+
+
+    subcmd2prepare = _mk_subcmd2prepare()
     顶级设置 = ArgParserPrepare([], [
-        ], {mk_group('subcmd'):dict(search=定位词库名的位置, readline=读取词库名)})
+        ], {mk_group('subcmd'):subcmd2prepare})
     #parser.add_subparsers('a')
     顶级设置.fill_to(parser)
     #raise
@@ -261,21 +376,22 @@ def _main_subcmd_readline(args):
     newline = args.newline
     newline = ast.literal_eval(newline)
     num_lines = args.num_lines
+    keep_newline = args.keep_newline
+    if byte_offset < 0: raise ValueError
 
 
     with open(ifname, 'rb') as fin:
-        it = iter_read_lines_ex(fin, byte_offset, encoding=encoding, newline=newline)
+        it = iter_read_lines_ex(fin, byte_offset, encoding=encoding, newline=newline, keep_newline=keep_newline)
         if num_lines >= 0:
             it = islice(it, num_lines)
         for pos, line in it:
             print(f"{pos} {line!r}")
-            break
         else:
             pass
 
 
 if __name__ == "__main__":
-    main()
+    main(ver=2)
 
 
 

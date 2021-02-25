@@ -1,0 +1,233 @@
+py c库 编译 构建 => nauty
+  e ../lots/NOTE/Python/howto-compile-c++-binding.txt
+
+
+
+https://realpython.com/python-bindings-overview/
+4 tools:
+  ctypes
+  CFFI
+  PyBind11
+  Cython
+pip install invoke
+  * pip install cffi
+  * pip install pybind11
+  * pip install cython
+  invoke
+    like "make"
+  CFFI
+    C Foreign Function Interface
+      not C++, C++ see:PyBind11
+    API-mode + out-of-line-mode
+    like ctypes, but read c header
+tasks.py is used by "invoke"
+
+# tasks.py
+import cffi
+...
+""" Build the CFFI Python bindings """
+print_banner("Building CFFI Module")
+ffi = cffi.FFI()
+# tasks.py
+this_dir = pathlib.Path().absolute()
+h_file_name = this_dir / "cmult.h"
+with open(h_file_name) as h_file:
+    ffi.cdef(h_file.read())
+
+# tasks.py
+ffi.set_source(
+    "cffi_example",
+    # Since you're calling a fully-built library directly, no custom source
+    # is necessary. You need to include the .h files, though, because behind
+    # the scenes cffi generates a .c file that contains a Python-friendly
+    # wrapper around each of the functions.
+    '#include "cmult.h"',
+    # The important thing is to include the pre-built lib in the list of
+    # libraries you're linking against:
+    libraries=["cmult"],
+    library_dirs=[this_dir.as_posix()],
+    extra_link_args=["-Wl,-rpath,."],
+)
+# tasks.py
+ffi.compile()
+############################
+"cffi_example" is the base name for the source file that will be created on your file system. CFFI will generate a .c file, compile it to a .o file, and link it to a .<system-description>.so or .<system-description>.dll file.
+
+'#include "cmult.h"' is the custom C source code that will be included in the generated source before it’s compiled. Here, you just include the .h file for which you’re generating bindings, but this can be used for some interesting customizations.
+
+libraries=["cmult"] tells the linker the name of your pre-existing C library. This is a list, so you can specify several libraries if required.
+
+library_dirs=[this_dir.as_posix(),] is a list of directories that tells the linker where to look for the above list of libraries.
+
+extra_link_args=['-Wl,-rpath,.'] is a set of options that generate a shared object, which will look in the current path (.) for other libraries it needs to load.
+############################
+shell
+$ invoke build-cffi
+==================================================
+= Building C Library
+* Complete
+==================================================
+= Building CFFI Module
+* Complete
+
+PyBind11
+PyBind11 is modeled after the Boost::Python library and has a similar interface. It restricts its use to C++11 and newer, however, which allows it to simplify and speed things up compared to Boost, which supports everything.
+
+// pybind11_wrapper.cpp
+#include <pybind11/pybind11.h>
+#include <cppmult.hpp>
+
+PYBIND11_MODULE(pybind11_example, m) {
+    m.doc() = "pybind11 example plugin"; // Optional module docstring
+    m.def("cpp_function", &cppmult, "A function that multiplies two numbers");
+}
+
+############################
+for this example, you’re creating a module called pybind11_example and that the rest of the code will use m as the name of the py::module object. On the next line, inside the C++ function you’re defining, you create a docstring for the module. 
+m.def() call. This will define a function that’s exported by your new Python bindings, meaning it will be visible from Python. In this example, you’re passing three parameters:
+
+cpp_function is the exported name of the function that you’ll use in Python. As this example shows, it doesn’t need to match the name of the C++ function.
+&cppmult takes the address of the function to be exported.
+"A function..." is an optional docstring for the function.
+############################
+# tasks.py
+invoke.run(
+    "g++ -O3 -Wall -Werror -shared -std=c++11 -fPIC cppmult.cpp "
+    "-o libcppmult.so "
+)
+
+shell
+$ invoke build-cppmult
+==================================================
+= Building C++ Library
+* Complete
+
+# tasks.py
+invoke.run(
+
+    "g++ -O3 -Wall -Werror -shared -std=c++11 -fPIC "
+
+    "`python3 -m pybind11 --includes` "
+
+    "-I /usr/include/python3.7 -I .  "
+
+    "{0} "
+
+    "-o {1}`python3.7-config --extension-suffix` "
+
+    "-L. -lcppmult -Wl,-rpath,.".format(cpp_name, extension_name)
+
+)
+############################
+
+Line 3 contains fairly standard C++ compiler flags that indicate several details, including that you want all warnings caught and treated as errors, that you want a shared library, and that you’re using C++11.
+
+Line 4 is the first step of the magic. It calls the pybind11 module to have it produce the proper include paths for PyBind11. You can run this command directly on the console to see what it does:
+
+$ python3 -m pybind11 --includes
+-I/home/jima/.virtualenvs/realpython/include/python3.7m
+-I/home/jima/.virtualenvs/realpython/include/site/python3.7
+
+
+In line 5 of your compilation call, you can see that you’re also adding the path to the Python dev includes. While it’s recommended that you don’t link against the Python library itself, the source needs some code from Python.h to work its magic. Fortunately, the code it uses is fairly stable across Python versions.
+
+Line 5 also uses -I . to add the current directory to the list of include paths. This allows the #include <cppmult.hpp> line in your wrapper code to be resolved.
+
+Line 6 specifies the name of your source file, which is pybind11_wrapper.cpp. Then, on line 7 you see some more build magic happening. This line specifies the name of the output file. Python has some particular ideas on module naming, which include the Python version, the machine architecture, and other details. Python also provides a tool to help with this called python3.7-config:
+
+$ python3.7-config --extension-suffix
+.cpython-37m-x86_64-linux-gnu.so
+
+
+
+The final line of your build command, line 8, points the linker at the libcppmult library you built earlier. The rpath section tells the linker to add information to the shared library to help the operating system find libcppmult at runtime. Finally, you’ll notice that this string is formatted with the cpp_name and the extension_name. You’ll be using this function again when you build your Python bindings module with Cython in the next section.
+
+Run this command to build your bindings:
+
+$ invoke build-pybind11
+==================================================
+= Building C++ Library
+* Complete
+==================================================
+= Building PyBind11 Module
+* Complete
+
+
+
+
+Cython
+
+The approach Cython takes to creating Python bindings uses a Python-like language to define the bindings and then generates C or C++ code that can be compiled into the module. There are several methods for building Python bindings with Cython. The most common one is to use setup from distutils. For this example, you’ll stick with the invoke tool, which will allow you to play with the exact commands that are run.
+
+# cython_example.pyx
+""" Example cython interface definition """
+
+
+cdef extern from "cppmult.hpp":
+
+    float cppmult(int int_param, float float_param)
+
+
+def pymult( int_param, float_param ):
+
+    return cppmult( int_param, float_param )
+
+
+    Lines 3 and 4 tell Cython that you’re using cppmult() from cppmult.hpp.
+    Lines 6 and 7 create a wrapper function, pymult(), to call cppmult().
+
+
+# tasks.py
+def compile_python_module(cpp_name, extension_name):
+
+    invoke.run(
+
+        "g++ -O3 -Wall -Werror -shared -std=c++11 -fPIC "
+
+        "`python3 -m pybind11 --includes` "
+
+        "-I /usr/include/python3.7 -I .  "
+
+        "{0} "
+
+        "-o {1}`python3.7-config --extension-suffix` "
+
+        "-L. -lcppmult -Wl,-rpath,.".format(cpp_name, extension_name)
+
+    )
+
+
+def build_cython(c):
+
+    """ Build the cython extension module """
+
+    print_banner("Building Cython Module")
+
+    # Run cython on the pyx file to create a .cpp file
+
+    invoke.run("cython --cplus -3 cython_example.pyx -o cython_wrapper.cpp")
+
+
+    # Compile and link the cython wrapper library
+
+    compile_python_module("cython_wrapper.cpp", "cython_example")
+
+    print("* Complete")
+
+
+    --cplus tells the compiler to generate a C++ file instead of a C file.
+    -3 switches Cython to generate Python 3 syntax instead of Python 2.
+    -o cython_wrapper.cpp specifies the name of the file to generate.
+
+Once the C++ file is generated, you use the C++ compiler to generate the Python bindings, just as you did for PyBind11. Note that the call to produce the extra include paths using the pybind11 tool is still in that function. It won’t hurt anything here, as your source will not need those.
+
+
+$ invoke build-cython
+==================================================
+= Building C++ Library
+* Complete
+==================================================
+= Building Cython Module
+* Complete
+
+
