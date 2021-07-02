@@ -1,0 +1,354 @@
+
+e others/book/The C++ Programming Language(4ed)(2013).txt
+e others/book/The\ C++\ Programming\ Language(4ed)(2013).txt
+
+  '/sdcard/0my_files/book/lang/C++/The C++ Programming Language(4ed)(2013).pdf'
+    pg103[118/1366]
+    pg118[133/1366]
+    pg119[134/1366]
+    pg123[138/1366]
+pg141[156/1366]
+pg149[164/1366]
+pg151[166/1366]
+pg155[170/1366]
+pg160[175/1366]
+pg166[181/1366]
+pg168[183/1366]
+pg179[194/1366]
+pg191[206/1366]
+pg193[208/1366]
+pg196[211/1366]
+pg217[232/1366]
+pg264[279/1366]
+pg268[283/1366]
+
+
+
+compl???
+  like: bitor === |
+  compl === ~
+sizeof, alignof, alignas, decltype?
+  alignas: "align as" use to decl/def uninit buffer #see below
+const
+constexpr
+enum class.xxx{a, b, c}; //+ switch/case
+template<...> using xxx = ...;
+
+operator "" km ()
+
+int main(int argc, char* argv[])
+  argc >= 1
+  2 <= len(argv) == argc+1
+  argv[-1] is argv[argc] == nullptr
+  argv[0] === executable/program-name
+  all(s is c_string (i.e. s[strlen(s)] == NUL) for s in argv[:-1])
+
+===
+===
+===
+===
+===
+pg282[297/1366] #
+  To deallocate space allocated by new,delete and delete[] must be able to determine the size of the object allocated. This implies that an object allocated using the standard implementation of new will occupy slightly more space than a static object. At a minimum, space is needed to hold the object’s size. Usually two or more words per allocation are used for free-store management. Most modern machines use 8-byte words. This overhead is not significant when we allocate many objects or large objects, but it can matter if we allocate lots of small objects (e.g.,ints or Points) on the free store.
+
+
+===
+pg268[283/1366] #narrowing ==>> narrow_cast<>, list_initializer
+  The {}-initializer syntax prevents narrowing (§6.3.5).
+    void f(double d)
+    {
+      char c {d};//error : double-precision fl oating-point to char conversion
+    }
+  If potentially narrowing conversions are unavoidable, consider using some form of run-time checked conversion function, such as narrow_cast<>()(§11.5).
+
+===
+pg265[280/1366] #constexpr constructor ==>> literal type
+  A class with a constexpr constructor is called a literal type. To be simple enough to be constexpr, a constructor must have an empty body and all members must be initialized by potentially constant expressions.
+
+===
+pg264[279/1366] #constexpr
+  The condition of a ?: is evaluated and then the selected alternative is evaluated. The alternative not selected is not evaluated and might even not be a constant expression. Similarly, operands of && and || that are not evaluated need not be constant expressions. This feature is primarily useful in constexpr functions that are sometimes used as constant expressions and sometimes not.
+  // 也可用作 检查输入输出、中间状态、报错
+
+===
+pg217[232/1366]
+  union
+    anonymous union #匿名
+    tagged union === discriminated union
+      #mine:cased
+    new(&s) string{ss};//placement new: explicitly construct string (§11.2.4)
+
+
+
+===
+pg196[211/1366]
+  T& & === T&
+  T&& & === T&
+  T& && === T&
+  T&& && === T&&
+
+
+
+
+===
+pg193[208/1366]
+  reference classify:
+    non-const lvalue reference
+      接受 部分 赋值: 左值(声明的右值自动变左值)
+    const lvalue reference
+      接受 任何 赋值: 左值(声明的右值自动变左值)，临时值，字面常量
+    rvalue reference
+      接受 部分 赋值: 临时值，字面常量
+
+
+
+===
+pg191[206/1366] #const T& = ... 可能复制并保留该临时值
+  Initialization of a reference is trivial when the initializer is an lvalue (an object whose address you can take; see §6.4). The initializer for a ‘‘plain’’ T& must be an lvalue of type T.
+  The initializer for a "const T&" need not be an lvalue or even of type T. In such cases:
+    [1] First, implicit type conversion to T is applied if necessary (see §10.5).
+    [2] Then, the resulting value is placed in a temporary variable of type T.
+    [3] Finally, this temporary variable is used as the value of the initializer.
+
+  Consider:
+    double& dr = 1;//error : lvalue needed
+    const double& cdr {1};//OK
+
+  The interpretation of this last initialization might be:
+    double temp = double{1}; //first create a temporar y with the right value
+    const double& cdr {temp};//then use the temporar y as the initializer for cdr
+
+  A temporary created to hold a reference initializer persists until the end of its reference’s scope.
+  References to variables and references to constants are distinguished because introducing a temporary for a variable would have been highly error-prone; an assignment to the variable would become an assignment to the – soon-to-disappear – temporary. No such problem exists for references to constants, and references to constants are often important as function arguments (§18.2.4).
+
+
+
+===
+pg179[194/1366]
+    u8"" utf8 string
+    u"" utf16 string
+    U"" utf32 string
+    L"" wchar_t[]
+    ==
+    R"tag(...)tag" multi-line raw string allow true newline
+    ==
+    UR not RU
+    R not r
+===
+pg168[183/1366]
+  // except char..._t, wchar_t
+  The _t suffix is conventional for aliases (‘‘typedefs’’). The int16_t,int32_t, and other such aliases can be found in<stdint>(§43.7).
+  Note that naming a type after its representation rather than its pur- pose is not necessarily a good idea (§6.3.3).
+  template<...> using xxx = ...;
+
+===
+pg166[181/1366]
+  key properties for addressing/copying/moving:
+    movable
+    has_identity #addressable
+
+  classify:
+    [not movable][not has_identity] <==> not C++ obj
+    [not movable][has_identity] <==> lvalue
+    [movable][has_identity] <==> xvalue
+    [movable][not has_identity] <==> prvalue
+    glvalue = lvalue | xvalue
+    rvalue = xvalue | prvalue
+    ==
+    l = lhs
+    r = rhs
+    g = generalized
+    p = pure
+    x = extraordinary / expert-only
+    ==
+    std::move() -> &&
+
+  #see:pg193[208/1366]
+  reference classify:
+    non-const lvalue reference
+    const lvalue reference
+    rvalue reference
+
+===
+pg160[175/1366]
+  T x {}; // avoid become func-decl: "T x();"
+  alway use {}(list initialization):
+  * except auto
+      auto z1 {99};//z1 is an initializer_list<int>
+      auto z2 = 99;//z2 is an int
+      // So prefer = when using auto.
+  * except non-list-initialization constructor has diff.meaning:
+      vector<int> v1 {99};//v1 is a vector of 1 element with the value 99
+        // == [99]
+      vector<int> v2(99);//v2 is a vector of 99 elements each with the default value 0
+        // == [0]*99
+
+
+===
+pg155[170/1366]
+  _ 用于 命名:
+    必须是 local
+    必须是 _[0-9a-z]...
+
+  Nonlocal names starting with an underscore are reserved for special facilities in the implementation and the run-time environment, so such names should not be used in application programs.
+  Similarly, names starting with a double underscore (__) or an underscore followed by an uppercase letter (e.g.,_Foo) are reserved (§iso.17.6.4.3).
+
+
+===
+pg151[166/1366] #alignas+uninitialized_copy
+
+void user(const vector<X>& vx)
+{
+  constexpr int bufmax = 1024;
+  alignas(X) buffer[bufmax]; //uninitialized
+  const int max = min(vx.size(),bufmax/siz eof(X));
+  uninitialized_copy(vx.begin(),vx.begin()+max,buffer);
+  //...
+}
+
+
+===
+pg149[164/1366]
+  基本类型 大小比较
+  #omit sizeof, unit:char
+  1 == char <= {(short <= int), bool, wchar_t} <= long <= long long
+    xxx == signed xxx == unsigned xxx
+  float <= double <= long double
+
+  #omit bit_of, unit:bit
+  8 <= char
+  16 <= short
+  32 <= long
+  ===
+  ！！！如果 char==4byte，那 char16_t/int16_t 是什么？
+    u8"" utf8 string
+    u"" utf16 string
+    U"" utf32 string
+  ===
+  其实 有些奇怪
+  基本类型 的 大小/对齐 依 宿主机器（内存、CPU寄存器） 而定 ==>> char
+  而 面向通信（网络协议）、存储（文件格式），则 必须 明确 比特数 ==>> byte/bit
+  C++似乎 没能很明确地 支持如何处理这问题
+  <cstddef>::size_t/ptrdiff_t
+    size_t is an implementation-defined unsigned integer type that can hold the size in bytes of every object. Consequently, it is used where we need to hold an object size.
+    void∗ allocate(size_t n); //get n bytes? #char!
+    ptrdiff_t for holding the result of subtracting two pointers to get a number of elements.
+
+  但是 文件大小/tell()呢？显然 不能用 size_t
+    文件指针fp呢？显然 不能用 (void*)
+
+
+===
+pg141[156/1366]
+  [err: A char fits in 1 byte.]
+    There are embedded processors without byte accessing hardware for which a char is 4 bytes.
+  第六章 让我震惊！
+  char 多少byte？文件读写 怎么办？毕竟 字节 与 char 不对应！
+  字符、字符串 的 转义字符:
+    * 注意 长度没有上限！
+      \oooooo
+      \xhhhhh
+    * 并不能确定是那个字符
+      相当于 整数 赋值给 字符
+      字符集 并不确定，移植性 有问题
+        所以 实际上 不是 字符串，而是 整数流
+      (wchar_t*) L"" 更严重，连 字符串 的 长度 都无法确定（依赖于 编译器实现）
+      只有 unicode字符串 是 确定的
+        (char32_t) U'\Uxxxxxxxx'
+        (char16_t) u'\uxxxx'
+    * char vs signed char vs unsigned char
+      与 整数 交换 值，有 移植性问题
+    * 字母 不一定 连续
+      字符集 不一定 是 ascii
+      比如: i,j 不相邻
+
+===
+pg123[138/1366]
+  future+promise <-- packaged_task
+    + thread ==>> sync with shared-data #显式运行线程，任务之间可通信
+    + async ==>> cannot communicate, there may or maynot be thread used to work #可能 所有任务 并行，也可能 串行，即使部分串行，任务之间 也不可能 通信。
+
+
+
+
+
+===
+pg119[134/1366] # mutex + condition_variable
+  void consumer()
+  {
+    while(true) {
+      unique_lock<mutex> lck{mmutex}; //acquire mmutex
+      while (mcond.wait(lck)) /*do nothing*/; //release lck and wait;
+      //re-acquire lck upon wakeup
+      auto m = mqueue.front(); //get the message
+      mqueue.pop();
+      lck.unlock(); //release lck
+      //... process m ...
+    }
+  }
+
+  void producer()
+  {
+    while(true) {
+      Message m;
+      //... fi ll the message ...
+      unique_lock<mutex> lck {mmutex}; //protect operations
+      mqueue.push(m);
+      mcond.notify_one(); //notify
+    }//release lock (at end of scope)
+  }
+
+
+
+
+
+===
+pg118[133/1366] #防止死锁deadlock
+  unique_lock<mutex> lck1 {m1,defer_lock}; //defer_lock: don’t yet try to acquire the mutex
+  unique_lock<mutex> lck2 {m2,defer_lock};
+  unique_lock<mutex> lck3 {m3,defer_lock};
+  lock(lck1,lck2,lck3); //acquire all three locks
+
+
+
+
+
+
+===
+pg103[118/1366]
+  contiguous 邻接的，无中断的，连续的
+  chrono-  [前缀]用于组词表示计时相关的词
+    $ ls ~/../usr/include/c++/v1/chrono
+    /data/data/com.termux/files/home/../usr/include/c++/v1/chrono
+    view /data/data/com.termux/files/usr/include/c++/v1/deque
+      deque::operator[] O(1)???
+        std has only seq: vector/array/deque/list/forward_list??? vector/array require contiguous memory ==>> size-limited???
+
+      ref:
+        pg886[901/1366]
+          A deque(pronounced ‘‘deck’’) is a mixture of linked-list and contiguous allocation.
+        pg894[909/1366]
+          The standard-library operations have complexity guarantees:
+            deque::operator[] O(1)
+              how can it be possible if use list<array<T,N>>?
+                ???it seems using vector<array<T,N>>???
+          我觉得 deque 可用 两个 vector 实现，一反向，一正向。允许 头部空洞（所有元素只在一侧）
+            ？？？如何避免contiguous，以防内存高度碎片化无法分配大量连续内存，而同时保留random-access-O(1)？？？
+            random-access-O(1)==>>必然使用数组/连续内存
+            但可分级，总级数固定或有上限(<<==O(1))，这样各层级的数组大小有上限，不至于太大(<<==对内存高度碎片化的容忍力)，但多层情形下，整体总容量足够大
+
+view /data/data/com.termux/files/usr/include/c++/v1/__split_buffer
+  typedef __split_buffer<pointer, __pointer_allocator> __map;
+  protected:
+    __map __map_;
+    size_type __start_;
+template <class _Tp, class _Allocator>
+inline
+typename deque<_Tp, _Allocator>::reference
+deque<_Tp, _Allocator>::operator[](size_type __i)
+{
+    size_type __p = __base::__start_ + __i;
+    return *(*(__base::__map_.begin() + __p / __base::__block_size) + __p % __base::__block_size);
+}
+
+
