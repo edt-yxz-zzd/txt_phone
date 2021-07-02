@@ -1,0 +1,482 @@
+https://www.cnblogs.com/HolyShine/p/10445067.html
+====================================
+====================================
+====================================
+====================================
+====================================
+
+
+
+
+返回主页	
+边哭边吃饭的人，一定能够活下去
+
+    管理
+
+Python中的音频和数字信号处理（DSP）
+
+翻译自Python For Engineers。
+1. 创建一个正弦波
+
+在这个项目中，我们将创建一个正弦波，并将其保存为wav文件。
+
+但在此之前，你应该知道一些理论。
+
+频率：频率是正弦波重复一秒的次数。我将使用1KHz的频率。
+
+采样率：大多数现实世界的信号是模拟的，而计算机是数字的。因此，我们需要一个模数转换器将模拟信号转换为数字信号。有关转换器如何工作的详细信息超出了本书的范围。关键是采样率，即转换器每秒采样模拟信号的次数。
+
+现在，采样率对我们来说并不重要，因为我们正在以数字方式完成所有工作，但我们的正弦波公式需要它。我将使用48000的采样率值，这是专业音频设备中使用的值。
+正弦波公式：公式如下。
+
+y(t)= A * sin(2 * pi * f *t)
+
+y(t) 是对于某个 x 轴 时间 t , y 轴的值
+
+A 是幅值
+
+pi 是我们的老朋友 3.14159.
+
+f 是频率.
+
+t 是样本. 由于我们需要将其转换为数字，我们将按采样率进行划分。
+
+    关于幅值：
+
+    上述的幅值A。在大多数书中，他们只选择A的随机值，通常为1.但我们这里不能这么取。我们生成的正弦波将处于浮点状态，虽然这对于绘制图形来说已经足够了，但是当我们写入文件时这将无法工作。原因是我们需要处理整数。如果查看wave文件，它们将被写为16位短整数。如果我们写一个浮点数，它将无法正确被表示。
+
+    为了解决这个问题，我们必须将浮点数转换为固定值。其中一种方法是将其乘以固定常数。我们如何计算这个常数？带符号的16位数的最大值是32767（2 ^ 15-1）。 （因为最左边的位是为符号保留的，留下15位。我们将2增加到15的幂，然后减去1，因为计算机从0开始计数）。
+
+    所以我们想要全音阶音频，我们将它与32767相乘。但我想要的音频信号是满量程的一半，所以我将使用16000的幅度。
+
+代码如下：
+
+import numpy as np
+ 
+import wave
+ 
+import struct
+ 
+import matplotlib.pyplot as plt
+ 
+# frequency is the number of times a wave repeats a second
+ 
+frequency = 1000
+ 
+num_samples = 48000
+ 
+# The sampling rate of the analog to digital convert
+ 
+sampling_rate = 48000.0
+ 
+amplitude = 16000
+ 
+file = "test.wav"
+
+设置我们刚才声明过的波形变量：
+
+sine_wave = [np.sin(2 * np.pi * frequency * x/sampling_rate) for x in range(num_samples)]
+
+它表示生成0到num_samples范围内的 x，并且对于每个x值，生成一个值为该值的值。你可以将此值视为y轴值。然后将所有这些值放入列表中。十分简单。
+
+nframes=num_samples
+ 
+comptype="NONE"
+ 
+compname="not compressed"
+ 
+nchannels=1
+ 
+sampwidth=2
+
+好的，现在是时候将正弦波写入文件了。我们将使用Python的内置wave库。在这里我们设置参数。 nframes是帧数或样本数。
+
+comptype和compname都表示同样的事情：数据未压缩。 nchannels是通道数，即1. sampwidth是以字节为单位的样本宽度。正如我前面提到的，波形文件通常是每个样本16位或2个字节。
+
+wav_file=wave.open(file, 'w')
+ 
+wav_file.setparams((nchannels, sampwidth, int(sampling_rate), nframes, comptype, compname))
+
+打开波形文件并且设置参数:
+
+for s in sine_wave:
+   wav_file.writeframes(struct.pack('h', int(s*amplitude)))
+
+这里可能需要解释一下。我们正在按样本写sine_wave文件。writeframes是写正弦波的函数。一切都很简单。可能让你感到困惑的是下面这一行：
+
+struct.pack('h', int(s*amplitude))
+
+分解上述句子：
+
+int(s*amplitude)
+
+s 是我们正在写的sine_wave的单个样本。我将它与此处的幅度相乘（转换为固定点）。放在这里处理的原因是写入文件时需要转化为整数处理。
+
+现在，我们拥有的数据只是一个数字列表。如果我们将其写入文件，音频播放器将无法读取。
+
+Struct是一个Python库，它接收我们的数据并将其打包为二进制数据。代码中的h表示16位数。
+
+要了解这个包的作用，让我们看看IPython中的一个例子。
+
+In [1]: import numpy as np
+ 
+In [2]: np.sin(0.5)
+ 
+Out[2]: 0.47942553860420301
+ 
+In [5]: 0.479*16000
+ 
+Out[5]: 7664.0
+
+上面是以0.5为例。
+
+因此我们取0.5的sin，并将其乘以16000将其转换为固定点数。现在如果我们将其写入文件，它只会将7664写为字符串，这是错误的。让我们看一下struct做了什么：
+
+In [6]: struct.pack('h', 7664)
+ 
+Out[6]: 'xf0x1d'
+
+x 表示数字是十六进制。如你所见，struct已将我们的数字7664转换为2个十六进制值：0xf0和0x1d。
+
+为什么是0xf0 0x1d？好吧，如果你将7664转换为十六进制，你将获得0xf01d。
+为什么两个值？因为我们使用的是16位值，而且我们的数字不能合二为一。因此，struct将其分为两个数字。
+
+由于数字现在是十六进制，因此其他程序可以读取它们，包括我们的音频播放器。
+
+回到我们的代码：
+
+for s in sine_wave:
+   wav_file.writeframes(struct.pack('h', int(s*amplitude)))
+
+这将采用我们的正弦波样本并将其写入我们的文件test.wav，打包为16位音频。
+
+在你拥有的任何音频播放器中播放文件 - Windows Media Player，VLC等。你应该能听到非常短的蜂鸣。
+
+现在，我们需要检查音调的频率是否正确。我将使用Audacity，一个具有大量功能的开源音频播放器。其中之一就是我们可以找到音频文件的频率。让我们打开Audacity。
+
+bky_20190227_1.jpg
+
+我们得到了一个正弦波。请注意，波形高达0.5，而1.0是最大值。还记得我们乘以16000，这是36767的一半。
+
+现在找频率。转到编辑 - >全选（或按Ctrl A），然后选择分析 - >频谱分析。
+
+bky_20190227_2.jpg
+
+可以看到峰值大约为1000 Hz，这就是我们创建波形文件的方式。
+2. 计算正弦波的频率
+
+我在我的学位课程中参加了一门信号处理课程，并且不了解任何事情。我们被要求解一百个方程式，没有任何意义或逻辑。我发现这个主题很无聊和迂腐。
+
+当我不得不再为我的硕士学习时，我不高兴。但我很幸运。
+
+这次，老师是一名执业工程师。他经营自己的公司并兼职教学。与大学教师不同，他实际上知道方程式的用途。
+
+但是这位老师（我忘了他的名字，他是一个丹麦人）向我们展示了一个嘈杂的信号，并且使用了DFT。然后他在图形窗口中显示结果。我们清楚地看到了原始的正弦波和噪声频率，我第一次理解了DFT的作用。
+使用 DFT 获取频率
+
+要获得正弦波的频率，你需要获得其离散傅立叶变换（DFT）。你不需要了解如何推导变换。你只需要知道如何使用它。
+
+最简单的说，DFT接收信号并计算其中存在哪些频率。在更多技术术语中，DFT将时域信号转换为频域。那是什么意思？让我们来看看我们的正弦波。
+
+bky_20190227_3.jpg
+
+波形随着时间而变化。如果这是一个音频文件，你可以想象播放器在文件播放时向右移动。
+
+在频域中，你可以看到信号的频率部分。此图片将从本章后面的内容中获取，以显示频域的外观：
+
+bky_20190227_4.jpg
+
+如果添加或删除频率，信号将发生变化，但不会及时更改。例如，如果你采用1000 Hz的音频并采用其频率，无论你看多长时间，频率都将保持不变。但是如果你在时域中看它，你会看到信号在移动。
+
+DFT在计算机上运行得很慢（早在70年代），因此发明了快速傅里叶变换（FFT）。 FFT如今被广泛使用。
+
+它的工作方式是，接收信号并在其上运行FFT，然后你会得到信号的频率。
+
+如果你从未使用过（甚至没有听过）FFT，请不要担心。我将教你如何开始使用它，如果你愿意，你可以在线阅读更多内容。无论如何，大多数教程或书籍都不会教你太多。他们通常会用公式来轰炸你，而不会告诉你如何处理它们。
+
+frame_rate = 48000.0
+ 
+infile = "test.wav"
+ 
+num_samples = 48000
+ 
+wav_file = wave.open(infile, 'r')
+ 
+data = wav_file.readframes(num_samples)
+ 
+wav_file.close()
+
+我们正在读取我们在上一个例子中生成的wave文件。这段代码应该足够清楚。wave.readframes()函数从wave文件中读取所有音频帧。
+
+data = struct.unpack('{n}h'.format(n=num_samples), data)
+
+还记得我们必须打包数据以使其以二进制格式可读吗？好吧，我们现在正好相反。该函数的第一个参数是格式字符。告诉解包器按照num_samples 16位字来解压缩文件（记住h表示16位）。
+
+data = np.array(data)
+
+然后我们将数据转换为numpy数组。
+
+data_fft = np.fft.fft(data)
+
+我们接受数据的fft。这将创建一个包含信号中所有频率的阵列。
+
+现在，这里就是问题所在。 fft返回一个复数的数组，不告诉我们任何东西。如果我打印出fft的前8个值，会得到：
+
+In [3]: data_fft[:8]
+ 
+Out[3]:
+ 
+array([ 13.00000000 +0.j        ,   8.44107682 -4.55121351j,
+ 
+6.24696630-11.98027552j,   4.09513760 -2.63009999j,
+ 
+-0.87934285 +9.52378503j,   2.62608334 +3.58733642j,
+ 
+4.89671762 -3.36196984j,  -1.26176048 +3.0234555j ])
+
+Numpy 可以将复数转换为实数值。
+
+# This will give us the frequency we want
+ 
+frequencies = np.abs(data_fft)
+
+numpy abs()函数将获取我们的复数信号并生成它的实数值。
+旁注
+
+稍微解释一下FFT如何返回其结果。
+
+FFT返回信号中所有可能的频率。它返回的方式是每个索引包含一个频率元素。假设你将FFT结果存储在名为data_fft的数组中。然后：
+
+data_fft [1]将包含1 Hz的频率部分。
+
+data_fft [2]将包含2 Hz的频率部分。
+
+...
+
+data_fft [8]将包含8 Hz的频率部分。
+
+...
+
+data_fft [1000]将包含1000 Hz的频率部分。
+
+现在如果你的信号中没有1Hz频率怎么办？你仍然可以在data_fft [1]获得一个值，但它将是微不足道的。举个例子，我们来看看1000 Hz波的实际fft：
+
+data_fft = np.fft.fft(sine_wave)
+ 
+abs(data_fft[0])
+ 
+Out[7]: 8.1289678326462086e-13
+ 
+abs(data_fft[1])
+ 
+Out[8]: 9.9475299243014428e-12
+ 
+abs(data_fft[1000])
+ 
+Out[11]: 24000.0
+
+如果你查看data_fft [0]或data_fft [1]的绝对值，你会发现它们很小。最后的e-12意味着它们被提升到-12的幂，所以对于data_fft [0]来说就像0.00000000000812。但是如果你看一下data_fft [1000]，那么这个值就是24000.这可以很容易地绘制出来。
+
+如果我们想要找到具有最高值的数组元素，我们可以通过以下方式找到它：
+
+print("The frequency is {} Hz".format(np.argmax(frequencies)))
+
+np.argmax将返回信号中的最高频率，然后打印出来。正如我们手动看到的，这是1000Hz（或存储在data_fft [1000]的值）。现在我们也可以绘制数据。
+
+plt.subplot(2,1,1)
+ 
+plt.plot(data[:300])
+ 
+plt.title("Original audio wave")
+ 
+plt.subplot(2,1,2)
+ 
+plt.plot(frequencies)
+ 
+plt.title("Frequencies found")
+ 
+plt.xlim(0,1200)
+ 
+plt.show()
+
+subplot（2,1,1）意味着我们正在绘制一个2×1网格。第三个数字是图号，是唯一一个会改变的号码。
+
+bky_20190227_5.jpg
+
+就是这样。我们获取了音频文件并计算了它的频率。接下来，我们将为我们的情景添加噪音，然后尝试清理它。
+3. 简单分离噪声
+
+frequency  = 1000
+noisy_freq = 50
+num_samples = 48000
+
+sampling_rate = 48000.0
+
+非噪声的频率是1000Hz，我们加入50Hz的噪声。
+
+# Create the sine wave and noise
+
+sine_wave = [np.sin(2*np.pi*frequency*x1/sampling_rate) for x1 in range(num_samples)]
+
+sine_noise = [np.sin(2*np.pi*noisy_freq*x1/sampling_rate) for x1 in range(num_samples)]
+
+# Convert them to numpy arrays
+
+sine_wave = np.array(sine_wave)
+sine_noise = np.array(sine_noise)
+
+上面的构建代码和之前的类似。我们生成了两个正弦波，其中是一个信号另一个是噪声，并且我们将他们都转化为了一个numpy的数组
+
+# Add them to create a noisy signal
+
+combined_signal = sine_wave+sine_noise
+
+我把噪声加到了信号里。正如之前提到的，numpy才有这么方便的累加方式。如果是普通的python列表，则需要写一个for循环。总之numpy很方便啦。
+
+把到目前为止得到的信号图像化：
+
+plt.subplot(3,1,1)
+
+plt.title('Original sine wave')
+
+# Need to add empty space, else everything looks scrunched up!
+
+plt.subplots_adjust(hspace=.5)
+
+plt.plot(sine_wave[:500])
+
+plt.subplot(3,1,2)
+
+plt.title('Noise wave')
+
+plt.plot(sine_noise[:4000])
+
+plt.subplot(3,1,3)
+
+plt.title('Original + Noise')
+
+plt.plot(combined_signal[:3000])
+
+plt.show()
+
+bky_20190227_6.jpg
+
+data_fft = np.fft.fft(combined_signal)
+
+freq = (np.abs(data_fft[:len(data_fft)]))
+
+data_fft 包含了噪声+信号波的 fft. freq 包含了其中发现的频率的绝对值。
+
+plt.plot(freq)
+
+plt.title('Before filtering: Will have main signal(1000Hz) + noise frequency(50Hz)')
+
+plt.xlim(0,1200)
+
+bky_20190227_7.jpg
+
+现在来过滤信号。我不会详细介绍过滤的每个细节(因为那样可能要讲一整本书)。我将使用 fft 来创建一个简单的过滤器。
+
+下面是完整的代码：
+
+filtered_freq = []
+index = 0
+for f in freq:
+    # Filter between lower and upper limits
+    # Chooing 950, as closest to 1000. In real world, won't get exact numbers like these
+    if index > 950 and index<1050:
+        # Has a real value. I'm choosing >1 , as many values are like 0.00000001 etc
+        if f>1:
+            filtered_freq.append(f)
+        else:
+            filtered_freq.append(0)
+    else:
+        filtered_freq.append(0)
+    index+=1
+
+上述代码创建一个空列表 filtered_freq。如果你还记得的话， freq 存储了 fft 的绝对值。
+
+index 是数组 freq 当前的索引。正如我说的，fft 返回了信号中所有的频率。
+它们基于索引存储在数组中，因此 freq[1] 的频率为1Hz， freq[2] 的频率为2Hz，依此类推。
+
+因为我知道我的目标信号频率是1000Hz，所以我会在这个值附近搜索它。在现实世界中，我们永远不会得到确切的频率，因为噪声意味着一些数据将会丢失。这里使用950的下限和1050的上限，代码检查我们循环的频率是否在这个范围内。
+
+至于嵌套的 if else，同样在前文中有所提及：虽然所有频率都会有值来表示，但它们的绝对值将是微小的，通常小于1.因此，如果我们找到大于1的值，我们将其保存到filtered_freq数组中。
+
+如果我们的频率不在我们正在寻找的范围内，或者如果该值太低，直接0。这是为了删除我们不想要的所有频率。然后我们移动索引到下一这个值。
+
+接下来画出我们滤波后的图像：
+
+plt.plot(filtered_freq)
+
+plt.title('After filtering: Main signal only(1000Hz)')
+
+plt.xlim(0,1200)
+
+plt.show()
+
+plt.close()
+
+bky_20190227_8.jpg
+
+recovered_signal = np.fft.ifft(filtered_freq)
+
+现在我们使用 ifft，即 FFT 的逆过程。这将接收我们的信号并将其转换回时域。我们现在可以将它与原始噪声信号进行比较。
+
+plt.subplot(3,1,1)
+ 
+plt.title("Original sine wave")
+ 
+# Need to add empty space, else everything looks scrunched up!
+ 
+plt.subplots_adjust(hspace=.5)
+ 
+plt.plot(sine_wave[:500])
+ 
+plt.subplot(3,1,2)
+ 
+plt.title("Noisy wave")
+ 
+plt.plot(combined_signal[:4000])
+ 
+plt.subplot(3,1,3)
+ 
+plt.title("Sine wave after clean up")
+ 
+plt.plot((recovered_signal[:500]))
+ 
+plt.show()
+
+bky_20190227_9.jpg
+
+注意我们会看到一个警告：
+
+ComplexWarning: Casting complex values to real discards the imaginary part
+return array(a, dtype, copy=False, order=order)
+
+这是因为fft返回一个复数数组。幸运的是，就像警告说的那样，虚部将被丢弃。
+怕什么真理无穷，进一寸有一寸的欢喜
+标签: 语音信号处理
+
+Holy炭
+
+昵称： Holy炭
+园龄： 5年1个月
+粉丝： 43
+关注： 2
++加关注
+导航目录
+
+    1. 创建一个正弦波
+    2. 计算正弦波的频率
+    使用 DFT 获取频率
+    旁注
+    3. 简单分离噪声
+
+Copyright © 2021 Holy炭
+Powered by .NET 5.0 on Kubernetes
+
+
+
+
+
