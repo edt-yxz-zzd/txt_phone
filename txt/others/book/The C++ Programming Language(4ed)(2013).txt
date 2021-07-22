@@ -1,4 +1,10 @@
 
+
+C++ bug:
+    * C++因为使用 基类引用、函数对象（带状态函数、匿名函数），不可能避免 强引用循环，这不是仔细设计析构函数使用智能指针就能解决的问题，没有垃圾回收器，必然存在 内存泄漏！C没有类继承，数据结构简单，仔细设计使用问题反而没那么严重。
+    * 模版的环境敏感型标识绑定，独立开发分离编译的两个库可能不相容，见下面 pg749[764/1366]，既然 依赖环境，那么 instantiation_point(类似goto标签，但 允许 存在于 命名空间 中)也当作为 模版参数
+
+
 e others/book/The C++ Programming Language(4ed)(2013).txt
 e others/book/The\ C++\ Programming\ Language(4ed)(2013).txt
 
@@ -21,18 +27,144 @@ pg196[211/1366]
 pg217[232/1366]
 pg264[279/1366]
 pg268[283/1366]
+pg282[297/1366]
+pg299[314/1366]
+pg307[322/1366]
+pg313[328/1366]
+pg314[329/1366]
+pg315[330/1366]
+pg319[334/1366]
+pg320[335/1366]
+pg336[351/1366]
+pg340[355/1366]
+pg353[368/1366]
+pg358[373/1366]
+pg366[381/1366]
+pg373[388/1366]
+pg374[389/1366]
+pg377[392/1366]
+pg395[410/1366]
+pg405[420/1366]
+pg413[428/1366]
+pg415[430/1366]
+pg416[431/1366]
+pg423[438/1366]
+pg430[445/1366]
+pg442[457/1366]
+pg443[458/1366]
+pg445[460/1366]
+pg462[477/1366]
+pg474[489/1366]
+pg479[494/1366]
+pg486[501/1366]
+pg487[502/1366]
+pg489[504/1366]
+pg490[505/1366]
+pg492[507/1366]
+pg494[509/1366]
+pg495[510/1366]
+pg496[511/1366]
+pg501[516/1366]
+pg502[517/1366]
+pg504[519/1366]
+pg513[528/1366]
+pg516[531/1366]
+pg517[532/1366]
+pg524[539/1366]
+pg529[544/1366]
+pg530[545/1366]
+pg532[547/1366]
+pg534[549/1366]
+pg536[551/1366]
+pg540[555/1366]
+pg541[556/1366]
+pg544[559/1366]
+pg588[603/1366]
+pg590[605/1366]
+pg593[608/1366]
+pg595[610/1366]
+pg596[611/1366]
+pg603[618/1366]
+pg604[619/1366]
+pg606[621/1366]
+pg608[623/1366]
+pg610[625/1366]
+pg624[639/1366]
+pg633[648/1366]
+pg638[653/1366]
+pg639[654/1366]
+pg643[658/1366]
+pg648[663/1366]
+pg653[668/1366]
+pg655[670/1366]
+pg657[672/1366]
+pg723[738/1366]
+pg724[739/1366]
+pg729[744/1366]
+pg730[745/1366]
+pg731[746/1366]
+  pg733[748/1366]
+pg736[751/1366]
+pg744[759/1366]
+pg746[761/1366]
+pg747[762/1366]
+pg748[763/1366]
+pg749[764/1366]
+pg755[770/1366]
+pg765[780/1366]
+pg766[781/1366]
+pg771[786/1366]
+pg796[811/1366]
+pg800[815/1366]
 
 
 
+
+Template<typename... Args>
+void f(Args... args);
+  // parameter pack
+  // sizeof... args
+
+[2] Explicitly instantiate if you need exact control of the instantiation environment; §26.2.2.
+[3] Explicitly instantiate if you optimize the time needed to generate specializations; §26.2.2.
+[6] Keep the binding context unchanged between instantiation points; §26.3.4.
+
+[5] Templates are type-safe, but checking happens too late; §23.3.
+substitution failure is not an error.
+  The rule is known under the unpronounceable acronym SFINAE (Substitution Failure Is Not An Error).
+
+非常量的非局部的静态变量 理应 改成 局部的静态变量#不知可否用 inline 函数包裹？
+  更明确的初始化时机#见下面call_once
+
+extern "C" void f()noexcept;
+noexcept --> terminate()
+virtual, [[noreturn]]
+override, final
+  f()... override final;
+  class X final{};
 compl???
   like: bitor === |
   compl === ~
 sizeof, alignof, alignas, decltype?
   alignas: "align as" use to decl/def uninit buffer #see below
-const
-constexpr
-enum class.xxx{a, b, c}; //+ switch/case
-template<...> using xxx = ...;
+#alias:
+  const
+  constexpr
+  enum class.xxx{a, b, c}; //+ switch/case
+  template<...> using xxx = typename X::Y::template Z<...>::template W<...>::...;
+  using std::string;
+    //using-declaration
+  using namespace std;
+    //using-directive
+  namespace Lib = Foundation_library_v2r11;
+    //namespace alias
+    // This can immensely simplify the task of replacing one version of a library with another.
+    // 所以说，命名空间 也该加 参数...
+
+
+a.*(&T::x)
+p->*(&T::x)
+
 
 operator "" km ()
 
@@ -48,6 +180,1541 @@ int main(int argc, char* argv[])
 ===
 ===
 ===
+===
+pg814[829/1366]
+28.6.3 Forwarding
+One of the major uses of variadic templates is forwarding from one function to another.
+  Consider how to write a function that takes as arguments something to be called and a possibly empty list of arguments to give to the ‘‘something’’ as arguments:
+      template<typename F, typename ... T>
+      void call(F&& f, T&&... t)
+      {
+        f(forward<T>(t)...);
+      }
+  That is pretty simple and not a hypothetical example.
+
+===
+pg800[815/1366]
+question ‘‘Can we call f(x) if x is of type X?’’
+  ==>> has_f
+
+  struct substitution_failure { }; //represent a failure to declare something
+  template<typename T>
+  struct substitution_succeeded : std::true_type
+  { };
+  template<>
+  struct substitution_succeeded<substitution_failure> : std::false_type
+  { };
+
+  //std::true_type::value == true
+  //std::false_type::value == false
+
+  template<typename T>
+  struct has_f
+  : substitution_succeeded<typename get_f_result<T>::type>
+  { };
+  template<typename T>
+  struct get_f_result {
+    private:
+      template<typename X>
+      static auto check(X const& x) −> decltype(f(x)); //can call f(x)
+      static substitution_failure check(...); //cannot call f(x)
+    public:
+      using type = decltype(check(std::declval<T>()));
+  };
+
+  template<typename T>
+  class X {
+    //...
+    Enable_if<Has_f<T>()> use_f(const T&)
+    {
+      //...
+      f(t);
+      //...
+    }
+    //...
+  };
+
+
+===
+pg796[811/1366]
+// 对于 类模版的成员函数 或 模版函数（非构析）
+//      函数的返回类型 编译期计算失败 则 取消 该函数的声明 而非 报错
+  template<typename T>
+  class Smart_pointer {
+    //...
+    T& operator∗(); //return reference to whole object
+    Enable_if<Is_class<T>(),T>∗ operator−>(); //select a member (for classes only)
+    //...
+  }
+
+
+  template<bool B, typename T>
+  using Enable_if = typename std::enable_if<B,T>::type;
+  template<typename T> bool Is_class()
+  {
+    return std::is_class<T>::value;
+  }
+
+  If Enable_if’s condition evaluates to true, its result is its second argument (here,T).
+    If Enable_if’s condition evaluates to false, the whole function declaration of which it is part is completely ignored.
+    In this case, if T is a class, we get a definition of operator−>() returning a T∗, and if it is not, we don’t declare anything.
+
+
+===
+pg771[786/1366]
+  /////
+  avoid virtual base class
+    avoid classical multiple-inheritance ‘‘diamond’’ hierarchy
+  use empty class as interface class
+  /////
+
+  27.4.2 Linearizing Class Hierarchies
+  ‘‘Internal Program Representation’’ (IPR) [DosReis,2011] is a general and systematic representation of C++ code as typed abstract syntax trees.
+
+
+  namespace empty_interface;
+    // empty: no non-static data members
+    // pure virtual
+    ///
+  struct empty_interface::Dispatchor; //Visitor
+  class empty_interface::I {
+    public:
+      virtual void accept(Dispatchor&)=0;
+      virtual ~I();
+        // shared for all derived class
+        ///
+    protected:
+      I(...);
+    public:
+      virtual ...func...()=0;
+  };
+  class empty_interface::IA : empty_interface::I {
+    protected:
+      IA(...);
+    public:
+      virtual ...func...()=0;
+  };
+  class empty_interface::IB : empty_interface::IA {
+    protected:
+      IB(...);
+    public:
+      virtual ...func...()=0;
+  };
+  // ... <: ID <: IC <: IB <: IA <: I
+
+  struct empty_interface::Dispatchor {
+    virtual void on_I(empty_interface::I&) =0;
+    virtual void on_IA(empty_interface::IA&) =0;
+    virtual void on_IB(empty_interface::IB&) =0;
+    ... ...
+  };
+
+
+  namespace impl;
+    //concrete class template
+    ///
+  template <typename interface>
+  class impl::C : interface {
+    public:
+      using interface_t = interface;
+        // shared for all derived class
+        ///
+      using upper_interface_t = empty_interface::I;
+      static_assert(issubclass<interface, upper_interface_t>());
+
+    public:
+      void accept(Dispatchor& ops) override {ops.on_I(*this);}
+      C(...);
+      ...func...() override;
+    private:
+      ...data members...;
+  };
+  template <typename interface>
+  class impl::CA : impl::C<interface> {
+    public:
+      using upper_interface_t = empty_interface::IA;
+      static_assert(issubclass<interface, upper_interface_t>());
+
+    public:
+      void accept(Dispatchor& ops) override {ops.on_IA(*this);}
+      CA(...);
+      ...func...() override;
+    private:
+      ...data members...;
+  };
+  template <typename interface>
+  class impl::CB : impl::CA<interface> {
+    public:
+      using upper_interface_t = empty_interface::IB;
+      static_assert(issubclass<interface, upper_interface_t>());
+
+    public:
+      void accept(Dispatchor& ops) override {ops.on_IB(*this);}
+      CB(...);
+      ...func...() override;
+    private:
+      ...data members...;
+  };
+  // ... <: CD<interface> <: CC<interface> <: CB<interface> <: CA<interface> <: C<interface> <: interface <: empty_interface::I
+  // 具象类 个数 o(n^2): forall CX <: C. forall interface <: I). CX<interface>
+
+
+===
+pg766[781/1366] #avoid overparameterize
+  // try to avoid parameters that affect only a few members.
+
+  For this shape example, the Color_scheme and Canvas parameters are unlikely to affect the interface much:
+    most member functions will not have them as part of their function type.
+    These parameters are an ‘‘implementation detail’’ that escaped into the interface – with likely serious performance implications.
+    It is not really the whole hierarchy that needs those parameters;
+      it is a few configuration functions and (most likely) a few lower-level drawing/rendering functions.
+  It is generally not a good idea to ‘‘overparameterize’’ (§23.4.6.3):
+    try to avoid parameters that affect only a few members.
+    If only a few member functions are affected by a parameter, try to make those function templates with that parameter. For example:
+        class Shape {
+          template<typename Color_scheme , typename Canvas>
+          void configure(const Color_scheme&, const Canvas&);
+          //...
+        };
+        ////或者 直接 输入 IConfigure& 完全无需 使用模版
+
+  ===
+  pg765[780/1366]
+    The template parameter lists of a template and one of its template members cannot be combined. For example:
+      template<typename T, typename T2>//error
+      Ptr<T>::operator Ptr<T2>()
+      {
+        return Ptr<T2>(p);
+      }
+
+      template<typename T>
+          template<typename T2>       //ok
+      Ptr<T>::operator Ptr<T2>()
+      {
+        return Ptr<T2>{p};
+      }
+
+
+===
+pg755[770/1366]
+  It is a good idea to avoid fully general (completely unconstrained) function templates in headers that also contain type definitions, but that’s hard to avoid.
+      If you need one, protecting it with a constraints check is often worthwhile.
+
+    template<typename In, typename Out,
+        typename = enable_if(
+                      Input_iterator<In>()
+                      && Output_iterator<Out>()
+                      && Assignable<Value_type<Out>,Value_type<In>>()
+        )>
+    Out copy(In p1, In p2, Out q)
+    {
+      //...
+    }
+
+
+===
+pg749[764/1366] #overload+argument-dependent lookup (ADL)+point-of-instantiation binding==>>error-prone
+  26.3.3 Point-of-Instantiation Binding
+    //十分惊人！不能接受！
+    // 无限定/无印 的 非局部标识 的 绑定既然依赖于 使用的地点，环境敏感，岂不意味着 带相同实参的模版 可能有 多份不同绑定的实现？？
+    //    环境敏感！宏！
+    // 若 允许同一实参化标识 有不同定义，则 逻辑上 有问题
+    // 若 禁止，则 分离编译的两个库 可能无法兼容
+
+  26.3.4 Multiple Instantiation Points
+    // C++选择 禁止（见上面 第二选项）
+    // 但 环境？是否 融合所有 使用地点 以找出 最佳绑定？
+    //  ???环境=?=每个使用地点|每个编译单元中的所有使用地点|可执行文件的所有编译单元中的所有使用地点???
+    To avoid surprising name bindings, try to limit context dependencies in templates.
+  [6] Keep the binding context unchanged between instantiation points; §26.3.4.
+  [2] Explicitly instantiate if you need exact control of the instantiation environment; §26.2.2.
+
+===
+pg748[763/1366] #typename/template
+  # T::xxx
+  # typename T::xxx
+  # T::template xxx
+  # p->template xxx<...>
+  # x.template xxx<...>
+  #我想，关键在于如何 解释 『<』，小于号？模版参数括号？
+  Compared to the use of typename to explicitly state that a name is assumed to name a type, the use of template to explicitly state that a name is assumed to name a template is rare.
+    Note the difference in the placement of the disambiguating keyword:typename appears before the qualified name and template immediately before the template name.
+
+        template<typename Container>
+        void fct(Container& c)
+        {
+          Container::value_type v1 = c[7];//syntax error: value_type is assumed to be a non-type name
+          typename Container::value_type v2 = c[9];//OK: value_type assumed to name a type
+          auto v3 = c[11];//OK: let the compiler figure it out
+          //...
+        }
+
+    We can avoid such awkward use of typename by introducing a type alias (§23.6). For example:
+        template<typename T>
+        using Value_type<T> = typename T::value_type;
+        template<typename Container>
+        void fct2(Container& c)
+        {
+          Value_type<Container> v1 = c[7];//OK
+          //...
+        }
+    Naming a member template after a.(dot),−>, or::requires similar use of the keyword template.
+        For example:
+        class Pool {//some allocator
+          public:
+            template<typename T> T∗ get();
+            template<typename T> void release(T∗);
+            //...
+        };
+        template<typename Alloc>
+        void f(Alloc& all)
+        {
+          int∗ p1 = all.get<int>(); //syntax error: get is assumed to name a non-template
+          int∗ p2 = all.template get<int>(); //OK: get() is assumed to be a template
+          //...
+        }
+        void user(Pool& pool){
+        {
+          f(pool);
+          //...
+        }
+
+===
+pg747[762/1366]
+  #实参表达式(函数调用实参，函数模版实例化实参)、函数类型
+  a function call is said to depend on a template argument if and only if one of these conditions holds:
+      [1] The type of the actual argument depends on a template parameter T according to the type deduction rules (§23.5.2), for example,f(T(1)),f(t),f(g(t)), and f(&t), assuming thatt is a T.
+      [2] The function called has a parameter that depends on T according to the type deduction rules (§23.5.2), for example,f(T),f(list<T>&), and f(const T∗).
+  Basically, the name of a called function is dependent if it is obviously dependent by looking at its arguments or at its formal parameters.
+  A call that by coincidence has an argument that matches an actual template parameter type is not dependent.
+
+  pg748[763/1366]
+  When the compiler sees a template definition, it determines which names are dependent (§26.3.1). If a name is dependent, looking for its declaration is postponed until instantiation time (§26.3.3).
+
+
+
+===
+pg746[761/1366] #name binding
+  The process of finding the declaration for each name explicitly or implicitly used in a template is called name binding. The general problem with template name binding is that three contexts are involved in a template instantiation and they cannot be cleanly separated:
+      [1] The context of the template definition
+      [2] The context of the argument type declaration
+      [3] The context of the use of the template
+
+  When defining a function template, we want to assure that enough context is available for the template definition to make sense in terms of its actual arguments without picking up ‘‘accidental stuff’’ from the environment of a point of use.
+    To help with this, the language separates names used in a template definition into two categories:
+      [1]Dependent names:
+          names that depend on a template parameter. Such names are bound at a point of instantiation (§26.3.3).
+          In the sum() example, the definition of + can be found in the instantiation context because it takes operands of the template argument type.
+      [2]Nondependent names:
+          names that don’t depend on a template parameter. Such names are bound at the point of definition of the template (§26.3.2).
+          In the sum() example, the template vector is defined in the standard header<vector>, and the Boolean tracing is in scope when the definition of sum() is encountered by the compiler.
+
+  To be considered, both dependent and independent names must either be in scope at their point of use or be found by argument-dependent lookup (ADL; §14.2.4).
+
+
+===
+pg744[759/1366]
+  // 隐式实例化 只生成用户用到的部分(例外:虚函数，以此包括一切依赖)，可避免 某些 编译错误（泛型，但实际参数 不支持）
+  // 显式实例化，生成 所有 静态对象，成员函数；因为 是用于 分离式编译，可能 用作 静态链接库，必须 全部生成。并且 不得重复 实例化！（不论 显式、隐式、特化）
+  // 如何避免 重复实例化？外部实例化声明！
+
+    // 头文件，模版声明
+    template<typename T> class MyVector;
+    template<typename T> class MyVector<T*>;
+    template<> class MyVector<void*>;
+    // 头文件，模版定义
+    template<typename T> class MyVector{...};
+    template<typename T> class MyVector<T*>{...};
+    template<> class MyVector<void*>{...};
+    // 头文件，外部实例化声明，阻止 隐式实例化
+    extern template class MyVector<int>;
+      //suppresses implicit instantiation
+      //explicitly instantiate elsewhere
+
+    // 源文件，显式实例化定义，只此一处实例化
+    template class MyVector<int>;
+
+===
+pg736[751/1366]
+  It is essential that every use of a template for a given set of template arguments be implemented by the same specialization.
+    If not, the type system is broken, so that identical uses of a template in different places may yield different results and objects created in different parts of a program may not be compatible.
+    Clearly that would be disastrous, so a programmer must take care that explicit specialization is consistent throughout a program.
+    In principle, implementations are capable of detecting inconsistent specialization, but the standard does not require them to and some don’t.
+
+
+  All specializations of a template must be declared in the same namespace as the primary template.
+    If used, a specialization that is explicitly declared (as opposed to generated from a more general template) must also be explicitly defined somewhere (§23.7).
+    In other words, explicitly specializing a template implies that no (other) definition is generated for that specialization.
+
+
+===
+pg731[746/1366]pg733[748/1366] #code bloat代码爆炸~type erasure类型擦除
+  The default behavior of most C++ implementations is to replicate the code for template functions. This is usually good for run-time performance, but unless care is taken, it leads to code bloat in critical cases such as the Vector example.
+  Fortunately, there is an obvious solution. Containers of pointers can share a single implementation. This can be expressed through specialization. First, we define a version (a specialization) of Vector for pointers to void:
+    template<>
+    class Vector<void∗> { //complete specialization
+      void∗∗ p;
+      //...
+      void∗& operator[](int i);
+    };
+  This specialization can then be used as the common implementation for all Vectors of pointers.
+  Another use would be to implement unique_ptr<T> based on a single shared implementation class storing a void∗.
+    ///
+  To define a specialization that is used for every Vector of pointers and only for Vectors of pointers, we can write:
+    template<typename T>
+    class Vector<T∗> : private Vector<void∗> { //partial specialization
+      ...
+    };
+
+  /////
+    template<typename T> class Vector {...}; //general vector type
+    template<typename T> class Vector<T∗> : private Vector<void∗> {...}; //partial specialization
+    template<> class Vector<void∗> {...}; //complete specialization
+  /////
+  pg733[748/1366]
+    Variants of the technique of using a single run-time representation for values of a number of types and relying on the (static) type system to ensure that they are used only according to their declared type has been called type erasure. In the context of C++, it was first documented in the original template paper [Stroustrup,1988].
+
+
+===
+pg730[745/1366] #policy+default vs type-traits
+  The technique of supplying a policy through a template argument and then defaulting that argument to supply the most common policy is almost universal in the standard library (e.g., §32.4).
+      Curiously enough, it is not used for basic_string(§23.2, Chapter 36) comparisons. Instead, the standard-library string relies on char_traits(§36.2.2). Similarly, the standard algorithms rely on iterator_traits(§33.1.3) and the standard-library containers rely on allocators(§34.4). The use of traits is presented in §28.2.4.
+
+===
+pg729[744/1366]
+  The semantic checking of a default argument for a template parameter is done only if that default argument is actually used.
+    In particular, as long as we refrain from using the default template argument less<Key>, we can compare() values of a type X for which less<X> wouldn’t compile.
+    This point is crucial in the design of the standard containers (e.g.,std::map), which rely on a template argument to specify default values (§31.4).
+
+
+
+
+===
+pg724[739/1366] #template value parameter
+  An argument for a template value parameter can be (§iso.14.3.2):
+    •An integral constant expression (§10.4)
+    •A pointer or a reference to an object or a function with external linkage (§15.2)
+    •A nonoverloaded pointer to member (§20.6)
+    •A null pointer (§7.2.2)
+  A pointer used as a template argument must be of the form "&of", where "of" is the name of an object or a function, or of the form "f", where "f" is the name of a function.
+    A pointer to member must be of the form "&X::of", where "of" is the name of a member.
+    In particular, a string literal is not acceptable as a template argument:
+    template<typename T, char∗ label>
+    class X {
+      //...
+    };
+    X<int,"BMW323Ci"> x1;//error : str ing literal as template argument
+    char lx2[] = "BMW323Ci";
+    X<int,lx2> x2;//OK: lx2 has exter nal linkage
+  This restriction, like the one against floating-point template value arguments, exists to simplify implementation of separately compiled translation units.
+    It is best to think of template value arguments as a mechanism for passing integers and pointers to functions. Resist the temptation to try something more clever.
+    Unfortunately (for no fundamental reason), literal types (§10.4.3) cannot be used as template value parameters.
+    The value template arguments are the mechanism for some more advanced compile-time computation techniques (Chapter 28).
+
+  ///自相矛盾，前面说 只有 整数 才行，下面 直接上 std::string
+  A type template parameter can be used as a type later in a template parameter list. For example:
+    template<typename T, T default_value>
+    class Vec {
+      //...
+    };
+    Vec<int,42> c1;
+    Vec<string,""> c2;
+  This becomes particularly useful when combined with a default template argument (§25.2.5); for example:
+    template<typename T, T default_value = T{}>
+    class Vec {
+      //...
+    };
+    Vec<int,42> c1;
+    Vec<int> c11;//default_value is int{}, that is, 0
+    Vec<string,"for tytwo"> c2;
+    Vec<string> c22;//default_value is string{}; that is, ""
+
+===
+pg723[738/1366]
+  To be used as a template argument, a type must be in scope and accessible. For example:
+    class X {
+      class M { /*...*/ };
+      //...
+      void mf();
+    };
+    void f()
+    {
+      struct S { /*...*/ };
+      vector<S> vs;//OK
+      vector<X::M> vm;//error : X::M is private
+      //...
+    }
+    void M::mf()
+    {
+      vector<S> vs;//error : no S in scope
+      vector<M> vm;//OK
+      //...
+    };
+
+===
+pg657[672/1366]
+  It is best to avoid calling virtual functions during construction and destruction.
+  ///虚函数表 指针 在构析过程中，一直在变化，虚函数 并非 最外派生类
+
+
+===
+pg655[670/1366]
+  visitor pattern
+
+  struct Dispatchor; //Visitor
+  struct I{
+    virtual void accept(Dispatchor&)=0;
+      // not: virtual void accept(const Dispatchor&)const =0;
+  };
+  struct X : I {
+    void accept(Dispatchor& ops) override {ops.on_X(*this);}
+  };
+  struct Y : I {
+    void accept(Dispatchor& ops) override {ops.on_Y(*this);}
+  };
+  struct Dispatchor{
+    virtual void on_X(X&)=0;
+    virtual void on_Y(Y&)=0;
+      // not: virtual void on_Y(const Y&)const =0;
+      // maybe: virtual void on(Y&)=0;
+  };
+
+
+===
+pg653[668/1366] #double dispatch === double dynamic dispatch
+  22.3.1 Double Dispatch
+    class X;
+    class Y;
+    struct I{
+      void f(const I& i)const {i.flip_f(*this);}
+      virtual void flip_f(const I&)const=0;
+      virtual void f(const X&)const=0;
+      virtual void f(const Y&)const=0;
+    };
+    struct X: public I{
+      void flip_f(const I& i)const override {i.f(*this);}
+      void f(const X&)const override{...}
+      void f(const Y&)const override{...}
+    };
+    struct Y: public I{
+      void flip_f(const I& i)const override {i.f(*this);}
+      void f(const X&)const override{...}
+      void f(const Y&)const override{...}
+    };
+
+
+===
+pg648[663/1366]
+  22.2.3 static_cast and dynamic_cast
+    A dynamic_cast can cast from a polymorphic virtual base class to a derived class or a sibling class (§22.2.1).
+      A static_cast(§11.5.2) does not examine the object it casts from, so it cannot:
+        void g(Radio& r)
+        {
+          Receiver∗ prec = &r;//Receiver is an ordinary base of Radio
+          Radio∗ pr = static_cast<Radio∗>(prec); //OK, unchecked
+          pr = dynamic_cast<Radio∗>(prec); //OK, run-time checked
+
+          Storable∗ ps = &r;//Storable is a virtual base of Radio
+          pr = static_cast<Radio∗>(ps); //error : cannot cast from virtual base
+          pr = dynamic_cast<Radio∗>(ps); //OK, run-time checked
+        }
+    The dynamic_cast requires a polymorphic operand because there is no information stored in a non-polymorphic object that can be used to find the objects for which it represents a base.
+      In particular, an object of a type with layout constraints determined by some other language – such as Fortran or C – may be used as a virtual base class.
+          For objects of such types, only static type information will be available.
+      However, the information needed to provide run-time type identification includes the information needed to implement the dynamic_cast.
+    Why would anyone want to use a static_cast for class hierarchy navigation? There is a run-time cost associated with the use of a dynamic_cast(§22.2.1).
+      More significantly, there are millions of lines of code that were written before dynamic_cast became available.
+        This code relies on alternative ways of making sure that a cast is valid, so the checking done by dynamic_cast is seen as redundant.
+        However, such code is typically written using the C-style cast (§11.5.3); often obscure errors remain. Where possible, use the safer dynamic_cast.
+
+
+    /// void*
+    The compiler cannot assume anything about the memory pointed to by a void∗.
+      This implies that dynamic_cast – which must look into an object to determine its type – cannot cast from a void∗.
+      For that, a static_cast is needed. For example:
+        Radio∗ f1(void∗ p)
+        {
+          Storable∗ ps = static_cast<Storable∗>(p); //trust the programmer
+          return dynamic_cast<Radio∗>(ps);
+        }
+
+
+===
+pg643[658/1366]
+  22.2.1 dynamic_cast
+  // fail ==>> nullptr|throw bad_cast() exception
+  //    upcast: to non-public baseclass
+  //    upcast: to too many replicated baseclass
+  //    downcast: from virtual baseclass to too mamy replicated intermediate replicated derived_class
+  //    downcast or crosscast: required ptr/ref to polymorphic type
+
+
+===
+pg639[654/1366] #mixin
+  A class that provides some – but not all – of the implementation for a virtual base class is often called a mixin.
+
+
+===
+pg638[653/1366] #浮动共享空基类 还是 重复接口
+  How do we choose between virtual base classes and replicated base classes for our interfaces?
+    Most often, of course, we don’t get a choice because we have to conform to an existing design.
+    When we do have a choice, we can take into account that (surprisingly)
+        the replicated base solution tends to lead to slightly smaller objects (because there is no need for data structures supporting sharing)
+        and that we often get our interface objects from ‘‘virtual constructors’’ or ‘‘factory functions’’ (§21.2.4).
+
+===
+pg633[648/1366] #virtual base containing data
+  Why would someone want to use a virtual base containing data? I can think of three obvious ways for two classes in a class hierarchy to share data:
+    [1] Make the data nonlocal (outside the class as a global or namespace variable).
+    [2] Put the data in a base class.
+    [3] Allocate an object somewhere and give each of the two classes a pointer.
+  Option [1], nonlocal data, is usually a poor choice because we cannot control what code accesses the data and how.
+      It breaks all notions of encapsulation and locality.
+  Option [2], put the data in a base class, is usually the simplest.
+      However, for single inheritance that solution makes useful data (and functions) ‘‘bubble up’’ to a common base class; often it ‘‘bubbles’’ all the way to the root of an inheritance tree.
+      This means that every member of the class hierarchy gets access. That is logically very similar to using nonlocal data and suffers from the same problems.
+      So we need a common base that is not the root of a tree – that is, a virtual base.
+  Option [3], sharing an object accessed through pointers, makes sense.
+      However, then constructor(s) need to set aside memory for that shared object, initialize it, and provide pointers to the shared object to objects needing access.
+      That is roughly what constructors do to implement a virtual base.
+  If you don’t need sharing, you can do without virtual bases, and your code is often better and typically simpler for it. However, if you do need sharing within a general class hierarchy, you basically have a choice between using a virtual base and laboriously constructing your own variants of the idea.
+
+
+
+
+===
+pg624[639/1366] #factory
+  Passing arguments to such ‘‘virtual constructors’’ is a bit tricky. In particular, we cannot override the base class functions that represent the interface with different arguments in different derived classes. This implies that a fair bit of foresight is required to design the factory class’s interface.
+
+  ///
+  // uniform ?frontend === interface === no mutable state class
+  // diff version backend === implementation inheritance
+  // user see interface inheritance only + main() driver use factory class of diff version
+  // inherit one implementation but impl many interface
+
+
+===
+pg610[625/1366] #contravariance
+  20.6.3 Base and Derived Members
+  A derived class has at least the members that it inherits from its base classes. Often it has more.
+    This implies that we can safely assign a pointer to a member of a base class to a pointer to a member of a derived class, but not the other way around.
+    This property is often called contravariance.
+
+  This contravariance rule appears to be the opposite of the rule that says we can assign a pointer to a derived class to a pointer to its base class.
+    In fact, both rules exist to preserve the fundamental guarantee that a pointer may never point to an object that doesn’t at least have the properties that the pointer promises.
+
+===
+pg608[623/1366]
+  A pointer to member can be obtained by applying the address-of operator,&, to a fully qualified class member name, for example,&Std_interface::suspend. A variable of type ‘‘pointer to member of class X’’ is declared using a declarator of the form X::∗.
+    using Pstd_mem = void (Std_interface::∗)(); //pointer-to-member type
+    void f(Std_interface∗ p)
+    {
+      Pstd_mem s = &Std_interface::suspend;//pointer to suspend()
+      p−>suspend(); //direct call
+      p−>∗s(); //call through pointer to member
+        // <==> (*p).*s()
+    }
+
+  ///
+  using Pmfi = void (C::∗)(int); //pointer to member function of C taking an int
+  using Pm = const char∗ C::∗; //pointer to char* data member of C
+
+
+===
+pg606[621/1366]
+  20.5.2.1 Multiple Inheritance and Access Control
+  If the name of a base class can be reached through multiple paths in a multiple-inheritance lattice (§21.3), it is accessible if it is accessible through any path. For example:
+    struct B {
+      int m;
+      static int sm;
+      //...
+    };
+    class D1 : public virtual B { /*...*/ } ;
+    class D2 : public virtual B { /*...*/ } ;
+    class D12 : public D1, private D2 { /*...*/ };
+    D12∗ pd = new D12;
+    B∗ pb = pd;//OK: accessible through D1
+    int i1 = pd−>m;//OK: accessible through D1
+
+
+
+  If a single entity is reachable through several paths, we can still refer to it without ambiguity. For example:
+    class X1 : public B { /*...*/ } ;
+    class X2 : public B { /*...*/ } ;
+    class XX : public X1, public X2 { /*...*/ };
+    XX∗ pxx = new XX;
+    int i1 = pxx−>m;//error, ambiguous: XX::X1::B::m or XX::X2::B::m?
+    int i2 = pxx−>sm;//OK: there is only one B::sm in an XX (sm is a static member)
+
+
+
+
+===
+pg604[619/1366]
+  A derived class can access a base class’s protected members only for objects of its own type:
+    class Buffer {
+    protected:
+      char a[128];
+      //...
+    };
+    class Linked_buffer : public Buffer {
+      //...
+    };
+    class Circular_buffer : public Buffer {
+      //...
+      void f(Linked_buffer∗ p)
+      {
+        a[0] = 0;//OK: access to Circular_buffer’s own protected member
+        p−>a[0] = 0;//error : access to protected member of different type
+      }
+    };
+  This prevents subtle errors that would otherwise occur when one derived class corrupts data belonging to other derived classes.
+
+
+  ///
+  Members declared protected are far more open to abuse than members declared private. In particular, declaring data members protected is usually a design error. Placing significant amounts of data in a common class for all derived classes to use leaves that data open to corruption. Worse, protected data, like public data, cannot easily be restructured because there is no good way of finding every use. Thus, protected data becomes a software maintenance problem.
+
+===
+pg603[618/1366]
+  A compiler may reorder sections of a class with separate access specifiers (§8.2.6). For example:
+    class S {
+      public: int m1;
+      public: int m2;
+    };
+  The compiler may decide for m2 to precede m1 in the layout of an S object. Such reordering could come as a surprise to the programmer and is implementation-dependent, so don’t use multiple access specifiers for data members without good reason.
+
+  // protected unchecked version
+  20.5.1 protected Members
+  When designing a class hierarchy, we sometimes provide functions designed to be used by implementers of derived classes but not by the general user.
+    For example, we may provide an (efficient) unchecked access function for derived class implementers and (safe) checked access for others.
+    Declaring the unchecked version protected achieves that. For example:
+
+
+===
+pg596[611/1366]
+  20.3.6 Return Type Relaxation
+    There is a relaxation of the rule that the type of an overriding function must be the same as the type of the virtual function it overrides.
+      That is, if the original return type was B∗, then the return type of the overriding function may be D∗, provided B is a public base of D.
+       Similarly, a return type ofB& may be relaxed to D&.
+       This is sometimes called the covariant return rule.
+    This relaxation applies only to return types that are pointers or references, and not to ‘‘smart pointers’’ such as unique_ptr(§5.2.1). In particular, there is not a similar relaxation of the rules for argument types because that would lead to type violations.
+
+
+===
+pg595[610/1366]
+  20.3.5.1 Inheriting Constructors
+    struct B1 {
+      B1(int) { }
+    };
+    struct D1 : B1 {
+      using B1::B1; //implicitly declares D1(int)
+        // <==> D1(int i) : B1(i) { }
+      string s;//string has a default constructor
+      int x;//we ‘‘forgot’’ to provide for initialization of x
+        // int x {0};//note: x is initialized
+    };
+    void test()
+    {
+      D1 d {6};//oops: d.x is not initialized
+      D1 e;//error : D1 has no default constructor
+    }
+
+
+===
+pg593[608/1366]
+  20.3.5 using Base Members
+  Functions do not overload across scopes (§12.3.3). For example:
+    struct Base {
+      void f(int);
+    };
+    struct Derived : Base {
+      void f(double);
+    };
+    void use(Derived d)
+    {
+      d.f(1); //call Derived::f(double)
+      Base& br = d
+      br.f(1); //call Base::f(int)
+    }
+  This can surprise people, and sometimes we want overloading to ensure that the best matching member function is used. As for namespaces,using-declarations can be used to add a function to a scope. For example:
+    struct D2 : Base {
+      using Base::f;//bring all fs from Base into D2
+      void f(double);
+    };
+    void use2(D2 d)
+    {
+      d.f(1); //call D2::f(int), that is, Base::f(int)
+      Base& br = d
+      br.f(1); //call Base::f(int)
+    }
+  We cannot use using-directives to bring all members of a base class into a derived class.
+
+
+===
+pg590[605/1366]
+  The override specifier comes last in a declaration, after all other parts.
+  Curiously,override/final is not a keyword; it is what is called a contextual keyword.
+
+===
+pg588[603/1366]
+  A virtual function invoked from a constructor or a destructor reflects that the object is partially constructed or partially destroyed (§22.4). It is therefore typically a bad idea to call a virtual function from a constructor or a destructor.
+  // 虚函数表 指针 会在 构析 过程中 变动？
+
+
+===
+pg544[559/1366] #conversion function
+  Note that the type being converted to is part of the name of the operator and cannot be repeated as the return value of the conversion function:
+      Tiny::operator int() const { return v; }//right
+      int Tiny::operator int() const { return v; }//error
+  In this respect also, a conversion operator resembles a constructor.
+
+
+  If both user-defined conversions and user-defined operators are defined, it is possible to get ambiguities between the user-defined operators and the built-in operators. For example:
+      int operator+(Tiny,Tiny);
+      void f(Tiny t, int i)
+      {
+        t+i; //error, ambiguous: ‘‘operator+(t,Tiny(i))’’ or ‘‘int(t)+i’’?
+      }
+  It is therefore often best to rely on user-defined conversions or user-defined operators for a given type, but not both.
+
+
+===
+pg541[556/1366]
+18.3.4 Literals
+
+  class complex {
+  public:
+    constexpr complex(double r =0, double i =0) : re{r}, im{i} { }
+    //...
+  }
+  constexpr complex z2 {1.2,12e3}; //guaranteed compile-time initialization
+
+
+
+  It is possible to go further and introduce a user-defined literal (§19.2.6) in support of our complex type. In particular, we could defineito be a suffix meaning ‘‘imaginary.’’ For example:
+    constexpr complex<double> operator "" i(long double d)//imaginar y literal
+    {
+      return {0,d};//complex is a literal type
+    }
+
+    complex z1 {1.2+12e3i};
+    complex f(double d)
+    {
+      auto x {2.3i};
+      return x+sqrt(d+12e3i)+12e3i;
+    }
+  This user-defined literal gives us one advantage over what we get from constexpr constructors:
+    we can use user-defined literals in the middle of expressions
+    where the {} notation can only be used when qualified by a type name.
+    The example above is roughly equivalent to:
+      complex z1 {1.2,12e3};
+      complex f(double d)
+      {
+        complex x {0,2.3};
+        return x+sqrt(complex{d,12e3})+complex{0,12e3};
+      }
+
+===
+pg540[555/1366]
+  An object constructed by explicit or implicit use of a constructor in an expression is automatic and will be destroyed at the first opportunity (see §10.3.4).
+
+  No implicit user-defined conversions are applied to the left-hand side of a.(or a−>). This is the case even when the . is implicit. For example:
+    void g(complex z)
+    {
+      3+z; //OK: complex(3)+z
+      3.operator+=(z); //error : 3 is not a class object
+      3+=z; //error : 3 is not a class object
+    }
+  Thus, you can approximate the notion that an operator requires an lvalue as its left-hand operand by making that operator a member. However, that is only an approximation because it is possible to access a temporary with a modifying operation, such as operator+=():
+    complex x {4,5}
+    complex z {sqrt(x)+={1,2}};//like tmp=sqrt(x), tmp+={1,2}
+
+
+===
+pg536[551/1366]
+
+  complex operator+(complex a, complex b)
+  {
+    return a += b;//access representation through +=
+  }
+
+  Composite assignment operators such as += and ∗= tend to be simpler to define than their ‘‘simple’’ counterparts + and ∗.
+    This surprises most people at first, but it follows from the fact that three objects are involved in a + operation (the two operands and the result), whereas only two objects are involved in a += operation.
+    In the latter case, run-time efficiency is improved by eliminating the need for temporary variables. For example:
+      inline complex& complex::operator+=(complex a)
+      {
+        re += a.re;
+        im += a.im;
+        return ∗this;
+      }
+  This does not require a temporary variable to hold the result of the addition and is simple for a compiler to inline perfectly.
+
+  //但如果考虑到 『异常保证』，先实现不破坏 输入 的 +()，再用 swap()实现 +=() 更合理。
+  //      模版的话，如何 保证 im += a.im 无异常？
+
+
+===
+pg534[549/1366]
+  Consider a binary operator@. If x is of type X and y is of type Y, x@yis resolved like this:
+    •If X is a class, look for operator@ as a member of X or as a member of a base of X; and
+    •look for declarations of operator@ in the context surrounding x@y; and
+    •if X is defined in namespace N, look for declarations of operator@ in N; and
+    •if Y is defined in namespace M, look for declarations of operator@ in M.
+
+  Declarations for several operator@s may be found and overload resolution rules (§12.3) are used to find the best match, if any.
+    This lookup mechanism is applied only if the operator has at least one operand of a user-defined type.
+    Therefore, user-defined conversions (§18.3.2, §18.4) will be considered.
+    Note that a type alias is just a synonym and not a separate user-defined type (§6.5).
+
+  Unary operators are resolved analogously.
+
+  Note that in operator lookup no preference is given to members over nonmembers.
+    This differs from lookup of named functions (§14.2.4).
+    The lack of hiding of operators ensures that built-in operators are never inaccessible and that users can supply new meanings for an operator without modifying existing class declarations.
+
+    X operator!(X);
+    struct Z {
+      Z operator!(); //does not hide ::operator!()
+      X f(X x) { /*...*/ return !x; }//invoke ::operator!(X)
+      int f(int x) { /*...*/ return !x; }//invoke the built-in ! for ints
+    };
+
+
+===
+pg532[547/1366]
+18.2.3 Operators and User-Defined Types
+  An operator function must either be a member or take at least one argument of a user-defined type (functions redefining thenew and delete operators need not).
+    This rule ensures that a user cannot change the meaning of an expression unless the expression contains an object of a user-defined type.
+    In particular, it is not possible to define an operator function that operates exclusively on pointers. This ensures that C++ is extensible but not mutable (with the exception of operators=,&, and,for class objects).
+
+===
+pg530[545/1366]
+
+  any binary operator @:
+    [aa@bb] === [aa.operator@(bb)]or[operator@(aa,bb)]
+
+  any prefix unary operator @:
+    [@aa] === [aa.operator@()]or[operator@(aa)]
+  any postfix unary operator @:
+    [aa@] === [aa.operator@(int)]or[operator@(aa,int)]
+
+
+  The operators operator=(§18.2.2),operator[](§19.2.1),operator()(§19.2.2), and operator−> (§19.2.3) must be non-static member functions.
+    #cannot be non-member functions
+    #cannot be free functions
+
+  The default meaning of &&,||, and ,(comma) involves sequencing: the first operand is evaluated before the second (and for && and || the second operand is not always evaluated). This special rule does not hold for user-defined versions of &&,||, and ,(comma); instead these operators are treated exactly like other binary operators.
+    #!!!!  operator,   ?????
+
+
+
+===
+pg529[544/1366]
+  The following operators cannot be defined by a user:
+    ::
+      scope resolution (§6.3.4, §16.2.12)
+    .
+      member selection (§8.2)
+    .∗
+      member selection through pointer to member (§20.6)
+    ?:
+      conditional evaluation (§9.4.1)
+    sizeof
+      size of object (§6.2.8)
+    alignof
+      alignment of object (§6.2.9)
+    typeid
+      type_infoof an object (§22.5)
+
+===
+pg524[539/1366] # =delete
+  we can delete any function that we can declare. For example, we can eliminate a specialization from the set of possible specializations of a function template:
+    template<class T>
+    T∗ clone(T∗ p) //return copy of *p
+    {
+      return new T{∗p};
+    };
+    Foo∗ clone(Foo∗) = delete; //don’t try to clone a Foo
+    void f(Shape∗ ps, Foo∗ pf)
+    {
+      Shape∗ ps2 = clone(ps); //fine
+      Foo∗ pf2 = clone(pf); //error : clone(Foo*) deleted
+    }
+
+
+    ===
+    class Not_on_stack {
+      //...
+      ˜Not_on_stack() = delete;
+    };
+    class Not_on_free_store {
+      //...
+      void∗ operator new(siz e_t) = delete;
+    };
+
+
+    void f()
+    {
+      Not_on_stack v1; //error : can’t destroy
+      Not_on_free_store v2;//OK
+      Not_on_stack∗ p1 = new Not_on_stack; //OK
+      Not_on_free_store∗ p2 = new Not_on_free_store; //error : can’t allocate
+    }
+
+
+===
+pg517[532/1366]
+17.6 Generating Default Operations
+  By default, a class provides:
+    •A default constructor:X()
+    •A copy constructor:X(const X&)
+    •A copy assignment:X& operator=(const X&)
+    •A move constructor:X(X&&)
+    •A move assignment:X& operator=(X&&)
+    •A destructor:˜X()
+
+
+  if the programmer takes control by defining one or more of those operations, the generation of related operations is suppressed:
+  •If the programmer declares any constructor for a class, the default constructor is not generated for that class.
+  •If the programmer declares a copy operation, a move operation, or a destructor for a class, no copy operation, move operation, or destructor is generated for that class.
+  Unfortunately, the second rule is only incompletely enforced: for backward compatibility, copy constructors and copy assignments are generated even if a destructor is defined. However, that generation is deprecated in the ISO standard (§iso.D), and you should expect a modern compiler to warn against it.
+  If necessary, we can be explicit about which functions are generated (§17.6.1) and which are not (§17.6.4).
+    =default;
+    =delete;
+
+
+
+===
+pg516[531/1366] #move constructor/assignment
+  template<class T>
+  void swap(T& a, T& b)//"perfect swap" (almost)
+  {
+    T tmp = std::move(a);
+    a = std::move(b);
+    b = std::move(tmp);
+  }
+
+
+
+
+===
+pg513[528/1366] #slicing: copy base of derived
+  This phenomenon is called slicing. It may be exactly what you intended (e.g., see the copy constructor for D in §17.5.1.2 where we pass selected information to a base class), but typically it is a subtle bug. If you don’t want slicing, you have two major tools to prevent it:
+    [1] Prohibit copying of the base class:deletethe copy operations (§17.6.4).
+    [2] Prevent conversion of a pointer to a derived to a pointer to a base: make the base class a private or protected base (§20.5).
+
+
+===
+pg504[519/1366]
+  17.4.4 In-Class Initializers
+    class A {
+    public:
+      int a {7};
+      int b = 77;
+    };
+  // 任何 构造函数，只要 漏掉 数据成员 的 初始化，则 使用 声明 时 的 初始化。
+  default in-class initializers provide an opportunity for documentation of common cases.
+
+===
+pg502[517/1366]
+  17.4.3 Delegating Constructors
+  class X {
+    int a;
+    public:
+    X(int x) { if (0<x && x<=max) a=x; else throw Bad_X(x); }
+    X() :X{42} { }
+    X(string s) :X{to<int>(s)} { }//§25.2.5.1
+    //...
+  };
+  That is, a member-style initializer using the class’s own name (its constructor name) calls another constructor as part of the construction. Such a constructor is called a delegating constructor (and occasionally a forwarding constructor).
+
+
+  An object is not considered constructed until its constructor completes (§6.4.2). When using a delegating constructor, the object is not considered constructed until the delegating constructor completes – just completing the delegated-to constructor is not sufficient. A destructor will not be called for an object unless its original constructor completed.
+    // 这毫无道理，既然叫『构造函数』，那它执行结束，自然有一个新对象(不变式 以建立，资源 以获取)！纵是 委托/转发 又如何？原来的 委托方 构造函数 其函数体 可视为 成员函数 修改 状态 但 维持 不变式。
+    //    除非 委托构造函数 并不是 构造函数，仅止是 不完全的 构造 前置 函数。那应该 给予 新称呼，不该叫 构造函数。
+
+
+===
+pg501[516/1366]
+  The members’ constructors are called before the body of the containing class’s own constructor is executed (§17.2.3).
+    The constructors are called in the order in which the members are declared in the class rather than the order in which the members appear in the initializer list.
+
+  If a member constructor needs no arguments, the member need not be mentioned in the member initializer list.
+    Note that an ‘‘implicitly initialized’’ member of a built-in type is left uninitialized (§17.3.1).
+
+  A reference member or aconstmember must be initialized (§7.5, §7.7, §17.3.3).
+
+
+===
+pg496[511/1366]
+17.3.4.1 initializer_list Constructor Disambiguation
+  •If either a default constructor or an initializer-list constructor could be invoked, prefer the default constructor.
+•If both an initializer-list constructor and an ‘‘ordinary constructor’’ could be invoked, prefer the initializer-list constructor.
+    necessary to avoid different resolutions based on different numbers of elements.
+    if T{a,b} not ok, then try T(a,b)
+
+
+===
+pg495[510/1366] #in-class member initializer
+  References and consts must be initialized (§7.7, §7.5). Therefore, a class containing such members cannot be default constructed unless the programmer supplies in-class member initializers (§17.4.4) or defines a default constructor that initializes them (§17.4.1). For example:
+    int glob {9};
+    struct X {
+      const int a1 {7};//OK
+      const int a2;//error : requires a user-defined constructor
+      const int& r {9};//OK
+      int& r1 {glob};//OK
+      int& r2;//error : requires a user-defined constructor
+    };
+    X x;//error : no default constructor for X
+
+
+
+===
+pg494[509/1366]
+  for a built-in type the default constructor is not invoked for uninitialized non-static variables (§17.3). The default value of a built-in type is 0 for integers,0.0 for floating-point types, and nullptr for pointers.
+    #0 for enum!!
+===
+pg492[507/1366]
+  {}initialization === universal initialization
+      the notation can be used everywhere
+  {}initialization is uniform
+
+  vector<int> v1 {77};//one element with the value 77
+  vector<int> v2(77);//77 elements with the default value 0
+===
+pg490[505/1366]
+  vs:
+    //非静态变量
+    T beta;
+    T beta {};
+
+  for local variables and free-store objects, the default initialization is done only for members of class type, and members of built-in type are left uninitialized, so the value of beta is {"","",unknown}.
+  The reason for this complication is to improve performance in rare critical cases. For example:
+    struct Buf {
+      int count;
+      char buf[16∗1024];
+    };
+
+
+===
+pg489[504/1366]
+  17.3.1 Initialization Without Constructors
+  we can initialize objects of a class for which we have not defined a constructor using
+    •memberwise initialization,
+      T x { {}, {}, a, ...};
+      memberwise initialization works only if we can access the members.
+    •copy initialization, or
+      //? T x = y;
+      T x {y}; //? //从类型上看，数据成员类型 严格小于 整个结构体 类型，与上面 无歧义，没毛病
+    •default initialization (without an initializer or with an empty initializer list).
+      T x {};
+
+===
+pg487[502/1366]
+  memberwise initialization can be used if initializers are needed. For example:
+    struct X { X(int); };
+    struct S2 {
+      X x;
+    };
+    S2 x1;//error :
+    S2 x2 {1}; //OK: x2.x is initialized with 1
+  See also §17.3.1.
+
+===
+pg486[501/1366]
+  Constructors and destructors interact correctly with class hierarchies (§3.2.4, Chapter 20). A constructor builds a class object ‘‘from the bottom up’’:
+    [1] first, the constructor invokes its base class constructors,
+    [2] then, it invokes the member constructors, and
+    [3] finally, it executes its own body.
+
+  A destructor ‘‘tears down’’ an object in the reverse order:
+    [1] first, the destructor executes its own body,
+    [2] then, it invokes its member destructors, and
+    [3] finally, it invokes its base class destructors.
+  In particular, a virtual base is constructed before any base that might use it and destroyed after all such bases (§21.3.5.1). This ordering ensures that a base or a member is not used before it has been initialized or used after it has been destroyed.
+
+  Constructors execute member and base constructors in declaration order (not the order of initializers): if two constructors used a different order, the destructor could not (without serious overhead) guarantee to destroy in the reverse order of construction. See also §17.4.
+
+
+===
+pg479[494/1366]
+  [8] Make a function a member only if it needs direct access to the representation of a class; §16.3.2.
+  [9] Use a namespace to make the association between a class and its helper functions explicit; §16.3.2.
+
+===
+pg474[489/1366]
+  enum class X{a=1};
+  X x{}; // x is not a; x===0!!!! === a^a as-if bit-op ^ & | are working
+
+===
+pg462[477/1366]
+    16.2.9.2 Physical and Logical Constness
+    * mutable data member
+    * ptr to non-const obj
+
+===
+pg445[460/1366]
+  [10] Distinguish between users’ interfaces and implementers’ interfaces; §15.3.2.
+  [11] Distinguish between average users’ interfaces and expert users’ interfaces; §15.3.2.
+
+===
+pg443[458/1366]
+  15.4.3 Program Termination
+  A program can terminate in several ways:
+    [1] By returning from main()
+    [2] By calling exit()
+    [3] By calling abort()
+    [4] By throwing an uncaught exception
+    [5] By violating noexcept
+    [6] By calling quick_exit()
+
+  In addition, there are a variety of ill-behaved and implementation-dependent ways of making a program crash (e.g., dividing adoubleby zero).
+
+
+  If a program is terminated using the standard-library function exit(), the destructors for constructed static objects are called (§15.4.1, §16.2.12).
+    However, if the program is terminated using the standard-library function abort(), they are not.
+    Note that this implies that exit()does not terminate a program immediately. Calling exit()in a destructor may cause an infinite recursion.
+
+  void exit(int);
+  Like the return value of main()(§2.2.1),exit()’s argument is returned to ‘‘the system’’ as the value of the program.
+    Zero indicates successful completion.
+
+  Calling exit()means that the local variables of the calling function and its callers will not have their destructors invoked.
+    Throwing an exception and catching it ensures that local objects are properly destroyed (§13.5.1).
+    Also, a call of exit()terminates the program without giving the caller of the function that called exit()a chance to deal with the problem.
+      It is therefore often best to leave a context by throwing an exception and letting a handler decide what to do next. For example, main()may catch every exception (§13.5.2.2).
+
+  The C (and C++) standard-library function atexit()offers the possibility to have code executed at program termination.
+  An argument toatexit()cannot take arguments or return a result, and there is an implementation-defined limit to the number of atexit functions. A nonzero value returned by atexit()indicates that the limit is reached. These limitations make atexit()less useful than it appears at first glance. Basically,atexit()is a C workaround for the lack of destructors.
+  The destructor of a constructed statically allocated object (§6.4.2) created before a call of atexit(f)will be invoked after f is invoked. The destructor of such an object created after a call of atexit(f)will be invoked before f is invoked.
+
+  The quick_exit()function is like exit()except that it does not invoke any destructors. You register functions to be invoked by quick_exit()using at_quick_exit().
+
+  The exit(),abort(),quick_exit(),atexit(), andat_quick_exit()functions are declared in<cstdlib>.
+
+
+===
+pg442[457/1366]
+  15.4.1 Initialization of Nonlocal Variables
+  In principle, a variable defined outside any function (that is, global, namespace, and class static variables) is initialized before main()is invoked.
+
+  There is no guaranteed order of initialization of global variables in different translation units.
+    Consequently, it is unwise to create order dependencies between initializers of global variables in different compilation units.
+
+  In particular, dynamically linked libraries do not coexist happily with global variables that have complicated dependencies.
+
+  The initialization of a local static is thread-safe (§42.3.3).
+
+  The initialization of nonlocal (statically allocated) variables is controlled by whatever mechanism an implementation uses to start up a C++ program. This mechanism is guaranteed to work properly only if main()is executed.
+    Consequently, one should avoid nonlocal variables that require run-time initialization in C++ code intended for execution as a fragment of a non-C++ program.
+    Note that variables initialized by constant expressions (§10.4) cannot depend on the value of objects from other translation units and do not require run-time initialization. Such variables are therefore safe to use in all cases.
+
+===
+pg430[445/1366] #
+  15.2.6 Linkage and Pointers to Functions
+  extern "C"
+  extern "C" {...}
+    # C linkage
+    # 这就是 数据指针 与 函数指针 不相容 的 原因 吗？
+    #   linkage 似乎不是类型的一部分，但静态类型检查 却需要考虑它？既然如此，为何不算作类型的一部分？
+===
+pg423[438/1366]
+  15.2.1 File-Local Names
+  If you must use global variables, at least restrict their use to a single source file. This restriction can be achieved in one of two ways:
+    [1] Place declarations in an unnamed namespace.
+    [2] Declare an entity static.
+
+  An unnamed namespace (§14.4.8) can be used to make names local to a compilation unit. The effect of an unnamed namespace is very similar to that of internal linkage.
+
+
+===
+pg416[431/1366] #c-header #backward compatibility
+  //stdio.h:
+    #include<cstdio>
+    //err too much: using namespace std;
+    using std::...;
+    using std::...;
+    using std::...;
+    using std::...;
+
+===
+pg415[430/1366]
+  14.4.8 Unnamed Namespaces
+
+===
+pg413[428/1366]
+  versioning:inline namespace
+  namespace xxx {
+    inline namespace v3 { ... }
+    namespace v2 { ... }
+    namespace v1 { ... }
+  }
+
+  // xxx |>=| xxx::v3
+
+===
+pg405[420/1366]
+  namespace xxx_interface4user{}
+  namespace xxx_interface4impl{}
+===
+pg395[410/1366] #Argument-Dependent Lookup(ADL)
+  // 感觉不行！
+  // 应该 提供一个注册用的命名空间，就像hs::class，用户 重载的函数namespace mine{f(){}} 自己用 namespace xxx_interface{using mine::f;} 注册进去
+  // 模版函数 调用时: xxx_interface::f(...) 或 using namespace xxx_interface; (重载 运算符)
+
+14.2.4 Argument-Dependent Lookup
+  A function taking an argument of user-defined type X is more often than not defined in the same namespace as X. Consequently, if a function isn’t found in the context of its use, we look in the namespaces of its arguments. For example:
+
+    namespace Chrono {
+      class Date { /*...*/ };
+      bool operator==(const Date&, const std::string&);
+      std::string format(const Date&);//make str ing representation
+      //...
+    }
+
+    void f(Chrono::Date d, int i)
+    {
+      std::string s = format(d); //Chrono::for mat()
+      std::string t = format(i); //error : no for mat() in scope
+    }
+
+  This lookup rule (called argument-dependent lookup or simply ADL) saves the programmer a lot of typing compared to using explicit qualification, yet it doesn’t pollute the namespace the way a using-directive (§14.2.3) can.
+    It is especially useful for operator operands (§18.2.5) and template arguments (§26.3.5), where explicit qualification can be quite cumbersome.
+  Note that the namespace itself needs to be in scope and the function must be declared before it can be found and used.
+
+
+  In the standard, the rules for argument-dependent lookup are phrased in terms of associated namespaces (§iso.3.4.2). Basically:
+    •If an argument is a class member, the associated namespaces are the class itself (including its base classes) and the class’s enclosing namespaces.
+    •If an argument is a member of a namespace, the associated namespaces are the enclosing namespaces.
+    •If an argument is a built-in type, there are no associated namespaces.
+
+
+
+===
+pg377[392/1366] #&*p <<-- std::uninitialized_fill():
+  // uninitialized_fill #src is T&
+  // uninitialized_fill_n
+  // uninitialized_copy #src is T[]
+  // forward-iterator
+  template<class For, class T>
+  void uninitialized_fill(For beg, For end, const T& x)
+  {
+    For p;
+    try {
+      for (p=beg; p!=end; ++p)
+        ::new(static_cast<void∗>(&∗p)) T(x);//construct copy of x in *p (§11.2.4)
+    }
+    catch (...) {
+      for (For q = beg; q!=p; ++q)
+        (&∗q)−>˜T(); //destroy element (§11.2.4)
+      throw;//rethrow (§13.5.2.1)
+    }
+  }
+  The curious construct &∗p takes care of iterators that are not pointers.
+    In that case, we need to take the address of the element obtained by dereference to get a pointer.
+
+
+  The calls to alloc.construct() in the vector constructors are simply syntactic sugar for this placement new. Similarly, the alloc.destroy()call simply hides explicit destruction (like(&∗q)−>˜T()).
+
+
+===
+pg374[389/1366] #catch(...)+current_exception()
+  // packaged_task-promise-current_exception
+  try {
+    //... do the work ...
+  }
+  catch(...) {
+    promise.set_exception(current_exception());
+  }
+
+===
+pg373[388/1366] #terminate #catch(...)@main()
+  // [27] Have main() catch and report all exceptions; §13.5.2.2, §13.5.2.4.
+  // [34] A library shouldn’t unilaterally terminate a program. Instead, throw an exception and let a caller decide; §13.4.
+  // [35] A library shouldn’t produce diagnostic output aimed at an end user. Instead, throw an exception and let a caller decide; §13.1.3.
+
+  The specific rules for calling terminate() are (§iso.15.5.1)
+    •When no suitable handler was found for a thrown exception
+    •When a noexcept function tries to exit with a throw
+    •When a destructor invoked during stack unwinding tries to exit with a throw
+    •When code invoked to propagate an exception (e.g., a copy constructor) tries to exit with a throw
+    •When someone tries to rethrow (throw;) when there is no current exception being handled
+    •When a destructor for a statically allocated or thread-local object tries to exit with a throw
+    •When an initializer for a statically allocated or thread-local object tries to exit with a throw
+    •When a function invoked as an atexit() function tries to exit with a throw
+
+  In such cases, the function std::terminate()is called. In addition, a user can call terminate()if less drastic approaches are infeasible.
+  By ‘‘tries to exit with a throw,’’ I mean that an exception is thrown somewhere and not caught so that the run-time system tries to propagate it from a function to its caller.
+  By default,terminate() will call abort()(§15.4.3). This default is the correct choice for most users – especially during debugging. If that is not acceptable, the user can provide a terminate handler function by a callstd::set_terminate() from <exception>:
+
+  The return value is the previous function given to set_terminate().
+    For example, a terminate handler could be used to abort a process or maybe to re-initialize a system. The intent is for terminate()to be a drastic measure to be applied when the error recovery strategy implemented by the exception-handling mechanism has failed and it is time to go to another level of a fault tolerance strategy.
+      If a terminate handler is entered, essentially nothing can be assumed about a program’s data structures; they must be assumed to be corrupted. Even writing an error message using cerr must be assumed to be hazardous.
+    A terminate handler cannot return to its caller. If it tries to,terminate()will callabort().
+
+    Note that abort()indicates abnormal exit from the program. The function exit()can be used to exit a program with a return value that indicates to the surrounding system whether the exit is normal or abnormal (§15.4.3).
+
+
+  It is implementation-defined whether destructors are invoked when a program is terminated because of an uncaught exception. On some systems, it is essential that the destructors are not called so that the program can be resumed from the debugger. On other systems, it is architecturally close to impossible not to invoke the destructors while searching for a handler.
+    If you want to ensure cleanup when an otherwise uncaught exception happens, you can add a catch-all handler (§13.5.2.2) tomain()in addition to handlers for exceptions you really care about.
+
+
+
+===
+pg372[387/1366] #noexcept destructor
+  If you managed to have two exceptions active at one time (in the same thread, which you can’t), the system would have no idea which of the exceptions to try to handle: your new one or the one it was already trying to handle.
+    Note that an exception is considered handled immediately upon entry into a catch-clause. Rethrowing an exception (§13.5.2.1) or throwing a new exception from within a catch-clause is considered a new throw done after the original exception has been handled. You can throw an exception from within a destructor (even during stack unwinding) as long as you catch it before it leaves the destructor.
+
+
+===
+pg366[381/1366] #conditionally noexcept
+  conditionally noexcept
+    template<typename T>
+      void my_fct(T& x) noexcept(Is_pod<T>());
+
+    template<typename T>
+      void call_f(vector<T>& v) noexcept(noexcept(f(v[0]))
+      {
+        for (auto x : v)
+          f(x);
+      }
+
+    template<class T, siz e_t N>
+      void swap(T (&a)[N], T (&b)[N]) noexcept(noexcept(swap(∗a, ∗b)));
+
+
+===
+pg358[373/1366]
+  RAII(+lambda) 可完全替代 try...finally
+    除了 vector构造函数 或者说 uninitialized_fill 之类
+
+===
+pg353[368/1366] #exception guarantee
+  //illustrate:pg381[396/1366] 13.6.3 Assignment //vector impl
+
+  The C++ standard library provides a generally useful conceptual framework for design for exception-safe program components. The library provides one of the following guarantees for every library operation:
+    •The basic guarantee for all operations: The basic invariants of all objects are maintained, and no resources, such as memory, are leaked. In particular, the basic invariants of every built-in and standard-library type guarantee that you can destroy an object or assign to it after every standard-library operation (§iso.17.6.3.1).
+    •The strong guarantee for key operations: in addition to providing the basic guarantee, either the operation succeeds, or it has no effect. This guarantee is provided for key operations, such as push_back(), single-element insert() on a list, and uninitialized_copy().
+    •The nothrow guarantee for some operations: in addition to providing the basic guarantee, some operations are guaranteed not to throw an exception. This guarantee is provided for a few simple operations, such as swap() of two containers and pop_back().
+
+
+  Both the basic guarantee and the strong guarantee are provided on the condition that
+    •user-supplied operations (such as assignments andswap()functions) do not leave container elements in invalid states,
+    •user-supplied operations do not leak resources, and
+    •destructors do not throw exceptions (§iso.17.6.5.12).
+
+
+===
+pg340[355/1366] #predefined macros
+  12.6.2 Predefined Macros
+  A few macros are predefined by the compiler (§iso.16.8, §iso.8.4.1):
+    •__cplusplus: defined in a C++ compilation (and not in a C compilation). Its value is 201103L in a C++11 program; previous C++ standards have lower values.
+    •__DATE__: date in ‘‘yyyy:mm:dd’’ format.
+    •__TIME__: time in ‘‘hh:mm:ss’’ format.
+    •__FILE__: name of current source file.
+    •__LINE__: source line number within the current source file.
+    •__FUNC__: an implementation-defined C-style string naming the current function.
+    •__STDC_HOSTED__:1 if the implementation is hosted (§6.1.1); otherwise 0.
+
+
+  In addition, a few macros are conditionally defined by the implementation:
+    •__STDC__: defined in a C compilation (and not in a C++ compilation)
+    •__STDC_MB_MIGHT_NEQ_WC__:1 if, in the encoding for wchar_t, a member of the basic character set (§6.1) might have a code value that differs from its value as an ordinary character literal
+    •__STDCPP_STRICT_POINTER_SAFETY__:1 if the implementation has strict pointer safety (§34.5); otherwise undefined.
+    •__STDCPP_THREADS__:1 if a program can have more than one thread of execution; otherwise undefined.
+
+
+===
+pg336[351/1366] #ptr to func
+  A pointer to function must reflect the linkage of a function (§15.2.6). Neither linkage specification nor noexcept may appear in type aliases:
+    using Pc = extern "C" void(int); //error : linkage specification in alias
+    using Pn = void(int) noexcept; //error : noexcept in alias
+
+===
+pg333[348/1366] #ptr to func
+  using CFT = int(const void∗, const void∗);
+
+===
+pg320[335/1366] #initializer_list argument take priority@ambiguity
+  If there is a possible ambiguity, an initializer_list parameter takes priority.
+  The reason that a function with an initializer_list argument take priority is that it could be very confusing if different functions were chosen based on the number of elements of a list. It is not possible to eliminate every form of confusion in overload resolution (for example, see §4.4, §17.3.4.1), but giving initializer_list parameters priority for{}-list arguments seems to minimize confusion.
+
+
+===
+pg319[334/1366] #reference-to-array
+  Note that the number of elements is part of a reference-to-array type. That makes such references far less flexible than pointers and containers (such as vector).
+    void f(int(&r)[4]);
+
+  The main use of references to arrays is in templates, where the number of elements is then deduced. For example:
+    template<class T, int N> void f(T(&r)[N])
+    {
+      //...
+    }
+
+===
+pg315[330/1366] #static-local+call_once==>>data-race-free
+  A static local variable allows the function to preserve information between calls without introducing a global variable that might be accessed and corrupted by other functions (see also §16.2.12).
+  Initialization of a static local variable does not lead to a data race (§5.3.1) unless you enter the function containing it recursively or a deadlock occurs (§iso.6.7). That is, the C++ implementation must guard the initialization of a local static variable with some kind of lock-free construct (e.g., a call_once; §42.3.3). The effect of initializing a local static recursively is undefined. For example:
+    int fn(int n)
+    {
+      static int n1 = n;//OK
+      static int n2 = fn(n−1)+1;//undefined
+      return n;
+    }
+  A static local variable is useful for avoiding order dependencies among nonlocal variables (§15.4.1).
+
+
+
+===
+pg314[329/1366] #[[noreturn]]
+  A construct[[...]]is called an attribute and can be placed just about anywhere in the C++ syntax.
+  In general, an attribute specifies some implementation-dependent property about the syntactic entity that precedes it. In addition, an attribute can be placed in front of a declaration. There are only two standard attributes (§iso.7.6), and[[noreturn]]is one of them. The other is[[carries_dependency]](§41.3).
+  Placing[[noreturn]]at the start of a function declaration indicates that the function is not expected to return.
+  //   see:pg307, pg314
+
+
+
+===
+pg313[328/1366] #
+  12.1.6.2 Conditional Evaluation
+  A branch of a conditional expression that is not taken in aconstexprfunction is not evaluated. This implies that a branch not taken can require run-time evaluation. For example:
+    constexpr int check(int i)
+    {
+      return (low<=i && i<high) ? i : throw out_of_rang e();
+    }
+    constexpr int low = 0;
+    constexpr int high = 99;
+    //...
+    constexpr int val = check(f(x,y,z));
+  //   see:pg264, pg313
+
+
+===
+pg307[322/1366] #
+  struct S {
+    [[noreturn]] static constexpr virtual inline auto f() −> void const noexcept =0 =default =delete final override;
+  };
+  //   see:pg307, pg314
+
+
+===
+pg299[314/1366] #homemade narrow_cast<>
+  template<class Target, class Source>
+  Targ et narrow_cast(Source v)
+  {
+    auto r = static_cast<Target>(v); //convert the value to the target type
+    if (static_cast<Source>(r)!=v)
+      throw runtime_error("narrow_cast<>() failed");
+    return r;
+  }
+
+
+  auto c2 = narrow_cast<char>(−64); //will throw if chars are unsigned
+  auto c3 = narrow_cast<char>(264); //will throw if chars are 8-bit and signed
+
+
+
+===
 pg282[297/1366] #
   To deallocate space allocated by new,delete and delete[] must be able to determine the size of the object allocated. This implies that an object allocated using the standard implementation of new will occupy slightly more space than a static object. At a minimum, space is needed to hold the object’s size. Usually two or more words per allocation are used for free-store management. Most modern machines use 8-byte words. This overhead is not significant when we allocate many objects or large objects, but it can matter if we allocate lots of small objects (e.g.,ints or Points) on the free store.
 
@@ -57,7 +1724,7 @@ pg268[283/1366] #narrowing ==>> narrow_cast<>, list_initializer
   The {}-initializer syntax prevents narrowing (§6.3.5).
     void f(double d)
     {
-      char c {d};//error : double-precision fl oating-point to char conversion
+      char c {d};//error : double-precision floating-point to char conversion
     }
   If potentially narrowing conversions are unavoidable, consider using some form of run-time checked conversion function, such as narrow_cast<>()(§11.5).
 
@@ -69,6 +1736,7 @@ pg265[280/1366] #constexpr constructor ==>> literal type
 pg264[279/1366] #constexpr
   The condition of a ?: is evaluated and then the selected alternative is evaluated. The alternative not selected is not evaluated and might even not be a constant expression. Similarly, operands of && and || that are not evaluated need not be constant expressions. This feature is primarily useful in constexpr functions that are sometimes used as constant expressions and sometimes not.
   // 也可用作 检查输入输出、中间状态、报错
+  //   see:pg264, pg313
 
 ===
 pg217[232/1366]
@@ -291,7 +1959,7 @@ pg119[134/1366] # mutex + condition_variable
   {
     while(true) {
       Message m;
-      //... fi ll the message ...
+      //... fill the message ...
       unique_lock<mutex> lck {mmutex}; //protect operations
       mqueue.push(m);
       mcond.notify_one(); //notify
