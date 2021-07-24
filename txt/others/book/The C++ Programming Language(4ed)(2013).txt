@@ -1,7 +1,8 @@
 
 
 C++ bug:
-    * C++因为使用 基类引用、函数对象（带状态函数、匿名函数），不可能避免 强引用循环，这不是仔细设计析构函数使用智能指针就能解决的问题，没有垃圾回收器，必然存在 内存泄漏！C没有类继承，数据结构简单，仔细设计使用问题反而没那么严重。
+    * C++因为使用 基类引用(强引用/共享指针/独占指针)、函数对象（带状态函数、匿名函数），不可能避免 强引用循环，这不是仔细设计析构函数使用智能指针就能解决的问题，没有垃圾回收器，必然存在 内存泄漏！C没有类继承，数据结构简单，仔细设计使用问题反而没那么严重。
+      如果 不使用 共享指针、仅使用类实心数据，即 值复制共享指针|独占指针仅用于指向最外层派生类|弱引用，则可大大降低不明不白的引用循环
     * 模版的环境敏感型标识绑定，独立开发分离编译的两个库可能不相容，见下面 pg749[764/1366]，既然 依赖环境，那么 instantiation_point(类似goto标签，但 允许 存在于 命名空间 中)也当作为 模版参数
 
 
@@ -116,8 +117,36 @@ pg766[781/1366]
 pg771[786/1366]
 pg796[811/1366]
 pg800[815/1366]
+pg814[829/1366]
+pg829[844/1366]
+pg855[870/1366]
+pg866[881/1366]
+pg868[883/1366]
+pg903[918/1366]
 
 
+
+
+
+
+
+pg770[785/1366] #empty-base optimization
+
+
+[7] Do not try to use a standard-library facility without#includeing its header; §30.2.
+[8] To use a range-foron a built-in array,#include<iterator>; §30.3.2.
+see below: [[[Standard_Library_Overview]]]
+  * Containers
+  * General_Utilities
+  * Algorithms
+  * Diagnostics
+  * Strings_and_Characters
+  * Input_Output
+  * Localization
+  * Language_Support
+  * Numerics
+  * Concurrency
+  * C_Compatibility
 
 
 Template<typename... Args>
@@ -180,6 +209,337 @@ int main(int argc, char* argv[])
 ===
 ===
 ===
+===
+===
+===
+===
+===
+===
+pg903[918/1366]
+  //无需重新分配内存，自然也无需移动所有元素，指针保持有效性
+  The notion of capacity allows for iterators into a vector to be valid unless a reallocation actually happens.
+      ---
+      The standard does not specify by how much capacity is increased when it is exceeded, but adding half the size is common.
+        I used to be careful about using reserve() when I was reading into a vector.
+        I was surprised to find that for essentially all of my uses, calling reserve() did not measurably affect performance.
+        The default growth strategy worked just as well as my estimates, so I stopped trying to improve performance using reserve().
+        Instead, I use it to increase predictability of reallocation delays and to prevent invalidation of pointers and iterators.
+
+
+===
+pg868[883/1366]
+  30.4 Error Handling
+  The standard library consists of components developed over a period of almost 40 years. Thus, their style and approaches to error handling are not consistent:
+      •C-style libraries consist of functions, many of which set errno to indicate that an error happened; see §13.1.2 and §40.3.
+      •Many algorithms operating on a sequence of elements return an iterator to the one-past-the-last element to indicate ‘‘not found’’ or ‘‘failure’’; see §33.1.1.
+      •The I/O streams library relies on a state in each stream to reflect errors and may (if the user requests it) throw exceptions to indicate errors; see §38.3.
+      •Some standard-library components, such as vector,string, and bitset, throw exceptions to indicate errors.
+
+  The standard library is designed so that all facilities obey ‘‘the basic guarantee’’ (§13.2); that is, even if an exception is thrown, no resource (such as memory) is leaked and no invariant for a standard-library class is broken.
+
+
+
+
+===
+pg866[881/1366] #include standard-library instead of writr forward-declarations manually
+  #不要手写标准库声明！
+[7] Do not try to use a standard-library facility without #include-ing its header; §30.2.
+[8] To use a range-for on a built-in array,#include<iterator>; §30.3.2.
+  ---
+  A user or a library implementer is not allowed to add or subtract declarations from the standard headers.
+    Nor is it acceptable to try to change the contents of a header by defining macros to change the meaning of declarations in a header (§15.2.3).
+    Any program or implementation that plays such games does not conform to the standard, and programs that rely on such tricks are not portable.
+    Even if they work today, the next release of any part of an implementation may break them. Avoid such trickery.
+
+  For a standard-library facility to be used, its header must be included.
+    Writing out the relevant declarations yourself is not a standards-conforming alternative.
+    The reason is that some implementations optimize compilation based on standard header inclusion, and others provide optimized implementations of standard-library facilities triggered by the headers.
+    In general, implementers use standard headers in ways programmers cannot predict and shouldn’t have to know about.
+    A programmer can, however, specialize utility templates, such as swap()(§35.5.2), for non-standard-library, user-defined types.
+
+
+  pg863[878/1366]
+  A standard header with a name starting with the letter c is equivalent to a header in the C standard library.
+    For every header <X.h> defining part of the C standard library in the global namespace and also in namespacestd, there is a header <cX> defining the same names.
+    Ideally, the names from a <cX> header do not pollute the global namespace (§15.2.4), but unfortunately (due to complexities of maintaining multilanguage, multi-operating-system environments) most do.
++++++
+[[[Standard_Library_Overview]]]:begin
+Standard-Library Overview
+  * Containers
+  * General_Utilities
+  * Algorithms
+  * Diagnostics
+  * Strings_and_Characters
+  * Input_Output
+  * Localization
+  * Language_Support
+  * Numerics
+  * Concurrency
+  * C_Compatibility
+
++++++
+Containers
+@@@<vector>
+    ::: One-dimensional resizable array§31.4.2
+@@@<deque>
+    ::: Double-ended queue§31.4.2
+@@@<forward_list>
+    ::: Singly-linked list§31.4.2
+@@@<list>
+    ::: Doubly-linked list§31.4.2
+@@@<map>
+    ::: Associative array §31.4.3
+@@@<set>
+    ::: Set §31.4.3
+@@@<unordered_map>
+    ::: Hashed associative array §31.4.3.2
+@@@<unordered_set>
+    ::: Hashed set§31.4.3.2
+@@@<queue>
+    ::: Queue §31.5.2
+@@@<stack>
+    ::: Stack §31.5.1
+@@@<array>
+    ::: One-dimensional fixed-size array§34.2.1
+@@@<bitset>
+    ::: Array of bool§34.2.2
+-----
+The associative containers multimap and multiset can be found in <map> and <set>, respectively.
+The priority_queue(§31.5.3) is declared in <queue>.
+
++++++
+General_Utilities
+@@@<utility>
+    ::: Operators and pairs§35.5, §34.2.4.1
+@@@<tuple>
+    ::: Tuples §34.2.4.2
+@@@<type_traits>
+    ::: Type traits§35.4.1
+@@@<typeindex>
+    ::: Use a type_info as a key or a hash code§35.5.4
+@@@<functional>
+    ::: Function objects§33.4
+@@@<memory>
+    ::: Resource management pointers§34.3
+@@@<scoped_allocator>
+    ::: Scoped allocators§34.4.4
+@@@<ratio>
+    ::: Compile-time rational arithmetic§35.3
+@@@<chrono>
+    ::: Time utilities§35.2
+@@@<ctime>
+    ::: C-style date and time§43.6
+@@@<iterator>
+    ::: Iterators and iterator support§33.1
+-----
+Iterators provide the mechanism to make standard algorithms generic (§3.4.2, §33.1.4).
+
+
++++++
+Algorithms
+@@@<algorithm>
+    ::: General algorithms§32.2
+@@@<cstdlib>
+    ::: bsearch(),qsort()§43.7
+-----
+A typical general algorithm can be applied to any sequence (§3.4.2, §32.2) of any type of element.
+The C standard library functions bsearch() and qsort() apply to built-in arrays with elements of types without user-defined copy constructors and destructors only (§12.5).
+
++++++
+Diagnostics
+@@@<exception>
+    ::: Exception class§30.4.1.1
+@@@<stdexcept>
+    ::: Standard exceptions §30.4.1.1
+@@@<cassert>
+    ::: Assert macro§30.4.2
+@@@<cerrno>
+    ::: C-style error handling§13.1.2
+@@@<system_error>
+    ::: System error support§30.4.3
+-----
+Assertions using exceptions are described in §13.4.
+
++++++
+Strings_and_Characters
+@@@<string>
+    ::: String of T Chapter 36
+@@@<cctype>
+    ::: Character classification§36.2.1
+@@@<cwctype>
+    ::: Wide-character classification§36.2.1
+@@@<cstring>
+    ::: C-style string functions§43.4
+@@@<cwchar>
+    ::: C-style wide-character string functions§36.2.1
+@@@<cstdlib>
+    ::: C-style allocation functions§43.5
+@@@<cuchar>
+    ::: C-style multibyte characters
+@@@<regex>
+    ::: Regular expression matching Chapter 37
+-----
+The <cstring> header declares the strlen(),strcpy(), etc., family of functions. The <cstdlib> declares atof() and atoi() which convert C-style strings to numeric values.
+
++++++
+Input_Output
+@@@<iosfwd>
+    ::: Forward declarations of I/O facilities §38.1
+@@@<iostream>
+    ::: Standardiostreamobjects and operations§38.1
+@@@<ios>
+    ::: iostreambases §38.4.4
+@@@<streambuf>
+    ::: Stream buffers §38.6
+@@@<istream>
+    ::: Input stream template§38.4.1
+@@@<ostream>
+    ::: Output stream template§38.4.2
+@@@<iomanip>
+    ::: Manipulators §38.4.5.2
+@@@<sstream>
+    ::: Streams to/from strings§38.2.2
+@@@<cctype>
+    ::: Character classification functions§36.2.1
+@@@<fstream>
+    ::: Streams to/from fi les§38.2.1
+@@@<cstdio>
+    ::: printf()family of I/O§43.3
+@@@<cwchar>
+    ::: printf()-style I/O of wide characters§43.3
+-----
+Manipulators are objects used to manipulate the state of a stream (§38.4.5.2).
+
++++++
+Localization
+@@@<locale>
+    ::: Represent cultural differences Chapter 39
+@@@<clocale>
+    ::: Represent cultural differences C-style
+@@@<codecvt>
+    ::: Code conversion facets §39.4.6
+-----
+A locale localizes differences such as the output format for dates, the symbol used to represent currency, and string collation criteria that vary among different natural languages and cultures.
+
++++++
+Language_Support
+@@@<limits>
+    ::: Numeric limits§40.2
+@@@<climits>
+    ::: C-style numeric scalar-limit macros§40.2
+@@@<cfloat>
+    ::: C-style numeric floating-point limit macros§40.2
+@@@<cstdint>
+    ::: Standard integer type names§43.7
+@@@<new>
+    ::: Dynamic memory management§11.2.3
+@@@<typeinfo>
+    ::: Run-time type identification support§22.5
+@@@<exception>
+    ::: Exception-handling support§30.4.1.1
+@@@<initializer_list>
+    ::: initializer_list§30.3.1
+@@@<cstddef>
+    ::: C library language support§10.3.1
+@@@<cstdarg>
+    ::: Variable-length function argument lists§12.2.4
+@@@<csetjmp>
+    ::: C-style stack unwinding
+@@@<cstdlib>
+    ::: Program termination§15.4.3
+@@@<ctime>
+    ::: System clock§43.6
+@@@<csignal>
+    ::: C-style signal handling
+-----
+The <cstddef> header defines the type of values returned by sizeof(), size_t, the type of the result of pointer subtraction and of array subscripts, ptrdiff_t(§10.3.1), and the infamous NULL macro (§7.2.2).
+C-style stack unwinding (using setjmp and longjmp from <csetjmp>) is incompatible with the use of destructors and with exception handling (Chapter 13, §30.4) and is best avoided.
+  C-style stack unwinding and signals are not discussed in this book.
+
++++++
+Numerics
+@@@<complex>
+    ::: Complex numbers and operations§40.4
+@@@<valarray>
+    ::: Numeric vectors and operations§40.5
+@@@<numeric>
+    ::: Generalized numeric operations§40.6
+@@@<cmath>
+    ::: Standard mathematical functions§40.3
+@@@<cstdlib>
+    ::: C-style random numbers§40.7
+@@@<random>
+    ::: Random number generators§40.7
+-----
+For historical reasons, abs()and div() are found in <cstdlib> rather than in <cmath> with the rest of the mathematical functions (§40.3).
+
++++++
+Concurrency
+@@@<atomic>
+    ::: Atomic types and operations§41.3
+@@@<condition_variable>
+    ::: Waiting for an action§42.3.4
+@@@<future>
+    ::: Asynchronous task§42.4.4
+@@@<mutex>
+    ::: Mutual exclusion classes§42.3.1
+@@@<thread>
+    ::: Threads §42.2
+-----
+C provides standard-library facilities of varying relevance to C++ programmers. The C++ standard library provides access to all such facilities:
+
++++++
+C_Compatibility
+@@@<cinttypes>
+    ::: Aliases for common integer types§43.7
+@@@<cstdbool>
+    ::: C bool
+@@@<ccomplex>
+    ::: <complex>
+@@@<cfenv>
+    ::: Floating-point environment
+@@@<cstdalign>
+    ::: C alignment
+@@@<ctgmath>
+    ::: C ‘‘type generic math’’: <complex> and <cmath>
+-----
+The <cstdbool> header will not define macros bool,true, or false. The <cstdalign> header will not define a macro alignas. The .h equivalents to <cstdbool>,<ccomplex>,<calign>, and <ctgmath> approximate C++ facilities for C. Avoid them if you can.
+The <cfenv> header provides types (such as fenv_t andf except_t), floating-point status flags, and control modes describing an implementation’s floating-point environment.
+
++++++
+[[[Standard_Library_Overview]]]:end
+
+
+
++++++
+
+===
+pg855[870/1366] #fused operations
+  This technique is based on the idea of using compile-time analysis and closure objects to transfer evaluation of a subexpression into an object representing a composite operation.
+    It can be applied to a variety of problems with the common attribute that several pieces of information need to be gathered into one function before evaluation can take place.
+    I refer to the objects generated to defer evaluation as composition closure objects, or simply compositors.
+
+  If this composition technique is used to delay execution of all operations, it is referred to as expression templates [Vandevoorde,2002] [Veldhuizen,1995].
+    Expression templates systematically use function objects to represent expressions as abstract syntax trees (ASTs).
+
+
+===
+pg829[844/1366] #Enable_if+is_XxxConcept<T>()
+  We can define an output function for use in debugging like this:
+    template<typename M>
+    Enable_if<Matrix_type<M>(),ostream&>
+    operator<<(ostream& os, const M& m)
+    {
+      os << '{';
+      for (siz e_t i = 0; i!=rows(m); ++i) {
+        os << m[i];
+        if (i+1!=rows(m)) os << ',';
+      }
+      return os << '}';
+    }
+  Here,Matrix_type is a concept (§24.3).
+
+
 ===
 pg814[829/1366]
 28.6.3 Forwarding
@@ -358,6 +718,11 @@ pg771[786/1366]
   // ... <: CD<interface> <: CC<interface> <: CB<interface> <: CA<interface> <: C<interface> <: interface <: empty_interface::I
   // 具象类 个数 o(n^2): forall CX <: C. forall interface <: I). CX<interface>
 
+
+===
+pg770[785/1366] #empty-base optimization
+  I benefit from the empty-base optimization.
+  The language guarantees that if a base class has no non-static data members, no memory will be allocated for it in an object of derived class (§iso.1.8).
 
 ===
 pg766[781/1366] #avoid overparameterize
