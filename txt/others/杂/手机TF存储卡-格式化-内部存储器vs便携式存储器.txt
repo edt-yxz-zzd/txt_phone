@@ -1,0 +1,337 @@
+手机TF存储卡-格式化-内部存储器vs便携式存储器
+
+
+
+TF卡最好别格式化成内部存储设备，这象是安卓6搞的一个很鸡肋的排外功能。格式化为内部存储设备的话就等于是机身c存储的一部分，应用可以转移到存储卡上面，但是这张卡放到电脑或其他手机都不能识别，需要重新格式化。
+如果格成内部存储，TF卡本身的方便性也就没了，无法放别的设备上存取，也失去U盘的功能，买能外接TF卡的手机不就是为TF卡的便利么？
+
+[[[#section
+================================
+https://www.jianshu.com/p/23b203f1b848
+
+Android 内部存储/外部存储 及 读写权限
+simplehych
+0.628
+2019.12.19 17:17:46
+字数 1,447阅读 7,655
+摘要
+
+Android 使用 VFS (Virtual File System) 虚拟文件系统。VFS提供了供存储设备挂载的节点，同一存储设备经过分区后，不同的分区可以挂载到不同的节点上，如手机的内置存储卡。
+关键字
+
+内置存储卡 / 外置SD卡
+内部存储 / 外部存储
+目录结构
+
+VFS 的目录以 / 为根节点，根节点下面又有不同的节点。物理存储设备就是挂载到这些节点上。
+目录结构
+
+    /data/data
+    该节点是用户应用的安装目录，如百度地图的安装路径是 /data/data/com.baidu.com，该目录需要root权限
+    /system
+    该节点是系统应用的安装目录
+    /storage
+    该节点是内置存储卡和外置SD卡的挂载点
+    外置SD卡挂载节点：/storage/sdcard1
+    内置存储卡挂载节点：/storage/emulated/0
+    不同的设备挂载节点不同，有的可能在 /mnt下
+
+内部存储和外部存储
+
+内部存储卡/外置SD卡 ≠ 内部存储/外部存储
+
+首先明确，内置存储卡/外置SD卡 是在物理层面相对于手机大众用户来说的。
+外置SD卡：可手动插拔的SD卡。
+内置存储卡：焊接在手机内部不可拆卸的存储卡。
+
+而，内部存 /外部存储 是在文件系统逻辑层面相对于开发者来说的，指具体的路径。
+一般针对某个应用而言的，属于该应用的存储路径叫内部存储，反之为外部存储。
+内部存储
+
+路径：/data/data/package_name
+
+/data/data/ 下都是已安装应用的目录，该目录下包含的文件都是以包名作为文件名的目录，例如/data/data/com.sankuai.meituan
+
+        内部存储的文件是应用的私有文件，其他应用不能访问。
+        应用访问自己的内部存储不需要权限，访问外部存储需要申请权限。
+        应用卸载后，这些文件也会被移除。
+
+获取内部存储的方式如下：
+
+Context
+File getDir(String name, String mode) ;
+// /data/data/com.sankuai.meituan
+
+File getFilesDir();
+// /data/data/com.sankuai.meituan/files
+
+File getCacheDir()
+// /data/data/com.sankuai.meituan/cache
+
+String getApplicationInfo().dataDir;
+// /data/data/com.sankuai.meituan
+
+其中，参数 mode 指创建模式，一种 4 种
+
+    MODE_PRIVATE，设为私有文件
+    MODE_APPEND，openFileOutput，文件存在则追加内容
+    MODE_WORLD_READABLE，API 17 废弃
+    MODE_WORLD_WRITEABLE，API 17 废弃
+
+注意： Android 7.0 以上android.os.Build.VERSION.SDK_INT>=Build.VERSION_CODES.N 使用3/4 常量时，将会导致SecurityException，这意味着不能通过名称共享私有文件。
+尝试共享 file://URI URI将会导致FileUriExposedException，StrictMode API政策禁止在您的应用外部公开file://URL。如果您的应用需要与其他应用共享私有文件，则可以使用 FileProvider 与 FLAG_GRANT_READ_URI_PERMISSION 配合使用。Android 7.0 行为变更 通过FileProvider在应用间共享文件吧
+外部存储
+
+外部存储，可以是 外置SD卡 或 内置存储卡的部分分区。
+
+外部存储，分为 公共目录 和 私有目录
+版本 	存储位置 	是否需要读写权限
+Android 4.4以前 	外部存储（公共目录和私有目录） 	需要
+Android 4.4以后 	外部存储（公共目录） 	需要
+Android 4.4以后 	外部存储（私有目录） 	不需要
+外部存储 - 私有目录
+
+    属于应用私有，但是这些私有数据可以被其他应用访问和修改（通过私有目录的地址）
+    应用卸载时，此目录及其内容将被删除。
+    系统媒体扫描程序不会读取这些目录的文件，因此不能从MediaStore内容提供程序访问这些文件
+
+获取方式
+
+Context
+File getExternalCacheDir()
+// /storage/emulated/0/Android/data/com.sankuai.meituan/cache
+
+File getExternalFilesDir(String type)
+// /storage/emulated/0/Android/data/com.sankuai.meituan/files
+
+外部存储注意事项
+
+    使用前先检查文件状态
+    外部存储的文件，所有的应用和用户都能移除和修改这些权限。
+    在使用外部存储执行工作之前，应该使用 getExternalStorageState() 检查介质是否可用，介质可能已经装载到设备，处于缺失、只读或其他某种状态。
+
+检查可用性的方法：
+
+String status = Environment.getExternalStorageState();
+boolean mounted = status.equals(Environment.MEDIA_MOUNTED)
+                    || status.equals(Environment.MEDIA_MOUNTED_READ_ONLY);
+return mounted;
+
+    对于支持外插SD卡的设备，外部存储包括两部分：内置存储卡和外置SD卡；
+
+Android 4.3 以下，只能通过Context#getExternalFilesDir(type) 来获取外部存储在内置存储卡分区的私有目录，无法获取外置SD卡。
+
+Android 4.3 开始，可以通过Context#getExternalFilesDirs(type) 获取一个File数组，包含了内置存储卡分区和外置SD的私有目录地址。
+
+可以使用兼容库的静态方法 ContextCompate.getExternalFilesDirs() 兼容 4.3。
+总结
+
+    应用使用内部存储不需要权限，内部存储属于应用的私有存储区域，其他应用不可访问，但应用卸载，内部存储中对应的文件也会删除。
+    外部存储分为公共目录和私有目录，外部存储是可以全局访问的，但需要申请读写权限。Android4.4以后私有目录不需要申请读写权限。
+    如果缓存的数据量较大，请不要保存到内部存储中。
+    如果想保存可共享给其他应用的数据，请保存到外部存储的公共目录中。
+    clear data 和 clear cache 两个都是应用的缓存数据，清理的是外部存储中的私有目录下的files/cache，即 /storage/emulated/0/Android/data/com.sankuai.meituan/cache
+
+参考资料
+
+感谢以下文章作者
+解析Android内部存储、外部存储的区别
+]]]#section
+[[[#section
+================================
+https://blog.csdn.net/yang_hai_long/article/details/9871135
+android内部存储器和外部存储器
+
+android爱好者yang 2013-08-10 09:27:36 1973 收藏
+Android使用的文件系统与其他平台的基于磁盘的文件系统类似。本节课介绍如何使用File APIs来执行读写Android文件系统的操作。
+ 
+File对象适用于按顺序读写大数据，而不是跳跃式的读写。例如，它可以很好的读写镜像文件或基于网络的数据交换。
+ 
+本节课介绍在你的应用程序中如何执行基本的文件相关的任务。本节课假定你熟悉Linux文件系统基础和java.io中标准的输入/输出APIs。
+ 
+选择内部或外部存储器
+ 
+所有的Android设备都有两个文件存储区域：“内部”和“外部”存储器。这两个名称来自早期的Android，当时大多数设备都提供内置的固定的内存（内置存储器），外加一个可移动的存储介质，如micro SD卡（外部存储器）。有些设备把固定不变的存储空间分成“内部”和“外部”两部分，这样即使没有可移动的存储介质，也总会有两个存储空间，并且不管外部存储器是可移动的，还是固定的，API的行为是相同的。
+ 
+下面列出了每种存储空间的概要特性：
+ 
+内部存储器
+ 外部存储器
+ 
+始终有效
+ 它不是始终有效的，因为用户可以安装一个USB存储器来作为外部存储，并且在某些情况下会从设备上删除该外部存储器。
+ 
+默认情况下，保存在这里的文件只有保存它的应用程序才能访问。
+ 它是全局可读的，因此保存在这里的文件可以在你的控制之外被读取。
+ 
+用户卸载你的应用程序时，系统会从内部存储器中删除该应用程序相关的所有文件。
+ 用户卸载你的应用程序时，如果你把文件保存在从getExternalFilesDir()方法中获取的目录中，那么系统只会删除这个目录中的文件。
+ 
+当你确定用户和其他应用程序都不能访问你的文件时，使用内部存储是最好的选择。
+ 对于那些没有访问限制、想要跟其他应用程序共享或允许用户使用计算机来访问的文件，外部存储器是最好的选择。
+ 
+ 
+提示：尽管默认的情况下，应用程序是被安装在内部存储器上的，但是你可以在清单文件中指定android:installLocation属性，以便让你的应用程序被安装在外部存储器上。当APK的尺寸比较大，并还有比内部存储空间大的外部存储空间时候，用户会很乐意使用这个选项。更多信息，请看应用程序的安装位置。
+ 
+获得使用外部存储器的权限
+ 
+要向外部存储器写入数据，你必须在清单文件中申请WRITE_EXTERNAL_STORAGE权限：
+ 
+<manifest ...> 
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" /> 
+    ... 
+</manifest>
+ 
+警告：当前，所有应用程序在没有指定权限的情况下，都具有读取外部存储器的能力。但是在未来发布的版本中，这种情况会被改变。如果你的应用程序需要读取外部存储器（但不向其中写入），那么你将会需要声明READ_EXTERNAL_STORAGE权限。因此，要确保你的应用程序能够继续你所期望的工作，就要在改变带来影响之前声明这个权限：
+ 
+<manifest ...> 
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" /> 
+    ... 
+</manifest>
+ 
+但是，如果你的应用使用了WRITE_EXTERNAL_STORAGE权限，那么就隐含着声明了读取外部存储器的权限。
+ 
+在内部存储器上保存数据，你不需任何权限。你的应用程序始终有权读写它在内部存储器目录中保存的文件。
+ 
+在内部存储器上保存文件
+ 
+在把文件保存到内部存储器上时，你可以通过调用以下两个方法之一所返回的File对象来获取相应的目录：
+ 
+getFileDir()
+ 
+   返回一个用于你的应用程序的、代表内部目录的File对象。
+ 
+getCacheDir()
+ 
+   返回一个用于你的应用程序缓存文件的、代表内部目录的File对象。在不需要这个文件时一定要确保将其删除，并且在任何时候，都要对你所使用的内存大小进行合理的限制，如1MB。如果系统在存储器的运行开始变慢，系统就会删除这些缓存文件而不会发出警告。
+ 
+你可以使用File()构造器，在上述方法所返回的目录中创建一个新的文件，例如：
+ 
+File file =newFile(context.getFilesDir(), filename);
+ 
+另外，你可以调用openFileOutput()方法来获得一个向内部存储目录中写入文件FileOutputStream对象。例如：以下代码演示如何向一个文件中写入文本：
+ 
+String filename ="myfile"; 
+String string = "Hello world!"; 
+FileOutputStream outputStream; 
+ 
+try { 
+  outputStream = openFileOutput(filename, Context.MODE_PRIVATE); 
+  outputStream.write(string.getBytes()); 
+  outputStream.close(); 
+} catch (Exception e) { 
+  e.printStackTrace(); 
+}
+ 
+或者，如果你需要缓存某些文件，你应该使用createTempFile()方法来替代。例如，下列方法从一个URL中提取了文件名称，并用这个名称在你的应用程序的内部缓存目录中创建了一个文件：
+ 
+publicFile getTempFile(Context context,String url){ 
+    File file; 
+    try { 
+        String fileName = Uri.parse(url).getLastPathSegment(); 
+        file = File.createTempFile(fileName, null, context.getCacheDir()); 
+    catch (IOException e) { 
+        // Error while creating file 
+    } 
+    return file; 
+}
+ 
+注意：你的应用程序的内部存储目录是在Android文件系统的特定位置中由你的应用程序的包名称来指定的。从技术上来说，如果你把该文件模式设置为可读的，那么另外一个应用程序是可以读取你的内部文件的。但是，其他的应用程序还需要知道你的应用程序的包名和文件名。其他的应用程序不能浏览你的内部目录，并且除非你把该文件设置为可读或可写，否则其他的应用程序不能够对其进行读写访问。因此在内部存储器上，只要你的文件使用了MODE_PRIVATE模式，那么其他的应用程序就不会访问到它们。
+ 
+在外部存储器上保存文件
+ 
+因为外部存储器可能是无效的---如当用户把提供的外部存储器（SD卡）安装到PC或移除时---因此在访问外部存储器之前，你应该先确认它是否有效。你可以通过调用getExternalStorageState()方法来查询外部存储器的状态。如果返回的状态值等于MEDIA_MOUNTED，那么你可以读写你的文件。例如，下列方法用于判断存储器是否有效：
+ 
+/* Checks if external storage is available for read and write */ 
+public boolean isExternalStorageWritable() { 
+    String state = Environment.getExternalStorageState(); 
+    if (Environment.MEDIA_MOUNTED.equals(state)) { 
+        return true; 
+    } 
+    return false; 
+} 
+ 
+/* Checks if external storage is available to at least read */ 
+public boolean isExternalStorageReadable() { 
+    String state = Environment.getExternalStorageState(); 
+    if (Environment.MEDIA_MOUNTED.equals(state) || 
+        Environment.MEDIA_MOUNTED_READ_ONLY.equals(state)) { 
+        return true; 
+    } 
+    return false; 
+}
+ 
+尽管外部存储器是可以比用户和其他应用程序编辑的，但是你可以有以下两种策略来保存你的文件：
+ 
+public files
+ 
+   该类文件应该对其他应用程序和用户完全有效。当用户卸载你的应用程序时，这些文件应该保留对用户的有效性。
+ 
+例如，你的应用程序拍摄的照片或其他的 下载文件。
+ 
+private files
+ 
+该类文件应该完全归属于你的应用程序，并且在用户卸载你的应用程序时，这些文件应该被删除。在技术上，尽管这些文件是可以被用户和其他应用程序访问的，因为它们是在外部存储器上，但是，它们不会把文件的值提供给你的应用程序以外的用户。当用户卸载你的应用程序时，系统会删除你的应用程序外部私有目录中所有的文件。
+ 
+例如，由你的应用程序下载的额外资源或临时媒体文件。
+ 
+如果你在外部存储器上保存公共文件，就要使用getExternalStoragePublicDirectory()方法来获取代表外部存储器上对应目录的File对象。这个方法需要指定你想要保存的文件的类型，以便他们能够被逻辑的跟其他公共文件组织到一起，例如DIRECTORY_MUSIC或DIRECTORY_PICTURES:
+ 
+publicFile getAlbumStorageDir(String albumName){ 
+    // Get the directory for the user's public pictures directory.  
+    File file = new File(Environment.getExternalStoragePublicDirectory( 
+            Environment.DIRECTORY_PICTURES), albumName); 
+    if (!file.mkdirs()) { 
+        Log.e(LOG_TAG, "Directory not created"); 
+    } 
+    return file; 
+}
+ 
+如果想要把文件保存成只对你的应用程序私有，你可以通过调用getExternalFilesDir()方法，并给这个方法传递你希望的目录类型，来获取对应的目录。这种方法创建的每个目录都会被添加到一个父目录中，这个父目录封装了你的应用的所有的外部存储文件，在用户卸载你的应用程序时，系统会删除这些文件。
+ 
+例如，使用下面的方法创建一个独立的相册目录：
+ 
+publicFile getAlbumStorageDir(Context context,String albumName){ 
+    // Get the directory for the app's private pictures directory.  
+    File file = new File(context.getExternalFilesDir( 
+            Environment.DIRECTORY_PICTURES), albumName); 
+    if (!file.mkdirs()) { 
+        Log.e(LOG_TAG, "Directory not created"); 
+    } 
+    return file; 
+}
+ 
+如果你的文件不打算放到预定义的子目录中，你可以调用getExternalFilesDir()方法，并给该方法传递null参数。这样就会返回你的应用程序在外部存储器上的私有目录的根目录。
+ 
+要记住，getExternalFilesDir()方法创建了一个内部目录，用户卸载你的应用程序时，这个目录会被删除。如果你希望应用程序保存的文件在用户卸载你应用程序之后继续有效---如卸载了照相机应用程序，并且还希望保留该应用程序拍摄的一些照片，你就要使用getExternalStoragePublicDirectory()方法来代替。
+ 
+不管你使用getExternalStoragePublicDirectory()来创建共享文件，还是使用getExternalFilesDir()方法来创建应用程序的私有文件，重要的是使用由API提供的诸如DIRECTORY_PICTURES这样的常量。这些目录名确保了这些文件能够被系统正确的处理。例如，保存在DIRECTORY_RINGTONES目录中文件，会被系统的媒体扫描器作为铃声来处理，而不是音乐。
+ 
+查询可用的存储空间
+ 
+如果你想要事前了解你可以保存多少数据，你可以调用getFreeSpace()方法或getTotalSpace()方法来查看是否有足够的存储空间，而不会导致IOException异常发生。这两个方法分别提供了当前存储器中有效的可用空间和总空间。这些信息有益于避免在某个阀值之上来填充存储卷。
+ 
+但是，系统不会保证你可以向存储器中写入由getFreeSpace()方法所返回的字节数一样多的数据。如果返回的数字比你要保存数据多几MB，或者被占用的文件系统存储空间小于90%，那么数据可以被安全的写入，否则你不应该向存储器中写入数据。
+ 
+注意：在保存文件之前，你不必检查有效的存储空间，相反，你可以尝试立即写入文件，然后捕获是否发生IOException异常。如果你不能确切的只读你所需要的存储空间，就需要使用这个方法。例如，如果你要把PNG格式文件转换成JPEG格式的文件，在保存之前你不会知道该文件的尺寸。
+ 
+删除文件
+ 
+在不需要的时候，你应该始终删除这些文件。删除文件的最直接的方法是调用打开的File对象自身的delete()方法。
+ 
+myFile.delete();
+ 
+如果文件被保存在内部存储器上，你还可以调用Context对象的deleteFile()方法来定位和删除文件：
+ 
+myContext.deleteFile(fileName);
+ 
+注意：当用户卸载你的应用程序时， Android 系统会删除以下内容：
+ 
+1. 内部存储器上所有的你的应用程序的文件；
+ 
+2. 外部存储器上所有的使用getExternalFilesDir()方法保存的文件。
+ 
+但是，你应该定期的手动删除所有的用getCacheDir()方法创建的缓存文件，以及那些不再需要的其他文件。
+ 
+android爱好者yang
+]]]#section
