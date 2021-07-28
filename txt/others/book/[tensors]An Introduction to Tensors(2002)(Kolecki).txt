@@ -1,0 +1,100 @@
+
+[tensors]An Introduction to Tensors(2002)(Kolecki).pdf
+
+pg11[15/29]
+  Since we are considering physical/tensorial quantities that exist in space and are coordinate independent, it behooves us to take a closer look at this distinction.
+
+pg13[17/29]
+  Physical quantities existing in the plane must be independent of the particular coordinate system chosen.
+    These quantities are not necessarily independent of the space that contains them, however.
+    The same idea applies to all other spaces and coordinate systems as well.
+
+物理量 可能 与 空间 相关，但 与 坐标系的选取 无关
+  所谓 与 坐标系的选取 无关，指 实际概念值，而非 特定坐标系下的表达！
+    换句话说，就是 经过 坐标系变换 后，值 相同。
+
+要求 张量 与 坐标系 无关
+  所谓 与 坐标系 无关，指 在任何坐标系下的表达皆相同(无需任何坐标系变换)！
+  温度 是 秩0张量 #scalar
+    光/电磁波的频率 则不是
+      因为 红移、蓝移 # 由 坐标系 的 相对速度 引起
+  两点形成的位移（两点坐标之差） 是 秩1张量 #vector
+    点坐标 则不是 #依赖 坐标系 原点
+      #点的位置 显然是 物理概念，虽然 在不同坐标系下表达不同，但 经过 坐标系变换 后，表达 便相同了。
+
+
+
+
+
+
+
+
+我的定义:
+  张量的秩 = 张量维数
+  乱序张量<切面数> = (元素量纲, 多维矩阵 (映射<切面数> 切面名 (映射<维数<切面名>  > 维向 量纲)))
+      Set :: @[type :: Type] -> Type
+      Set = \[type :: Type] -> @[obj :: type] -> Prop
+        # [xxx_set::Set T]: [is_in_xxx_set<~x<-xxx_set] = (?[x :: T], ?[is_in_xxx_set :: xxx_set x])
+
+      uint :: @[i :: Integer] -> Prop
+      uint :: Set Integer
+      uint = \[i :: Integer] -> [i >= 0]
+
+      (<=>) :: @[lhs :: Prop] -> @[rhs :: Prop] -> ([lhs->rhs], [rhs->lhs])
+
+      (===) :: @[T :: Type] => @[lhs :: T] -> @[rhs :: T] -> @[P::T->Prop] -> [P lhs <=> P rhs]
+        # => like ->
+        # but auto deduce (lhs === rhs) or (lhs ===[T] rhs)
+
+      (<->) :: @[x,y :: Type] -> @[xs :: Set x] -> @[ys :: Set y] -> (?[f :: @[a<-xs] -> (?[b::y], [ys b])], ?[g :: @[b<-ys] -> (?[a::x], [xs a])], [@[xs_a<~a<-xs] -> (?[ys_fa :: ys (f a xs_a)], [g (f a xs_a) ys_fa === a])])
+
+      FiniteSet
+      Tensor = [@F<-uint] -> ([?dimension_of_elements :: Dimension], Matrix F)
+      Matrix = ([?F<-uint], [?faces <- Set FaceName], [F == len faces], [@face <- faces] -> ([?D<-uint], [?component <- Set ComponentName], [D == len components], [@component<-components] -> Dimension))
+
+  次序张量<切面数> = (元素量纲, 多维矩阵 (序列<切面数> (序列<维数<切面索引号> > 量纲)))
+    #次序==手动排序!=自动排序=全序
+
+  自由积乘法
+    :: 次序张量<x> -> 次序张量<y> -> 次序张量<x+y>
+    ---
+    自由积[i[0],..,i[x+y-1]] = 左张量[i[0],..,i[x-1]] * 右张量[i[x],..,i[x+y-1]]
+    自由积.元素量纲 = lhs.元素量纲 * rhs.元素量纲
+    自由积.切面数 = lhs.切面数 + rhs.切面数
+    自由积.各切面维数 = lhs.各切面维数 ++ rhs.各切面维数
+    自由积.各切面各维向量纲 = lhs.各切面各维向量纲 ++ rhs.各切面各维向量纲
+
+  内积乘法
+    :: [x>=1][y>=1]
+    -> [内卷维数:==lhs.各切面维数[x-1]==rhs.各切面维数[0]]
+    -> [内卷量纲 := 空量纲 if 内卷维数==0 else lhs.各切面各维向量纲[x-1][0] * rhs.各切面各维向量纲[0][0]]
+    -> [@j<-[0..内卷维数-1]. [内卷量纲 == lhs.各切面各维向量纲[x-1][j] * rhs.各切面各维向量纲[0][j]]]
+    -> [lhs::次序张量<x>] -> [rhs::次序张量<y>] -> 次序张量<x+y-2>
+    ---
+    内积[i[0],..,i[x+y-3]] = sum~ 左张量[i[0],..,i[x-2],j] * 右张量[j,i[x-1],..,i[x+y-3]] {j<-[0..lhs.维向秩[x-1]-1]}
+
+    内积.元素量纲 = 内卷量纲 * lhs.元素量纲 * rhs.元素量纲
+    内积.切面数 = lhs.切面数 + rhs.切面数 -2
+    内积.各切面维数 = lhs.各切面维数[:-1] ++ rhs.各切面维数[1:]
+    内积.各切面各维向量纲 = lhs.各切面各维向量纲[:-1] ++ rhs.各切面各维向量纲[1:]
+
+
+  泛化内积乘法<2> #二元运算
+  泛化内积乘法<M,N> #大二元运算，左操作数M元，右操作数N元
+  泛化内积乘法<N> #N元运算
+    #==>> 自由积乘法，内积乘法
+    #   可先作 自由积，内卷的维向 构成 子矩阵，外显的维向 构成 以这些子矩阵为元素 的 矩阵。再将 这些子矩阵 压制成 元素 就得到 泛化内积。1)如何 压制？比如：二维方阵 求对角和(需要保证 加法的量纲一致性原则)。2)如何 选取 内卷的维向？3)如何 实现 外显的维向 的 重命名(自动构造？避免 重复)？
+    #
+    #其实 本质 还是 矩阵乘法，只不过 要手动指明 哪些维向 共同构成 行，另外的维向 共同构成 列
+    #
+    #
+  泛化内积乘法<N> #N元运算
+    :: [N <- uint] -> [ @i<-uint_lt N. ?各张量
+
+
+
+    :: 左内卷维向集合 -> 右内卷维向集合
+    -> [bimap :: 可逆映射 (映射 左内卷维向 索引[0..lhs.维向秩[左内卷维向]]) (映射 右内卷维向 索引[0..lhs.维向秩[右内卷维向])]]
+    [inner_idc.键值维向 ~<=~ lhs.键值维向/-\rhs.键值维向][量纲 维向秩 匹配..]
+    => [inner_idc::集合<z> 维向]
+    -> [lhs::乱序张量<x>] -> [rhs::乱序张量<y>] -> 乱序张量<x+y-2*z>
