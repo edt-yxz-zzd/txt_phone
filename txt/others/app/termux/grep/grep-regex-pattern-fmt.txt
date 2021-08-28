@@ -1,0 +1,300 @@
+
+e others/app/termux/grep/grep-regex-pattern-fmt.txt
+view others/book/The\ C++\ Programming\ Language(4ed)(2013).txt
+
+
+
+below from: 'others/book/The C++ Programming Language(4ed)(2013).txt'
+===
+pg1052[1067/1366]
+37.1.1 Regular Expression Notation
+The regex library can recognize several variants of the notation for regular expressions (§37.2).
+    Here, I first present the default notation used, a variant of the ECMA standard used for ECMAScript (more commonly known as JavaScript).
+
+The syntax of regular expressions is based on characters with special meaning:
+Regular Expression Special Characters
+. Any single character (a ‘‘wildcard’’)
+[ Begin character class
+] End character class
+{ Begin count
+} End count
+( Begin grouping
+) End grouping
+\ Next character has a special meaning
+∗ Zero or more
++ One or more
+? Optional (zero or one)
+| Alternative (or)
+ˆ Start of line; negation
+$ End of line
+
+
+A pattern can be optional or repeated (the default is exactly once) by adding a suffix:
+Repetition
+{ n } Exactly n times
+{ n, } n or more times
+{n,m} At least n and at most m times
+∗ Zero or more, that is,{0,}
++ One or more, that is,{1,}
+? Optional (zero or one), that is{0,1}
+
+A suffix "?" after any of the repetition notations makes the pattern matcher ‘‘lazy’’ or ‘‘non-greedy.’’
+  That is, when looking for a pattern, it will look for the shortest match rather than the longest.
+  By default, the pattern matcher always looks for the longest match (similar to C++’s Max Munch rule; §10.3).
+
+
+
+
+
+The most common character classifications have names:
+Character Classes
+@@@alnum
+    :::Any alphanumeric character
+@@@alpha
+    :::Any alphabetic character
+@@@blank
+    :::Any whitespace character that is not a line separator
+@@@cntrl
+    :::Any control character
+@@@d
+    :::Any decimal digit
+@@@digit
+    :::Any decimal digit
+@@@graph
+    :::Any graphical character
+@@@lower
+    :::Any lowercase character
+@@@print
+    :::Any printable character
+@@@punct
+    :::Any punctuation character
+@@@s
+    :::Any whitespace character
+@@@space
+    :::Any whitespace character
+@@@upper
+    :::Any uppercase character
+@@@w
+    :::Any word character (alphanumeric characters plus the underscore)
+@@@xdigit
+    :::Any hexadecimal digit character
+
+
+Several character classes are supported by shorthand notation:
+Character Class Abbreviations
+@@@\d
+    :::A decimal digit === [[:digit:]]
+@@@\s
+    :::A space (space, tab, etc.) === [[:space:]]
+@@@\w
+    :::A letter (a-z) or digit (0-9) or underscore (_) === [_[:alnum:]]
+@@@\D
+    :::Not\d  === [ˆ[:digit:]]
+@@@\S
+    :::Not\s  === [ˆ[:space:]]
+@@@\W
+    :::Not\w  === [ˆ_[:alnum:]]
+
+In addition, languages supporting regular expressions often provide:
+Nonstandard (but Common) Character Class Abbreviations
+@@@\l
+    :::A lowercase character === [[:lower:]]
+@@@\u
+    :::An uppercase character === [[:upper:]]
+@@@\L
+    :::Not\l  === [ˆ[:lower:]]
+@@@\U
+    :::Not\u  === [ˆ[:upper:]]
+
+
+bool is_identifier(const string& s)
+{
+  regex pat {"[_[:alpha:]]\\w∗"};
+  return regex_match(s,pat);
+}
+
+
+
+
+
+
+
+
+
+Note the doubling of the backslash to include a backslash in an ordinary string literal. As usual, backslashes can also denote special characters:
+Special Characters (§iso.2.14.3, §6.2.3.2)
+@@@\n
+    :::Newline
+@@@\t
+    :::Tab
+@@@\\
+    :::One backslash
+@@@\xhh
+    :::Unicode characters expressed using two hexadecimal digits
+@@@\uhhhh
+    :::Unicode characters expressed using four hexadecimal digits
+
+
+To add to the opportunities for confusion, two further logically different uses of the backslash are provided:
+Special Characters (§iso.28.5.2, §37.2.2)
+@@@\b
+    :::The first or last character of a word (a ‘‘boundary character’’)
+@@@\B
+    :::Not a \b
+@@@\i
+    :::The ith sub_match in this pattern
+
+
+
+
+
+
+
+
+
+
+#group
+
+A group(a subpattern) potentially to be represented by a sub_match is delimited by parentheses.
+  If you need parentheses that should not define a subpattern, use "(?" rather than plain "(".
+  For example:
+      (\s|:|,)∗(\d∗)//spaces, colons, and/or commas followed by a number
+
+    Assuming that we were not interested in the characters before the number (presumably separators), we could write:
+      (?\s|:|,)∗(\d∗)//spaces, colons, and/or commas followed by a number
+
+    This would save the regular expression engine from having to store the first characters: the "(?" variant has only one subpattern.
+
+Regular Expression Grouping Examples
+\d∗\s\w+
+    No groups (subpatterns)
+(\d∗)\s(\w+)
+    Two groups
+(\d∗)(\s(\w+))+
+    Two groups (groups do not nest)
+(\s∗\w∗)+
+    One group, but one or more subpatterns; only the last subpattern is saved as asub_match
+<(.∗?)>(.∗?)</\1>
+    Three groups; the \1 means ‘‘same as group 1’’
+
+That last pattern is useful for parsing XML. It finds tag/end-of-tag markers. Note that I used a non-greedy match (a lazy match), ".∗?", for the subpattern between the tag and the end tag.
+  Had I used plain.∗, this input would have caused a problem:
+    "Always look for the <b>bright</b> side of <b>life</b>"
+
+
+
+It is possible to vary details of the regular expression notation using options (§37.2).
+  For example, if regex_constants::grep is used, "a?x:y" is a sequence of five ordinary characters because "?" does not mean ‘‘optional’’ in grep.
+
+
+
+
+
+
+
+
+
+
+37.2 regex
+A regular expression is a matching engine (usually a state machine) constructed from a sequence of characters, such as a string:
+template<class C, class traits = regex_traits<C>>
+class basic_regex {
+  public:
+    using value_type = C;
+    using traits_type = traits;
+    using string_type = typename traits::string_type;
+    using flag_type = regex_constants::syntax_option_type;
+    using locale_type = typename traits::locale_type;
+
+    ˜basic_regex(); //not virtual; basic_regex is not meant to be used as a base class
+  //...
+};
+The regex_traits are presented in §37.5.
+Like string, regex is an alias for the version that uses chars:
+using regex = basic_regex<char>;
+
+
+//////(ECMAScript|basic|extended|awk|grep|egrep)+icase+nosubs+collate+optimize
+///default=regex_constants::ECMAScript
+///
+The meaning of regular expression patterns is controlled by syntax_option_type constants defined identically in regex_constants and regex:
+basic_regex<C,Tr>Member Constants (syntax_option_type, §iso.28.5.1)
+@@@icase
+    :::No case is used when matching
+@@@nosubs
+    :::No subexpression matches are stored in the match results
+@@@optimize
+    :::Prefer fast matching to fast regular expression object construction
+@@@collate
+    :::Character ranges of the form "[a−b]" are locale sensitive
+@@@ECMAScript
+    :::The regular expression grammar is the one used by ECMAScript in ECMA-262 (with minor modifications; §iso.28.13)
+@@@basic
+    :::The regular expression grammar is the one used by basic regular expressions in POSIX
+@@@extended
+    :::The regular expression grammar is the one used by extended regular expressions in POSIX
+@@@awk
+    :::The regular expression grammar is the one used by POSIX awk
+@@@grep
+    :::The regular expression grammar is the one used by POSIX grep
+@@@egrep
+    :::The regular expression grammar is the one used by POSIX grep-E
+
+Use the default unless you have a good reason not to. Good reasons include a large body of existing regular expressions in a non-default notation.
+
+
+A regex object can be constructed from a string or similar sequence of characters:
+basic_regex<C,Tr>Constructors (§iso.28.8.2)
+@@@basic_regex r {};
+    :::Default constructor: an empty pattern; flags set to regex_constants::ECMAScript
+@@@basic_regex r {x, flags};
+    :::x can be a basic_regex, a string, a C-style string, or aninitializer_list<value_type> with the notation defined by flags; explicit
+@@@basic_regex r {x};
+    :::
+@@@basic_regex r {p,n, flags};
+    :::
+@@@basic_regex r {p,n};
+    :::
+@@@basic_regex r {b,e , flags};
+    :::
+@@@basic_regex r {b,e};
+    :::
+
+The main use of regex is through the search, match, and replace functions (§37.3), but there are also a few operations on regex itself:
+basic_regex<C,Tr>Operations (§iso.28.8)
+@@@r=x
+    :::Copy assignment: x can be a basic_regex, a C-style string, a basic_string, or an initializer_list<value_type>
+@@@r=move(r2)
+    :::Move assignment
+@@@r=r.assign(r2)
+    :::Copy or move
+@@@r=r.assign(x, flags)
+    :::Copy or move; set r’s flags to flags x can be a basic_string, a C-style string, or an initializer_list<value_type>
+@@@r=r.assign(x)
+    :::r=r.assign(x,regex_constants::ECMAScript)
+@@@r=r.assign(p,n, flags)
+    :::Set r’s pattern to [p:p+n) and r’s flags to flags
+@@@r=r.assign(b,e , flags)
+    :::Set r’s pattern to [b:e) and r’s flags to flags
+@@@r=r.assign(b,e)
+    :::r=r.assign(b,e ,regex_constants::ECMAScript)
+@@@n=r.mark_count()
+    :::n is the number of marked subexpressions in r
+@@@x=r.flags()
+    :::x is r’s flags
+@@@loc2=r.imbue(loc)
+    :::r gets the locale loc;loc2 is r’s previous locale
+@@@loc=r.getloc()
+    :::loc is r’slocale
+@@@r.swap(r2)
+    :::Exchange values of r and r2
+
+
+
+
+
+
+
+
+
+

@@ -1,4 +1,25 @@
 
+vim cmd:
+  :
+    :.,.+6s//@@@\0\r\    :::
+    :.,.+6s/^\S* /@@@\0\r\    :::
+    :.,.+6s/^[^;]*; /@@@\0\r\    :::
+    :%s/<F\d\+>//g
+    :%s/ \+$//g
+  /
+    / \+$
+    /^\S*\s
+    /^[^;]*;\s\?
+    /^[^)]*)\s\?
+
+
+C/C++
+  果然只是西方编程语言
+  stoi(str, &n, base):
+    base of the number (between 2 and 36, inclusive)
+    26个英语字母
+  字符大小写
+    中文字符根本没有这种东西
 
 C++ bug:
     * C++因为使用 基类引用(强引用/共享指针/独占指针)、函数对象（带状态函数、匿名函数），不可能避免 强引用循环，这不是仔细设计析构函数使用智能指针就能解决的问题，没有垃圾回收器，必然存在 内存泄漏！C没有类继承，数据结构简单，仔细设计使用问题反而没那么严重。
@@ -123,6 +144,32 @@ pg855[870/1366]
 pg866[881/1366]
 pg868[883/1366]
 pg903[918/1366]
+pg966[981/1366]
+pg971[986/1366]
+pg974[989/1366]
+pg985[1000/1366]
+pg986[1001/1366]
+pg992[1007/1366]
+pg994[1009/1366]
+pg995[1010/1366]
+pg1005[1020/1366]
+pg1006[1021/1366]
+pg1009[1024/1366]
+pg1017[1032/1366]
+pg1018[1033/1366]
+pg1028[1043/1366]
+pg1029[1044/1366]
+pg1029[1044/1366]2
+pg1030[1045/1366]
+pg1033[1048/1366]
+pg1034[1049/1366]
+pg1043[1058/1366]
+pg1048[1063/1366]
+pg1051[1066/1366]
+pg1052[1067/1366]
+pg1058[1073/1366]
+  pg1062[1077/1366]
+pg1067[1082/1366]
 
 
 
@@ -204,6 +251,23 @@ int main(int argc, char* argv[])
   argv[0] === executable/program-name
   all(s is c_string (i.e. s[strlen(s)] == NUL) for s in argv[:-1])
 
+
+
+
+
+
+int_max_t
+
+string::npos
+  the end of string
+  -1???
+
+
+
+
+
+
+
 ===
 ===
 ===
@@ -214,6 +278,1959 @@ int main(int argc, char* argv[])
 ===
 ===
 ===
+===
+pg1071[1086/1366]
+37.6 Advice
+[1] Use regex for most conventional uses of regular expressions; §37.1.
+[2] The regular expression notation can be adjusted to match various standards; §37.1.1, §37.2.
+[3] The default regular expression notation is that of ECMAScript; §37.1.1.
+[4] For portability, use the character class notation to avoid nonstandard abbreviations; §37.1.1.
+[5] Be restrained; regular expressions can easily become a write-only language; §37.1.1.
+[6] Prefer raw string literals for expressing all but the simplest patterns; §37.1.1.
+[7] Note that "\i" allows you to express a subpattern in terms of a previous subpattern; §37.1.1.
+[8] Use "?" to make patterns ‘‘lazy’’; §37.1.1, §37.2.1.
+[9]regex can use ECMAScript, POSIX, awk, grep, and egrep notation; §37.2.
+[10] Keep a copy of the pattern string in case you need to output it; §37.2.
+[11] Use regex_search()for looking at streams of characters and regex_match()to look for fixed layouts; §37.3.2, §37.3.1.
+
+
+
+===
+pg1067[1082/1366]
+  to read later
+37.4 Regular Expression Iterators
+The regex_search()function allows us to find a single occurrence of a pattern in a data stream.
+  What if we wanted to find and do something to all such occurrences?
+    If the data is organized as a sequence of easily recognized lines or records, we can iterate over those and use regex_match()for each.
+    If what we want to do with each occurrence of a pattern is a simple substitution, we can use regex_replace().
+    If we want to iterate over a sequence of characters doing something for each occurrence of a pattern, we use a regex_iterator.
+
+
+
+37.4.1 regex_iterator
+A regex_iterator is a bidirectional iterator that searches a sequence for the next match of a pattern when incremented:
+template<class Bi,
+  class C = typename iterator_traits<Bi>::value_type ,
+  class Tr = typename regex_traits<C>::type>
+class regex_iterator {
+  public:
+    using regex_type = basic_regex<C,Tr>;
+    using value_type = match_results<Bi>;
+    using difference_type = ptrdiff_t;
+    using pointer = const value_type∗;
+    using reference = const value_type&;
+    using iterator_category = forward_iterator_tag;
+  //...
+};
+
+The regex_traits are described in §37.5.
+The usual set of aliases is provided:
+  using cregex_iterator = regex_iterator<const char∗>;
+  using wcregex_iterator = regex_iterator<const wchar_t∗>;
+  using sregex_iterator = regex_iterator<string::const_iterator>;
+  using wsregex_iterator = regex_iterator<wstring::const_iterator>;
+
+
+
+A regex_iterator provides a minimal set of iterator operations:
+regex_iterator<Bi,C,Tr>(§iso.28.12.1)
+@@@regex_iterator p {};
+    :::p is end-of-sequence
+@@@regex_iterator p {b,e,pat, flags);
+    :::Iterate over [b:e), looking for matches of pat using options flags
+@@@regex_iterator p {b,e,pat);
+    :::p is initialized with{b,e,pat,regex_constants::match_default}
+@@@regex_iterator p {q};
+    :::Copy constructor (no move constructor)
+@@@p=q
+    :::Copy assignment (no move assignment)
+@@@p==q
+    :::Does p point to the same sub_match as q?
+@@@p!=q
+    :::!(p==q)
+@@@c=∗p
+    :::c is the current sub_match
+@@@x=p−>m
+    :::x=(∗p).m
+@@@++p
+    :::Make p point to the next occurrence of p’s pattern
+@@@q=p++
+    :::q=p, then++p
+
+
+A regex_iterator is a bidirectional iterator, so we cannot directly iterate over an istream.
+As an example, we can output all whitespace-separated words in a string:
+
+void test()
+{
+  string input = "aa as; asd ++eˆasdf asdfg";
+  regex pat {R"(\s+(\w+))"};
+  for (sregex_iterator p(input.begin(),input.end(),pat); p!=sregex_iterator{}; ++p)
+    cout << (∗p)[1] << '\n';
+}
+
+This outputs:
+  as
+  asd
+  asdfg
+
+Note that we are missing the first word,aa, because it has no preceding whitespace. If we simplify
+the pattern to R"((\ew+))", we get
+  aa
+  as
+  asd
+  e
+  asdf
+  asdfg
+
+You cannot write through a regex_iterator and regex_iterator{}is the only possible end-of-sequence.
+
+
+
+
+
+
+37.4.2 regex_token_iterator
+A regex_token_iterator is an adaptor for regex_iterator that iterates over sub_matches of the match_results found:
+template<class Bi,
+  class C = typename iterator_traits<Bi>::value_type ,
+  class Tr = typename regex_traits<C>::type>
+class regex_token_iterator {
+  public:
+    using regex_type = basic_regex<C,Tr>;
+    using value_type = sub_match<Bi>;
+    using difference_type = ptrdiff_t;
+    using pointer = const value_type∗;
+    using reference = const value_type&;
+    using iterator_category = forward_iterator_tag;
+  //...
+}
+
+
+The regex_traits are described in §37.5.
+The usual set of aliases is provided:
+  using cregex_token_iterator = regex_token_iterator<const char∗>;
+  using wcregex_token_iterator = regex_token_iterator<const wchar_t∗>;
+  using sregex_token_iterator = regex_token_iterator<string::const_iterator>;
+  using wsregex_token_iterator = regex_token_iterator<wstring::const_iterator>;
+
+
+
+A regex_token_iterator provides a minimal set of iterator operations:
+regex_token_iterator(§iso.28.12.2)
+@@@regex_token_iterator p {};
+    :::p is the end-of-sequence
+@@@regex_token_iterator p {b,e,pat,x, flags};
+    :::x lists the indices of the sub_matches to be included in the iteration or 0, meaning ‘‘the whole match,’’ or −1, meaning ‘‘represent each character sequence not matched as a sub_match’’; x can be an int, an initializer_list<int>, a const vector<int>&, or a const int (&sub_match)[N]
+@@@regex_token_iterator p {b,e,pat,x};
+    :::p is initialized with {b,e,pat,x,regex_constants::match_default}
+@@@regex_token_iterator p {b,e,pat};
+    :::p is initialized with {b,e,pat,0,regex_constants::match_default}
+@@@regex_token_iterator p {q};
+    :::Copy constructor (no move constructor)
+@@@p.˜regex_token_iterator()
+    :::Destructor: release all resources
+@@@p=q
+    :::Copy assignment (no move assignment)
+@@@p==q
+    :::Does p point to the same sub_match as q?
+@@@p!=q
+    :::!(p==q)
+@@@c=∗p
+    :::c is the current sub_match
+@@@x=p−>m
+    :::x=(∗p).m
+@@@++p
+    :::Make p point to the next occurrence of p’s pattern
+@@@q=p++
+    :::q=p, then ++p
+
+
+The x argument lists the sub_matches to be included in the iteration. For example (iterating over matches 1 and 3):
+void test1()
+{
+  string input {"aa::bb cc::dd ee::ff"};
+  regex pat {R"((\w+)([[:punct:]]+)(\w+)\s∗)"};
+  sregex_token_iterator end {};
+  for (sregex_token_iterator p{input.begin(),input.end(),pat,{1,3}}; p!=end; ++p)
+    cout << ∗p << '\n';
+}
+
+This gives the output:
+  aa
+  bb
+  cc
+  dd
+  ee
+  ff
+
+The −1 option basically inverts the strategy for reporting matches by representing each character sequence that does not match as a sub_match.
+  This is often referred to as token splitting(that is, splitting a character stream into tokens) because when your pattern matches the token separators, option −1 leaves you with the tokens. For example:
+void test2()
+{
+  string s {"1,2 , 3 ,4,5, 6 7"};//input
+  regex pat {R"(\s∗,\s∗)"}; //use comma as token separator
+  copy(
+      sregex_token_iterator{s.begin(),s.end(),pat,−1},
+      sregex_token_iterator{},
+      ostream_iterator<string>{cout,"\n"}
+      );
+}
+
+The output is:
+  1
+  2
+  3
+  4
+  5
+  6 7
+
+This could equivalently be written using an explicit loop:
+void test3()
+{
+  sregex_token_iterator end{};
+  for (sregex_token_iterator p {s.begin(),s.end(),pat,−1}; p!=end; ++p)
+    cout << ∗p << '\n';
+}
+
+
+
+
+
+
+37.5 regex_traits
+A regex_traits<T> represents the correspondence between a character type, a string type, and a locale as needed for a regex implementer:
+template<class C>
+struct regex_traits {
+  public:
+    using char_type = C;
+    using string_type = basic_string<char_type>;
+    using locale_type = locale;
+    using char_class_type = /*implementation-defined bitmask type*/;
+  //...
+};
+
+The standard library provides specialization sregex_traits<char> and regex_traits<wchar_t>.
+regex_traits<C>Operations (§iso.28.7)
+@@@regex_traits tr {};
+    :::Make a default regex_trait<C>
+@@@n=tr.length(p)
+    :::n is the number of characters in the C-style string p; n=char_traits<C>::length(p); static
+@@@c2=tr.translate(c)
+    :::c2=c, that is, a no-op
+@@@c2=tr.translate_nocase(c)
+    :::use_facet<ctype<C>>(getloc()).tolower(c); §39.4.5
+@@@s=tr.transform(b,e)
+    :::s is a string that can be used to compare [b:e) to others strings; §39.4.1
+@@@s=tr.transform_primary(b,e)
+    :::s is a string that can be used to compare [b:e) to others strings; ignore case; §39.4.1
+@@@s=tr.lookup_collatename(b,e)
+    :::s is the string name of the collating element named [b:e) or the empty string
+@@@m=tr.lookup_classname(b,e,ign)
+    :::m is the string name of the classification mask for the character classification named [b:e); ignore case if ign==true
+@@@m=tr.lookup_classname(b,e)
+    :::m=tr.lookup_classname(b,e ,false)
+@@@tr.isctype(c,m)
+    :::Is c classified as an m? m is a class_type
+@@@i=tr.value(c,b)
+    :::i is the integer value represented by c in base b; b must be 8,10, or 16
+@@@loc2=tr.imbue(loc)
+    :::Set tr’s locale to loc;loc2 is tr’s previous locale
+@@@loc=tr.getloc()
+    :::loc is tr’s locale
+
+A transform is used to generate strings for fast comparisons in pattern-matching implementations.
+A classification name is one of the character classifications listed in §37.1.1, such as alpha, s, and xdigit.
+
+
+
+
+
+===
+pg1058[1073/1366]
+37.2.1 Match Results
+Results from a regular expression match are gathered in a match_results object which contains one or more sub_match objects:
+template<class Bi>
+class sub_match : public pair<Bi,Bi> {
+  public:
+    using value_type = typename iterator_traits<Bi>::value_type;
+    using difference_type = typename iterator_traits<Bi>::difference_type;
+    using iterator = Bi;
+    using string_type = basic_string<value_type>;
+    bool matched; //true if *this contains a match
+  //...
+};
+Bi must be a bidirectional iterator (§33.1.2). A sub_match can be seen as a pair of iterators into the string being matched.
+
+
+sub_match<Bi> Operations
+@@@sub_match sm {};
+    :::Default constructor: an empty sequence; constexpr
+@@@n=sm.length()
+    :::n is the number of characters matched
+@@@s=sm
+    :::Implicit conversion of a sub_match to a basic_string; s is a basic_string containing the characters matched
+@@@s=sm.str()
+    :::s is a basic_string containing the characters matched
+@@@x=sm.compare(x)
+    :::Lexicographical comparison:sm.str().compare(x); x can be a sub_match, a basic_string, or a C-style string
+@@@x==y
+    :::Is x equal to y? x and y can be a sub_match or a basic_string
+@@@x!=y
+    :::!(x==y)
+@@@x<y
+    :::x is lexicographically before y
+@@@x>y
+    :::y<x
+@@@x<=y
+    :::!(x>y)
+@@@x>=y
+    :::!(x<y)
+@@@sm.matched
+    :::true if sm contains a match;false otherwise
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+A match_results is a container of sub_matches:
+template<class Bi, class A = allocator<sub_match<Bi>>
+class match_results {
+  public:
+    using value_type = sub_match<Bi>;
+    using const_reference = const value_type&;
+    using reference = const_reference;
+    using const_iterator = /*implementation-defined*/;
+    using iterator = const_iterator;
+    using difference_type = typename iterator_traits<Bi>::difference_type;
+    using size_type = typename allocator_traits<A>::size_type;
+    using allocator_type = A;
+    using char_type = typename iterator_traits<Bi>::value_type;
+    using string_type = basic_string<char_type>;
+    ˜match_results(); //not virtual
+  //...
+};
+Bi must be a bidirectional iterator (§33.1.2).
+
+
+As for basic_string and basic_ostream, a few standard aliases are provided for the most common match_results:
+  using cmatch = match_results<const char∗>; //C-style string
+  using wcmatch = match_results<const wchar_t∗>; //wide C-style string
+  using smatch = match_results<string::const_iterator>; //string
+  using wsmatch = match_results<wstring::const_iterator>; //wstring
+
+A match_results provides access to its match string, its sub_matches, and the characters before and after the match:
+  input_string == m.prefix() ++ m[0] ++ m.suffix()
+  m[0] == m[1]...m[m.size()-1]
+
+A match_results provides a conventional set of operations:
+regex<C,Tr> Matches and Submatches (§iso.28.9, §iso.28.10)
+@@@match_results m {};
+    :::Default constructor: use allocator_type{}
+@@@match_results m {a};
+    :::Use allocator a; explicit
+@@@match_results m {m2};
+    :::Copy and move constructor
+@@@m2=m
+    :::Copy assignment
+@@@m2=move(m)
+    :::Move assignment
+@@@m.˜match_results()
+    :::Destructor: release all resources
+@@@m.ready()
+    :::Does m hold a complete match?
+@@@n=m.size()
+    :::n−1 is the number of subexpressions in m;n==0 if there was no match
+@@@n=m.max_size()
+    :::n is the largest possible number of sub_matches form
+@@@m.empty()
+    :::m.size()==0?
+@@@r=m[i]
+    :::r is a const reference to the ith sub_match of m; m[0] represents the complete match; if i>= size(),m[i] refers to a sub_match representing an unmatched subexpression.
+@@@n=m.length(i)
+    :::n=m[i].length(); the number of characters of m[i]
+@@@n=m.length()
+    :::n=m.length(0)
+@@@pos=m.position(i)
+    :::pos=m[i].first; the first character of m[i]
+@@@pos=m.position()
+    :::pos=position(0)
+@@@s=m.str(i)
+    :::s=m[i].str(); a string representation of m[i]
+@@@s=m.str()
+    :::s=m.str(0)
+@@@sm=m.prefix()
+    :::sm is a sub_match representing the characters not matched by m in the input string coming before the match
+@@@sm=m.suffix()
+    :::sm is a sub_match representing the characters not matched by m in the input string coming after the match
+
+regex<C,Tr> Matches and Submatches (continued)(§iso.28.9, §iso.28.10)
+p=m.begin() p points to the first sub_match of m
+p=m.end() p points to the one-beyond-the-last sub_match of m
+p=m.cbegin() p points to the first sub_match of m(const iterator)
+p=m.cend() p points to the one-beyond-the-last sub_match of m(const iterator)
+a=m.get_allocator() a is m’s allocator
+m.swap(m2) Exchange the states of m and m2
+m==m2 Are the values of sub_matches of m and m2 equal?
+m!=m2 !(m==m2)
+
+We can subscript a regex_match to access a sub_match, for example,m[i]. If a subscript,i, refers to a nonexistent sub_match, the result of m[i] represents an unmatched sub_match. For example:
+void test()
+{
+  regex pat ("(AAAA)(BBB)?");
+  string s = "AAAA";
+  smatch m;
+  regex_search(s,m,pat);
+  cout << boolalpha;
+  cout << m[0].matched << '\n';//true: we found a match
+  cout << m[1].matched << '\n';//true: there was a first sub_match
+  cout << m[2].matched << '\n';//false: no second sub_match
+  cout << m[3].matched << '\n';//false: there couldn’t be a third sub_match for pat
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+37.2.2 Formatting
+In regex_replace(), formatting is done using a format() function:
+regex<C,Tr> Formatting (§iso.28.10.5)
+Formatting is controlled by match_flag_typeoptions
+@@@out=m.format(out,b,e,flags)
+    :::Copy [b:e) to out; substituting submatches from m for format characters
+@@@out=m.format(out,b,e)
+    :::out=m.format(out,b,e ,regex_constants::format_default)
+@@@out=m.format(out,fmt,flags)
+    :::out=m.format(out,begin(fmt),end(fmt),flags); fmt can be a basic_string or a C-style string
+@@@out=m.format(out,fmt)
+    :::out=m.format(out,fmt,regex_constants::format_default)
+@@@s=m.format(fmt,flags)
+    :::Construct s as a copy of fmt; substituting submatches fromm for format characters; fmt can be a basic_string or a C-style string
+@@@s=m.format(fmt)
+    :::s=m.format(fmt,regex_constants::format_default)
+
+
+Formats can contain formatting characters:
+Format Substitution Notation
+@@@$&
+    :::The match
+@@@$‘
+    :::The prefix
+@@@$’
+    :::The suffix
+@@@$i
+    :::The ith submatch, e.g.,$1
+@@@$ii
+    :::The iith submatch, e.g.,$12
+@@@$$
+    :::Not a match, the $ character
+
+For an example, see §37.3.3.
+The details of formatting done by format() are controlled by a set of options (flags):
+regex<C,Tr>Formatting Options (regex_constants::match_flag_type; §iso.28.5.2)
+@@@format_default
+    :::Use ECMAScript (ECMA-262) rules (§iso.28.13)
+@@@format_sed
+    :::Use POSIX sed notation
+@@@format_no_copy
+    :::Copy only matches
+@@@format_first_only
+    :::Only the first occurrence of the regular expression is replaced
+
+
+
+
+
+
+
+37.3 Regular Expression Functions
+The functions for applying regular expression patterns to data are
+    regex_search()for searching in a sequence of characters
+    ,regex_match()for matching a fixed-length sequence of characters
+    , and regex_replace()for doing replacement of patterns.
+
+The details of matching are controlled by a set of options (flags):
+regex<C,Tr>Matching Options (regex_constants::match_flag_type; §iso.28.5.2)
+@@@match_not_bol
+    :::The character ˆ is not considered to mean ‘‘beginning of line’’
+@@@match_not_eol
+    :::The character $ is not considered to mean ‘‘end of line’’
+@@@match_not_bow
+    :::\b does not match the subsequence [first,first)
+@@@match_not_eow
+    :::\b does not match the subsequence [last,last)
+@@@match_any
+    :::If more than one match is possible, then any match is acceptable
+@@@match_not_null
+    :::Do not match an empty sequence
+@@@match_continuous
+    :::Match only a subsequence that begins at first
+@@@match_prev_avail
+    :::(−−first) is a valid iterator position
+
+
+
+pg1062[1077/1366]
+
+
+37.3.1 regex_match()
+To look for a pattern matching a whole sequence with a known length, such as a line of text, use regex_match():
+Regular Expression Matching (§iso.28.11.2)
+Matching is controlled by match_flag_type options (§37.3)
+@@@regex_match(b,e ,m,pat,flags)
+    :::Does the input [b:e) match the regex pattern pat? place the result in match_results m; use options flags
+@@@regex_match(b,e ,m,pat)
+    :::regex_match(b,e ,m,pat,regex_constants::match_default)
+@@@regex_match(b,e ,pat,flags)
+    :::Does the input [b:e) match the regex pattern pat? use options flags
+@@@regex_match(b,e ,pat)
+    :::regex_match(b,e ,pat,regex_constants::match_default)
+@@@regex_match(x,m,pat,flags)
+    :::Does the input x match the regex pattern pat?  x can be a basic_string or a C-style string; place the result in match_results m; use options flags
+@@@regex_match(x,m,pat)
+    ::: regex_match(x,m,pat,regex_constants::match_default)
+@@@regex_match(x,pat,flags)
+    :::Does the input x match the regex pattern pat? x can be a basic_string or a C-style string; use options flags
+@@@regex_match(x,pat)
+    ::: regex_match(x,pat,regex_constants::match_default)
+
+
+
+
+
+
+
+37.3.2 regex_search()
+To look for a pattern in a part of a sequence, such as a file, use regex_search():
+Regular Expression Searching (§iso.28.11.3)
+Matching is controlled by match_flag_type options (§37.3)
+@@@regex_search(b,e ,m,pat,flags)
+    :::Does the input [b:e) contain a match for the regex pattern pat? place the result in match_results m; use options flags
+@@@regex_search(b,e ,m,pat)
+    :::regex_search(b,e ,m,regex_constants::match_default)
+@@@regex_search(b,e ,pat,flags)
+    :::Does the input [b:e) contain a match for the the regex pattern pat? use options flags
+@@@regex_search(b,e ,pat)
+    :::regex_search(b,e ,pat,regex_constants::match_default)
+@@@regex_search(x,m,pat,flags)
+    :::Does the input x contain a match for the regex pattern pat? x can be a basic_string or a C-style string; place the result in match_results m; use options flags
+@@@regex_search(x,m,pat)
+    ::: regex_search(x,m,pat,regex_constants::match_default)
+@@@regex_search(x,pat,flags)
+    :::Does the input x contain a match for the regex pattern pat? x can be a basic_string or a C-style string; use options flags
+@@@regex_search(x,pat)
+    ::: regex_search(x,pat,regex_constants::match_default)
+
+
+
+
+
+37.3.3 regex_replace()
+To make simple substitutions of a pattern in a part of a sequence, such as a file, use regex_replace():
+Regular Expression Replacement (§iso.28.11.4)
+Matching is controlled by match_flag_type options (§37.3)
+out=regex_replace(out,b,e ,pat,fmt,flags)Copy [b:e) to out, searching for the regex pattern pat; when a match for pat is found, copy it to out using the format fmt controlled by flags; fmt can be a basic_string or a C-style string
+out=regex_replace(out,b,e ,pat,fmt)out=regex_replace(out,b,e ,pat,fmt, regex_constants::match_defaults)
+s=regex_replace(x,pat,fmt,flags)Copy x to s, searching for the regex pattern pat; when a match for pat is found copy it to s using the format fmt controlled by flags; x can be a basic_string or a C-style string; fmt can be a basic_string or a C-style string
+s=regex_replace(x,pat,fmt) s=regex_replace(x,pat,fmt, regex_constants::match_defaults)
+
+
+
+Copying a format is done using the regex’s format()(§37.2.2) with the "$" prefix notation, for example, "$&" for the match and "$2" for the second submatch.
+
+
+
+By default,regex_match() copies unmatched characters to its output.
+  To eliminate those, we can use the format_no_copy option (§37.2.2):
+    cout << regex_replace(input,pat,format,regex_constants::format_no_copy);
+
+
+
+
+
+
+
+===
+pg1052[1067/1366]
+37.1.1 Regular Expression Notation
+The regex library can recognize several variants of the notation for regular expressions (§37.2).
+    Here, I first present the default notation used, a variant of the ECMA standard used for ECMAScript (more commonly known as JavaScript).
+
+The syntax of regular expressions is based on characters with special meaning:
+Regular Expression Special Characters
+. Any single character (a ‘‘wildcard’’)
+[ Begin character class
+] End character class
+{ Begin count
+} End count
+( Begin grouping
+) End grouping
+\ Next character has a special meaning
+∗ Zero or more
++ One or more
+? Optional (zero or one)
+| Alternative (or)
+ˆ Start of line; negation
+$ End of line
+
+
+A pattern can be optional or repeated (the default is exactly once) by adding a suffix:
+Repetition
+{ n } Exactly n times
+{ n, } n or more times
+{n,m} At least n and at most m times
+∗ Zero or more, that is,{0,}
++ One or more, that is,{1,}
+? Optional (zero or one), that is{0,1}
+
+A suffix "?" after any of the repetition notations makes the pattern matcher ‘‘lazy’’ or ‘‘non-greedy.’’
+  That is, when looking for a pattern, it will look for the shortest match rather than the longest.
+  By default, the pattern matcher always looks for the longest match (similar to C++’s Max Munch rule; §10.3).
+
+
+
+
+
+The most common character classifications have names:
+Character Classes
+@@@alnum
+    :::Any alphanumeric character
+@@@alpha
+    :::Any alphabetic character
+@@@blank
+    :::Any whitespace character that is not a line separator
+@@@cntrl
+    :::Any control character
+@@@d
+    :::Any decimal digit
+@@@digit
+    :::Any decimal digit
+@@@graph
+    :::Any graphical character
+@@@lower
+    :::Any lowercase character
+@@@print
+    :::Any printable character
+@@@punct
+    :::Any punctuation character
+@@@s
+    :::Any whitespace character
+@@@space
+    :::Any whitespace character
+@@@upper
+    :::Any uppercase character
+@@@w
+    :::Any word character (alphanumeric characters plus the underscore)
+@@@xdigit
+    :::Any hexadecimal digit character
+
+
+Several character classes are supported by shorthand notation:
+Character Class Abbreviations
+@@@\d
+    :::A decimal digit === [[:digit:]]
+@@@\s
+    :::A space (space, tab, etc.) === [[:space:]]
+@@@\w
+    :::A letter (a-z) or digit (0-9) or underscore (_) === [_[:alnum:]]
+@@@\D
+    :::Not\d  === [ˆ[:digit:]]
+@@@\S
+    :::Not\s  === [ˆ[:space:]]
+@@@\W
+    :::Not\w  === [ˆ_[:alnum:]]
+
+In addition, languages supporting regular expressions often provide:
+Nonstandard (but Common) Character Class Abbreviations
+@@@\l
+    :::A lowercase character === [[:lower:]]
+@@@\u
+    :::An uppercase character === [[:upper:]]
+@@@\L
+    :::Not\l  === [ˆ[:lower:]]
+@@@\U
+    :::Not\u  === [ˆ[:upper:]]
+
+
+bool is_identifier(const string& s)
+{
+  regex pat {"[_[:alpha:]]\\w∗"};
+  return regex_match(s,pat);
+}
+
+
+
+
+
+
+
+
+
+Note the doubling of the backslash to include a backslash in an ordinary string literal. As usual, backslashes can also denote special characters:
+Special Characters (§iso.2.14.3, §6.2.3.2)
+@@@\n
+    :::Newline
+@@@\t
+    :::Tab
+@@@\\
+    :::One backslash
+@@@\xhh
+    :::Unicode characters expressed using two hexadecimal digits
+@@@\uhhhh
+    :::Unicode characters expressed using four hexadecimal digits
+
+
+To add to the opportunities for confusion, two further logically different uses of the backslash are provided:
+Special Characters (§iso.28.5.2, §37.2.2)
+@@@\b
+    :::The first or last character of a word (a ‘‘boundary character’’)
+@@@\B
+    :::Not a \b
+@@@\i
+    :::The ith sub_match in this pattern
+
+
+
+
+
+
+
+
+
+
+#group
+
+A group(a subpattern) potentially to be represented by a sub_match is delimited by parentheses.
+  If you need parentheses that should not define a subpattern, use "(?" rather than plain "(".
+  For example:
+      (\s|:|,)∗(\d∗)//spaces, colons, and/or commas followed by a number
+
+    Assuming that we were not interested in the characters before the number (presumably separators), we could write:
+      (?\s|:|,)∗(\d∗)//spaces, colons, and/or commas followed by a number
+
+    This would save the regular expression engine from having to store the first characters: the "(?" variant has only one subpattern.
+
+Regular Expression Grouping Examples
+\d∗\s\w+
+    No groups (subpatterns)
+(\d∗)\s(\w+)
+    Two groups
+(\d∗)(\s(\w+))+
+    Two groups (groups do not nest)
+(\s∗\w∗)+
+    One group, but one or more subpatterns; only the last subpattern is saved as as ub_match
+<(.∗?)>(.∗?)</\1>
+    Three groups; the \1 means ‘‘same as group 1’’
+
+That last pattern is useful for parsing XML. It finds tag/end-of-tag markers. Note that I used a non-greedy match (a lazy match), ".∗?", for the subpattern between the tag and the end tag.
+  Had I used plain.∗, this input would have caused a problem:
+    "Always look for the <b>bright</b> side of <b>life</b>"
+
+
+
+It is possible to vary details of the regular expression notation using options (§37.2).
+  For example, if regex_constants::grep is used, "a?x:y" is a sequence of five ordinary characters because "?" does not mean ‘‘optional’’ in grep.
+
+
+
+
+
+
+
+
+
+
+37.2 regex
+A regular expression is a matching engine (usually a state machine) constructed from a sequence of characters, such as a string:
+template<class C, class traits = regex_traits<C>>
+class basic_regex {
+  public:
+    using value_type = C;
+    using traits_type = traits;
+    using string_type = typename traits::string_type;
+    using flag_type = regex_constants::syntax_option_type;
+    using locale_type = typename traits::locale_type;
+
+    ˜basic_regex(); //not virtual; basic_regex is not meant to be used as a base class
+  //...
+};
+The regex_traits are presented in §37.5.
+Like string, regex is an alias for the version that uses chars:
+using regex = basic_regex<char>;
+
+
+//////(ECMAScript|basic|extended|awk|grep|egrep)+icase+nosubs+collate+optimize
+///default=regex_constants::ECMAScript
+///
+The meaning of regular expression patterns is controlled by syntax_option_type constants defined identically in regex_constants and regex:
+basic_regex<C,Tr>Member Constants (syntax_option_type, §iso.28.5.1)
+@@@icase
+    :::No case is used when matching
+@@@nosubs
+    :::No subexpression matches are stored in the match results
+@@@optimize
+    :::Prefer fast matching to fast regular expression object construction
+@@@collate
+    :::Character ranges of the form "[a−b]" are locale sensitive
+@@@ECMAScript
+    :::The regular expression grammar is the one used by ECMAScript in ECMA-262 (with minor modifications; §iso.28.13)
+@@@basic
+    :::The regular expression grammar is the one used by basic regular expressions in POSIX
+@@@extended
+    :::The regular expression grammar is the one used by extended regular expressions in POSIX
+@@@awk
+    :::The regular expression grammar is the one used by POSIX awk
+@@@grep
+    :::The regular expression grammar is the one used by POSIX grep
+@@@egrep
+    :::The regular expression grammar is the one used by POSIX grep-E
+
+Use the default unless you have a good reason not to. Good reasons include a large body of existing regular expressions in a non-default notation.
+
+
+A regex object can be constructed from a string or similar sequence of characters:
+basic_regex<C,Tr>Constructors (§iso.28.8.2)
+@@@basic_regex r {};
+    :::Default constructor: an empty pattern; flags set to regex_constants::ECMAScript
+@@@basic_regex r {x, flags};
+    :::x can be a basic_regex, a string, a C-style string, or an initializer_list<value_type> with the notation defined by flags; explicit
+@@@basic_regex r {x};
+    :::
+@@@basic_regex r {p,n, flags};
+    :::
+@@@basic_regex r {p,n};
+    :::
+@@@basic_regex r {b,e , flags};
+    :::
+@@@basic_regex r {b,e};
+    :::
+
+The main use of regex is through the search, match, and replace functions (§37.3), but there are also a few operations on regex itself:
+basic_regex<C,Tr>Operations (§iso.28.8)
+@@@r=x
+    :::Copy assignment: x can be a basic_regex, a C-style string, a basic_string, or an initializer_list<value_type>
+@@@r=move(r2)
+    :::Move assignment
+@@@r=r.assign(r2)
+    :::Copy or move
+@@@r=r.assign(x, flags)
+    :::Copy or move; set r’s flags to flags x can be a basic_string, a C-style string, or an initializer_list<value_type>
+@@@r=r.assign(x)
+    :::r=r.assign(x,regex_constants::ECMAScript)
+@@@r=r.assign(p,n, flags)
+    :::Set r’s pattern to [p:p+n) and r’s flags to flags
+@@@r=r.assign(b,e , flags)
+    :::Set r’s pattern to [b:e) and r’s flags to flags
+@@@r=r.assign(b,e)
+    :::r=r.assign(b,e ,regex_constants::ECMAScript)
+@@@n=r.mark_count()
+    :::n is the number of marked subexpressions in r
+@@@x=r.flags()
+    :::x is r’s flags
+@@@loc2=r.imbue(loc)
+    :::r gets the locale loc;loc2 is r’s previous locale
+@@@loc=r.getloc()
+    :::loc is r’slocale
+@@@r.swap(r2)
+    :::Exchange values of r and r2
+
+
+
+
+
+
+
+===
+pg1051[1066/1366]
+<regex>
+
+37.1 Regular Expressions
+In<regex>, the standard library provides regular expressions:
+•regex_match():
+    Match a regular expression against a string (of known size).
+•regex_search():
+    Search for a string that matches a regular expression in an (arbitrarily long) stream of data.
+•regex_replace():
+    Search for strings that match a regular expression in an (arbitrarily long) stream of data and replace them.
+•regex_iterator:
+    iterate over matches and submatches.
+•regex_token_iterator:
+    iterate over non-matches.
+
+
+
+The result of a regex_search()is a collection of matches, typically represented as an smatch:
+void use()
+{
+    ifstream in("file.txt"); //input file
+    if (!in) cerr << "no file\n";
+
+    regex pat {R"(\w{2}\s∗\d{5}(−\d{4})?)"}; //U.S. postal code pattern
+
+    int lineno = 0;
+    for (string line; getline(in,line);) {
+        ++lineno;
+        smatch matches; //matched strings go here
+        if (regex_search(line , matches, pat)) {
+            cout << lineno << ": " << matches[0] << '\n';//the complete match
+            if (1<matches.size() && matches[1].matched)
+                cout << "\t: " << matches[1] << '\n';//submatch
+        }
+    }
+}
+This function reads a file looking for U.S. postal codes, such as "TX77845" and "DC 20500−0001".
+  An smatch type is a container of regex results.
+    Here, matches[0] is the whole pattern and matches[1] is the optional four-digit subpattern.
+
+I used a raw string (§7.3.2.1) which is particularly suitable for regular expressions because they tend to contain a lot of backslashes. Had I used a conventional string, the pattern definition would have been:
+  regex pat {"\\w{2}\\s∗\\d{5}(−\\d{4})?"}; //U.S. postal code pattern
+
+
+
+
+===
+pg1048[1063/1366]
+string.substr
+
+basic_string<C,Tr,A>Substrings (§iso.21.4.7.8)
+s2=s.substr(pos,n) s2=basic_string(&s[pos],m) where m=min(s.size()−n,n)
+s2=s.substr(pos) s2=s.substr(pos,string::npos)
+s2=s.substr() s2=s.substr(0,string::npos)
+
+
+===
+pg1043[1058/1366]
+36.3.5 Numeric Conversions
+<string>
+  only for string or wstring(note: not basic_string<C,Tr,A>)
+
+Numeric Conversions (§iso.21.5) (continues)
+  # s can be a string or a wstring
+@@@x=stoi(s,p,b)
+    :::String to int;x is an integer; read starting with s[0] if p!=nullptr,∗p is set to the number of characters used for x; b is the base of the number (between 2 and 36, inclusive)
+@@@x=stoi(s,p)
+    ::: x=stoi(s,p,10); decimal numbers
+@@@x=stoi(s)
+    :::x=stoi(s,nullptr,10); decimal numbers; don’t report the character count
+@@@x=stol(s,p,b)
+    :::String to long
+@@@x=stoul(s,p,b)
+    :::String to unsigned long
+@@@x=stoll(s,p,b)
+    :::String to long long
+@@@x=stoull(s,p,b)
+    :::String to unsigned long long
+@@@x=stof(s,p)
+    :::String to float
+@@@x=stod(s,p)
+    :::String to double
+@@@x=stold(s,p)
+    :::String to long double
+@@@s=to_string(x)
+    ::: s is a string representation of x;x must be an integer or floating-point value
+@@@ws=to_wstring(x)
+    ::: s is a wstring representation of x;x must be an integer or floating-point value
+
+The sto∗ functions encode their target type in their names. This makes them unsuitable for generic code where the target can be a template parameter. In such cases, consider to<X>(§25.2.5.1).
+  // user-defined?
+
+
+
+
+
+===
+pg1034[1049/1366]
+36.2.1 Classification Functions
+<cctype>
+<cwctype>
+  equivalent functions for wide characters are provided in <cwctype>.
+<locale>
+  The character classification functions are sensitive to the"C"locale (§39.5.1, §39.5.2). Equivalent functions for other locales are provided in<locale>(§39.5.1).
+
+
+Character Classification
+isspace(c) Is c whitespace (space' ', horizontal tab'\t', newline'\n', vertical tab'\v', form feed'\f', carriage return'\r')?
+@@@isalpha(c)
+    :::Is c a letter ('a'..'z','A'..'Z')? note: not underscore'_'
+@@@isdigit(c)
+    :::Is c a decimal digit ('0'..'9')?
+@@@isxdigit(c)
+    :::Is c hexadecimal digit (decimal digit or 'a'..'f' or 'A'..'F')?
+@@@isupper(c)
+    :::Is c an uppercase letter?
+@@@islower(c)
+    :::Is c a lowercase letter?
+@@@isalnum(c)
+    ::: isalpha(c) or isdigit(c)
+@@@iscntrl(c)
+    :::Is c a control character (ASCII 0..31 and 127)?
+@@@ispunct(c)
+    :::Is c not a letter, digit, whitespace, or invisible control character?
+@@@isprint(c)
+    :::Is c printable (ASCII' '..'˜')?
+@@@isgraph(c)
+    ::: isalpha(c) or isdigit(c) or ispunct(c)? note: not space
+
+
+In addition, the standard library provides two useful functions for removing case differences:
+Upper- and Lowercase
+@@@toupper(c)
+    :::c or c’s uppercase equivalent
+@@@tolower(c)
+    :::c or c’s lowercase equivalent
+
+
+
+
+One reason that these character classification functions are useful is that character classification can be trickier than it might appear. For example, a novice might write:
+    if ('a'<ch && ch<'z') //a character
+This is more verbose (and most likely slower) than:
+    if (islower(ch)) //a low ercase character
+Also, there is no guarantee that the characters are contiguous in a code space. Furthermore, the use of standard character classifications are far easier to convert to another locale:
+    if (islower,danish) //a low ercase character in Danish
+        //(assuming ‘‘danish’’ is the name for a Danish locale)
+Note that Danish has three more lowercase characters than English, so that the initial explicit test using'a'and'z'would be flat wrong.
+
+
+
+===
+pg1033[1048/1366]
+
+<cctype>(§36.2)
+  character classification operations
+<string>(§36.3)
+  strings with associated operations
+<regex>(Chapter 37)
+  regular expression matching
+<cstring>(§43.4)
+  support for C-style strings
+<locale> <clocale> <codecvt>
+  Handling of different character sets, encodings, and conventions (locales) is discussed in Chapter 39.
+
+
+
+===
+pg1030[1045/1366]
+<typeindex>
+  #<typeinfo>
+35.5.4 Comparing and Hashing type_info
+type_index is created from a type_info(§22.5), specifically to allow such comparison and hashing.
+type_index Operations (§iso.20.13)
+  ##tip is a pointer to the type_info represented by a type_index
+@@@type_index ti {tinf};
+    :::ti represents the type_info tinf; noexcept
+@@@ti==ti2
+    :::ti and ti2 represent the same type_info:∗ti.tip==∗ti2.tip); noexcept
+@@@ti!=ti2
+    :::!(ti==ti2); noexcept
+@@@ti<ti2
+    :::ti.tip−>before(ti2.tip); noexcept
+@@@ti<=ti2
+    :::!ti2.tip−>before(ti.tip); noexcept
+@@@ti>ti2
+    :::ti2.tip−>before(ti.tip); noexcept
+@@@ti>=ti2
+    :::!ti.tip−>before(ti2.tip); noexcept
+@@@n=ti.hash_code()
+    :::n=ti.tip−>hash_code()
+@@@p=ti.name()
+    :::p = ti.tip−>name()
+@@@hash<type_index>
+    :::A specialization of hash(§31.4.3.4)
+
+
+
+unordered_map<type_index,type_info∗> types;
+//...
+types[type_index{something}] = &typeid(something);
+
+
+
+
+===
+pg1029[1044/1366]2
+<utility>
+using namespace std::rel_ops;
+
+35.5.3 Relational Operators
+Relational Operators instd::rel_ops(§iso.20.2.1)
+@@@x!=y
+    :::!(x==y)
+@@@x>y
+    :::y<x
+@@@x<=y
+    :::!(y<x)
+@@@x>=y
+    :::!(x<y)
+This requires that the programmer has made sure that x==y and x<y work.
+
+
+
+
+===
+pg1029[1044/1366]
+<utility>
+35.5.2 swap()
+Other Transformations (§iso.20.2.2)
+swap(x,y) Exchange the values of x and y; x and y are passed as non-const references; noexcept if x’s and y’s copy operations are noexcept
+swap(a1n,a2n) a1n and a2n are passed as references to arrays:T(&)[N]; noexcept if ∗a1n and ∗a2n’s copy operations are noexcept
+
+
+The relatively obvious implementation swap() is:
+template<typename T>
+void swap(T& a, T& b) noexcept(Is_nothrow_move_constructible<T>() && Is_nothrow_move_assignable<T>())
+{
+  T tmp {move(a)};
+  a = move(b);
+  b = move(tmp);
+}
+
+
+This implies that swap() cannot be used to exchange rvalues:
+  vector<int> v1 {1,2,3,4};
+  swap(v,vecor<int>{}); //error : second argument is an rvalue
+  v.clear(); //clearer (less obscure)
+
+
+===
+pg1028[1043/1366]
+<utility>
+35.5.1 move() and forward()
+Other Transformations (§iso.20.9.7.6)
+x2=forward(x) x2 is an rvalue; x may not be an lvalue; noexcept
+x2=move(x) x2 is an rvalue; noexcept
+x2=move_if_noexcept(x) If x can be moved, x2=move(x); otherwise x2=x; noexcept
+
+
+
+
+A move()is simply a cast to an rvalue:
+template<typename T>
+Remove_reference<T>&& move(T&& t) noexcept
+{
+  return static_cast<Remove_reference<T>&&>(t);
+}
+In my opinion,move()should have been calledrvalue()
+    , because it doesn’t actually move anything
+    . Instead, it produces an rvalue for its argument, so that the object referred to can be moved from.
+A move() is used to tell the compiler that an object will not be used anymore in a context, so that its value can be moved and an empty object left behind. The simplest example is the implementation of swap()(§35.5.2).
+
+
+
+A forward() produces an rvalue from an rvalue only:
+template<typename T>
+T&& forward(Remove_reference<T>& t) noexcept
+{
+  return static_cast<T&&>(t);
+}
+template<typename T>
+T&& forward(Remove_reference<T>&& t) noexcept;
+{
+  static_assert(!Is_lvalue_reference<T>,"forward of lvalue");
+  return static_cast<T&&>(t);
+}
+This pair of forward() functions are meant always to be available together, and selection between them should be done by overload resolution. In that case, any lvalue goes to the first version and every rvalue to the second. For example:
+  int i = 7;
+  forward(i); //call first version
+  forward(7); //call second version
+The assert is there for programmer who are too clever for their own good and calls the second version with an explicit template argument and an lvalue.
+
+The archetypical use of forward()is for ‘‘perfect forwarding’’ of an argument from one function to another (§23.5.2.1, §28.6.3). The standard-library make_shared<T>(x)(§34.3.2) is a good example.
+
+
+
+
+
+Use move() when the intent is to ‘‘steal the representation’’ of an object with a move operation
+    , and use forward() for forwarding.
+  Thus, forward(x) is safe
+    , whereas move(x) marks x for destruction so that move(x) should be used with care.
+    The only safe use of an x after a move(x) is destruction or as a target for an assignment.
+  Obviously a particular type could provide further guarantees, and ideally the class’s invariant is left intact. However, don’t rely on that unless you really know.
+
+
+
+===
+pg1018[1033/1366]
+35.4 Type Functions
+<type_traits>
+  type functions (§28.2) to determine properties of types (type traits; §35.4.1) and to generate new types from existing ones (type generators; §35.4.2).
+
+# ::value
+The primary type predicates test fundamental properties of a type:
+Primary Type Predicates (§iso.20.9.4.1)
+@@@is_void<X>
+    :::Is X void?
+@@@is_integral<X>
+    :::Is X an integral type?
+@@@is_floating_point<X>
+    :::Is X a floating-point type?
+@@@is_array<X>
+    :::Is X a built-in array?
+@@@is_pointer<X>
+    :::Is X a pointer (not including pointers to members)?
+@@@is_lvalue_reference<X>
+    :::Is X an lvalue reference?
+@@@is_rvalue_reference<X>
+    :::Is X an rvalue reference?
+@@@is_member_object_pointer<X>
+    :::Is X a pointer to a non-static data member?
+@@@is_member_function_pointer<X>
+    :::Is X a pointer to a non-static member function?
+@@@is_enum<X>
+    :::Is X an enum(either plain of class enum)?
+@@@is_union<X>
+    :::Is X a union?
+@@@is_class<X>
+    :::Is X a class(including structs, but not enums)?
+@@@is_function<X>
+    :::Is X a function?
+
+
+
+
+
+
+These composite type predicates simply offer notational convenience.
+Composite Type Predicates (§iso.20.9.4.2)
+@@@is_reference<X>
+    :::Is x a reference (lvalue or rvalue reference)?
+@@@is_arithmetic<X>
+    :::Is x an arithmetic type (integral or floating-point; §6.2.1)?
+@@@is_fundamental<X>
+    :::Is x a fundamental type (§6.2.1)?
+@@@is_object<X>
+    :::Is x an object type (not a function)?
+@@@is_scalar<X>
+    :::Is x a scalar type (not a class or a function)?
+@@@is_compound<X>
+    :::Is x a compound type (!is_fundamental<X>)?
+@@@is_member_pointer<X>
+    :::Is x a pointer to a non-static data or function member?
+
+
+
+
+
+
+type property predicates provide tests for fundamental aspects of a type:
+Type property predicates (§iso.20.9.4.3)
+@@@is_const<X>
+    :::Is X a const?
+@@@is_volatile<X>
+    :::Is X a volatile(§41.4)?
+@@@is_trivial<X>
+    :::Is X a trivial type (§8.2.6)?
+@@@is_trivially_copyable<X>
+    :::Can X be copied, moved, and destroyed as a simple collection of bits (§8.2.6)?
+@@@is_standard_layout<X>
+    :::Is X a standard-layout type (§8.2.6)?
+@@@is_pod<X>
+    :::Is X a POD (§8.2.6)?
+@@@is_literal_type<X>
+    :::Does X have a constexpr constructor (§10.4.3)?
+@@@is_empty<X>
+    :::Does X have a member that requires space in an object?
+@@@is_polymorphic<X>
+    :::Does X have a virtual function?
+@@@is_abstract<X>
+    :::Does X have a pure virtual function?
+@@@is_signed<X>
+    :::Is X an arithmetic type and signed?
+@@@is_unsigned<X>
+    :::Is X an arithmetic type and unsigned?
+@@@is_constructible<X,args>
+    :::Can an X be constructed from args?
+@@@is_default_constructible<X>
+    :::Can an X be constructed from {}?
+@@@is_copy_constructible<X>
+    :::Can an X be constructed from an X&?
+@@@is_move_constructible<X>
+    :::Can an X be constructed from an X&&?
+@@@is_assignable<X,Y>
+    :::Can a Y be assigned to an X?
+@@@is_copy_assignable<X>
+    :::Can an X& be assigned to an X?
+@@@is_move_assignable<X>
+    :::Can an X&& be assigned to an X?
+@@@is_destructible<X>
+    :::Can an X be destroyed (i.e.,˜X() has not been deleted)?
+
+@@@is_trivially_constructible<X,args>
+    :::Can X be constructed from args using only trivial operations?
+#below  §8.2.6
+@@@is_trivially_default_constructible<X>
+@@@is_trivially_copy_constructible<X>
+@@@is_trivially_move_constructible<X>
+@@@is_trivially_assignable<X,Y>
+@@@is_trivially_copy_assignable<X>
+@@@is_trivially_move_assignable<X>
+@@@is_trivially_destructible<X>
+
+@@@is_nothrow_constructible<X,args>
+    :::Can X be constructed from args using only noexcept operations?
+@@@is_nothrow_default_constructible<X>
+@@@is_nothrow_copy_constructible<X>
+@@@is_nothrow_move_constructible<X>
+@@@is_nothrow_assignable<X,Y>
+@@@is_nothrow_copy_assignable<X>
+@@@is_nothrow_move_assignable<X>
+@@@is_nothrow_destructible<X>
+@@@has_virtual_destructor<X>
+    :::Does X have a virtual destructor?
+
+
+
+
+
+
+
+
+Like sizeof(T), a property query returns a numeric value related to a type argument:
+# :: value
+Type Property Queries (§iso.20.9.5)
+@@@n=alignment_of<X>
+    :::n=alignof(X)
+@@@n=rank<X>
+    :::If X is an array,n is the number of dimensions; otherwise n==0
+@@@n=extent<X,N>
+    :::If X is an array,n is the number of elements in the Nth dimension; otherwise n==0
+@@@n=extent<X>
+    :::n=extent<X,0>
+
+
+
+
+
+The type relations are predicated on two types:
+Type Relations (§iso.20.9.6)
+@@@is_same<X,Y>
+    :::Is X the same type as Y?
+@@@is_base_of<X,Y>
+    :::Is X a base of Y?
+@@@is_convertible<X,Y>
+    :::Can an X be implicitly converted to a Y?
+
+
+
+35.4.2 Type Generators
+# ::type
+const and volatile Modification (§iso.20.9.7.1)
+@@@remove_const<X>
+    :::Like X, but with any top-level const removed
+@@@remove_volatile<X>
+    :::Like X, but with any top-level volatile removed
+@@@remove_cv<X>
+    :::Like X, but with any top-level const or volatile removed
+@@@add_const<X>
+    :::If X is a reference, function, or const, then X; otherwise const X
+@@@add_volatile<X>
+    :::If X is a reference, function, or volatile, then X; otherwise volatile X
+@@@add_cv<X>
+    :::Add const and volatile:add_const<typename add_volatile<T>::type>::type
+
+
+
+Reference Modification (§iso.20.9.7.2, §iso.20.9.7.6)
+@@@remove_reference<X>
+    :::If X is a reference type, the referred-to type; otherwise,X
+@@@add_lvalue_reference<X>
+    :::If X is an rvalue reference Y&&, Y&; otherwise, X&
+@@@add_rvalue_reference<X>
+    :::If X is a reference, X; otherwise, X&&(§7.7.3)
+@@@decay<X>
+    :::The type passed by value for a function argument of type X. The decay functions handles array decay as well as reference dereferencing.
+
+
+
+
+Sign Modification (§iso.20.9.7.3)
+@@@make_signed<X>
+    :::Remove any (explicit or implied) unsigned modifier and add signed; Xmust be an integral type (except bool or an enumeration)
+@@@make_unsigned<X>
+    :::Remove any (explicit or implied) signed modifier and add unsigned; Xmust be an integral type (except bool or an enumeration)
+
+
+
+
+Array Modification (§iso.20.9.7.4)
+@@@remove_extent<X>
+    :::If X is an array type, the element type; otherwise X
+@@@remove_all_extents<X>
+    :::If X is an array type, the base type (after removing all array modifiers); otherwise X
+
+
+
+
+Pointer Modification (§iso.20.9.7.5)
+@@@remove_pointer<X>
+    :::If X is a pointer type, the pointed-to type; otherwise X
+@@@add_pointer<X>
+    :::remove_reference<X>::type∗
+
+
+
+
+
+
+Alignments (§iso.20.9.7.6)
+@@@aligned_storage<n,a>
+    :::A POD type with size of at least n and whose alignment is a divisor of a
+@@@aligned_storage<n>
+    :::aligned_storage<n,def> where def is the largest alignment required for any object type,T, with sizeof(T)<=n
+@@@aligned_union<n,X...>
+    :::A POD type with size of at least n that can hold a union with members of type X
+
+The standard mentions this as a possible implementation of aligned_storage:
+template<std::size_t N, std::size_t A>
+struct aligned_storage {
+  using type = struct { alignas(A) unsigned char data[N]; };//N chars aligned to A (§6.2.9)
+};
+
+
+
+
+Other Transformations (§iso.20.9.7.6)
+@@@enable_if<b,X>
+    :::X if b==true; otherwise there is no member::type, leading to substitution failure (§23.5.3.2) for most uses
+@@@enable_if<b>
+    :::enable_if<b,void>
+@@@conditional<b,T,F>
+    :::T if b==true; otherwise F
+@@@common_type<X...>
+    :::The common type of all types of a parameter pack X; two types are common if they can be used as true and false types of a (?:)-expression
+@@@underlying_type<X>
+    :::X’s underlying type (§8.4); X must be an enumeration
+@@@result_of<FX>
+    :::The type of the result of F(X); FX must be a type F(X) where F is invoked with an argument list X
+
+
+
+template<typename ...T>
+struct common_type;
+
+template<typename T>
+struct common_type<T> {
+  using type = T;
+};
+
+template<typename T, typename U>
+struct common_type<T, U> {
+  using type = decltype(true ? declval<T>() : declval<U>());
+};
+
+template<typename T, typename U, typename ... V>
+struct common_type<T, U, V...> {
+  using type = typename common_type<typename common_type<T, U>::type , V...>::type;
+};
+
+
+
+
+Result_ofis used to extract the type of the result of a callable type:
+int ff(int) { return 2; }//function
+typedef bool (∗PF)(int); //pointer to function
+struct Fct {//function object
+double operator()(string);
+string operator()(int,int);
+};
+auto fx = [](char ch) { return tolower(ch); };//lambda
+Result_of<decltype(&ff)()> r1 = 7;//r1 is a int
+Result_of<PF(int)> r2 = true;//r2 is a bool
+Result_of<Fct(string)> r3 = 9.9;//r3 is a double
+Result_of<Fct(int,int)> r4 = "Hero"; //r4 is a string
+Result_of<decltype(fx)(char)> r5 = 'a';//r5 is a char
+
+Note that Result_of can distinguish between the two versions of Fct::operator()().
+Curiously enough, the same does not apply to nonmember functions. For example:
+int f();//function
+string f(int);
+Result_of<decltype(&f)()> r1 = 7;//error : no overload resolution for pointer to function
+Unfortunately, we don’t do overload resolution for pointers to functions, but why did I use Result_of in such a roundabout way, instead of:
+Result_of<ff> r1 = 7;
+    //error : no argument specification,
+    //and ff is a function rather than a type
+Result_of<ff()> r1 = 7;
+    //error : the argument to Result_of must be a type
+Result_of<decltype(f)()> r2 = 7;/
+    /error : decltype(f) is a function type
+    //rather than a pointer to function type
+Result_of<decltype(f)∗()> r3 = 7;//OK: r3 is an int
+Naturally, Result_of is usually found in templates where we can’t easily look up the answer in the program text. For example:
+template<typename F, typename A>
+auto temp(F f, A a) −> Result_of<F(A)>
+{
+  //...
+}
+void f4()
+{
+  temp(ff,1);
+  temp(fx,'a');
+  temp(Fct(),"Ulysses");
+}
+Note that the function ff is converted to a pointer function in the call, so the reliance on pointers to functions in Result_of isn’t as odd as it may seem at first.
+
+
+
+declval()(§iso.20.2.4)
+@@@declval<T>()
+    :::Returns an rvalue for T: typename add_rvalue_reference<T>::type; never use a return value of declval
+
+The declval() type function is unusual in the standard library because it is actually a function (without users needing to wrap it). It returns a value that must never be used. The intent is to use declval<X> as a type where the type of a variable of type X is needed.
+template<typename T, size_t N>
+void array<T,N> swap(array& y) noexcept(noexcept(swap(declval<T&>(), declval<T&>())))
+{
+  for (int i=0; i<a.size(); ++i)
+  swap((∗this)[i],a[i]);
+}
+
+
+
+
+===
+pg1017[1032/1366]
+35.3 Compile-Time Rational Arithmetic
+<ratio>
+  compile-time rational arithmetic
+
+template<intmax_t N, intmax_t D = 1>
+struct ratio {
+  static constexpr intmax_t num;
+  static constexpr intmax_t den;
+  using type = ratio<num,den>;
+};
+The basic idea is to encode the numerator and denominator of a rational number as (value) template arguments. The denominator must always be nonzero.
+
+
+
+ratio Arithmetic Operations (§iso.20.10.4)
+    z=ratio_add<x,y> #? :: type
+    z=ratio_subtract<x,y>
+    z=ratio_multiply<x,y>
+    z=ratio_divide<x,y>
+    ratio_equal<x,y> :: value
+    ratio_not_equal<x,y>
+    ratio_less<x,y>
+    ratio_less_equal<x,y>
+    ratio_not_equal<x,y>
+    ratio_greater<x,y>
+    ratio_greater_equal<x,y>
+
+
+
+using yocto = ratio<1,1000000000000000000000000>; //conditionally supported
+using zepto = ratio<1,1000000000000000000000>; //conditionally supported
+using atto= ratio<1,1000000000000000000>;
+using femto = ratio<1,1000000000000000>;
+using pico= ratio<1,1000000000000>;
+using nano= ratio<1,1000000000>;
+using micro= ratio<1,1000000>;
+using milli= ratio<1,1000>;
+using centi= ratio<1,100>;
+using deci= ratio<1,10>;
+using deca= ratio<10,1>;
+using hecto= ratio<100,1>;
+using kilo= ratio<1000,1>;
+using mega= ratio<1000000,1>;
+using giga= ratio<1000000000,1>;
+using tera= ratio<1000000000000,1>;
+using peta= ratio<1000000000000000,1>;
+using exa = ratio<1000000000000000000,1>;
+using zetta = ratio<1000000000000000000000,1>; //conditionally supported
+using yotta = ratio<1000000000000000000000000,1>; //conditionally supported
+
+
+===
+pg1009[1024/1366]
+<chrono>
+using namespace std::chrono;
+duration
+time_point
+
+three clocks:
+  system_clock
+  steady_clock
+  high_resolution_clock
+
+steady_clock::time_point t = steady_clock::now();
+//... do something ...
+steady_clock::duration d = steady_clock::now()−t; //something took d time units
+
+A clock returns a time_point, and a durationis the difference between two time_points from the same clock.
+
+auto t = steady_clock::now();
+//... do something ...
+auto d = steady_clock::now()−t; //something took d time units
+cout << "something took " << duration_cast<milliseconds>(d).count() << "ms";//print as milliseconds
+
+
+template<typename Rep, typename Period = ratio<1>>
+class duration {
+  public:
+    using rep = Rep;
+    using period = Period;
+  //...
+};
+
+period is a unit system
+pg1013[1028/1366]
+The standard library provides some convenience aliases using the SI units from<ratio>(§35.3):
+  using nanoseconds = duration<si64,nano>;
+  using microseconds = duration<si55,micro>;
+  using milliseconds = duration<si45,milli>;
+  using seconds = duration<si35>;
+  using minutes = duration<si29,ratio<60>>;
+  using hours = duration<si23,ratio<3600>>;
+Here,siN means ‘‘an implementation-defined signed integer type of at least N bits.’’
+
+
+
+The duration_cast is used to get a duration with a known unit of measurement. For example:
+  auto t1 = system_clock::now();
+  f(x); //do something
+  auto t2 = system_clock::now();
+  auto dms = duration_cast<milliseconds>(t2−t1);
+  cout << "f(x) took " << dms.count() << " milliseconds\n";
+  auto ds = duration_cast<seconds>(t2−t1);
+  cout << "f(x) took " << ds.count() << " seconds\n";
+The reason we need a cast in this example is that we are throwing away information: on the system I used, the system_clock counts in nanoseconds.
+The precision of a clock is implementation-dependent.
+
+
+
+
+
+template<typename Clock, typename Duration = typename Clock::duration>
+class time_point {
+  public:
+    using clock = Clock;
+    using duration = Duration;
+    using rep = typename duration::rep;
+    using period = typename duration::period;
+  //...
+};
+
+An epoch is a range of time determined by aclock, measured in terms of a duration, starting at the duration::zero():
+  time_point tp {};
+      Default constructor: start of epoch:duration::zero()
+  time_point tp {d};
+      Constructor: time point d of epoch:time_point{}+d; explicit
+  d=tp.time_since_epoch()
+      d is tp’s stored duration
+
+
+
+
+
+pg1015[1030/1366]
+
+class system_clock {
+  public:
+    using rep = /*implementation-defined signed type*/;
+    using period = /*implementation-defined ratio<>*/;
+    using duration = chrono::duration<rep,period>;
+    using time_point = chrono::time_point<system_clock>;
+  //...
+};
+All data and function members are static. We don’t explicitly deal with clock objects. Instead, we use clock types:
+  Clock Members (§iso.20.11.7)
+    is_steady
+        Is this clock type steady?
+    That is, is c.now()<=c.now() for all consecutive calls of now() and is the time between clock ticks constant? static
+
+Clock Types (§iso.20.11.7)
+    system_clock
+        The system’s real-time clock
+        ; the system’s clock may be reset (jump forward or backward) to match external clocks
+    steady_clock
+        A clock where time moves steadily forward
+        ; that is, time does not go backward and the time between clock ticks is constant
+    high_resolution_clock
+        A clock with the shortest time increment on a system
+These three clocks need not be different; a standard-library clock name may be an alias.
+
+
+
+
+===
+pg1006[1021/1366]
+<memory> #raw_storage_iterator
+raw_storage_iterator :: Output_iterator{assigment} -> Output_iterator{copy_constructor/emplacement_new}
+template<typename Output_iterator, typename T> class raw_storage_iterator;
+  #??T=typename iterator_traits<Output_iterator>::value_type >
+
+
+===
+pg1005[1020/1366] #Temporary Buffers
+template<typename T>
+pair<T∗,ptrdiff_t> get_temporary_buffer(ptrdiff_t); //allocate, don’t initialize
+template<typename T>
+void return_temporary_buffer(T∗); //deallocate, don’t destroy
+
+
+A get_temporary_buffer<X>(n) operation tries to allocate space for n or more objects of type X.
+    If it succeeds in allocating some memory, it returns a pointer to the first uninitialized space and the number of objects of type X that will fit into that space
+    ; otherwise, the second value of the pair is zero.
+
+A buffer obtained by get_temporary_buffer() must be freed for other use by a call of return_temporary_buffer().
+    Just as get_temporary_buffer() allocates without constructing, return_temporary_buffer() frees without destroying.
+
+Because get_temporary_buffer()is low-level and likely to be optimized for managing temporary buffers, it should not be used as an alternative to new or allocator::allocate() for obtaining longer-term storage.
+
+
+
+
+===
+pg995[1010/1366] #allocator
+basic allocator functions are:
+  p=a.allocate(n); //acquire space for n objects of type T
+  a.deallocate(p,n); //release space for n objects of type T pointed to by p
+  ##uninitialized!!!
+
+DefaultConstructor() {}
+using value_type = T;
+T∗ allocate(size_t n);
+void deallocate(T∗ p, size_t n);
+
+===
+pg994[1009/1366]
+ptr =
+  {logical_subobject
+  ,control_block
+  }
+control_block =
+  {owner_object
+  ,use_count
+  ,deleter
+  ,weak_use_count
+  }
+
+weak_ptr<T>(§iso.20.7.2.3)
+@@@n=wp.use_count()
+    ::: n is the number of shared_ptrs to ∗cp; noexcept
+@@@wp.expired()
+    ::: Are there any shared_ptrs to ∗cp? noexcept
+@@@sp=wp.lock()
+    ::: Make a new shared_ptr for ∗cp; noexcept
+
+
+
+===
+pg992[1007/1366]
+
+shared_ptr<T>Helpers (§iso.20.7.2.2.6, §iso.20.7.2.2.7) (continues)
+@@@sp=make_shared(args)
+    ::: sp is a shared_ptr<T>for an object of type T constructed from the arguments args; allocated using new
+@@@sp=allocate_shared(a,args)
+    ::: sp is a shared_ptr<T>for an object of type T constructed from the arguments args; allocated using allocator a
+@@@sp2=static_pointer_cast(sp)
+    ::: static_cast for shared pointers: sp2=shared_ptr<T>(static_cast<T∗>(sp.cp)); noexcept
+@@@sp2=dynamic_pointer_cast(sp)
+    ::: dynamic_cast for shared pointers: sp2=shared_ptr<T>(dynamic_cast<T∗>(sp.cp)); noexcept
+@@@sp2=const_pointer_cast(sp)
+    ::: const_cast for shared pointers: sp2=shared_ptr<T>(const_cast<T∗>(sp.cp)); noexcept
+@@@dp=get_deleter<D>(sp)
+    ::: If sp has a deleter of typeD,∗dp is sp’s deleter; otherwise,dp==nullptr; noexcept
+@@@os<<sp
+    ::: Write sp to ostream os
+
+
+
+===
+pg986[1001/1366]
+<memory>
+
+‘‘smart pointers’’ to express ownership:
+•unique_ptr(§34.3.1) to represent exclusive ownership
+•shared_ptr(§34.3.2) to represent shared ownership
+•weak_ptr(§34.3.3) to break loops in circular shared data structures
+
+#T[]
+  unique_ptr<Shape> ps {new Circle{p,20}}; //OK
+  unique_ptr<Shape[]> pa {new Circle[] {Circle{p,20}, Circle{p2,40}}; //error
+
+
+
+===
+pg985[1000/1366]
+array
+pair
+tuple
+make_pair
+make_tuple
+
+#t::T
+#T = array|pair|tuple
+tuple_size<T>::value
+tuple_element<N,T>::type
+get<N>(t)
+
+tuple<Types...>Helpers (§iso.20.4.2.4, §iso.20.4.2.9) (continues)
+@@@t=make_tuple(args)
+    ::: Make tuple from args
+@@@t=forward_as_tuple(args)
+    ::: t is a tuple of rvalue references to the elements in args  so you can forward the elements of args throught
+@@@t=tie(args)
+    ::: t is a tuple of lvalue references to the elements of args so you can assign to the elements of args throught
+@@@t=tuple_cat(args)Concatenate
+    ::: tuples: args is one or more tuples; t has the members of the tuples in args in order
+
+拆包
+    For example,tie() can be used to extract elements from a tuple:
+        auto t = make_tuple(2.71828,299792458,"Hannibal");
+        double c;
+        string name;
+        tie(c,ignore,name) = t;//c=299792458; name="Hannibal"
+    The name ignore refers to an object of a type that ignores assignments. Thus, an ignore in a tie()
+    implies that attempts to assign to its tuple position are ignored. An alternative would be:
+        double c = get<0>(t); //c=299792458
+        string name = get<2>(t); //name="Hannibal"
+
+
+===
+pg974[989/1366]
+<tuple>
+<utility>#pair
+<bitset>#big_endian vs vector<bool>little_endian
+<array>
+
+‘‘ Almost Containers’’
+@@@T[N]
+    ::: Built-in array: a fixed-size continuously allocated sequence of N elements of type T; implicitly converts to a T∗
+@@@array<T,N>
+    ::: A fixed-size continuously allocated sequence of N elements of type T; like the built-in array, but with most problems solved
+@@@bitset<N>
+    ::: A fixed-size sequence of N bits
+@@@vector<bool>A
+    ::: sequence of bits compactly stored in a specialization of vector
+@@@pair<T,U>
+    ::: Two elements of types T and U
+@@@tuple<T...>
+    ::: A sequence of an arbitrary number of elements of arbitrary types
+@@@basic_string<C>
+    ::: A sequence of characters of type C; provides string operations
+@@@valarray<T>
+    ::: An array of numeric values of type T; provides numeric operations
+
+example:
+•pair and tuple are heterogeneous
+  ; all other containers are homogeneous (all elements are of the same type).
+•array,vector, and tuple elements are contiguously allocated
+  ; forward_list and map are linked structures.
+•bitset and vector<bool> hold bits and access them through proxy objects
+  ; all other standard-library containers can hold a variety of types and access elements directly.
+•basic_string requires its elements to be some form of character and to provide string manipulation, such as concatenation and locale-sensitive operations (Chapter 39)
+  and valarray requires its elements to be numbers and to provide numerical operations.
+All of these containers can be seen as providing specialized services needed by large communities of programmers.
+  No single container could serve all of these needs because some needs are contradictory, for example
+      , ‘‘ability to grow’’ vs. ‘‘guaranteed to be allocated in a fixed location,’’
+      and ‘‘elements do not move when elements are added’’ vs. ‘‘contiguously allocated.’’
+  Furthermore, a very general container would imply overhead deemed unacceptable for individual containers.
+
+
+===
+pg971[986/1366]
+reverse_iterator::base()->original_underlying_iter
+move_iterator
+
+===
+pg966[981/1366]
+<functional>
+  std::placeholders::_1
+  bind(f,_2,_1)("hello",2); //reverse order of arguments: also calls f(2,"hello");
+  #curious#感觉不太行，因为placeholders本身也可作为实际参数！必须指明哪些用作实际参数！
+  # my_bind(f,actual_arg("hello"),placeholder<1>{})(2);
+
+33.4 Function Objects
+Note that logical_and and logical_or always evaluate both their arguments (&& and || do not).
+
+Predicates (§iso.20.8.5, §iso.20.8.6, §iso.20.8.7)
+@@@p=equal_to<T>(x,y)
+    ::: p(x,y) means x==y when  x and y are of  type T
+@@@p=not_equal_to<T>(x,y)
+    ::: p(x,y) means x!=y when  x and y are of  type T
+@@@p=greater<T>(x,y)
+    ::: p(x,y) means x>y when  x and y are of  type T
+@@@p=less<T>(x,y)
+    ::: p(x,y) means x<y when  x and y are of  type T
+@@@p=greater_equal<T>(x,y)
+    ::: p(x,y) means x>=y when  x and y are of  type T
+@@@p=less_equal<T>(x,y)
+    ::: p(x,y) means x<=y when  x and y are of  type T
+@@@p=logical_and<T>(x,y)
+    ::: p(x,y) means x&&y when  x and y are of  type T
+@@@p=logical_or<T>(x,y)
+    ::: p(x,y) means x||y when  x and y are of  type T
+@@@p=logical_not<T>(x)
+    ::: p(x) means !x when x is of  type T
+@@@p=bit_and<T>(x,y)
+    ::: p(x,y) means x&y when  x and y are of  type T
+@@@p=bit_or<T>(x,y)
+    ::: p(x,y) means x|y when  x and y are of  type T
+@@@p=bit_xor<T>(x,y)
+    ::: p(x,y) means xˆy when  x and y are of  type T
+
+
+Arithmetic Operations (§iso.20.8.4)
+@@@f=plus<T>(x,y)
+    ::: f(x,y) means x+y when  x and y are of  type T
+@@@f=minus<T>(x,y)
+    ::: f(x,y) means x−y when  x and y are of  type T
+@@@f=multiplies<T>(x,y)
+    ::: f(x,y) means x∗y when  x and y are of  type T
+@@@f=divides<T>(x,y)
+    ::: f(x,y) means x/y when  x and y are of  type T
+@@@f=modulus<T>(x,y)
+    ::: f(x,y) means x%y when  x and y are of  type T
+@@@f=negate<T>(x)
+    ::: f(x) means −x when x is of  type T
+
+Adaptors (§iso.20.8.9, §iso.20.8.10, §iso.20.8.8)
+@@@g=bind(f,args)
+    ::: g(args2) is equivalent to f(args3) where args3 is obtained by replacing placeholders in args with arguments from args2 for the use of placeholders, such as_1,_2, and _3
+@@@g=mem_fn(f)
+    ::: g(p,args) means p−>f(args) if p is a pointer and p.mf(args) if p is not; args is a (possibly empty) list of arguments
+@@@g=not1(f)
+    ::: g(x) means !f(x)
+@@@g=not2(f)
+    ::: g(x,y) means !f(x,y)
+
+The bind() and mem_fn() adaptors do argument binding, also called Currying or partial evaluation.
+  bind(f,_2,_1)("hello",2); //reverse order of arguments: also calls f(2,"hello");
+  auto pow2 = bind(pow,_1,2); //error : which pow()?
+  auto pow2 = bind((double(∗)(double ,double))pow,_1,2); //OK (but ugly)
+  for_each(v.begin(),v.end(),mem_fn(&Shape::draw));
+}
+
+
+#相当于lambda函数 的 传参方式 是选用 传值 还是 传引用？
+reference_wrapper<T>(§iso.20.8.3)
+@@@r=ref(t)
+    ::: r is a reference_wrapper for T& t; noexcept
+@@@r=cref(t)
+    ::: r is a reference_wrapper for a const T& t; noexcept
+
+bind(f,...)(ref(x));
+
+
 ===
 pg903[918/1366]
   //无需重新分配内存，自然也无需移动所有元素，指针保持有效性
@@ -402,7 +2419,7 @@ Input_Output
 @@@<cctype>
     ::: Character classification functions§36.2.1
 @@@<fstream>
-    ::: Streams to/from fi les§38.2.1
+    ::: Streams to/from files§38.2.1
 @@@<cstdio>
     ::: printf()family of I/O§43.3
 @@@<cwchar>
@@ -531,7 +2548,7 @@ pg829[844/1366] #Enable_if+is_XxxConcept<T>()
     operator<<(ostream& os, const M& m)
     {
       os << '{';
-      for (siz e_t i = 0; i!=rows(m); ++i) {
+      for (size_t i = 0; i!=rows(m); ++i) {
         os << m[i];
         if (i+1!=rows(m)) os << ',';
       }
@@ -1357,7 +3374,7 @@ pg541[556/1366]
 
 
   It is possible to go further and introduce a user-defined literal (§19.2.6) in support of our complex type. In particular, we could defineito be a suffix meaning ‘‘imaginary.’’ For example:
-    constexpr complex<double> operator "" i(long double d)//imaginar y literal
+    constexpr complex<double> operator "" i(long double d)//imaginary literal
     {
       return {0,d};//complex is a literal type
     }
@@ -1514,7 +3531,7 @@ pg524[539/1366] # =delete
     };
     class Not_on_free_store {
       //...
-      void∗ operator new(siz e_t) = delete;
+      void∗ operator new(size_t) = delete;
     };
 
 
@@ -1944,7 +3961,7 @@ pg366[381/1366] #conditionally noexcept
           f(x);
       }
 
-    template<class T, siz e_t N>
+    template<class T, size_t N>
       void swap(T (&a)[N], T (&b)[N]) noexcept(noexcept(swap(∗a, ∗b)));
 
 
@@ -2045,7 +4062,7 @@ pg313[328/1366] #
   A branch of a conditional expression that is not taken in aconstexprfunction is not evaluated. This implies that a branch not taken can require run-time evaluation. For example:
     constexpr int check(int i)
     {
-      return (low<=i && i<high) ? i : throw out_of_rang e();
+      return (low<=i && i<high) ? i : throw out_of_range();
     }
     constexpr int low = 0;
     constexpr int high = 99;
@@ -2065,7 +4082,7 @@ pg307[322/1366] #
 ===
 pg299[314/1366] #homemade narrow_cast<>
   template<class Target, class Source>
-  Targ et narrow_cast(Source v)
+  Target narrow_cast(Source v)
   {
     auto r = static_cast<Target>(v); //convert the value to the target type
     if (static_cast<Source>(r)!=v)
@@ -2148,8 +4165,8 @@ pg191[206/1366] #const T& = ... 可能复制并保留该临时值
     const double& cdr {1};//OK
 
   The interpretation of this last initialization might be:
-    double temp = double{1}; //first create a temporar y with the right value
-    const double& cdr {temp};//then use the temporar y as the initializer for cdr
+    double temp = double{1}; //first create a temporary with the right value
+    const double& cdr {temp};//then use the temporary as the initializer for cdr
 
   A temporary created to hold a reference initializer persists until the end of its reference’s scope.
   References to variables and references to constants are distinguished because introducing a temporary for a variable would have been highly error-prone; an assignment to the variable would become an assignment to the – soon-to-disappear – temporary. No such problem exists for references to constants, and references to constants are often important as function arguments (§18.2.4).
@@ -2234,7 +4251,7 @@ void user(const vector<X>& vx)
 {
   constexpr int bufmax = 1024;
   alignas(X) buffer[bufmax]; //uninitialized
-  const int max = min(vx.size(),bufmax/siz eof(X));
+  const int max = min(vx.size(),bufmax/sizeof(X));
   uninitialized_copy(vx.begin(),vx.begin()+max,buffer);
   //...
 }
