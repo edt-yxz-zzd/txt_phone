@@ -1,0 +1,141 @@
+
+e others/数学/编程/lambda/CombinatorSKIBC__2__LocalBatchRouter.txt
+
+##################################
+copy from:
+  e ../../python3_src/nn_ns/mimic_Haskell/Data.py
+##################################
+##################################
+##################################
+[[[[[
+
+
+LocalBatchRouter
+      LocalBatchRouter局部批量参数路由<触发动作的输入参数数量, [[参数序号]]>
+      LocalBatchRouter<L, uintss> x[1..L]
+        = Apps [Apps [x[i] | i<-uints] | uints<-uintss]
+        where
+          Apps = foldl I App
+
+##################################
+##################################
+py -m nn_ns.functional._try_CombinatoryLogic > $my_tmp/out4py/nn_ns.functional._try_CombinatoryLogic.case0.1-14.txt
+    指数增长？！！！
+    view /sdcard/0my_files/tmp//out4py/nn_ns.functional._try_CombinatoryLogic.case0.1-14.txt
+  ====其实，并非一定要只使用SKIBC，我起初感兴趣的原由在于除去变量名，这样一来函数体显得更规范更容易比较结构的等同性。调用函数也不必替换变量。
+  ====等效来讲，只是将远在叶节点的绑定变量所指引的污径在途中的所有丫节点标记指引
+  ======显化局部指引
+  T[x]=x #必是 自由变量
+  T[App f e]=App T[f] T[e]
+  T[(Abs x[i])+ z]=K<1+n> z
+      #n 表示 Abs 的数量，(1+n)代表 触发动作的输入参数数量
+  T[(Abs x[i])+ x[i]]=I<n,i> z
+      #n 表示 Abs 的数量，也代表 触发动作的输入参数数量，i代表 反弹的参数的输入序号
+  T[(Abs x[i])+ f (App e[j])+]=S<m+n,[[i<-[1..n]{#sorted#} | x[i] <- FV(e[j])] | j<-[1..m]]> T[(Abs x[i] if x[i]<-FV(f))* f] ...T[(Abs x[i] if x[i]<-FV(e[j]))* e[j]]...
+    #批量处理，反正，在头部所有连续Abs丫节点都接受到参数之前，函数体 等效于 未触发
+    #注意:这与 单纯地使用 SKIBC 是不同的，批量一次性自顶向下vs多层次碰撞自顶向下，后者代码爆炸/或比较难估计，前者上限必然是O(n^3)，现将前者再转化为后者...关键就是T[(\x[1..n] -> Apps [Apps [f[i]]++x[1..n] | i<-[1..n]])]=O(?<n>)??其中 f[1..n]不含x[1..n]也不含Abs。比较难估计，可见，S<m+n,...>编码了大量信息，缩减代码数量。
+    # Apps [] === I
+    泛化S<m+n,...>以更好地处理 排列组合:
+      #old-name:LocalBatchSchedule局部批量参数转发指引
+      LocalBatchRouter局部批量参数路由<触发动作的输入参数数量, [[参数序号]]>
+      LocalBatchRouter<L, uintss> x[1..L]
+        = Apps [Apps [x[i] | i<-uints] | uints<-uintss]
+        where
+          Apps = foldl I App
+    系统[Var+Abs+App]
+    <==>系统[Var+Abs+Apps]
+    <==>系统[Var+Apps+LocalBatchRouter]
+      #Var自由变量
+      #Apps 用于表达 LocalBatchRouter 触发动作后的展开式
+    Apps 计算:
+      Apps 简化:
+        Apps [e] -> e
+        Apps [Apps hs, ts...] -> Apps (hs++ts)
+      Apps 动作:
+        Apps [Abs x e, y, ts...] -> Apps [call(Abs x e, y), ts...]
+        Apps [LocalBatchRouter<L, uintss>, ys...{len=L}, ts...] -> Apps [call(LocalBatchRouter<L, uintss>, ys), ts...]
+
+SKIBC:
+    S = \x2f x2a x -> ((x2f x) (x2a x))
+        = LocalBatchRouter(3, [0, 2], [1, 2])
+    K = \a b -> a
+        = LocalBatchRouter(2, [0])
+    I = \a -> a
+        = LocalBatchRouter(1, [0])
+        = LocalBatchRouter(0)
+    B = \f g a -> f (g a)
+        = LocalBatchRouter(3, [0], [1, 2])
+        #= \f -> S (K f) = B S K
+        #=\f g x -> f (g x)
+        #   = \f g -> S (K f) g
+        #   = \f -> S (K f)
+        #   = S (K S) K
+        ############################
+        # S (K S) K f
+        #   = (K S f) (K f)
+        #   = S (K f)
+        #####################
+        # S (K f) g x
+        #   = (K f x) (g x)
+        #   = f (g x)
+        #####################
+    C = \f a b -> f b a
+        = LocalBatchRouter(3, [0, 2], [1])
+        = LocalBatchRouter(3, [0, 2, 1])
+        #=\f a b -> f b a
+        #   =\f a -> (S f) (K a)
+        #   =\f -> S (K (S f)) K
+        #   = S (\f-> S (K (S f))) (K K)
+        #   = S (S (K S) (\f-> K (S f))) (K K)
+        #   = S (S (K S) (S (K K) (\f->S f))) (K K)
+        #   = S (S (K S) (S (K K) S)) (K K)
+        ############################
+        # S (S (K S) (S (K K) S)) (K K) f
+        #   = (S (K S) (S (K K) S) f) (K K f)
+        #   = ((K S f) (S (K K) S f)) K
+        #   = S ((K K f) (S f)) K
+        #   = S (K (S f)) K
+        #####################
+        # S (K (S f)) K a
+        #   = (K (S f) a) (K a)
+        #   = (S f) (K a)
+        #   = S f (K a)
+        #####################
+        # S f (K a) b
+        #   = (f b) (K a b)
+        #   = f b a
+        #####################
+
+
+    #fix #calc_fix_point
+        x = f x = y f
+        y f = f (y f)
+        y = h h
+        h = \h f -> f (h h f)
+    Y = H H
+        # Y f = H H f
+        #   = f (H H f)
+        #   = f (Y f)
+    H = \h f -> f (h h f)
+        = LocalBatchRouter(2, [1], [0, 0, 1])
+        #= \h f -> f (h h f)
+        #   = \h -> S I (h h)
+        #   = S (K (S I)) (\h-> h h)
+        #   = S (K (S I)) (S I I)
+        ############################
+        # S (K (S I)) (S I I) h
+        #   = (K (S I) h) (S I I h)
+        #   = (S I) (h h)
+        #   = S I (h h)
+        #####################
+        # S I (h h) f
+        #   = f (h h f)
+        #####################
+    DEAD = (S I I) (S I I)
+
+]]]]]
+##################################
+##################################
+##################################
+
+

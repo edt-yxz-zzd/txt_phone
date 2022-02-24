@@ -1,0 +1,1058 @@
+
+农历公历对照表 农历节日 公历节日
+  e others/数学/编程/农历/py农历.txt
+
+11111
+https://www.jianshu.com/p/272c5dfa3eef
+22222
+https://www.latelee.org/python/python-yangli-to-nongli.html
+33333
+https://blog.csdn.net/wqlineky1/article/details/80945299
+
+
+
+
+
+
+
+
+
+[[[
+11111
+https://www.jianshu.com/p/272c5dfa3eef
+=====
+https://github.com/CutePandaSh/zhdate
+香港天文台农历对照表（文字版）
+  [过时]https://www.hko.gov.hk/gts/time/conversion1_text_c.htm
+  -->
+    https://www.hko.gov.hk/tc/gts/time/conversion1_text.htm#
+      * https://www.hko.gov.hk/tc/gts/time/calendar/text/files/T1904c.txt
+1904(甲辰-肖龍)年公曆與農曆日期對照表
+
+公曆日期         農曆日期               星期              節氣
+1904年01月01日    十四                  星期五
+1904年01月02日    十五                  星期六
+1904年01月03日    十六                  星期日
+1904年01月04日    十七                  星期一
+1904年01月05日    十八                  星期二
+1904年01月06日    十九                  星期三
+1904年01月07日    二十                  星期四            小寒
+1904年01月08日    廿一                  星期五
+=====
+https://www.hko.gov.hk/tc/gts/time/calendar/text/files/T1904c.txt
+mkdir /sdcard/0my_files/tmp/curl_/农历数据/
+cd /sdcard/0my_files/tmp/curl_/农历数据/
+curl https://www.hko.gov.hk/tc/gts/time/calendar/text/files/T[1901-2100]c.txt   --create-dirs -o 'T#1c.txt'
+
+cd /sdcard/0my_files/tmp/curl_/
+mv -T ./农历数据/ ./香港天文台农历对照表（文字版）/
+/sdcard/0my_files/git_repos/txt_phone/txt/script/农历/香港天文台农历对照表（文字版）.zip
+view ++enc=big5 /sdcard/0my_files/tmp/curl_/香港天文台农历对照表（文字版）/T2021c.txt
+
+
+=====
+安装方法
+
+通过 pip 直接安装
+pip install zhdate
+
+或从git拉取
+git clone https://github.com/CutePandaSh/zhdate.git
+cd zhdate
+python setup.py install
+=====
+核心算法
+
+重要的事情说三遍
+
+    农历不是算出来的，是天文台观测出来的
+    农历不是算出来的，是天文台观测出来的
+    农历不是算出来的，是天文台观测出来的
+
+所以也想做农历功能的同学就不要费心去学什么农历算法了，浪费了我三天时间也没看懂到底是怎么计算的。
+目前通用的也是比较准确的，可下载的农历阳历对照数据是 香港天文台农历对照表（文字版）, 可下载txt格式的农历对照数据。写了一个简单的爬虫，将所有txt文件下载下来。注意获得到的txt是Big5的，并且需要跳过头部的三行，头部三行是每个文件的年份基础信息。可以用以下代码来读取，这里还用到了如何跳过文件头部n行，以及打开非utf8编码格式文件的小技巧。
+with open('./{年份}.txt', encoding='big5') as file:
+     for n_line, line in enumerate(file.readline()):
+        if n_line < 3:
+            continue
+       else:
+            dosomething()
+
+下载到的数据是从 公历 1901年1月1日，农历 1900年11月11日起，至 2100年12月31日，农历 2100年12月1日之间的200年的每天对照数据。经过编码转换后，重新存一个json或者pickle文件就可以直接拿来用了，速度也不慢。但是这个包含了所有日期数据的文件，json格式的话，有6M多，字典pickle格式也有2M多，显然不利于传播和重复使用。参考了网上一篇Java的农历转换源码，虽然使用的基础数据存在错误，但是算法非常精辟，所以就 拿来主义 了。
+=====
+年度数据编码
+
+每一整年的数据可用 20位的二进制数表示
+ 0001 1000 1000 1000 1000
+
+        第一部分，最左边的前4位，只有0或1，0表示当年闰月为小月（即29天），1表示当年闰月为大月（即30天），这个需要和最右侧的最后4位结合使用。
+        第二部分，中间的12位，表示当年农历年每月的大小月，0表示小月，1表示大月，忽略闰月，从左起第一位表示1月。
+        第三部分，最右侧的最后4位，转换成10进制表示当年的闰月月份，如果闰月不存在那就为 0。
+=====
+坑爹的网上农历说明
+
+有些网站上提到每年的闰月应该和实际月天数相同，比如上述的例子，按照说明那么 2020年的农历4月和农历闰4月的天数是相同的，实际上是不同的，所以按照天文台的数据进行处理吧。
+=====
+香港天文台能下载到的只有1901年-2100年的数据，作为一个强迫症患者，看到这个1901总是不爽，在百度上查了一下，正好它支持1900年2050年的数据，所以手动添加了1900的部分，形成了这个项目中的1900 - 2100年的完整农历数据。
+
+为了加快运算除了年度代码，还存储了每年的农历正月初一的公历日期，这样就用了20K就保存了200年的农历数据。
+
+作者：stackOverflowsh
+链接：https://www.jianshu.com/p/272c5dfa3eef
+来源：简书
+著作权归作者所有。商业转载请联系作者获得授权，非商业转载请注明出处。
+=====
+以上就是整个项目中最核心的部分，本质上来说，这个项目并不涉及复杂算法，最核心的是使用二进制来压缩存储年度数据，相关的在Python中如何二进制的基本用法，以及应用案例我会另开文章来写。至于涉及到的其他
+
+作者：stackOverflowsh
+链接：https://www.jianshu.com/p/272c5dfa3eef
+来源：简书
+]]]
+
+
+
+
+
+
+
+
+
+
+
+[[[
+22222
+https://www.latelee.org/python/python-yangli-to-nongli.html
+===
+
+本站当前定位为个人的知识库中心。
+如果有疑问，可发邮件至li@latelee.org，但不一定回复。
+
+Python实现阳历转农历功能
+
+    首页 所有文章 2017年02月 python 
+
+2017-02-14 22:15 python 2.7k 字 385 次
+
+实然心血来潮，决定研究一下阳历转换农历的算法，但网上几乎都是几种文章(或其演绎版本)，笔者看了看，好像能得到正常结果，但没深入理解算法。为了练手Python，决定自己实现。
+中国的农历十分复杂，涉及面也广，需要天文台计算确定，本文干脆通通舍弃这些知识，只需要确保程序运行结果与参考日历一致就行了。
+
+结合代码，将算法概述如下：
+0、阴历转农历使用查表法，确定阳历基准日、农历基准日，然后通过某种方法，计算出当前日期与基准日的差值，然后根据农历月份天数逐步计算出农历日期。
+1、文中使用g_lunar_month_day存储每一年月份天数，因为农历月份大月为30天，小月为29天，没有其它值，为节省存储空间，使用1表示大月，0为小月，还需要保存闰月月份及该月份是否大小月。网上有的农历数据是从高位开始依次存储每月天数，本文从低位开始。
+2、另外使用g_lunar_year_day保存春节日期(正月初一)以及该日期离元旦的天数。做此数据结构，主要是为了计算农历的快捷性，因为网上有的计算方法是从1901年开始计算日期差，直到指定日期，如今年是2017年，则要循环计算116年(2017-1901)，虽然以当今CPU性能对应此事绰绰有余，但不必要进行如此计算。故本文使用g_lunar_year_day了。只需要在当前年份中进行计算即可。
+3、年份的天干地支、生肖根据公式计算，以农历正月初一为分界。另外还有以立春为准的说法，这个问题待天文学家和算命先生讨论吧。
+4、本文农历使用HK天文台日历数据，从1901年到2100年，地址：http://data.weather.gov.hk/gts/time/conversion1_text_c.htm。为了获取日历数据，还另外编写python程序进行分析，从而得到数据表。
+5、显示日历利用python提供的calendar，其提供的itermonthdays方法返回的数据即为指定年月的日历，以周一开始。
+代码如下：
+
+#!/usr/bin/python3
+# encoding: utf-8
+# Author: Late Lee
+# Linux + python3
+# 2017.2.14
+
+#####################################################################################
+# 1901~2100年农历数据表
+# powered by Late Lee, http://www.latelee.org 
+# 2017-02-11 10:01:48.405752 
+#农历数据 每个元素的存储格式如下： 
+#   16~13    12          11~0  
+#  闰几月 闰月日数  1~12月份农历日数  
+# 注：1、bit0表示农历1月份日数，为1表示30天，为0表示29天。bit1表示农历2月份日数，依次类推。 
+#     2、bit12表示闰月日数，1为30天，0为29天。bit17~bit14表示第几月是闰月(注：为0表示该年无闰月) 
+# 数据来源: http://data.weather.gov.hk/gts/time/conversion1_text_c.htm
+# 由Jim Kent编写python爬虫强力分析
+#####################################################################################
+g_lunar_month_day = [
+    0x00752, 0x00ea5, 0x0ab2a, 0x0064b, 0x00a9b, 0x09aa6, 0x0056a, 0x00b59, 0x04baa, 0x00752, # 1901 ~ 1910 
+    0x0cda5, 0x00b25, 0x00a4b, 0x0ba4b, 0x002ad, 0x0056b, 0x045b5, 0x00da9, 0x0fe92, 0x00e92, # 1911 ~ 1920 
+    0x00d25, 0x0ad2d, 0x00a56, 0x002b6, 0x09ad5, 0x006d4, 0x00ea9, 0x04f4a, 0x00e92, 0x0c6a6, # 1921 ~ 1930 
+    0x0052b, 0x00a57, 0x0b956, 0x00b5a, 0x006d4, 0x07761, 0x00749, 0x0fb13, 0x00a93, 0x0052b, # 1931 ~ 1940 
+    0x0d51b, 0x00aad, 0x0056a, 0x09da5, 0x00ba4, 0x00b49, 0x04d4b, 0x00a95, 0x0eaad, 0x00536, # 1941 ~ 1950 
+    0x00aad, 0x0baca, 0x005b2, 0x00da5, 0x07ea2, 0x00d4a, 0x10595, 0x00a97, 0x00556, 0x0c575, # 1951 ~ 1960 
+    0x00ad5, 0x006d2, 0x08755, 0x00ea5, 0x0064a, 0x0664f, 0x00a9b, 0x0eada, 0x0056a, 0x00b69, # 1961 ~ 1970 
+    0x0abb2, 0x00b52, 0x00b25, 0x08b2b, 0x00a4b, 0x10aab, 0x002ad, 0x0056d, 0x0d5a9, 0x00da9, # 1971 ~ 1980 
+    0x00d92, 0x08e95, 0x00d25, 0x14e4d, 0x00a56, 0x002b6, 0x0c2f5, 0x006d5, 0x00ea9, 0x0af52, # 1981 ~ 1990 
+    0x00e92, 0x00d26, 0x0652e, 0x00a57, 0x10ad6, 0x0035a, 0x006d5, 0x0ab69, 0x00749, 0x00693, # 1991 ~ 2000 
+    0x08a9b, 0x0052b, 0x00a5b, 0x04aae, 0x0056a, 0x0edd5, 0x00ba4, 0x00b49, 0x0ad53, 0x00a95, # 2001 ~ 2010 
+    0x0052d, 0x0855d, 0x00ab5, 0x12baa, 0x005d2, 0x00da5, 0x0de8a, 0x00d4a, 0x00c95, 0x08a9e, # 2011 ~ 2020 
+    0x00556, 0x00ab5, 0x04ada, 0x006d2, 0x0c765, 0x00725, 0x0064b, 0x0a657, 0x00cab, 0x0055a, # 2021 ~ 2030 
+    0x0656e, 0x00b69, 0x16f52, 0x00b52, 0x00b25, 0x0dd0b, 0x00a4b, 0x004ab, 0x0a2bb, 0x005ad, # 2031 ~ 2040 
+    0x00b6a, 0x04daa, 0x00d92, 0x0eea5, 0x00d25, 0x00a55, 0x0ba4d, 0x004b6, 0x005b5, 0x076d2, # 2041 ~ 2050 
+    0x00ec9, 0x10f92, 0x00e92, 0x00d26, 0x0d516, 0x00a57, 0x00556, 0x09365, 0x00755, 0x00749, # 2051 ~ 2060 
+    0x0674b, 0x00693, 0x0eaab, 0x0052b, 0x00a5b, 0x0aaba, 0x0056a, 0x00b65, 0x08baa, 0x00b4a, # 2061 ~ 2070 
+    0x10d95, 0x00a95, 0x0052d, 0x0c56d, 0x00ab5, 0x005aa, 0x085d5, 0x00da5, 0x00d4a, 0x06e4d, # 2071 ~ 2080 
+    0x00c96, 0x0ecce, 0x00556, 0x00ab5, 0x0bad2, 0x006d2, 0x00ea5, 0x0872a, 0x0068b, 0x10697, # 2081 ~ 2090 
+    0x004ab, 0x0055b, 0x0d556, 0x00b6a, 0x00752, 0x08b95, 0x00b45, 0x00a8b, 0x04a4f, ]
+
+
+#农历数据 每个元素的存储格式如下： 
+#    12~7         6~5    4~0  
+#  离元旦多少天  春节月  春节日  
+#####################################################################################
+g_lunar_year_day = [
+    0x18d3, 0x1348, 0x0e3d, 0x1750, 0x1144, 0x0c39, 0x15cd, 0x1042, 0x0ab6, 0x144a, # 1901 ~ 1910 
+    0x0ebe, 0x1852, 0x1246, 0x0cba, 0x164e, 0x10c3, 0x0b37, 0x14cb, 0x0fc1, 0x1954, # 1911 ~ 1920 
+    0x1348, 0x0dbc, 0x1750, 0x11c5, 0x0bb8, 0x15cd, 0x1042, 0x0b37, 0x144a, 0x0ebe, # 1921 ~ 1930 
+    0x17d1, 0x1246, 0x0cba, 0x164e, 0x1144, 0x0bb8, 0x14cb, 0x0f3f, 0x18d3, 0x1348, # 1931 ~ 1940 
+    0x0d3b, 0x16cf, 0x11c5, 0x0c39, 0x15cd, 0x1042, 0x0ab6, 0x144a, 0x0e3d, 0x17d1, # 1941 ~ 1950 
+    0x1246, 0x0d3b, 0x164e, 0x10c3, 0x0bb8, 0x154c, 0x0f3f, 0x1852, 0x1348, 0x0dbc, # 1951 ~ 1960 
+    0x16cf, 0x11c5, 0x0c39, 0x15cd, 0x1042, 0x0a35, 0x13c9, 0x0ebe, 0x17d1, 0x1246, # 1961 ~ 1970 
+    0x0d3b, 0x16cf, 0x10c3, 0x0b37, 0x14cb, 0x0f3f, 0x1852, 0x12c7, 0x0dbc, 0x1750, # 1971 ~ 1980 
+    0x11c5, 0x0c39, 0x15cd, 0x1042, 0x1954, 0x13c9, 0x0e3d, 0x17d1, 0x1246, 0x0d3b, # 1981 ~ 1990 
+    0x16cf, 0x1144, 0x0b37, 0x144a, 0x0f3f, 0x18d3, 0x12c7, 0x0dbc, 0x1750, 0x11c5, # 1991 ~ 2000 
+    0x0bb8, 0x154c, 0x0fc1, 0x0ab6, 0x13c9, 0x0e3d, 0x1852, 0x12c7, 0x0cba, 0x164e, # 2001 ~ 2010 
+    0x10c3, 0x0b37, 0x144a, 0x0f3f, 0x18d3, 0x1348, 0x0dbc, 0x1750, 0x11c5, 0x0c39, # 2011 ~ 2020 
+    0x154c, 0x0fc1, 0x0ab6, 0x144a, 0x0e3d, 0x17d1, 0x1246, 0x0cba, 0x15cd, 0x10c3, # 2021 ~ 2030 
+    0x0b37, 0x14cb, 0x0f3f, 0x18d3, 0x1348, 0x0dbc, 0x16cf, 0x1144, 0x0bb8, 0x154c, # 2031 ~ 2040 
+    0x0fc1, 0x0ab6, 0x144a, 0x0ebe, 0x17d1, 0x1246, 0x0cba, 0x164e, 0x1042, 0x0b37, # 2041 ~ 2050 
+    0x14cb, 0x0fc1, 0x18d3, 0x1348, 0x0dbc, 0x16cf, 0x1144, 0x0a38, 0x154c, 0x1042, # 2051 ~ 2060 
+    0x0a35, 0x13c9, 0x0e3d, 0x17d1, 0x11c5, 0x0cba, 0x164e, 0x10c3, 0x0b37, 0x14cb, # 2061 ~ 2070 
+    0x0f3f, 0x18d3, 0x12c7, 0x0d3b, 0x16cf, 0x11c5, 0x0bb8, 0x154c, 0x1042, 0x0ab6, # 2071 ~ 2080 
+    0x13c9, 0x0e3d, 0x17d1, 0x1246, 0x0cba, 0x164e, 0x10c3, 0x0bb8, 0x144a, 0x0ebe, # 2081 ~ 2090 
+    0x1852, 0x12c7, 0x0d3b, 0x16cf, 0x11c5, 0x0c39, 0x154c, 0x0fc1, 0x0a35, 0x13c9, # 2091 ~ 2100 
+    ]
+
+#==================================================================================
+
+from datetime import date, datetime
+import calendar
+
+START_YEAR = 1901
+
+month_DAY_BIT = 12
+month_NUM_BIT = 13
+
+#　todo：正月初一 == 春节   腊月二十九/三十 == 除夕
+yuefeng = ["正月", "二月", "三月", "四月", "五月", "六月", "七月", "八月", "九月", "十月", "冬月", "腊月"]
+riqi = ["初一", "初二", "初三", "初四", "初五", "初六", "初七", "初八", "初九", "初十",
+    "十一", "十二", "十三", "十四", "十五", "十六", "十七", "十八", "十九", "廿十",
+    "廿一", "廿二", "廿三", "廿四", "廿五", "廿六", "廿七", "廿八", "廿九", "三十"]
+
+xingqi = ["星期一", "星期二", "星期三", "星期四", "星期五", "星期六", "星期日"]
+
+tiangan   = ["甲", "乙", "丙", "丁", "戊", "己", "庚", "辛", "壬", "癸"]
+dizhi     = ["子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥"]
+shengxiao = ["鼠", "牛", "虎", "兔", "龙", "蛇", "马", "羊", "猴", "鸡", "狗", "猪"]
+
+# todo：添加节气
+jieqi = [
+    "小寒", "大寒",  # 1月
+    "立春", "雨水",  # 2月
+    "惊蛰", "春分",  # 3月
+    "清明", "谷雨",  # 4月
+    "立夏", "小满",  # 5月
+    "芒种", "夏至",  # 6月
+    "小暑", "大暑",  # 7月
+    "立秋", "处暑",  # 8月
+    "白露", "秋分",  # 9月
+    "寒露", "霜降",  # 10月
+    "立冬", "小雪",  # 11月
+    "大雪", "冬至"]  # 12月
+
+def change_year(num):
+    dx = ["零", "一", "二", "三", "四", "五", "六", "七", "八", "九", "十"]
+    tmp_str = ""
+    for i in str(num):
+        tmp_str += dx[int(i)]
+    return tmp_str
+
+def week_str(tm):
+    return xingqi[tm.weekday()]
+
+def lunar_day(day):
+    return riqi[(day - 1) % 30]
+
+def lunar_day1(month, day):
+    if day == 1:
+        return lunar_month(month)
+    else:
+        return riqi[day - 1]
+
+def lunar_month(month):
+    leap = (month>>4)&0xf
+    m = month&0xf
+    month = yuefeng[(m - 1) % 12]
+    if leap == m:
+        month = "闰" + month
+    return month
+
+def lunar_year(year):
+    return tiangan[(year - 4) % 10] + dizhi[(year - 4) % 12] + '[' + shengxiao[(year - 4) % 12] + ']'
+
+# 返回：
+# a b c
+# 闰几月，该闰月多少天 传入月份多少天
+def lunar_month_days(lunar_year, lunar_month):
+    if (lunar_year < START_YEAR):
+        return 30
+
+    leap_month, leap_day, month_day = 0, 0, 0 # 闰几月，该月多少天 传入月份多少天
+
+    tmp = g_lunar_month_day[lunar_year - START_YEAR]
+
+    if tmp & (1<<(lunar_month-1)):
+        month_day = 30
+    else:
+        month_day = 29
+
+    # 闰月
+    leap_month = (tmp >> month_NUM_BIT) & 0xf
+    if leap_month:
+        if (tmp & (1<<month_DAY_BIT)):
+            leap_day = 30
+        else:
+            leap_day = 29
+
+    return (leap_month, leap_day, month_day)
+
+# 算农历日期
+# 返回的月份中，高4bit为闰月月份，低4bit为其它正常月份
+def get_ludar_date(tm):
+    year, month, day = tm.year, 1, 1
+    code_data = g_lunar_year_day[year - START_YEAR]
+    days_tmp = (code_data >> 7) & 0x3f
+    chunjie_d = (code_data >> 0) & 0x1f
+    chunjie_m = (code_data >> 5) & 0x3
+    span_days = (tm - datetime(year, chunjie_m, chunjie_d)).days
+    #print("span_day: ", days_tmp, span_days, chunjie_m, chunjie_d)
+
+    # 日期在该年农历之后
+    if (span_days >= 0):
+        (leap_month, foo, tmp) = lunar_month_days(year, month)
+        while span_days >= tmp:
+            span_days -= tmp
+            if (month == leap_month):
+                (leap_month, tmp, foo) = lunar_month_days(year, month) # 注：tmp变为闰月日数
+                if (span_days < tmp): # 指定日期在闰月中
+                    month = (leap_month<<4) | month
+                    break
+                span_days -= tmp
+            month += 1 # 此处累加得到当前是第几个月
+            (leap_month, foo, tmp) = lunar_month_days(year, month)
+        day += span_days
+        return year, month, day
+    # 倒算日历
+    else:
+        month = 12
+        year -= 1
+        (leap_month, foo, tmp) = lunar_month_days(year, month)
+        while abs(span_days) >= tmp:
+            span_days += tmp
+            month -= 1
+            if (month == leap_month):
+                (leap_month, tmp, foo) = lunar_month_days(year, month)
+                if (abs(span_days) < tmp): # 指定日期在闰月中
+                    month = (leap_month<<4) | month
+                    break
+                span_days += tmp
+            (leap_month, foo, tmp) = lunar_month_days(year, month)
+        day += (tmp + span_days) # 从月份总数中倒扣 得到天数
+        return year, month, day
+
+def _show_month(tm):
+    (year, month, day) = get_ludar_date(tm)
+    print("%d年%d月%d日" % (tm.year, tm.month, tm.day), week_str(tm), end='')
+    print("\t农历 %s年 %s年%s%s " % (lunar_year(year), change_year(year), lunar_month(month), lunar_day(day))) # 根据数组索引确定
+    print("一\t二\t三\t四\t五\t六\t日")
+
+    c = calendar.Calendar(0)
+    ds = [d for d in c.itermonthdays(tm.year, tm.month)]
+
+    #print(len(ds), ds)
+    # 利用calendar直接获取指定年月日期
+    count = 0
+    for d in ds:
+        if d == 0:
+            print("\t", end='')
+            count += 1
+            continue
+
+        (year, month, day) = get_ludar_date(datetime(tm.year, tm.month, d))
+
+        if count % 7 == 0:
+            print("\n", end='')
+        d_str = str(d)
+        if d == tm.day:
+            d_str = "*" + d_str
+        print("%s\t" % (d_str + lunar_day1(month, day)), end='')
+        count += 1
+    print("")
+
+
+def show_month(year, month, day):
+    if year > 2100 or year < 1901:
+        return
+    if month > 13 or month < 1:
+        return
+
+    tmp = datetime(year, month, day)
+    _show_month(tmp)
+
+def this_month():
+    #print(calendar.month(datetime.now().year, datetime.now().month))
+    #print('--------------------------')
+    show_month(datetime.now().year, datetime.now().month, datetime.now().day)
+
+this_month()
+show_month(2034, 1, 1)
+
+运行结果：
+
+2017年2月14日 星期三    农历 丁酉[鸡]年 二零一七年正月十八 
+一      二      三      四      五      六      日
+                1初五   2初六   3初七   4初八   5初九
+6初十   7十一   8十二   9十三   10十四  11十五  12十六
+13十七  *14十八  15十九 16廿十  17廿一  18廿二  19廿三
+20廿四  21廿五  22廿六  23廿七  24廿八  25廿九  26二月
+27初二  28初三
+
+
+2034年1月1日 星期日     农历 癸丑[牛]年 二零三三年闰冬月十一 
+一      二      三      四      五      六      日
+                                                *1十一
+2十二   3十三   4十四   5十五   6十六   7十七   8十八
+9十九   10廿十  11廿一  12廿二  13廿三  14廿四  15廿五
+16廿六  17廿七  18廿八  19廿九  20三十  21初二  22初三
+23初四  24初五  25初六  26初七  27初八  28初九  29初十
+30十一  31十二
+
+参考：
+http://www.cnblogs.com/chjbbs/p/5704326.html
+http://www.jb51.net/article/49368.html
+
+李迟 2017年2月14日 周二 晚
+
+    本文作者：李迟
+    版权声明：原创文章，版权归署名作者，转载建议注明出处（当然不注明亦可）。
+    本文链接：http://www.latelee.org/python/python-yangli-to-nongli.html
+
+前一篇 嵌入式Linux入门：概述
+后一篇 使用Python实现GBK转unicode码查询表
+]]]
+
+
+
+
+
+
+
+
+[[[
+33333
+https://blog.csdn.net/wqlineky1/article/details/80945299
+===
+python3实现万年历（包括公历、农历、节气、节日） 转载
+2018-07-06 19:12:12 2点赞
+
+    强129
+
+    码龄12年
+关注
+
+转载:https://www.cnblogs.com/lanzhi/p/6468355.html
+
+
+#!/usr/local/bin/python3
+# coding=utf-8
+# Created:     20/07/2012
+# Copyright:   http://www.cnblogs.com/txw1958/
+'''
+A Chinese Calendar Library in Python
+'''
+
+
+import os, io, sys, re, time, datetime, base64
+
+__version__ = "$Rev: 123 $"
+__all__ = ['LunarDate']
+
+
+solar_year          = 1900
+solar_month         = 1
+solar_day           = 31
+solar_weekday          = 0
+
+lunar_year          = 0
+lunar_month         = 0
+lunar_day           = 0
+lunar_isLeapMonth   = False
+
+
+class LunarDate(object):
+    _startDate = datetime.date(1900, 1, 31)
+
+    def __init__(self, year, month, day, isLeapMonth=False):
+        global lunar_year
+        global lunar_month
+        global lunar_day
+        global lunar_isLeapMonth
+
+        lunar_year          = int(year)
+        lunar_month         = int(month)
+        lunar_day           = int(day)
+        lunar_isLeapMonth   = bool(isLeapMonth)
+
+        self.year = year
+        self.month = month
+        self.day = day
+        self.isLeapMonth = bool(isLeapMonth)
+
+    def __str__(self):
+        return 'LunarDate(%d, %d, %d, %d)' % (self.year, self.month, self.day, self.isLeapMonth)
+
+    __repr__ = __str__
+
+    @staticmethod
+    def fromSolarDate(year, month, day):
+        solarDate = datetime.date(year, month, day)
+        offset = (solarDate - LunarDate._startDate).days
+        return LunarDate._fromOffset(offset)
+
+    def toSolarDate(self):
+        def _calcDays(yearInfo, month, day, isLeapMonth):
+            isLeapMonth = int(isLeapMonth)
+            res = 0
+            ok = False
+            for _month, _days, _isLeapMonth in self._enumMonth(yearInfo):
+                if (_month, _isLeapMonth) == (month, isLeapMonth):
+                    if 1 <= day <= _days:
+                        res += day - 1
+                        return res
+                    else:
+                        raise ValueError("day out of range")
+                res += _days
+
+            raise ValueError("month out of range")
+
+        offset = 0
+        if self.year < 1900 or self.year >= 2050:
+            raise ValueError('year out of range [1900, 2050)')
+        yearIdx = self.year - 1900
+        for i in range(yearIdx):
+            offset += yearDays[i]
+
+        offset += _calcDays(yearInfos[yearIdx], self.month, self.day, self.isLeapMonth)
+        return self._startDate + datetime.timedelta(days=offset)
+
+    def __sub__(self, other):
+        if isinstance(other, LunarDate):
+            return self.toSolarDate() - other.toSolarDate()
+        elif isinstance(other, datetime.date):
+            return self.toSolarDate() - other
+        elif isinstance(other, datetime.timedelta):
+            res = self.toSolarDate() - other
+            return LunarDate.fromSolarDate(res.year, res.month, res.day)
+        raise TypeError
+
+    def __rsub__(self, other):
+        if isinstance(other, datetime.date):
+            return other - self.toSolarDate()
+
+    def __add__(self, other):
+        if isinstance(other, datetime.timedelta):
+            res = self.toSolarDate() + other
+            return LunarDate.fromSolarDate(res.year, res.month, res.day)
+        raise TypeError
+
+    def __radd__(self, other):
+        return self + other
+
+    def __lt__(self, other):
+        return self - other < datetime.timedelta(0)
+
+    def __le__(self, other):
+        return self - other <= datetime.timedelta(0)
+
+    @classmethod
+    def today(cls):
+        res = datetime.date.today()
+        return cls.fromSolarDate(res.year, res.month, res.day)
+
+    @staticmethod
+    def _enumMonth(yearInfo):
+        months = [(i, 0) for i in range(1, 13)]
+        leapMonth = yearInfo % 16
+        if leapMonth == 0:
+            pass
+        elif leapMonth <= 12:
+            months.insert(leapMonth, (leapMonth, 1))
+        else:
+            raise ValueError("yearInfo %r mod 16 should in [0, 12]" % yearInfo)
+
+        for month, isLeapMonth in months:
+            if isLeapMonth:
+                days = (yearInfo >> 16) % 2 + 29
+            else:
+                days = (yearInfo >> (16 - month)) % 2 + 29
+            yield month, days, isLeapMonth
+
+    @classmethod
+    def _fromOffset(cls, offset):
+        def _calcMonthDay(yearInfo, offset):
+            for month, days, isLeapMonth in cls._enumMonth(yearInfo):
+                if offset < days:
+                    break
+                offset -= days
+            return (month, offset + 1, isLeapMonth)
+
+        offset = int(offset)
+
+        for idx, yearDay in enumerate(Info.yearDays()):
+            if offset < yearDay:
+                break
+            offset -= yearDay
+        year = 1900 + idx
+
+        yearInfo = Info.yearInfos[idx]
+        month, day, isLeapMonth = _calcMonthDay(yearInfo, offset)
+        return LunarDate(year, month, day, isLeapMonth)
+
+class ChineseWord():
+    def weekday_str(tm):
+        a = '星期日 星期一 星期二 星期三 星期四 星期五 星期六'.split()
+        return a[tm]
+
+    def solarTerm(year, month, day):
+        a = '小寒 大寒 立春 雨水 惊蛰 春分\
+             清明 谷雨 立夏 小满 芒种 夏至\
+             小暑 大暑 立秋 处暑 白露 秋分\
+             寒露 霜降 立冬 小雪 大雪 冬至'.split()
+        return
+
+    def day_lunar(ld):
+        a = '初一 初二 初三 初四 初五 初六 初七 初八 初九 初十\
+             十一 十二 十三 十四 十五 十六 十七 十八 十九 廿十\
+             廿一 廿二 廿三 廿四 廿五 廿六 廿七 廿八 廿九 三十'.split()
+        return a[ld - 1]
+
+    def month_lunar(le, lm):
+        a = '正月 二月 三月 四月 五月 六月 七月 八月 九月 十月 十一月 十二月'.split()
+        if le:
+            return "闰" + a[lm - 1]
+        else:
+            return a[lm - 1]
+
+    def year_lunar(ly):
+        y = ly
+        tg = '甲 乙 丙 丁 戊 己 庚 辛 壬 癸'.split()
+        dz = '子 丑 寅 卯 辰 巳 午 未 申 酉 戌 亥'.split()
+        sx = '鼠 牛 虎 兔 龙 蛇 马 羊 猴 鸡 狗 猪'.split()
+        return tg[(y - 4) % 10] + dz[(y - 4) % 12] + '[' + sx[(y - 4) % 12] + ']' + '年'
+
+class Festival():
+    #国历节日 *表示放假日
+    def solar_Fstv(solar_month, solar_day):
+        sFtv = [
+        "0101#元旦节#",
+        "0202#世界湿地日#",
+        "0210#国际气象节#",
+        "0214#情人节#",
+        "0301#国际海豹日#",
+        "0303#全国爱耳日#",
+        "0305#学雷锋纪念日#",
+        "0308#妇女节#",
+        "0312#植树节# #孙中山逝世纪念日#",
+        "0314#国际警察日#",
+        "0315#消费者权益日#",
+        "0317#中国国医节# #国际航海日#",
+        "0321#世界森林日# #消除种族歧视国际日# #世界儿歌日#",
+        "0322#世界水日#",
+        "0323#世界气象日#",
+        "0324#世界防治结核病日#",
+        "0325#全国中小学生安全教育日#",
+        "0330#巴勒斯坦国土日#",
+        "0401#愚人节# #全国爱国卫生运动月(四月)# #税收宣传月(四月)#",
+        "0407#世界卫生日#",
+        "0422#世界地球日#",
+        "0423#世界图书和版权日#",
+        "0424#亚非新闻工作者日#",
+        "0501#劳动节#",
+        "0504#青年节#",
+        "0505#碘缺乏病防治日#",
+        "0508#世界红十字日#",
+        "0512#国际护士节#",
+        "0515#国际家庭日#",
+        "0517#国际电信日#",
+        "0518#国际博物馆日#",
+        "0520#全国学生营养日#",
+        "0523#国际牛奶日#",
+        "0531#世界无烟日#",
+        "0601#国际儿童节#",
+        "0605#世界环境保护日#",
+        "0606#全国爱眼日#",
+        "0617#防治荒漠化和干旱日#",
+        "0623#国际奥林匹克日#",
+        "0625#全国土地日#",
+        "0626#国际禁毒日#",
+        "0701#中国共·产党诞辰# #香港回归纪念日# #世界建筑日#",
+        "0702#国际体育记者日#",
+        "0707#抗日战争纪念日#",
+        "0711#世界人口日#",
+        "0730#非洲妇女日#",
+        "0801#建军节#",
+        "0808#中国男子节(爸爸节)#",
+        "0815#抗日战争胜利纪念#",
+        "0908#国际扫盲日# #国际新闻工作者日#",
+        "0909#毛·泽东逝世纪念#",
+        "0910#中国教师节#",
+        "0914#世界清洁地球日#",
+        "0916#国际臭氧层保护日#",
+        "0918#九·一八事变纪念日#",
+        "0920#国际爱牙日#",
+        "0927#世界旅游日#",
+        "0928#孔子诞辰#",
+        "1001#国庆节# #世界音乐日# #国际老人节#",
+        "1002#国庆节假日# #国际和平与民主自由斗争日#",
+        "1003#国庆节假日#",
+        "1004#世界动物日#",
+        "1006#老人节#",
+        "1008#全国高血压日# #世界视觉日#",
+        "1009#世界邮政日# #万国邮联日#",
+        "1010#辛亥革命纪念日# #世界精神卫生日#",
+        "1013#世界保健日# #国际教师节#",
+        "1014#世界标准日#",
+        "1015#国际盲人节(白手杖节)#",
+        "1016#世界粮食日#",
+        "1017#世界消除贫困日#",
+        "1022#世界传统医药日#",
+        "1024#联合国日#",
+        "1031#世界勤俭日#",
+        "1107#十月社会主义革命纪念日#",
+        "1108#中国记者日#",
+        "1109#全国消防安全宣传教育日#",
+        "1110#世界青年节#",
+        "1111#国际科学与和平周(本日所属的一周)#",
+        "1112#孙中山诞辰纪念日#",
+        "1114#世界糖尿病日#",
+        "1116#国际宽容日#",
+        "1117#国际大学生节# #世界学生节#",
+        "1120#彝族年#",
+        "1121#彝族年# #世界问候日# #世界电视日#",
+        "1122#彝族年#",
+        "1129#国际声援巴勒斯坦人民国际日#",
+        "1201#世界艾滋病日#",
+        "1203#世界残疾人日#",
+        "1205#国际经济和社会发展志愿人员日#",
+        "1208#国际儿童电视日#",
+        "1209#世界足球日#",
+        "1210#世界人权日#",
+        "1212#西安事变纪念日#",
+        "1213#南京大屠杀(1937年)纪念日#",
+        "1220#澳门回归纪念#",
+        "1221#国际篮球日#",
+        "1224#平安夜#",
+        "1225#圣诞节#",
+        "1226#毛·泽东诞辰纪念日#"
+        ]
+        solar_month_str = str(solar_month) if solar_month > 9 else "0" + str(solar_month)
+        solar_day_str = str(solar_day) if solar_day > 9 else "0" + str(solar_day)
+        pattern = "(" + solar_month_str + solar_day_str + ")([\w+?\#?\(?\)?\d+\s?·?]*)"
+        for solar_fstv_item in sFtv:
+            result = re.search(pattern, solar_fstv_item)
+            if result is not None:
+                return result.group(2)
+
+
+    def lunar_Fstv(lunar_month, lunar_day):
+        #农历节日 *表示放假日
+        #每年单独来算
+        lFtv = [
+        "0101#春节#",
+        "0115#元宵节#",
+        "0202#春龙节",
+        #"0314#清明节#", #每年不一样，此为2012年，事实上为公历节日
+        "0505#端午节#",
+        "0707#七夕情人节#",
+        "0715#中元节#",
+        "0815#中秋节#",
+        "0909#重阳节#",
+        "1208#腊八节#",
+        "1223#小年#",
+        "1229#除夕#"   #每年不一样，此为2011年
+        ]
+        lunar_month_str = str(lunar_month) if lunar_month > 9 else "0" + str(lunar_month)
+        lunar_day_str = str(lunar_day) if lunar_day > 9 else "0" + str(lunar_day)
+        pattern = "(" + lunar_month_str + lunar_day_str + ")([\w+?\#?\s?]*)"
+        for lunar_fstv_item in lFtv:
+            result = re.search(pattern, lunar_fstv_item)
+            if result is not None:
+                return result.group(2)
+
+    #国历节日 *表示放假日
+    def weekday_Fstv(solar_month, solar_day, solar_weekday):
+        #某月的第几个星期几
+        wFtv = [
+        "0150#世界防治麻风病日#", #一月的最后一个星期日（月倒数第一个星期日）
+        "0520#国际母亲节#",
+        "0530#全国助残日#",
+        "0630#父亲节#",
+        "0730#被奴役国家周#",
+        "0932#国际和平日#",
+        "0940#国际聋人节# #世界儿童日#",
+        "0950#世界海事日#",
+        "1011#国际住房日#",
+        "1013#国际减轻自然灾害日(减灾日)#",
+        "1144#感恩节#"]
+
+        #7，14等应该属于1, 2周，能整除的那天实际属于上一周，做个偏移
+        offset = -1 if solar_day % 7 == 0 else 0
+        #计算当前日属于第几周，得出来从0开始计周，再向后偏移1
+        weekday_ordinal = solar_day // 7 + offset + 1
+
+        solar_month_str = str(solar_month) if solar_month > 9 else "0" + str(solar_month)
+        solar_weekday_str = str(weekday_ordinal) + str(solar_weekday)
+
+        pattern = "(" + solar_month_str + solar_weekday_str + ")([\w+?\#?\s?]*)"
+        for weekday_fstv_item in wFtv:
+            result = re.search(pattern, weekday_fstv_item)
+            if result is not None:
+                return result.group(2)
+
+        #如何计算某些最后一个星期几的情况，..........
+
+    #24节气
+    def solar_Term(solar_month, solar_day):
+        #每年数据不一样，此为2012年内的数据
+        stFtv = [
+        "0106#小寒#",
+        "0120#大寒#",
+        "0204#立春#",
+        "0219#雨水#",
+        "0305#惊蛰#",
+        "0320#春分#",
+        "0404#清明#",
+        "0420#谷雨#",
+        "0505#立夏#",
+        "0521#小满#",
+        "0605#芒种#",
+        "0621#夏至#",
+        "0707#小暑#",
+        "0722#大暑#",
+        "0807#立秋#",
+        "0823#处暑#",
+        "0907#白露#",
+        "0922#秋分#",
+        "1008#寒露#",
+        "1023#霜降#",
+        "1107#立冬#",
+        "1122#小雪#",
+        "1206#大雪#",
+        "1221#冬至#",
+        ]
+        solar_month_str = str(solar_month) if solar_month > 9 else "0" + str(solar_month)
+        solar_day_str = str(solar_day) if solar_day > 9 else "0" + str(solar_day)
+        pattern = "(" + solar_month_str + solar_day_str + ")([\w+?\#?]*)"
+        for solarTerm_fstv_item in stFtv:
+            result = re.search(pattern, solarTerm_fstv_item)
+            if result is not None:
+                return result.group(2)
+
+class Info():
+    yearInfos = [
+        #    /* encoding:
+        #               b bbbbbbbbbbbb bbbb
+        #       bit#    1 111111000000 0000
+        #               6 543210987654 3210
+        #               . ............ ....
+        #       month#    000000000111
+        #               M 123456789012   L
+        #
+        #    b_j = 1 for long month, b_j = 0 for short month
+        #    L is the leap month of the year if 1<=L<=12; NO leap month if L = 0.
+        #    The leap month (if exists) is long one iff M = 1.
+        #    */
+        0x04bd8,                                    #   /* 1900 */
+        0x04ae0, 0x0a570, 0x054d5, 0x0d260, 0x0d950,#   /* 1905 */
+        0x16554, 0x056a0, 0x09ad0, 0x055d2, 0x04ae0,#   /* 1910 */
+        0x0a5b6, 0x0a4d0, 0x0d250, 0x1d255, 0x0b540,#   /* 1915 */
+        0x0d6a0, 0x0ada2, 0x095b0, 0x14977, 0x04970,#   /* 1920 */
+        0x0a4b0, 0x0b4b5, 0x06a50, 0x06d40, 0x1ab54,#   /* 1925 */
+        0x02b60, 0x09570, 0x052f2, 0x04970, 0x06566,#   /* 1930 */
+        0x0d4a0, 0x0ea50, 0x06e95, 0x05ad0, 0x02b60,#   /* 1935 */
+        0x186e3, 0x092e0, 0x1c8d7, 0x0c950, 0x0d4a0,#   /* 1940 */
+        0x1d8a6, 0x0b550, 0x056a0, 0x1a5b4, 0x025d0,#   /* 1945 */
+        0x092d0, 0x0d2b2, 0x0a950, 0x0b557, 0x06ca0,#   /* 1950 */
+        0x0b550, 0x15355, 0x04da0, 0x0a5d0, 0x14573,#   /* 1955 */
+        0x052d0, 0x0a9a8, 0x0e950, 0x06aa0, 0x0aea6,#   /* 1960 */
+        0x0ab50, 0x04b60, 0x0aae4, 0x0a570, 0x05260,#   /* 1965 */
+        0x0f263, 0x0d950, 0x05b57, 0x056a0, 0x096d0,#   /* 1970 */
+        0x04dd5, 0x04ad0, 0x0a4d0, 0x0d4d4, 0x0d250,#   /* 1975 */
+        0x0d558, 0x0b540, 0x0b5a0, 0x195a6, 0x095b0,#   /* 1980 */
+        0x049b0, 0x0a974, 0x0a4b0, 0x0b27a, 0x06a50,#   /* 1985 */
+        0x06d40, 0x0af46, 0x0ab60, 0x09570, 0x04af5,#   /* 1990 */
+        0x04970, 0x064b0, 0x074a3, 0x0ea50, 0x06b58,#   /* 1995 */
+        0x05ac0, 0x0ab60, 0x096d5, 0x092e0, 0x0c960,#   /* 2000 */
+        0x0d954, 0x0d4a0, 0x0da50, 0x07552, 0x056a0,#   /* 2005 */
+        0x0abb7, 0x025d0, 0x092d0, 0x0cab5, 0x0a950,#   /* 2010 */
+        0x0b4a0, 0x0baa4, 0x0ad50, 0x055d9, 0x04ba0,#   /* 2015 */
+        0x0a5b0, 0x15176, 0x052b0, 0x0a930, 0x07954,#   /* 2020 */
+        0x06aa0, 0x0ad50, 0x05b52, 0x04b60, 0x0a6e6,#   /* 2025 */
+        0x0a4e0, 0x0d260, 0x0ea65, 0x0d530, 0x05aa0,#   /* 2030 */
+        0x076a3, 0x096d0, 0x04afb, 0x04ad0, 0x0a4d0,#   /* 2035 */
+        0x1d0b6, 0x0d250, 0x0d520, 0x0dd45, 0x0b5a0,#   /* 2040 */
+        0x056d0, 0x055b2, 0x049b0, 0x0a577, 0x0a4b0,#   /* 2045 */
+        0x0aa50, 0x1b255, 0x06d20, 0x0ada0          #   /* 2049 */
+        ]
+
+    def yearInfo2yearDay(yearInfo):
+        yearInfo = int(yearInfo)
+
+        res = 29 * 12
+
+        leap = False
+        if yearInfo % 16 != 0:
+            leap = True
+            res += 29
+
+        yearInfo //= 16
+
+        for i in range(12 + leap):
+            if yearInfo % 2 == 1:
+                res += 1
+            yearInfo //= 2
+        return res
+
+    def yearDays():
+        yearDays = [Info.yearInfo2yearDay(x) for x in Info.yearInfos]
+        return yearDays
+
+    def day2LunarDate(offset):
+        offset = int(offset)
+        res = LunarDate()
+
+        for idx, yearDay in enumerate(yearDays()):
+            if offset < yearDay:
+                break
+            offset -= yearDay
+        res.year = 1900 + idx
+
+class SolarDate():
+
+    def __init__(self):
+        global solar_year
+        global solar_month
+        global solar_day
+        global solar_weekday
+
+        solar_year      = int(time.strftime("%Y", time.localtime()))
+        solar_month     = int(time.strftime("%m", time.localtime()))
+        solar_day       = int(time.strftime("%d", time.localtime()))
+        solar_weekday   = int(time.strftime("%w", time.localtime()))
+
+        self.year = solar_year
+        self.month = solar_month
+        self.day = solar_day
+        self.weekday = solar_weekday
+
+    def __str__(self):
+        return 'LunarDate(%d, %d, %d, %d)' % (self.year, self.month, self.day, self.isLeapMonth)
+
+
+def getCalendar_today():
+    solar = SolarDate()
+    LunarDate.fromSolarDate(solar_year, solar_month, solar_day)
+
+    festival = ""
+
+    if Festival.solar_Term(solar_month, solar_day):
+        festival = festival + " 今日节气：" + Festival.solar_Term(solar_month, solar_day)
+    if Festival.solar_Fstv(solar_month, solar_day):
+        festival = festival + " 公历节日：" + Festival.solar_Fstv(solar_month, solar_day)
+    if Festival.weekday_Fstv(solar_month, solar_day, solar_weekday):
+        if festival.find("公历节日") == -1:
+            festival = festival + " 公历节日：" + Festival.weekday_Fstv(solar_month, solar_day, solar_weekday)
+        else:
+            festival = festival + " " + Festival.weekday_Fstv(solar_month, solar_day, solar_weekday)
+    if Festival.lunar_Fstv(lunar_month, lunar_day):
+        festival = festival + " 农历节日：" + Festival.lunar_Fstv(lunar_month, lunar_day)
+
+    twitter = \
+    "今天是" + str(solar_year) + "年" + str(solar_month) + "月" + str(solar_day) + "日" + " " \
+    + ChineseWord.weekday_str(solar_weekday) + " 农历" + ChineseWord.year_lunar(lunar_year) \
+    + ChineseWord.month_lunar(lunar_isLeapMonth,lunar_month) \
+    + ChineseWord.day_lunar(lunar_day) + festival
+    print(twitter)
+    return twitter
+
+def getCalendar_all_day():
+    #solar = SolarDate()
+    global solar_year
+    global solar_month
+    global solar_day
+    global solar_weekday
+
+    solar_year = 2012
+    solar_month = 1
+    weekday_offset = 0 #1月1号星期几?
+    index_day = 0
+    for solar_month in range(1, 13):
+        if solar_month in [1, 3, 5, 7, 8, 10, 12]:
+            solar_day_max = 31
+        elif solar_month in [4, 6, 9, 11]:
+            solar_day_max = 30
+        elif solar_month == 2:
+            if ((solar_year % 4 == 0) and (solar_year % 100 != 0)) or (solar_year % 400 == 0 ):
+                solar_day_max = 29
+            else:
+                solar_day_max = 28
+        else:
+            None
+
+        for solar_day in range(1, solar_day_max + 1):
+            index_day += 1
+            solar_weekday = (index_day )% 7 +  - 1
+            solar_weekday = 0 if solar_weekday == 7 else solar_weekday
+            solar_weekday = 6 if solar_weekday == -1 else solar_weekday
+
+            LunarDate.fromSolarDate(solar_year, solar_month, solar_day)
+            festival = ""
+
+            if Festival.solar_Term(solar_month, solar_day):
+                festival = festival + " 节气：" + Festival.solar_Term(solar_month, solar_day)
+            if Festival.solar_Fstv(solar_month, solar_day):
+                festival = festival + " 节日：" + Festival.solar_Fstv(solar_month, solar_day)
+            if Festival.weekday_Fstv(solar_month, solar_day, solar_weekday):
+                if festival.find("节日") == -1:
+                    festival = festival + " 节日：" + Festival.weekday_Fstv(solar_month, solar_day, solar_weekday)
+                else:
+                    festival = festival + " " + Festival.weekday_Fstv(solar_month, solar_day, solar_weekday)
+            if Festival.lunar_Fstv(lunar_month, lunar_day):
+                if festival.find("节日") == -1:
+                    festival = festival + " 节日：" + Festival.lunar_Fstv(lunar_month, lunar_day)
+                else:
+                    festival = festival + " " + Festival.lunar_Fstv(lunar_month, lunar_day)
+
+            index_yy = str(solar_year)
+            if int(solar_month) < 10:
+                index_mm = "0" + str(solar_month)
+            else:
+                index_mm = str(solar_month)
+            if int(solar_day) < 10:
+                index_dd = "0" + str(solar_day)
+            else:
+                index_dd = str(solar_day)
+
+            index_yyddmm = index_yy + index_mm + index_dd
+
+
+            twitter = ("message(" + str(index_yyddmm) + ') = "') + \
+            str(solar_year) + "年" + str(solar_month) + "月" + str(solar_day) + "日" + " " \
+            + ChineseWord.weekday_str(solar_weekday) + " 农历" + ChineseWord.year_lunar(lunar_year) \
+            + ChineseWord.month_lunar(lunar_isLeapMonth,lunar_month) \
+            + ChineseWord.day_lunar(lunar_day) + festival + '"'
+            print(twitter)
+
+    return twitter
+
+
+def main():
+    "main function"
+    print(base64.b64decode(b'Q29weXJpZ2h0IChjKSAyMDEyIERvdWN1YmUgSW5jLiBBbGwgcmlnaHRzIHJlc2VydmVkLg==').decode())
+    getCalendar_all_day()
+    getCalendar_today()
+
+if __name__ == '__main__':
+    main()
+
+]]]

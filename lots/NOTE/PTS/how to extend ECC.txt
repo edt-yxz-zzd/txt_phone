@@ -49,4 +49,467 @@ def System U = PTS with
 
 
 
+below:
+  obj :: type ::: sort :::: sort
+  var4obj -:: type
+  var4type -::: sort
+  var4sort -:::: sort
+  @[var4obj -:: type ::: sort] -> [type<var4obj> ::: sort] ::: sort
+
+???update with pair+either???
+  pair/existential-? cannot be impl by ECC
+    mk_pair
+      :: [@@@[sort1 -:::: ???] -> @@@[sort2 -:::: ???] -> @@[type1 -::: sort1] -> @[obj1 -:: type1] -> @[obj2 -:: type2<obj1> ::: sort2]
+        -> @@@[sort3 -:::: ???] -> @@[mk_type3 -:: [@[obj1 -:: type1] -> @[obj2 -:: type2<obj1> ::: sort2] -> [type3 -::: sort3 :::: ???]] ::: sort3] -> [@[obj1 -:: type1] -> @[obj2 -:: type2<obj1> ::: sort2] -> [mk_type3 obj1 obj2 ::: sort3]] -> [mk_type3 obj1 obj2 ::: sort3]] ::: ?????
+    mk_pair
+      :: @@@{<s1,s2>} => @@[t1:s1] -> @[t2_:t1->s2] -> @[o1:t1] -> @[o2:t2_ o1]
+      -> @@@{<s3>} => @@[t3:s3]
+      -> (@[o1:t1] -> @[o2:t2_ o1] -> t3)
+      ->  t3
+      ::: ????? =?= <s1,s2,s3> => Top4arrow(max(s1+1,s2+1,s3+1), s3)
+      #######-> @@@{<s3>} => @@[t3__:@[o1:t1] -> @[o2:t2_ o1]->s3]
+      #######-> (@[o1:t1] -> @[o2:t2_ o1] -> t3__ o1 o2)
+
+???update with auto-sort-upgrate / from HoTT???
+  [空间自动升级]
+  i.e. ???[[type ::: sort :::: sort2] |- [type ::: sort2]][[sort :::: sort2 :::: sort3] |- [sort :::: sort3]]???
+
+
+
+
+
+探讨一下：假设[ECC][+pair+either][空间自动升级]:
+  #[空间自动升级] ==>> (m,0,arbitrary) 而非 分裂的 (m,0,{0}\-/{m..})
+  #     这样一来，可选sort范围不再分裂，统一使用最小值即可
+  能否有 类型自己定义自己的空间？该如何实现？
+  #用于表达 否命题 : 矛盾 或者说 出错
+  #     否命题<命题> = [命题] -> 矛盾
+  矛盾<sort> = [[@@[type -::: sort] -> type] ::: sort]
+  矛盾 = [[@@@[sort -:::: ???] -> [@@[type -::: sort] -> type] ::: sort]] ::: ?????
+  sort 的 数据结构
+    这里只是 基本的，见下面『自举类型的空间』
+  let fix f = f f
+      fix_recur = fix recur
+  sort_from_syntax_base recur
+    # ver4->ver5: = var4sort -> var_ex4sort
+    # ver5:
+    = var_ex4sort #= var4sort | 0 | LocalTopSort
+      # xxx no!!!err: ShortCut_0 is 0 but max than others(include normal 0)
+      # LocalTopSort cannot occur directly in syntax(现在允许了！), but will appear in sort_under_m0arbitrary convert from sort_from_template_arrow__implicit
+    | sort_from_pair fix_recur fix_recur
+      #from pair+either
+    | sort_from_arrow fix_recur fix_recur
+    | sort_from_polymorphism fix_recur uint
+      #from polymorphism+type-constructor
+      #sort_from_syntax[+n]
+    #ver5:
+    | sort_from_template_arrow__implicit var4sort sort_from_syntax
+      #var4sort not var_ex4sort
+      # @~[s -:*~~ ~~ [sort_relationship<s>]] => ...
+      # [@~[s -:*~~ LocalTopSort[+1] ~~ [sort_relationship<s>]] => ...] :@* LocalTopSort[+2]
+      # [@~[s -<=:*~~ LocalTopSort ~~ [sort_relationship<s>]] => ...] :@* LocalTopSort[+2]
+      #     LocalTopSort被替换为其他变量时，可能与0等高
+      #可 归结到下面sort_from_template_arrow__explicit
+    | sort_from_template_arrow__explicit var4sort sort_from_syntax sort_from_syntax
+      | sort_from_template_arrow__explicit2 var4sort sort_from_syntax__minus1 sort_from_syntax
+      #var4sort not var_ex4sort
+      # @~[s -:**~ sort[+1] ~~ [sort_relationship<s>]] => ...
+      # @~[s -<=:**~ sort ~~ [sort_relationship<s>]] => ...
+      #     sort被替换为其他变量时，可能与0等高
+    | sort_from_apply_template_arrow_to_fix_LocalTopSort sort_from_syntax sort_from_syntax
+      # template_type $@~ sort
+      #     let .LocalTopSort = sort in template_type
+    | sort_from_apply_template_arrow var4sort sort_from_syntax__body sort_from_syntax
+      # (@~[s -<=:**~ sort ~~ [sort_relationship<s>]] => body...) $@* sort
+
+  sort_from_syntax
+    = fix sort_from_syntax_base
+
+  #ver1 without level_up/sort_from_polymorphism: sort_under_m0arbitrary = {turnoff_0_if_any :: Set var4sort, turnon_var_if_any :: Map var4sort (Set (Set var4sort))}
+  #ver2 add level_up, but bug/fail: sort_under_m0arbitrary = {turnoff_0_if_any :: Set var4sort, level_up :: UInt, turnon_var_if_any :: Map var4sort (Set (Set var4sort))}
+  #ver3: sort_under_m0arbitrary = {turnoff_0_if_any :: Set var4sort, turnon_leveled_xvar_if_any :: Map (Either level_up (var4sort, level_up)) (Set (Set var4sort))}
+  #ver4:
+  sort_under_m0arbitrary = {turnoff_0_if_any :: Set var4sort, level_up :: UInt, turnon_leveled_var_if_any :: Map (var4sort, level_up) (Set (Set var4sort))}
+      #语义见下面eval
+      # 简单地说，给定某个配置，当且仅当turnoff_0_if_any里面全0时本对象表达0。turnon_var_if_any里每个键值var4sort对应一个path列表，任一path全非0(打通)，则键值var4sort被选中，所有被选中的键值var4sort的唯一极小上界 再+level_up即是本对象表达的sort。
+      # #outdated:ver1 约束/不变式：turnoff_0_if_any与任一path的交集不空。
+      # #outdated:ver3 约束/不变式：turnon_leveled_xvar_if_any不空(？禁止 直接使用0/uint)，paths不空，path也不空。若turnoff_0_if_any不空，则与任一path的交集不空，否则 键值 必有 (Left level_up)且[level_up>0]。
+      # ver4 约束/不变式：turnon_leveled_xvar_if_any不空(？禁止 直接使用0/uint)，paths不空，path也不空。turnoff_0_if_any不空，与任一path的交集也不空。min{键值中的level_up} ==== 0。(xxx 已强行移出！ xxx min{键值中的level_up} ==== 外部的level_up。)
+      #
+  #ver5:
+  #xxx sort_under_m0arbitrary = {turnoff_0_if_any :: Set (Set var4sort), level_up :: UInt, turnon_leveled_var_if_any :: Map (var4sort, level_up) (Set (Set var4sort))}
+  #xxx sort_under_m0arbitrary = {level_up :: UInt, turnon_leveled_var_if_any :: Map (var_ex4sort, level_up) (Set (Set var4sort))}
+    #注意: 键值var-ex, path var。
+    #   err:turnoff_0_if_any 合并到 turnon_leveled_var_if_any 以 (ShortCut_0, 0)为键值。
+  sort_under_m0arbitrary = {turnoff_shortcut_if_any :: Set var4sort, common_level_up, level4shortcut :: UInt, turnon_leveled_var_ex_if_any :: Map (var_ex4sort, level_up) (Set (Set var4sort))}
+    #注意: 键值var-ex, path var。
+    #turnoff_shortcut_if_any 仅止是 turnon_leveled_var_ex_if_any的一部分信息，用于 辅助实现 convert-sort_from_arrow
+    #   即 若当前环境下，turnoff_shortcut_if_any 推出 开启shortcut，则 turnon_leveled_var_ex_if_any必无任一path打通。
+    #等等！！turnoff_shortcut_if_any 似乎可用 仍旧可沿用用前版turnoff_0_if_any的类型 ！！
+    #(common_level_up, level4shortcut) from pair&[+1]==>>bug:min(w1, w2) #->max(w1, w2)??但这样一来，键值中的level_up可能为负数！！
+    #       将一个level_up分成两个值，min/common_level_up用以避免键值中出现赋值，max/level4shortcut用以标识shortcut开启时的 sort-uint，表明是否 为0，用于convert-sort_from_arrow
+    #       level4shortcut,键值中的level_up均需加上common_level_up
+    #       turnoff_shortcut_if_any 不空，turnon_leveled_var_ex_if_any本身不空，paths不空，path不空，path与turnoff_shortcut_if_any交集不空，键值level_up不负，必有0。
+  #ver6
+  sort_under_m0arbitrary = {may_turnon_0_if_all :: Maybe (Set var_ex4sort), turnon_leveled_var_ex_if_any_all :: Map (var_ex4sort, level_up) (Set (Set var4sort))}
+
+
+
+  # 『=0』means 『is BottomSort』
+  ??[sort_from_syntax=0]
+    case of
+    * var4sort/var_ex4sort
+      <==> [all0 {var4sort}]
+    * sort_from_pair sort_from_syntax1 sort_from_syntax2
+      <==> [sort_from_syntax1=0][sort_from_syntax2=0]
+      <==> [all0 sort_from_syntax1...turnoff_0_if_any][sort_from_syntax2=0]
+      <==> [all0 $ sort_from_syntax1...turnoff_0_if_any\-/sort_from_syntax2...turnoff_0_if_any]
+      #ver5:
+      <==> [all0 sort_from_syntax1/2...(common_level_up+level4shortcut)][all0 $ sort_from_syntax1/2...turnoff_shortcut_if_any]
+    * sort_from_arrow sort_from_syntax1 sort_from_syntax2
+      <==> [sort_from_syntax2=0]
+      <==> [all0 sort_from_syntax2...turnoff_0_if_any]
+      #ver5:
+      <==> [0== sort_from_syntax2...(common_level_up+level4shortcut)][all0 $ sort_from_syntax2...turnoff_shortcut_if_any]
+    * sort_from_polymorphism sort_from_syntax1 n
+      #sort_from_syntax1[+n]
+      <==> [n=0][sort_from_syntax1=0]
+
+    given a sort_setting:
+      eval<sort_setting>(sort_from_syntax)
+        = case of
+        * var4sort/var_ex4sort
+          -> sort_setting[var4sort]
+        * sort_from_pair sort_from_syntax1 sort_from_syntax2
+          -> max(recur sort_from_syntax1, recur sort_from_syntax2)
+        * sort_from_arrow sort_from_syntax1 sort_from_syntax2
+          -> let s = recur sort_from_syntax2 in if s==0 then 0 else max(recur sort_from_syntax1, s)
+        * sort_from_polymorphism sort_from_syntax1 n
+          -> n+recur sort_from_syntax1
+        * sort_from_template_arrow__implicit var4sort sort_from_syntax2
+          -> recur (sort_from_template_arrow__explicit2 var4sort LocalTopSort sort_from_syntax2)
+        * sort_from_template_arrow__explicit2 var4sort sort_from_syntax__minus1 sort_from_syntax2
+          ->  let top_plus_0 = recur sort_from_syntax__minus1
+                  #top_plus_0+2 ~ LocalTopSort[+2]
+                  #top_plus_0 ~ LocalTopSort ~ max var4sort
+              in  recur<sort_setting.ireplace({var4sort:top_plus_0})> $ as_if-sort_from_arrow (top_plus_0) sort_from_syntax2
+        * sort_from_apply_template_arrow_to_fix_LocalTopSort sort_from_syntax1 sort_from_syntax2
+          -> recur (sort_from_apply_template_arrow LocalTopSort sort_from_syntax1 sort_from_syntax2)
+        * sort_from_apply_template_arrow var4sort sort_from_syntax__body sort_from_syntax__input
+          ->  let top_plus_0 = recur sort_from_syntax__input
+              in  recur<sort_setting.ireplace({var4sort:top_plus_0})> sort_from_syntax__body
+
+
+
+
+
+
+
+
+
+      eval<sort_setting>(sort_under_m0arbitrary)
+        #ver1: = let var_is_0 = (\v->sort_setting[v] == 0) in if all var_is_0 sort_under_m0arbitrary.turnoff_0_if_any then 0 else max{ var4sort | @[(var4sort, turnon_paths) <- sort_under_m0arbitrary.turnon_var_if_any.items()], [any (not . any var_is_0) turnon_paths]}
+        #ver5
+        = let var_is_0 = (\v->sort_setting[v] == 0)
+              (vs, common, lvl4s, vw2paths) = sort_under_m0arbitrary
+          in  common + if all var_is_0 vs then lvl4s else max{ sort_setting[var_ex4sort]+lvl | @[((var_ex4sort, lvl), turnon_paths) <- vw2paths.items()], [any (not . any var_is_0) turnon_paths]}
+        #ver6
+        = let var_is_0 = (\v->sort_setting[v] == 0)
+              (may_vs, vw2paths) = sort_under_m0arbitrary
+              sort = max{ sort_setting[var_ex4sort]+lvl | @[((var_ex4sort, lvl), turnon_paths) <- vw2paths.items()], [any (not . any var_is_0) turnon_paths]}
+              lower_bound = maybe 1 (\vs -> if all var_is_0 vs then 0 else 1) may_vs
+          in  assert (sort >= lower_bound) $ sort
+
+        ##考虑 偏序关系？？(似无用<-:::: ?), <=::::, ~=~(子空间 等高/同层空间), ~=~0(is-BottomSort)
+        #自动提升 需要 比较『<=::::』
+        #根据已知偏序关系进行填充以规范化(偏序关系, sort_under_m0arbitrary)->std-sort_under_m0arbitrary
+        #   path 加入更大的项，反正新项更不可能为0
+        #   接着，补充 更小的键值，若已存在，则 补充 它的paths，反正 出现了也会被覆盖
+        #   至于 turnoff_0_if_any 与 path 相反，添加 更小的项，新项更有可能为0
+        #比较 规范型的sort_under_m0arbitrary
+        #如果 嫌复杂，如何精简？如何设定模式 禁止 默认使用 非var4sort 的 复杂型？亦即 要求 用户 显式输入 var4sort，或 可从已知偏序关系推导出唯一极小上界max/top？
+
+    convert(sort_from_syntax)->sort_under_m0arbitrary
+        = case of
+        * var4sort#var_ex4sort,now
+          #ver5:-> ({var4sort}, 0, 0, {(var4sort,0):{{var4sort}}})
+          #ver6:
+          * var4sort | 0 | LocalTopSort as v
+            #not: -> (Just {v}, {(v,0):{{v}}})
+            -> (Just {v}, {(v,0):{{%}}})
+              #may_turnon_0_if_all
+              #turnon_leveled_var_ex_if_any_all
+        * sort_from_pair sort_from_syntax1 sort_from_syntax2
+          #ver6:
+          ->  let ((may_us, uw2paths), (may_vs, vw2paths)) = (recur sort_from_syntax1, recur sort_from_syntax2)
+                  may_xs = case (may_us, may_vs) of
+                      * (Just us, Just vs) -> Just (us\-/vs)
+                      * _ -> Nothing
+            in  (may_xs, uw2paths\\--//vw2paths)
+          #ver5:->  let ((us, w1, m1, uw2paths), (vs, w2, m2, vw2paths)) = (recur sort_from_syntax1, recur sort_from_syntax2)
+          #not bug: (us\-/vs)
+          #bug:min(w1, w2) #->max(w1, w2)??但这样一来，键值中的level_up可能为负数！！
+                  cmp = (w1+m1) - (w2+m2)
+            #bug:in  (if cmp < 0 then vs elif cmp > 0 then us else us\-/vs, min(w1,w2), max(w1+m1,w2+m2)-min(w1,w2), ...)
+            #       不论cmp是否为0，us+vs都必须同时全0才能保证开启捷径！否则非全零的那一方可能无限大！
+            in  (us\-/vs, min(w1,w2), max(w1+m1,w2+m2)-min(w1,w2), key_add (w1-min(w1,w2)) uw2paths\\--//key_add (w2-min(w1,w2)) vw2paths)
+            #   max/min 分离 level_up一分为二 ==>> ver4->ver5
+        * sort_from_arrow sort_from_syntax1 sort_from_syntax2
+          #ver6:
+          ->  let ((may_us, uw2paths), (may_vs, vw2paths)) = (recur sort_from_syntax1, recur sort_from_syntax2)
+                  xw2paths = case may_vs of
+                      * Just vs -> if vs <= {0} then vw2paths else (path_pad_each uw2paths vs)\\--//vw2paths
+                      * _ -> uw2paths\\--//vw2paths
+            in  (may_vs, xw2paths)
+            where path_pad_each uw2paths vs = {uw:paths2 | @[(uw, paths) <- uw2paths.items()], ?[paths2 := {path\-/{v} | @[path <- paths], @[v <- vs]}]}
+          #ver5:-> let ((us, w1, m1, uw2paths), (vs, w2, m2, vw2paths)) = (recur sort_from_syntax1, recur sort_from_syntax2)
+          in  if w2+m2==0 then (vs, 0, 0, vw2paths\\--//{(u, w1+m1+lvl):paths2 | @[((u, lvl), paths) <- uw2paths.items()], ?[paths2 := {path\-/{v} | @[path <- paths], @[v <- vs]}]}) else recur (sort_from_pair sort_from_syntax1 sort_from_syntax2)
+          where uw2paths\\--//vw2paths = {x:paths | @[x <- uw2paths.keys() \-/ vw2paths.keys()], ?[paths := uw2paths.get(x, {})\-/vw2paths.get(x, {})]}
+        * sort_from_polymorphism sort_from_syntax1 n
+          #ver6:
+          -> let (may_vs, vw2paths) = (recur sort_from_syntax1)
+          in  if  n==0 then (may_vs, vw2paths) else (Nothing, key_add n vw2paths)
+          #ver5: -> let (vs, w, m, vw2paths) = (recur sort_from_syntax1)
+          in  (vs, w+n, m, vw2paths)
+        * sort_from_template_arrow__implicit var4sort sort_from_syntax2
+          #ver6: #ver5:
+          -> recur (sort_from_template_arrow__explicit var4sort LocalTopSort sort_from_syntax2)
+        * sort_from_template_arrow__explicit var4sort sort_from_syntax1 sort_from_syntax2
+          * sort_from_template_arrow__explicit2 var4sort sort_from_syntax__minus1 sort_from_syntax2
+          #ver6:
+          -> recur (sort_from_arrow (sort_from_polymorphism sort_from_syntax__minus1 2) sort_from_syntax2)
+          #ver5:->  let (us, w1, m1, uw2paths) = top_plus_1 = recur sort_from_syntax1
+                  #??? assert w1+m1 >= 1 #LocalTopSort[+1]
+                  assert w1 >= 1
+                    #强迫 真[+1]，而非 pair某个分支大于0？
+                    #用 (us, w1-1, m1, uw2paths) 替换 sort_from_syntax2中的var4sort
+              in  ???
+        * sort_from_apply_template_arrow_to_fix_LocalTopSort sort_from_syntax1 sort_from_syntax2
+          #ver6:
+          -> recur (sort_from_apply_template_arrow LocalTopSort sort_from_syntax1 sort_from_syntax2)
+        * sort_from_apply_template_arrow var4sort sort_from_syntax__body sort_from_syntax__input
+          #ver6:
+          ->  let ((may_us, uw2paths), (may_vs, vw2paths)) = (recur sort_from_syntax__body, recur sort_from_syntax__input)
+                  uw2paths2 = case may_vs of
+                      * Just vs -> (path_expand_var_each uw2paths var4sort vs)
+                      * _ -> (path_discard_var uw2paths var4sort)
+                  xw2paths = {xw:paths4 | @[item@((u,lvl), paths2) <- uw2paths2.items()], @[(xw,paths4) <- if u=!=var4sort then [item] else [((v,w+lvl), paths2++**paths3) | @[((v,w),paths3) <- vw2paths.items()]]]}
+                  may_xs = case may_us of
+                      * Just us -> if var4sort <-/- us then Just us else $ case may_vs of
+                          * Just vs -> Just ((us \-\ {var4sort}) \-/ vs)
+                          * _ -> Nothing
+                      * _ -> Nothing
+            in  (may_xs, xw2paths)
+
+
+
+colored/tagged sort 空间 划分出 子空间，比如：BottomSort 可 划分出 Prop/Proposition 特定用途的BottomSort，专用于 表达 命题。(因为仅有的(m,0,0)规则，Prop只能锚定于0，也就是colored而非tagged)
+  任何(tags,sort)均构成合法的sort
+  任何(colors,sort)均构成合法的sort
+  等高：
+    [sort ~=~:::: (tags,sort) ~=~:::: (tags2,sort) ~=~:::: (colors,sort) ~=~:::: (colors2,sort)]
+        #即 等高
+  正负：
+    *正tag/color
+      [tags |<=| tags2] <==> [(tags,sort) <=:::: (tags2,sort)]
+      [colors |<=| colors2] <==> [(colors,sort) <=:::: (colors2,sort)]
+          #正:多则大
+    *负tag/color
+      [tags2 |<=| tags] <==> [(tags,sort) <=:::: (tags2,sort)]
+      [colors2 |<=| colors] <==> [(colors,sort) <=:::: (colors2,sort)]
+          #负:少则大
+
+
+  tag 与 sort 正交，容易分离，上下层空间层次相应
+    [sort :::: sort2] <==> [(tags,sort) :::: (tags,sort2)]
+        #即 上下对应
+    *正tag
+      上界((tags1,sort1), (tags2,sort2))
+        = (tags1\-/tags2, 上界(sort1,sort2))
+    *负tag
+      上界((tags1,sort1), (tags2,sort2))
+        = (tags1/-\tags2, 上界(sort1,sort2))
+  color则黏住sort，上下层 并不相关
+    [sort :::: sort2] =xx=>> [(colors,sort) :::: (colors,sort2)]
+
+
+
+
+
+
+自举类型的空间：
+  template_sort 不是 sort(退化型 例外)，不能 作为 var4sort 的实例。故此，它们之间的 偏序关系 不重要
+  template_sort_from_syntax_base recur
+    = sort_from_syntax_base recur
+    | sort_from_template_arrow template_head fix_recur
+  template_sort_from_syntax = fix template_sort_from_syntax_base
+  template_head = Set var4sort
+  @@@{<s1>} => @@[t1:s1] -> @@@{<s2>} => @@[t2:s2] -> [t3 ::: free_s3]
+    ::: @@@{<s1>} => @@@{<s2>} => arr {s1,s2} free_s3
+    ::: @@@{<s1,s2>} => arr pair{s1,s2} free_s3
+  #无关的绑定变量可移除添加
+    [template_sort_from_syntax1] == [(sort_from_template_arrow template_head1 template_sort_from_syntax1)]
+    #==>>统一带head
+      [(sort_from_template_arrow {} s)] == [s]
+  #移出合并head，注意 需重命名以防碰撞自由变量
+  [sort_from_template_arrow template_head (sort_from_template_arrow template_head2 s)] === [sort_from_template_arrow (template_head\-/template_head2) s]
+  [sort_from_pair (sort_from_template_arrow template_head s) (sort_from_template_arrow template_head2 s2)] === [sort_from_template_arrow (template_head\-/template_head2) (sort_from_pair s s2)]
+  [sort_from_arrow s (sort_from_template_arrow template_head2 s2)] === [sort_from_template_arrow template_head2 (sort_from_arrow s s2)]
+  #以下 arr=sort_from_arrow, tpl=sort_from_template_arrow, pair=sort_from_pair
+  #但是 [arr (tpl _ _) _] 无法处理
+  #外移arr_nest_tpl
+  [arr (tpl _ _) (arr (tpl _ _) _)]
+    == [arr (pair (tpl _ _) (tpl _ _)) _]
+  [pair (arr (tpl _ _) _) _]
+    == [pair _ (arr (tpl _ _) _)]
+    == [arr (tpl _ _) (pair _ _)]
+  template_sort_from_syntax可规范为：
+  template_sort_from_syntax_base__std recur
+    = 最深 template_head sort_from_syntax
+    | 深入 template_head (sort_from_arrow fix_recur sort_from_syntax)
+  template_sort_from_syntax__std
+    = fix template_sort_from_syntax_base__std
+    <==> [(\_->(template_head, _, sort_from_syntax))]
+    <==> [(template_head, sort_from_syntax)]
+
+  template_sort_under_m0arbitrary = [(template_head, sort_under_m0arbitrary)]
+    #语义：不断深入，应用arr_nest_tpl
+    #比较 template_sort_under_m0arbitrary+template_type_under_m0arbitrary偏序关系 十分困难，因为template_head无序，要对应起来 并不容易,需要 用户 提供 提示
+
+
+
+
+不要color
+tag 同 sort 一样 使用偏序关系，不分 正负
+  虽然 tag在关于sort的操作中十分无趣，但当 sort 被用作 type时，tag就能起到 子类型的作用
+  tag 也可作用于 type、obj？
+  不分正负？但如果 要实现 Inhabited prop
+    [0 <=:::: (Inhabited, 0)]
+      即 任何 实例/证明步骤 都可 转化为 居留类
+      但 反之则不行 (Inhabited=?=not_not)
+    但要是想划出子类，则 [(tag,s)] <=:::: s
+    s{-tag} <= s{-tag}{+tag} <= s <= s{+tag}{-tag} <= s{+tag}
+没有template_sort_under_m0arbitrary，用不上
+  只有 template_type_under_m0arbitrary
+需要sort[+1]，并非无条件引入，前提是存在sort2 > sort，这样一来，看似没用上的sort2，被隐式地使用到。
+  @[T : *] -> * ==>> *[+1]
+  sort_under_m0arbitrary 
+template_head需同时 附加 偏序关系描述:
+  {a,b,c}<{w,x}<={y,z,free_s3}
+  或者 更灵活的集合运算:
+    『<』:= {a,b,c,d}*{w,x,y,z} - {a,b}*{w,x}
+
+
+例 : 类
+  obj 象
+  type 种
+  sort 属
+  template_type 种模
+『:』表示 例 与 类 的 关系
+  (obj) :\@ [type] :@* {sort} :** {sort}
+  偏序关系：
+    #无用：type <:@@ type
+    type <=:@@ type
+    sort <:** sort
+    sort <=:** sort
+    sort ~=~:** sort
+      #等高，同层
+    sort ~=~:** {%}
+      #is BottomSort
+『-』表示 取出
+  \@[var4obj -:\@ type] -> ...
+  @@[var4obj -:\@ type] -> ...
+    #tpye 也可是 template_type
+  \*[var4type -:@* sort] -> ...
+  @*[var4type -:@* sort] -> ...
+    #sort 而不能是 template_sort
+  \~[var4sort -:*~ sort_relationship<var4sort>] => ...
+  @~[var4sort -:*~ sort_relationship<var4sort>] => ...
+    #实参只能是 sort 而不能是 template_sort
+
+
+超前调用 flip泛化
+  f :\@ [@~[s -:*~ []] => @*[t -:@* s] -> @~[s2 -:*~ []] => ...]
+  f s3 ^*-^s4 ...
+    sort 不可能依赖于其他 变量，可随意提前，最多更改sort_relationship(自己以及被越过的sort)
+  同理，任何形参类型只要不依赖于前一位，就可提前一位
+  可将 后续所需实参 分成 『可立即传入』 和 『需等待』
+    『可立即传入』 即 可提前止 当前第一位
+  ^\-^ 将『可立即传入』的obj实参中 的 第一个 提前至 当前第一位
+  ^@-^ type实参
+  ^*-^ sort实参
+  ^\-^-^-^ 将『可立即传入』的obj实参中 的 第三个 提前至 当前第一位
+
+
+
+obj :\@ type/template_type
+  并不要求 type :@* sort，因为 type 可能是 template_type
+  当 obj是函数，调用时，也不需要 检查。
+  但是当 obj 作为 实参 时，需要 检查 sort 是否 匹配。#sort 是必定存在的
+    例外，template_type 只需 检查 类型偏序，因为 template_type 并无 sort/template_sort
+    其实也可给 template_type 加个sort，但无需template_sort那么 复杂，就叫 SORT好了
+    只是 没有 [@[x-:SORT] -> ...]及[...->SORT]
+      polymorphism 是为了构造 证明步骤 的 类型
+      type_constructor与polymorphism匹配
+      SORT用于模块引入import
+      ...
+      操作模块的meta language 函数？
+      又一组无限向上提升空间？
+      统一表达？其实都是sort，SORT也可称为LocalTopSort
+      [@[s -:** LocalTopSort] => ...] :@* LocalTopSort[+1]
+      template_type<LocalTopSort> :@* LocalTopSort[+1]
+      [template_type<LocalTopSort> -> template_type<LocalTopSort>] :@* LocalTopSort[+1]
+      [(template_type<LocalTopSort>, template_type<LocalTopSort>)] :@* LocalTopSort[+1]
+    var4sort 只是起到 降低LocalTopSort并分层的作用
+    无需LocalTopSort[+2]
+    LocalTopSort 与 LocalTopSort[+1] 均无需 显化！
+      但 任何一个 template_type.LocalTopSort 都可被设定！
+      [@[s -:*~ [sort_relationship]] => ...] :@* LocalTopSort[+1]
+          第一式
+      [@[s -:** free_s3[sort_relationship]] => ...] :@* ?????
+          第二式
+
+      设定template_type.LocalTopSort:
+        设定后，由上面的 第一式 变成 第二式，语义 改变，变成template_type其中任何 使用 LocalTopSort引入的sort 改为绑定 设定值，这样一来，LocalTopSort由于不是全局性的，故而 不能 盖过 其中的free_s3、s[+5之类。template_type的sort不再是LocalTopSort[+1]，而需要 重新计算。
+        首先，s 显然不能 出现在 第二式 的 『?????』中。
+        其次，s 是 变化的，故而 取消它，需 填入 最大值LocalTopSort[-1](并不存在，只是假设)
+        sort_under_m0arbitrary 的 变动
+          是否为0?
+            若 s 出现在 turnoff_0_if_any 中，则情况比较麻烦:
+            * LocalTopSort:=1 ==>> s~=~0
+            * otherwise ==>> s~=~LocalTopSort[-1] > 0 ==>> 将turnoff_0_if_any+path中的s替换成LocalTopSort，(xxx破坏约束:将path中的s删除xxx)。将 键值(s,0)删除，将(s,+n)改为(LocalTopSort,+n-1)。
+        干脆要求设定LocalTopSort的值 只能是sort[+n](n>=1)，这个要求很合理，因为LocalTopSort用于引入var4sort，不可能是0。
+          将sort_under_m0arbitrary中的s替换成sort[+n-1]。但考虑到sort的复杂性，+n-1>0，还需更进一步细化改动。
+          假设 设定用的sort=snew=(vs, w, vw2paths))
+          则snew[+n-1] = (vs, w+n-1, vw2paths))
+          假设 s 引入之后的 sort=sold=(us, lvl, uw2paths))
+          sold中的s将被snew[+n-1]替换:
+          * [w+n-1]==0
+            -> (if s<-us then (us-{s})\-/vs else us, lvl, path 如含有s则 一变多 s分别以任一vs中的值替换；键值(s,+i):paths 一变多 (v,+i+vv+w+n-1):paths++**paths2 for ((v,vv),paths2)<-vw2paths.items())
+              #xxx 不可能！: 可能还需要 抽取出 共同level_up iff sold中 level_up=0的键值 只有(s,0)
+          * [w+n-1] >0
+            #xxx bug: 先将 us 中的可能存在的s删除，相应地 删除paths中的s。只有 键值中还可能有s。再按上面 处理 键值中的s及对应的paths。
+            #       见上面 ver4约束 turnoff_0_if_any不空；还需注意 sold中可能存在的 LocalTopSort (不只有s,free_s3, 还有 内里 的?...)
+            先将us 及 paths中的s替换成 常量 (w+n-1)或1???
+
+  apply8种:
+    f $\\[obj]
+    f $\@[type]
+    f $\*[sort]
+    f $\~[sort] 设定 f/obj 的LocalTopSort
+    t $@\[obj]
+    t $@@[type]
+    t $@*[sort]
+    t $@~[sort] 设定 t/type 的LocalTopSort
+
+
+
+
+更改为：LocalTopSort -> LocalTopSort[+1]
+      [@[s -:*~ ~~ [sort_relationship]] => ...] :@* LocalTopSort[+2]
+      <==> [@[s -:*~ LocalTopSort[+1] ~~ [sort_relationship]] => ...] :@* LocalTopSort[+2]
+          第一式
+      [@[s -:** free_s3[+1] ~~ [sort_relationship]] => ...] :@* ?????
+          第二式
+
 

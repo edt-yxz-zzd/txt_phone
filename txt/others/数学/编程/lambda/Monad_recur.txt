@@ -1,0 +1,81 @@
+
+
+e others/数学/编程/lambda/Monad_recur.txt
+
+##################################
+let x = f x
+  ==>>
+    x = y f
+    y f = f (y f)
+    y = h h
+    h = \h f -> f (h h f)
+  ==>>
+    x = f (f (f ...))
+
+##################################
+let m = do
+          rec x <- f x
+          return x
+  ==>>
+    m = f undefined >>= k f
+    k = y (\k f x -> f x >>= k f)
+  ==>>
+    m = f undefined >>= \x->
+        f x >>= \x->
+        f x >>= \x->
+        ...
+
+
+##################################
+copy from:
+  e ../../python3_src/nn_ns/mimic_Haskell/Data.py
+##################################
+##################################
+[[[[[
+| RecurDoLet4hs [(Var, MixSyntactic4hs)] MixSyntactic4hs
+    #plan recur
+    x =[def]= f x
+        x = f x = f (f x) = (f^inf) $ arbitrary
+    y f =[def]= f (y f)
+        y f = f (y f) = f (f (y f)) = (f^inf) $ arbitrary
+    ==>> [x===y f]
+    #monad recur
+    rec do x <- f x
+        f x = f x >>= return
+        f x = f x >>= f
+            = f x >>= f >>= f
+            = ((>>= f)^inf) (f arbitrary)
+            = ((>>= f)^inf) arbitrary
+            = y (>>= f)
+    f =[def]= \x -> [a, x, b]
+        y (>>= f) =[SHOULDBE]= aab-aab-abb-...
+        y (>>= f)
+            = (>>= f) (y (>>= f))
+            =  (y (>>= f)) >>= f
+            = undefined
+    m === m >>= f  #  vs   x === f x
+    m = z f
+        = (z f) >>= f
+        ## wrong direction
+        ##  SHOULD extend to rhs
+    ######################
+    m0 = f undefined
+    m1 = m0 >>= f
+    ...
+    m = m0 >>= \x -> (f x >>= \x -> f x >>= ...)
+         = m0 >>= k f
+    k f = \x -> f x >>= k f
+    k = y (\k f x -> f x >>= k f)
+    m = f undefined >>= k f
+        = y f >>= k f
+
+    #error:
+    xxx    do
+    xxx        recur x <- f x
+    xxx        return x
+    xxx    let x_jmp = empty _Placeholder4hs
+    xxx    in  f x_jmp >>= \x_val -> assert [x_val is not x_jmp] $ x_jmp.set(x_val) `seq` x_val
+]]]]]
+##################################
+##################################
+
