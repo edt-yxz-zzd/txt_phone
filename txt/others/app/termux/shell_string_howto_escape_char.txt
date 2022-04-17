@@ -1,0 +1,114 @@
+
+e others/app/termux/grep/grep_regex_pattern_howto_escape_char.txt
+e others/app/termux/shell_string_howto_escape_char.txt
+
+grep 与 字符 的unicode 转义？
+  并不需要grep自己转义
+  而是直接使用shell转义字符串:
+    #ANSI-C quoting
+    『$'...'』
+[[
+$ echo $'\u4e00'
+一
+$ echo $'\U00004e00'
+一
+$ echo $'\x31'
+1
+$ echo $'\o061'
+\o061
+$ echo $'\061'
+1
+]]$
+[[
+https://unix.stackexchange.com/questions/523327/how-to-grep-characters-with-their-unicode-value
+
+You can use ANSI-C quoting, to replace backslash-escaped characters as specified by the ANSI C standard.
+
+grep $'\u16A0'
+
+For some more complex examples, you might refer to this related question and its answers.
+Share
+Improve this answer
+answered Jun 6, 2019 at 14:52
+user avatar
+pLumo
+20.1k11 gold badge3636 silver badges6161 bronze badges
+
+    2
+    Note that it's not ANSI C, the C language standard does not specify functionality of shells, and it was invented by David Korn for the Korn shell. unix.stackexchange.com/a/65819/5132 – 
+    JdeBP
+    Jun 6, 2019 at 18:40
+]]
+[[
+$ printf '\u0905'
+$ /usr/bin/printf '\u0905
+$ grep "$(printf '\u0905')" file
+$ echo grep "$(printf '[\u0905-\u097f]')" file
+]]
+[[ $'...'  #前缀『$』，类似python f''.r'' b''
+https://www.gnu.org/software/bash/manual/html_node/ANSI_002dC-Quoting.html#ANSI_002dC-Quoting
+
+Next: Locale Translation, Previous: Double Quotes, Up: Quoting   [Contents][Index]
+3.1.2.4 ANSI-C Quoting
+
+Words of the form $'string' are treated specially. The word expands to string, with backslash-escaped characters replaced as specified by the ANSI C standard. Backslash escape sequences, if present, are decoded as follows:
+
+\a
+
+    alert (bell) 
+\b
+
+    backspace 
+\e
+\E
+
+    an escape character (not ANSI C) 
+\f
+
+    form feed 
+\n
+
+    newline 
+\r
+
+    carriage return 
+\t
+
+    horizontal tab 
+\v
+
+    vertical tab 
+\\
+
+    backslash 
+\'
+
+    single quote 
+\"
+
+    double quote 
+\?
+
+    question mark 
+\nnn
+
+    the eight-bit character whose value is the octal value nnn (one to three octal digits) 
+\xHH
+
+    the eight-bit character whose value is the hexadecimal value HH (one or two hex digits) 
+\uHHHH
+
+    the Unicode (ISO/IEC 10646) character whose value is the hexadecimal value HHHH (one to four hex digits) 
+\UHHHHHHHH
+
+    the Unicode (ISO/IEC 10646) character whose value is the hexadecimal value HHHHHHHH (one to eight hex digits) 
+\cx
+
+    a control-x character 
+
+The expanded result is single-quoted, as if the dollar sign had not been present.
+]]
+
+
+
+

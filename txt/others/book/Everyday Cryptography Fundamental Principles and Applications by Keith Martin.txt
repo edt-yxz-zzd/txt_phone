@@ -1,0 +1,579 @@
+  'Everyday Cryptography Fundamental Principles and Applications by Keith Martin (z-lib.org).pdf'
+      '/sdcard/0my_files/book/cryptography/Everyday\ Cryptography\ Fundamental\ Principles\ and\ Applications\ by\ Keith\ Martin\ (z-lib.org).pdf'
+      e others/book/Everyday Cryptography Fundamental Principles and Applications by Keith Martin.txt
+
+
+[[[
+[p41/773]1.2.1. types of attack
+  passive attack
+    undetectable
+    The main type of passive attack is unauthorised access to data.
+
+  active attack
+    An active attack involves either data being changed in some way, or a process being conducted on the data. Examples of active attacks include: 
+      • unauthorised alteration of data; 
+      • unauthorised deletion of data; 
+      • unauthorised transmission of data; 
+      • unauthorised tampering with the origin of data; 
+      • unauthorised prevention of access to data (denial of service).
+          密码学 无法阻止 拒绝服务攻击
+          We will see that cryptography can be used as a tool to help prevent most passive and active attacks. A notable exception is denial of service. There is very little protection that cryptography can provide against this type of attack. Defence against denial of service normally requires security controls in other parts of the security infrastructure.
+
+communication scenario:
+  * Alice/sender --[transmit email]--> Bob/receiver
+      Alice:
+        * 明文于其他人是否可见？
+        * 如何确保明文未被窜改？
+        * 是否存在预处理措施来保护明文？
+      Bob:
+        * 如何确认明文来自Alice？
+        * 如何确认明文的收件人是我？(而非转发)
+        * Alice是否可以否认发送过该明文？
+
+user === entity
+
+基本保密服务
+basic security services:
+
+  *1.机密性
+  confidentiality is the assurance that data cannot be viewed by an unauthorised user.
+    confidentiality === secrecy
+
+  *2.完整性/数据完整的可校验性
+  data integrity is the assurance that data has not been altered in an unauthorised (which includes accidental) manner.
+
+  *3.数据来源鉴定/认证
+  data origin authentication is the assurance that a given entity was the original source of received data.
+    data origin authentication === message authentication
+    不在乎 生成时间、中转路由
+    [数据来源鉴定]==>>[数据完整的可校验性]:
+      数据来源鉴定 必须作用于 整个数据，所以必先保证完整性。
+    [机密性]==/=>>[数据来源鉴定]
+
+  *4.不可抵赖性
+  non-repudiation is the assurance that an entity cannot deny a previous commitment or action.
+    #repudiation:n. 否认/拒绝
+    [不可抵赖性]==>>[数据来源鉴定]:
+      数据来源鉴定 仅止于 接收者 认证/确认。
+        传送(msg, MAC)，MAC 见下面 CBC-MAC，key 为 双方共享私有，不能展示于第三方。
+      而 不可抵赖性 则有 第三方参与(围观校验/仲裁)。
+
+  *5.实时对话实体的身份鉴定
+  entity authentication is the assurance that a given entity is involved and currently active in a communication session.
+    entity authentication === identification
+    例如:用户登录时使用口令证明自己身份
+    [data origin authentication][freshness check] ==>> [entity authentication]
+        猜测实现:实时挑战，要求打包指定的实时生成的随机数据，再通过数据认证身份
+
+
+  *6.其他:
+    匿名
+    anonymity
+
+
+常见密码学术语
+common cryptographic terminology:
+
+  *1. cryptography === cryptology + cryptanalysis
+    密码学===设计+分析
+    工具箱
+  cryptography is a generic term used to describe the design and analysis of mechanisms based on mathematical techniques that provide fundamental security services.
+    * cryptology, which is the scientific study of cryptography (the design of such mechanisms)
+    * cryptanalysis (the analysis of such mechanisms).
+    ###It is appropriate to think of cryptography as the establishment of a large toolkit of different techniques, the contents of which can either be used on their own, or combined, in security applications.
+
+  *2. cryptographic primitive
+    基元/基础单元/基础部件
+    工具/工具用途
+  A cryptographic primitive is a cryptographic process that provides a number of specified security services.
+    If cryptography is a toolkit, then cryptographic primitives are the basic generic tools in that kit.
+    例如：
+      block ciphers
+      stream ciphers
+      message authentication codes (MAC)
+      hash functions
+      digital signature schemes
+
+  *3. cryptographic algorithm
+    算法
+    工具材质品牌款式型号
+  A cryptographic algorithm is the particular specification of a cryptographic primitive.
+    A cryptographic algorithm is essentially a ‘recipe’ of computational steps.
+      An algorithm is a sufficiently detailed specification that a computer programmer could implement it.
+      例如：AES is a cryptographic algorithm that specifies a block cipher.
+
+
+  *4. cryptographic protocol
+    协议
+    工具组合使用/连招
+  A cryptographic protocol is a sequence of message exchanges and operations between one or more parties, at the end of which a series of security goals should have been achieved.
+    例如：
+      the STS protocol
+      SSL/TLS
+      AKE protocols (authentication and key establishment)
+    Cryptographic protocols typically employ a number of different cryptographic primitives at various stages.
+    If cryptographic primitives are tools in the cryptography toolkit, then a cryptographic protocol is a way of taking a number of these tools and using them in a specific way in order to achieve more complex security goals.
+
+
+  *5. cryptosystem === cryptographic scheme === cipher system
+    常相关于 机密性，故称 加密系统，包括 加密器、解密器、用户、密钥、密钥管理 等等
+  A cryptosystem (or cryptographic scheme) is often used rather generically to refer to the implementation of some cryptographic primitives and their accompanying infrastructure.
+    Thus, while a cryptosystem that is being used to provide data confidentiality might use a block cipher, the ‘cryptosystem’ may also include the users, the keys, the key management, etc.
+    This term is most often used in association with cryptographic primitives that provide data confidentiality. A cryptosystem is sometimes also referred to as a cipher system.
+
+
+
+
+基础部件 与 安全服务 的 关系
+  基础部件:
+    加密术 encryption === block ciphers + stream ciphers + public-key encryption + ...
+    散列函数 hash function
+    信息鉴定证书/消息鉴定码/信息证实代码 MAC === message authentication code (MAC)
+    数字签名 data signature
+  安全服务:
+    机密性
+    数据完整的可校验性
+    数据来源鉴定
+    不可抵赖性
+    实时对话实体的身份鉴定
+  关系:
+    独力实现
+    辅助实现
+    #下面 双问号 表示 sometimes ?有时?
+
+  独力实现:
+    机密性 ~ {加密术}
+    数据完整的可校验性 ~ {?散列函数?, 信息鉴定证书, 数字签名}
+    数据来源鉴定 ~ {信息鉴定证书, 数字签名}
+    不可抵赖性 ~ {?信息鉴定证书?, 数字签名}
+    实时对话实体的身份鉴定 ~ {空}
+  辅助实现:
+    # 信息鉴定证书, 数字签名 不能用于 机密性
+    机密性 ~ {加密术, 散列函数}
+    数据完整的可校验性 ~ {全部}
+    数据来源鉴定 ~ {全部}
+    不可抵赖性 ~ {全部}
+    实时对话实体的身份鉴定 ~ {全部}
+
+    ##
+    加密术 ==>> 信息鉴定证书 ==>> 数据来源鉴定
+      CBC-MAC<block-cipher, N, key>(msg) = recur (ceil(len msg / N))
+        where
+          recur 0 = [0]*N #N bits
+          recur i = block-cipher<N,key>(xor(recur (i-1), msg[(i-1)*N:i*N]))
+    ##
+    散列函数 ==>> 特定类型的 机密性(无需密码)
+      例如：password-file(::{user-identity: (?salt?, hash(password+?salt?+?user_id?))}) 保存 口令散列值 而非 口令 本身，preimage resistance 阻止 管理员 得到 口令。
+    ##
+    信息鉴定证书 ==>> 特定类型的 不可抵赖性(第三方权威仲裁机构)
+      例如：arbitrated digital signature scheme
+        signer, verifier, arbitrator
+        signer签名者，verifier核验者/验证员/校验机/检验器/核对器，arbitrator仲裁者/公断人/调停者
+        #signer send msg to verifier
+        msg <-- signer
+        key1 <-- signer&arbitrator
+        key2 <-- verifier&arbitrator
+        ###
+        msg1 = (msg, signer_id, verifier_id)
+        mac1 = MAC<key1>(msg1)
+        msg2 = (msg1, mac1)
+        signer send msg2 to arbitrator
+
+        mac2 = MAC<key2>(msg2)
+        msg3 = (msg2, mac2)
+        arbitrator forward msg3 to verifier
+
+        #msg3 === (((msg, signer_id, verifier_id), mac1), mac2)
+    ##
+    数字签名 =可用于=>> 实时对话实体的身份鉴定
+      见下面 AKE::STS::signature+certificate
+
+]]]
+
+
+
+[[[
+[p53/773]1.4.3 Basic model of a cryptosystem
+
+基本模型:
+  * 安全服务 仅顾虑 机密性
+  * 通信对话 而非 存储数据
+sender发送者, receiver接收者, interceptor窃听者
+  interception === eavesdropping n 窃听
+      intercept=eavesdrop=overhear vt 偷听/窃听
+  interceptor 窃听者
+    更宽泛的模型中，相应的是：
+      adversary 敌手/对手
+      attacker 进攻者
+plaintext明文, ciphertext密文
+  message === plaintext
+  cryptogram === ciphertext
+encryption_key加密用密钥-encryption_algorithm加密算法
+decryption_key解密用密钥-decryption_algorithm解密算法
+
+谁知道哪些信息:
+  sender:
+    encryption_key
+      encryption_algorithm
+    ===
+    plaintext
+      ==>> ciphertext = encryption_algorithm<encryption_key>(plaintext)
+    ===
+  receiver:
+    decryption_key
+      decryption_algorithm
+    ===
+    ?encryption_key#通常知道
+      ?encryption_algorithm
+    ciphertext
+      ==>> plaintext = decryption_algorithm<decryption_key>(ciphertext)
+    ===
+  interceptor:
+    ciphertext
+    ?decryption_algorithm#可能知道
+    ?encryption_key#可能知道
+      ?encryption_algorithm
+    ###donot know decryption_key:
+      keyspace =[def]= the collection of all possible decryption keys
+
+
+code:
+  code =[def]= Most generally, the term code is often used for any scheme where data is replaced by alternative data before being sent over a communication channel.
+    codebook =[def]= This replacement is usually dictated by the contents of a codebook, which states precisely which replacement data to use.
+  ###vs error-correcting code = a technique that can be deployed in order to enable the recovery of correct data from ‘noisy’ data containing accidental errors that are introduced in an unreliable channel.
+  ####  Error-correcting codes have nothing to do with preventing data from being seen by unauthorised users.
+  ####  While they are related to data integrity, error-correcting codes do not protect data from being deliberately manipulated by an attacker.
+
+
+数据机密性 的 三种方法:
+  * 加密
+    encryption@cryptography
+  * 隐藏
+    data hiding@steganography
+  * 访问权限控制
+    access control
+  ########################
+  There are, in fact, three different approaches that can be taken to providing data confidentiality.
+    * The one we are most interested in is encryption, since this provides protection independently of the location where the data resides.
+    * As we have just seen, steganography relies on ‘hiding’ the data.
+    * A third approach is to control access to the (unencrypted) data.
+        Access control is a major topic in its own right.
+        Indeed, much of our data is not protected through the use of encryption, but rather through access control mechanisms on computers that use a combination of software and hardware techniques to prevent unauthorised users from accessing data.
+
+
+？迷宫？牛头怪？
+  labyrinth迷宫，迷津(maze)
+    the Labyrinth 希腊神话-迷宫，雅典名匠-狄德勒斯Daedalus为 克里特Crete王-迈诺斯Minos建造用以监禁怪物-迈诺托Minotaur的迷宫
+steganography vs cryptography
+  steganography 隐藏信息，别人不知道通信正在发生。比如，数据隐藏于图片中。
+  瞒天过海！
+
+  Another concept often confused with cryptography is steganography, which is also concerned with preventing unauthorised users from accessing plaintext data. However, the basic assumptions behind the use of steganography are rather different from those of cryptography.
+    Steganography is essentially the study of information hiding. The main aim of steganography is for a sender to transfer a plaintext to a receiver in such a way that only the receiver can extract the plaintext because only the receiver knows that a hidden plaintext exists in the first place, and how to look for it (for example, by extracting information from a digital image).
+    In steganography, an ‘interceptor’ may well be unaware that observed data contains hidden information. This is quite unlike cryptography, where an interceptor is normally fully aware that data is being communicated because they can see the ciphertext. Their problem in this case is that they cannot determine what data the ciphertext represents. 
+
+  Cryptography and steganography are used in quite different applications. They can also be used together. In this case, steganography can be used to hide a ciphertext. This creates two layers of security.
+
+  While it does potentially have niche applications, and might in some cases be regarded as a potential threat to an information system, steganography is rarely employed to secure information systems.
+
+
+
+
+
+
+两种类型的 加密系统:
+  #cryptosystem
+  * 对称加密系统/私钥加密系统
+    [encryption_key===decryption_key]
+      symmetric_key===encryption_key==decryption_key
+    symmetric cryptosystem === secret-key cryptosystem
+    symmetric cryptography := the study of symmetric cryptosystems
+  * 公钥加密系统/反对称加密系统
+    [encryption_key=!=decryption_key]
+      public_key==encryption_key
+      private_key===decryption_key
+    public-key cryptosystem === asymmetric cryptosystem
+    public-key cryptography := the study of public-key cryptosystems
+    computationally_infeasible
+      In such cryptosystems, it is ‘impossible’ (we often use the phrase computationally infeasible to capture this impossibility) to determine the decryption key from the encryption key.
+  ####################
+  ####################
+  secret_key = decryption_key = symmetric_key | private_key
+
+
+
+
+加密系统的安全性假设:
+cryptosystem security assumptions 
+  standard assumptions
+  attack models
+  the details of the encryption algorithm
+
+assumptions about attacker’s ability:
+  attacker knows:
+    + The details of the encryption algorithm
+    + All ciphertexts sent using the cryptosystem
+    + Some corresponding pairs of plaintexts and ciphertexts.
+      some possible scenarios are: 
+        #明文泄漏，档案保密期过期解密
+        #明文固定格式，文件头
+        #协议要求发送者加密未知来源的数据(先于 身份鉴定)
+        #内部奸细，短期掌控加密系统
+        #公钥加密系统，加密密钥 是 公开密钥
+        • The receiver has been careless in failing to keep decrypted ciphertexts secret. 
+        • The attacker has intelligently guessed some predictable plaintexts. A good example is predictable document headers. 
+        • The attacker has been able to influence the choice of plaintexts encrypted by the sender. 
+        • The attacker has (temporary) access to either the encryption or decryption device. Note this does not imply that the attacker knows the encryption or decryption key. The keys might be embedded in secure hardware and the attacker only has access to the interface of the machine that conducts the encryption (decryption) process. Obviously, we assume that the attacker does not have permanent access to the decryption device, otherwise they are in a very strong position! 
+        • We are using a public-key cryptosystem, where the encryption key is known to any potential attacker. Thus, an attacker can generate pairs of corresponding plaintexts and ciphertexts at leisure.
+
+theoretical attack models:
+  * ciphertext-only attacks
+      assume the attacker knows the encryption algorithm and some ciphertext; 
+  * known-plaintext attacks
+      assume the attacker knows the encryption algorithm and some arbitrary plaintext/ciphertext pairs; 
+  * chosen-plaintext attacks
+      assume the attacker knows the encryption algorithm and some plaintext/ciphertext pairs that correspond to plaintexts chosen by the attacker; 
+  * chosen-ciphertext attacks
+      assume the attacker knows the encryption algorithm and some plaintext/ciphertext pairs that correspond either to plaintexts or to ciphertexts chosen by the attacker. 
+  ###
+  #Modern cryptosystems should thus be able to withstand at least chosen-plaintext attacks.
+  #However, to be on the safe side, they are usually designed to protect against chosen-ciphertext attacks.
+  #
+
+
+
+knowledge of the encryption algorithm:
+  * Publicly known algorithms:
+      The full details of the algorithm are in the public domain and can be studied by anyone 
+  * Proprietary algorithms:
+      The details of the algorithm are only known by the designers and perhaps a few selected parties.
+      #物理捕获设备+逆向工程
+      #意外或故意泄漏
+  ####
+  #In the case of publicly known encryption algorithms, an attacker knows the encryption algorithm.
+  #   In the case of proprietary encryption algorithms, an attacker may well know the name of the encryption algorithm and certain basic properties, but it is not intended that they know any of the details of how it performs the encryption and decryption processes. 
+  #
+  ####
+  #Note that the term proprietary is often used in other contexts to describe something that has an owner (an individual or organisation) and may have been patented; hence, our use of this term is slightly unusual.
+  #   It is possible for a publicly known algorithm to be patented by an owner, and indeed there are several high-profile examples.
+  #   Further, it is not necessarily the case that a proprietary algorithm has any patent issues, although its use will necessarily be restricted.
+  #
+
+THE IMPACT OF KERCKHOFFS’ SECOND PRINCIPLE
+Kerckhoffs' second principle
+  a proprietary encryption algorithm should still be secure in the event that the encryption algorithm becomes publicly known. 
+  ##
+    This principle is the most famous of six cryptosystem design principles identified by Auguste Kerckhoffs in the 19th century.
+    More precisely, Kerckhoffs stated that the cryptographic algorithm should not be required to be secret.
+    This principle is often misinterpreted as stating that the cryptographic algorithm should be publicly known, and hence rely only on the secrecy of the decryption key. However, Kerckhoffs did not say this.
+      He simply pointed out that proprietary algorithms should not rely on their ‘extra layer of security’ and should be designed in such a way that public exposure of the algorithm does not compromise the security
+      (more literally, he stated that the algorithm must be able to fall into the hands of the enemy without inconvenience).
+
+
+
+
+
+
+TODO
+
+
+]]]
+
+
+
+[[[#AKE
+[p414/773]9.4. AKE
+
+######################
+AKE protocols (authentication and key establishment)
+
+main general security objectives of AKE:
+  + 相互之间的身份认证
+    mutual entity authentication
+    #occasionally just unilateral entity authentication. 
+    #prevent 'man-in-the-middle attack' #中间人攻击？中介攻击
+  + 临时对话用的对称密钥的构建/确立
+    establishment of a common symmetric key
+    #regardless of whether symmetric or public-key techniques are used to do this.
+
+more precise typical security goals of AKE:
+  +1. Mutual entity authentication.
+    Alice and Bob are able to verify each other’s identity to make sure they know with whom they are establishing a key. 
+  +2. Mutual data origin authentication.
+    Alice and Bob can be certain that information being exchanged originates with the other party and not an attacker. 
+  +3. Mutual key establishment.
+    Alice and Bob establish a common symmetric key. 
+  +4. Key confidentiality.
+    The established key should at no time be accessible to any party other than Alice and Bob.
+  +5. Key freshness.
+    Alice and Bob should be happy that (with high probability) the established key is not one which has been used before. 
+    freshness
+      nonces
+      nonce adj. 临时用的 n. 目前/暂时性
+        challenge 挑战，盘问/询问
+  +6. Mutual key confirmation.
+    Alice and Bob should have some evidence that they both end up with the same key. 
+  +7. Unbiased key control.
+    Alice and Bob should be satisfied that neither party can unduly influence the generation of the established key 
+
+  ###The motivation for the first five of these security goals should be self-evident. The last two goals are more subtle and are not always required.
+
+  #additional goals:
+  +8. perfect forward secrecy
+      perfect forward secrecy if the compromise of long-term keys does not affect the security of short-term keys used prior to the compromise of the long-term key.
+      长期密钥(也有有效期) 只用于 身份鉴定，而不用于 对话密钥的构建(可用Diffie–Hellman key agreement protocol)，其泄漏或过期失效不暴露 对话密钥
+
+two families of AKE protocols based on:
+  * Key agreement
+      if the key is established from information contributed by each of Alice and Bob.
+  * Key distribution
+      if the key is generated by one entity (which could be a trusted third party) and then distributed to Alice and Bob.
+      #trusted third party (denoted TTP)
+      # 例如：经过平台认证，类似许多手游通过微信登陆#经可靠第三方鉴定身份
+
+
+######################
+Diffie–Hellman key agreement protocol === Diffie–Hellman protocol
+  key(same shared secret) is established without sharing any secret information
+
+requirements of Diffie–Hellman protocol:
+  + public-key cryptosystem
+    (private_key<A>, public_key<A>)
+    (private_key<B>, public_key<B>)
+    #let public_key = P(private_key)
+
+  + combination function F
+    s.t. [F(private_key<A>, public_key<B>) == F(private_key<B>, public_key<A>)]
+    # [F(x, P(y)) == F(y, P(x))]
+    AND [hard to compute F(x, P(y)) from (P(x), P(y))]
+
+
+  ############
+  实例：
+    ElGamal<p,g>
+      P =[def]= \s->g**s
+      F = \sA g_sB->g_sB**sA
+      the difficulty of the discrete logarithm problem.
+    #[p::prime][g is primitive element of p]
+    #[p,g::uint][{p} == {i<-[2..p] | [i `divs` p]}][p-1 == min {i<-[1..p] | [g**i % p == 1]}]
+
+
+sketch/outline of Diffie–Hellman protocol:
+  +0.
+      Alice prepares (private_key<A>, public_key<A>)
+      Bob prepares (private_key<B>, public_key<B>)
+  +1.
+      Alice sends public_key<A> to Bob
+      Bob sends public_key<B> to Alice
+  +2.
+      Alice computes Z_AB=F(private_key<A>, public_key<B>)
+      Bob computes Z_AB=F(private_key<B>, public_key<A>)
+
+
+
+######################
+station-to-station protocol (STS)
+  AKE protocol based on Diffie–Hellman
+    AKE protocol based on key agreement
+
+additional assumption:
+  Alice and Bob have each established a long-term signature/verification key pair and have had their verification keys certified.
+
+a simplified STS protocol:
+  + -1.
+      Alice prepared (signature_key<A>, verification_key<A>, certificate<verification_key<A> >)
+      Bob prepared (signature_key<B>, verification_key<B>, certificate<verification_key<B> >)
+      certificate<x> =[def]= (unique_identity<owner>, x, validity_time_period, signature<signature_key<creator> >([unique_identity_of_owner, x, validity_time_period]))
+  +0.
+      Alice prepares (private_key<A>, public_key<A>)
+      Bob prepares (private_key<B>, public_key<B>)
+      using public_key as nonce ==>> signature provides 实时对话实体的身份鉴定
+  +1.
+      Alice sends (public_key<A>, certificate<verification_key<A> >) to Bob
+      Bob sends (public_key<B>, certificate<verification_key<B> >) to Alice
+  +2.
+      Alice verifies certificate<verification_key<B> >
+      Bob verifies certificate<verification_key<A> >
+  +4.
+      Alice sends signed_msg<A>=signature<signature_key<A> >([unique_identity<Bob>, public_key<B>, public_key<A>]) to Bob
+      Bob sends signed_msg<B>=signature<signature_key<B> >([unique_identity<Alice>, public_key<A>, public_key<B>]) to Alice
+  +5.
+      Alice verifies signed_msg<B> using verification_key<B>
+      Bob verifies signed_msg<A> using verification_key<A>
+  +6.
+      Alice computes Z_AB=F(private_key<A>, public_key<B>)
+      Bob computes Z_AB=F(private_key<B>, public_key<A>)
+
+
+
+######################
+versions of Diffie–Hellman protocol:
+  # 4=2*2
+  * private_key validity_time_period:
+    * static Diffie–Hellman
+    * ephemeral Diffie–Hellman
+    ##nonce临时用的 vs temporary临时的 vs ephemeral短暂的/短命的 vs short_term短期的 vs fixed固定不变的 vs permanent永久的/耐久的/终身的/常设的 vs long_term长期的 vs static静态的 vs dynamic动态的
+  * public-key cryptosystem
+    * ElGamal Diffie–Hellman
+    * elliptic-curve Diffie–Hellman (ECDH)
+
+
+
+
+######################
+ISO 9798-2 protocol
+  AKE protocol based on key distribution
+  AKE protocol based on key distribution and the use of symmetric cryptography.
+  vs: STS protocol is an AKE protocol based on key agreement and the use of public-key cryptography.
+
+a simplified version of one from ISO 9798-2:
+  A similar AKE protocol is used by the widely deployed Kerberos protocol.
+
+requirements:
+    + TTP
+        involves the use of a trusted third party (denoted TTP).
+    + K_AT
+        Alice has already established a long-term shared symmetric key K_AT with the TTP. 
+    + K_BT
+        Bob has already established a long-term shared symmetric key K_BT with the TTP. 
+    + generate_nonce()
+        Alice and Bob are both capable of randomly generating nonces.
+
+a simplified version of one from ISO 9798-2:
+  +01. rB:=Bob.generate_nonce()
+  +02. Bob sends rB to Alice
+
+  +03. rA:=Alice.generate_nonce()
+  +04. Alice sends (rA, unique_identity<A>, unique_identity<B>, rB) to TTP
+
+  +05. K_AB:=TTP.generate_temporary_key()
+  +06. TTP sends (encrypt<K_AT>([rA,K_AB,unique_identity<B>]), encrypt<K_BT>([rB,K_AB,unique_identity<A>])) to Alice
+
+  +07. K_AB <-- Alice.decrypt<K_AT>(encrypt<K_AT>([rA,K_AB,unique_identity<B>]))
+  +08. Alice verifies (rA, unique_identity<B>)
+  +09. rA2:=Alice.generate_nonce()
+  +10. Alice sends (encrypt<K_AB>([rA2,rB]), encrypt<K_BT>([rB,K_AB,unique_identity<A>])) to Bob
+
+  +11. K_AB <-- Bob.decrypt<K_BT>(encrypt<K_BT>([rB,K_AB,unique_identity<A>]))
+  +12. Bob verifies (rB, unique_identity<A>)
+  +13. rA2 <-- Bob.decrypt<K_AB>(encrypt<K_AB>([rA2,rB]))
+  +14. Bob verifies rB
+  +15. Bob sends encrypt<K_AB>([rB,rA2,unique_identity<A>]) to Alice
+
+  +16. Alice.decrypt<K_AB>([rB,rA2,unique_identity<A>])
+  +17. Alice verifies (rB,rA2,unique_identity<A>)
+
+
+
+
+
+
+######################
+perfect forward secrecy
+  Yes:
+      ephemeral version STS protocol
+  No:
+      static version STS protocol
+      ISO 9798-2 protocol
+
+]]]#AKE

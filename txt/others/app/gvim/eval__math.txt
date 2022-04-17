@@ -1,0 +1,176 @@
+
+:h :py
+:h has-python
+  :echo has('python')
+  :echo has('python2')
+  :echo has('python3')
+  #手机版droidvim -->> 0 #不带 python
+  pyxeval
+    #eval py2/py3 expr
+    py3eval
+    pyeval
+
+
+:h eval
+  =!= ":h :eval"
+    :h :call
+      #eval<用户自定义函数>
+    :h :eval
+      #丢弃结果，不显示，期望的是副作用
+    :h :exec
+      #执行 vim命令 如 『:ls』『:!mkdir』
+    :h :sandbox
+      #exec<沙箱版>
+
+Blob === py::bytes
+  0zFF00ED015DAF
+  Blob:Binary Large Object
+
+:echo "0100" + 0
+-->> 64
+:echo "0x100" + 0
+-->> 256
+
+
+
+#并未找到 类似py::hex()的 vim内建函数
+str2nr :: str8number -> base -> number
+  :echo str2nr("ffff", 16)
+  -->> 65535
+char2nr :: char -> number<decimal>
+  :echo char2nr("，")
+  -->> 65292
+    vs 正常模式下的ga
+termux:
+  $ py -c 'print(hex(65292))'
+  0xff0c
+
+
+10 types of variables:
+  Special
+  Number/Integer#(32/64bit)
+  Float
+
+  String
+  Blob
+
+  List
+  Dictionary
+
+  Funcref
+  Job
+  Channel
+
+[[[
+Number		A 32 or 64 bit signed number.  |expr-number|
+		64-bit Numbers are available only when compiled with the
+		|+num64| feature.
+		Examples:  -123  0x10  0177  0b1011
+
+Float		A floating point number. |floating-point-format| *Float*
+		{only when compiled with the |+float| feature}
+		Examples: 123.456  1.15e-6  -1.1e3
+
+String		A NUL terminated string of 8-bit unsigned characters (bytes).
+		|expr-string| Examples: "ab\txx\"--"  'x-z''a,c'
+
+List		An ordered sequence of items, see |List| for details.
+		Example: [1, 2, ['a', 'b']]
+
+Dictionary	An associative, unordered array: Each entry has a key and a
+		value. |Dictionary|
+		Examples:
+			{'blue': "#0000ff", 'red': "#ff0000"}
+			#{blue: "#0000ff", red: "#ff0000"}
+
+Funcref		A reference to a function |Funcref|.
+		Example: function("strlen")
+		It can be bound to a dictionary and arguments, it then works
+		like a Partial.
+		Example: function("Callback", [arg], myDict)
+
+Special		|v:false|, |v:true|, |v:none| and |v:null|.  *Special*
+
+Job		Used for a job, see |job_start()|. *Job* *Jobs*
+
+Channel		Used for a channel, see |ch_open()|. *Channel* *Channels*
+
+Blob		Binary Large Object. Stores any sequence of bytes.  See |Blob|
+		for details
+		Example: 0zFF00ED015DAF
+		0z is an empty Blob.
+
+]]]
+
+[[[
+The Number and String types are converted automatically, depending on how they
+are used.
+
+Conversion from a Number to a String is by making the ASCII representation of
+the Number.  Examples:
+	Number 123	-->	String "123" ~
+	Number 0	-->	String "0" ~
+	Number -1	-->	String "-1" ~
+							*octal*
+Conversion from a String to a Number is done by converting the first digits to
+a number.  Hexadecimal "0xf9", Octal "017", and Binary "0b10" numbers are
+recognized (NOTE: when using |scriptversion-4| octal is not recognized).  If
+the String doesn't start with digits, the result is zero.
+Examples:
+	String "456"	-->	Number 456 ~
+	String "6bar"	-->	Number 6 ~
+	String "foo"	-->	Number 0 ~
+	String "0xf1"	-->	Number 241 ~
+	String "0100"	-->	Number 64 ~
+	String "0b101"	-->	Number 5 ~
+	String "-8"	-->	Number -8 ~
+	String "+8"	-->	Number 0 ~
+
+To force conversion from String to Number, add zero to it: >
+	:echo "0100" + 0
+<	64 ~
+
+To avoid a leading zero to cause octal conversion, or for using a different
+base, use |str2nr()|.
+
+						*TRUE* *FALSE* *Boolean*
+For boolean operators Numbers are used.  Zero is FALSE, non-zero is TRUE.
+You can also use |v:false| and |v:true|.  When TRUE is returned from a
+function it is the Number one, FALSE is the number zero.
+
+Note that in the command: >
+	:if "foo"
+	:" NOT executed
+"foo" is converted to 0, which means FALSE.  If the string starts with a
+non-zero number it means TRUE: >
+	:if "8foo"
+	:" executed
+To test for a non-empty string, use empty(): >
+	:if !empty("foo")
+<
+							*non-zero-arg*
+Function arguments often behave slightly different from |TRUE|: If the
+argument is present and it evaluates to a non-zero Number, |v:true| or a
+non-empty String, then the value is considered to be TRUE.
+Note that " " and "0" are also non-empty strings, thus considered to be TRUE.
+A List, Dictionary or Float is not a Number or String, thus evaluate to FALSE.
+
+		*E745* *E728* *E703* *E729* *E730* *E731* *E908* *E910* *E913*
+		*E974* *E975* *E976*
+|List|, |Dictionary|, |Funcref|, |Job|, |Channel| and |Blob| types are not
+automatically converted.
+
+							*E805* *E806* *E808*
+When mixing Number and Float the Number is converted to Float.  Otherwise
+there is no automatic conversion of Float.  You can use str2float() for String
+to Float, printf() for Float to String and float2nr() for Float to Number.
+
+			*E891* *E892* *E893* *E894* *E907* *E911* *E914*
+When expecting a Float a Number can also be used, but nothing else.
+
+						*no-type-checking*
+You will not get an error if you try to change the type of a variable.
+]]]
+
+
+
