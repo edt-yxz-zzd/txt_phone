@@ -1,5 +1,5 @@
 
-r'''
+r'''[[[
 e script/download_zxcs_novel/collect_links_from_zxcs_sort_pages.py
 py /sdcard/0my_files/git_repos/txt_phone/txt/script/download_zxcs_novel/collect_links_from_zxcs_sort_pages.py -sort 37 -od /sdcard/0my_files/tmp/out4py/download_zxcs_novel/collect_links_from_zxcs_sort_pages/sorts/
     ###
@@ -29,6 +29,13 @@ idx:
 view ../../python3_src/nn_ns/internet/webpage/fetch_webpage.py
 from nn_ns.internet.webpage.fetch_webpage import fetch_webpage__str
 
+fixed:
+    20220418
+        『<br>』之前加『\n』
+        『点击下载』由属性值 移作文本
+        移除『www.』，否则进入小说页面无法显示评分
+            # 以前 小说页面&下载页面 都有
+            #   现在 都没有
 
 
 ####################################
@@ -142,7 +149,7 @@ view script/download_zxcs_novel/zxcs_pages/via_py_download/20210919/zxcs.me@2021
 		<div id="pagenavi"><a href="http://www.zxcs.me/sort/37" title="首页">&laquo;</a><em>...</em> <a href="http://www.zxcs.me/sort/37/page/43">43</a>  <a href="http://www.zxcs.me/sort/37/page/44">44</a>  <a href="http://www.zxcs.me/sort/37/page/45">45</a>  <a href="http://www.zxcs.me/sort/37/page/46">46</a>  <a href="http://www.zxcs.me/sort/37/page/47">47</a>  <span>48</span> </div>
 
 
-#'''
+#]]]'''
 
 
 
@@ -174,8 +181,9 @@ view script/download_zxcs_novel/zxcs_pages/zxcs-37-12842.html
     <a href="http://www.zxcs.me/download.php?id=12842" rel="external nofollow" target="_blank" title="点击下载"></a>
     #'''
 
-    def __init__(sf):
+    def __init__(sf, /, *, to_remove_www_in_URL):
         sf.mk_tag = bs4.BeautifulSoup(features="lxml").new_tag
+        sf.to_remove_www_in_URL = to_remove_www_in_URL
     def mk_page_from_link_infoss(sf, link_infoss, /,*, reverse:bool):
         if reverse:
             def f(it):
@@ -196,6 +204,8 @@ view script/download_zxcs_novel/zxcs_pages/zxcs-37-12842.html
             list_soup.append(list_item_soup)
         return soup
     def mk_link_info_tag(sf, collectlist_idx, novel_link, target_label, description, /):
+        if sf.to_remove_www_in_URL:
+            novel_link = novel_link.replace('www.', '')
         description = description.strip()
         novel_page_idx = rpartition_last_uint_from_link(novel_link)
             #12842 <- http://www.zxcs.me/post/12842
@@ -209,20 +219,32 @@ view script/download_zxcs_novel/zxcs_pages/zxcs-37-12842.html
         p_soup = sf.mk_tag('p')
         div_soup.append(p_soup)
         #bug:p_soup.append(description.replace('\n', '\n<br/>'))
+        def add_EOL(p_soup, /):
+            #too ugly:p_soup.append(sf.mk_tag('br'))
+            p_soup.append('\n')
+            p_soup.append(sf.mk_tag('br'))
         if 1:
             p_soup.append(f'{collectlist_idx}:{novel_page_idx}:{target_label}')
-            p_soup.append(sf.mk_tag('br'))
-            p_soup.append(sf.mk_tag('br'))
+            add_EOL(p_soup)
+            add_EOL(p_soup)
         for s in description.split('\n'):
             p_soup.append(s)
-            p_soup.append(sf.mk_tag('br'))
-        p_soup.append(sf.mk_tag('a', href=download_page_link, rel="external nofollow", target="_blank", title="点击下载"))
-            #<a href="http://www.zxcs.me/download.php?id=12842" rel="external nofollow" target="_blank" title="点击下载"></a>
-        p_soup.append(sf.mk_tag('br'))
-        p_soup.append(sf.mk_tag('br'))
+            add_EOL(p_soup)
+        if 1:
+            #bug:p_soup.append(sf.mk_tag('a', href=download_page_link, rel="external nofollow", target="_blank", title="点击下载"))
+            #无法显示，因为没有『内容』
+            #??为何？原页面可以？<a href="http://www.zxcs.me/download.php?id=12842" rel="external nofollow" target="_blank" title="点击下载"></a>
+            a4download = sf.mk_tag('a', href=download_page_link, rel="external nofollow", target="_blank")
+            a4download.append("点击下载")
+            p_soup.append(a4download)
+
+        add_EOL(p_soup)
+        add_EOL(p_soup)
         return div_soup
     def mk_zxcs_download_page_link(sf, novel_page_idx, /):
         download_page_link = f'http://www.zxcs.me/download.php?id={novel_page_idx}'
+        if sf.to_remove_www_in_URL:
+            download_page_link = download_page_link.replace('www.', '')
         return download_page_link
 class Extract_novel_link_infos_from_zxcs_me_sort_page__webpage_via_python_fetch:
     def __init__(sf, page_txt_or_html_file):
@@ -282,21 +304,21 @@ class Extract_novel_link_infos_from_zxcs_me_sort_page__webpage_via_phone_firefox
 
 
 
-def _t():
+def _t(*, to_remove_www_in_URL):
     sort_page_path = G.sort_page_path
     with open(sort_page_path, 'rb') as fin:
         x = Extract_novel_link_infos_from_zxcs_me_sort_page__webpage_via_phone_firefox(fin)
         [*infos] = x.iter_extract_novel_link_infos()
     #print(infos)
     assert len(infos)==15
-    main4mk_collectlist_webpage = Main4mk_collectlist_webpage()
+    main4mk_collectlist_webpage = Main4mk_collectlist_webpage(to_remove_www_in_URL=to_remove_www_in_URL)
     html_soup = main4mk_collectlist_webpage.mk_page_from_link_infoss([infos], reverse=True)
     #print(str(html_soup))
 
     output_collect_infoss_path = G.output_collect_infoss_path
     with open(output_collect_infoss_path, 'xt', encoding='utf8') as fout:
         print(str(html_soup), file=fout)
-#_t()
+#_t(to_remove_www_in_URL=False)
 
 
 
@@ -316,8 +338,8 @@ class MkHtmlFileBaseName:
         return name
 
 class Main:
-    def main(sf, /,*, may_ofname, outdir, sort_idx_str, may_total, timeout):
-        main4download = Main4download(timeout=timeout)
+    def main(sf, /,*, may_ofname, outdir, sort_idx_str, may_total, timeout, to_remove_www_in_URL):
+        main4download = Main4download(timeout=timeout, to_remove_www_in_URL=to_remove_www_in_URL)
         if may_total is None:
             total = main4download.detect_total_pages_of_zxcs_sort(sort_idx_str=sort_idx_str)
         else:
@@ -335,22 +357,22 @@ class Main:
         main4download.download_zxcs_sort_pages_to(sort_idx_str=sort_idx_str, total=total, outdir=outdir)
 
         main4extract = Main4extract(via_phone=False)
-        main4extract.mk_zxcs_novel_info_collectlist_page_from_sort_pages_from(ofname=ofname, indir=outdir, sort_idx_str=sort_idx_str, may_total=total)
+        main4extract.mk_zxcs_novel_info_collectlist_page_from_sort_pages_from(ofname=ofname, indir=outdir, sort_idx_str=sort_idx_str, may_total=total, to_remove_www_in_URL=to_remove_www_in_URL)
 
 class Main4extract:
     r'''
     def extract_zxcs_novel_infoss_of_sort_pages_from(sf, /,*, indir, sort_idx_str, may_total):
-    def mk_zxcs_novel_info_collectlist_page_from_sort_pages_from(sf, /,*, ofname, indir, sort_idx_str, may_total):
+    def mk_zxcs_novel_info_collectlist_page_from_sort_pages_from(sf, /,*, ofname, indir, sort_idx_str, may_total, to_remove_www_in_URL):
     #'''
     def __init__(sf, /,*, via_phone:bool):
         sf.Extract_novel_link_infos_from_zxcs_me_sort_page = Extract_novel_link_infos_from_zxcs_me_sort_page__webpage_via_phone_firefox if via_phone else Extract_novel_link_infos_from_zxcs_me_sort_page__webpage_via_python_fetch
-    def mk_zxcs_novel_info_collectlist_page_from_sort_pages_from(sf, /,*, ofname, indir, sort_idx_str, may_total):
-        html_soup = sf._mk_zxcs_novel_info_collectlist_page_from_sort_pages_from__soup(indir=indir, sort_idx_str=sort_idx_str, may_total=may_total)
+    def mk_zxcs_novel_info_collectlist_page_from_sort_pages_from(sf, /,*, ofname, indir, sort_idx_str, may_total, to_remove_www_in_URL):
+        html_soup = sf._mk_zxcs_novel_info_collectlist_page_from_sort_pages_from__soup(indir=indir, sort_idx_str=sort_idx_str, may_total=may_total, to_remove_www_in_URL=to_remove_www_in_URL)
         with open(ofname, 'xt', encoding='utf8') as fout:
             print(str(html_soup), file=fout)
-    def _mk_zxcs_novel_info_collectlist_page_from_sort_pages_from__soup(sf, /,*, indir, sort_idx_str, may_total):
+    def _mk_zxcs_novel_info_collectlist_page_from_sort_pages_from__soup(sf, /,*, indir, sort_idx_str, may_total, to_remove_www_in_URL):
         infoss = sf.extract_zxcs_novel_infoss_of_sort_pages_from(indir=indir, sort_idx_str=sort_idx_str, may_total=may_total)
-        main4mk_collectlist_webpage = Main4mk_collectlist_webpage()
+        main4mk_collectlist_webpage = Main4mk_collectlist_webpage(to_remove_www_in_URL=to_remove_www_in_URL)
         html_soup = main4mk_collectlist_webpage.mk_page_from_link_infoss(infoss, reverse=True)
         return html_soup
     def extract_zxcs_novel_infoss_of_sort_pages_from(sf, /,*, indir, sort_idx_str, may_total):
@@ -385,8 +407,9 @@ class Main4download:
     def detect_total_pages_of_zxcs_sort(sf, /,*, sort_idx_str):
     #'''
 
-    def __init__(sf, /,*, timeout):
+    def __init__(sf, /,*, timeout, to_remove_www_in_URL):
         sf.timeout = timeout
+        sf.to_remove_www_in_URL = to_remove_www_in_URL
     def download_webpage(sf, link, /):
         return fetch_webpage__str(link, timeout=sf.timeout)
     def download_webpage_to(sf, link, /,*, ofname):
@@ -410,7 +433,10 @@ class Main4download:
             sort_link = sf.mk_zxcs_sort_page_link(sort_idx_str=sort_idx_str, sort_page_idx=sort_page_idx)
             yield sort_page_idx, sort_link
     def mk_zxcs_sort_page_link(sf, /,*, sort_idx_str, sort_page_idx):
-        return f'http://www.zxcs.me/sort/{sort_idx_str}/page/{sort_page_idx}'
+        sort_link = f'http://www.zxcs.me/sort/{sort_idx_str}/page/{sort_page_idx}'
+        if sf.to_remove_www_in_URL:
+            sort_link = sort_link.replace('www.', '')
+        return sort_link
 
 
 
@@ -491,6 +517,9 @@ def main(args=None, /):
                         , default = False
                         , help='open mode for output file')
     #'''
+    parser.add_argument('--remove_www_in_URL', action='store_true'
+                        , default = False
+                        , help='202204 found change: http://www.zxcs.me -->> http://zxcs.me; 小说页面 带『www.』时出错不显示评分')
 
     args = parser.parse_args(args)
     r'''
@@ -508,10 +537,11 @@ def main(args=None, /):
     may_total = args.total
     may_ofname = args.output
     timeout = args.timeout
+    to_remove_www_in_URL = args.remove_www_in_URL
 
 
     os.makedirs(outdir/sort_idx_str, exist_ok=True)
-    Main().main(may_ofname=may_ofname, outdir=outdir, sort_idx_str=sort_idx_str, may_total=may_total, timeout=timeout)
+    Main().main(may_ofname=may_ofname, outdir=outdir, sort_idx_str=sort_idx_str, may_total=may_total, timeout=timeout, to_remove_www_in_URL=to_remove_www_in_URL)
 
 def _main4download_example_page_to_programming():
     #用python直接下载的页面 与 手机上看到的 不同！！
@@ -529,7 +559,7 @@ def _main4download_example_page_to_programming():
         #199~=48
     date = '20210919'
     outdir = Path(fr'script/download_zxcs_novel/zxcs_pages/via_py_download/{date}/')
-    main4download = Main4download(timeout=60)
+    main4download = Main4download(timeout=60, to_remove_www_in_URL=False)
     sort_idx_str = '37'
     sort_page_idc = [199, 48, 47, 2, 1, 0]
     for sort_page_idx in sort_page_idc:
