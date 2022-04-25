@@ -5,7 +5,9 @@ py /sdcard/0my_files/git_repos/txt_phone/txt/script/download_zxcs_novel/collect_
     ###
     mkdir -p /sdcard/0my_files/tmp/out4py/download_zxcs_novel/collect_links_from_zxcs_sort_pages/sorts/
     mkdir -p script/download_zxcs_novel/zxcs_pages/via_py_download/20210919
-
+py /sdcard/0my_files/git_repos/txt_phone/txt/script/download_zxcs_novel/collect_links_from_zxcs_sort_pages.py -sort 37 -od /sdcard/0my_files/tmp/out4py/download_zxcs_novel/collect_links_from_zxcs_sort_pages/sorts/ --turnoff__download --remove_www_in_URL
+view /sdcard/0my_files/tmp/out4py/download_zxcs_novel/collect_links_from_zxcs_sort_pages/sorts/37.html
+view /sdcard/0my_files/tmp/out4py/download_zxcs_novel/collect_links_from_zxcs_sort_pages/sorts/37.html.iinfos.txt
 
 idx:
     sort_idx_str
@@ -159,6 +161,9 @@ from pathlib import Path
 from itertools import chain
 from nn_ns.internet.webpage.fetch_webpage import fetch_webpage__str
 import os#makedirs
+from seed.tiny_.pprint4container__depth1 import pprintT4tuple__depth1, pprint4container__depth1
+from seed.tiny import print_err
+import io #StringIO
 
 
 class G:
@@ -184,31 +189,50 @@ view script/download_zxcs_novel/zxcs_pages/zxcs-37-12842.html
     def __init__(sf, /, *, to_remove_www_in_URL):
         sf.mk_tag = bs4.BeautifulSoup(features="lxml").new_tag
         sf.to_remove_www_in_URL = to_remove_www_in_URL
-    def mk_page_from_link_infoss(sf, link_infoss, /,*, reverse:bool):
+    def link_infoss2iinfos(sf, link_infoss, /,*, reverse:bool):
         if reverse:
             def f(it):
                 return reversed((*it,))
             link_infoss = f(map(f, link_infoss))
         link_infos = chain.from_iterable(link_infoss)
+        ##NOTE:MUST:reversed() before enumerate()
+        #   collectlist_idx match correctly
+        for collectlist_idx, link_info in enumerate(link_infos, 1):
+            link_iinfo = sf.cidx_link_info2iinfo(collectlist_idx, link_info)
+            (collectlist_idx, novel_page_idx, target_label, description) = link_iinfo
+            yield link_iinfo
+        return
 
+    def mk_page_from_link_infoss(sf, link_infoss, /,*, reverse:bool):
+        link_iinfos = sf.link_infoss2iinfos(link_infoss, reverse=reverse)
+        return sf.mk_page_from_link_iinfos(link_iinfos)
+    def mk_page_from_link_iinfos(sf, link_iinfos, /):
         soup = sf.mk_tag('html')
         body_soup = sf.mk_tag('body')
         soup.append(body_soup)
         list_soup = sf.mk_tag('ol')
         body_soup.append(list_soup)
-        for collectlist_idx, link_info in enumerate(link_infos, 1):
-            (novel_link, target_label, description) = link_info
-            link_info_tag = sf.mk_link_info_tag(collectlist_idx, novel_link, target_label, description)
+        for (collectlist_idx, novel_page_idx, target_label, description) in link_iinfos:
+            link_info_tag = sf.mk_link_info_tag(collectlist_idx, novel_page_idx, target_label, description)
             list_item_soup = sf.mk_tag('li')
             list_item_soup.append(link_info_tag)
             list_soup.append(list_item_soup)
         return soup
-    def mk_link_info_tag(sf, collectlist_idx, novel_link, target_label, description, /):
+    def cidx_link_info2iinfo(sf, collectlist_idx, link_info, /):
+        (novel_link, target_label, description) = link_info
         if sf.to_remove_www_in_URL:
             novel_link = novel_link.replace('www.', '')
+        target_label = target_label.strip()
         description = description.strip()
         novel_page_idx = rpartition_last_uint_from_link(novel_link)
             #12842 <- http://www.zxcs.me/post/12842
+        _novel_link = sf.mk_zxcs_novel_link(novel_page_idx)
+        if not novel_link == _novel_link: raise Exception(f'logic-err: {novel_link!r} != {_novel_link!r}')
+        link_iinfo = (collectlist_idx, novel_page_idx, target_label, description)
+        return link_iinfo
+
+    def mk_link_info_tag(sf, collectlist_idx, novel_page_idx, target_label, description, /):
+        novel_link = sf.mk_zxcs_novel_link(novel_page_idx)
         download_page_link = sf.mk_zxcs_download_page_link(novel_page_idx)
             # 12842 -> http://www.zxcs.me/download.php?id=12842
 
@@ -241,6 +265,11 @@ view script/download_zxcs_novel/zxcs_pages/zxcs-37-12842.html
         add_EOL(p_soup)
         add_EOL(p_soup)
         return div_soup
+    def mk_zxcs_novel_link(sf, novel_page_idx, /):
+        novel_link = f'http://www.zxcs.me/post/{novel_page_idx}'
+        if sf.to_remove_www_in_URL:
+            novel_link = novel_link.replace('www.', '')
+        return novel_link
     def mk_zxcs_download_page_link(sf, novel_page_idx, /):
         download_page_link = f'http://www.zxcs.me/download.php?id={novel_page_idx}'
         if sf.to_remove_www_in_URL:
@@ -337,48 +366,89 @@ class MkHtmlFileBaseName:
         name = f'{sf.prefix}{pad_0s}{_name_}{sf.suffix}'
         return name
 
+def mk_ofname4html(*, may_ofname4html, outdir, sort_idx_str):
+    int(sort_idx_str)
+    outdir = Path(outdir)
+    if may_ofname4html is None:
+        ofname4html = outdir/f'{sort_idx_str}.html'
+    else:
+        ofname4html = may_ofname4html
+        ofname4html = Path(ofname4html)
+    return ofname4html
+
 class Main:
-    def main(sf, /,*, may_ofname, outdir, sort_idx_str, may_total, timeout, to_remove_www_in_URL):
-        main4download = Main4download(timeout=timeout, to_remove_www_in_URL=to_remove_www_in_URL)
-        if may_total is None:
-            total = main4download.detect_total_pages_of_zxcs_sort(sort_idx_str=sort_idx_str)
-        else:
-            total = may_total
-        assert total >= 1
-
-
+    def main(sf, /,*, may_ofname4html, outdir, sort_idx_str, may_total, timeout, to_remove_www_in_URL, turnoff__download, turnoff__extract):
         int(sort_idx_str)
         outdir = Path(outdir)
-        if may_ofname is None:
-            ofname = outdir/f'{sort_idx_str}.html'
-        else:
-            ofname = Path(ofname)
+        ofname4html = mk_ofname4html(may_ofname4html=may_ofname4html, outdir=outdir, sort_idx_str=sort_idx_str)
 
-        main4download.download_zxcs_sort_pages_to(sort_idx_str=sort_idx_str, total=total, outdir=outdir)
 
-        main4extract = Main4extract(via_phone=False)
-        main4extract.mk_zxcs_novel_info_collectlist_page_from_sort_pages_from(ofname=ofname, indir=outdir, sort_idx_str=sort_idx_str, may_total=total, to_remove_www_in_URL=to_remove_www_in_URL)
+        if not turnoff__download:
+            main4download = Main4download(timeout=timeout, to_remove_www_in_URL=to_remove_www_in_URL)
+            if may_total is None:
+                total = main4download.detect_total_pages_of_zxcs_sort(sort_idx_str=sort_idx_str)
+            else:
+                total = may_total
+            assert total >= 1
+
+
+            main4download.download_zxcs_sort_pages_to(sort_idx_str=sort_idx_str, total=total, outdir=outdir)
+
+        if not turnoff__extract:
+            if not turnoff__download:
+                may_total = total
+
+            main4extract = Main4extract(via_phone=False)
+            main4extract.mk_zxcs_novel_info_collectlist_page_from_sort_pages_from(ofname4html=ofname4html, indir=outdir, sort_idx_str=sort_idx_str, may_total=may_total, to_remove_www_in_URL=to_remove_www_in_URL)
+
+
+def print_str2opath__warn_and_skip_if_exists(opath, s, /):
+    if opath.exists():
+        print_err(f'FileExistsError: {opath!r}')
+    else:
+        with open(opath, 'xt', encoding='utf8') as fout:
+            print(s, file=fout)
+
+def ofname4html__to__ofname4iinfos(ofname4html, /):
+    ofname4iinfos = ofname4html.parent / (ofname4html.name +'.iinfos.txt')
+    return ofname4iinfos
 
 class Main4extract:
     r'''
     def extract_zxcs_novel_infoss_of_sort_pages_from(sf, /,*, indir, sort_idx_str, may_total):
-    def mk_zxcs_novel_info_collectlist_page_from_sort_pages_from(sf, /,*, ofname, indir, sort_idx_str, may_total, to_remove_www_in_URL):
+    def mk_zxcs_novel_info_collectlist_page_from_sort_pages_from(sf, /,*, ofname4html, indir, sort_idx_str, may_total, to_remove_www_in_URL):
     #'''
     def __init__(sf, /,*, via_phone:bool):
         sf.Extract_novel_link_infos_from_zxcs_me_sort_page = Extract_novel_link_infos_from_zxcs_me_sort_page__webpage_via_phone_firefox if via_phone else Extract_novel_link_infos_from_zxcs_me_sort_page__webpage_via_python_fetch
-    def mk_zxcs_novel_info_collectlist_page_from_sort_pages_from(sf, /,*, ofname, indir, sort_idx_str, may_total, to_remove_www_in_URL):
-        html_soup = sf._mk_zxcs_novel_info_collectlist_page_from_sort_pages_from__soup(indir=indir, sort_idx_str=sort_idx_str, may_total=may_total, to_remove_www_in_URL=to_remove_www_in_URL)
-        with open(ofname, 'xt', encoding='utf8') as fout:
-            print(str(html_soup), file=fout)
-    def _mk_zxcs_novel_info_collectlist_page_from_sort_pages_from__soup(sf, /,*, indir, sort_idx_str, may_total, to_remove_www_in_URL):
-        infoss = sf.extract_zxcs_novel_infoss_of_sort_pages_from(indir=indir, sort_idx_str=sort_idx_str, may_total=may_total)
+
+    def mk_zxcs_novel_info_collectlist_page_from_sort_pages_from(sf, /,*, ofname4html, indir, sort_idx_str, may_total, to_remove_www_in_URL):
+        def f(link_iinfos, /):
+            fout = io.StringIO()
+            #pprintT4tuple__depth1(indent='', fout=fout, repr4element=None, to_elememts=None)(link_iinfos)
+            pprint4container__depth1(link_iinfos, fout=fout)
+            return fout.getvalue()
+
+        html_soup, link_iinfos = sf._mk_zxcs_novel_info_collectlist_page_from_sort_pages_from__soup__ex(indir=indir, sort_idx_str=sort_idx_str, may_total=may_total, to_remove_www_in_URL=to_remove_www_in_URL)
+        html_soup__str = str(html_soup)
+        link_iinfos__str = f(link_iinfos)
+        ofname4iinfos = ofname4html__to__ofname4iinfos(ofname4html)
+
+        print_str2opath__warn_and_skip_if_exists(ofname4html, html_soup__str)
+
+        print_str2opath__warn_and_skip_if_exists(ofname4iinfos, link_iinfos__str)
+
+    def _mk_zxcs_novel_info_collectlist_page_from_sort_pages_from__soup__ex(sf, /,*, indir, sort_idx_str, may_total, to_remove_www_in_URL):
+        link_infoss = sf.extract_zxcs_novel_infoss_of_sort_pages_from(indir=indir, sort_idx_str=sort_idx_str, may_total=may_total)
         main4mk_collectlist_webpage = Main4mk_collectlist_webpage(to_remove_www_in_URL=to_remove_www_in_URL)
-        html_soup = main4mk_collectlist_webpage.mk_page_from_link_infoss(infoss, reverse=True)
-        return html_soup
+        link_iinfos = main4mk_collectlist_webpage.link_infoss2iinfos(link_infoss, reverse=True)
+        link_iinfos = (*link_iinfos,)
+
+        html_soup = main4mk_collectlist_webpage.mk_page_from_link_iinfos(link_iinfos)
+        return html_soup, link_iinfos
     def extract_zxcs_novel_infoss_of_sort_pages_from(sf, /,*, indir, sort_idx_str, may_total):
         indir_sort_dir = indir/sort_idx_str
         if may_total is None:
-            ifnames = indir_sort_dir.iter_dir()
+            ifnames = indir_sort_dir.iterdir()
             ifnames = sorted(ifnames)
         else:
             total = may_total
@@ -388,8 +458,8 @@ class Main4extract:
                     name = mk_basename(sort_page_idx)
                     yield indir_sort_dir/name
             ifnames = f()
-        infoss = sf.iter_extract_zxcs_sort_page_infoss(ifnames)
-        return infoss
+        link_infoss = sf.iter_extract_zxcs_sort_page_infoss(ifnames)
+        return link_infoss
     def iter_extract_zxcs_sort_page_infoss(sf, ifnames, /):
         return map(sf.iter_extract_zxcs_sort_page_infos, ifnames)
     def iter_extract_zxcs_sort_page_infos(sf, ifname, /):
@@ -520,6 +590,12 @@ def main(args=None, /):
     parser.add_argument('--remove_www_in_URL', action='store_true'
                         , default = False
                         , help='202204 found change: http://www.zxcs.me -->> http://zxcs.me; 小说页面 带『www.』时出错不显示评分')
+    parser.add_argument('--turnoff__extract', action='store_true'
+                        , default = False
+                        , help='skip extract phase (eg. download-only)')
+    parser.add_argument('--turnoff__download', action='store_true'
+                        , default = False
+                        , help='skip download phase (eg. already downloaded)')
 
     args = parser.parse_args(args)
     r'''
@@ -529,19 +605,21 @@ def main(args=None, /):
     may_ifname = args.input
     with may_open_stdin(may_ifname, 'rt', encoding=encoding) as fin:
 
-    may_ofname = args.output
-    with may_open_stdout(may_ofname, omode, encoding=encoding) as fout:
+    may_ofname4html = args.output
+    with may_open_stdout(may_ofname4html, omode, encoding=encoding) as fout:
     #'''
     outdir = args.outdir
     sort_idx_str = args.sort_idx_str
     may_total = args.total
-    may_ofname = args.output
+    may_ofname4html = args.output
     timeout = args.timeout
     to_remove_www_in_URL = args.remove_www_in_URL
+    turnoff__download = args.turnoff__download 
+    turnoff__extract = args.turnoff__extract
 
 
     os.makedirs(outdir/sort_idx_str, exist_ok=True)
-    Main().main(may_ofname=may_ofname, outdir=outdir, sort_idx_str=sort_idx_str, may_total=may_total, timeout=timeout, to_remove_www_in_URL=to_remove_www_in_URL)
+    Main().main(may_ofname4html=may_ofname4html, outdir=outdir, sort_idx_str=sort_idx_str, may_total=may_total, timeout=timeout, to_remove_www_in_URL=to_remove_www_in_URL, turnoff__download=turnoff__download, turnoff__extract=turnoff__extract)
 
 def _main4download_example_page_to_programming():
     #用python直接下载的页面 与 手机上看到的 不同！！

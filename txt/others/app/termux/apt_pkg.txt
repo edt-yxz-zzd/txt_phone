@@ -597,7 +597,165 @@ import xlwt
 import xlsxwriter
 
 
+===========================================
 
+[[
+py -m pip install --upgrade pip
+py -m pip install requests
+  Successfully installed requests-2.15.1
+  # but:Release v2.26.0
+
+======================
+https://docs.python-requests.org/en/master/
+https://docs.python-requests.org/en/master/user/install/#get-the-source-code
+py -m pip install requests
+
+git clone git://github.com/psf/requests.git
+curl -OL https://github.com/psf/requests/tarball/master
+  doc???
+
+
+======================
+用于 知轩藏书 zxcs.me 取评分
+[[[
+[[
+view-source:http://zxcs.me/post/9999
+<div........>
+... ...
+... ...
+<div class="filecont">
+  <p class="filetit"><a href="http://zxcs.me/download.php?id=9999" rel="external nofollow" target="_blank" title="">《唐朝小官人》（校对版全本）作者：上山打老虎额</a></p>
+  <p class="fileinfo"><span>格式：TXT</span>|&nbsp;&nbsp;&nbsp;<span>大小：3.54 MB</span></p>
+</div>
+
+<div class="down_2">
+  <a href="http://zxcs.me/download.php?id=9999" rel="external nofollow" target="_blank" title="点击下载"></a>
+</div>
+... ...
+... ...
+</div>
+
+<div id="vote">
+<script language="javascript">
+    var pluginpath = "http://zxcs.me/content/plugins/cgz_xinqing/";
+    var infoid = "9999";
+</script>
+<script language = "javascript" src ="http://zxcs.me/content/plugins/cgz_xinqing/cgz_xinqing.js">
+</script>
+</div>
+]]
+==>>下载『cgz_xinqing.js』
+[[
+!mkdir /sdcard/0my_files/tmp/wget_/zxcs.me/
+cd /sdcard/0my_files/tmp/wget_/zxcs.me/
+wget http://zxcs.me/content/plugins/cgz_xinqing/cgz_xinqing.js
+]]
+[[
+view /sdcard/0my_files/tmp/wget_/zxcs.me/cgz_xinqing.js
+
+document.writeln("<div><a onclick=\"get_mood(\'mood1\')\" ><img src=\""+pluginpath+"images\/1.png\" \><\/a><\/div>");
+document.writeln("<div style=\"font-size:16px;height:26px;light-height:26px;\">仙草<\/div>");
+
+function get_mood(mood_id)
+{
+  ... ...
+  url = ""+pluginpath+"cgz_xinqing_action.php?action=mood&id="+infoid+"&typee="+mood_id+"&m=" + Math.random();
+  makeRequest(url,'return_review1','GET','');
+  ... ...
+}
+function return_review1(ajax)
+{
+  if (http_request.status == 200) {
+    var str_error_num = http_request.responseText;
+    ... ...
+      moodinner(str_error_num);
+    ... ...
+  }
+}
+
+# moodinner() ==>> moodarr/moodtext 是 评分
+#   mood 心情/情绪
+function moodinner(moodtext)
+{
+  ... ...
+  var moodarr = moodtext.split(",");
+  var moodzs = 0;
+  for(k=0;k<8;k++) {
+    moodarr[k] = parseInt(moodarr[k]);
+    moodzs += moodarr[k];
+  }
+  for(i=0;i<8;i++) {
+    heightarr[i]= Math.round(moodarr[i]/moodzs*heightz);
+    if(heightarr[i]<1) heightarr[i]=1;
+    if(moodarr[i]>hmaxpx) {
+    hmaxpx = moodarr[i];
+    }
+  }
+  for(j=0;j<8;j++)
+  {
+    if(moodarr[j]==hmaxpx && moodarr[j]!=0) {
+      vote("moodinfo"+j).innerHTML = "<span style='color: "+color2+";'>"+moodarr[j]+"</span>";
+    } else {
+      vote("moodinfo"+j).innerHTML = "<span style='color: "+color1+";'>"+moodarr[j]+"</span>";
+    }
+  }
+}
+
+function makeRequest(url, functionName, httpType, sendData) {
+  http_request = false;
+  if (!httpType) httpType = "GET";
+
+  ... ...
+  var changefunc="http_request.onreadystatechange = "+functionName;
+  eval (changefunc);
+  http_request.open(httpType, url, true);
+  http_request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+  http_request.send(sendData);
+}
+]]
+
+[[摘要:
+======================
+view-source:http://zxcs.me/post/9999
+var pluginpath = "http://zxcs.me/content/plugins/cgz_xinqing/";
+var infoid = "9999";
+======================
+view /sdcard/0my_files/tmp/wget_/zxcs.me/cgz_xinqing.js
+onclick=\"get_mood(\'mood1\')\"
+var moodarr = moodtext.split(",");
+url = ""+pluginpath+"cgz_xinqing_action.php?action=mood&id="+infoid+"&typee="+mood_id+"&m=" + Math.random();
+makeRequest(url,'return_review1','GET','');
+
+]]
+[[py模拟:
+import random as Rm
+pluginpath = "http://zxcs.me/content/plugins/cgz_xinqing/"
+infoid = "9999"
+  #info_ID
+  #来自于网址:小说页面:http://zxcs.me/post/9999
+  #
+mood_id = "mood1"
+  #mood[1-5]
+  #按理来说，mood1 只代表 仙草
+  #但，结果是 全部！
+  #
+url = ""+pluginpath+"cgz_xinqing_action.php?action=mood&id="+infoid+"&typee="+mood_id+"&m=" + str(Rm.random());
+  #JavaScript Math.random()->float
+  #与py::random.random()一样！
+  #
+'http://zxcs.me/content/plugins/cgz_xinqing/cgz_xinqing_action.php?action=mood&id=9999&typee=mood1&m=0.7204524125627698'
+
+import requests as R
+r = R.get(url)
+r.status_code
+200
+r.content
+b'93,8,5,7,30'
+  #92人:仙草; 8人:粮草; 5人:干草; 7人:枯草; 30人:毒草;
+]]
+]]]
+
+]]
 
 
 
