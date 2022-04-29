@@ -377,14 +377,14 @@ def mk_ofname4html(*, may_ofname4html, outdir, sort_idx_str):
     return ofname4html
 
 class Main:
-    def main(sf, /,*, may_ofname4html, outdir, sort_idx_str, may_total, timeout, to_remove_www_in_URL, turnoff__download, turnoff__extract):
+    def main(sf, /,*, may_ofname4html, outdir, sort_idx_str, may_total, timeout, to_remove_www_in_URL, turnoff__download, turnoff__extract, continue_download__skip_nonempty_opath_overwrite_empty_opath):
         int(sort_idx_str)
         outdir = Path(outdir)
         ofname4html = mk_ofname4html(may_ofname4html=may_ofname4html, outdir=outdir, sort_idx_str=sort_idx_str)
 
 
         if not turnoff__download:
-            main4download = Main4download(timeout=timeout, to_remove_www_in_URL=to_remove_www_in_URL)
+            main4download = Main4download(timeout=timeout, to_remove_www_in_URL=to_remove_www_in_URL, continue_download__skip_nonempty_opath_overwrite_empty_opath=continue_download__skip_nonempty_opath_overwrite_empty_opath)
             if may_total is None:
                 total = main4download.detect_total_pages_of_zxcs_sort(sort_idx_str=sort_idx_str)
             else:
@@ -477,12 +477,23 @@ class Main4download:
     def detect_total_pages_of_zxcs_sort(sf, /,*, sort_idx_str):
     #'''
 
-    def __init__(sf, /,*, timeout, to_remove_www_in_URL):
+    def __init__(sf, /,*, timeout, to_remove_www_in_URL, continue_download__skip_nonempty_opath_overwrite_empty_opath):
         sf.timeout = timeout
         sf.to_remove_www_in_URL = to_remove_www_in_URL
+        sf.continue_download__skip_nonempty_opath_overwrite_empty_opath = continue_download__skip_nonempty_opath_overwrite_empty_opath
     def download_webpage(sf, link, /):
         return fetch_webpage__str(link, timeout=sf.timeout)
     def download_webpage_to(sf, link, /,*, ofname):
+        opath = Path(ofname)
+        #if opath.exists():
+        if sf.continue_download__skip_nonempty_opath_overwrite_empty_opath and opath.is_file():
+            sz = opath.stat().st_size
+            if sz:
+                #skip
+                return
+            else:
+                #delete for overwrite
+                opath.unlink()
         with open(ofname, 'xt', encoding='utf8') as fout:
             txt = sf.download_webpage(link)
             fout.write(txt)
@@ -587,6 +598,9 @@ def main(args=None, /):
                         , default = False
                         , help='open mode for output file')
     #'''
+    parser.add_argument('-c', '--continue_download__skip_nonempty_opath_overwrite_empty_opath', action='store_true'
+                        , default = False
+                        , help=' for output file')
     parser.add_argument('--remove_www_in_URL', action='store_true'
                         , default = False
                         , help='202204 found change: http://www.zxcs.me -->> http://zxcs.me; 小说页面 带『www.』时出错不显示评分')
@@ -614,12 +628,13 @@ def main(args=None, /):
     may_ofname4html = args.output
     timeout = args.timeout
     to_remove_www_in_URL = args.remove_www_in_URL
-    turnoff__download = args.turnoff__download 
+    turnoff__download = args.turnoff__download
     turnoff__extract = args.turnoff__extract
+    continue_download__skip_nonempty_opath_overwrite_empty_opath = args.continue_download__skip_nonempty_opath_overwrite_empty_opath
 
 
     os.makedirs(outdir/sort_idx_str, exist_ok=True)
-    Main().main(may_ofname4html=may_ofname4html, outdir=outdir, sort_idx_str=sort_idx_str, may_total=may_total, timeout=timeout, to_remove_www_in_URL=to_remove_www_in_URL, turnoff__download=turnoff__download, turnoff__extract=turnoff__extract)
+    Main().main(may_ofname4html=may_ofname4html, outdir=outdir, sort_idx_str=sort_idx_str, may_total=may_total, timeout=timeout, to_remove_www_in_URL=to_remove_www_in_URL, turnoff__download=turnoff__download, turnoff__extract=turnoff__extract, continue_download__skip_nonempty_opath_overwrite_empty_opath=continue_download__skip_nonempty_opath_overwrite_empty_opath)
 
 def _main4download_example_page_to_programming():
     #用python直接下载的页面 与 手机上看到的 不同！！

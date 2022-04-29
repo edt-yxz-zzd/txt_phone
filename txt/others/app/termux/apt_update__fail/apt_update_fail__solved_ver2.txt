@@ -1,0 +1,338 @@
+
+subversion_1.13.0_arm.deb	2022-03-13 01:07 	1.3M
+
+section
+0. 想要安装『svn/subversion』，因为要从github下载 单文件/子文件夹，而非下载 不含历史的整个库的压缩包
+    svn ls <repo>/trunk/folder
+    svn export <repo>/trunk/<folder>
+
+section
+1. 『apt update』失败
+  $ apt update
+    链接失效:
+      https://dl.bintray.com/
+      https://termux.net
+
+section
+2.1.尝试修改配置主仓库网址，但找到Android7_SDK24的主仓库『https://packages-cf.termux.org/apt/termux-main』:
+  [[[
+    #旧库另命名
+    #
+    mv /data/data/com.termux/files/usr/etc/apt/sources.list.d/  /data/data/com.termux/files/usr/etc/apt/sources.list.d[old]
+    mkdir /data/data/com.termux/files/usr/etc/apt/sources.list.d/
+
+    #删失效库:https://dl.bintray.com/
+    #
+    pkg remove game-repo
+    pkg remove science-repo
+
+    #另存 主仓库 原配置: deb https://termux.net stable main
+    #
+    mv /data/data/com.termux/files/usr/etc/apt/sources.list /data/data/com.termux/files/usr/etc/apt/sources.list[old]
+
+    #更改 主仓库
+    #   主仓库链接 来自 脚本: https://github.com/termux/termux-packages/blob/master/packages/termux-tools/termux-change-repo
+    #
+    echo $'# The main termux repository:\ndeb https://packages-cf.termux.org/apt/termux-main stable main\n' > /data/data/com.termux/files/usr/etc/apt/sources.list
+
+  ]]]
+
+
+section
+2.2. 执行『apt update』连接成功，
+
+section
+2.3. 尝试更新『apt upgrade termux-am』，自此之后，很多命令都无法执行:apt/dpkg！连ls/rm/cp/mv/cat都无法使用了...
+  [[[[[
+  apt list | grep 'termux.*upgradable'
+    [[[
+      $ apt list | grep 'termux.*upgradable'
+      WARNING: apt does not have a stable CLI interface. Use with caution in scripts.
+
+      termux-am/stable 0.4 all [upgradable from: 0.3-1]
+      termux-auth/stable 1.4-2 arm [upgradable from: 1.1-2]
+      termux-exec/stable 1:1.0 arm [upgradable from: 0.4-2]
+      termux-keyring/stable 3.3 all [upgradable from: 1.1-1]
+      termux-licenses/stable 2.0-2 all [upgradable from: 1.0-1]
+      termux-tools/stable 0.175 all [upgradable from: 0.75]
+    ]]]
+  apt upgrade termux-am
+    [[[
+      $ apt upgrade termux-am
+      Reading package lists... Done
+      Building dependency tree
+      Reading state information... Done
+      Calculating upgrade... Done
+      The following packages were automatically installed and are no longer required:
+        binutils libcairo-gobject libtool libutil
+      Use 'apt autoremove' to remove them.
+      The following NEW packages will be installed:
+        dialog game-music-emu giflib
+        libandroid-posix-semaphore libaom libbluray
+        libcap-ng libcompiler-rt libdav1d libevent liblz4
+        librav1e libresolv-wrapper libssh2 libudfread
+        libvidstab lld llvm openjpeg-tools
+        openssh-sftp-server openssl-1.1 pkg-config
+        termux-am-socket ttf-dejavu unbound xxhash zstd
+      The following packages have been kept back:
+        libcairo pango texlive-bin
+      The following packages will be upgraded:
+        apt autoconf automake bash bash-completion binutils
+        busybox bzip2 ca-certificates clang cmake
+        command-not-found coreutils curl dash diffutils
+        dpkg dx ecj ffmpeg findutils fontconfig freetype
+        fribidi gawk gdbm gdk-pixbuf gettext git glib gnupg
+        gpgv graphviz grep gzip harfbuzz harfbuzz-icu
+        hexedit hub jsoncpp krb5 ldns less lftp
+        libandroid-glob libandroid-support libarchive
+        libass libassuan libbz2 libc++ libcroco libcrypt
+        libcurl libdb libedit libexpat libffi libgcrypt
+        libgd libgmp libgnutls libgpg-error libgraphite
+        libicu libidn2 libjpeg-turbo libksba libllvm
+        libltdl liblzma libmp3lame libmpfr libnettle
+        libnghttp2 libogg libopus libpixman libpng librsvg
+        libsoxr libsqlite libtiff libtool libunistring
+        libuuid libuv libvorbis libvpx libwebp libx264
+        libx265 libxml2 libxslt littlecms m4 make man
+        ncurses ncurses-ui-libs ndk-sysroot openjpeg
+        openssh openssl openssl-tool p7zip pacman4console
+        pcre pcre2 perl pinentry poppler procps psmisc
+        pure-ftpd python python-static readline resolv-conf
+        rhash sed sharutils tar tcl teckit termux-am
+        termux-auth termux-exec termux-keyring
+        termux-licenses termux-tools tree tsu unrar
+        util-linux vim-python vim-runtime wget xvidcore
+        xz-utils zlib
+      141 upgraded, 27 newly installed, 0 to remove and 3 not upgraded.
+      Need to get 179 MB of archives.
+      After this operation, 198 MB of additional disk space will be used.
+      Do you want to continue? [Y/n] y
+      Preparing to unpack .../archives/coreutils_9.1_arm.deb ...
+      Unpacking coreutils (9.1) over (8.31-5) ...
+      WARNING: linker: rm: unused DT entry: type 0x1d arg 0xc5b
+      WARNING: linker: /data/data/com.termux/files/usr/lib/libandroid-support.so: unused DT entry: type 0x1d arg 0x18a
+      WARNING: linker: /data/data/com.termux/files/usr/lib/libgmp.so: unused DT entry: type 0x1d arg 0x2900
+      CANNOT LINK EXECUTABLE: cannot locate symbol "__fwrite_chk" referenced by "rm"...
+      page record for 0xb6e5f00c was not found (block_size=64)
+      dpkg: error while cleaning up:
+       rm command for cleanup subprocess returned error exit status 1
+      Setting up coreutils (9.1) ...
+      WARNING: linker: rm: unused DT entry: type 0x1d arg 0xc5b
+      WARNING: linker: /data/data/com.termux/files/usr/lib/libandroid-support.so: unused DT entry: type 0x1d arg 0x18a
+      WARNING: linker: /data/data/com.termux/files/usr/lib/libgmp.so: unused DT entry: type 0x1d arg 0x2900
+      CANNOT LINK EXECUTABLE: cannot locate symbol "__fwrite_chk" referenced by "rm"...
+      page record for 0xb6e0a00c was not found (block_size=64)
+      dpkg: error processing archive /data/data/com.termux/files/usr/var/cache/apt/archives/libbz2_1.0.8-6_arm.deb (--unpack):
+       rm command for cleanup subprocess returned error exit status 1
+      Errors were encountered while processing:
+       /data/data/com.termux/files/usr/var/cache/apt/archives/libbz2_1.0.8-6_arm.deb
+      E: Sub-process /data/data/com.termux/files/usr/bin/dpkg returned an error code (1)
+    ]]]
+  #自此之后，很多命令都无法执行！
+  apt update
+    [[[
+      $ apt update
+      Err:1 https://packages-cf.termux.org/apt/termux-main stable InRelease
+        At least one invalid signature was encountered.
+      Reading package lists... Done
+      Building dependency tree
+      Reading state information... Done
+      140 packages can be upgraded. Run 'apt list --upgradable' to see them.
+      W: An error occurred during the signature verification. The repository is not updated and the previous index files will be used. GPG error: https://packages-cf.termux.org/apt/termux-main stable InRelease: At least one invalid signature was encountered.
+      W: Failed to fetch https://packages-cf.termux.org/apt/termux-main/dists/stable/InRelease  At least one invalid signature was encountered.
+      W: Some index files failed to download. They have been ignored, or old ones used instead.
+    ]]]
+  #连ls/rm/cp/mv/cat都无法使用了...幸亏有vim+python!
+  ls
+    [[[
+      $ ls
+      WARNING: linker: ls: unused DT entry: type 0x1d arg 0xc5b
+      WARNING: linker: /data/data/com.termux/files/usr/lib/libandroid-support.so: unused DT entry: type 0x1d arg 0x18a
+      WARNING: linker: /data/data/com.termux/files/usr/lib/libgmp.so: unused DT entry: type 0x1d arg 0x2900
+      CANNOT LINK EXECUTABLE: cannot locate symbol "__fwrite_chk" referenced by "ls"...
+      page record for 0xb6ddb00c was not found (block_size=64)
+    ]]]
+  ]]]]]
+
+section
+3. 幸亏有vim+python，有了手动修复的可能。
+  [[
+  ok:cd,pwd,diff
+  alias rm="py -m nn_ns.app.rm"
+  alias cp="py -m nn_ns.app.cp"
+  alias mv="py -m nn_ns.app.mv"
+  alias ls="py -m nn_ns.app.ls"
+  alias cat="py -m nn_ns.app.cat"
+  ]]
+
+section
+4. 发现是系统版本问题(重点是apt竟然没有阻止！)，寻找legacy-termux-repositories<Android6_SDK23>，结果得到『https://free.nchc.org.tw/osdn//storage/g/t/te/termux-old/termux-packages/』
+  #本手机信息: armv7-a 32bit
+      # arm==arm-32bit
+      # aarch == amd =?!= arm != x86
+  getprop
+    [[[
+      $ getprop
+      [ro.build.version.codename]: [REL]
+      [ro.build.version.release]: [6.0]
+      [ro.build.version.sdk]: [23]
+
+      $ getprop ro.build.version.release
+      6.0
+    ]]]
+  #寻找legacy-termux-repositories<Android6_SDK23>
+    [[
+    https://github.com/termux/termux-packages/issues/4658
+    Note that the last working version of Termux for android 5/6 is Termux 0.75. This is available in Fdroid by enabling the 'F-Droid Archive' repo in settings.
+      并没有找到！@202204
+
+    If want packages working on Android 5, get them from https://archive.org/download/termux-repositories-legacy/termux-repositories-legacy-24.12.2019.tar.
+      https://linx.li/termux-v079-offline-bootstraps.apk
+      https://archive.org/download/termux-repositories-legacy/termux-repositories-legacy-24.12.2019.tar
+        cd $PREFIX/../
+        tar zcvf /sdcard/termux-prefix.tar.gz usr
+
+    尝试下载 termux-repositories-legacy-24.12.2019.tar
+      https://archive.org/无法访问！
+
+    寻找 termux-repositories-legacy-24.12.2019.tar
+      https://pt.osdn.net/projects/termux-old/storage/termux-packages/
+          [[
+        Archive of Termux’s packages for Android 5/6
+          https://archive.org/download/termux-repositories-legacy/termux-repositories-legacy-24.12.2019.tar
+
+        Archive of apps, packages and sources compatible with Android 5:
+          https://archive.org/details/termux-repositories-legacy
+
+        https://pt.osdn.net/projects/termux-old/storage/termux-packages/dists/stable/
+        https://pt.osdn.net/projects/termux-old/storage/termux-packages/dists/stable/main/binary-arm/
+        https://free.nchc.org.tw/osdn//storage/g/t/te/termux-old/termux-packages/dists/stable/Release
+          <-- 跳转自 https://pt.osdn.net/projects/termux-old/storage/termux-packages/ 下的文件列表中的『Release』
+          https://free.nchc.org.tw/osdn//storage/g/t/te/termux-old/termux-packages/
+            似乎可以用来替换 https://packages-cf.termux.org/apt/termux-main
+              因为同样有文件夹『dists/』
+                确实行，不过本地动态链接库一致性已遭到破坏，apt/dpkg无法正常工作(rm失败)，需要手动修复。
+        https://free.nchc.org.tw/osdn//storage/g/t/te/termux-old/termux-packages/dists/stable/main/binary-arm/
+        [ ]	Packages.xz	2022-03-13 00:31 	80K	 
+        [ ]	libandroid-support-static_24-6_arm.deb	2022-03-13 00:52 	103K	 
+        [ ]	libandroid-support_24-6_arm.deb	2022-03-13 00:52 	102K	 
+          ]]
+
+
+    结果找到一个Android5/Android6?主仓库『https://free.nchc.org.tw/osdn//storage/g/t/te/termux-old/termux-packages/』
+    ]]
+
+section
+5. 手动修复关键模块(使apt/dpkg能正常工作)，再用apt重装所有202204安装的模块
+  [[[[[
+  下载 https://free.nchc.org.tw/osdn//storage/g/t/te/termux-old/termux-packages/dists/stable/main/binary-arm/Packages
+  查看所有模块信息:模块名，模块版本，简介，直接依赖
+    <==>
+    dpkg -I xxx.deb
+  下载 https://free.nchc.org.tw/osdn//storage/g/t/te/termux-old/termux-packages/dists/stable/main/binary-arm/*.deb
+
+  view ~/../usr/var/log/apt/history.log
+    命令执行结果？
+  view ~/../usr/var/log/apt/term.log
+    终端输出的全部历史？
+  [[grep Unpacking ~/../usr/var/log/apt/term.log
+  ... ...
+  ... ...
+  Unpacking patch (2.7.6-4) ...
+  ######################
+  ######################
+  ######################error below
+  ######################
+  ######################
+  Unpacking libandroid-support (28-2) over (24-6) ...
+  Unpacking liblz4 (1.9.3) ...
+  Unpacking xxhash (0.8.1) ...
+  Unpacking libc++ (23b-3) over (20-3) ...
+  Unpacking libgmp (6.2.1-1) over (6.1.2-5) ...
+  Unpacking coreutils (9.1) over (8.31-5) ...
+    ]] ==>> 全部重装！libandroid-support liblz4 xxhash libc++ libgmp coreutils
+    [[[
+    虽然 libandroid-support 与 coreutils 已手动重装，但文档之类没有还原，还要用apt重装
+      #手动重装coreutils之后，『rm』『mv』『cp』才能用，apt依赖于dpkg依赖于rm...依赖于coreutils
+      #
+
+    for: apt install /mnt/m_external_sd/000edt/0my_files/apk/deb_pkgs4termux/arm-deb_pkgs4termux/xxxx.deb
+      [[
+      view /sdcard/Download/downs4termux/binary-arm-index.html.ls-3.txt
+      libandroid-glob-static_0.6-1_arm.deb	2022-03-13 00:52 	4.3K
+      libandroid-glob_0.6-1_arm.deb	2022-03-13 00:52 	6.5K
+      libandroid-shmem-static_0.2.1-1_arm.deb	2022-03-13 00:52 	5.4K
+      libandroid-shmem_0.2.1-1_arm.deb	2022-03-13 00:52 	8.7K
+      libandroid-support-static_24-6_arm.deb	2022-03-13 00:52 	103K
+      libandroid-support_24-6_arm.deb	2022-03-13 00:52 	102K
+
+
+      liblz4-static_1.9.2-1_arm.deb	2022-03-13 00:57 	53K
+      liblz4_1.9.2-1_arm.deb	2022-03-13 00:57 	75K
+
+      没有xxhash的deb
+
+      libc++_20-3_arm.deb	2022-03-13 00:53 	161K
+
+      libgmp-static_6.1.2-5_arm.deb	2022-03-13 00:55 	203K
+      libgmp_6.1.2-5_arm.deb	2022-03-13 00:55 	293K
+
+      coreutils_8.31-5_arm.deb	2022-03-13 00:35 	689K
+      ]]
+
+    $ pkg list-installed
+      并没有 static
+
+    ]]]
+
+
+  [[
+  !!!手动重装!!!
+  dpkg-deb --extract /sdcard/Download/libandroid-support_24-6_arm.deb ~/1tmp/libandroid-support_24-6_arm/
+  tree ~/1tmp/libandroid-support_24-6_arm/
+  备份先于覆写
+  cp /data/data/com.termux/files/usr/lib/libandroid-support.so[24-6_arm][from_www_tw] /data/data/com.termux/files/usr/lib/libandroid-support.so
+    !!!修改系统!!!
+
+
+  dpkg-deb --extract /mnt/m_external_sd/000edt/0my_files/apk/deb_pkgs4termux/arm-deb_pkgs4termux/coreutils_8.31-5_arm.deb ~/1tmp/coreutils_8.31-5_arm/
+  tree ~/1tmp/coreutils_8.31-5_arm/
+    可执行文件 主要两个，其余都是文档/箭头(软链接:ls/rm/...)
+  备份先于覆写
+  cp /data/data/com.termux/files/usr/bin/coreutils[8.31-5_arm][from_www_tw] /data/data/com.termux/files/usr/bin/coreutils
+      !!!修改系统!!!
+  cp /data/data/com.termux/files/usr/libexec/coreutils/libstdbuf.so[8.31-5_arm][from_www_tw]  /data/data/com.termux/files/usr/libexec/coreutils/libstdbuf.so
+      !!!修改系统!!!
+      ls/cp恢复正常工作！
+  ]]
+
+
+  [[
+  !!!apt重装!!!
+  apt install /mnt/m_external_sd/000edt/0my_files/apk/deb_pkgs4termux/arm-deb_pkgs4termux/libandroid-support_24-6_arm.deb
+  apt install /mnt/m_external_sd/000edt/0my_files/apk/deb_pkgs4termux/arm-deb_pkgs4termux/liblz4_1.9.2-1_arm.deb
+  apt autoremove xxhash
+
+  apt install /mnt/m_external_sd/000edt/0my_files/apk/deb_pkgs4termux/arm-deb_pkgs4termux/libc++_20-3_arm.deb
+  apt install /mnt/m_external_sd/000edt/0my_files/apk/deb_pkgs4termux/arm-deb_pkgs4termux/libgmp_6.1.2-5_arm.deb
+
+  apt install /mnt/m_external_sd/000edt/0my_files/apk/deb_pkgs4termux/arm-deb_pkgs4termux/coreutils_8.31-5_arm.deb
+  ]]
+
+
+  ]]]]]
+
+section
+
+section
+
+section
+
+section
+e others/app/termux/apt_update__fail/apt_update_fail__solved_ver2.txt
+  <<==:
+  e /sdcard/Download/downs4termux/other-urls.txt
+  e script/20220427_fix_termux.py
+  e others/app/termux/apt_pkg.txt
+  e others/app/termux/apt_update_fail__solved.txt
+  e TODO.txt
