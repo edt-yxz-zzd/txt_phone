@@ -5,6 +5,9 @@ TODO:
         findout_and_replace_non_UNIFIED_hz
 
     列出 最高频 的 部件，不必考虑拆分与否，就像 压缩算法/中文形码输入法，只考察 ref_count大小。
+see:
+    view ../../python3_src/nn_ns/CJK/cjk_subsets/共享汉字集字形拆分树.py
+        考察小字符集，再拓展到大字符集，python实在太慢。
 
 py script/collect_hz_components.py
 e script/collect_hz_components.py
@@ -139,6 +142,50 @@ op2alias__str = r'⿰川⿱三⿲川⿳三⿴回⿵冈⿶凶⿷区⿸右⿹可�
     missed_non_UNIFIED_hz_set = {'⺳', 'タ', '具', '⺢', ' ⻖', '⺗', '直', '⺯', '刃', '⺜', '⺇', '⻀', '⺫', ' 𥄳', '⺃', '屮', '旣', '⺲', '⻏', '灰', '⺈', '⺊', ' 冗', '⺼', '⺧', '⻢', '穀', '⺣', '⺄', '⺆', '充', ' ⺪', '叟', '者', '⻞', '⺶', '⻃', '⺌'}
     replaced_non_UNIFIED_hz_set = {'⻤', '⻌'}
     py_eval --startup 'import unicodedata as U' --turnoff_eval --postprocess U.name -i ⺳ タ 具 ⺢  ⻖ ⺗ 直 ⺯ 刃 ⺜ ⺇ ⻀ ⺫  𥄳 ⺃ 屮 旣 ⺲ ⻏ 灰 ⺈ ⺊  冗 ⺼ ⺧ ⻢ 穀 ⺣ ⺄ ⺆ 充  ⺪ 叟 者 ⻞ ⺶ ⻃ ⺌
+$     py_eval --startup 'import unicodedata as U' --turnoff_eval --postprocess 'lambda x:(x, U.name(x))' -i ⺳ タ 具 ⺢  ⻖ ⺗ 直 ⺯ 刃 ⺜ ⺇ ⻀ ⺫  𥄳 ⺃ 屮 旣 ⺲ ⻏ 灰 ⺈ ⺊  冗 ⺼ ⺧ ⻢ 穀 ⺣ ⺄ ⺆ 充  ⺪ 叟 者 ⻞ ⺶ ⻃ ⺌ ⻤ ⻌
+    [[
+('⺳', 'CJK RADICAL NET THREE')
+('タ', 'KATAKANA LETTER TA')
+('具', 'CJK COMPATIBILITY IDEOGRAPH-2F811')
+('⺢', 'CJK RADICAL WATER TWO')
+('⻖', 'CJK RADICAL MOUND TWO')
+('⺗', 'CJK RADICAL HEART TWO')
+('直', 'CJK COMPATIBILITY IDEOGRAPH-2F940')
+('⺯', 'CJK RADICAL SILK')
+('刃', 'CJK COMPATIBILITY IDEOGRAPH-2F81E')
+('⺜', 'CJK RADICAL SUN')
+('⺇', 'CJK RADICAL TABLE')
+('⻀', 'CJK RADICAL GRASS THREE')
+('⺫', 'CJK RADICAL EYE')
+('𥄳', 'CJK COMPATIBILITY IDEOGRAPH-2F944')
+('⺃', 'CJK RADICAL SECOND TWO')
+('屮', 'CJK COMPATIBILITY IDEOGRAPH-2F878')
+('旣', 'CJK COMPATIBILITY IDEOGRAPH-2F8CB')
+('⺲', 'CJK RADICAL NET TWO')
+('⻏', 'CJK RADICAL CITY')
+('灰', 'CJK COMPATIBILITY IDEOGRAPH-2F835')
+('⺈', 'CJK RADICAL KNIFE ONE')
+('⺊', 'CJK RADICAL DIVINATION')
+('冗', 'CJK COMPATIBILITY IDEOGRAPH-2F817')
+('⺼', 'CJK RADICAL MEAT')
+('⺧', 'CJK RADICAL COW')
+('⻢', 'CJK RADICAL C-SIMPLIFIED HORSE')
+('穀', 'CJK COMPATIBILITY IDEOGRAPH-2F959')
+('⺣', 'CJK RADICAL FIRE')
+('⺄', 'CJK RADICAL SECOND THREE')
+('⺆', 'CJK RADICAL BOX')
+('充', 'CJK COMPATIBILITY IDEOGRAPH-FA74')
+('⺪', 'CJK RADICAL BOLT OF CLOTH')
+('叟', 'CJK COMPATIBILITY IDEOGRAPH-2F837')
+('者', 'CJK COMPATIBILITY IDEOGRAPH-FA5B')
+('⻞', 'CJK RADICAL EAT TWO')
+('⺶', 'CJK RADICAL SHEEP')
+('⻃', 'CJK RADICAL WEST ONE')
+('⺌', 'CJK RADICAL SMALL ONE')
+('⻤', 'CJK RADICAL GHOST')
+('⻌', 'CJK RADICAL SIMPLIFIED WALK')
+    ]]
+
 
 搜索:『/('⿺', (('hz', '[^𠃊廴辶尤夨木夂⻌鬼豕文]'), ('hz', '.')))』
     旭

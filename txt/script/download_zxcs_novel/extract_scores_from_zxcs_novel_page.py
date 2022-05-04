@@ -380,7 +380,8 @@ def main(args=None, /):
 
     may_ofname = args.output
     with may_open_stdout(may_ofname, omode, encoding=encoding) as fout:
-        pprint4dict_items__depth1 = pprintT4dict_items__depth1(indent='', fout=fout, two_lines_per_item=False)
+        #pprint4dict_items__depth1 = pprintT4dict_items__depth1(indent='', fout=fout, two_lines_per_item=False, sort_by_=('keyfunc', echo))
+        pprint4dict_items__depth1 = pprintT4dict_items__depth1(indent='', fout=fout, two_lines_per_item=False, sort_by_=('sortfunc4elements', iter))#no_sort
         (today__str, novel_page_idx2scores) = batch_fetch_scoress_from_internet(iter_IDs, seconds4sleep=seconds4sleep, interactive=not args.turnoff__interactive)
         items = sorted(novel_page_idx2scores.items(), key=lambda kv: novel_page_idx2collectlist_idx[kv[0]])
 

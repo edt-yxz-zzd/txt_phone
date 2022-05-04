@@ -1,0 +1,136 @@
+
+e others/数学/编程/TODO_list/周期长度为二的对称加密.txt
+
+scwplt = symmetry_cipher_with_period_len_eq_two
+[f is scwplt] <==> [@k. [f<k> . f<k> === echo]]
+
+f :: k -> a -> a
+  f<k> 将 集合a 划分成 大小为1或2的小集合
+
+比如：xor
+
+实现细化:加密程序由多个操作组合:
+  单操作:
+    [f<k> . f<k> === echo]
+  多操作:
+    f<k> := f1<k1> . f2<k2> . f3<k3> ... fN<kN>
+    !![f<k> . f<k> === echo]
+    [f1<k1> . f2<k2> . f3<k3> ... fN<kN> . f1<k1> . f2<k2> . f3<k3> ... fN<kN> === echo]
+    [fN<kN> === inv f1<k1>]
+    [f[N-i]<k[N-i]> === inv f[i+1]<k[i+1]>]
+    [N==2*n]:
+      f[n]<k[n]> = f[N-n]<k[N-n]> = inv f[n+1]<k[n+1]>
+      f<k> = f1<k1> ... f[n]<k[n]> . f[n+1]<k[n+1]> ... f[2n]<k[2n]> = echo
+      不适合作加密函数
+    [N=2n+1]:
+      f<k>
+        = f1<k1> ... f[n]<k[n]> . f[n+1]<k[n+1]> . f[n+2]<k[n+2]> ... f[2n+1]<k[2n+1]>
+        = f1<k1> ... f[n]<k[n]> . f[n+1]<k[n+1]> . (inv f[n]<k[n]>) ... (inv f1<k1>)
+        = (f1<k1> ... f[n]<k[n]>) . f[n+1]<k[n+1]> . (inv (f1<k1> ... f[n]<k[n]>))
+        = encrypt<k4e> . g<k4g> . decrypt<k4d>
+        [g is scwplt, too]
+        也就是 分解之后，还是需要定义一个 scwplt
+
+实现细化:输入是有序序列
+  字符集的选择
+    比如：[0-9], hex, base64, py::isalnum/isidentifier/isprintable, 我::hz_2513/hz_1869
+  假设输入为：
+    drs :: [(digit::uint, radix::uint)]
+      [digit <- [0..radix-1]]
+      也就是 字符串中，每个字符的所属字符集独立设置
+  等长变换:
+    ====
+    可视输入为一个变权重进制数%RADIX:
+      RADIX := muls(map(snd, drs))
+    进行可逆的大整数模运算%RADIX(modular arithmetic)
+    ====
+    可逆的位置交换
+      * 交换时 是 整个(digit,radix)一起移动
+        反正RADIX不变:
+          输入的字符串
+          ->位置改变后的字符串
+          -->大整数%RADIX
+          --->依照输入的权重次序表达的字符串
+      * 置换(permutation)只由不相交的两两交换环组成，这样可直接实现scwplt，若是实现共轭的encrypt/decrypt，则无此约束。
+    ====
+    每个字符/数字独立加密
+      独立密钥，独立加密:
+        k -> ks
+        h<ks[i]> radix[i] digit[i]
+          针对[0..radix-1]
+          先选出[0..2]个不变的字符，剩下『偶数』个元素，再两两配对
+            (1/radix)的概率-无配对，独立不变
+            2n个元素 配对方案:
+              (2n)!/(2!)**n/n!
+              =(2n)!/(2n)!!
+              =(2n-1)!!
+            2:1
+            4:3
+            6:15
+    ====
+    拆分RADIX:加法
+      RADIX=sum small_radix[i]**big_exp[i] {i}
+      成功找到一个合适的拆分后，依照 大整数%RADIX 在accumulate small_radix[i]**big_exp[i] {i} 中的定位，(-=offset) (% small_radix[i]**big_exp[i])
+        自此之后，就在这一层中进行变换
+        small_radix 全部是 2，也行，就是 有的 big_exp 可能很小
+    ====
+    拆分RADIX:减法
+    稍稍溢出似乎也行，只要最后将溢出的再变换回去即可
+    find n, s.t. [2**(n-1)<RADIX<=2**n]
+    n = ceil_log2(RADIX)
+    def t :: [0..2**n-1] <-> [0..2**n-1]
+    [x <- [0..RADIX-1]][t x <- [RADIX..2**n-1]]:
+      y := t x
+      while y >= RADIX:
+        # 最多需要 [2**n-RADIX]次循环
+        y := t y
+    但若[t is scwplt]则[y:=x]，即 所有溢出的直接变不动点，所以这里的t不能是scwplt(xor不行)。
+    ？由于随机散列效果，循环次数应当很小，可设定最大循环次数，一旦超过，则回退重选更严格的拆分方案？但是解密时数据不同，所以不行！
+    没有保证即是最好的保证，对于暴力破解而言，没有约束，就是灾难。
+
+    ====
+    只拆出部分来加密:
+      u = 大整数%RADIX
+      n = floor_log2(RADIX)
+      if u < 2**n:
+        u := 加密<%2**n>(u)
+      进行某种反转操作，如:
+          u := RADIX-1-u
+      if u < 2**n:
+        u := 加密<%2**n>(u)
+      这样一来，u至少加密一次
+    ====
+
+
+
+高利益高风险
+  人们认为广泛被研究的加密系统更安全
+  然而，使用既广，攻破得利愈高，硬件投入更多、隐瞒漏洞的可能性更大，风险陡增。
+  相反，如果每个团体乃至每个个人都使用自己的算法，再叠加对方使用的算法，由于算法太多太杂，毫无利润可言，没有吸引力最安全。
+
+检查:
+  由于加密系统用于保存重要数据，一定不能出错，一定要检查加密结果是否可解密为原明文！
+  即:
+    encrypt k i = icheck o where
+      o = encrypt_without_check k t
+      icheck o = assert (i == decrypt_without_check k o) o
+  但，加密系统又是多层加密系统组成的，若是每个加密算子都进行无条件检查，运算量将是指数增长(若是解密算子也检查)或平方增长:
+    f4 call f3 call f2 call f1 call f0
+      f1 e/d => e+d+2c/d+c f0
+        f1 e --> f0 encrypt+decrypt
+        f1 d --> f0 decrypt
+        c:call
+      f2 e/d => e+d+2c/d+c f1
+         => e+d+2c+d+c+2c/d+c+c f0
+         => e+2d+5c/d+2c f0
+      f3 e/ => e+d+2c/d+c f2
+         => e+2d+5c+d+2c+2c/d+2c+c f0
+         => e+3d+9c/d+3c f0
+      f4 e/d => e+d+2c/d+c f3
+         => e+3d+9c+d+3c+2c/d+3c+c  f0
+         => e+4d+14c/d+4c  f0
+      解密
+      加密调用深度为n，则 加密相关 call数量为n
+        检查使用的解密相关 call数量为sum[1..n]=O(n*n)
+
+
