@@ -1,0 +1,108 @@
+
+e ../lots/NOTE/unicode/note4UnicodeStandard_13_0_pdf/unicode_ver13_0__Normalization.txt
+
+regex"NFK?[DC]"
+  NF - Normalization Form
+  K - ？compatibility 兼容？
+    canonical_decompose vs compatibility_decompose
+    canonical_decompose 完全等价
+    compatibility_decompose 丢失部分信息(typically formatting information)
+  D - decompose 尽可能地拆开来
+  C - compose 尽可能地组合起来(起步:尽可能地拆开来)
+
+NFD<K> coded_chars = Canonical_Ordering_Algorithm . full_decompose<K> $ coded_chars
+NFC<K> coded_chars = Canonical_Composition_Algorithm . NFD<K> $ coded_chars
+
+  #Canonical_Ordering_Algorithm
+  #full_decompose<K>
+  #Canonical_Composition_Algorithm
+
+
+full_decompose<K=F> = canonical_decompose
+full_decompose<K=T> = compatibility_decompose
+#针对字符串，而非单字符，语境敏感(类似 简繁转换 基于 词组 而非 单字)
+canonical_decompose :: coded_chars -> coded_chars
+compatibility_decompose :: coded_chars -> coded_chars
+
+
+
+
+
+
+Chapter 2. General Structure
+2.12 Equivalent Sequences
+pg61[89/1030] Normalization
+Where a unique representation is required, a normalized form of Unicode text can be used to eliminate unwanted distinctions.
+The Unicode Standard defines four normalization forms:
+  Normalization Form D (NFD)
+  , Normalization Form KD (NFKD)
+  , Normalization Form C (NFC)
+  , and Normalization Form KC (NFKC)
+  .
+Roughly speaking
+  , NFD and NFKD decompose characters where possible
+  , while NFC and NFKC compose characters where possible.
+For more information
+  , see Unicode Standard Annex #15, “Unicode Normalization Forms,”
+  and Section 3.11, Normalization Forms
+    UAX15, “Unicode Normalization Forms”
+  .
+
+
+规范化/正态化:
+  * 字串次序
+    canonical ordering for multiple combining marks applied to the same base character.
+      base_character combining_mark+
+      组合用标志字符 是否可调换位置？
+        属性名:Canonical_Combining_Class(ccc)
+          除unicode标准定义的算法外，外部不可用此属性，因为有 例外情形！！
+
+        ??本原字符.ccc == 0
+        ??组合用标志字符.ccc > 0
+        同层次，相互作用，不可调换位置
+          不同层次，不相互作用，依ccc排序
+            更像是 来源，来源相同 则 相互作用，否则无关
+        有点奇怪，如果 本原字符 也同样处理，字串 岂不是 变成:所有本原字符++所有组合用标志字符？
+          难道没有修饰 修饰词 的 高级修饰词？类似 副词修饰形容词？
+            副词 与 形容词 同层？ccc相等？靠次序决定谁修饰谁？
+              但这样一来，结构就十分简单:
+                字串:=(本原字符, {ccc:[组合用标志字符]})
+
+
+Types of Decomposables:
+  canonical_decomposable(ch) =[def]= [ch =!= canonical_decompose(ch)]
+  compatibility_decomposable(ch) =[def]= [canonical_decompose(ch) =!= compatibility_decompose(ch)]
+  nondecomposable =[def]= [ch  === canonical_decompose(ch) === compatibility_decompose(ch)]
+    [ch == compatibility_decompose(ch)] <==> [nondecomposable(ch)]
+      因为 compatibility_decompose包含了canonical_decompose
+
+two important points:
+• Decompositions may be to single characters or to sequences of characters.
+• A very small number of characters are both canonical and compatibility decomposable.
+
+
+
+
+
+Conformance
+3.11 Normalization Forms
+pg139[167/1030] Definition of Normalization Forms
+  The Unicode Standard specifies four normalization forms.
+  Informally, two of these forms are defined by maximal decomposition of equivalent sequences
+    , and two of these forms are defined by maximal composition of equivalent sequences.
+  Each is then differentiated based on whether it employs a Canonical Decomposition or a Compatibility Decomposition.
+
+D118 Normalization Form D (NFD): The Canonical Decomposition of a coded character sequence. 
+D119 Normalization Form KD (NFKD): The Compatibility Decomposition of a coded character sequence. 
+D120 Normalization Form C (NFC): The Canonical Composition of the Canonical Decomposition of a coded character sequence. 
+D121 Normalization Form KC (NFKC): The Canonical Composition of the Compatibility Decomposition of a coded character sequence. 
+
+Logically, to get the NFD or NFKD (maximally decomposed) normalization form for a Unicode string, one first computes the full decomposition of that string and then applies the Canonical Ordering Algorithm to it.
+  #Canonical_Ordering_Algorithm
+  #full_decompose
+
+Logically, to get the NFC or NFKC (maximally composed) normalization form for a Uni- code string, one first computes the NFD or NFKD normalization form for that string, and then applies the Canonical Composition Algorithm to it.
+  #Canonical_Composition_Algorithm
+
+
+

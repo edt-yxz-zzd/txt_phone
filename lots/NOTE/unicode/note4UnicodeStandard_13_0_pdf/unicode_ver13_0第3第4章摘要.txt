@@ -423,16 +423,56 @@ UCD::BidiMirroring.txt
 4.8 Name
 char.Name <- (
     regex'[0-9A-Z -]+'
-    - regex'(.* )?[0-9].*'
+      #没有 下划线/小写字母
+    - regex'(.*[ ])?[0-9].*'
+      #数字
+      #不在开头，不在空格之后
     - regex'-.*'
+      #连字符
+      #不在开头
     - regex'.*-'
+      #连字符
+      #不在结尾
     - regex'.*--.*'
-    - regex'.* - .*'
-        # 'a- -b' 是允许的
-    - regex' .*'
-    - regex'.* '
-    - regex'.*  .*'
+      #连字符
+      #不连续出现
+    - regex'.*[ ]-[ ].*'
+      #连字符
+      #不连接两空格
+      # 'A- -B' 是允许的
+    - regex'[ ].*'
+      #空格
+      #不在开头
+    - regex'.*[ ]'
+      #空格
+      #不在结尾
+    - regex'.*[ ][ ].*'
+      #空格
+      #不连续出现
     )
+For more information on character name matching, see Section 5.9, “Matching Rules” in Unicode Standard Annex #44, “Unicode Character Database.”
+[[
+UAX44-v28::5.9.2 Matching Character Names
+UAX44-LM2. Ignore case, whitespace, underscore ('_'), and all medial hyphens except the hyphen in U+1180 HANGUL JUNGSEONG O-E.
+    * "zero-width space" is equivalent to "ZERO WIDTH SPACE" or "zerowidthspace"
+    * "character -a" is not equivalent to "character a"
+Loose matching rule UAX44-LM2 步骤定义如下：
+    1. remove all medial hyphens (except the medial hyphen in the name for U+1180)
+      例外: U+1180 HANGUL JUNGSEONG O-E
+
+    "zero-width space" is equivalent to "ZERO WIDTH SPACE" or "zerowidthspace"
+    2. remove all whitespace and underscore characters
+      #怎么有 下划线？是处理别名？
+      不可调换 步骤1与步骤2的次序
+        U+10089 LINEAR B IDEOGRAM B107M HE-GOAT
+          连字符 被删除
+        U+0F39 TIBETAN MARK TSA -PHRU
+          连字符 被保留
+    3. apply toLowercase() to both strings
+Loose matching rule UAX44-LM2 is also appropriate for matching character name aliases, the names of named character sequences, and code point labels, which all share the unique namespace (and matching behavior) of Unicode character names. See Section 4.8, Name in [Unicode]
+
+Implementations of name matching should use extreme care when matching non-standard, alternative names for particular characters. The Name Uniqueness Policy in the Unicode Consortium Stability Policies [Stability] guarantees that the Unicode Standard will never add a character whose name would match an existing encoded character, according to matching rule UAX44-LM2. However, any other name for a character might be used in the future.
+]]
 
 UCD::NameAliases.txt
 UCD::NamedSequences.txt
