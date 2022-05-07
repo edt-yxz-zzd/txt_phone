@@ -100,7 +100,71 @@ f :: k -> a -> a
         u := 加密<%2**n>(u)
       这样一来，u至少加密一次
     ====
+    极简:
+      u = 大整数%RADIX
+      M = 2**n <= RADIX < 2**(n+1) == 2*M
+      N2 = RADIX*233//377
+      N1 = RADIX - N2
+      核心scwplt:
+        flip<RADIX>(u) = RADIX-1-u
+          若M==RADIX，则等价于xor1111<==>flip
+            permutation_bits/xor_bits 无效/可交换
+            add_mul近乎无效
+              (R-1-(a+u)*b) *b**-1 -a
+              =(R-1)*b**-1 -(a+u) -a
+              =(R-1)*b**-1 -2*a -u
+              =? - u
+            rotate 可用
+      共轭-可逆:
+        mask<h, %RADIX>(u) = if u < M then (bhb<M> h)(u) else u
+          bhb<%2**n> h = uint5bits . h . uint2bits
+            permutation_bits<k> bits
+            xor_bits<k> bits
+            acc_chain_xor<k> bits
+              状态积累，并非同时xor，先后次序有影响
+        rotate<%RADIX>(u) = if u < N1 then u+N2 else if u < N2 then N2-1-u else 2*N2-1-u
+        add_mul<k, %RADIX>(u) = ((gen(k)+u)*gen_coprime(RADIX,k))%RADIX
 
+      左可逆<k, %RADIX>
+        = mask<xor_bits<~k?>, %RADIX> # xor放在最外层
+        . mask<permutation_bits<~k?>, %RADIX>
+        . rotate<%RADIX>
+        . mask<acc_chain_xor<~k?>, %RADIX>
+        . mask<permutation_bits<~k?>, %RADIX>
+        . add_mul<~k?, %RADIX>
+        . mask<xor_bits<~k?>, %RADIX>
+        . mask<permutation_bits<~k?>, %RADIX>
+        . rotate<%RADIX>
+        . mask<permutation_bits<~k?>, %RADIX>
+        . add_mul<~k?, %RADIX>
+            #扩散差异
+        . mask<acc_chain_xor<~k?>, %RADIX>
+        . mask<permutation_bits<~k?>, %RADIX>
+        . rotate<%RADIX> #引入差异#最里层只能是rotate，最临近 核心scwplt-flip，其他无效
+
+      加解密<k, %RADIX> = f<k, RADIX> . g<RADIX> . f<k, RADIX>
+2
+3
+5
+8
+13
+21
+34
+55
+89
+144
+233
+377
+610
+987
+1597
+2584
+4181
+6765
+10946
+17711
+28657
+46368
 
 
 高利益高风险
