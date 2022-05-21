@@ -1,0 +1,236 @@
+
+[[[
+c compiler
+  太老、特定平台、C++
+  gcc/clang
+gcc download
+how to compile gcc
+[[
+https://gcc.gnu.org/wiki/InstallingGCC
+  installation docs
+    http://gcc.gnu.org/install/index.html
+  Installing GCC: Prequisites
+    http://gcc.gnu.org/install/prerequisites.html
+
+libgmp-dev, libmpfr-dev, libmpc-dev
+  If building GCC fails when using any of the --with-gmp or --with-mpfr or --with-mpc options then you probably shouldn't be using them. 
+
+
+===[
+https://gcc.gnu.org/wiki/InstallingGCC
+Installing GCC
+
+This page is intended to offer guidance to avoid some common problems when installing GCC, the official installation docs are in the Installing GCC section of the main GCC documentation. N.B. those installation docs refer to the development trunk, the installation instructions for released versions are included in the release sources.
+
+For most people the easiest way to install GCC is to install a package made for your operating system. The GCC project does not provide pre-built binaries of GCC, only source code, but all GNU/Linux distributions include packages for GCC. The BSD-based systems include GCC in their ports collections. For other operating systems the Installing GCC: Binaries page lists some third-party sources of GCC binaries.
+
+If you cannot find suitable binaries for your system, or you need a newer version than is available, you will need to build GCC from source in order to install it.
+
+Building GCC
+
+Many people rush into trying to build GCC without reading the installation docs properly and make one or more of these common mistakes:
+
+    do not run ./configure from within the source directory, this is not supported. You need to run configure from outside the source directory, in a separate directory created for the build (this is a FAQ)
+
+    if GCC links dynamically to the GMP, MPFR or MPC support libraries then the relevant shared libraries must be in the dynamic linker's path, both when building gcc and when using the installed compiler (this is also a FAQ) 
+
+Support libraries
+
+See Installing GCC: Prequisites for the software required to build GCC. If you do not have the GMP, MPFR and MPC support libraries already installed as part of your operating system then there are two simple ways to proceed, and one difficult, error-prone way. For some reason most people choose the difficult way. The easy ways are:
+
+    If it provides sufficiently recent versions, use your OS package management system to install the support libraries in standard system locations. For Debian-based systems, including Ubuntu, you should install the packages libgmp-dev, libmpfr-dev and libmpc-dev. For RPM-based systems, including Fedora and SUSE, you should install gmp-devel, mpfr-devel and libmpc-devel (or mpc-devel on SUSE) packages. The packages will install the libraries and headers in standard system directories so they can be found automatically when building GCC.
+
+    Alternatively, after extracting the GCC source archive, simply run the ./contrib/download_prerequisites script in the GCC source directory. That will download the support libraries and create symlinks, causing them to be built automatically as part of the GCC build process. Set GRAPHITE_LOOP_OPT=no in the script if you want to build GCC without ISL, which is only needed for the optional Graphite loop optimizations. 
+
+The difficult way, which is not recommended, is to download the sources for GMP, MPFR and MPC, then configure and install each of them in non-standard locations, then configure GCC with --with-gmp=/some/silly/path/gmp --with-mpfr=/some/silly/path/mpfr --with-mpc=/some/silly/path/mpc, then be forced to set LD_LIBRARY_PATH=/some/silly/path/gmp:/some/silly/path/mpfr:/some/silly/path/mpc/lib in your environment forever. This is silly and causes major problems for anyone who doesn't understand how dynamic linkers find libraries at runtime. Do not do this. If building GCC fails when using any of the --with-gmp or --with-mpfr or --with-mpc options then you probably shouldn't be using them.
+
+Configuration
+
+See Installing GCC: Configuration for the full documentation. A major benefit of running srcdir/configure from outside the source directory (instead of running ./configure) is that the source directory will not be modified in any way, so if your build fails or you want to re-configure and build again, you simply delete everything in the objdir and start again.
+
+For example, configuring and building GCC 4.6.2 (with support for C, C++, Fortran and Go) should be as simple as:
+
+tar xzf gcc-4.6.2.tar.gz
+cd gcc-4.6.2
+./contrib/download_prerequisites
+cd ..
+mkdir objdir
+cd objdir
+$PWD/../gcc-4.6.2/configure --prefix=$HOME/GCC-4.6.2 --enable-languages=c,c++,fortran,go
+make
+make install
+
+The make step takes a long time. If your computer has multiple processors or cores you can speed it up by building in parallel using make -j 2 (or a higher number for more parallelism).
+
+If your build fails and your configure command has lots of complicated options you should try removing options and keep it simple. Do not add lots of configure options you don't understand, they might be the reason your build fails.
+
+None: InstallingGCC (2017-07-20 19:47:08由JonathanWakely编辑)
+
+
+    MoinMoin PoweredPython PoweredGPL licensedValid HTML 4.01 
+===]
+===[
+http://gcc.gnu.org/install/prerequisites.html
+
+Prerequisites for GCC
+
+GCC requires that various tools and packages be available for use in the build procedure. Modifying GCC sources requires additional tools described below.
+Tools/packages necessary for building GCC
+
+ISO C++11 compiler
+
+    Necessary to bootstrap GCC.
+
+    Versions of GCC prior to 11 also allow bootstrapping with an ISO C++98 compiler, versions of GCC prior to 4.8 also allow bootstrapping with a ISO C89 compiler, and versions of GCC prior to 3.4 also allow bootstrapping with a traditional (K&R) C compiler.
+
+    To build all languages in a cross-compiler or other configuration where 3-stage bootstrap is not performed, you need to start with an existing GCC binary (version 4.8 or later) because source code for language frontends other than C might use GCC extensions.
+C standard library and headers
+
+    In order to build GCC, the C standard library and headers must be present for all target variants for which target libraries will be built (and not only the variant of the host C++ compiler).
+
+    This affects the popular ‘x86_64-pc-linux-gnu’ platform (among other multilib targets), for which 64-bit (‘x86_64’) and 32-bit (‘i386’) libc headers are usually packaged separately. If you do a build of a native compiler on ‘x86_64-pc-linux-gnu’, make sure you either have the 32-bit libc developer package properly installed (the exact name of the package depends on your distro) or you must build GCC as a 64-bit only compiler by configuring with the option --disable-multilib. Otherwise, you may encounter an error such as ‘fatal error: gnu/stubs-32.h: No such file’
+GNAT
+
+    In order to build GNAT, the Ada compiler, you need a working GNAT compiler (GCC version 5.1 or later).
+
+    This includes GNAT tools such as gnatmake and gnatlink, since the Ada front end is written in Ada and uses some GNAT-specific extensions.
+
+    In order to build a cross compiler, it is strongly recommended to install the new compiler as native first, and then use it to build the cross compiler. Other native compiler versions may work but this is not guaranteed and will typically fail with hard to understand compilation errors during the build.
+
+    Similarly, it is strongly recommended to use an older version of GNAT to build GNAT. More recent versions of GNAT than the version built are not guaranteed to work and will often fail during the build with compilation errors.
+
+    Note that configure does not test whether the GNAT installation works and has a sufficiently recent version; if too old a GNAT version is installed and --enable-languages=ada is used, the build will fail.
+
+    ADA_INCLUDE_PATH and ADA_OBJECT_PATH environment variables must not be set when building the Ada compiler, the Ada tools, or the Ada runtime libraries. You can check that your build environment is clean by verifying that ‘gnatls -v’ lists only one explicit path in each section.
+GDC
+
+    In order to build GDC, the D compiler, you need a working GDC compiler (GCC version 9.1 or later) and D runtime library, ‘libphobos’, as the D front end is written in D.
+
+    Versions of GDC prior to 12 can be built with an ISO C++11 compiler, which can then be installed and used to bootstrap newer versions of the D front end.
+
+    It is strongly recommended to use an older version of GDC to build GDC. More recent versions of GDC than the version built are not guaranteed to work and will often fail during the build with compilation errors relating to deprecations or removed features.
+
+    Note that configure does not test whether the GDC installation works and has a sufficiently recent version. Though the implementation of the D front end does not make use of any GDC-specific extensions, or novel features of the D language, if too old a GDC version is installed and --enable-languages=d is used, the build will fail.
+
+    On some targets, ‘libphobos’ isn’t enabled by default, but compiles and works if --enable-libphobos is used. Specifics are documented for affected targets.
+A “working” POSIX compatible shell, or GNU bash
+
+    Necessary when running configure because some /bin/sh shells have bugs and may crash when configuring the target libraries. In other cases, /bin/sh or ksh have disastrous corner-case performance problems. This can cause target configure runs to literally take days to complete in some cases.
+
+    So on some platforms /bin/ksh is sufficient, on others it isn’t. See the host/target specific instructions for your platform, or use bash to be sure. Then set CONFIG_SHELL in your environment to your “good” shell prior to running configure/make.
+
+    zsh is not a fully compliant POSIX shell and will not work when configuring GCC.
+A POSIX or SVR4 awk
+
+    Necessary for creating some of the generated source files for GCC. If in doubt, use a recent GNU awk version, as some of the older ones are broken. GNU awk version 3.1.5 is known to work.
+GNU binutils
+
+    Necessary in some circumstances, optional in others. See the host/target specific instructions for your platform for the exact requirements.
+
+    Note binutils 2.35 or newer is required for LTO to work correctly with GNU libtool that includes doing a bootstrap with LTO enabled.
+gzip version 1.2.4 (or later) or
+bzip2 version 1.0.2 (or later)
+
+    Necessary to uncompress GCC tar files when source code is obtained via HTTPS mirror sites.
+GNU make version 3.80 (or later)
+
+    You must have GNU make installed to build GCC.
+GNU tar version 1.14 (or later)
+
+    Necessary (only on some platforms) to untar the source code. Many systems’ tar programs will also work, only try GNU tar if you have problems.
+Perl version between 5.6.1 and 5.6.24
+
+    Necessary when targeting Darwin, building ‘libstdc++’, and not using --disable-symvers. Necessary when targeting Solaris 2 with Solaris ld and not using --disable-symvers.
+
+    Necessary when regenerating Makefile dependencies in libiberty. Necessary when regenerating libiberty/functions.texi. Necessary when generating manpages from Texinfo manuals. Used by various scripts to generate some files included in the source repository (mainly Unicode-related and rarely changing) from source tables.
+
+    Used by automake.
+
+Several support libraries are necessary to build GCC, some are required, others optional. While any sufficiently new version of required tools usually work, library requirements are generally stricter. Newer versions may work in some cases, but it’s safer to use the exact versions documented. We appreciate bug reports about problems with newer versions, though. If your OS vendor provides packages for the support libraries then using those packages may be the simplest way to install the libraries.
+
+GNU Multiple Precision Library (GMP) version 4.3.2 (or later)
+
+    Necessary to build GCC. If a GMP source distribution is found in a subdirectory of your GCC sources named gmp, it will be built together with GCC. Alternatively, if GMP is already installed but it is not in your library search path, you will have to configure with the --with-gmp configure option. See also --with-gmp-lib and --with-gmp-include. The in-tree build is only supported with the GMP version that download_prerequisites installs.
+MPFR Library version 3.1.0 (or later)
+
+    Necessary to build GCC. It can be downloaded from https://www.mpfr.org. If an MPFR source distribution is found in a subdirectory of your GCC sources named mpfr, it will be built together with GCC. Alternatively, if MPFR is already installed but it is not in your default library search path, the --with-mpfr configure option should be used. See also --with-mpfr-lib and --with-mpfr-include. The in-tree build is only supported with the MPFR version that download_prerequisites installs.
+MPC Library version 1.0.1 (or later)
+
+    Necessary to build GCC. It can be downloaded from https://www.multiprecision.org/mpc/. If an MPC source distribution is found in a subdirectory of your GCC sources named mpc, it will be built together with GCC. Alternatively, if MPC is already installed but it is not in your default library search path, the --with-mpc configure option should be used. See also --with-mpc-lib and --with-mpc-include. The in-tree build is only supported with the MPC version that download_prerequisites installs.
+isl Library version 0.15 or later.
+
+    Necessary to build GCC with the Graphite loop optimizations. It can be downloaded from https://gcc.gnu.org/pub/gcc/infrastructure/. If an isl source distribution is found in a subdirectory of your GCC sources named isl, it will be built together with GCC. Alternatively, the --with-isl configure option should be used if isl is not installed in your default library search path.
+zstd Library.
+
+    Necessary to build GCC with zstd compression used for LTO bytecode. The library is searched in your default library patch search. Alternatively, the --with-zstd configure option should be used.
+
+Tools/packages necessary for modifying GCC
+
+autoconf version 2.69
+GNU m4 version 1.4.6 (or later)
+
+    Necessary when modifying configure.ac, aclocal.m4, etc. to regenerate configure and config.in files.
+automake version 1.15.1
+
+    Necessary when modifying a Makefile.am file to regenerate its associated Makefile.in.
+
+    Much of GCC does not use automake, so directly edit the Makefile.in file. Specifically this applies to the gcc, intl, libcpp, libiberty, libobjc directories as well as any of their subdirectories.
+
+    For directories that use automake, GCC requires the latest release in the 1.15 series, which is currently 1.15.1. When regenerating a directory to a newer version, please update all the directories using an older 1.15 to the latest released version.
+gettext version 0.14.5 (or later)
+
+    Needed to regenerate gcc.pot.
+gperf version 2.7.2 (or later)
+
+    Necessary when modifying gperf input files, e.g. gcc/cp/cfns.gperf to regenerate its associated header file, e.g. gcc/cp/cfns.h.
+DejaGnu version 1.5.3 (or later)
+Expect
+Tcl
+
+    Necessary to run the GCC testsuite; see the section on testing for details.
+autogen version 5.5.4 (or later) and
+guile version 1.4.1 (or later)
+
+    Necessary to regenerate fixinc/fixincl.x from fixinc/inclhack.def and fixinc/*.tpl.
+
+    Necessary to run ‘make check’ for fixinc.
+
+    Necessary to regenerate the top level Makefile.in file from Makefile.tpl and Makefile.def.
+Flex version 2.5.4 (or later)
+
+    Necessary when modifying *.l files.
+
+    Necessary to build GCC during development because the generated output files are not included in the version-controlled source repository. They are included in releases.
+Texinfo version 4.7 (or later)
+
+    Necessary for running makeinfo when modifying *.texi files to test your changes.
+
+    Necessary for running make dvi or make pdf to create printable documentation in DVI or PDF format. Texinfo version 4.8 or later is required for make pdf.
+
+    Necessary to build GCC documentation during development because the generated output files are not included in the repository. They are included in releases.
+TeX (any working version)
+
+    Necessary for running texi2dvi and texi2pdf, which are used when running make dvi or make pdf to create DVI or PDF files, respectively.
+Sphinx version 1.0 (or later)
+
+    Necessary to regenerate jit/docs/_build/texinfo from the .rst files in the directories below jit/docs.
+git (any version)
+SSH (any version)
+
+    Necessary to access the source repository. Public releases and weekly snapshots of the development sources are also available via HTTPS.
+GNU diffutils version 2.7 (or later)
+
+    Useful when submitting patches for the GCC source code.
+patch version 2.5.4 (or later)
+
+    Necessary when applying patches, created with diff, to one’s own sources.
+
+Return to the GCC Installation page
+For questions related to the use of GCC, please consult these web pages and the GCC manuals. If that fails, the gcc-help@gcc.gnu.org mailing list might help. Comments on these web pages and the development of GCC are welcome on our developer list at gcc@gcc.gnu.org. All of our lists have public archives.
+
+Copyright (C) Free Software Foundation, Inc. Verbatim copying and distribution of this entire article is permitted in any medium, provided this notice is preserved.
+
+These pages are maintained by the GCC team. Last modified 2022-04-29.
+===]
+]]
+]]]

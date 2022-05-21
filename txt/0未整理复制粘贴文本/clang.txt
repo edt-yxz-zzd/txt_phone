@@ -1,0 +1,426 @@
+
+[[[
+C++编译器
+  c++ compiler
+    clang.C++ 需要 gcc 的 头文件？？
+    https://clang.llvm.org/
+    C++11, C++14 and C++17
+
+[[
+https://clang.llvm.org/get_started.html
+
+Getting Started: Building and Running Clang
+
+This page gives you the shortest path to checking out Clang and demos a few options. This should get you up and running with the minimum of muss and fuss. If you like what you see, please consider getting involved with the Clang community. If you run into problems, please file bugs on the LLVM bug tracker.
+Release Clang Versions
+
+Clang is released as part of regular LLVM releases. You can download the release versions from https://llvm.org/releases/.
+
+Clang is also provided in all major BSD or GNU/Linux distributions as part of their respective packaging systems. From Xcode 4.2, Clang is the default compiler for Mac OS X.
+Building Clang and Working with the Code
+On Unix-like Systems
+
+If you would like to check out and build Clang, the current procedure is as follows:
+
+    Get the required tools.
+        See Getting Started with the LLVM System - Requirements.
+        Note also that Python is needed for running the test suite. Get it at: https://www.python.org/downloads/
+        Standard build process uses CMake. Get it at: https://cmake.org/download/
+    Check out the LLVM project:
+        Change directory to where you want the llvm directory placed.
+        git clone https://github.com/llvm/llvm-project.git
+        The above command is very slow. It can be made faster by creating a shallow clone. Shallow clone saves storage and speeds up the checkout time. This is done by using the command:
+            git clone --depth=1 https://github.com/llvm/llvm-project.git (using this only the latest version of llvm can be built)
+            For normal users looking to just compile, this command works fine. But if someone later becomes a contributor, since they can't push code from a shallow clone, it needs to be converted into a full clone:
+                cd llvm-project
+                git fetch --unshallow
+    Build LLVM and Clang:
+        cd llvm-project
+        mkdir build (in-tree build is not supported)
+        cd build
+        cmake -DLLVM_ENABLE_PROJECTS=clang -G "Unix Makefiles" ../llvm
+        make
+        This builds both LLVM and Clang for debug mode.
+        Note: For subsequent Clang development, you can just run make clang.
+        CMake allows you to generate project files for several IDEs: Xcode, Eclipse CDT4, CodeBlocks, Qt-Creator (use the CodeBlocks generator), KDevelop3. For more details see Building LLVM with CMake page.
+    If you intend to use Clang's C++ support, you may need to tell it how to find your C++ standard library headers. In general, Clang will detect the best version of libstdc++ headers available and use them - it will look both for system installations of libstdc++ as well as installations adjacent to Clang itself. If your configuration fits neither of these scenarios, you can use the -DGCC_INSTALL_PREFIX cmake option to tell Clang where the gcc containing the desired libstdc++ is installed.
+    Try it out (assuming you add llvm/build/bin to your path):
+        clang --help
+        clang file.c -fsyntax-only (check for correctness)
+        clang file.c -S -emit-llvm -o - (print out unoptimized llvm code)
+        clang file.c -S -emit-llvm -o - -O3
+        clang file.c -S -O3 -o - (output native machine code)
+    Run the testsuite:
+        make check-clang
+
+Using Visual Studio
+
+The following details setting up for and building Clang on Windows using Visual Studio:
+
+    Get the required tools:
+        Git. Source code control program. Get it from: https://git-scm.com/download
+        CMake. This is used for generating Visual Studio solution and project files. Get it from: https://cmake.org/download/
+        Visual Studio 2017 or later
+        Python. It is used to run the clang test suite. Get it from: https://www.python.org/download/
+        GnuWin32 tools The Clang and LLVM test suite use various GNU core utilities, such as grep, sed, and find. The gnuwin32 packages are the oldest and most well-tested way to get these tools. However, the MSys utilities provided by git for Windows have been known to work. Cygwin has worked in the past, but is not well tested. If you don't already have the core utilies from some other source, get gnuwin32 from http://getgnuwin32.sourceforge.net/.
+    Check out LLVM and Clang:
+        git clone https://github.com/llvm/llvm-project.git
+
+    Note: Some Clang tests are sensitive to the line endings. Ensure that checking out the files does not convert LF line endings to CR+LF. If you're using git on Windows, make sure your core.autocrlf setting is false.
+    Run CMake to generate the Visual Studio solution and project files:
+        cd llvm-project
+        mkdir build (for building without polluting the source dir)
+        cd build
+        If you are using Visual Studio 2017: cmake -DLLVM_ENABLE_PROJECTS=clang -G "Visual Studio 15 2017" -A x64 -Thost=x64 ..\llvm
+        -Thost=x64 is required, since the 32-bit linker will run out of memory.
+        To generate x86 binaries instead of x64, pass -A Win32.
+        See the LLVM CMake guide for more information on other configuration options for CMake.
+        The above, if successful, will have created an LLVM.sln file in the build directory. 
+    Build Clang:
+        Open LLVM.sln in Visual Studio.
+        Build the "clang" project for just the compiler driver and front end, or the "ALL_BUILD" project to build everything, including tools.
+    Try it out (assuming you added llvm/debug/bin to your path). (See the running examples from above.)
+    See Hacking on clang - Testing using Visual Studio on Windows for information on running regression tests on Windows.
+
+Using Ninja alongside Visual Studio
+
+We recommend that developers who want the fastest incremental builds use the Ninja build system. You can use the generated Visual Studio project files to edit Clang source code and generate a second build directory next to it for running the tests with these steps:
+
+    Check out clang and LLVM as described above
+    Open a developer command prompt with the appropriate environment.
+        If you open the start menu and search for "Command Prompt", you should see shortcuts created by Visual Studio to do this. To use native x64 tools, choose the one titled "x64 Native Tools Command Prompt for VS 2017".
+        Alternatively, launch a regular cmd prompt and run the appropriate vcvarsall.bat incantation. To get the 2017 x64 tools, this would be:
+        "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvarsall.bat" x64
+    mkdir build_ninja (or build, or use your own organization)
+    cd build_ninja
+    set CC=cl (necessary to force CMake to choose MSVC over mingw GCC if you have it installed)
+    set CXX=cl
+    cmake -GNinja -DLLVM_ENABLE_PROJECTS=clang ..\llvm
+    ninja clang This will build just clang.
+    ninja check-clang This will run the clang tests.
+
+Clang Compiler Driver (Drop-in Substitute for GCC)
+
+The clang tool is the compiler driver and front-end, which is designed to be a drop-in replacement for the gcc command. Here are some examples of how to use the high-level driver:
+
+$ cat t.c
+#include <stdio.h>
+int main(int argc, char **argv) { printf("hello world\n"); }
+$ clang t.c
+$ ./a.out
+hello world
+
+The 'clang' driver is designed to work as closely to GCC as possible to maximize portability. The only major difference between the two is that Clang defaults to gnu99 mode while GCC defaults to gnu89 mode. If you see weird link-time errors relating to inline functions, try passing -std=gnu89 to clang.
+Examples of using Clang
+
+$ cat ~/t.c
+typedef float V __attribute__((vector_size(16)));
+V foo(V a, V b) { return a+b*a; }
+
+Preprocessing:
+
+$ clang ~/t.c -E
+# 1 "/Users/sabre/t.c" 1
+
+typedef float V __attribute__((vector_size(16)));
+
+V foo(V a, V b) { return a+b*a; }
+
+Type checking:
+
+$ clang -fsyntax-only ~/t.c
+
+GCC options:
+
+$ clang -fsyntax-only ~/t.c -pedantic
+/Users/sabre/t.c:2:17: warning: extension used
+typedef float V __attribute__((vector_size(16)));
+                ^
+1 diagnostic generated.
+
+Pretty printing from the AST:
+
+Note, the -cc1 argument indicates the compiler front-end, and not the driver, should be run. The compiler front-end has several additional Clang specific features which are not exposed through the GCC compatible driver interface.
+
+$ clang -cc1 ~/t.c -ast-print
+typedef float V __attribute__(( vector_size(16) ));
+V foo(V a, V b) {
+   return a + b * a;
+}
+
+Code generation with LLVM:
+
+$ clang ~/t.c -S -emit-llvm -o -
+define <4 x float> @foo(<4 x float> %a, <4 x float> %b) {
+entry:
+         %mul = mul <4 x float> %b, %a
+         %add = add <4 x float> %mul, %a
+         ret <4 x float> %add
+}
+$ clang -fomit-frame-pointer -O3 -S -o - t.c # On x86_64
+...
+_foo:
+Leh_func_begin1:
+	mulps	%xmm0, %xmm1
+	addps	%xmm1, %xmm0
+	ret
+Leh_func_end1:
+]]
+        [[
+!mkdir /sdcard/0my_files/tmp/curl_/llvm_14/
+cd /sdcard/0my_files/tmp/curl_/llvm_14/
+cd /sdcard/0my_files/unzip/clang_llvm_14_0/
+ls /sdcard/0my_files/zip/clang_llvm_14_0/
+clang-14.0.0.src.tar.xz   clang-tools-extra-14.0.0.src.tar.xz   compiler-rt-14.0.0.src.tar.xz   libclc-14.0.0.src.tar.xz   libcxx-14.0.0.src.tar.xz   libcxxabi-14.0.0.src.tar.xz   libunwind-14.0.0.src.tar.xz   lld-14.0.0.src.tar.xz   lldb-14.0.0.src.tar.xz   llvm-14.0.0.src.tar.xz   openmp-14.0.0.src.tar.xz
+tar
+tar -x -f clang-14.0.0.src.tar.xz
+
+cd /data/data/com.termux/files/home/1tmp/clang14/clang-14.0.0.src/cmake/modules
+cmake .
+  输入 ./CMakeLists.txt
+rm ./CMakeCache.txt
+clang 怎么编译？
+how to cmake clang?
+  https://clang.llvm.org/get_started.html
+
+
+
+curl -L -C - -O https://github.com/llvm/llvm-project/releases/download/llvmorg-14.0.0/llvm-project-14.0.0.src.tar.xz
+  mv /sdcard/0my_files/tmp/curl_/llvm_14/llvm-project-14.0.0.src.tar.xz /sdcard/0my_files/unzip/clang_llvm_14_0/
+  mv /sdcard/0my_files/unzip/clang_llvm_14_0/llvm-project-14.0.0.src.tar.xz  /sdcard/0my_files/zip/clang_llvm_14_0/
+  cd ~/1tmp/clang14/llvm_project/
+  tar -x -f  /sdcard/0my_files/zip/clang_llvm_14_0/llvm-project-14.0.0.src.tar.xz
+  [[
+$ pwd
+/data/data/com.termux/files/home/1tmp/clang14/llvm_project/llvm-project-14.0.0.src
+$ ls -1
+CONTRIBUTING.md
+README.md
+SECURITY.md
+bolt
+clang
+clang-tools-extra
+cmake
+compiler-rt
+cross-project-tests
+flang
+libc
+libclc
+libcxx
+libcxxabi
+libunwind
+lld
+lldb
+llvm
+mlir
+openmp
+polly
+pstl
+runtimes
+third-party
+utils
+
+$
+  ]]
+  cmake ./cmake/
+    CMake Error: The source directory "/data/data/com.termux/files/home/1tmp/clang14/llvm_project/llvm-project-14.0.0.src/cmake" does not appear to contain CMakeLists.txt.
+  $ view cmake/README.rst
+  $ view README.md
+  cmake -S llvm -B build -G <generator> [options]
+  pkg install ninja
+  $ du ~/../usr/tmp -h
+  export TEMP=~/../usr/tmp
+  export TMPDIR=~/../usr/tmp
+  echo $TEMP
+  echo $TMPDIR
+  cmake -S llvm -B build -G Ninja -DLLVM_ENABLE_PROJECTS="clang" -DLLVM_ENABLE_RUNTIMES="libcxx;libcxxabi" -DCMAKE_INSTALL_PREFIX=/usr/local -DCMAKE_BUILD_TYPE=Debug
+    config.guess: cannot create a temporary directory in /tmp
+      自定义 $TMPDIR $TEMP
+        !!可行!!
+    ===
+      -- Configuring done
+      -- Generating done
+      -- Build files have been written to: /data/data/com.termux/files/home/1tmp/clang14/llvm_project/llvm-project-14.0.0.src/build
+  cmake --build build
+    slow??
+    $ pwd
+    /data/data/com.termux/files/home/1tmp/clang14
+    $ du -s -h clang-14.0.0.src/
+    323M    clang-14.0.0.src/
+    $ du -s -h llvm_project/
+    1.5G    llvm_project/
+    rm -r clang-14.0.0.src/
+
+cmake directiry option settings
+$ cmake --help > $my_tmp/cmake--help.txt
+view /sdcard/0my_files/tmp/cmake--help.txt
+!mkdir others/app/termux/cmake/
+!mv /sdcard/0my_files/tmp/cmake--help.txt others/app/termux/cmake/
+view others/app/termux/cmake/cmake--help.txt
+  cmake [options] -S <path-to-source> -B <path-to-build>
+  Specify a source directory to (re-)generate a build system for it in the current working directory.
+  Specify an existing build directory to re-generate its build system.
+  --build <dir>                = Build a CMake-generated project binary tree.
+  --install <dir>              = Install a CMake-generated project binary
+
+$ pwd
+/data/data/com.termux/files/home/1tmp/clang14/llvm_project/llvm-project-14.0.0.src
+ls -l -t
+find . -name *.o
+$ find . -name *.o > $my_tmp/llvm_project_o.txt
+view /sdcard/0my_files/tmp/llvm_project_o.txt
+view others/app/termux/find/find.txt
+man find > $my_txt/others/app/termux/find/man_find.txt
+view others/app/termux/find/man_find.txt
+%s/.//g
+       -ctime _
+##?? 没试过，不知有没有用:find . -ctime 1 > $my_tmp/llvm_project_o.txt
+### 似乎生成的文件 都在 ./build/里
+
+TODO:将1.5G的源文件 移至 外存 删除build/
+mv /data/data/com.termux/files/home/1tmp/clang14/llvm_project/llvm-project-14.0.0.src/ /sdcard/0my_files/unzip/clang_llvm_14_0/
+cd /sdcard/0my_files/unzip/clang_llvm_14_0/
+tar -x -f  /mnt/m_external_sd/000edt/0my_files/zip/clang_llvm_14_0/llvm-project-14.0.0.src.tar.xz   /sdcard/0my_files/unzip/clang_llvm_14_0/xxx/
+tar -x   /sdcard/0my_files/unzip/clang_llvm_14_0/xxx/  -f  /mnt/m_external_sd/000edt/0my_files/zip/clang_llvm_14_0/llvm-project-14.0.0.src.tar.xz    --no-same-permissions --no-same-owner --touch --no-delay-directory-restore
+  看来只能提前到 当前目录
+tar: /sdcard/0my_files/unzip/clang_llvm_14_0/xxx: Not found in archive
+tar: Exiting with failure status due to previous errors
+
+tar -x   -f  /mnt/m_external_sd/000edt/0my_files/zip/clang_llvm_14_0/llvm-project-14.0.0.src.tar.xz    --no-same-permissions --no-same-owner --touch --no-delay-directory-restore
+tar: llvm-project-14.0.0.src/clang/test/Driver/Inputs/multilib_64bit_linux_tree/usr/bin/ld: Cannot create symlink to ‘x86_64-unknown-linux-gnu-ld’: Permission denied
+tar: llvm-project-14.0.0.src/libclc/amdgcn-mesa3d: Cannot create symlink to ‘amdgcn-amdhsa’: Permission denied
+tar: llvm-project-14.0.0.src/libclc/clspv64: Cannot create symlink to ‘clspv’: Permission denied
+[[
+===
+$ pwd
+/sdcard/0my_files/unzip/clang_llvm_14_0
+===
+===
+$ tar -x   -f  /mnt/m_external_sd/000edt/0my_files/zip/clang_llvm_14_0/llvm-project-14.0.0.src.tar.xz    --no-same-permissions --no-same-owner --touch --no-delay-directory-restore
+tar: llvm-project-14.0.0.src/clang/test/Driver/Inputs/basic_cross_linux_tree/usr/bin/i386-unknown-linux-gnu-ld: Cannot create symlink to ‘i386-unknown-linux-gnu-ld.gold’: Permission denied
+tar: llvm-project-14.0.0.src/clang/test/Driver/Inputs/basic_cross_linux_tree/usr/bin/x86_64-unknown-linux-gnu-ld: Cannot create symlink to ‘x86_64-unknown-linux-gnu-ld.gold’: Permission denied
+tar: llvm-project-14.0.0.src/clang/test/Driver/Inputs/basic_cross_linux_tree/usr/i386-unknown-linux-gnu/bin/ld: Cannot create symlink to ‘ld.gold’: Permission denied
+tar: llvm-project-14.0.0.src/clang/test/Driver/Inputs/basic_cross_linux_tree/usr/x86_64-unknown-linux-gnu/bin/ld: Cannot create symlink to ‘ld.gold’: Permission denied
+tar: llvm-project-14.0.0.src/clang/test/Driver/Inputs/multilib_32bit_linux_tree/usr/bin/as: Cannot create symlink to ‘i386-unknown-linux-gnu-as’: Permission denied
+tar: llvm-project-14.0.0.src/clang/test/Driver/Inputs/multilib_32bit_linux_tree/usr/bin/ld: Cannot create symlink to ‘i386-unknown-linux-gnu-ld’: Permission denied
+tar: llvm-project-14.0.0.src/clang/test/Driver/Inputs/multilib_64bit_linux_tree/usr/bin/as: Cannot create symlink to ‘x86_64-unknown-linux-gnu-as’: Permission denied
+tar: llvm-project-14.0.0.src/clang/test/Driver/Inputs/multilib_64bit_linux_tree/usr/bin/ld: Cannot create symlink to ‘x86_64-unknown-linux-gnu-ld’: Permission denied
+tar: llvm-project-14.0.0.src/libclc/amdgcn-mesa3d: Cannot create symlink to ‘amdgcn-amdhsa’: Permission denied
+tar: llvm-project-14.0.0.src/libclc/clspv64: Cannot create symlink to ‘clspv’: Permission denied
+tar: llvm-project-14.0.0.src/openmp/tools/analyzer/llvm-openmp-analyzer++: Cannot create symlink to ‘llvm-openmp-analyzer’: Permission denied
+tar: llvm-project-14.0.0.src/libcxx/test/std: Directory renamed before its status could be extracted
+tar: llvm-project-14.0.0.src/libcxx/test: Directory renamed before its status could be extracted
+tar: llvm-project-14.0.0.src/libcxx: Directory renamed before its status could be extracted
+tar: llvm-project-14.0.0.src/clang/test/Driver/Inputs/multilib_64bit_linux_tree/usr/x86_64-unknown-linux/bin: Directory renamed before its status could be extracted
+tar: llvm-project-14.0.0.src/clang/test/Driver/Inputs/multilib_64bit_linux_tree/usr/x86_64-unknown-linux: Directory renamed before its status could be extracted
+tar: llvm-project-14.0.0.src/clang/test/Driver/Inputs/multilib_64bit_linux_tree/usr: Directory renamed before its status could be extracted
+tar: llvm-project-14.0.0.src/clang/test/Driver/Inputs/multilib_64bit_linux_tree: Directory renamed before its status could be extracted
+tar: llvm-project-14.0.0.src/clang/test/Driver/Inputs/multilib_32bit_linux_tree/usr/i386-unknown-linux/bin: Directory renamed before its status could be extracted
+tar: llvm-project-14.0.0.src/clang/test/Driver/Inputs/multilib_32bit_linux_tree/usr/i386-unknown-linux: Directory renamed before its status could be extracted
+tar: llvm-project-14.0.0.src/clang/test/Driver/Inputs/multilib_32bit_linux_tree/usr: Directory renamed before its status could be extracted
+tar: llvm-project-14.0.0.src/clang/test/Driver/Inputs/multilib_32bit_linux_tree: Directory renamed before its status could be extracted
+tar: llvm-project-14.0.0.src/clang/test/Driver/Inputs/CUDA-symlinks/usr/bin: Directory renamed before its status could be extracted
+tar: llvm-project-14.0.0.src/clang/test/Driver/Inputs/CUDA-symlinks/usr: Directory renamed before its status could be extracted
+tar: llvm-project-14.0.0.src/clang/test/Driver/Inputs/CUDA-symlinks: Directory renamed before its status could be extracted
+tar: llvm-project-14.0.0.src/clang/test/Driver/Inputs: Directory renamed before its status could be extracted
+tar: llvm-project-14.0.0.src/clang/test/Driver: Directory renamed before its status could be extracted
+tar: llvm-project-14.0.0.src/clang/test: Directory renamed before its status could be extracted
+tar: llvm-project-14.0.0.src/clang: Directory renamed before its status could be extracted
+tar: llvm-project-14.0.0.src: Cannot change mode to rwx------: Operation not permitted
+tar: Exiting with failure status due to previous errors
+
+===
+]]
+[[
+      --delay-directory-restore   delay setting modification times and
+                             permissions of extracted directories until the end
+                             of extraction
+  -m, --touch                don't extract file modified time
+      --no-delay-directory-restore
+                             cancel the effect of --delay-directory-restore
+                             option
+      --no-same-owner        extract files as yourself (default for ordinary
+                             users)
+      --no-same-permissions  apply the user's umask when extracting permissions
+]]
+[[
+$ view cmake/README.rst
+$ view README.md
+cmake -S llvm -B build -G <generator> [options]
+pkg install ninja
+export TEMP=~/../usr/tmp
+export TMPDIR=~/../usr/tmp
+echo $TEMP
+echo $TMPDIR
+!mkdir /sdcard/0my_files/unzip/clang_llvm_14_0/tmp/
+cd /sdcard/0my_files/unzip/clang_llvm_14_0/tmp/
+cmake -S ../llvm-project-14.0.0.src/llvm -B ./build -G Ninja -DLLVM_ENABLE_PROJECTS="clang" -DLLVM_ENABLE_RUNTIMES="libcxx;libcxxabi" -DCMAKE_INSTALL_PREFIX=/usr/local -DCMAKE_BUILD_TYPE=Debug
+  所有 configure file 无法执行，出错！
+... ...
+CMake Error at cmake/modules/AddLLVM.cmake:1718 (configure_file):
+  configure_file Problem configuring file
+Call Stack (most recent call first):
+  test/CMakeLists.txt:38 (configure_lit_site_cfg)
+... ...
+-- Configuring incomplete, errors occurred!
+See also "/sdcard/0my_files/unzip/clang_llvm_14_0/tmp/build/CMakeFiles/CMakeOutput.log".
+See also "/sdcard/0my_files/unzip/clang_llvm_14_0/tmp/build/CMakeFiles/CMakeError.log".
+$ ls
+build
+$ du -s -h build
+4.2M    build
+$
+
+]]
+
+
+curl -L -C - -O https://github.com/llvm/llvm-project/releases/download/llvmorg-14.0.0/clang-14.0.0.src.tar.xz
+curl -L -C - -O https://github.com/llvm/llvm-project/releases/download/llvmorg-14.0.0/llvm-14.0.0.src.tar.xz
+curl -L -C - -O 
+--remote-name-all
+curl -L -C - --remote-name-all https://github.com/llvm/llvm-project/releases/download/llvmorg-14.0.0/clang-tools-extra-14.0.0.src.tar.xz https://github.com/llvm/llvm-project/releases/download/llvmorg-14.0.0/compiler-rt-14.0.0.src.tar.xz https://github.com/llvm/llvm-project/releases/download/llvmorg-14.0.0/libclc-14.0.0.src.tar.xz https://github.com/llvm/llvm-project/releases/download/llvmorg-14.0.0/libcxx-14.0.0.src.tar.xz https://github.com/llvm/llvm-project/releases/download/llvmorg-14.0.0/libcxxabi-14.0.0.src.tar.xz https://github.com/llvm/llvm-project/releases/download/llvmorg-14.0.0/libunwind-14.0.0.src.tar.xz https://github.com/llvm/llvm-project/releases/download/llvmorg-14.0.0/lld-14.0.0.src.tar.xz https://github.com/llvm/llvm-project/releases/download/llvmorg-14.0.0/lldb-14.0.0.src.tar.xz https://github.com/llvm/llvm-project/releases/download/llvmorg-14.0.0/openmp-14.0.0.src.tar.xz
+
+curl -L -C - -O 
+        https://github.com/llvm/llvm-project/releases/download/llvmorg-14.0.0/llvm-14.0.0.src.tar.xz
+        https://github.com/llvm/llvm-project/releases/download/llvmorg-14.0.0/clang-14.0.0.src.tar.xz
+
+        https://github.com/llvm/llvm-project/releases/download/llvmorg-14.0.0/clang-tools-extra-14.0.0.src.tar.xz
+        https://github.com/llvm/llvm-project/releases/download/llvmorg-14.0.0/compiler-rt-14.0.0.src.tar.xz
+        https://github.com/llvm/llvm-project/releases/download/llvmorg-14.0.0/libclc-14.0.0.src.tar.xz
+        https://github.com/llvm/llvm-project/releases/download/llvmorg-14.0.0/libcxx-14.0.0.src.tar.xz
+        https://github.com/llvm/llvm-project/releases/download/llvmorg-14.0.0/libcxxabi-14.0.0.src.tar.xz
+        https://github.com/llvm/llvm-project/releases/download/llvmorg-14.0.0/libunwind-14.0.0.src.tar.xz
+        https://github.com/llvm/llvm-project/releases/download/llvmorg-14.0.0/lld-14.0.0.src.tar.xz
+        https://github.com/llvm/llvm-project/releases/download/llvmorg-14.0.0/lldb-14.0.0.src.tar.xz
+        https://github.com/llvm/llvm-project/releases/download/llvmorg-14.0.0/openmp-14.0.0.src.tar.xz
+        ]]
+    ====
+    https://releases.llvm.org/download.html
+      https://github.com/llvm/llvm-project/releases/tag/llvmorg-14.0.0
+        https://github.com/llvm/llvm-project/releases/download/llvmorg-14.0.0/clang+llvm-14.0.0-armv7a-linux-gnueabihf.tar.xz
+          506 MB
+        https://github.com/llvm/llvm-project/releases/download/llvmorg-14.0.0/clang-14.0.0.src.tar.xz
+          17.7 MB
+        https://github.com/llvm/llvm-project/releases/download/llvmorg-14.0.0/clang-tools-extra-14.0.0.src.tar.xz
+          2.72 MB
+        Doxygen is the de facto standard tool for generating documentation from annotated C++ sources
+        https://github.com/llvm/llvm-project/releases/download/llvmorg-14.0.0/clang-tools-extra_doxygen-14.0.0.tar.xz
+           clang-tools-extra_doxygen-14.0.0.tar.xz 8.45 MB
+        https://github.com/llvm/llvm-project/releases/download/llvmorg-14.0.0/clang_doxygen-14.0.0.tar.xz
+        clang_doxygen-14.0.0.tar.xz 55.1 MB
+        https://github.com/llvm/llvm-project/releases/download/llvmorg-14.0.0/compiler-rt-14.0.0.src.tar.xz
+        compiler-rt-14.0.0.src.tar.xz 2.22 MB
+        https://github.com/llvm/llvm-project/releases/download/llvmorg-14.0.0/libclc-14.0.0.src.tar.xz
+        https://github.com/llvm/llvm-project/releases/download/llvmorg-14.0.0/libcxx-14.0.0.src.tar.xz
+        https://github.com/llvm/llvm-project/releases/download/llvmorg-14.0.0/libcxxabi-14.0.0.src.tar.xz
+        https://github.com/llvm/llvm-project/releases/download/llvmorg-14.0.0/libunwind-14.0.0.src.tar.xz
+        https://github.com/llvm/llvm-project/releases/download/llvmorg-14.0.0/lld-14.0.0.src.tar.xz
+        https://github.com/llvm/llvm-project/releases/download/llvmorg-14.0.0/lldb-14.0.0.src.tar.xz
+        https://github.com/llvm/llvm-project/releases/download/llvmorg-14.0.0/llvm-14.0.0.src.tar.xz
+        llvm-14.0.0.src.tar.xz 47.4 MB
+        https://github.com/llvm/llvm-project/releases/download/llvmorg-14.0.0/llvm-project-14.0.0.src.tar.xz
+        llvm-project-14.0.0.src.tar.xz 101 MB
+        https://github.com/llvm/llvm-project/releases/download/llvmorg-14.0.0/llvm_doxygen-14.0.0.tar.xz
+        llvm_doxygen-14.0.0.tar.xz 129 MB
+        https://github.com/llvm/llvm-project/releases/download/llvmorg-14.0.0/openmp-14.0.0.src.tar.xz
+]]]
