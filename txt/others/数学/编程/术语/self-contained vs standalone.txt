@@ -1,0 +1,1206 @@
+
+e others/数学/编程/术语/self-contained vs standalone.txt
+
+
+[[[
+self-contained vs framework-dependent
+self-contained vs standalone
+independence vs irrelevance
+independent vs irrelevant vs irreverent vs non-interactive vs non-interference
+  独立vs无关vs无礼vs不交互作用vs不干涉
+marginal gamble
+  边际  赌博
+coherence 一致性
+expectation vs prevision
+  期望vs预知
+URI vs URL
+squeeze 挤、压
+deploy deployment 部署，调配
+
+flow 流/流程
+non-printing characters
+
+
+
+
+[[
+self-contained vs standalone
+  私以为：
+    standalone:
+      单机=>不联网
+      ，对于xml/html而言，即 不导入网络资源(多媒体/脚本/定义与声明)，但可使用本地资源？
+      ===
+      修饰 产品
+
+    self-contained:
+      自成一体=>自给自足，无需 外部的 运行库支持。runtime/dll
+      打包所有一切:资源，运行期支持库（即使不是所有平台，也得有某个特定平台）
+    self-contained 比 standalone 要求高，约束条件更强
+      ===
+      单文件single-file #data URI
+      离线/脱机 offline
+      用于修饰 系统/整体
+
+]]
+
+
+[[
+self-contained vs framework-dependent
+  打包 运行期支持库 与否？
+
+===
+https://andrewlock.net/should-i-use-self-contained-or-framework-dependent-publishing-in-docker-images/
+Should I use self-contained or framework-dependent publishing in Docker images?
+Share on:
+
+ASP.NET Core has two different publishing modes, framework-dependent and self-contained. In this post I compare the impact of the publishing mode on Docker image size. I compare an image published using both approaches and take into account the size of cached layers to decide which approach is the best for Docker images.
+
+I'm only comparing Docker image size in this post, as that's the main thing that changes between the modes. As self-contained mode uses app-trimming it's a little less "safe" as you may accidentally trim assemblies or methods you need. It also takes a little longer to build trimmed self-contained apps, as the SDK has to do the app trimming. For the purposes of this post I'm ignoring those differences.
+Framework-dependent vs self-contained
+
+ASP.NET Core apps can be published in one of two modes:
+
+    Framework-dependent. In this mode, you need to have the .NET Core / .NET 5.0 runtime installed on the target machine.
+    Self-contained. In this mode, your app is bundled with the .NET Core / .NET 5.0 runtime when it is published, so the target machine does not need the .NET Core runtime installed.
+
+There are advantages and disadvantages to both approaches. For example
+
+    Framework-dependent
+        Pro: you only need to distribute your app's dll files, as the runtime is already installed on the target machine.
+        Pro: you can path the .NET runtime for all your apps, without having to re-compile.
+        Con: you have less control at runtime - you don't know exactly which version of the .NET runtime will be used when your app runs (as it depends what's installed).
+    Self-contained
+        Pro: You have complete control over the runtime used with your app, as you're distributing it with your app.
+        Pro: No requirement for a shared runtime to be installed. This means you can, for example, deploy preview versions of a runtime to Azure App Service, before they're "officially" supported.
+        Con: As you're distributing the runtime as well, the total size of your app will be much larger. This can be mitigated to some extent in .NET 5.0 by using trimming, but your app will still be much larger.
+        Pro/Con: To patch the runtime, you need to recompile and redistribute your app. This is a con, in that it's an extra task to do, but it means that you have always tested your app with a known version of the runtime.
+
+Comparing framework-dependent with self-contained modes
+
+These are pretty standard trade-offs if you're deploying to a hosted service or to to a VM, but what about if you're building Docker images?
+Framework-dependent vs self-contained in Docker
+
+If you're building Docker images and publishing these as your "deployment artefact" then the pros and cons aren't as clear cut.
+
+    Framework-dependent
+        『You only need to distribute your app's dll files, as the runtime is already installed on the target machine No longer』 true, as with a Docker image you're essentially distributing the target machine as well!
+        『You don't know exactly which version of the .NET runtime will be used at runtime』 No longer true as you specify exactly which version of the runtime to use in your Docker image.
+
+    Self-contained
+        『You have complete control over the runtime used with your app, as you're distributing it with your app』 True, but not really any different to framework-dependent now.
+        『No requirement for a shared runtime to be installed』 True, but again, also true when deploying as a framework dependent app in Docker.
+        『To patch the runtime, you need to recompile and redistribute your app』 True, but again, the same as framework-dependent apps now.
+        『As you're distributing the runtime as well, the total size of your app will be much larger.』 This is no longer true; in both cases we're distributing everything in the Docker image: the OS, the .NET runtime, and the app itself. However, with self-contained deployments we can trim the framework, so we'd expect the resulting Docker images to be smaller.
+
+Comparing framework-dependent with self-contained modes in Docker images
+
+So, based on this, it seems like self-contained deployments for Docker images should be the best approach right? Both images should be functionally the same, and the self-contained deployment is smaller, which is desirable for Docker images, so that makes sense.
+
+However, this ignores an important aspect of Docker images - layer caching. If two Docker images use the same "base" image, then Docker will naturally "de-dupe" the duplicate layers. These duplicate layers don't need to be transferred when pushing or pulling images from registries if the target already has the given layer.
+Docker layers don't need to be re-pulled if they already exist on the target machine
+
+If two framework dependent apps are deployed in Docker images, and both use the same framework version, then the effective image size is much smaller, due to the layer caching. In contrast, even though self-contained deployment images will be smaller over all, they'll never benefit from caching the .NET runtime in a layer, as it's part of your application deployment. That means you may well have to push more bytes around with self-contained deployments.
+
+I was interested to put some numbers around this so I setup a little experiment.
+Comparing Docker image sizes between framework-dependent and self-contained apps
+
+I decided to do a quick test to put some numbers on the differences between the apps. I wanted to use a vaguely realistic application as a test, so I decided to use the IdentityServer 4 quick-start application as my test
+
+I started by installing the IdentityServer templates using
+
+dotnet new -i IdentityServer4.Templates
+
+And then created my test app called IdentityServerTestApp using:
+
+dotnet new is4ef -n IdentityServerTestApp -o .
+
+    The templates currently target .NET Core 3.1, so I quickly updated the target framework to .NET 5.0 for this test. Why not!
+
+Finally I checked I could build using dotnet build. Everything worked, so I moved on to the Docker side.
+Creating the test Docker images
+
+Given I want this to be a vaguely realistic test, I created two separate Dockerfiles that use multi-stage builds: one in which the app is deployed in self-contained mode, and one that uses framework-dependent mode.
+
+    You should always use multi-stage builds in production, to keep your final Docker images as small as possible. These let you use a different Docker image for the "build" part of your app than you use to deploy it.
+
+The Dockerimage below shows the framework-dependent version. I've just done the whole restore/build/publish in one step here, as I'm only going to be building it once anyway. In practice, you should use an approach that caches intermediate build layers.
+
+# The builder image
+FROM mcr.microsoft.com/dotnet/sdk:5.0.100-alpine3.12 AS builder
+
+WORKDIR /sln
+
+# Just copy everything
+COPY . .
+
+# Do the restore/publish/build in one step
+RUN dotnet publish -c Release -o /sln/artifacts
+
+# The deployment image
+FROM mcr.microsoft.com/dotnet/aspnet:5.0.100-alpine3.12
+
+# Copy across the published app
+WORKDIR /app
+ENTRYPOINT ["dotnet", "IdentityServerTestApp.dll"]
+COPY --from=builder ./sln/artifacts .
+
+The self-contained deployment uses a very similar Dockerfile:
+
+
+# The builder image
+FROM mcr.microsoft.com/dotnet/sdk:5.0.100-alpine3.12 AS builder
+
+WORKDIR /sln
+
+# Just copy everything
+COPY . .
+
+# Do the restore/publish/build in one step
+RUN dotnet publish -c Release -r linux-x64 -o /sln/artifacts -p:PublishTrimmed=True
+
+# The deployment image
+FROM mcr.microsoft.com/dotnet/runtime-deps:5.0.100-alpine3.12
+
+# Copy across the published app
+WORKDIR /app
+ENTRYPOINT ["dotnet", "IdentityServerTestApp.dll"]
+COPY --from=builder ./sln/artifacts .
+
+There's only two differences here:
+
+    We're publishing the app as self-contained by specifying a runtime identifier (linux-x64). I've also set it to do conservative assembly-level trimming, new in .NET 5.0. You could update that to the more aggressive member-level trimming by adding -p:TrimMode=Link
+    Instead of using the dotnet/aspnet image, which has the ASP.NET Core runtime installed, we're using dotnet/runtime-deps, which doesn't have a .NET runtime installed at all.
+
+If we compare the base size of the runtime images, you can see that the dotnet/aspnet image is about 10x larger, 103MB vs. 9.9MB:
+
+> docker images | grep mcr.microsoft.com/dotnet
+
+mcr.microsoft.com/dotnet/sdk            5.0.100-alpine3.12   487MB
+mcr.microsoft.com/dotnet/aspnet         5.0.0-alpine3.12     103MB
+mcr.microsoft.com/dotnet/runtime-deps   5.0.0-alpine3.12      10MB
+
+This is what we'd expect. The dotnet/aspnet image includes everything in the dotnet/runtime-deps, but then layers the .NET 5.0 runtime and ASP.NET Core framework libraries on top. That layer constitutes the additional 93MB of the image size.
+
+Now lets see what the size difference is once we build and publish our apps.
+Building the images
+
+We can build the images using the following two commands:
+
+# Build the framework-dependent app
+docker build -f FrameworkDependent.Dockerfile -t identity-server-test-app:framework-dependent .
+# Build the self-contained app
+docker build -f SelfContained.Dockerfile -t identity-server-test-app:self-contained .
+
+Let's compare the final Docker images after publishing our app:
+
+> docker images | grep identity-server-test-app
+
+identity-server-test-app      framework-dependent   131MB
+identity-server-test-app      self-contained        65MB
+
+The table below breaks these numbers down a bit further, to see where the size difference comes from.
+
+    I later run another test in self-contained mode with aggressive, member-level, trimming enabled. For the purposes of the table, I assumed that only members from framework dlls were trimmed. That's probably not entirely accurate, but I think is a reasonable assumption here.
+
+| Layer | Cached?| Framework-dependent | Self-contained | Agressive trimming| | ----- | ---------- | ------------------- | -------------- | ------ | | Base runtime-dependencies | Yes | 9.9 MB | 9.9MB | 9.9MB |
+| Shared framework layer | Yes | 93 MB | - | - | | Trimmed .NET runtime dlls | No | - | 48MB | 27 MB | | Application dlls | No | 28 MB | 28 MB | 28 MB | | Total | | 131 MB | 76 MB | 65 MB | | Total (excluding cached) | | 28 MB | 66 MB | 55 MB |
+
+As you can see, the self-contained image is significantly smaller than the framework dependent image 76MB (or 65MB for member-trimming) vs. 131MB. However, if you just consider the "uncacheable" layers in the apps, and assume that the base dependencies and shared framework layers will already be present on target machines (a reasonable enough assumption in many cases), then the results swing the other way!
+
+So which is the "right" option? From my point of view, if you're deploying Docker images to a Kubernetes cluster (for example), then the framework-dependent approach probably makes the most sense. You'll benefit from more layer-caching, so there should be fewer bytes to push to and from Docker registries. If you're unsure if the layers will be cached, if you're deploying to some sort of shared hosting for example, then the smaller self-contained deployments are probably the better option.
+
+    I'm only talking about the case where you're deploying in Docker here. If you're not, I think the self-contained deployment will often be the better approach for the added control and assurance it gives you about your runtime environment.
+
+Summary
+
+In this post I compared the size of an example application when deployed in a Docker image using two different modes. Using the framework-dependent publishing mode, the final runtime image was 131 MB, but 103 MB of that would likely already be cached on a target machine.
+
+In contrast, the self-contained deployment model gave images that were 76 MB (or 65 MB with member-level trimming enabled)—significantly smaller. However, only 10MB of those images can be cached, giving a larger size to push and pull from repositories (66MB vs 28MB).
+
+For that reason, I think if you're deploying Docker images to a Kubernetes cluster (for example), then the framework-dependent approach probably makes the most sense. You'll benefit from more layer-caching, so there should be fewer bytes to push to and from Docker registries. If you're unsure if the layers will be cached, if you're deploying to some sort of shared hosting for example, then the smaller self-contained deployments are probably the better option.
+Source code
+Example source code for this post
+Follow me
+
+Enjoy this blog?
+
+    Buy Me A Coffee Donate with PayPal 
+
+Using action results and content negotiation with "route-to-code" APIs Previous Using action results and content negotiation with "route-to-code" APIs
+Auto-assigning issues using a GitHub Action Next Auto-assigning issues using a GitHub Action: Creating my first GitHub app with Probot - Part 4
+Loading comments powered by Disqus, please wait…
+© 2022 Andrew Lock | .NET Escapades. All Rights Reserved. | Built with Metalsmith (Previously Ghost and Caffeine Theme). | Image credits
+]]
+[[
+下面所说的大约就是:
+  将 选项 --self-contained 拆分为 两个选项: --standalone --embed-resources
+===
+https://github.com/jgm/pandoc/issues/7331
+
+jgm / pandoc Public
+
+Enable usage of "self-contained" without "standalone" for HTML #7331
+Open
+mjfs opened this issue on 30 May 2021 · 9 comments
+Labels
+CLI
+enhancement
+good first issue
+Comments
+@mjfs mjfs commented on 30 May 2021
+
+Using the option self-contained currently implies the option standalone when producing HTML output. This is not desired in all use cases, especially not when using Pandoc as an external renderer in certain context (Content Management System, Templating etc.).
+
+It would be useful to have an option to produce data URIs (i.e. not requiring external images) for a part of included document, rendering only HTML body in that case without other HTML declarations (that are a part of the master document).
+
+Introducing an additional Pandoc option would perhaps be the cleanest way of addressing the mentioned use case, since it would not break existing usage, e.g. something like embed-resources (or embedded-references or embed-media
+@jgm jgm commented on 30 May 2021
+
+Yeah, this makes a lot of sense to me.
+The only problem is that the suggested change has the potential to break a lot of existing workflows, since people may have gotten used to specifying --self-contained without --standalone.
+@mjfs mjfs commented on 30 May 2021
+
+Actually, the alternative that I have mentioned in the last paragraph would not have any impact on existing workflows:
+
+    self-contained would imply standalone as well as embed-resources (or embedded-references or embed-media or whichever option name would be chosen)
+
+    embed-resources would then be the option that would enable generating data URIs
+
+Both, new use workflows would be covered as well as compatibility with existing ones assured by using this approach.
+@jgm jgm commented on 30 May 2021
+
+So, if understand correctly, you're suggesting that --self-contained be factored into --embed-resources + --standalone.
+
+That may be the best way forward (and actually --embed-resources is a better name than --self-contained).
+@jgm jgm commented on 30 May 2021
+
+IF we did this I'd be inclined to deprecate --self-contained.
+@cagix cagix commented on 30 May 2021
+
+maybe you can keep --self-contained for one or two releases and emit a deprecation warning? that would allow people to adjust their workflows.
+@mjfs mjfs commented on 30 May 2021
+
+@jgm: Yes, that is what I was suggesting. I am however not entirely sure regarding the depreciation of existing option (--self-contained), since even with the introduction of new one (--embed-resources), one could still see the existing one as a shortcut (for --embed-resources + --standalone). Counterargument is perhaps the fact that --self-contained does not come with a shorter form as is the case for --standalone. Apart from that I guess it is more the matter of general policy regarding composite options and personal preference. Depreciation (with eventual removal further on) seems cleaner to me, since composites can lead to ambiguity, but I do not have strong feelings regarding that either way.
+@jgm jgm commented on 31 May 2021
+
+    maybe you can keep --self-contained for one or two releases and emit a deprecation warning? that would allow people to adjust their workflows.
+
+That's the idea. The reason for deprecating is just that it's confusing to have two options that are so similar.
+@jgm jgm commented on 1 Jun 2021
+
+Note: in the mean time, here's a workaround: just use a custom template containing simply
+
+$body$
+
+@mjfs mjfs mentioned this issue on 6 Jun 2021
+Sanitizer exception for IMG SRC attribute not being applied go-gitea/gitea#16020
+Closed
+4 tasks
+@mjfs mjfs commented on 6 Jun 2021
+
+@jgm: Thank you for suggested workaround, I have already put it into good use.
+
+Less important, but possibly also helpful, to avoid the Pandoc warning when executing the command, --metadata title=" " can be added to the parameters that one uses (this does of course depend on the use case and input data).
+
+]]
+[[
+https://ell.stackexchange.com/questions/219401/independent-standalone-self-contained
+independent/standalone/self-contained
+
+    Standalone: able to operate without control from another system, company, etc.
+
+    self-contained: not requiring help or support from anyone or anything else : complete by itself
+
+    Independent : not associated with or owned by a larger business
+
+    From Merriam Webster Learner's Dictionary
+
+Suppose a company is spinning off one of its divisions into a separate company. This division becomes a standalone/self-contained/independent business. Can I use all of them here? What is the difference between them?
+
+meaning
+difference
+Share
+Improve this question
+asked Jul 25, 2019 at 13:45
+user avatar
+luxury20041985
+1,0751212 silver badges2828 bronze badges
+Add a comment
+1 Answer
+Sorted by:
+1
+
+Independence is the best fit.
+
+In my own experience, standalone is more for products, and self-contained is more for systems. A quick search seems to back this up, at least colloquially.
+
+Go to google and just type in 'standalone'. You'll see that the autofill suggestions are consumer products (vr headset, smartwatch). Do the same for self-contained and you'll see 'classroom' and 'ecosystem'. Now do the same with 'independent' and you'll see business types: contractor, towing, realty.
+Share
+Improve this answer
+answered Jul 25, 2019 at 16:58
+user avatar
+keparoo
+]]
+[[
+https://docs.oracle.com/javase/9/deploy/self-contained-application-packaging.htm
+Self-Contained Application Packaging - Oracle
+In general, the size of self-contained application packages is larger than the size of a standalone application, because a private copy of the JRE is included. Package per target platform Self-contained application packages are platform-specific and can only be produced for the same system on which you build.
+]]
+[[
+self-contained 自成一体 #自足？
+
+  self-con·tained
+  [ˈˌself kənˈtānd]
+  ADJECTIVE
+
+    (of a thing) complete, or having all that is needed, in itself:
+    "every section of the painting is a self-contained unit" · [more]
+    synonyms:
+    complete · [more]
+    (of a person) quiet and independent; not depending on or influenced by others:
+    "he's very self-contained"
+    synonyms:
+    independent · [more]
+
+Translate self-contained to
+
+    自成一体
+]]
+[[
+standalone 单机/独立
+  stand-a·lone
+  [ˈstand əˌlōn]
+  ADJECTIVE
+  standalone (adjective)
+
+    (of computer hardware or software) able to operate independently of other hardware or software:
+    "a stand-alone application" · [more]
+
+Translate stand-alone to
+adjective
+
+    单机
+    独立
+]]
+]]]
+
+
+
+[[[
+[[
+independent
+  in·de·pend·ent
+  [ˌindəˈpendənt]
+  ADJECTIVE
+
+    free from outside control; not depending on another's authority:
+    "the study is totally independent of central government" · "Canada's largest independent investment firm"
+    synonyms:
+    freethinking · individualistic · unconventional · maverick · free · liberated · bold · free-spirited · unconstrained · unrestrained · unfettered · untrammeled · unhampered · undisciplined · wild · willful · headstrong · contrary
+    not depending on another for livelihood or subsistence:
+    "I wanted to remain independent in old age"
+    synonyms:
+    self-sufficient · self-supporting · self-sustaining · self-reliant · self-standing · able to stand on one's own two feet · self-contained · self-made
+    capable of thinking or acting for oneself:
+    "advice for independent travelers"
+
+NOUN
+
+    an independent person or body:
+    "one of the few independents left in the music business"
+
+Translate independent to
+adjective
+
+    独立
+    自主
+    独立自主
+    无关
+    独立性
+]]
+[[
+irrelevant
+  ir·rel·e·vant
+  [əˈreləvənt]
+  ADJECTIVE
+
+    not connected with or relevant to something:
+    "an irrelevant comment" · "theory can sometimes be hastily dismissed as irrelevant to the classroom"
+    synonyms:
+    beside the point · not to the point · immaterial · not pertinent · not germane · off the subject · neither here nor there · unconnected · unrelated · peripheral · tangential · extraneous · inapposite · inapt · inapplicable · unimportant · inconsequential · insignificant · of no matter/moment · of little account · trivial · negligible · minor · trifling · petty · superficial · impertinent
+
+Translate irrelevant to
+adjective
+
+    不相干
+    无关紧要
+    无关
+    毫不相干
+    无关痛痒
+    无足轻重
+    无所谓
+]]
+[[
+irreverent
+  ir·rev·er·ent
+  [əˈrev(ə)rənt]
+  ADJECTIVE
+
+    showing a lack of respect for people or things that are generally taken seriously:
+    "he had an irreverent sense of humor but could always be counted on for sage advice"
+    synonyms:
+    disrespectful · disdainful · scornful · contemptuous · derisive · disparaging · [more]
+
+Translate irreverent to
+adjective
+
+    揶揄
+    无礼
+]]
+[[
+noninteractive
+
+: not interactive especially : not involving or requiring the actions or input of a user
+
+https://www.wordhippo.com/what-is/another-word-for/non-interactive.html
+What is another word for non-interactive?
+  Adjective
+    Not interacting with or communicating with and reacting with other entities
+
+  noninteractive
+  noninteractional
+  noncollaborative
+  noninteracting
+  standalone
+  autonomous
+  independent
+  uncollaborative
+  solo
+]]
+[[
+non-interference
+  non·in·ter·fer·ence
+  [ˌnänin(t)ərˈfirəns]
+  NOUN
+non-interference (noun)
+
+    failure or refusal to intervene without invitation or necessity, especially in political matters.
+
+Translate noninterference to
+
+    不干涉
+]]
+[[
+irrelevance
+  ir·rel·e·vance
+  [i(r)ˈreləvəns]
+  NOUN
+
+    the quality or state of being irrelevant:
+    "the document was withheld on grounds of irrelevance"
+    synonyms:
+    inapplicability · unconnectedness · unrelatedness · peripherality · extraneousness · inappropriateness · inappositeness · inaptness · unimportance · inconsequentiality · insignificance · impertinence
+        a person or thing that is irrelevant:
+        "he regarded religion as an irrelevance"
+
+Translate irrelevance to
+noun
+
+    无关
+]]
+[[
+independence
+  in·de·pend·ence
+  [ˌindəˈpendəns]
+  NOUN
+
+    the fact or state of being independent:
+    "Argentina gained independence from Spain in 1816" · [more]
+    synonyms:
+    self-government · self-rule · home rule · self-legislation · self-determination · sovereignty · autonomy · nonalignment · freedom · liberty · autarky · self-sufficiency · self-reliance · self-support · self-sustenance · self-standing
+
+Translate independence to
+noun
+
+    独立
+    独立性
+    独立自主
+    自立
+    自主
+]]
+[[
+independence vs irrelevance
+http://library.utia.cas.cz/separaty/2012/MTR/vejnarova-conditioning,%20conditional%20independence%20and%20irrelevance%20in%20evidence%20theory.pdf
+
+事件:T,G,D,W
+  有向图Y:{T->D,G->D,D->W}
+    表达 相关性？
+    T,G 无条件不相关:
+      T _||_ G
+    W 与 {T,G} 在条件D下不相关:
+      W _||_ T,G  | D
+      ((W _||_ {T,G})  | D)
+
+P(T,G,D,W)
+  =[无条件]= P(T)*P(G|T)*P(D|G,T)*P(W|D,G,T)
+  =[under 有向图Y]= P(T)*P(G)*P(D|G,T)*P(W|D)
+Fact: In (precise) probabilistic setting conditional independence of X and Y given Z: [P(XYZ) * P(Z) = P(XZ) * P(YZ)] is (more or less) equivalent to conditional irrelevance: [P(X|YZ) = P(X|Z)].
+  conditional independence <==> conditional irrelevance
+  概率论中，条件独立 等价于 条件无关
+  !![P(XY|Z)=P(X|YZ)*P(Y|Z)]:
+    [[P(XY|Z)=P(X|Z)*P(Y|Z)] <==> [P(X|YZ)=P(X|Z)]]
+  !![P(XYZ)=P(XY|Z)*P(Z)][P(XZ)=P(X|Z)*P(Z)][P(YZ)=P(Y|Z)*P(Z)]:
+    [P(XYZ) * P(Z) = P(XY|Z)*P(Z) * P(Z)]
+    [P(XZ) * P(YZ) = P(X|Z)*P(Z) * P(Y|Z)*P(Z)]
+    [[P(XYZ) * P(Z) = P(XZ) * P(YZ)] <==> [P(XY|Z)=P(X|Z)*P(Y|Z)] <==> [P(X|YZ)=P(X|Z)]]
+
+]]
+[[
+coherence
+  co·her·ence
+  [ˌkōˈhirəns]
+  NOUN
+coherence (noun) · coherences (plural noun)
+
+    the quality of being logical and consistent:
+    "this raises further questions on the coherence of state policy"
+    synonyms:
+    consistency · logicality · good sense · soundness · organization · orderliness · unity · clarity · articulacy · intelligibility · comprehensibility
+    antonyms:
+    incoherence
+    the quality of forming a unified whole:
+    "the group began to lose coherence and the artists took separate directions"
+
+Translate coherence to
+noun
+
+    连贯性
+    一致性
+    相干
+    连贯
+    协调一致
+    连贯一致
+    协调
+    一贯性
+    协调性
+]]
+[[
+marginal
+  mar·gin·al
+  [ˈmärjənl]
+  ADJECTIVE
+marginal (adjective)
+
+    relating to or situated at the edge or margin of something:
+    "marginal notes"
+        of secondary or minor importance; not central:
+        "it seems likely to make only a marginal difference" · "a marginal criminal element"
+        synonyms:
+        slight · small · tiny · minute · low · minor · insignificant · minimal · negligible
+        antonyms:
+        vast · gross
+        (of a decision or distinction) very narrow:
+        "a marginal offside decision"
+        synonyms:
+        borderline · disputable · questionable · doubtful
+        relating to water adjacent to the land's edge or coast:
+        "water lilies and marginal aquatics"
+        (chiefly of costs or benefits) relating to or resulting from small or unit changes.
+        (of taxation) relating to increases in income.
+        BRITISH
+        (of a parliamentary seat) having a small majority and therefore at risk in an election.
+        close to the limit of profitability, especially through difficulty of exploitation:
+        "marginal farmland"
+
+NOUN
+marginal (noun) · marginals (plural noun)
+
+    a plant that grows in water adjacent to the edge of land.
+
+ORIGIN
+late 16th century: from medieval Latin marginalis, from margo, margin- (see margin).
+Translate marginal to
+adjective
+
+    边际
+    边缘
+    贫瘠
+    少量
+    微不足道
+    缘
+]]
+[[
+gamble
+  gam·ble
+  [ˈɡambəl]
+  VERB
+gamble (verb) · gambles (third person present) · gambled (past tense) · gambled (past participle) · gambling (present participle)
+
+    play games of chance for money; bet:
+    "she was fond of gambling on cards and horses"
+    synonyms:
+    bet · wager · place a bet · lay a bet · stake money on something · back the horses · try one's luck on the horses · game
+        bet (a sum of money) on a game of chance:
+        "he was gambling every penny he had on the spin of a wheel"
+    take risky action in the hope of a desired result:
+    "the British could only gamble that something would turn up"
+    synonyms:
+    take a chance · take a risk · take a leap in the dark · leave things to chance · speculate · venture · buy a pig in a poke · take a flyer · act in the hope of · trust in · take a chance on · bank on
+
+NOUN
+gamble (noun) · gambles (plural noun)
+
+    an act of gambling; an enterprise undertaken or attempted with a risk of loss and a chance of profit or success.
+    synonyms:
+    bet · wager · speculation · game of chance
+
+ORIGIN
+early 18th century (in gambling noun): ultimately from game. There may be a connection with the obsolete form gameling ‘playing of games’ (late 16th century).
+Translate gamble to
+noun
+
+    甘伯
+    赌局
+    赌注
+    冒险
+    搏
+
+verb
+
+    赌博
+    赌
+    赌钱
+    孤注一掷
+]]
+[[
+flow
+[flō]
+VERB
+flow (verb) · flows (third person present) · flowed (past tense) · flowed (past participle) · flowing (present participle)
+
+    (of a fluid, gas, or electricity) move along or out steadily and continuously in a current or stream:
+    "from here the river flows north" · "ventilation channels keep the air flowing" · "a cross-current of electricity seemed to flow between them"
+    synonyms:
+    run · move · go along · course · pass · proceed · glide · slide · drift · circulate · trickle · dribble · drizzle · spill · gurgle · babble · ripple · stream · swirl · surge · sweep · gush · cascade · pour · roll · rush · whirl · well · spurt · spout · squirt · spew · jet · leak · seep · ooze · percolate · drip
+        (of the sea or a tidal river) move toward the land; rise. Compare with ebb.
+    go from one place to another in a steady stream, typically in large numbers:
+    "the firm is hoping the orders will keep flowing in"
+        proceed or be produced smoothly, continuously, and effortlessly:
+        "talk flowed freely around the table"
+        synonyms:
+        result · proceed · arise · follow · ensue · derive · stem · accrue · originate · emanate · spring · emerge · be caused by · be brought about by · be produced by · originate in
+        (of clothing or hair) hang loosely in an easy and graceful manner:
+        "her red hair flowed over her shoulders"
+        be available in copious quantities:
+        "their talk and laughter grew louder as the excellent brandy flowed"
+        (flow from)
+        result from; be caused by:
+        "there are certain advantages that may flow from that decision"
+        antonyms:
+        cause · give rise to · be independent of
+    (of a solid) undergo a permanent change of shape under stress, without melting.
+
+NOUN
+flow (noun) · flows (plural noun)
+
+    the action or fact of moving along in a steady, continuous stream:
+    "the flow of water into the pond"
+    synonyms:
+    movement · moving · locomotion · rise and fall · shifting · stirring · to and fro · toing and froing · coming and going · progress · passage · passing · transit · course · going · travel · traveling · motility · mobility
+        the rate or speed at which something flows:
+        "under the ford the river backs up, giving a deep sluggish flow"
+        the rise of a tide or a river. Compare with ebb.
+    a steady, continuous stream of something:
+    "she eased the car into the flow of traffic"
+    synonyms:
+    movement · motion · course · passage · current · flux · drift · circulation · stream · swirl · surge · sweep · gush · roll · rush · welling · spate · tide · spurt · squirt · jet · outpouring · outflow · trickle · leak · seepage · ooze · percolation · drip
+    the gradual permanent deformation of a solid under stress, without melting.
+
+ORIGIN
+Old English flōwan, of Germanic origin; related to Dutch vloeien, also to flood.
+Translate flow to
+noun
+
+    流
+    流量
+    流动
+    流程
+    流通
+    水流
+    流向
+    流体
+]]
+[[
+expectation
+ex·pec·ta·tion
+
+[ˌekspekˈtāSH(ə)n]
+NOUN
+expectation (noun) · expectations (plural noun)
+
+    a strong belief that something will happen or be the case in the future:
+    "reality had not lived up to expectations" · "there is the expectation that some individuals will do better in the program than others" · "he drilled his men in expectation of a Prussian advance"
+    synonyms:
+    supposition · assumption · belief · presupposition · presumption · conjecture · surmise · reckoning · calculation · prediction · forecast · projection · assurance · confidence · trust · anticipation · expectancy · eagerness · hope · hopefulness · excitement · suspense
+        a belief that someone will or should achieve something:
+        "students had high expectations for their future"
+        synonyms:
+        supposition · assumption · belief · presupposition · presumption · conjecture · surmise · reckoning · calculation · prediction · forecast · projection · assurance · confidence · trust
+        archaic
+        (expectations)
+        one's prospects of inheritance.
+        synonyms:
+        prospects · prospects of inheritance · hopes · outlook · lookout
+        mathematics
+        another term for expected value.
+
+Translate expectation to
+noun
+
+    期望
+    展望
+    期待
+    预期
+    期望值
+    意料
+    期盼
+]]
+[[
+prevision
+pre·vi·sion
+[ˌprēˈviZH(ə)n]
+NOUN
+literary
+prevision (noun) · previsions (plural noun) · pre-vision (noun) · pre-visions (plural noun)
+
+    a feeling or prediction about a future event:
+    "a wise prevision of what is to come" · "our powers of rational prevision"
+
+Translate prevision to
+noun
+
+    预知
+]]
+[[
+multiset 多集/多重集
+]]
+[[
+mapping
+map·ping
+[ˈmapiNG]
+NOUN
+mathematics
+linguistics
+mapping (noun) · mappings (plural noun)
+
+    an operation that associates each element of a given set (the domain) with one or more elements of a second set (the range).
+
+map
+[map]
+VERB
+mapping (present participle)
+
+    represent (an area) on a map; make a map of:
+    "inaccessible parts will be mapped from the air"
+    synonyms:
+    chart · plot · delineate · draw · depict · portray · survey
+        record in detail the spatial distribution of (something):
+        "the project to map the human genome"
+        associate (a group of elements or qualities) with an equivalent group, according to a particular formula or model:
+        "the transformational rules map deep structures into surface structures" · "this data is then mapped against a policy model"
+        (map onto)
+        be associated with or linked to (an equivalent group):
+        "it is not obvious that the subprocesses of language will map onto individual brain areas"
+        mathematics
+        associate each element of (a set) with an element of another set:
+        "the direct sum of two rings A and B may be mapped homomorphically on the summand"
+
+ORIGIN
+early 16th century: from medieval Latin mappa mundi, literally ‘sheet of the world’, from Latin mappa ‘sheet, napkin’ + mundi ‘of the world’ (genitive of mundus).
+Translate mapping to
+noun
+
+    映射
+    测绘
+    制图
+    测图
+    绘图
+
+verb
+
+    绘制
+]]
+[[
+dictionary
+dic·tion·ar·y
+[ˈdikSHəˌnerē]
+NOUN
+dictionary (noun) · dictionaries (plural noun)
+
+    a book or electronic resource that lists the words of a language (typically in alphabetical order) and gives their meaning, or gives the equivalent words in a different language, often also providing information about pronunciation, origin, and usage:
+    "I'll look up ‘love’ in the dictionary" · "the website gives access to an online dictionary" · "the dictionary definition of ‘smile’"
+    synonyms:
+    lexicon · wordbook · glossary · vocabulary list · vocabulary · word list · wordfinder
+        a reference work on a particular subject, the items of which are typically arranged in alphabetical order:
+        "a dictionary of quotations"
+        computing
+        a set of words or other text strings made for use in applications such as spelling checkers:
+        "the worm attempts to crack account passwords using a built-in dictionary"
+
+ORIGIN
+early 16th century: from medieval Latin dictionarium (manuale) or dictionarius (liber) ‘manual or book of words’, from Latin dictio (see diction).
+Translate dictionary to
+noun
+
+    辞典
+
+adjective
+
+    字典
+    词典
+    查字典
+]]
+[[
+offline
+off·line
+[ˈôfˌlīn, ˌôfˈlīn]
+ADJECTIVE
+offline (adjective) · off-line (adjective)
+
+    not controlled by or directly connected to a computer or external network.
+
+ADVERB
+(off line)
+offline (adverb) · off-line (adverb)
+
+    while not directly controlled by or connected to a computer or external network.
+        with a delay between the production of data and its processing.
+
+Translate offline to
+noun
+
+    脱机
+    离线
+    处于脱机状态
+]]
+[[
+online
+on·line
+[änˈlīn]
+ADJECTIVE
+online (adjective) · on-line (adjective)
+
+    controlled by or connected to another computer or to a network.
+        connected to the internet or World Wide Web:
+        "the ease and convenience of online shopping"
+
+ADVERB
+online (adverb) · on-line (adverb)
+
+    while so connected or under computer control.
+        with processing of data carried out simultaneously with its production.
+    in or into operation or existence:
+    "the town's new high-tech power plant is expected to go online this month" · "the company has additional production capacity coming online later this year"
+
+Translate online to
+noun
+
+    联机
+    网上
+    网络
+    上网
+
+adjective
+
+    在线
+]]
+[[
+inline 在线#？内联？内嵌？排队？
+in-line
+[ˈinˌlīn]
+ADJECTIVE
+inline (adjective)
+
+    having parts arranged in a line:
+    "a 24-valve in-line 6-cylinder engine"
+    constituting an integral part of a continuous sequence of operations or machines:
+    "a two-stream in-line fuel-oil blender"
+        constituting an integral part of a computer program:
+        "the parameters can be set up as in-line code"
+
+Translate in-line to
+
+    在线
+]]
+[[
+squeeze
+[[
+squeeze
+[skwēz]
+VERB
+squeeze (verb) · squeezes (third person present) · squeezed (past tense) · squeezed (past participle) · squeezing (present participle)
+
+    firmly press (something soft or yielding), typically with one's fingers:
+    "Kate squeezed his hand affectionately" · "I cocked the gun and squeezed the trigger" · "he squeezed with all his strength"
+    synonyms:
+    compress · press · crush · squash · pinch · nip · grasp · grip · clutch · flatten · knead · mash · pulp · wring · screw
+        extract (liquid or a soft substance) from something by compressing or twisting it firmly:
+        "the outer stalk remains once the juice has been squeezed from sugar cane" · "freshly squeezed orange juice"
+        synonyms:
+        extract · press · force · express
+    manage to get into or through a narrow or restricted space:
+    "Sarah squeezed in beside her" · "he found a hole in the hedge and squeezed his way through"
+    synonyms:
+    crowd · crush · cram · pack · jam · squash · wedge oneself · shove · push · jostle · force one's way · thrust
+        manage to force into or through a narrow or restricted space:
+        "she squeezed herself into her tightest pair of jeans"
+        synonyms:
+        force · thrust · stick · cram · ram · jam · stuff · pack · compress · wedge · press · squash · tamp · drive
+    obtain (something) from someone with difficulty:
+    "you were evidently attempting to squeeze as much money out of him as you could "
+    synonyms:
+    extort · force · extract · wrest · wring · tear from · milk
+        informal
+        pressure (someone) in order to obtain something from them:
+        "she used the opportunity to squeeze him for information"
+        synonyms:
+        pressurize · pressure · bring pressure to bear on · strong-arm · suck dry · milk · fleece · wring · exploit · impose on
+        (especially in a financial or commercial context) have a damaging or restricting effect on:
+        "the economy is being squeezed by foreign debt repayments"
+        bridge
+        force (an opponent) to discard a guarding or potentially winning card.
+
+NOUN
+squeeze (noun) · squeezes (plural noun) · squeeze play (noun) · squeeze plays (plural noun)
+
+    an act of pressing something with one's fingers:
+    "a gentle squeeze of the trigger"
+    synonyms:
+    press · pinch · nip · grasp · grip · clutch · compression
+        a hug.
+        synonyms:
+        hug · embrace · cuddle · clasp · hold
+        a state of forcing oneself or being forced into a small or restricted space:
+        "it was a tight squeeze in the tiny hall"
+        synonyms:
+        crush · jam · squash · press · huddle · tightly packed crowd · congestion
+        dated
+        a crowded social gathering.
+        a small amount of liquid extracted from something by pressing it firmly with one's fingers:
+        "a squeeze of lemon juice"
+        synonyms:
+        drop · few drops · dash · splash · dribble · trickle · spot · hint · touch · bit
+    a strong financial demand or pressure, typically a restriction on borrowing, spending, or investment in a financial crisis:
+    "industry faced higher costs and a squeeze on profits"
+        informal
+        money illegally extorted or exacted from someone:
+        "he was out to extract some squeeze from her"
+        bridge
+        a tactic that forces an opponent to discard an important card.
+    a molding or cast of an object, or an impression or copy of a design, obtained by pressing a pliable substance around or over it.
+    NORTH AMERICAN
+    informal
+    dated
+    a person's girlfriend or boyfriend:
+    "the poor guy just lost his main squeeze"
+    synonyms:
+    girlfriend · girl · partner · significant other · wife · spouse · consort · fiancée · lover · mistress · sweetheart · inamorata · querida · lady friend · lady love · young lady · lady · lady wife · leman · doxy · paramour
+    baseball
+    an act of bunting a ball in order to enable a runner on third base to start for home as soon as the ball is pitched.
+
+ORIGIN
+mid 16th century: from earlier squise, from obsolete queise, of unknown origin.
+Translate squeeze to
+noun
+
+    挤压
+    紧缩
+
+verb
+
+    挤
+    挤进去
+    挤出
+    压榨
+    榨
+    榨取
+    捏
+]]
+[[
+squeeze 的翻译
+词性	翻译	反向翻译	频率
+help_outline
+动词
+	
+挤
+	
+
+    squeeze, crowd, push, press, shove, pack
+
+	
+压榨
+	
+
+    press, squeeze, oppress and exploit
+
+	
+压缩
+	
+
+    compress, reduce, squeeze, condense, cut down, squash
+
+	
+拥挤
+	
+
+    crowd, squeeze, pack, cram, pile, gather
+
+	
+插身
+	
+
+    get involved, squeeze, edge in, take part
+
+	
+塞
+	
+
+    stopper, stuff, fill in, squeeze, stop up
+
+	
+压扁
+	
+
+    squash, squeeze
+
+	
+压碎
+	
+
+    crush, press, squash, squeeze, compress
+
+	
+拥
+	
+
+    have, own, possess, embrace, hug, squeeze
+
+	
+掐尖儿
+	
+
+    oust from office, scrounge, squeeze
+
+	
+搜索枯肠
+	
+
+    force, puzzle, rack one's brains, squeeze
+
+	
+squeeze的定义
+动词
+1
+firmly press (something soft or yielding), typically with one's fingers.
+"Kate squeezed his hand affectionately"
+同义词：
+compress press crush squash pinch nip grasp grip clutch flatten knead mash pulp wring screw hug embrace cuddle clasp crush clutch press enfold envelop enclasp wrap encircle fold take in one's arms hold tight hold close cling to archaic：strain
+2
+manage to get into or through a narrow or restricted space.
+"Sarah squeezed in beside her"
+同义词：
+crowd crush cram pack jam squash wedge oneself shove push jostle force one's way thrust
+3
+obtain (something) from someone with difficulty.
+同义词：
+extort force extract wrest wring tear from milk informal：bleed someone of something
+名词
+1
+an act of pressing something with one's fingers.
+"a gentle squeeze of the trigger"
+同义词：
+press pinch nip grasp grip clutch compression
+2
+a strong financial demand or pressure, typically a restriction on borrowing, spending, or investment in a financial crisis.
+"industry faced higher costs and a squeeze on profits"
+3
+a molding or cast of an object, or an impression or copy of a design, obtained by pressing a pliable substance around or over it.
+4
+Baseball
+an act of bunting a ball in order to enable a runner on third base to start for home as soon as the ball is pitched.
+]]
+]]
+[[
+deploy
+de·ploy
+[dəˈploi]
+VERB
+deploy (verb) · deploys (third person present) · deployed (past tense) · deployed (past participle) · deploying (present participle)
+
+    move (troops or equipment) into position for military action:
+    "forces were deployed at strategic locations"
+    synonyms:
+    position · station · post · place · install · locate · situate · site · establish · base · garrison · distribute · arrange · range · dispose · redistribute · spread out · extend · put into position · posit
+    antonyms:
+    concentrate
+        (of troops) move into position for military action:
+        "the air force began to deploy forward"
+        bring into effective action; utilize:
+        "they are not always able to deploy this skill"
+        synonyms:
+        use · utilize · employ · make use of · avail oneself of · turn to account · take advantage of · exploit · bring into service · bring into play · bring into action · have recourse to · call on · turn to · resort to
+
+ORIGIN
+late 18th century: from French déployer, from Latin displicare and late Latin deplicare ‘unfold or explain’, from dis-, de- ‘un-’ + plicare ‘to fold’. Compare with display.
+Translate deploy to
+verb
+
+    部署
+    调配
+]]
+[[
+deployment
+de·ployment
+[dəˈploimənt]
+NOUN
+deployment (noun) · deployments (plural noun)
+
+    the movement of troops or equipment to a place or position for military action:
+    "the authorities announced deployment of extra security forces in towns and cities to prevent violence" · "they agreed to round up their troops for immediate deployment" · "a six-month deployment in the Gulf with the U.S. Navy"
+    the action of bringing resources into effective action:
+    "the rapid deployment of high-speed cable internet services to consumers" · "a world leader in the development and deployment of wave and tidal power"
+
+Translate deployment to
+noun
+
+    部署
+    调配
+]]
+[[[
+view others/数学/编程/术语/URI-vs-URL.txt
+URI vs URL vs IRI vs UUID/GUID
+URI = URL | URN | URC | data-URI | file-URI | ...
+  URL: 资源地址 + 访问协议 (所指的资源 可变)
+  URN: 资源标识(锚定 同一资源)
+    urn:
+  data-URI: 内联/内嵌 资源字面值
+    data:
+  file-URI: 文件系统路径
+    file:
+
+UUID === GUID
+IRI (International Resource Identifier) is a revision to the definition of URI that allows us to use international characters in URIs.
+]]]
+[[[
+non-printing characters
+Non-Printable Characters
+Control character
+view others/数学/编程/术语/non-printing characters.txt
+
+]]]
+[[
+view others/数学/编程/术语/self-contained vs standalone.txt
+]]
+[[
+]]
+]]]

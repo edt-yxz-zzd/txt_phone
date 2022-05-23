@@ -1,0 +1,624 @@
+
+e others/数学/编程/术语/URI-vs-URL.txt
+URN: which/who
+URL: how+where
+data URI: what
+IRI: ?字符集?unicode instead of ascii?
+UUID/GUID: ?随机选取一个大整数?
+
+[[[
+URI vs URL vs IRI vs UUID/GUID
+URI = URL | URN | URC | data-URI | file-URI | ...
+  URL: 资源地址 + 访问协议 (所指的资源 可变)
+  URN: 资源标识(锚定 同一资源)
+    urn:
+  data-URI: 内联/内嵌 资源字面值
+    data:
+  file-URI: 文件系统路径
+    file:
+
+UUID === GUID
+IRI (International Resource Identifier) is a revision to the definition of URI that allows us to use international characters in URIs.
+[[
+Data URI scheme
+The data URI scheme is a uniform resource identifier scheme that provides a way to include data in-line in Web pages as if they were external resources. It is a form of file literal or here document. This technique allows normally separate elements such as images and style sheets to be fetched in a single Hypertext Transfer Protocol request, which may be more efficient than multiple HTTP requests, and used by several browser extensions to package images as well as other multimedia contents in a single HTML file for page saving. As of 2022, data URIs are fully supported by most major browsers, and partially supported in Internet Explorer.
+[[
+data:[<mediatype>][;base64],<data>
+
+https://developer.mozilla.org/en-US/docs/web/http/basics_of_http/data_urls
+
+Data URLs
+
+In this article
+
+    Syntax
+    Encoding data into base64 format
+    Common problems
+    Specifications
+    Browser compatibility
+    See also
+
+Related Topics
+
+    HTTP
+    Guides:
+    Resources and URIs
+    HTTP guide
+    HTTP security
+    HTTP access control (CORS)
+    HTTP authentication
+    HTTP caching
+    HTTP compression
+    HTTP conditional requests
+    HTTP content negotiation
+    HTTP cookies
+    HTTP range requests
+    HTTP redirects
+    HTTP specifications
+    Feature policy
+    References:
+    HTTP headers
+    HTTP request methods
+    HTTP response status codes
+    CSP directives
+    CORS errors
+    Feature-Policy directives
+
+Data URLs
+
+Data URLs, URLs prefixed with the data: scheme, allow content creators to embed small files inline in documents. They were formerly known as "data URIs" until that name was retired by the WHATWG.
+
+Note: Data URLs are treated as unique opaque origins by modern browsers, rather than inheriting the origin of the settings object responsible for the navigation.
+Syntax
+
+Data URLs are composed of four parts: a prefix (data:), a MIME type indicating the type of data, an optional base64 token if non-textual, and the data itself:
+
+data:[<mediatype>][;base64],<data>
+
+The mediatype is a MIME type string, such as 'image/jpeg' for a JPEG image file. If omitted, defaults to text/plain;charset=US-ASCII
+
+If the data contains characters defined in RFC 3986 as reserved characters, or contains space characters, newline characters, or other non-printing characters, those characters must be percent-encoded (aka "URL-encoded").
+
+If the data is textual, you can embed the text (using the appropriate entities or escapes based on the enclosing document's type). Otherwise, you can specify base64 to embed base64-encoded binary data. You can find more info on MIME types here and here.
+
+A few examples:
+
+data:,Hello%2C%20World%21
+
+    The text/plain data Hello, World!. Note how the comma is percent-encoded as %2C, and the space character as %20.
+data:text/plain;base64,SGVsbG8sIFdvcmxkIQ==
+
+    base64-encoded version of the above
+data:text/html,%3Ch1%3EHello%2C%20World%21%3C%2Fh1%3E
+
+    An HTML document with <h1>Hello, World!</h1>
+data:text/html,<script>alert('hi');</script>
+
+    An HTML document that executes a JavaScript alert. Note that the closing script tag is required.
+
+Encoding data into base64 format
+
+Base64 is a group of binary-to-text encoding schemes that represent binary data in an ASCII string format by translating it into a radix-64 representation. By consisting only of ASCII characters, base64 strings are generally url-safe, and that's why they can be used to encode data in Data URLs.
+Encoding in Javascript
+
+The Web APIs have native methods to encode or decode to base64: Base64 encoding and decoding.
+Encoding on a Unix system
+
+Base64 encoding of a file or string on Linux and macOS systems can be achieved using the command-line base64 (or, as an alternative, the uuencode utility with -m argument).
+
+echo -n hello|base64
+# outputs to console: aGVsbG8=
+
+echo -n hello>a.txt
+base64 a.txt
+# outputs to console: aGVsbG8=
+
+base64 a.txt>b.txt
+# outputs to file b.txt: aGVsbG8=
+
+Encoding on Microsoft Windows
+
+On Windows, Convert.ToBase64String from PowerShell can be used to perform the Base64 encoding:
+
+[convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes("hello"))
+# outputs to console: aGVsbG8=
+
+Alternatively, a GNU/Linux shell (such as WSL) provides the utility base64:
+
+bash$ echo -n hello | base64
+# outputs to console: aGVsbG8=
+
+Common problems
+
+This section describes problems that commonly occur when creating and using data URLs.
+
+data:text/html,lots of text...<p><a name%3D"bottom">bottom</a>?arg=val
+
+This represents an HTML resource whose contents are:
+
+lots of text...<p><a name="bottom">bottom</a>?arg=val
+
+Syntax
+
+    The format for data URLs is very simple, but it's easy to forget to put a comma before the "data" segment, or to incorrectly encode the data into base64 format.
+Formatting in HTML
+
+    A data URL provides a file within a file, which can potentially be very wide relative to the width of the enclosing document. As a URL, the data should be formattable with whitespace (linefeed, tab, or spaces), but there are practical issues that arise when using base64 encoding.
+Length limitations
+
+    Browsers are not required to support any particular maximum length of data. For example, the Opera 11 browser limited URLs to 65535 characters long which limits data URLs to 65529 characters (65529 characters being the length of the encoded data, not the source, if you use the plain data:, without specifying a MIME type). Firefox version 97 and newer supports data URLs of up to 32MB (before 97 the limit was close to 256MB). Chromium objects to URLs over 512MB, and Webkit (Safari) to URLs over 2048MB.
+Lack of error handling
+
+    Invalid parameters in media, or typos when specifying 'base64', are ignored, but no error is provided.
+No support for query strings, etc.
+
+    The data portion of a data URL is opaque, so an attempt to use a query string (page-specific parameters, with the syntax <url>?parameter-data) with a data URL will just include the query string in the data the URL represents.
+Security issues
+
+    A number of security issues (for example, phishing) have been associated with data URLs, and navigating to them in the browser's top level. To mitigate such issues, top-level navigation to data: URLs is blocked in all modern browsers. See this blog post from the Mozilla Security Team for more details.
+
+Specifications
+The "data" URL scheme
+# section-2
+Browser compatibility
+Report problems with this compatibility data on GitHub
+data URL scheme
+	
+CSS files
+	
+HTML files
+	
+JavaScript files
+	
+Top-level navigation blocked to data:// URIs
+	
+Legend
+
+Full support
+    Full support
+No support
+    No support
+    See implementation notes.
+
+See also
+
+    Base64 encoding and decoding
+    Percent encoding
+    atob()
+    btoa()
+    CSS url()
+    URI
+
+]]
+[[
+https://base64.guru/developers/data-uri
+
+Base64.Guru
+A virtual teacher who reveals to you the great secrets of Base64
+Data URI
+
+Data URI is a URI scheme that allows to embed any kind of data into HTML pages (that is, instead of specifying the URL of the file, you can insert the contents of the file). For example, thanks to it, you can embed images into an HTML page as if they are loaded from an external resource. Nevertheless, since the images are stored “internally”, the browser does not need to make any additional HTTP requests to load them.
+
+The data URI scheme was defined by RFC 2397 in August 1998. According to that document, it accepts values in both percent-encoded and Base64 encoded. However, to embed binary data into text document you should encode it to Base64. Therefore, I provide here only the following syntax:
+
+data:<mime>;base64,<b64>
+
+where:
+
+    <mime> is the media type of the original data
+    <b64> is the result of Base64 encoded data
+
+For example, using the Base64 image encoder, a one-pixel red dot GIF image becomes:
+
+data:image/gif;base64,R0lGODdhAQABAPAAAP8AAAAAACwAAAAAAQABAAACAkQBADs
+
+Next, we can use the string above as src of the <img> tag:
+
+<img src="data:image/gif;base64,R0lGODdhAQABAPAAAP8AAAAAACwAAAAAAQABAAACAkQBADs" />
+
+Or as value of the background-image CSS property:
+
+background-image:url("data:image/gif;base64,R0lGODdhAQABAPAAAP8AAAAAACwAAAAAAQABAAACAkQBADs")
+
+More information about examples above can be found on the following pages: CSS and HTML. Furthermore, you can use the data URI string as a regular URL: just paste it into the address bar of your browser and press Enter — as a result you’ll see a one-pixel red dot image (well, it is very small, so watch attentively).
+What are the pros and cons of using Base64 encoded data URIs?
+
+Since data URI has its advantages and disadvantages, as well as gray magic, it can be harmful if not used wisely. So read carefully what you get by using Base64 encoded data URIs on HTML pages.
+
+    pros:
+        Speeds up page loading, because the browser will not be limited by the maximum number of concurrent HTTP requests.
+        Reduces the server load, since the browser makes only one HTTP request. As result, the server can simultaneously serve more clients.
+        Provides a simple hotlinking protection since no one can embed images onto their pages directly from your server.
+        Makes pages independent of external files, allowing you to easily share them even offline.
+        Improves performance (preliminary tests showed that the browser requires less CPU).
+    cons:
+        The size of the Base64 encoded data grows by 33%.
+        Even on minimal page changes, the browser must re-cache and reload all images.
+        Difficult image editing, because you first need to decode the Base64 string.
+        It is more difficult to debug, especially that Base64 strings are very long.
+        Ignores user settings who have disabled images to save Internet bandwidth usage.
+        It always takes up space even if images are not used on the current page.
+        Unlike images, stylesheets block the webpage rendering.
+
+When to use data URI scheme?
+
+You can practically use data URIs in any project, but this does not mean that you need to do this. Of course, it all depends on what you need, but the following examples show when you are welcome to embed binary files via data URI.
+
+    Binary file is very small (for example, a 1x1 image).
+    Image is used on all pages (for example, as background image).
+    You develop a single-page application designed to run offline.
+    Files containing Base64 encoded data are rarely updated.
+    The necessary files are encoded when deployed in a production environment.
+
+Who use data URIs?
+
+In order to assess the popularity of a technology, you need to analyze what others are doing (especially the “big guys”). That is why I analyzed the first 20 websites according to the Alexa Top 500 and I specified the list of used media types for each website that embeds data via data URIs. Please note, that since I analyzed only home pages with a parser that doesn’t support JavaScript, I may have missed some websites or media types. In any case, at least 20 of the 20 largest sites use data URIs, so obviously it is not a bad idea.
+
+    google.com (image/gif, image/jpg, image/png)
+    youtube.com (text/javascript, image/gif, image/png, application/x-mpegurl, image/svg+xml)
+    facebook.com (text/css, application/x-font-woff, font/opentype)
+    baidu.com (image/png, image/jpeg, image/gif, image/svg+xml)
+    wikipedia.org (image/svg+xml, image/png)
+    qq.com (image/png, application/x-silverlight, text/html, text/plain, image/webp)
+    taobao.com (image/png, image/gif, image/svg+xml, image/webp)
+    yahoo.com (image/png, image/svg+xml, image/gif)
+    tmall.com (image/gif, image/jpeg, image/png, image/webp)
+    amazon.com (image/gif, image/png, image/svg+xml)
+    google.co.in (image/gif, image/jpg, image/png)
+    twitter.com (image/gif, image/png)
+    sohu.com (image/png, application/x-font-ttf, application/font-woff, image/svg+xml, image/gif, application/json, image/jpeg, image/webp)
+    live.com (application/json, image/gif, image/png, application/font-woff)
+    jd.com (image/png, image/webp, application/json)
+    instagram.com (image/png)
+    weibo.com (application/font-woff, image/svg+xml)
+    sina.com.cn (image/webp)
+    vk.com (image/svg+xml, font/woff, audio/wav, text/css)
+    reddit.com (image/png)
+
+Which browsers support data URI scheme?
+
+According to Caniuse.com, by and large the URI data scheme is supported by 96% of users from all over the world. For example, Base64 encoded images embedded in CSS via data URI scheme are supported by the following browsers:
+
+    Chrome 4+
+    Edge 12+
+    Firefox 2+
+    Internet Explorer 8+
+    Opera 10+
+    Safari 3.1+
+
+How to use data URI correctly and is it worth it at all?
+
+You should carefully weigh the advantages and disadvantages of the data URI scheme and, if necessary, consult with other developers who have experience with it. Remember that there is no universal advice and it all depends on the specific project. If you are not sure, perhaps it is better not to use it. If you bother that the size will become larger — use it only for files with a size less than 500 bytes. In addition, I have prepared additional reading material for you that can help you make the right decision:
+
+    Gzip is the best friend of the data URI
+    CSS Sprites and data URI are not enemies
+
+Comments (5)
+
+I hope you enjoy this discussion. In any case, I ask you to join it.
+
+    DavidAArteaga, 27 january 2020 at 01:43 #
+    Very informative. Thank you. There is a fine line between privacy and being SHH'd when you didn't say anything?? but there's an old saying", secrets don't make friends".
+    reply
+    Kaipa, 9 july 2020 at 03:58 #
+    also when i try to play base64 string of 50MB audio, it playing only first 10 minutes only. May be that is also a limitation, or might be showing audio length as 10:00 always.
+    reply
+    JerryChin, 10 september 2020 at 07:32 #
+    Super helpful! This schema makes uploading and downloading small image files super easy, I dont't have to setup a dedicated file server for images.
+    reply
+    TAISIN, 1 september 2021 at 13:24 #
+    What is this bro
+
+    const-string v20, "android.intent.action.VIEW"
+
+        const-string v21, 
+
+    "V1ZWb1UwMUhUa2xVVkZwTlpWUnJNVmxxVGxkTlIxSllVMjE0VFdKVk5USlpiRTAxWVd0M2QxSnNUbEpXVlhCVlZUQldSMUpHVFhkV2JFNVdUVlp3UzFaVlJUbFFVVDA5"
+    reply
+    Paull, 20 january 2022 at 15:44 #
+    Good afternoon.
+    I have a digitally signed PDF document, I convert it to base64 working ok, but when I use the decode the PDF image does not appear.
+    What can it be?
+
+    I'm using PHP
+    reply
+
+]]
+]]
+[[
+file URI scheme
+The File URI Scheme is a URI scheme defined in RFC 8089, typically used to retrieve files from within one's own computer. Previously the file URI scheme was specified in RFC 1630 and RFC 1738. The Internet Engineering Task Force published RFC 8089, updating the latter RFC, with "a syntax based on the generic syntax of RFC 3986 that is compatible with most existing usages."
+[[
+https://tools.ietf.org/id/draft-kerwin-file-scheme-07.html
+
+
+2. Scheme Definition
+
+The 'file' URI scheme is used to identify and retrieve files accessible on a particular host computer, where a "file" is a named resource which can be accessed through the computer's filesystem interface. These file names are interpreted from the perspective of the user of a reference, rather than in relation to a globally-defined naming authority, so care ought to be taken when distributing file URIs to ensure that such references are actually intended to be interpreted in relation to the end user's filesystem interface.
+
+This scheme, unlike most other URI schemes, does not identify a resource that is universally accessible over the Internet.
+
+The mechanism for retrieving a representation of a dereferenced file URI is through the computer's filesystem interface; for example using the POSIX open, read and close functions [POSIX].
+
+Also note that file and ftp URIs are not the same, even when the target of the ftp URI is the local host.
+2.1. Components
+
+file:///usr/local/bin/
+
+The 'file' URI scheme conforms with the generic structure defined in [RFC3986], and can be described in terms of its components:
+
+Scheme
+    The literal value file
+Authority
+    The authority component of a file URI describes the machine or system on which the file is accessible. If the authority refers to a remote system, from the point of view of the user of the URI, the implication is that the file system cannot be accessed, or perhaps that some other mechanism must be used to access the file. It does not imply that the file ought to be accessible over a network connection. No retrieval mechanism for files stored on a remote machine is defined by this specification.
+
+    The authority component is optional in a file URI.
+
+    If present it is either: one of the special values localhost or the empty string (""); or the host name of the system on which the file is accessible.
+
+    If the authority component is omitted, or has either of the special values localhost or the empty string (""), it is interpreted as "the machine from which the URI is being interpreted". 
+Path
+    The path component of a file URI describes the hierarchical directory path to the file, using the slash ("/") character to separate directories. Implementations Section 3.1)
+
+    Some systems allow file URIs to refer to directories. In this case, the path usually (but not always) includes a terminating slash character, such as in: file URI refers to a directory, but the absence of a slash does not necessarily indicate that it refers to a filesystem object other than a directory. Implementations ought to use other mechanisms to detect directories, if and when such detection is required. 
+Query
+    The query component of a file URI contains non-hierarchical data that, along with data in the path component, serves to identify a file. For example, in a versioning file system, the query component might be used to refer to a specific version of a file.
+
+    Few implementations are known to use or support query components in file URIs. 
+Fragment
+    The semantics of a fragment component are undefined by this specification. A protocol that employs file URIs 
+
+Previous definitions of the 'file' URI scheme required two slashes between the scheme and path, so implementations that wish to remain interoperable with older implementations ought to include an authority component in any file URIs they generate.
+2.2. Syntax
+
+The file URI syntax is defined here in Augmented Backus-Naur Form (ABNF) [RFC5234], including the core ABNF syntax rule 'ALPHA' defined by that specification, and borrowing the 'host', 'path-absolute' and 'segment' rules from [RFC3986] (as updated by [RFC6874]).
+
+fileURI       = "file" ":" ( auth-file / local-file )
+
+auth-file     = "//" ( host-file / nohost-file )
+
+host-file     = hostpart path-absolute
+                               ;   file://<host>/<path>
+                               ;   file://localhost/<path>
+
+nohost-file   = path-abs       ; begins with "/"
+              / path-abs-win   ; begins with drive-letter
+                               ;   file:///<path>
+                               ;   file:////<bad-UNC-path>
+                               ;   file://c:/<path> *
+
+local-file    = path-absolute  ;   file:/<path>
+              / path-abs-win   ;   file:c:/<path>
+
+hostpart      = "localhost" / host
+
+path-abs      = 1*( "/" segment )
+
+path-abs-win  = drive-letter path-absolute
+drive-letter  = ALPHA [ drive-marker ]
+drive-marker  = ":" / "|"
+
+* The 'no-host-file' rule allows for dubious URIs that encode a Windows drive letter as the authority component. See Section 3.3 of RFC XXXX. [Note to RFC Editor: please replace XXXX with the number issued to this document.]
+
+Systems exhibit different levels of case-sensitivity. Implementations file URIs to and from the local system's representation of file paths, and any systems or devices that transport file URIs file URIs they transport.
+3. Implementation Notes
+3.1. Hierarchical Structure
+
+Most implementations of the 'file' URI scheme do a reasonable job of mapping the hierarchical part of a directory structure into the slash ("/") delimited hierarchy of the URI syntax, independent of the native platform's delimiter.
+
+For example, on Microsoft Windows platforms, it is typical that the file system presents backslash ("\") as the file delimeter for file names, yet the URI's forward slash ("/") can be used in file URIs interpreted on those platforms. Similarly, on (some) Macintosh OS versions, at least in some contexts, the colon (":") is used as the delimiter in the native presentation of file path names. Unix systems natively use the same forward slash ("/") delimiter for hierarchy, so there is a closer mapping between file URI paths and native path names.
+
+In accordance with Section 3.3 of [RFC3986], the path segments . and .., also known as dot-segments, are only interpreted within the URI path hierarchy and are removed as part of the resolution process ([RFC3986], Section 5.2). Implementations operating on or interacting with systems that allow dot-segments in their native path representation may be required to escape those segments using some other means when translating to and from file URIs.
+3.2. Absolute and relative file paths
+
+The conventions for specifying absolute file paths differ from system to system. For example, in a UNIX-based system an absolute file path begins with a slash ("/") character, denoting the root of the filesystem, whereas on a Microsoft DOS- or Windows-based system an absolute file path begins with a drive letter (e.g. "c:\").
+
+file:alpha/bravo/charlie
+
+As relative references are resolved into their respective (absolute) target URIs according to Section 5 of [RFC3986], this document does not describe that resolution. However, a fully resolved URI may contain a non-absolute path. For example, using a generic parser, the URI: charlie, in directory bravo, in directory alpha, on the machine on which the URI is being interpreted (i.e. localhost); however there is no indication of the location of the directory alpha on that machine. By convention an absolute file path would begin with a slash ("/") character on a Unix-based system, or a drive letter (e.g. "c:\") on a Microsoft Windows system, etc.
+
+Resolution of relative file paths is undefined by this specification. A protocol that employs file URIs
+3.3. Drive Letters
+
+file:///c:/TMP/test.txt
+file:///c|/TMP/test.txt
+file:///c/TMP/test.txt
+
+c:\TMP\test.txt
+
+Historically drive letters have been mapped into the top of a file URI in various ways. On systems running some versions of Microsoft Windows the drive letter may be specified with a colon (":") character, however sometimes the colon is replaced with a pipe ("|") character, and in some implementations the colon is omitted entirely. The three representations drive-letter rule in Section 2.2). For example, the following URIs:
+
+Implementations
+
+Note that some systems running some versions of Microsoft Windows are known to omit the slash before the drive letter, effectively replacing the authority component with the drive specification; for example, file://c:/TMP/test.txt. In line with Postel's robustness principle ("an implementation must be conservative in its sending behavior, and liberal in its receiving behavior" [RFC791]) implementations that are likely to encounter such a URI
+3.4. UNC File Paths
+
+UNC        = "\\" hostname "\" sharename *( "\" objectname )
+hostname   = <NetBIOS name, FQDN, or IP address of a server>
+sharename  = <name of a share or resource to be accessed>
+objectname = <the name of an object>
+          
+
+The Microsoft Windows Universal Naming Convention (UNC) [MS-DTYP] defines a convention for specifying the location of resources such as shared files or devices, for example Windows shares accessed via the SMB/CIFS protocol [MS-SMB2]. The general structure of a UNC file path, given in Augmented Backus-Naur Form (ABNF) [RFC5234], is:
+
+Note that this syntax description is non-normative.
+
+\\server.example.com\Share\path\to\file.doc
+
+file://server.example.com/Share/path/to/file.doc
+       \________________/\_____________________/
+            hostname      sharename+objectnames
+
+The canonical representation of a UNC file path as a file URI copies the UNC hostname into the URI host field, and the UNC sharename and objectnames, concatenated with forward slash ("/") characters, into the path. For example, the following UNC path: file URI canonically as:
+
+file:////server.example.com/Share/path/to/file.doc
+       \_________________________________________/
+                  translated UNC path
+
+file://///server.example.com/Share/path/to/file.doc
+        \_________________________________________/
+                  translated UNC path
+
+Historically some implementations have translated UNC file paths entirely into the path segment of a file URI, including both leading slashes, and the Firefox web browser even prefixes the UNC file path with another slash. For example, the UNC path given above might be translated as:
+
+The 'file' URI scheme is unusual in that it does not specify an Internet protocol or access method for shared files; as such, its utility in network protocols between hosts is limited. Examples of file server protocols that do define such access methods include SMB/CIFS [MS-SMB2], NFS [RFC3530], and NCP [NOVELL].
+3.5. Namespaces
+
+The Microsoft Windows API defines Win32 Namespaces [Win32-Namespaces] for interacting with files and devices using Windows API functions. These namespaced paths are prefixed by \\?\ for Win32 File Namespaces and \\.\ for Win32 Device Namespaces. There is also a special case for UNC file paths [MS-DTYP] in Win32 File Namespaces, referred to as "Long UNC", using the prefix \\?\UNC\.
+
+This specification does not define a mechanism for translating namespaced file paths into file URIs.
+4. Encoding and Character Set Considerations
+
+As specified in [RFC3986], the 'file' URI scheme allows any character from the Universal Character Set (UCS) [ISO10646] encoded as UTF-8 [RFC3629] and then percent-encoded in valid ASCII [RFC20].
+
+If the local file system uses a known non-Unicode character encoding, the file path [UTR15]).
+
+Before applying any percent-encoding, an application MUST ensure the following about the string that is used as input to the URI-construction process:
+
+    The host, if any, consists only of Unicode code points that conform to the rules specified in [RFC5892].
+    Internationalized domain name (IDN) labels are encoded as A-labels [RFC5890].
+
+
+]]
+]]
+[[
+https://www.computerhope.com/jargon/u/uuid.htm
+
+UUID
+Updated: 11/16/2019 by Computer Hope
+
+Alternatively referred to as a GUID (globally unique identifier), UUID is short for universally unique identifier. It is a 128-bit unique identification value. UUIDs are used in the Apollo Network Computing System, OSF (Open Software Foundation), DCE (Distributed Computing Environment), and Microsoft Windows, and is fully defined in RFC 4122. Below is an example of a UUID.
+
+bc37d0c0-fcf2-11d9-8cd6-0800200c9a66
+
+In the example above, the timestamp of Monday, July 25, 2005 3:59:05 A.M. MDT is encoded into the UUID.
+]]
+[[
+https://www.computerhope.com/jargon/u/urc.htm
+
+URC
+Updated: 10/17/2017 by Computer Hope
+uniform resource characteristics
+  === Uniform Resource Citation
+
+Short for Uniform Resource Characteristics, URC is metadata about a resource that can be understood and parsed by a human and a machine. For example, a URC could be used as a step in resolving a URN address and determining the best location to retrieve the resource.
+
+URCs were mentioned in RFC 1737. They were purposed and discussed throughout the 1990s, but never became widely adopted or standardized.
+]]
+[[
+https://stackoverflow.com/questions/4913343/what-is-the-difference-between-uri-url-and-urn
+URL -- Uniform Resource Locator
+
+Contains information about how to fetch a resource from its location. For example:
+
+    http://example.com/mypage.html
+    ftp://example.com/download.zip
+    mailto:user@example.com
+    file:///home/user/file.txt
+    http://example.com/resource?foo=bar#fragment
+    /other/link.html (A relative URL, only useful in the context of another URL)
+
+URLs always start with a protocol (http) and usually contain information such as the network host name (example.com) and often a document path (/foo/mypage.html). URLs may have query parameters and fragment identifiers.
+URN -- Uniform Resource Name
+
+Identifies a resource by name. It always starts with the prefix urn: For example:
+
+    urn:isbn:0451450523 to identify a book by its ISBN number.
+    urn:uuid:6e8bc430-9c3a-11d9-9669-0800200c9a66 a globally unique identifier
+    urn:publishing:book - An XML namespace that identifies the document as a type of book.
+
+URNs can identify ideas and concepts. They are not restricted to identifying documents. When a URN does represent a document, it can be translated into a URL by a "resolver". The document can then be downloaded from the URL.
+URI -- Uniform Resource Identifier
+
+URIs encompasses both URLs, URNs, and other ways to indicate a resource.
+
+An example of a URI that is neither a URL nor a URN would be a data URI such as data:,Hello%20World. It is not a URL or URN because the URI contains the data. It neither names it, nor tells you how to locate it over the network.
+
+There are also uniform resource citations (URCs) that point to meta data about a document rather than to the document itself. An example of a URC would be an indicator for viewing the source code of a web page: view-source:http://example.com/. A URC is another type of URI that is neither URL nor URN.
+Frequently Asked Questions
+I've heard that I shouldn't say URL anymore, why?
+
+The w3 spec for HTML says that the href of an anchor tag can contain a URI, not just a URL. You should be able to put in a URN such as <a href="urn:isbn:0451450523">. Your browser would then resolve that URN to a URL and download the book for you.
+Do any browsers actually know how to fetch documents by URN?
+
+Not that I know of, but modern web browser do implement the data URI scheme.
+Can a URI be both a URL and a URN?
+
+Good question. I've seen lots of places on the web that state this is true. I haven't been able to find any examples of something that is both a URL and a URN. I don't see how it is possible because a URN starts with urn: which is not a valid network protocol.
+Does the difference between URL and URI have anything to do with whether it is relative or absolute?
+
+No. Both relative and absolute URLs are URLs (and URIs.)
+Does the difference between URL and URI have anything to do with whether it has query parameters?
+
+No. Both URLs with and without query parameters are URLs (and URIs.)
+Does the difference between URL and URI have anything to do with whether it has a fragment identifier?
+
+No. Both URLs with and without fragment identifiers are URLs (and URIs.)
+Is a tel: URI a URL or a URN?
+
+For example tel:1-800-555-5555. It doesn't start with urn: and it has a protocol for reaching a resource over a network. It must be a URL.
+But doesn't the w3C now say that URLs and URIs are the same thing?
+
+Yes. The W3C realized that there is a ton of confusion about this. They issued a URI clarification document that says that it is now OK to use URL and URI interchangeably. It is no longer useful to strictly segment URIs into different types such as URL, URN, and URC.
+]]
+
+
+
+[[
+https://blog.hubspot.com/website/uri-vs-url
+URI vs. URL: What’s the Difference?
+
+Written by Anna Fitzgerald
+Website owner learning difference between uri and url
+
+There are so many resources available on the internet today, from web pages to images to weather reports and electronic documents. It’s important to be able to identify and retrieve these different resources.
+
+To do so, you’ll need to know what a URI and URL are and how they’re different. Let’s define each of the terms below, then explain their key differences.
+
+What is a URI?
+
+A URI — short for “Uniform Resource Identifier” — is a sequence of characters that distinguishes one resource from another.
+
+For example, foo://example.com:8042/over/there?name=ferret#nose is a URI containing a scheme name, authority, path, query and fragment. A URI does not need to contain all these components. All it needs is a scheme name and a file path, which can be empty.
+
+Here’s another example of a URI: telnet://192.0.2.16:80/. In this example, “telnet” is the scheme name and the numbers after the double slash make up the authority. The path is empty, which is why no characters come after the slash
+Types of URI
+
+There are two types of URIs: URNs and URLs.
+
+A Uniform Resource Name (URN) is a persistent and location-independent identifier that follows the “urn” scheme. In this context, “persistent” means that the URN persists in identifying the same resource over time. Here’s an example of a URN provided by the RFC 3986: urn:oasis:names:specification:docbook:dtd:xml:4.1.2
+
+A URL, on the other hand, is a location-dependent identifier that is not necessarily persistent. Meaning, URLs are not required to identify the same resource over time. URLs also do not follow the “urn” scheme. Now that we have a brief understanding of URIs, URLs, and URNs, let’s take a closer look at what URLs are below.
+What is a URL?
+
+A URL — short for “Uniform Resource Locator” — is a specific type of identifier that not only identifies the resource but tells you how to access it or where it’s located. For example, a URL might contain ftp:// or https://. This tells you that the resource can be located and accessed via File Transfer Protocol (FTP) or Hypertext Transfer Protocol Secure (HTTPS).
+
+Here are some examples of URLs:
+
+    ftp://ds.internic.net/internet-drafts/draft-ietf-uri-irl-fun-req-02.txt
+    https://blog.hubspot.com/website/application-programming-interface-api
+    http://www.ietf.org/rfc/rfc2396.txt
+    https://offers.hubspot.com/how-to-run-seo-audit?hubs_post-cta=anchor&hsCtaTracking=f55ac8df-26f8-41f5-b63a-fa80e97d2fec%7Cfe8e963d-d682-4a22-b84e-52f7d60e4786
+
+You’ll notice that these look similar to the URI examples mentioned above. That’s because they contain many of the same components, including path and query.
+
+However, a URL contains unique components, such as protocol and domain, as well. In the last URL example, “https://” is the protocol. “Offers” is the subdomain, and “hubspot.com” the domain name. “How-to-run-seo-audit” is the path, and the question mark and everything after makes up the query.  
+
+Now let’s take a closer look at the difference between a URI and a URL.
+What is the difference between URIs and URLs?
+
+The key difference between URIs and URLs is that URIs are identifiers, whereas URLs are locators. In other words, a URI simply identifies the resource. It does not describe or imply how to locate the resource. A URL does.
+
+URLs are therefore a specific subset of URIs. Meaning, all URLs are URIs, but not all URIs are URLs.
+
+The most common analogy used to understand the difference between URIs and URLs is comparing a person’s name vs. their address. A person’s name is like a URI because it identifies the person without providing any information on how to locate them. An address, however, identifies the person as resident of that address and provides their physical location. That’s why it’s like a URL.
+
+The other major difference is that URIs can be used to identify and differentiate HTML, XML, and other files from each other. URLs, on the other hand, can only be used to identify and locate web pages.
+Identifying and Locating Resources on the Web
+
+With millions of resources available on the web, it's important to understand the proper way of identifying and locating individual resources. While URIs are used to identify resources with either a name or location, URLs are a subset of URIs that identify resources by how you access them. 
+
+Originally published Jan 6, 2021 7:00:00 AM, updated January 06 2021
+
+]]
+]]]
