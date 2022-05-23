@@ -1,0 +1,85 @@
+e others/数学/编程/python/CPython-listobj-impl.txt
+  view ../../python3_src/seed/types/ops/IEmplaceStackOps.py
+
+[[[
+CPython source code download
+  https://www.python.org/downloads/source/
+    Python 3.9.13 - May 17, 2022
+    Python3_9_13-20220517
+    https://www.python.org/ftp/python/3.9.13/Python-3.9.13.tar.xz
+  ===
+  view /mnt/m_external_sd/000edt/0my_files/zip/py/Python3_9_13-20220517/Python-3.9.13.tar.xz
+  view /mnt/m_external_sd/000edt/0my_files/unzip/py/Python3_9_13-20220517/Python-3.9.13/
+  ===
+  !du -h -s /mnt/m_external_sd/000edt/0my_files/zip/py/Python3_9_13-20220517/Python-3.9.13.tar.xz
+    19M
+  !du -h -s /mnt/m_external_sd/000edt/0my_files/unzip/py/Python3_9_13-20220517/Python-3.9.13/
+    199M
+  ===
+
+view /mnt/m_external_sd/000edt/0my_files/unzip/py/Python3_9_13-20220517/Python-3.9.13/Python-3.9.13/Objects/listobject.c
+  ===
+    items = (PyObject **)PyMem_Realloc(self->ob_item, num_allocated_bytes);
+    self->ob_item = items;
+      #1.->2. 搜索 PyMem_Realloc
+  ===
+    PyObject **items = PyMem_New(PyObject*, size);
+    self->ob_item = items;
+      #1.->2. 搜索 PyMem_New
+  ===
+        op->ob_item = (PyObject **) PyMem_Calloc(size, sizeof(PyObject *));
+      #1.->2. 搜索 PyMem_Calloc
+  ===
+    return ((PyListObject *)op) -> ob_item[i];
+  ===
+  ===
+  ===
+  ===
+view /mnt/m_external_sd/000edt/0my_files/unzip/py/Python3_9_13-20220517/Python-3.9.13/Python-3.9.13/Objects/clinic/listobject.c.h
+view /mnt/m_external_sd/000edt/0my_files/unzip/py/Python3_9_13-20220517/Python-3.9.13/Python-3.9.13/Include/cpython/listobject.h
+    PyObject **ob_item;
+      #1. 搜索 ob_item
+      # 没毛病！ob_item :: [PyObject*]===[pyobj_ref]
+      #     确实是 数组！！
+]]]
+
+
+
+[[[从CPython.listobject的源代码看，Python.list确实是 单个C语言数组
+https://github.com/python/cpython/blob/main/Objects/listobject.c
+
+cd ~/1tmp/svn_
+svn ls https://github.com/python/cpython/trunk/
+  ok!
+svn export https://github.com/python/cpython/trunk/Objects/listobject.c
+A    listobject.c
+Export complete.
+mv ~/1tmp/svn_/listobject.c /sdcard/0my_files/tmp/
+view /sdcard/0my_files/tmp/listobject.c
+    {"__getitem__", (PyCFunction)list_subscript, METH_O|METH_COEXIST, "x.__getitem__(y) <==> x[y]"},
+list_subscript(PyListObject* self, PyObject* item)
+        return list_item(self, i);
+list_item(PyListObject *a, Py_ssize_t i)
+    Py_INCREF(a->ob_item[i]);
+    return a->ob_item[i];
+
+
+list_append(PyListObject *self, PyObject *object)
+    if (_PyList_AppendTakeRef(self, Py_NewRef(object)) < 0) {
+PyList_Append(PyObject *op, PyObject *newitem)
+        Py_INCREF(newitem);
+        return _PyList_AppendTakeRef((PyListObject *)op, newitem);
+_PyList_AppendTakeRefListResize(PyListObject *self, PyObject *newitem)
+    if (list_resize(self, len + 1) < 0) {
+list_resize(PyListObject *self, Py_ssize_t newsize)
+    new_allocated = ((size_t)newsize + (newsize >> 3) + 6) & ~(size_t)3;
+    if (newsize - Py_SIZE(self) > (Py_ssize_t)(new_allocated - newsize))
+        new_allocated = ((size_t)newsize + 3) & ~(size_t)3;
+    if (newsize == 0)
+        new_allocated = 0;
+    num_allocated_bytes = new_allocated * sizeof(PyObject *);
+    items = (PyObject **)PyMem_Realloc(self->ob_item, num_allocated_bytes);
+    self->ob_item = items;
+]]]
+
+
