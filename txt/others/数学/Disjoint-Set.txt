@@ -1,0 +1,983 @@
+
+『Disjoint-Set data structure』/『union-find data structure』
+  not 『Disjoint-Union』
+view others/数学/Disjoint-Union.txt
+view others/数学/Disjoint-Set.txt
+
+[[
+https://www.geeksforgeeks.org/union-find-algorithm-set-2-union-by-rank/
+
+Union-Find Algorithm | Set 2 (Union By Rank and Path Compression)
+
+    Difficulty Level : Medium
+    Last Updated : 17 Apr, 2022
+
+In the previous post, we introduced union find algorithm and used it to detect cycle in a graph. We used following union() and find() operations for subsets.
+C++
+// Naive implementation of find
+int find(int parent[], int i)
+{
+    if (parent[i] == -1)
+        return i;
+    return find(parent, parent[i]);
+}
+  
+// Naive implementation of union()
+void Union(int parent[], int x, int y)
+{
+    int xset = find(parent, x);
+    int yset = find(parent, y);
+    parent[xset] = yset;
+}
+Java
+Python3
+C#
+Javascript
+
+The above union() and find() are naive and the worst case time complexity is linear. The trees created to represent subsets can be skewed and can become like a linked list. Following is an example worst case scenario. 
+
+Let there be 4 elements 0, 1, 2, 3
+
+Initially, all elements are single element subsets.
+0 1 2 3 
+
+Do Union(0, 1)
+   1   2   3  
+  /
+ 0
+
+Do Union(1, 2)
+     2   3   
+    /
+   1
+ /
+0
+
+Do Union(2, 3)
+         3    
+        /
+      2
+     /
+   1
+ /
+0
+
+The above operations can be optimized to O(Log n) in worst case. The idea is to always attach smaller depth tree under the root of the deeper tree. This technique is called union by rank. The term rank is preferred instead of height because if path compression technique (we have discussed it below) is used, then rank is not always equal to height. Also, size (in place of height) of trees can also be used as rank. Using size as rank also yields worst case time complexity as O(Logn).
+
+Let us see the above example with union by rank
+Initially, all elements are single element subsets.
+0 1 2 3 
+
+Do Union(0, 1)
+   1   2   3  
+  /
+ 0
+
+Do Union(1, 2)
+   1    3
+ /  \
+0    2
+
+Do Union(2, 3)
+    1    
+ /  |  \
+0   2   3
+
+The second optimization to naive method is Path Compression. The idea is to flatten the tree when find() is called. When find() is called for an element x, root of the tree is returned. The find() operation traverses up from x to find root. The idea of path compression is to make the found root as parent of x so that we don’t have to traverse all intermediate nodes again. If x is root of a subtree, then path (to root) from all nodes under x also compresses.
+
+Let the subset {0, 1, .. 9} be represented as below and find() is called
+for element 3.
+             9
+         /   |   \  
+        4    5    6
+       /         /  \
+      0         7    8
+     /        
+    3
+   / \         
+  1   2
+When find() is called for 3, we traverse up and find 9 as representative
+of this subset. With path compression, we also make 3 and 0 as the child of 9 so 
+that when find() is called next time for 0, 1, 2 or 3, the path to root is reduced.
+
+        --------9-------
+      /   /    /  \      \
+     0   4    5    6       3 
+                  /  \    /  \
+                 7    8   1   2
+
+The two techniques complement each other. The time complexity of each operation becomes even smaller than O(Logn). In fact, amortized time complexity effectively becomes small constant. 
+
+Following is union by rank and path compression based implementation to find a cycle in a graph. 
+C++
+// A C++ program to detect cycle in a graph using union by
+// rank and path compression
+#include <bits/stdc++.h>
+using namespace std;
+ 
+// a structure to represent an edge in the graph
+struct Edge {
+    int src, dest;
+};
+ 
+// a structure to represent a graph
+struct Graph {
+    // V-> Number of vertices, E-> Number of edges
+    int V, E;
+ 
+    // graph is represented as an array of edges
+    struct Edge* edge;
+};
+ 
+struct subset {
+    int parent;
+    int rank;
+};
+ 
+// Creates a graph with V vertices and E edges
+struct Graph* createGraph(int V, int E)
+{
+    struct Graph* graph = (struct Graph*)malloc(sizeof(struct Graph));
+    graph->V = V;
+    graph->E = E;
+ 
+    graph->edge = (struct Edge*)malloc(graph->E * sizeof(struct Edge));
+ 
+    return graph;
+}
+ 
+// A utility function to find set of an element i
+// (uses path compression technique)
+int find(struct subset subsets[], int i)
+{
+    // find root and make root as parent of i (path
+    // compression)
+    if (subsets[i].parent != i)
+        subsets[i].parent = find(subsets, subsets[i].parent);
+ 
+    return subsets[i].parent;
+}
+ 
+// A function that does union of two sets of x and y
+// (uses union by rank)
+void Union(struct subset subsets[], int xroot, int yroot)
+{
+ 
+    // Attach smaller rank tree under root of high rank tree
+    // (Union by Rank)
+    if (subsets[xroot].rank < subsets[yroot].rank)
+        subsets[xroot].parent = yroot;
+    else if (subsets[xroot].rank > subsets[yroot].rank)
+        subsets[yroot].parent = xroot;
+ 
+    // If ranks are same, then make one as root and
+    // increment its rank by one
+    else {
+        subsets[yroot].parent = xroot;
+        subsets[xroot].rank++;
+    }
+}
+ 
+// The main function to check whether a given graph contains
+// cycle or not
+int isCycle(struct Graph* graph)
+{
+    int V = graph->V;
+    int E = graph->E;
+ 
+    // Allocate memory for creating V sets
+    struct subset* subsets
+        = (struct subset*)malloc(V * sizeof(struct subset));
+ 
+    for (int v = 0; v < V; ++v) {
+        subsets[v].parent = v;
+        subsets[v].rank = 0;
+    }
+ 
+    // Iterate through all edges of graph, find sets of both
+    // vertices of every edge, if sets are same, then there
+    // is cycle in graph.
+    for (int e = 0; e < E; ++e) {
+        int x = find(subsets, graph->edge[e].src);
+        int y = find(subsets, graph->edge[e].dest);
+ 
+        if (x == y)
+            return 1;
+ 
+        Union(subsets, x, y);
+    }
+    return 0;
+}
+ 
+// Driver code
+int main()
+{
+    /* Let us create the following graph
+         0
+        |  \
+        |    \
+        1-----2 */
+ 
+    int V = 3, E = 3;
+    struct Graph* graph = createGraph(V, E);
+ 
+    // add edge 0-1
+    graph->edge[0].src = 0;
+    graph->edge[0].dest = 1;
+ 
+    // add edge 1-2
+    graph->edge[1].src = 1;
+    graph->edge[1].dest = 2;
+ 
+    // add edge 0-2
+    graph->edge[2].src = 0;
+    graph->edge[2].dest = 2;
+ 
+    if (isCycle(graph))
+        cout << "Graph contains cycle";
+    else
+        cout << "Graph doesn't contain cycle";
+ 
+    return 0;
+}
+ 
+// This code is contributed by Aditya Kumar (adityakumar129)
+C
+Java
+Python3
+C#
+Javascript
+Output
+
+Graph contains cycle
+
+Related Articles : 
+Union-Find Algorithm | Set 1 (Detect Cycle in a an Undirected Graph) 
+Disjoint Set Data Structures (Java Implementation) 
+Greedy Algorithms | Set 2 (Kruskal’s Minimum Spanning Tree Algorithm) 
+Job Sequencing Problem | Set 2 (Using Disjoint Set)
+
+References: 
+http://en.wikipedia.org/wiki/Disjoint-set_data_structure 
+IITD Video Lecture
+Please write comments if you find anything incorrect, or you want to share more information about the topic discussed above.
+
+]]
+[[
+https://www.geeksforgeeks.org/union-find/
+
+Disjoint Set (Or Union-Find) | Set 1 (Detect Cycle in an Undirected Graph)
+
+    Difficulty Level : Medium
+    Last Updated : 17 Jan, 2022
+
+A disjoint-set data structure is a data structure that keeps track of a set of elements partitioned into a number of disjoint (non-overlapping) subsets. A union-find algorithm is an algorithm that performs two useful operations on such a data structure:
+
+Find: Determine which subset a particular element is in. This can be used for determining if two elements are in the same subset.
+
+Union: Join two subsets into a single subset. Here first we have to check if the two subsets belong to same set. If no, then we cannot perform union.
+
+In this post, we will discuss the application of Disjoint Set Data Structure. The application is to check whether a given graph contains a cycle or not.
+
+Union-Find Algorithm can be used to check whether an undirected graph contains cycle or not. Note that we have discussed an algorithm to detect cycle. This is another method based on Union-Find. This method assumes that the graph doesn’t contain any self-loops. 
+
+We can keep track of the subsets in a 1D array, let’s call it parent[].
+Let us consider the following graph: 
+
+cycle-in-graph
+
+For each edge, make subsets using both the vertices of the edge. If both the vertices are in the same subset, a cycle is found.
+
+Initially, all slots of parent array are initialized to -1 (means there is only one item in every subset).
+
+0   1   2
+-1 -1  -1
+
+Now process all edges one by one.
+Edge 0-1: Find the subsets in which vertices 0 and 1 are. Since they are in different subsets, we take the union of them. For taking the union, either make node 0 as parent of node 1 or vice-versa. 
+
+0   1   2    <----- 1 is made parent of 0 (1 is now representative of subset {0, 1})
+1  -1  -1
+
+Edge 1-2: 1 is in subset 1 and 2 is in subset 2. So, take union.
+
+0   1   2    <----- 2 is made parent of 1 (2 is now representative of subset {0, 1, 2})
+1   2  -1
+
+Edge 0-2: 0 is in subset 2 and 2 is also in subset 2. Hence, including this edge forms a cycle.
+How subset of 0 is same as 2? 
+0->1->2 // 1 is parent of 0 and 2 is parent of 1  
+Recommended Practice
+Union-Find
+Try It!
+
+Based on the above explanation, below are implementations: 
+C++
+// A union-find algorithm to detect cycle in a graph
+#include <bits/stdc++.h>
+using namespace std;
+ 
+// a structure to represent an edge in graph
+class Edge
+{
+public:
+    int src, dest;
+};
+ 
+// a structure to represent a graph
+class Graph
+{
+public:
+    // V-> Number of vertices, E-> Number of edges
+    int V, E;
+ 
+    // graph is represented as an array of edges
+    Edge* edge;
+};
+ 
+// Creates a graph with V vertices and E edges
+Graph* createGraph(int V, int E)
+{
+    Graph* graph = new Graph();
+    graph->V = V;
+    graph->E = E;
+ 
+    graph->edge = new Edge[graph->E * sizeof(Edge)];
+ 
+    return graph;
+}
+ 
+// A utility function to find the subset of an element i
+int find(int parent[], int i)
+{
+    if (parent[i] == -1)
+        return i;
+    return find(parent, parent[i]);
+}
+ 
+// A utility function to do union of two subsets
+void Union(int parent[], int x, int y)
+{
+    parent[x] = y;
+}
+ 
+// The main function to check whether a given graph contains
+// cycle or not
+int isCycle(Graph* graph)
+{
+    // Allocate memory for creating V subsets
+    int* parent = new int[graph->V * sizeof(int)];
+ 
+    // Initialize all subsets as single element sets
+    memset(parent, -1, sizeof(int) * graph->V);
+ 
+    // Iterate through all edges of graph, find subset of
+    // both vertices of every edge, if both subsets are
+    // same, then there is cycle in graph.
+    for (int i = 0; i < graph->E; ++i) {
+        int x = find(parent, graph->edge[i].src);
+        int y = find(parent, graph->edge[i].dest);
+ 
+        if (x == y)
+            return 1;
+ 
+        Union(parent, x, y);
+    }
+    return 0;
+}
+ 
+// Driver code
+int main()
+{
+    /* Let us create the following graph
+        0
+        | \
+        |  \
+        1---2 */
+    int V = 3, E = 3;
+    Graph* graph = createGraph(V, E);
+ 
+    // add edge 0-1
+    graph->edge[0].src = 0;
+    graph->edge[0].dest = 1;
+ 
+    // add edge 1-2
+    graph->edge[1].src = 1;
+    graph->edge[1].dest = 2;
+ 
+    // add edge 0-2
+    graph->edge[2].src = 0;
+    graph->edge[2].dest = 2;
+ 
+    if (isCycle(graph))
+        cout << "graph contains cycle";
+    else
+        cout << "graph doesn't contain cycle";
+ 
+    return 0;
+}
+ 
+// This code is contributed by rathbhupendra
+C
+Java
+Python3
+C#
+Javascript
+
+Output: 
+
+graph contains cycle
+
+Note that the implementation of union() and find() is naive and takes O(n) time in the worst case. These methods can be improved to O(Logn) using Union by Rank or Height. We will soon be discussing Union by Rank in a separate post. 
+https://youtu.be/mHz-mx-8lJ8?list=PLqM7alHXFySEaZgcg7uRYJFBnYMLti-nh 
+
+Related Articles : 
+Union-Find Algorithm | Set 2 (Union By Rank and Path Compression) 
+Disjoint Set Data Structures (Java Implementation) 
+Greedy Algorithms | Set 2 (Kruskal’s Minimum Spanning Tree Algorithm) 
+Job Sequencing Problem | Set 2 (Using Disjoint Set)
+
+]]
+[[
+https://www.geeksforgeeks.org/kruskals-minimum-spanning-tree-algorithm-greedy-algo-2/
+
+Kruskal’s Minimum Spanning Tree Algorithm | Greedy Algo-2
+
+    Difficulty Level : Hard
+    Last Updated : 13 Apr, 2022
+
+What is Minimum Spanning Tree? 
+Given a connected and undirected graph, a spanning tree of that graph is a subgraph that is a tree and connects all the vertices together. A single graph can have many different spanning trees. A minimum spanning tree (MST) or minimum weight spanning tree for a weighted, connected, undirected graph is a spanning tree with a weight less than or equal to the weight of every other spanning tree. The weight of a spanning tree is the sum of weights given to each edge of the spanning tree.
+How many edges does a minimum spanning tree has? 
+A minimum spanning tree has (V – 1) edges where V is the number of vertices in the given graph. 
+What are the applications of the Minimum Spanning Tree? 
+See this for applications of MST.
+
+Below are the steps for finding MST using Kruskal’s algorithm
+
+    1. Sort all the edges in non-decreasing order of their weight. 
+    2. Pick the smallest edge. Check if it forms a cycle with the spanning tree formed so far. If cycle is not formed, include this edge. Else, discard it. 
+    3. Repeat step#2 until there are (V-1) edges in the spanning tree.
+
+Step #2 uses the Union-Find algorithm to detect cycles. So we recommend reading the following post as a prerequisite. 
+Union-Find Algorithm | Set 1 (Detect Cycle in a Graph) 
+Union-Find Algorithm | Set 2 (Union By Rank and Path Compression)
+The algorithm is a Greedy Algorithm. The Greedy Choice is to pick the smallest weight edge that does not cause a cycle in the MST constructed so far. Let us understand it with an example: Consider the below input graph. 
+ 
+
+Kruskal’s Minimum Spanning Tree Algorithm
+
+The graph contains 9 vertices and 14 edges. So, the minimum spanning tree formed will be having (9 – 1) = 8 edges. 
+
+After sorting:
+
+Weight   Src    Dest
+1         7      6
+2         8      2
+2         6      5
+4         0      1
+4         2      5
+6         8      6
+7         2      3
+7         7      8
+8         0      7
+8         1      2
+9         3      4
+10        5      4
+11        1      7
+14        3      5
+
+Now pick all edges one by one from the sorted list of edges 
+1. Pick edge 7-6: No cycle is formed, include it. 
+ 
+
+Kruskal’s Minimum Spanning Tree Algorithm
+
+2. Pick edge 8-2: No cycle is formed, include it. 
+ 
+
+Kruskal’s Minimum Spanning Tree Algorithm
+
+3. Pick edge 6-5: No cycle is formed, include it. 
+ 
+
+Kruskal’s Minimum Spanning Tree Algorithm
+
+4. Pick edge 0-1: No cycle is formed, include it. 
+ 
+
+Kruskal’s Minimum Spanning Tree Algorithm
+
+5. Pick edge 2-5: No cycle is formed, include it. 
+ 
+
+Kruskal’s Minimum Spanning Tree Algorithm
+
+6. Pick edge 8-6: Since including this edge results in the cycle, discard it.
+7. Pick edge 2-3: No cycle is formed, include it. 
+ 
+
+Kruskal’s Minimum Spanning Tree Algorithm
+
+8. Pick edge 7-8: Since including this edge results in the cycle, discard it.
+9. Pick edge 0-7: No cycle is formed, include it. 
+ 
+
+Kruskal’s Minimum Spanning Tree Algorithm
+
+10. Pick edge 1-2: Since including this edge results in the cycle, discard it.
+11. Pick edge 3-4: No cycle is formed, include it. 
+ 
+
+Kruskal’s Minimum Spanning Tree Algorithm
+
+Since the number of edges included equals (V – 1), the algorithm stops here.
+ 
+Recommended: Please try your approach on {IDE} first, before moving on to the solution.
+
+Below is the implementation of the above idea:
+Java
+// Java program for Kruskal's algorithm to
+// find Minimum Spanning Tree of a given
+//connected, undirected and  weighted graph
+import java.util.*;
+import java.lang.*;
+import java.io.*;
+ 
+class Graph {
+    // A class to represent a graph edge
+    class Edge implements Comparable<Edge>
+    {
+        int src, dest, weight;
+ 
+        // Comparator function used for
+        // sorting edgesbased on their weight
+        public int compareTo(Edge compareEdge)
+        {
+            return this.weight - compareEdge.weight;
+        }
+    };
+ 
+    // A class to represent a subset for
+    // union-find
+    class subset
+    {
+        int parent, rank;
+    };
+ 
+    int V, E; // V-> no. of vertices & E->no.of edges
+    Edge edge[]; // collection of all edges
+ 
+    // Creates a graph with V vertices and E edges
+    Graph(int v, int e)
+    {
+        V = v;
+        E = e;
+        edge = new Edge[E];
+        for (int i = 0; i < e; ++i)
+            edge[i] = new Edge();
+    }
+ 
+    // A utility function to find set of an
+    // element i (uses path compression technique)
+    int find(subset subsets[], int i)
+    {
+        // find root and make root as parent of i
+        // (path compression)
+        if (subsets[i].parent != i)
+            subsets[i].parent
+                = find(subsets, subsets[i].parent);
+ 
+        return subsets[i].parent;
+    }
+ 
+    // A function that does union of two sets
+    // of x and y (uses union by rank)
+    void Union(subset subsets[], int x, int y)
+    {
+        int xroot = find(subsets, x);
+        int yroot = find(subsets, y);
+ 
+        // Attach smaller rank tree under root
+        // of high rank tree (Union by Rank)
+        if (subsets[xroot].rank
+            < subsets[yroot].rank)
+            subsets[xroot].parent = yroot;
+        else if (subsets[xroot].rank
+                 > subsets[yroot].rank)
+            subsets[yroot].parent = xroot;
+ 
+        // If ranks are same, then make one as
+        // root and increment its rank by one
+        else {
+            subsets[yroot].parent = xroot;
+            subsets[xroot].rank++;
+        }
+    }
+ 
+    // The main function to construct MST using Kruskal's
+    // algorithm
+    void KruskalMST()
+    {
+        // This will store the resultant MST
+        Edge result[] = new Edge[V];
+       
+        // An index variable, used for result[]
+        int e = 0;
+       
+        // An index variable, used for sorted edges
+        int i = 0;
+        for (i = 0; i < V; ++i)
+            result[i] = new Edge();
+ 
+        // Step 1:  Sort all the edges in non-decreasing
+        // order of their weight.  If we are not allowed to
+        // change the given graph, we can create a copy of
+        // array of edges
+        Arrays.sort(edge);
+ 
+        // Allocate memory for creating V subsets
+        subset subsets[] = new subset[V];
+        for (i = 0; i < V; ++i)
+            subsets[i] = new subset();
+ 
+        // Create V subsets with single elements
+        for (int v = 0; v < V; ++v)
+        {
+            subsets[v].parent = v;
+            subsets[v].rank = 0;
+        }
+ 
+        i = 0; // Index used to pick next edge
+ 
+        // Number of edges to be taken is equal to V-1
+        while (e < V - 1)
+        {
+            // Step 2: Pick the smallest edge. And increment
+            // the index for next iteration
+            Edge next_edge = edge[i++];
+ 
+            int x = find(subsets, next_edge.src);
+            int y = find(subsets, next_edge.dest);
+ 
+            // If including this edge doesn't cause cycle,
+            // include it in result and increment the index
+            // of result for next edge
+            if (x != y) {
+                result[e++] = next_edge;
+                Union(subsets, x, y);
+            }
+            // Else discard the next_edge
+        }
+ 
+        // print the contents of result[] to display
+        // the built MST
+        System.out.println("Following are the edges in "
+                           + "the constructed MST");
+        int minimumCost = 0;
+        for (i = 0; i < e; ++i)
+        {
+            System.out.println(result[i].src + " -- "
+                               + result[i].dest
+                               + " == " + result[i].weight);
+            minimumCost += result[i].weight;
+        }
+        System.out.println("Minimum Cost Spanning Tree "
+                           + minimumCost);
+    }
+ 
+    // Driver Code
+    public static void main(String[] args)
+    {
+ 
+        /* Let us create following weighted graph
+                 10
+            0--------1
+            |  \     |
+           6|   5\   |15
+            |      \ |
+            2--------3
+                4       */
+        int V = 4; // Number of vertices in graph
+        int E = 5; // Number of edges in graph
+        Graph graph = new Graph(V, E);
+ 
+        // add edge 0-1
+        graph.edge[0].src = 0;
+        graph.edge[0].dest = 1;
+        graph.edge[0].weight = 10;
+ 
+        // add edge 0-2
+        graph.edge[1].src = 0;
+        graph.edge[1].dest = 2;
+        graph.edge[1].weight = 6;
+ 
+        // add edge 0-3
+        graph.edge[2].src = 0;
+        graph.edge[2].dest = 3;
+        graph.edge[2].weight = 5;
+ 
+        // add edge 1-3
+        graph.edge[3].src = 1;
+        graph.edge[3].dest = 3;
+        graph.edge[3].weight = 15;
+ 
+        // add edge 2-3
+        graph.edge[4].src = 2;
+        graph.edge[4].dest = 3;
+        graph.edge[4].weight = 4;
+ 
+        // Function call
+        graph.KruskalMST();
+    }
+}
+// This code is contributed by Aakash Hasija
+Python3
+C#
+C++
+
+ 
+ 
+Output
+
+Following are the edges in the constructed MST
+2 -- 3 == 4
+0 -- 3 == 5
+0 -- 1 == 10
+Minimum Cost Spanning Tree: 19
+
+ 
+
+Time Complexity: O(ElogE) or O(ElogV). Sorting of edges takes O(ELogE) time. After sorting, we iterate through all edges and apply the find-union algorithm. The find and union operations can take at most O(LogV) time. So overall complexity is O(ELogE + ELogV) time. The value of E can be at most O(V2), so O(LogV) is O(LogE) the same. Therefore, the overall time complexity is O(ElogE) or O(ElogV)
+
+ 
+
+ 
+
+References: 
+http://www.ics.uci.edu/~eppstein/161/960206.html 
+http://en.wikipedia.org/wiki/Minimum_spanning_tree
+This article is compiled by Aashish Barnwal and reviewed by the GeeksforGeeks team. Please write comments if you find anything incorrect, or you want to share more information about the topic discussed above.
+
+ 
+
+
+]]
+[[
+https://www.geeksforgeeks.org/job-sequencing-using-disjoint-set-union/
+
+Job Sequencing Problem | Set 2 (Using Disjoint Set)
+
+    Difficulty Level : Hard
+    Last Updated : 25 Jan, 2021
+
+Given a set of n jobs where each job i has a deadline di >=1 and profit pi>=0. Only one job can be scheduled at a time. Each job takes 1 unit of time to complete. We earn the profit if and only if the job is completed by its deadline. The task is to find the subset of jobs that maximizes profit.
+
+Examples: 
+
+Input: Four Jobs with following deadlines and profits
+JobID Deadline Profit
+   a      4      20
+   b      1      10
+   c      1      40
+   d      1      30
+Output: Following is maximum profit sequence of jobs:
+       c, a
+
+Input: Five Jobs with following deadlines and profits
+JobID Deadline Profit
+   a     2       100
+   b     1       19
+   c     2       27
+   d     1       25
+   e     3       15
+Output: Following is maximum profit sequence of jobs:
+       c, a, e
+
+A greedy solution of time complexity O(n2) is already discussed here. Below is the simple Greedy Algorithm.
+
+    Sort all jobs in decreasing order of profit.
+    Initialize the result sequence as first job in sorted jobs.
+    Do following for remaining n-1 jobs 
+        If the current job can fit in the current result sequence without missing the deadline, add current job to the result. Else ignore the current job.
+
+The costly operation in the Greedy solution is to assign a free slot for a job. We were traversing each and every slot for a job and assigning the greatest possible time slot(<deadline) which was available.
+What does greatest time slot means? 
+Suppose that a job J1 has a deadline of time t = 5. We assign the greatest time slot which is free and less than the deadline i.e 4-5 for this job. Now another job J2 with deadline of 5 comes in, so the time slot allotted will be 3-4 since 4-5 has already been allotted to job J1.
+Why to assign greatest time slot(free) to a job? 
+Now we assign the greatest possible time slot since if we assign a time slot even lesser than the available one than there might be some other job which will miss its deadline. 
+
+Example: 
+J1 with deadline d1 = 5, profit 40 
+J2 with deadline d2 = 1, profit 20 
+Suppose that for job J1 we assigned time slot of 0-1. Now job J2 cannot be performed since we will perform Job J1 during that time slot.
+Using Disjoint Set for Job Sequencing 
+All time slots are individual sets initially. We first find the maximum deadline of all jobs. Let the max deadline be m. We create m+1 individual sets. If a job is assigned a time slot of t where t >= 0, then the job is scheduled during [t-1, t]. So a set with value X represents the time slot [X-1, X]. 
+We need to keep track of the greatest time slot available which can be allotted to a given job having deadline. We use the parent array of Disjoint Set Data structures for this purpose. The root of the tree is always the latest available slot. If for a deadline d, there is no slot available, then root would be 0. Below are detailed steps.
+Initialize Disjoint Set: Creates initial disjoint sets.
+
+// m is maximum deadline of a job
+parent = new int[m + 1];
+
+// Every node is a parent of itself
+for (int i = 0; i ≤ m; i++)
+    parent[i] = i;
+
+Find : Finds the latest time slot available. 
+
+// Returns the maximum available time slot
+find(s)
+{
+    // Base case
+    if (s == parent[s])
+       return s;
+
+    // Recursive call with path compression
+    return parent[s] = find(parent[s]);
+} 
+
+Union : 
+
+ Merges two sets.  
+// Makes u as parent of v.
+union(u, v)
+{
+   // update the greatest available
+   // free slot to u
+   parent[v] = u;
+} 
+
+How come find returns the latest available time slot? 
+Initially all time slots are individual slots. So the time slot returned is always maximum. When we assign a time slot ‘t’ to a job, we do union of ‘t’ with ‘t-1’ in a way that ‘t-1’ becomes parent of ‘t’. To do this we call union(t-1, t). This means that all future queries for time slot t would now return the latest time slot available for set represented by t-1.
+
+Implementation : 
+The following is the implementation of above algorithm.
+C++
+// C++ Program to find the maximum profit job sequence
+// from a given array of jobs with deadlines and profits
+#include<bits/stdc++.h>
+using namespace std;
+ 
+// A structure to represent various attributes of a Job
+struct Job
+{
+    // Each job has id, deadline and profit
+    char id;
+    int deadLine, profit;
+};
+ 
+// A Simple Disjoint Set Data Structure
+struct DisjointSet
+{
+    int *parent;
+ 
+    // Constructor
+    DisjointSet(int n)
+    {
+        parent = new int[n+1];
+ 
+        // Every node is a parent of itself
+        for (int i = 0; i <= n; i++)
+            parent[i] = i;
+    }
+ 
+    // Path Compression
+    int find(int s)
+    {
+        /* Make the parent of the nodes in the path
+           from u--> parent[u] point to parent[u] */
+        if (s == parent[s])
+            return s;
+        return parent[s] = find(parent[s]);
+    }
+ 
+    // Makes u as parent of v.
+    void merge(int u, int v)
+    {
+        //update the greatest available
+        //free slot to u
+        parent[v] = u;
+    }
+};
+ 
+// Used to sort in descending order on the basis
+// of profit for each job
+bool cmp(Job a, Job b)
+{
+    return (a.profit > b.profit);
+}
+ 
+// Functions returns the maximum deadline from the set
+// of jobs
+int findMaxDeadline(struct Job arr[], int n)
+{
+    int ans = INT_MIN;
+    for (int i = 0; i < n; i++)
+        ans = max(ans, arr[i].deadLine);
+    return ans;
+}
+ 
+int printJobScheduling(Job arr[], int n)
+{
+    // Sort Jobs in descending order on the basis
+    // of their profit
+    sort(arr, arr + n, cmp);
+ 
+    // Find the maximum deadline among all jobs and
+    // create a disjoint set data structure with
+    // maxDeadline disjoint sets initially.
+    int maxDeadline = findMaxDeadline(arr, n);
+    DisjointSet ds(maxDeadline);
+ 
+    // Traverse through all the jobs
+    for (int i = 0; i < n; i++)
+    {
+        // Find the maximum available free slot for
+        // this job (corresponding to its deadline)
+        int availableSlot = ds.find(arr[i].deadLine);
+ 
+        // If maximum available free slot is greater
+        // than 0, then free slot available
+        if (availableSlot > 0)
+        {
+            // This slot is taken by this job 'i'
+            // so we need to update the greatest
+            // free slot. Note that, in merge, we
+            // make first parameter as parent of
+            // second parameter. So future queries
+            // for availableSlot will return maximum
+            // available slot in set of
+            // "availableSlot - 1"
+            ds.merge(ds.find(availableSlot - 1),
+                             availableSlot);
+ 
+            cout << arr[i].id << " ";
+        }
+    }
+}
+ 
+// Driver code
+int main()
+{
+    Job arr[] =  { { 'a', 2, 100 }, { 'b', 1, 19 },
+                   { 'c', 2, 27 },  { 'd', 1, 25 },
+                   { 'e', 3, 15 } };
+    int n = sizeof(arr) / sizeof(arr[0]);
+    cout << "Following jobs need to be "
+         << "executed for maximum profit\n";
+    printJobScheduling(arr, n);
+    return 0;
+}
+Java
+Python3
+Output
+
+Following jobs need to be executed for maximum profit
+a c e 
+
+This article is contributed by Chirag Agarwal. If you like GeeksforGeeks and would like to contribute, you can also write an article and mail your article to contribute@geeksforgeeks.org. See your article appearing on the GeeksforGeeks main page and help other Geeks. 
+Please write comments if you find anything incorrect, or you want to share more information about the topic discussed above
+
+]]
+[[
+]]

@@ -1,0 +1,101 @@
+e others/数学/编程/graph/Page Rank--Random Walk method.txt
+old name: others/数学/编程/graph/Implementation of Page Rank using Random Walk method in Python.txt
+[[
+https://www.geeksforgeeks.org/implementation-of-page-rank-using-random-walk-method-in-python/?ref=rp
+
+Implementation of Page Rank using Random Walk method in Python
+
+    Last Updated : 01 Oct, 2020
+
+Prerequisite: Page Rank Algorithm and Implementation, Random Walk
+
+In Social Networks page rank is a very important topic. Basically page rank is nothing but how webpages are ranked according to its importance and relevance of search. All search engines use page ranking. Google is the best example that uses page rank using the web graph.
+
+Random Walk Method – In the random walk method we will choose 1 node from the graph uniformly at random. After choosing the node we will look at its neighbors and choose a neighbor uniformly at random and continue these iterations until convergence is reached. After N iterations a point will come after which there will be no change In points of every node. This situation is called convergence.
+
+Algorithm: Below are the steps for implementing the Random Walk method.
+
+    Create a directed graph with N nodes.
+    Now perform a random walk.
+    Now get sorted nodes as per points during random walk.
+    At last, compare it with the inbuilt PageRank method.
+
+Below is the python code for the implementation of the points distribution algorithm.
+Python3
+import networkx as nx
+import random
+import numpy as np
+  
+# Add directed edges in graph
+def add_edges(g, pr):
+    for each in g.nodes():
+        for each1 in g.nodes():
+            if (each != each1):
+                ra = random.random()
+                if (ra < pr):
+                    g.add_edge(each, each1)
+                else:
+                    continue
+    return g
+  
+# Sort the nodes
+def nodes_sorted(g, points):
+    t = np.array(points)
+    t = np.argsort(-t)
+    return t
+  
+# Distribute points randomly in a graph
+def random_Walk(g):
+    rwp = [0 for i in range(g.number_of_nodes())]
+    nodes = list(g.nodes())
+    r = random.choice(nodes)
+    rwp[r] += 1
+    neigh = list(g.out_edges(r))
+    z = 0
+      
+    while (z != 10000):
+        if (len(neigh) == 0):
+            focus = random.choice(nodes)
+        else:
+            r1 = random.choice(neigh)
+            focus = r1[1]
+        rwp[focus] += 1
+        neigh = list(g.out_edges(focus))
+        z += 1
+    return rwp
+  
+  
+# Main
+# 1. Create a directed graph with N nodes
+g = nx.DiGraph()
+N = 15
+g.add_nodes_from(range(N))
+  
+# 2. Add directed edges in graph
+g = add_edges(g, 0.4)
+  
+# 3. perform a random walk
+points = random_Walk(g)
+  
+# 4. Get nodes rank according to their random walk points
+sorted_by_points = nodes_sorted(g, points)
+print("PageRank using Random Walk Method")
+print(sorted_by_points)
+  
+# p_dict is dictionary of tuples
+p_dict = nx.pagerank(g)
+p_sort = sorted(p_dict.items(), key=lambda x: x[1], reverse=True)
+  
+print("PageRank using inbuilt pagerank method")
+for i in p_sort:
+    print(i[0], end=", ")
+
+Output:
+
+PageRank using Random Walk Method
+[ 9 10  4  6  3  8 13 14  0  7  1  2  5 12 11]
+PageRank using inbuilt pagerank method
+9, 10, 6, 3, 4, 8, 13, 0, 14, 7, 1, 2, 5, 12, 11, 
+
+
+]]
