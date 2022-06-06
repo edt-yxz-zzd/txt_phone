@@ -1905,6 +1905,7 @@ view others/app/termux/apt_update__fail/\[details]\[20220430]20220427_fix_termux
   view TODO3[20220407].txt
     search:
       #def__backup_cmds:goto
+      view ../../python3_src/my_convention/backup_cmds.txt
 上传github:
   g0,g1,g2,g3,g5,g6_,g7
     口令 改为 密钥: ghp_...
@@ -2441,7 +2442,8 @@ k-convex_hull的k-1个共边facet的交边是 棱边
     edges = 所有棱边
     facets = 所有次切面
     edge2vtc = 棱边的所有端点#==2#棱边的表达
-    facet2linear_equality = 次切面的表达#(d+1)个系数, 坐标向量变量=d个实数变量
+    facet2法向量 = facet2linear_equality = 次切面的表达#(d+1)个系数, 坐标向量变量=d个实数变量
+    facet2inequality_signs # 标准化系数，防重复，重复时 不等号 可能不同，多个并存
     vtc2point = 端点的坐标#端点的表达#坐标向量=d个实数
 
     facet2vtc = 次切面的所有端点#>=k
@@ -2451,6 +2453,24 @@ k-convex_hull的k-1个共边facet的交边是 棱边
   ##约束:==大概率降维;</>/<=/>=大概率不降维;!=无影响
   #以下不考虑==,!=
   TODO:
+  次平面 是否 重复？
+    若已出现过，则 考虑 约束/不等号 是否 更改，更新 信息
+  次平面 切割 凸包 所得 新凸包:
+    + 新增端点 为 次平面 与 旧棱边的交点
+      通过 判断 棱边的两个端点 关于 次平面 线性函数的求值结果 的 正负符号 是否 相反(零 再说)
+        [次平面上的向量 * 法向量 == 0]
+        [次平面上的点 * 法向量 == 常量K]
+        [这里假设 所有不等式 都是『>=』]
+        则[保留的旧端点 * 法向量 >= 常量K]
+        则[删除的旧端点 * 法向量 < 常量K]
+    + 新增棱边 为 次平面上的棱边
+      穷举C(新增端点数,2) 再 判断 此两端点u,v的连线是否是 棱边:
+        棱边 是 至少(k-1)个 次切面 的 共线
+        所以 len(vtx2facets[v]/-\vtx2facets[u])>=k-1
+    - 删除旧端点(<0)
+    + 更新旧端点(==0) vtx2facets[v]+=curr_facet
+    - 删除旧棱边(两端点均被删;<0) #只要有一个端点不被删，即保留
+    - 更新旧棱边(相交==>>端点改变)
 
 ]]
 [[凸包
