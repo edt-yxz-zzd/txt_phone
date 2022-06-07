@@ -1,0 +1,225 @@
+
+e others/app/termux/find/find_exec_mv_rename.txt
+?find mv rename extension
+
+find /sdcard/0my_files/apk/ -type f -name '*.apk' -exec mv {} {}_ \;
+find . -name "file.abc" -exec sh -c 'mv "$1" "$(dirname $1)/blub.xyz"' _ {} \;
+find . -name "*.abc" -exec sh -c 'mv "$1" "${1%.abc}.xyz"' _ {} \;
+
+";" vs "+":
+  cmd(file)
+  find /path [args] -exec [cmd] {} \;
+
+  cmd(files)
+  find /path [args] -exec [cmd] {} \+
+
+
+
+[[
+https://unix.stackexchange.com/questions/181141/rename-multiple-files-with-mv-to-change-the-extension
+
+find . -name "*.gappedPeak" -exec sh -c 'mv "$1" "${1%.gappedPeak}.bed"' _ {} \;
+Command Breakdown:
+
+'.' => search path starting at current directory marked by ' . '
+
+-name => set find match name (in this case all files that end with .gappedPeak)
+
+-exec => execute the following command on every match
+
+sh -c => 'exec' creates an independent shell environment for each match
+
+mv "$1" "${1%.gappedPeak}.bed" => mv first variable (denoted by $1), which is the current file name, to new name. Here I do a substring match and delete; so take first var again, $1 and use % to delete .gappedPeak from the string. The .bed at the end just concatenates the remaining variable, which in the example below would now be testNumber, with .bed, creating the new testNumber.bed filename.
+
+The underscore is a placeholder for $0
+
+The {} is replaced by each (*.gappedPeak) filename found by the find command, and becomes $1 to the sh command.
+
+\; marks the end of the -exec command.  You can also use ';' or ";".
+
+Example:
+
+[user@before]# ls -lh
+total 0
+-rw-r--r--. 1 root root 0 Jan 26 11:40 test1.gappedPeak
+-rw-r--r--. 1 root root 0 Jan 26 11:40 test2.gappedPeak
+-rw-r--r--. 1 root root 0 Jan 26 11:40 test3.gappedPeak
+-rw-r--r--. 1 root root 0 Jan 26 11:40 test4.gappedPeak
+-rw-r--r--. 1 root root 0 Jan 26 11:40 test5.gappedPeak
+
+[user@after]# ls -lh
+total 0
+-rw-r--r--. 1 root root 0 Jan 26 11:40 test1.bed
+-rw-r--r--. 1 root root 0 Jan 26 11:40 test2.bed
+-rw-r--r--. 1 root root 0 Jan 26 11:40 test3.bed
+-rw-r--r--. 1 root root 0 Jan 26 11:40 test4.bed
+-rw-r--r--. 1 root root 0 Jan 26 11:40 test5.bed
+Share
+Improve this answer
+Follow
+edited May 7, 2020 at 13:00
+user avatar
+AdminBee
+18.5k1616 gold badges4141 silver badges6464 bronze badges
+answered Jan 26, 2015 at 16:54
+user avatar
+devnull
+5,0971818 silver badges3434 bronze badges
+2
+Awesome, thanks! With a bash guide and your explanation I was able to get everything. – 
+user1717828
+ Jan 27, 2015 at 22:51
+1
+Works like a charm. Here's another simplified example for file.abc -> blub.xyz in multiple sub dirs: find . -name "file.abc" -exec sh -c 'mv "$1" "$(dirname $1)/blub.xyz"' _ {} \; – 
+Mahn
+ Apr 12, 2016 at 15:17
+]]
+[[
+https://www.howtouselinux.com/post/linux-find-exec-examples-advanced-part
+
+howtouselinux
+Menu
+10 Find Exec examples – Advanced Part
+Table of Contents
+Find exec multiple commands syntaxes
+Find exec with du – Collect file size
+Find exec with rm – Remove files older than a certain time
+Find exec with mv – Rename files
+Find exec with chown
+Find exec with grep in Linux
+Find exec with grep and print filename
+Find exec with shell script function
+Find exec with pipe
+Grep and find exec with sed
+Find exec with links
+
+
+
+Find exec causes find command to execute the given task once per file is matched. It will place the name of the file wherever we put the {} placeholder. It is mainly used to combine with other commands to execute certain tasks. For example: find exec grep can print files with certain content.
+
+We will also cover find exec Linux examples like find exec rm to remove files with a certain condition, find exec pipe, find exec multiple commands, bash find exec, combine find exec with sed or awk.
+
+ 
+Find exec grep
+Find exec rm
+Find exec pipe
+ 
+
+Find exec multiple commands syntaxes
+There are two syntaxes for find exec.
+
+find /path [args] -exec [cmd] {} \;
+
+{} Is a placeholder for the result found by find
+\; Says that for each found result, the command cmd is executed once with the found result.
+It is executed like this: cmd result1; cmd result2; …; cmd result N
+ 
+
+ 
+find /path [args] -exec [cmd] {} \+
+
+{} Is a placeholder for the result found by find
+\+ Says that for all found results, the command cmd is executed with all the found results.
+It is executed like this: cmd result1 result2 … result N
+ 
+
+when we should use find exec \; other than \+
+
+The tool run by -exec does not accept multiple files as an argument
+Running the tool on so many files at once might use up too much memory
+We want to start getting some results as soon as possible, even though it will take more time to get all the results
+ 
+
+ 
+Find exec with du – Collect file size
+In this find exec example, we will find all files under /tmp and collect the size for each file.
+
+# find /tmp/ -type f -exec du -sh {} \;
+
+Here, -type f means lookout for regular files. With the following find exec example, we can store the output to a file.
+
+# find /tmp/ -type f -exec du -sh {} \; > /root/du_datababse.out
+
+ 
+Find exec with rm – Remove files older than a certain time
+In the below find exec example, we will list files older than 10 days
+
+List files older than 10 days under /tmp directory
+# find /tmp/ -type f -mtime +10 -exec ls -l {} \;
+
+To remove files older than 10 days
+# find /tmp/ -type f -mtime +10 -exec rm -rf {} \;
+Here -mtime means file’s data was last modified n*24 hours ago
+
+ 
+
+ 
+Find exec with mv – Rename files
+Mv command is used to rename files. We can use this with find and exec to rename multiple files. This command we use find exec to rename files where the found files are stored in {} and then the files are renamed with _renamed extension
+
+# find / -type f -name ‘howtouselinux*’ -exec mv {} {}_renamed \;
+
+Find exec with chown
+We can combine find exec with multiple commands in one line. Find will continue to run one by one. So each consecutive -exec command is executed only if the previous ones returned true (i.e. 0 exit status of the commands).
+
+# find /tmp/dir1/ -type f -exec chown root:root {} \; -exec chmod o+x {} \;
+
+ 
+Find exec with grep in Linux
+We can combine find exec with grep if we wish to look for files with certain content.
+
+For example below we need the list of files that has the string “howtouselinux”. But find exec grep print filename didn’t work here as we only get matched string.
+
+# find /tmp/ -type f -exec grep -i howtouselinux {} \;
+This is a dummy config file owned by howtouselinux
+This is a dummy config file owned by howtouselinux
+This is a dummy config file owned by howtouselinux
+
+Find exec with grep and print filename
+Now in the above command, we get a list of output from files that contain howtouselinux string. But it does not print the filename.
+
+ 
+Here find exec grep print filename using different methods. In the below example we will combine find exec andd print filename.
+
+# find /tmp/ -type f -exec grep -i howtouselinux {} \+
+/tmp/dir2/text3:This is a dummy config file owned by howtouselinux
+/tmp/dir2/text1:This is a dummy config file owned by howtouselinux
+/tmp/dir2/text5:This is a dummy config file owned by howtouselinux
+
+Alternatively, we can also use the below commands to combine find exec grep print filename.
+
+# find /tmp/ -type f -exec grep -i “howtouselinux” {} \; -exec echo {} \;
+# find /tmp/ -type f -exec grep -i “howtouselinux” {} \; -print
+
+ 
+Find exec with shell script function
+We can combine find exec with shell script function.
+
+# find ./ -type f -exec bash -c ‘ls -lrt {}’ \;
+
+Find exec with pipe
+We can combine find exec with pipe. In the below example we are going to combine find exec with pipe multiple times.
+
+# find /tmp/dir1/ -type f -exec sh -c ‘egrep -i a “$1” | grep -i howtouselinux’ sh {} \;
+
+ 
+This example is a little complex. It is part of shell programming. We can refer to the following example.
+
+sh -c ‘echo “You gave me $1, thanks!”‘ sh “apples”
+You gave me apples, thanks!
+
+ 
+That example works like this.
+egrep -i a filename |grep -i howtouselinux
+
+Grep and find exec with sed
+We can combine find exec with sed or with awk. In the below example we combine grep and find exec with sed.
+
+# find /tmp/dir1/ -type f -exec grep howtouselinux {} \; -exec echo {} \; | sed ‘s/howtouselinux/deep/g’
+
+Find exec with links
+In the below example we will combine find exec with the link option.
+
+# find /tmp/dir1/ -links +1 -type f -exec echo {} \;
+]]
+
