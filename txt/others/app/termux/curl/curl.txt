@@ -1,8 +1,15 @@
 curl
-curl -L -C - --remote-name-all <urls...>
-  -L 跳转
+#curl_ = curl -L -C - -f -S
+
+curl -L -C - -f -S --remote-name-all <urls...>
+  -L 跳转，redirect if the HTTP response was 301, 302, or 303。#注意:curl本身不支持页面内部js运行。见下面[other_redirects]
   -C - 断点续传
+  -f 避免下载出错页面而非目标文件
+  -S 强制打印错误信息，即使--silent
   --remote-name-all 各个url的下载文件名默认为url的文件名 # 单个url 时 等价于 -O
+    但...可能试图保存类似『...?...=.. &...=...』这种格式的文件名，而出错
+       curl -L -C - -O https://libgen.rocks/get.php?md5=794bbfa1ed6c8c52ebed579924342e88&key=ITYM0SRW1RGB8UJB
+          curl: (23) Failure writing output to destination
 
 Copy these URLs to an editor and save it to a file called “urls-to-download.txt.” We can use xargs to treat the content of each line of the text file as a parameter which it will feed to curl, in turn.
 
@@ -19,6 +26,65 @@ xargs -n 1 curl -O < urls-to-download.txt
 
 
 
+
+
+
+
+
+https://curl.se/docs/httpscripting.html
+  [other_redirects]:
+    Browsers typically support at least two other ways of redirects that curl does not: first the html may contain a meta refresh tag that asks the browser to load a specific URL after a set number of seconds, or it may use JavaScript to do it.
+
+服务器 出错，比如：找不到目标文件 时，会返回一个页面说明出错，这时curl会下载保存 此网页 而非 目标文件，为避免 这种情况，需要『--fail』及『--show-error』
+-f, --fail
+      (HTTP) Fail fast with no output at all on
+      server errors. This is useful to enable
+      scripts and users to better deal with
+      failed attempts. In normal cases when an
+      HTTP server fails to deliver a document, it
+      returns an HTML document stating so (which
+      often also describes why and more). This
+      flag will prevent curl from outputting that
+      and return error 22.
+
+      This method is not fail-safe and there are
+      occasions where non-successful response
+      codes will slip through, especially when
+      authentication is involved (response codes
+      401 and 407).
+-S, --show-error
+      When used with -s, --silent, it makes curl
+      show an error message if it fails.
+
+      This option is global and does not need to
+      be specified for each use of -:, --next.
+-L, --location
+      (HTTP) If the server reports that the requested page has moved
+      to a different location (indicated with a Location: header and a
+      3XX response code), this option will make curl redo the request
+      on the new place. If used together with --include or -I, --head,
+      headers from all requested pages will be shown. When
+      authentication is used, curl only sends its credentials to the
+      initial host. If a redirect takes curl to a different host, it
+      will not be able to intercept the user+password. See also
+      --location-trusted on how to change this. You can limit the
+      amount of redirects to follow by using the --max-redirs option.
+
+      When curl follows a redirect and if the request is a POST, it
+      will send the following request with a GET if the HTTP response
+      was 301, 302, or 303. If the response code was any other 3xx
+      code, curl will re-send the following request using the same
+      unmodified method.
+
+      You can tell curl to not change POST requests to GET after a 30x
+      response by using the dedicated options for that: --post301,
+      --post302 and --post303.
+
+      The method set with --request overrides the method curl would
+      otherwise select to use.
+
+      Example:
+       curl -L https://example.com
 
 
 
