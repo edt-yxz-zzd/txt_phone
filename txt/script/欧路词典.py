@@ -35,6 +35,8 @@ for i in $(ls) ; do echo $i ; py $my_txt/script/欧路词典.py readline    -b 1
 375916128.eudb
 1046 '现代汉语词典'
 99569493.eudb
+1046 '新世纪英汉科技大词典'
+
 
 py $my_txt/script/欧路词典.py readline    -b 0   -n '"\n"'    -i  20017.eudb -sz 7
 

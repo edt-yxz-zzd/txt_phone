@@ -262,7 +262,7 @@ T3 = gcd(T1,T2) requires [T1+T2 <= n]
 若是 [结束串囗字集 && 内容串囗字集 =!= {}]，则 结束串 必是 变长字串，如何指定？指定长度？或者 又是一个 原貌串？
   自然一点，当然是 重复使用 原貌串
   是否 可行？
-    可行：结束串 以log 递减长度
+    可行：结束串 以 对数/log 递减长度
     若 [len 结束串囗字集 >= 3] 则 可使用模版 regex'[01]*2' 用作 结束串
     若 [len 结束串囗字集 == 2] 则 才有必要 使用 非确定性 多层 递减 结束串，首个 结束串 固定长度，格式:
       (?P<首个结束串>.{固定长度})(?P<下一层结束串或原貌串>((?!\本层结束串).)*)(\本层结束串)(?P<接续否>[01])〔(?P<下一层结束串或原貌串>((?!\本层结束串).)*)(\本层结束串)(?P<接续否>[01])〕※
@@ -272,8 +272,8 @@ T3 = gcd(T1,T2) requires [T1+T2 <= n]
           见上面:『构建反双缀字串的一个模版』
 
 
-???证明 合格 结束串 的 最短长度 只有 log 原貌串长度
-证明 合格 半结束串 的 最短长度 只有 log 原貌串长度
+???证明 合格 结束串 的 最短长度 只有 原貌串长度 的 对数规模大小 # O(log 原貌串长度)
+证明 合格 半结束串 的 最短长度 只有 原貌串长度 的 对数规模大小 # O(log 原貌串长度)
 
 ???[len(结束串) = O(log<len(结束串囗字集)>(len(原貌串)))]
   半结束串 只要 附加 字串 变成 反双缀字串 即 变成 合格 结束串
@@ -346,6 +346,9 @@ e script/bifix.py
 OEIS 在线揭秘整数序列
     1 2 3 4 6 8 10 13 17 21 27 30 37 47 57 62
     https://oeis.org/A005434
+        #A005434 Number of distinct autocorrelations of binary words of length n.
+        #   为什么只是 二进制？是否 真的与任意大小字母表的字符串 拥有同样的 双缀长度可行配置？
+        #A045690 (the number of binary strings sharing the same autocorrelation).
 
 #[[[枚举所有非空真子双缀长度的可行配置囗简单版
 # copy from: view script/bifix.py
@@ -383,20 +386,20 @@ def 枚举所有非空真子双缀长度的可行配置囗简单版(until, /):
                 config2instance[sorted_bifix_lens] = instance
             #def add(sorted_bifix_lens, instance, /):
 
-            for pseudo_period in range(1, S+1):
-                q, r = divmod(S, pseudo_period)
+            for min_pseudo_period in range(1, S+1):
+                q, r = divmod(S, min_pseudo_period)
                 assert q >= 1
                 if q > 1:
-                    assert 1 <= pseudo_period <= S//2
-                    sz__small = r+pseudo_period
+                    assert 1 <= min_pseudo_period <= S//2
+                    sz__small = r+min_pseudo_period
                     assert 0 < sz__small < S
                     config2instance__small = sz2config2instance[sz__small]
                     if r == 0:
                         def pred(sorted_bifix_lens__small, /):
-                            assert sz__small == pseudo_period
+                            assert sz__small == min_pseudo_period
                             if sorted_bifix_lens__small:
                                 min_pseudo_period__small = sz__small - sorted_bifix_lens__small[-1]
-                                return not pseudo_period%min_pseudo_period__small==0
+                                return not min_pseudo_period%min_pseudo_period__small==0
                             return True
                     else:
                         def pred(sorted_bifix_lens__small, /):
@@ -404,9 +407,9 @@ def 枚举所有非空真子双缀长度的可行配置囗简单版(until, /):
                                 return False
                             min_pseudo_period__small = sz__small - sorted_bifix_lens__small[-1]
 
-                            return min_pseudo_period__small == pseudo_period or not pseudo_period%min_pseudo_period__small==0
+                            return min_pseudo_period__small == min_pseudo_period or not min_pseudo_period%min_pseudo_period__small==0
                     ##end-def-pred()
-                    ex = (*range(sz__small, S, pseudo_period),)
+                    ex = (*range(sz__small, S, min_pseudo_period),)
                     for sorted_bifix_lens__small, instance__small in config2instance__small.items():
                         if not pred(sorted_bifix_lens__small):continue
                         sorted_bifix_lens = sorted_bifix_lens__small + ex
@@ -415,16 +418,16 @@ def 枚举所有非空真子双缀长度的可行配置囗简单版(until, /):
                 #if q > 1:
                 else:
                     assert q==1
-                    assert pseudo_period > S//2
+                    assert min_pseudo_period > S//2
                     if r == 0:
-                        assert pseudo_period == S
+                        assert min_pseudo_period == S
                         sorted_bifix_lens = ()
                         instance = [0]*S
                         instance[-1] = 1
                         add(sorted_bifix_lens, instance)
                     else:
-                        assert 1 <= r < pseudo_period
-                        assert r+pseudo_period == S
+                        assert 1 <= r < min_pseudo_period
+                        assert r+min_pseudo_period == S
                         assert 2*r < S
                         sz__small = r
                         config2instance__small = sz2config2instance[sz__small]
@@ -1280,5 +1283,40 @@ grouped: 62
 
 
 
+
+suffix_tree 后缀树
+  view ../../python3_src/nn_ns/RMQ/suffix_tree/SuffixTree.py
+
+给定 原貌串、半结束串囗字集，如何 求一个 最短 半结束串，以满足 [半结束串 not in 原貌串]
+    suffix_tree<原貌串>
+    搜索 suffix_tree<原貌串> 的 最短间隙 当作 半结束串
+
+给定 半结束串、附加串囗字集，如何 求一个 最短 附加串，以满足 [半反双缀(半结束串,附加串)]
+    suffix_tree<半结束串>
+    sorted_bifix_lens<半结束串>
+    let 结束串 := 半结束串++附加串
+    [结束串[:L+len(附加串)]==结束串[-L-len(附加串):]][1<=L<len(半结束串)]:
+      [L <- sorted_bifix_lens<半结束串>]
+    let 双缀后缀树<半结束串> := suffix_tree<半结束串> 删去 并非 半结束串 双缀长度 的 起始索引 的 叶节点
+    搜索 双缀后缀树<半结束串> 的 最短间隙 当作 附加串
+
+给定 原貌串、结束串囗字集，如何 求一个 尽量短 但 不必最短 的 结束串，以满足 [结束串 not in 原貌串++结束串[:-1]]
+  求 最短 半结束串 <-- 原貌串，半结束串囗字集=结束串囗字集
+  求 最短 附加串 <-- 半结束串，附加串囗字集=结束串囗字集
+  得: 尽量短 结束串 := 半结束串++附加串
+  ===若 [len 结束串囗字集 >= 3]，可简化如下:
+  #保留一字符 唯一附加字符 当作 附加串
+  let 唯一附加字符 <- 结束串囗字集
+  附加串囗字集 := {唯一附加字符}
+  附加串 := [唯一附加字符]
+  半结束串囗字集 := 结束串囗字集 \-\ 附加串囗字集
+  求 最短 半结束串 <-- 原貌串，半结束串囗字集
+  得: 尽量短 结束串 := 半结束串++附加串
+
+
+
+给定 原貌串、结束串囗字集，如何 求一个 最短 结束串，以满足 [结束串 not in 原貌串++结束串[:-1]]
+    suffix_tree<原貌串>
+    搜索 suffix_tree<原貌串> 的 满足 题中约束的 最短间隙 当作 结束串
 
 
