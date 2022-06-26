@@ -1,11 +1,315 @@
-r'''
+r'''[[[[[[[
 bifix 双缀
 
 e script/bifix.py
     view others/数学/编程/永恒代码/原貌字符串.txt
+    view ../lots/NOTE/pseudo_period_of_word/note4pseudo_period_of_word.txt
+
+[[
+[[[定理:合格的双缀长度配置与字母表大小无关/或者说 任何合格的双缀长度配置，都存在相应的比特向量满足它。
+[@M <-[2..]. @word:[uint%M]. ?bits:[uint%2]. [sorted_bifix_lens word == sorted_bifix_lens bits]]
+    #存在性定理
+    #构造性证明:
+    #bug: 错！！bits := autocorrelation(word)
+自相关函数 定义
+[autocorrelation :: Eq a => [a] -> [Bool]]
+[autocorrelation(s) =[def]= [s[i:] == s[:len(s)-i] for i in range(len(s))]]
+互相关函数 定义
+[correlation :: Eq a => [a] -> [a] -> [Bool]]
+[correlation(s,t) =[def]= [s[i:i+L] == t[:L] for i in range(len(s))] for L in [min(len(s)-i, len(t))]]
+[autocorrelation(s) === correlation(s,s)]
+
+]]]
+
+[[[
+bug in paper: /sdcard/0my_files/book/math/pseudo_period_of_word/'Periods in strings(1981)(Leo J Guibas)(Andrew M Odlyzko).pdf' 1.2MB [page27][pg 9/24] : "Since r + x is in the range [r, r + t), it must be the (m + 1)'st multiple of the basic period t of W." 反例1:101011010101101010110101; 反例2:11011011101101101110110110111011011
+    =====
+    .above-paper-varable=below-instance-varable=value
+    -----[
+    .Z=z=101011010101101010110101
+    .t=T=5
+    .r=W=10
+    .x=X=4
+    .q=Q=7
+        (.r+.x) % .z = 0
+        .z=.q=7
+        (.r+.x) % .t = (10+4)%5 = 4 =!= 0
+    -----]
+    -----[
+    .Z=z=11011011101101101110110110111011011
+    .t=T=7
+    .r=W=15
+    .x=X=5
+    .q=Q=10
+        (.r+.x) % .z = 0
+        .z=.q=10
+        (.r+.x) % .t = (15+5)%7 = 6 =!= 0
+    -----]
+    =====
+问题:特定条件下，通过 拓展 短比特向量 以 构建 更长比特向量(归纳法步骤)，怎么避免 引入 意外的 拟周期？
+    字串:w,x,q,z
+    长度:W,X,Q,Z
+    [W > 0]
+    [z == w++x++w]
+    [T=w最短拟周期] # min T. [w .%. T]
+    [W >= 2T]
+    [Q=z最短拟周期] # min Q. [z .%. Q]
+        #[W+X <- z拟周期]
+    [0 <= X < T]
+        #[[W..W+X-1] /-\  z拟周期 == {}]
+        #???[X==0]
+        #   !![W >= 2T]
+        #   ==>> z=w++w 不会 引入 意外的 拟周期
+    是否存在 Q 满足 [0 < Q < W][Q%T =!= 0]
+        若存在，x的可行空间 是否 大于 Q的数量？ [2**X > len{Q|...}]???
+
+
+
+W
+    [W>0]
+T
+    min T: [w .%. T] #定义
+[W >= 2T] #分支之前置条件
+R = W%T
+0<=R<T
+Z=W+X+W
+[0 <= X < T] #分支之前置条件
+Q
+    min Q. [w++x++w .%. Q] #定义
+    [0 < Q < W][Q%T =!= 0] #分支之前置条件
+    !![Q < W]
+    [w .%. Q]
+    !![w .%. T][Q%T =!= 0]
+    Q+T>W+gcd(Q,T)
+    !![W >= 2T]
+    Q>W-T+gcd(Q,T) >= W-T+1 >= T+R+1
+    [Q>W-T+1]
+    [Q>T+R+1]
+
+#??? [(W+X)%Q == 0] ???
+!![Q < W]
+[(W+X) + Q < W+X+W = len(w++x++w)]
+!![w++x++w .%. (W+X)]
+!![w++x++w .%. Q]
+[w++x++w .%. gcd(Q, W+X)]
+!!min Q. [w++x++w .%. Q] #定义
+[0 < T+R+1 < Q <= gcd(Q, W+X) <= Q]
+[Q == gcd(Q, W+X)]
+[(W+X)%Q == 0]
+
+#??? [(W+X) == 2Q] ???
+!![0 <= X < T][Q < W]
+[Q < W <= W+X]
+
+!![Q>W-T+1]
+[Q >= W-T+2]
+[3Q-(W+X)>=3(W-T+2) -(W+X) = 2W-3T+6 -X]
+!![W >= 2T]
+!![0 <= X < T]
+[3Q-(W+X)>= 2W-3T+6 -X >= T+6-X > 6]
+[3Q > (W+X)]
+[Q < W+X < 3Q]
+[1 < (W+X)/Q < 3]
+!![(W+X)%Q == 0]
+[(W+X) == 2Q]
+
+
+
+#??? [W == 2T+R] ???
+let m := W//T
+!![R = W%T]
+[W=m*T+R]
+!![W>=2T]
+[m >= 2]
+
+!![Q >= W-T+2]
+[W+X == 2Q >= 2(W-T+2)]
+[X >= W-2T+4]
+!![W=m*T+R]
+[X >= m*T+R-2T+4]
+!![0 <= X < T]
+[T > X >= m*T+R-2T+4]
+[T > m*T+R-2T+4]
+[0 > (m-3)*T+R+4]
+!![0 <= R < T]
+[(3-m)*T > R+4 >= 4]
+[m < 3]
+!![m>=2]
+[m==2]
+[W=2T+R]
+
+
+
+??? W,T,X ==>> Q 唯一???
+!![W=2T+R]
+!![(W+X) == 2Q]
+==>> Q若存在则唯一
+
+
+
+
+W=2T+R
+Q < W
+Q+T>W+gcd(Q,T)
+Q>T+R+1
+
+X=2Q-W
+0 <= X < T
+W/2 < Q < (W+T)/2
+(2T+R)/2 < Q < (3T+R)/2
+T+R/2 < Q < T+(T+R)/2 < 2T
+T+R+1<Q<T+(T+R)/2
+X=2Q-W >= 2(T+R+2)-(2T+R) = R+4 >= 4
+[4 <= X < T]
+    4==>>足够多的比特位？Q唯一？
+    并不需要！
+    见上面:Q唯一
+    见下面:特殊分支[(W+X)%T == 0]不存在
+
+T+R+1<Q<T+(T+R)/2
+T+R+2<T+(T+R)/2
+R+2<(T+R)/2
+2R+4<(T+R)
+R<T-4
+0<=R<=T-5
+T>=5
+
+* [R==0]:
+[T=5][R=0]:
+    [6<Q<7.5]
+    [Q=7]
+    gcd(Q,T)==1
+        ok
+    W=2T+R=10
+    X=2Q-W=4
+    Z=W+X+W=24
+    #1abcd1abcd
+    #       1abcd1abcd
+    #[b=1][c=a][d=b]
+    #[d=b=1][c=a]
+    #1a1a11a1a1
+    #1010110101
+    w = 1010110101
+    q = 1010110
+    w++x = q++q
+    1010110101++x == 1010110++101 0110
+    x = 0110
+    z = q++q ++w = w++x++w
+      = 1010110101 0110 1010110101
+      = 101011010101101010110101
+    sorted_bifix_lens(z) = (1, 3, 5, 10, 17)
+    pseudo_period_of_word(z) = (7, 14, 19, 21, 23)
+
+
+
+* [R==1]:
+    1<=R<=T-5
+    T>=6
+[T=6][R=1]:
+    [8<Q<9.5]
+    [Q=9]
+    gcd(Q,T)==3
+    not Q+T>W+gcd(Q,T)
+    fail
+[T=7][R=1]:
+    [9<Q<11]
+    [Q=10]
+    gcd(Q,T)==1
+        ok
+    W=2T+R=15
+    X=2Q-W=5
+    Z=W+X+W=35
+    #1abcdef1abcdef1
+    #          1abcdef1abcdef1
+    #[c=1][d=a][e=b][f=c][1=d]
+    #[f=c=1][e=b][1=d=a]
+    #11b11b111b11b11
+    #110110111011011
+    w = 110110111011011
+    q = 1101101110
+    w++x = q++q
+    110110111011011++x == 1101101110++11011 01110
+    x = 01110
+    z = q++q ++w = w++x++w
+      = 110110111011011 01110 110110111011011
+      = 11011011101101101110110110111011011
+    sorted_bifix_lens(z) = (1, 2, 5, 8, 15, 25)
+    pseudo_period_of_word(z) = (10, 20, 27, 30, 33, 34)
+
+
+
+特殊分支:
+[(W+X)%T == 0]: #分支之前置条件
+    !![(W+X) == 2Q]
+    [2Q%T == 0]
+    !![Q%T =!= 0]
+    [T%2 == 0][gcd(Q,T) == T/2]
+    let H := T//2
+    let k := (Q-H)//T
+    [T == 2*H]
+    [Q == (2k+1)*H]
+    !![Q>T+R+1]
+    [k >= 1]
+
+    !![Q+T>W+gcd(Q,T)]
+    [(2k+3)*H > W+H]
+    !![W=2T+R]
+    [(2k+3)*H > W+H == 5H+R]
+    [(2k-2)*H > R]
+    [0 <= R < (k-1)*T]
+    [0 < (k-1)*T]
+    [0 < (k-1)]
+    [k >= 2]
+
+    !![(W+X)%T == 0]
+    !![W%T == R]
+    [(R+X)%T == 0]
+    !![4 <= X < T]
+    !![0 <= R < T]
+    [4 <= R+X < 2T]
+    !![(R+X)%T == 0]
+    [R+X == T][X >= 4][R >= 1]
+    !![0<=R<=T-5]
+    [T>=R+5>=6]
+
+
+    !![W=2T+R]
+    !![R+X == T]
+    [W+X == 2T+R+X == 3T]
+    !![(W+X) == 2Q]
+    [3T == 2Q]
+    !![T == 2*H]
+    [3H == Q]
+    !![Q == (2k+1)*H]
+    [k==1]
+    !![k >= 2]
+    [k不存在]
+    [Q不存在]
+        即 不可能存在满足[(W+X)%T == 0]的实例
+
+]]]
+[[[
+???bug???not-bug!:[没有 避开 反向传播]枚举所有非空真子双缀长度的可行配置囗简单版
+    不对，并没有错！
+    因为 已经 隐含了 反向传播约束
+        显式检验 正/反向传播约束 可能 O(S**2)
+        我的方法:
+            * 跟 『/sdcard/0my_files/book/math/pseudo_period_of_word/'Periods in strings(1981)(Leo J Guibas)(Andrew M Odlyzko).pdf'』里的线性断言 差不多
+            * 跟 『/sdcard/0my_files/book/math/pseudo_period_of_word/'Combinatorics of periods in strings(2003)(Eric Rivals)(Sven Rahmann).pdf'』 264K 里的 枚举算法 一模一样！(就是 sorted_bifix_lens 与 autocorrelation自相关比特向量 的 微小差别！)
+TODO:找到 反向传播 实例
+]]]
+]]
 
 py script/bifix.py -s '_find(True)'
 py script/bifix.py -s '_find(False)'
+py script/bifix.py -s 'print(instance2sorted_bifix_lens([*map(int, "11011101101110110111011")]))'
+(1, 2, 5, 9, 16)
+py script/bifix.py -s 'print(instance2sorted_bifix_lens([*map(int, "11011011101101101110110110111011011")]))'
+(1, 2, 5, 8, 15, 25)
+py script/bifix.py -s 'print(instance2sorted_bifix_lens([*map(int, "101011010101101010110101")]))'
+(1, 3, 5, 10, 17)
+
+
 
 py script/bifix.py -s '枚举所有非空真子双缀长度的可行配置(3)'
 1
@@ -2549,6 +2853,19 @@ Combinatorial Algorithms on Words
     L. J. Guibas, Periodicities in Strings, Combinatorial Algorithms on Words 1985, NATO ASI Vol. F12, 257-269
     https://libgen.lc/edition.php?id=137907038
         Combinatorial Algorithms on Words(1985)(Guibas).pdf
+        重命名 为:
+        Combinatorial Algorithms on Words(1985)(Guibas).djvu
+        还是打不开！
+            view /sdcard/0my_files/book/math/pseudo_period_of_word/Combinatorial\ Algorithms\ on\ Words(1985)(Guibas).djvu
+            cd ~/download/wget_/
+            wget 'http://62.182.86.140/main/2129000/a9f734bea3b1962e8b68b4973fa4a447/%28NATO%20ASI%20series.%20Series%20F%2C%20Computer%20and%20systems%20sciences%20_%2012%29%20Alberto%20Apostolico%2C%20Zvi%20Galil%20%20%28eds.%29%20-%20Combinatorial%20Algorithms%20on%20Words-Springer%20Berlin%20Heidelberg%20%281985%29.djvu' -O 'Combinatorial Algorithms on Words(1985)(Guibas).djvu'
+            diff /sdcard/0my_files/book/math/pseudo_period_of_word/'Combinatorial Algorithms on Words(1985)(Guibas).djvu' ~/download/wget_/'Combinatorial Algorithms on Words(1985)(Guibas).djvu'
+                一样！
+                文件管理器->长按之->打开方式/其他方式打开->EBookDroid
+                『The DjVU lightweight decoder is based on the DjVuLibre library released under GPL licence.
+                According to the GPL, SOURCE CODE can be downloaded from Google Drive.』
+                确认之后，可以用了...
+
 
 Periods in Strings
     L. J. Guibas and A. M. Odlyzko, Periods in Strings, Journal of Combinatorial Theory A 30:1 (1981) 19-42.
@@ -2579,7 +2896,7 @@ Combinatorics of Periods in Strings
 ls -1hs /sdcard/0my_files/book/math/pseudo_period_of_word/
 ~/.../Download/wget_ $ ls -1hs /sdcard/0my_files/book/math/pseudo_period_of_word/
 total 7.0M
-4.3M 'Combinatorial Algorithms on Words(1985)(Guibas).pdf'
+4.3M 'Combinatorial Algorithms on Words(1985)(Guibas).djvu'
 264K 'Combinatorics of periods in strings(2003)(Eric Rivals)(Sven Rahmann).pdf'
 1.2M 'Periods in strings(1981)(Leo J Guibas)(Andrew M Odlyzko).pdf'
 1.4M 'String overlaps, pattern matching, and nontransitive games(1981)(L.J Guibas)(A.M Odlyzko).pdf'
@@ -2587,7 +2904,7 @@ total 7.0M
 ]]]]]
 
 
-#'''
+#]]]]]]]'''
 
 
 
@@ -2741,6 +3058,22 @@ def 枚举所有非空真子双缀长度的可行配置(until, /):
 # copy to: view others/数学/编程/永恒代码/原貌字符串.txt
 from seed.helper.stable_repr import stable_repr__expand_top_layer, stable_repr_print__expand_top_layer
 from seed.tiny import print_err
+def instance2sorted_bifix_lens(instance, /):
+    return tuple(i for i in range(1, len(instance)) if instance[:i] == instance[-i:])
+from seed.iters.find import mk_last_pos2len_longest_proper_bifix
+def instance2sorted_bifix_lens(instance, /):
+    sorted_bifix_lens = []
+    last_pos2len_longest_proper_bifix = mk_last_pos2len_longest_proper_bifix(instance)
+    bifix_len = len(instance)
+    while bifix_len:
+        bifix_len = last_pos2len_longest_proper_bifix[bifix_len-1]
+        sorted_bifix_lens.append(bifix_len)
+    if sorted_bifix_lens:
+        _0 = sorted_bifix_lens.pop()
+        assert _0 == 0
+    sorted_bifix_lens.reverse()
+    return tuple(sorted_bifix_lens)
+
 def 枚举所有非空真子双缀长度的可行配置囗简单版(until, /):
     def show(sz, config2instance, /):
         bifix_lens2seq = config2instance
@@ -2751,8 +3084,6 @@ def 枚举所有非空真子双缀长度的可行配置囗简单版(until, /):
         print()
 
 
-    def instance2sorted_bifix_lens(instance, /):
-        return tuple(i for i in range(1, len(instance)) if instance[:i] == instance[-i:])
 
     def main():
         sz2config2instance = [{}, {():[0]}]

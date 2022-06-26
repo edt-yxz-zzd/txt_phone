@@ -1,0 +1,117 @@
+
+e ../lots/NOTE/pseudo_period_of_word/note4pseudo_period_of_word.txt
+
+
+
+~/.../Download/wget_ $ ls -1hs /sdcard/0my_files/book/math/pseudo_period_of_word/
+total 7.0M
+4.3M 'Combinatorial Algorithms on Words(1985)(Guibas).djvu'
+264K 'Combinatorics of periods in strings(2003)(Eric Rivals)(Sven Rahmann).pdf'
+1.2M 'Periods in strings(1981)(Leo J Guibas)(Andrew M Odlyzko).pdf'
+1.4M 'String overlaps, pattern matching, and nontransitive games(1981)(L.J Guibas)(A.M Odlyzko).pdf'
+
+
+
+[[[
+[[
+1.2M 'Periods in strings(1981)(Leo J Guibas)(Andrew M Odlyzko).pdf'
+=====
+自相关函数 定义
+[autocorrelation :: Eq a => [a] -> [Bool]]
+[autocorrelation(s) =[def]= [s[i:] == s[:len(s)-i] for i in range(len(s))]]
+互相关函数 定义
+[correlation :: Eq a => [a] -> [a] -> [Bool]]
+[correlation(s,t) =[def]= [s[i:i+L] == t[:L] for i in range(len(s))] for L in [min(len(s)-i, len(t))]]
+[autocorrelation(s) === correlation(s,s)]
+
+@[M <- [2..]]:
+  [is_period_of :: uint -> [uint%M] -> Bool]
+  [is_period_of p w =[def]= [0 <= p < len w][w[:p] === w[len w -p:]]]
+  [period_set_of :: [uint%M] -> {uint}]
+  [period_set_of w =[def]= {p <- [0..<len w] | [w[:p] === w[len w -p:]]}
+
+  #basic_period is not period
+  #pi(w)
+  [basic_period_of :: [uint%M] -> uint]
+  [basic_period_of w = min((period_set_of(w) \-\{0}) \-/{len w})]
+    #basic_period may be (len w) which is not period
+    #basic_period may be 0 which == (len w)
+
+
+等价描述:
+[characterization of autocorrelations]
+  [@[v :: [Bool]] -> [
+    [?[w :: [Bool]] -> [v==autocorrelation(w)]]
+    <==> [@M <- [2..] -> ?[w :: [uint%M]] -> [v==autocorrelation(w)]]
+    <==> [[len v >= 1] -> [[v[0]==1][forward_propagation_rule(v)][backward_propagation_rule(v)]]]
+    <==> [recursive_predicate4autocorrelation(v)]
+    ]]
+@[v :: [Bool]]:#大前提
+  #无需[len v >= 1]
+  #FPR:前向传播约束
+  [forward_propagation_rule(v) =[def]= @[p,q <- [0..<len v]] -> [p < q] -> [v[p]==1==v[q]] -> @[i <- [2..(len v -p)//(q-p)]] -> [v[p+i*(q-p)]==1]]
+  #BPR:后向传播约束
+  [backward_propagation_rule(v) =[def]= @[p,q <- [0..<len v]] -> [p < q < 2*p] -> [v[p]==1==v[q]] -> [v[2*p-q]==0] -> @[i <- [2..min(p, len v -p)//(q-p)]] -> [v[p-i*(q-p)]==0]]
+  #公约数约束
+  [GCD_rule(v) =[def]= [[v[0]==1][forward_propagation_rule(v)][backward_propagation_rule(v)]] -> @[p,q <- [0..<len v]] -> [let g := gcd(p,q)] -> [v[p]==1==v[q]] -> [p+q<=len v +g] -> [v[g]==1]]
+  #O(len v) 线性递归断言囗自相关比特向量
+  [recursive_predicate4autocorrelation(v) =[def]= [len v >= 1] -> [let p := basic_period_of v] -> [[v[0]==1][
+    #v is not empty
+    #0 < p <= len v
+    [[len v >= 2*p] -> [let r := len v %p +p] -> [let tail := v[len v -r:]] -> [
+      #[0 < len tail == r <- [p..<2*p]]
+      [@[i<-[1..<len v -r]] -> [v[i] == [i%p==0]]]
+      [[r =!= p] -> [tail[p]==1]]
+        #turn on if not at end of v
+      [[basic_period_of tail < p] -> [p+basic_period_of tail > r+gcd(p, basic_period_of tail)]]
+        #avoid GCD_rule
+      [recursive_predicate4autocorrelation(tail)]
+        #recur, tail is not empty
+      ]]
+    [[len v < 2*p] -> [let r := len v-p] -> [let tail := v[p:]] -> [
+      #[0 <= len tail == r <- [0..<p]]
+      [@[i<-[1..<p]] -> [v[i] == 0]]
+      [recursive_predicate4autocorrelation(tail)]
+        #recur, tail may be empty
+      ]]
+  ]]]
+
+]]
+[[
+264K 'Combinatorics of periods in strings(2003)(Eric Rivals)(Sven Rahmann).pdf'
+=====
+@[v :: [Bool]]:#大前提
+  [is_autocorrelation_bit_vector(v) =[def]= [?[w :: [Bool]] -> [v==autocorrelation(w)]]]
+
+
+[@[v :: [Bool]] -> [is_autocorrelation_bit_vector v] -> @[i,j :: uint] -> [0 <= i < j <= len v] -> [v[i]==1] -> [is_autocorrelation_bit_vector v[i:j]]]
+
+
+#IPS:不可约伪周期集合
+#irreducible_period_set_of <== period_set_of
+@[M <- [2..]]:
+  [irreducible_period_set_of :: [uint%M] -> {uint}]
+  [irreducible_period_set_of w =[def]= /-\~ {irs <- 2**(period_set_of w) | []}
+
+
+#see:forward_propagation_rule
+[forward_closure_ :: @[S::uint] -> @[ips::{uint%S}] -> ?[ps::{uint%S}] -> [ps === /-\~ {ps <- 2**{0..<S} | [ips |<=| ps][forward_propagation_rule(ps)]}]]
+[forward_closure :: @[S::uint] -> {uint%S} -> {uint%S}]
+[forward_closure S ips =[def]= fst $ forward_closure_ S ips]
+[forward_closure S ips === let [rs := forward_closure_step S ips] in if rs == ips then ips else forward_closure S rs]
+[forward_closure_step :: @[S::uint] -> {uint%S} -> {uint%S}]
+[forward_closure_step S ips =[def]= ips \-/ {p+i*(q-p) | @[p,q <- ips], [p < q], [v[p]==1==v[q]], @[i <- [2..(S-p)//(q-p)]]}]
+
+]]
+[[
+=====
+]]
+[[
+=====
+]]
+[[
+=====
+]]
+]]]
+
+
