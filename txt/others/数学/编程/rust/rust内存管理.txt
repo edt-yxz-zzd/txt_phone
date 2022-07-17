@@ -1,0 +1,463 @@
+
+e others/数学/编程/rust/rust内存管理.txt
+[[[
+
+Rust 不提供原生类型之间的隐式类型转换（coercion），但可以使用 as 关键字进行显式类型转换（casting）。
+rust三种 结构体
+  元组结构体（tuple struct），事实上就是具名元组而已。
+  经典的 C 语言风格结构体（C struct）。
+  单元结构体（unit struct），不带字段，在泛型中很有用。
+
+
+可以用 type 语句给已有的类型取个新的名字。类型的名字必须遵循驼峰命名法（像是 CamelCase 这样），否则编译器将给出错误。原生类型是例外，比如： usize、f32，等等。
+#[allow(non_camel_case_types)]
+#![allow(dead_code)]
+#![allow(unused_code)]
+
+rust.enum === haskell.datatype
+
+
+swift a..b === rust a..=b
+swift a..<b === rust a..b
+
+[[
+https://zhuanlan.zhihu.com/p/365766807
+浅析rust的内存管理
+1 年前 · 来自专栏 rust编程语言
+子预
+北京大学 计算机系统结构硕士
+版权声明：引用必须注明出处，请尊重原创，不得用于商业行为
+学习rust第一个需要迈过去的坎儿就是内存管理，想想我们在java/go语言中使用方式
+
+java中真的一个new走天下，new就是创建对象。至于对象怎么回收，什么时候回收完全不用管：
+
+class Person {
+   private String name;
+   private int age;
+   public Person(String name, int age) {
+     this.name = name;
+     this.age = age;
+   }
+}
+
+Person person = new Person("Mr. Hello", 23);
+go语言里面的对象创建也是相对简单的
+
+type Person struct {
+   Name string
+   Age int
+}
+var person = new(Person)
+person.Name = "Mr. Hello"
+person.Age = 23
+但是在Rust中的变量创建就变得十分复杂了，我们先来看一下我们在rust内存管理方面的知识地图：
+
+
+rust的内存管理知识概览
+从地图上来看，我们在使用rust的时候的心智负担确实比以前的通用编程语言要增加很多倍：
+
+[公式]
+
+下面开始我们的rust内存管理之旅吧
+
+（一）rust语言中的变量/引用/借用的概念
+
+Rust的变量/引用/借用
+首先，需要明确的一点的是rust默认是把变量分配在栈上的，其他多数我们接触到的语言都是把一些内置类型变量或者引用分配到栈上，复杂类型的变量分配到堆上的。所以这就造成了一定的差异。
+
+把变量（包括复杂的结构体类型）分配到栈上，优势是效率高，方便自动回收。劣势是很多时候我们需要分配到堆上的，与我们惯用的习惯不太一致，加大了学习曲线。
+
+（二）rust语言中结构体声明/创建/析构
+rust中结构体的声明十分简单，就是使用struct关键字。但是这种简洁性在后续引入范性和声明周期后会极速复杂化，但是我们现在还是先按照最简单的情形引入结构体的概念：结构体就是多个命名成员变量组成的整体。其声明方式如下：
+
+struct Person {
+    name: String,
+    age: u32
+}
+结构体在栈上的创建也十分简单，只需要把每个成员变量赋值即可：
+
+let person = Person {
+    name: String::from("Mr. Hello"),
+    age: 23
+};
+创建和销毁通常是成对出现的，rust中的结构体可以明确地定义销毁的时候的行为。这里暂时先不用管impl关键字和Drop是什么意义。我们先只需要知道有一种方式可以定义结构体的析构行为：
+
+struct Person {
+    name: String,
+    age: u32
+}
+
+// 这个简单析构函数用于展示析构的触发时机。
+impl Drop for Person {
+    fn drop(&mut self) {
+        println!("Person Drop: {}", self.name);
+    }
+}
+
+fn main() {
+    let person_a = Person { 
+        name: String::from("Mr. Hello"), 
+        age: 23 
+    };
+
+    // 子代码块或者函数
+    {
+        let person_b = Person { 
+            name: String::from("Mr. World"), 
+            age: 24 
+        };
+        // Person Drop: Mr. World
+    }
+    // Person Drop: Mr. Hello
+}
+（二）rust语言中的智能指针
+(1) 智能指针Box
+
+有了前面结构体栈上析构行为的定义方式，我们就可以创造我们的第一个智能指针Box。这种智能指针就是在我们构造的时候去堆上分配内存，析构的时候去堆上释放内存。
+
+
+rust中的Box智能指针
+有兴趣的同学可以尝试自己实现一个简单的Box指针结构体，下面用伪代码示意：
+
+pub struct Box<T> {
+    ptr: 指向堆内存的指针,
+}
+
+impl<T> Box<T> {
+    pub fn new(data: T) -> Self {
+        堆上分配内存空间，并获取指向这块堆空间的指针
+        把data数据写入到堆内存空间
+        返回结构体，结构中包含指针
+    }
+}
+
+impl<T> Drop for Box<T> {
+    fn drop(&mut self) {
+        释放指针指向的堆内存空间
+    }
+}
+这用我们就利用栈上结构体销毁的析构函数，自动释放了堆内存的空间。Box智能指针本上利用栈的自动管理实现了堆的自动管理。
+
+fn main() {
+   let person_box = Box::new(Person{
+       name: String::from("Mr. Box"),
+       age: 25
+   });
+   // Person Drop: Mr. Box
+}
+
+
+(2) 智能指针Rc
+
+有了Box后我们可以利用栈帮助我们管理堆了，我们处理单个拥有者的堆上数据已经有了有效的手段，但是如果需要多个拥有者同时持有同一个对象的指针呢？
+
+struct PersonPair {
+    person_a: Box<Person>,
+    person_b: Box<Person>
+}
+
+fn main() {
+    let person_a = Box::new(Person { 
+        name: String::from("Mr. Allen"), 
+        age: 22 
+    });
+
+    let person_b = Box::new(Person { 
+        name: String::from("Mr. Bob"), 
+        age: 23 
+    });
+
+    let person_c = Box::new(Person { 
+        name: String::from("Mr. Carry"), 
+        age: 24 
+    });
+
+    let person_pair_1 = PersonPair{
+        person_a: person_a, 
+        person_b: person_b  // 第一次所有权转移
+    };
+    
+    let person_pair_2 = PersonPair{
+        person_a: person_b, // 第二次所有权转移，不允许了
+        person_b: person_c
+    };
+}
+我们会得到如下的编译错误，意思是说personb这个变量在上一次赋值给person_pair_1的时候就已经转移了拥有者，后续你又想赋值给person_pair_2是不可以的：
+
+57 |         person_b: person_b
+   |                   -------- value moved here
+...
+61 |         person_a: person_b, 
+   |                   ^^^^^^^^ value used here after mov
+那么能否有一种智能指针，可以有多个不同的拥有者呢
+
+
+rust的智能指针Rc
+那么我们怎么才能实现多个指针指向同一个地址，但是又能够自动释放呢？我们增加一个计数器记录指向同一个地址的智能指针的数量。新增加一个clone方法，用于复制指针，每次复制的时候计数器加1。然后每次drop的时候计数器减1，如果为0了就释放堆内存。一个简单的伪代码示意如下：
+
+pub struct Rc<T> {
+    ptr: 指向堆内存的指针,
+    cnt: 指向同一个地址的结构体的数量
+}
+
+impl<T> Rc<T> {
+    pub fn new(data: T) -> Self {
+        堆上分配内存空间，并获取指向这块堆空间的指针
+        把data数据写入到堆内存空间
+        cnt设置为1
+        返回结构体，结构中包含指针
+    }
+}
+
+impl<T> Drop for Rc<T> {
+    fn drop(&mut self) {
+        cnt减少1
+        如果cnt==0,那么就释放指针指向的堆内存空间
+    }
+}
+
+impl<T> Clone for Rc<T> {
+    fn clone(&self) -> Rc<T> {
+        复制ptr这个指针
+        cnt增加1
+    }
+}
+当时实际的标准库中的实现会比这个复杂，主要是还有弱指向和强指向的区别，不过初入门的时候直接这么理解就已经可以较好地理解Rc的工作方式了。
+
+我们引入Rc这个智能指针后，我们就可以做到多个智能指针指向同一个位置，但是又可以借助栈帮助我们实现自动内存管理了：
+
+struct PersonTuple {
+    person_a: Rc<Person>,
+    person_b: Rc<Person>,
+    person_c: Rc<Person>
+}
+
+fn learn_rc() {
+
+    let person_a = Rc::new(Person { 
+        name: String::from("Mr. Allen"), 
+        age: 23 
+    });
+
+    let person_b = Rc::new(Person { 
+        name: String::from("Mr. Bob"), 
+        age: 23 
+    });
+
+    let person_c = Rc::new(Person { 
+        name: String::from("Mr. Carry"), 
+        age: 23 
+    });
+
+    let person_tuple_1 = PersonTuple{
+        person_a: person_a.clone(), // 我们复制了指针
+        person_b: person_b.clone(), // 我们复制了指针
+        person_c: person_c.clone()  // 我们复制了指针
+    };
+    
+    let person_tuple_2 = PersonTuple{
+        person_a: person_a, 
+        person_b: person_b,
+        person_c: person_c
+    };
+}
+(3) 智能指针Arc
+
+前面我们介绍了Rc的使用方式，这个这种方式在多线程的环境下就无法发挥作用了。主要的多线程情况下大家直接去做计数器的加减法是做不好的，需要用到原子类型的数据变量：
+
+atomic::AtomicUsize
+其结构的示意图如下：
+
+
+rust的智能指针Arc
+用这个原子计数器来计数后，就可以保证在多线程情况下计数器是准确的。而多线程的同时写入还是一个麻烦的事情，这里在讲内存结构的时候暂时先不做阐释，后续在讲多线程的部分再详细说明，我们现在需要知道的就是多线程情况下的Arc和单线程情况的下Rc本质上是同一个意思，唯独就是计数器一个用的是AtomicUsize，一个用的是usize，就这么点区别。
+
+Arc<T>          // 仅仅共享读的时候可以这么写
+Arc<Mutex<T>>   // 多线程之间共享读写的通用写法
+Arc<RwLock<T>>  // 多线程之间共享读写的高性能写法，但是T的限制多一些
+(4) 标准容器之Cell和RefCell，以及底层的UnsafeCell
+
+前面我们讲引用计数的时候，还有一个细节没有讲到，就是如果我们的指针都是一些只读的引用，那么理论上通过这些指针是不能修改指针指向的内容的，但是我们的智能指针是需要cnt计数器的，于是标准库用unsafe的代码给我们开了一个后门，这个后门就是UnsafeCell，其定义如下：
+
+pub struct UnsafeCell<T> {
+    value: T
+}
+
+pub const fn get(&self) -> *mut T {
+    // We can just cast the pointer from `UnsafeCell<T>` to `T` because of
+    // #[repr(transparent)]. This exploits libstd's special status, there is
+    // no guarantee for user code that this will work in future versions of the compiler!
+    self as *const UnsafeCell<T> as *const T as *mut T
+}
+有了这个后门后，我们就可以直接通过不变的引用拿到UnsafeCell的可变的指针。事实上Cell就是UnsafeCell的一个简单封装：
+
+pub struct Cell<T> {
+    value: UnsafeCell<T>,
+}
+Cell一般用于最基本的实现了Copy特性的变量，如果是引用类型的变量，我们使用RefCell来声明其内部可变性，RefCell的定义如下
+
+pub struct RefCell<T> {
+    borrow: Cell<BorrowFlag>,
+    value: UnsafeCell<T>,
+}
+我们使用标准库中的说明示例来演示一下这种内部可变性：
+
+fn learn_refcell() {
+     // 注意这里我们使用的是不可变的类型
+     let shared_map: Rc<RefCell<_>> = Rc::new(RefCell::new(HashMap::new()));
+     
+     // 我们在子代码块中来修改这个map
+     {
+         // 我们这里耍赖了，我们居然从一个不可变的类型拿到了一个可变的类型
+         let mut map: RefMut<_> = shared_map.borrow_mut();
+         map.insert("africa", 92388);
+         map.insert("kyoto", 11837);
+         map.insert("piccadilly", 11826);
+         map.insert("marbles", 38);
+     }
+
+     // 最后，我们算一个汇总，看看map中的值，是否真的被改变了
+     let total: i32 = shared_map.borrow().values().sum();
+     println!("total is {}", total); //total is 116089
+}
+编辑于 2021-04-18 21:03
+
+]]
+[[
+https://zhuanlan.zhihu.com/p/432858314
+Rust 所有权：内存管理新流派
+7 个月前 · 来自专栏 Rust 学习笔记
+Linux百里
+在 Rust 中每个值都只能被一个所有者拥有，当这个值被赋给其他所有者，原所有者无法再使用。正是这种机制保证了 Rust 语言的内存安全，从而无需自动垃圾回收，也无需手动释放。所有权是 Rust 最重要的特性之一。下面来看一个简单的例子。
+
+fn main() {
+    let s = String::from("hello");
+    let a = s;          // 字符串对象“hello” 的所有权被转移
+    println!("{}"， s); // error！ 无法再使用 s
+}
+上面展示了所有权转移的基本案例, 由于a获得了字符串的所有权，s无法再使用。这可能和现存的编程语言有很大的区别，事实上在 Rust 之前，我所了解的所有语言中这样用是完全正确的，但是现在我明白了这么做的奇妙之处。
+
+为什么要转移所有权？
+Rust 定位系统编程语言，要求内存安全以及内存管理无运行时开销。
+
+何为内存管理的运行时开销，这里要拿 Java 做个例子，Java 自称是内存安全的语言，因为 Java 中程序员无需手动管理内存（程序员自己管理是内存不安全的源头）， Java 采用垃圾自动回收，所有的 Java 程序都运行在 Jvm 中，Jvm 在 Java 程序运行期间，必须时刻监控、遍历 Java 对象树，以鉴别出堆上哪些变量不再被引用，在一定的时间周期到达时自动释放那些不被引用变量的内存。
+
+也就是说，Jvm 在运行着一个和实际程序完全无关的垃圾回收进程，这被称为运行时开销。当然，由于 Java 的定位，这些开销是可以完全不用考虑的。
+
+C/C++ 作为系统编程语言，由程序员手动管理内存，在malloc后free必须被使用，否则会发生内存泄漏，最终占满进程的所有内存空间，在 C++ 中是new和delete这一对好兄弟。目测这很好处理，只要记得同时使用就好了，但是当问题变得复杂，这将变得困难而又容易出错。来看一段 C 代码：
+
+#include <stdio.h>
+#include <malloc.h>
+ 
+int* func()
+{
+    int *p = malloc(sizeof(int));
+    /*
+       do something
+    */
+    return p;
+}
+谁能保证在这个函数的外部，有人记得这个指针是 指向堆而不是栈上的，并且记得调用free()？这很难说, 尤其是情况变得更加复杂的时候… 因此，C/C++ 高手很难炼成，连 Goole 都因它犯难，试图用Go取代部分 C/C++ 的应用场景，Go的特性这里不多提，它无疑是一个优秀的编程语言，出身名门，虽然自我定位是系统编程语言，但是目前主要被用于网络编程，它也采用了垃圾自动回收机制，因此，运行时开销是无法避免的。
+
+上面说到的 Java 和 C/C++两个例子，代表了当前内存管理的两个流派，两种方式都存在一定的痛点，这就是为什么 Rust 决定采用一种完全不同的管理方式，通过转移所有权，Rust 做到了安全的内存管理。那么现在回到主题，来看 Rust 是如何管理内存的。
+
+Rust 的内存管理
+Rust 中没有自动垃圾回收（Auto GC）, 也不需手动管理，这一工作在编译阶段，由编译器来负责。编译成功后，变量内存何时回收已经被确定，硬编码到二进制程序中了，程序自己运行到该回收的时候就自动回收了。编译器如何做到如此智能？Rust 中的所有权系统功绩首屈一指。下面来分别介绍所有权系统的各种特性。
+
+作用域
+每一个变量被限定在一个作用域内有效，和大多数编程语言一样，{}被看作一个作用域的标志，但不同的是，在运行到}时，不仅回收栈上的变量，也回收堆上的内存。
+
+fn func() {
+    let n = 2;  // 在栈上分配
+    let s = String::new(); // 在堆上分配
+}
+如上，在堆上分配的空间也被回收了，这看似很正常，但是如果s被作为返回值，它的作用域改变了，它仍然能够最终在某个}（所处作用域结束时）处被释放，作用域保证了变量一定会被回收，也就避免了像上面 C 语言忘记调用free()的情况了。
+
+到底是如何回收的？在 Rust 中，类使用struct定义，或者你可以不叫它“类”，而是别的名字。每个对象都实现了一个trait, 即Drop（如果你熟悉 Java 可以把trait理解为“接口”），Drop 包含一个方法drop(), 在任何对象离开作用域的时候，它的drop()会被自动调用，从而释放自身内存。
+
+转移
+正如本文开始提到，一个值只能有一个拥有者，因此当赋值给其他的变量时，所有权被转移，原所有者不能继续使用。在 Rust 中，所有权转移称为move. 本文开头的赋值是一个所有权转移的基本例子，下面我们再来看一个稍微复杂的。
+
+fn main() {
+    let s = String::from("hello");
+    func(s);    // 字符串的所有权转移到了func()的内部
+    let a = s;  // error  s 已经无法被使用
+}
+ 
+fn func(s: String) {
+    println!("{}", s);  // s 将在离开作用域时被释放
+}
+但是有时在作为函数参数使用后，仍要使用怎么办，在函数结尾将其 return是一个解决办法，但不是好办法，后面马上会讲到的借用，会很好的解决这个问题。
+
+值得注意的是，move的例子中我都使用的是 String::new()或者String::from()来创建一个字符串对象, 为什么不直接用字符串类型例如let s = "hello"或者其他类型如i32做演示，因为 move 规则对它们并不适用！
+
+fn main() {
+    let n = 2;   // i32 类型
+    let a = n;
+    println!("{}", n);  // success! 并没有问题
+}
+看起来这和之前的理论矛盾了，但实际上所有权规则对所有类型都是适用的，只不过 Rust 为了减少编程的复杂度，在基本类型赋值的时候, 拷贝了一份原内存作为新变量，而不是转移所有权。也就是说本例中 a 是一个独立的变量，拥有独立的内存，而不是从n处获得。n也得以保留了对应值的内存，因而可以继续使用。
+
+以上说的“基本类型”到底是哪些类型，常用的i32,bool等都是。具体来说是实现了Copy这个trait的类型，基本类型 Rust 已经内置实现了，也就是说，我们完全可以自己为String类型实现Copy，从而在字符串对象赋值的时候，拷贝而不转移。
+
+注意！let s = "hello"中的s并不是基本类型变量，虽然赋值也不会转移所有权，那是因为s的类型是&str, 是借用在起作用而不是拷贝！
+
+上面的赋值和传参是move的隐式调用，有些情况下，必须通过关键字move显式指定，否则无法编译通过，比如闭包就是一个常见的情况。文章篇幅考虑，这里先不介绍闭包，让我们快速进入前面多次提到的借用，这也是本节最后一部分。
+
+借用
+使用转移所有权有的时候还是太麻烦了，正如现实中一样，我可以把自己的东西借给被人用，但仍然具有所有权，Rust 中支持借用(borrow)，用&表示，有些文章中也称为“引用”，但是我觉得这样并不好，因为这里的&与在 C/C++ 中&有很大的区别, 而且编译器都叫它 “borrow” 而非 “refer” !
+
+来看一下如何用借用解决所有权问题。
+
+fn main() {
+    let s = String::from("hello");
+    let a = &s;
+    println!("{}", s);  // success
+    println!("{}", a);  // success, print "hello"
+    func(&s);  // success
+}
+ 
+fn func(s: &String) {
+    println!("{}", s);
+}
+这段代码是借用的基本用法，a通过&借用了s的内存，并没有转移，但现在a能访问s的空间了，Rust 允许有多个借用者，传入到函数func()的也是s的一个借用，但是它在func()结束时被释放了。
+
+但是，在被借用期间，拥有者不允许修改变量，或者转移所有权！这看似是一个礼节问题，但实则是为内存安全考虑，修改值将导致这些借用的值与本身不一致，引发逻辑错误，转移所有权必将导致借用失效，因此，这不被允许！让我们尝试在func(&s)之后转移所有权。
+
+fn main() {
+    let s = String::from("hello");
+    ...
+    func(&s);
+    let b = s;  // error  s 已被借用，无法转移
+}
+到这里为止，提到的借用都是指不可变借用，也可以说是“只读借用”，借用者允许有多个，借用者不允许修改值，这不难理解，如果有一个借用者修改了值，必将造成数据的不一致。
+
+但有时我们还真的需要修改值！比如我们熟悉的swap(), 这时 Rust 提供了可变借用(&mut),可变借用者能够对数据进行修改，当然前提是这个值本身是可变的(mut)。简单考虑，这里用字符串连接作为例子。
+
+fn main() {
+    let mut s = String::from("hello");
+    func(&mut s);
+}
+ 
+fn func(s: &mut String) {
+    s.push_str(" world");  // s = "hello world"
+}
+通过可变借用，func()函数得以修改了s的值，但是可变借用有一个非常严格的限制，那就是只能有一个可变借用。可变借用期间，不允许有其他的任何借用，包括不可变借用； 可变借用期间，拥有者本身也不能进行任何操作，不能转移，不能修改值。
+
+从某种角度来看，可变借用和转移没什么区别，它相当于一个临时的所有权转移，当接收转移的那个变量离开作用域，所有权自动物归原主 。
+
+到此为止，Rust 的所有权系统基本介绍完毕，正是这些规则撑起了 Rust 内存安全的大旗，完备而相互论证，借用理论来源于生活，符合情理，不得不说 Rust 内存管理设计的非常精妙！
+
+Tips
+提炼出本文得出的几个有用的 Tip：
+
+基本变量（实现了Copy）的变量赋值时不转移所有权，而是拷贝
+被借用期间，不允许修改值
+可变借用只允许一个，借用期间，拥有者不允许任何操作
+可变借用相当于临时的所有权转移，借用释放后，物归原主
+作者：chiyiw
+链接：https://juejin.cn/post/6844903509087764488
+发布于 2021-11-13 15:04
+
+]]
+]]]

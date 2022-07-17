@@ -1,0 +1,4120 @@
+
+e ../lots/NOTE/Python/howto/set-timeout-to-kill-thread-or-subprocess.txt
+
+[[问题来源:
+e script/parse_html_of_integer_factor_result_at_factordb_com.py  自动下载 所有素因子p 并递归下载 (p-1)的 整数分解 用于 证明
+  factordb.com
+    搜索 -> 整数分解 但 大数只显示部分
+    内部ID -> 大数 完整数字
+  下限阈值？或者 用sympy 分解，但 限定耗时
+  how python set timeout to kill thread/subprocess?
+
+
+]]
+[[
+想要递归下载整数分解(factordb.com)用于证明(u->{p:e} then recur (p-1)->{...})，但又不想下载太多，下限阈值？或 使用sympy分解，并 限制时长(timeout?)
+help(sympy.factorint)
+- ``use_trial``: Toggle use of trial division
+- ``use_rho``: Toggle use of Pollard's rho method
+- ``use_pm1``: Toggle use of Pollard's p-1 method
+
+Algorithm:
+    The function switches between multiple algorithms. Trial division quickly finds small factors (of the order 1-5 digits)
+    , and finds all large factors if given enough time. The Pollard rho and p-1 algorithms are used to find large factors ahead of time
+    ; they will often find factors of the order of 10 digits within a few seconds:
+>>> (10**10).bit_length()
+34
+>>> (10**11).bit_length()
+37
+要不，直接 设置 下限阈值=10**10 得了；timeout 太麻烦
+
+
+]]
+
+
+
+
+[[[解决方案:
+
+[[
+threading::Thread+Event
+===
+
+from threading import Thread, Event
+import time
+ 
+ 
+# It sends signals from one to another thread
+bridge = Event()
+ 
+ 
+def func():
+    print('func() is started')
+    """
+    func will timeout after 3 seconds it will print a number starting from 1 and wait for 1 second 
+    """
+    x = 0
+    while True:
+        x += 1
+        print(x)
+        time.sleep(1)
+ 
+        # Ensures whether the other thread sends the signals or not
+        if bridge.is_set():
+            break
+ 
+ 
+if __name__ == '__main__':
+    # Creating the main thread that executes the function
+    main_thread= Thread(target=func)
+ 
+    # We start the thread and will wait for 3 seconds then the code will continue to execute
+    main_thread.start()
+    main_thread.join(timeout=3)
+ 
+    # sends the signal to stop other thread
+    bridge.set()
+ 
+    print("The function is timed out, you can continue performing your other task")
+]]
+
+[[
+signal::signal+alarm
+===
+
+import sys
+import random
+import signal
+import time
+
+
+def handle_sigint(sig, frame):
+    print('SIGINT received, terminating.')
+    sys.exit()
+
+
+def handle_timeout(sig, frame):
+    raise TimeoutError('took too long')
+
+
+def do_stuff(n):
+    time.sleep(n)
+
+
+def main():
+    signal.signal(signal.SIGINT, handle_sigint)
+    signal.signal(signal.SIGALRM, handle_timeout)
+
+    max_duration = 5
+    
+    while True:
+        try:
+            duration = random.choice([x for x in range(1, 11)])
+            print('duration = {}: '.format(duration), end='', flush=True)
+            signal.alarm(max_duration + 1)
+            do_stuff(duration)
+            signal.alarm(0)
+        except TimeoutError as exc:
+            print('{}: {}'.format(exc.__class__.__name__, exc))
+        else:
+            print('slept for {}s'.format(duration))
+
+
+if __name__ == '__main__':
+    main()
+
+
+]]
+[[
+multiprocessing::join+is_alive+terminate
+===
+
+import multiprocessing as mp
+import random
+import time
+
+
+def do_stuff(n):
+    time.sleep(n)
+    print('slept for {}s'.format(n))
+
+
+def main():
+    max_duration = 5
+
+    while True:
+        duration = random.choice([x for x in range(1, 11)])
+        print('duration = {}: '.format(duration), end='', flush=True)
+
+        process = mp.Process(target=do_stuff, args=(duration,))
+        process.start()
+        process.join(timeout=max_duration + 0.01)
+
+        if process.is_alive():
+            process.terminate()
+            process.join()
+            print('took too long')
+
+
+if __name__ == '__main__':
+    main()
+
+]]
+[[
+_thread/thread.interrupt_main + threading.Timer
+===
+#exit_after decorator
+#Next we need a function to terminate the main() from the child thread:
+
+def quit_function(fn_name):
+    # print to stderr, unbuffered in Python 2.
+    print('{0} took too long'.format(fn_name), file=sys.stderr)
+    sys.stderr.flush() # Python 3 stderr is likely buffered.
+    thread.interrupt_main() # raises KeyboardInterrupt
+
+def exit_after(s):
+    '''
+    use as decorator to exit process if 
+    function takes longer than s seconds
+    '''
+    def outer(fn):
+        def inner(*args, **kwargs):
+            timer = threading.Timer(s, quit_function, args=[fn.__name__])
+            timer.start()
+            try:
+                result = fn(*args, **kwargs)
+            finally:
+                timer.cancel()
+            return result
+        return inner
+    return outer
+]]
+[[
+stopit
+pip install stopit
+===
+@stopit.threading_timeoutable(default='not finished')
+#With stopit-1.1.2 the basic timeout decorator: @stopit.threading_timeoutable(default='not finished') works well on Linux and Windows as well. Simple and excellent solution if you only want a simple timeout.
+]]
+[[
+threading+ctypes.pythonapi.PyThreadState_SetAsyncExc
+===
+import threading
+import ctypes
+import time
+  
+class thread_with_exception(threading.Thread):
+    def __init__(self, name):
+        threading.Thread.__init__(self)
+        self.name = name
+             
+    def run(self):
+ 
+        # target function of the thread class
+        try:
+            while True:
+                print('running ' + self.name)
+        finally:
+            print('ended')
+          
+    def get_id(self):
+ 
+        # returns id of the respective thread
+        if hasattr(self, '_thread_id'):
+            return self._thread_id
+        for id, thread in threading._active.items():
+            if thread is self:
+                return id
+  
+    def raise_exception(self):
+        thread_id = self.get_id()
+        res = ctypes.pythonapi.PyThreadState_SetAsyncExc(thread_id,
+              ctypes.py_object(SystemExit))
+        if res > 1:
+            ctypes.pythonapi.PyThreadState_SetAsyncExc(thread_id, 0)
+            print('Exception raise failure')
+      
+t1 = thread_with_exception('Thread 1')
+t1.start()
+time.sleep(2)
+t1.raise_exception()
+t1.join()
+
+]]
+[[
+===
+]]
+[[
+===
+]]
+[[
+===
+]]
+[[
+===
+]]
+]]]
+
+[[[
+how python set timeout to kill thread/subprocess?
+how python set timeout to terminate function/thread?
+[[
+===
+]]
+[[
+===
+]]
+[[
+===
+]]
+[[
+https://stackoverflow.com/questions/2223654/stopping-a-thread-in-python?noredirect=1
+===
+Stopping a thread in python
+2
+I am creating a thread in my Python app with thread.start_new_thread.
+
+How do I stop it if it hasn't finished in three seconds time?
+
+python
+multithreading
+Share
+Improve this question
+Follow
+asked Feb 8, 2010 at 17:49
+user avatar
+Fahad Sadah
+2,23833 gold badges1818 silver badges2727 bronze badges
+You might be interested in this related question on StackOverflow. – 
+Noctis Skytower
+ Feb 8, 2010 at 17:56
+If you are downloading data, you can set a socket timeout. – 
+wisty
+ Feb 9, 2010 at 5:30
+Add a comment
+4 Answers
+Sorted by:
+
+Highest score (default)
+
+2
+
+You can't do that directly. Anyway aborting a thread is not good practice - rather think about using synchronization mechanisms that let you abort the thread in a "soft" way.
+
+But daemonic threads will automatically be aborted if no non-daemonic threads remain (e.g. if the only main thread ends). Maybe that's what you want.
+
+Share
+Improve this answer
+Follow
+answered Feb 8, 2010 at 18:01
+user avatar
+AndiDog
+66.1k2020 gold badges156156 silver badges201201 bronze badges
+Add a comment
+
+1
+
+If you really need to do this (e.g. the thread calls code that may hang forever) then consider rewriting your code to spawn a process with the multiprocessing module. You can then kill the process with the Process.terminate() method. You will need 2.6 or later for this, of course.
+
+Share
+Improve this answer
+Follow
+answered Feb 8, 2010 at 18:23
+user avatar
+Dave Kirby
+24.7k55 gold badges6464 silver badges8181 bronze badges
+Add a comment
+
+1
+
+You cannot. Threads can't be killed from outside. The only thing you can do is add a way to ask the thread to exit. Obviously you won't be able to do this if the thread is blocked in some systemcall.
+
+Share
+Improve this answer
+Follow
+answered Feb 8, 2010 at 17:52
+user avatar
+Thomas Wouters
+126k2323 gold badges144144 silver badges122122 bronze badges
+Add a comment
+
+1
+
+As noted in a related question, you might be able to raise an exception through ctypes.pythonapi, but not while it's waiting on a system call.
+
+]]
+[[
+https://www.geeksforgeeks.org/python-different-ways-to-kill-a-thread/
+===
+Python | Different ways to kill a Thread
+
+Difficulty Level : Medium
+Last Updated : 20 Jul, 2021
+In general, killing threads abruptly is considered a bad programming practice. Killing a thread abruptly might leave a critical resource that must be closed properly, open. But you might want to kill a thread once some specific time period has passed or some interrupt has been generated. There are the various methods by which you can kill a thread in python. 
+ 
+
+Raising exceptions in a python thread
+Set/Reset stop flag
+Using traces to kill threads
+Using the multiprocessing module to kill threads
+Killing Python thread by setting it as daemon
+Using a hidden function _stop()
+Raising exceptions in a python thread : 
+This method uses the function PyThreadState_SetAsyncExc() to raise an exception in the a thread. For Example, 
+ 
+
+Python3
+
+# Python program raising
+# exceptions in a python
+# thread
+ 
+import threading
+import ctypes
+import time
+  
+class thread_with_exception(threading.Thread):
+    def __init__(self, name):
+        threading.Thread.__init__(self)
+        self.name = name
+             
+    def run(self):
+ 
+        # target function of the thread class
+        try:
+            while True:
+                print('running ' + self.name)
+        finally:
+            print('ended')
+          
+    def get_id(self):
+ 
+        # returns id of the respective thread
+        if hasattr(self, '_thread_id'):
+            return self._thread_id
+        for id, thread in threading._active.items():
+            if thread is self:
+                return id
+  
+    def raise_exception(self):
+        thread_id = self.get_id()
+        res = ctypes.pythonapi.PyThreadState_SetAsyncExc(thread_id,
+              ctypes.py_object(SystemExit))
+        if res > 1:
+            ctypes.pythonapi.PyThreadState_SetAsyncExc(thread_id, 0)
+            print('Exception raise failure')
+      
+t1 = thread_with_exception('Thread 1')
+t1.start()
+time.sleep(2)
+t1.raise_exception()
+t1.join()
+When we run the code above in a machine and you will notice, as soon as the function raise_exception() is called, the target function run() ends. This is because as soon as an exception is raised, program control jumps out of the try block and run() function is terminated. After that join() function can be called to kill the thread. In the absence of the function run_exception(), the target function run() keeps running forever and join() function is never called to kill the thread. 
+  
+Set/Reset stop flag : 
+In order to kill a threads, we can declare a stop flag and this flag will be check occasionally by the thread. For Example 
+ 
+
+Python3
+# Python program showing
+# how to kill threads
+# using set/reset stop
+# flag
+ 
+import threading
+import time
+ 
+def run():
+    while True:
+        print('thread running')
+        global stop_threads
+        if stop_threads:
+            break
+ 
+stop_threads = False
+t1 = threading.Thread(target = run)
+t1.start()
+time.sleep(1)
+stop_threads = True
+t1.join()
+print('thread killed')
+In the above code, as soon as the global variable stop_threads is set, the target function run() ends and the thread t1 can be killed by using t1.join(). But one may refrain from using global variable due to certain reasons. For those situations, function objects can be passed to provide a similar functionality as shown below. 
+ 
+
+Python3
+# Python program killing
+# threads using stop
+# flag
+ 
+import threading
+import time
+ 
+def run(stop):
+    while True:
+        print('thread running')
+        if stop():
+                break
+                 
+def main():
+        stop_threads = False
+        t1 = threading.Thread(target = run, args =(lambda : stop_threads, ))
+        t1.start()
+        time.sleep(1)
+        stop_threads = True
+        t1.join()
+        print('thread killed')
+main()
+The function object passed in the above code always returns the value of the local variable stop_threads. This value is checked in the function run(), and as soon as stop_threads is reset, the run() function ends and the thread can be killed. 
+  
+Using traces to kill threads : 
+This methods works by installing traces in each thread. Each trace terminates itself on the detection of some stimulus or flag, thus instantly killing the associated thread. For Example 
+ 
+
+Python3
+# Python program using
+# traces to kill threads
+ 
+import sys
+import trace
+import threading
+import time
+class thread_with_trace(threading.Thread):
+  def __init__(self, *args, **keywords):
+    threading.Thread.__init__(self, *args, **keywords)
+    self.killed = False
+ 
+  def start(self):
+    self.__run_backup = self.run
+    self.run = self.__run     
+    threading.Thread.start(self)
+ 
+  def __run(self):
+    sys.settrace(self.globaltrace)
+    self.__run_backup()
+    self.run = self.__run_backup
+ 
+  def globaltrace(self, frame, event, arg):
+    if event == 'call':
+      return self.localtrace
+    else:
+      return None
+ 
+  def localtrace(self, frame, event, arg):
+    if self.killed:
+      if event == 'line':
+        raise SystemExit()
+    return self.localtrace
+ 
+  def kill(self):
+    self.killed = True
+ 
+def func():
+  while True:
+    print('thread running')
+ 
+t1 = thread_with_trace(target = func)
+t1.start()
+time.sleep(2)
+t1.kill()
+t1.join()
+if not t1.isAlive():
+  print('thread killed')
+In this code, start() is slightly modified to set the system trace function using settrace(). The local trace function is defined such that, whenever the kill flag (killed) of the respective thread is set, a SystemExit exception is raised upon the execution of the next line of code, which end the execution of the target function func. Now the thread can be killed with join(). 
+  
+Using the multiprocessing module to kill threads : 
+The multiprocessing module of Python allows you to spawn processes in the similar way you spawn threads using the threading module. The interface of the multithreading module is similar to that of the threading module. For Example, in a given code we created three threads(processes) which count from 1 to 9. 
+ 
+
+Python3
+# Python program creating
+# three threads
+ 
+import threading
+import time
+ 
+# counts from 1 to 9
+def func(number):
+    for i in range(1, 10):
+        time.sleep(0.01)
+        print('Thread ' + str(number) + ': prints ' + str(number*i))
+ 
+# creates 3 threads
+for i in range(0, 3):
+    thread = threading.Thread(target=func, args=(i,))
+    thread.start()
+The functionality of the above code can also be implemented by using the multiprocessing module in a similar manner, with very few changes. See the code given below. 
+ 
+
+Python3
+# Python program creating
+# thread using multiprocessing
+# module
+ 
+import multiprocessing
+import time
+ 
+def func(number):
+    for i in range(1, 10):
+        time.sleep(0.01)
+        print('Processing ' + str(number) + ': prints ' + str(number*i))
+ 
+for i in range(0, 3):
+    process = multiprocessing.Process(target=func, args=(i,))
+    process.start()
+Though the interface of the two modules is similar, the two modules have very different implementations. All the threads share global variables, whereas processes are completely separate from each other. Hence, killing processes is much safer as compared to killing threads. The Process class is provided a method, terminate(), to kill a process. Now, getting back to the initial problem. Suppose in the above code, we want to kill all the processes after 0.03s have passed. This functionality is achieved using the multiprocessing module in the following code. 
+ 
+
+Python3
+# Python program killing
+# a thread using multiprocessing
+# module
+ 
+import multiprocessing
+import time
+ 
+def func(number):
+    for i in range(1, 10):
+        time.sleep(0.01)
+        print('Processing ' + str(number) + ': prints ' + str(number*i))
+ 
+# list of all processes, so that they can be killed afterwards
+all_processes = []
+ 
+for i in range(0, 3):
+    process = multiprocessing.Process(target=func, args=(i,))
+    process.start()
+    all_processes.append(process)
+ 
+# kill all processes after 0.03s
+time.sleep(0.03)
+for process in all_processes:
+    process.terminate()
+Though the two modules have different implementations. This functionality provided by the multiprocessing module in the above code is similar to killing threads. Hence, the multiprocessing module can be used as a simple alternative whenever we are required to implement the killing of threads in Python. 
+  
+Killing Python thread by setting it as daemon : 
+Daemon threads are those threads which are killed when the main program exits. For Example 
+ 
+
+Python3
+import threading
+import time
+import sys
+ 
+def func():
+    while True:
+        time.sleep(0.5)
+        print("Thread alive, and it won't die on program termination")
+ 
+t1 = threading.Thread(target=func)
+t1.start()
+time.sleep(2)
+sys.exit()
+Notice that, thread t1 stays alive and prevents the main program to exit via sys.exit(). In Python, any alive non-daemon thread blocks the main program to exit. Whereas, daemon threads themselves are killed as soon as the main program exits. In other words, as soon as the main program exits, all the daemon threads are killed. To declare a thread as daemon, we set the keyword argument, daemon as True. For Example in the given code it demonstrates the property of daemon threads. 
+ 
+
+Python3
+# Python program killing
+# thread using daemon
+ 
+import threading
+import time
+import sys
+ 
+def func():
+    while True:
+        time.sleep(0.5)
+        print('Thread alive, but it will die on program termination')
+ 
+t1 = threading.Thread(target=func)
+t1.daemon = True
+t1.start()
+time.sleep(2)
+sys.exit()
+Notice that, as soon as the main program exits, the thread t1 is killed. This method proves to be extremely useful in cases where program termination can be used to trigger the killing of threads. Note that in Python, the main program terminates as soon as all the non-daemon threads are dead, irrespective of the number of daemon threads alive. Hence, the resources held by these daemon threads, such as open files, database transactions, etc. may not be released properly. The initial thread of control in a python program is not a daemon thread. Killing a thread forcibly is not recommended unless it is known for sure, that doing so will not cause any leaks or deadlocks. 
+Using a hidden function _stop() : 
+In order to kill a thread, we use hidden function _stop() this function is not documented but might disappear in the next version of python. 
+ 
+
+Python3
+# Python program killing
+# a thread using ._stop()
+# function
+ 
+import time
+import threading
+ 
+class MyThread(threading.Thread):
+ 
+    # Thread class with a _stop() method.
+    # The thread itself has to check
+    # regularly for the stopped() condition.
+ 
+    def __init__(self, *args, **kwargs):
+        super(MyThread, self).__init__(*args, **kwargs)
+        self._stop = threading.Event()
+ 
+    # function using _stop function
+    def stop(self):
+        self._stop.set()
+ 
+    def stopped(self):
+        return self._stop.isSet()
+ 
+    def run(self):
+        while True:
+            if self.stopped():
+                return
+            print("Hello, world!")
+            time.sleep(1)
+ 
+t1 = MyThread()
+ 
+t1.start()
+time.sleep(5)
+t1.stop()
+t1.join()
+Note: Above methods might not work in some situation or another, because python does not provide any direct method to kill threads.
+ 
+
+
+]]
+[[
+https://dreamix.eu/blog/webothers/timeout-function-in-python-3
+===
+Timeout Function in Python 3
+ by Veselin Pavlov
+ November 15, 2016
+Have you ever implemented a function that has to stop its execution after certain period of time? It is not as easy as it sounds, is it? I had to develop such functionality for a customer who had a requirement that one activity shouldn’t take more than 180 seconds to execute. There are two approaches to achieve this behavior. The first one is to use threads and the second one, to use processes. The second one is better in my opinion but let me first start with the threads.
+
+Implementing timeout function with thread:
+In order to implement the timeout function, we need one thread to execute the function and another to watch the time that it takes. When the time is over only the second thread knows it. If we could simply kill the function thread everything would work as expected but since they share the same execution context, we can’t. Threads can’t be killed so what we can do is to signal the other thread that it should stop. The drawback of this approach is that it can’t be used in all the cases. For example if we are using an external library inside that function, the execution might be stuck in a code that we don’t have access to. In this case we can’t guarantee that the function will stop exactly after the given period. But in most of the cases this approach is enough. In the first thread (the one that executes the function) we have to make regular checks if the time is over. We can use the Event object from the threading module in Python 3 to send a signal from one thread to another. Here is an example:
+
+Example:
+
+Python
+from threading import Thread, Event
+import time
+
+
+# Event object used to send signals from one thread to another
+stop_event = Event()
+
+
+def do_actions():
+    """
+    Function that should timeout after 5 seconds. It simply prints a number and waits 1 second.
+    :return:
+    """
+    i = 0
+    while True:
+        i += 1
+        print(i)
+        time.sleep(1)
+
+        # Here we make the check if the other thread sent a signal to stop execution.
+        if stop_event.is_set():
+            break
+
+
+if __name__ == '__main__':
+    # We create another Thread
+    action_thread = Thread(target=do_actions)
+
+    # Here we start the thread and we wait 5 seconds before the code continues to execute.
+    action_thread.start()
+    action_thread.join(timeout=5)
+
+    # We send a signal that the other thread should stop.
+    stop_event.set()
+
+    print("Hey there! I timed out! You can do things after me!")
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+from threading import Thread, Event
+import time
+ 
+ 
+# Event object used to send signals from one thread to another
+stop_event = Event()
+ 
+ 
+def do_actions():
+    """
+    Function that should timeout after 5 seconds. It simply prints a number and waits 1 second.
+    :return:
+    """
+    i = 0
+    while True:
+        i += 1
+        print(i)
+        time.sleep(1)
+ 
+        # Here we make the check if the other thread sent a signal to stop execution.
+        if stop_event.is_set():
+            break
+ 
+ 
+if __name__ == '__main__':
+    # We create another Thread
+    action_thread = Thread(target=do_actions)
+ 
+    # Here we start the thread and we wait 5 seconds before the code continues to execute.
+    action_thread.start()
+    action_thread.join(timeout=5)
+ 
+    # We send a signal that the other thread should stop.
+    stop_event.set()
+ 
+    print("Hey there! I timed out! You can do things after me!")
+Result:
+1
+2
+3
+4
+5
+Hey there! I timed out! You can do things after me!
+
+In this example the main thread waits 5 seconds before it sends a stop_event signal. This is implemented with the join method which purpose is to block the calling thread until the thread whose join() method is called is terminated or the period set in the timeout parameter is over. After the blocking goes off, the main thread sends the stop signal and the other thread is supposed to see it and stop. If we have a loop with many fast actions, this approach is appropriate but if we call some functions from external modules we can’t guarantee that after the 5 seconds, the thread will be able to see that it should stop. Fortunately Python provides the multiprocessing module, which allows us to create processes which can be killed.
+
+Implementing timeout function with Process:
+As I said earlier threads can’t be killed because they have shared memory and some resources like files, database connections might be left unreleased if we kill the threads forcefully. This is not true for processes. Each process has it’s own memory space. This allows us to kill it without worrying that it might leave some open resource. Below is the same example implemented with process:
+
+Example:
+
+Python
+from multiprocessing import Process
+import time
+
+def do_actions():
+    """
+    Function that should timeout after 5 seconds. It simply prints a number and waits 1 second.
+    :return:
+    """
+    i = 0
+    while True:
+        i += 1
+        print(i)
+        time.sleep(1)
+
+if __name__ == '__main__':
+    # We create a Process
+    action_process = Process(target=do_actions)
+
+    # We start the process and we block for 5 seconds.
+    action_process.start()
+    action_process.join(timeout=5)
+
+    # We terminate the process.
+    action_process.terminate()
+    print("Hey there! I timed out! You can do things after me!")
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+from multiprocessing import Process
+import time
+ 
+def do_actions():
+    """
+    Function that should timeout after 5 seconds. It simply prints a number and waits 1 second.
+    :return:
+    """
+    i = 0
+    while True:
+        i += 1
+        print(i)
+        time.sleep(1)
+ 
+if __name__ == '__main__':
+    # We create a Process
+    action_process = Process(target=do_actions)
+ 
+    # We start the process and we block for 5 seconds.
+    action_process.start()
+    action_process.join(timeout=5)
+ 
+    # We terminate the process.
+    action_process.terminate()
+    print("Hey there! I timed out! You can do things after me!")
+Result:
+1
+2
+3
+4
+5
+Hey there! I timed out! You can do things after me!
+
+As you can see from the code we use the terminate function of the process to stop it. Keep in mind that the termination process might take some time so in both cases we can’t guarantee that it will take exactly 5 seconds to finish but at least with processes it will be closer.
+
+Do you know another way to implement this behavior?
+
+
+Veselin Pavlov
+Dev Manager and Partner at Dreamix
+
+]]
+[[
+https://www.codespeedy.com/timeout-a-function-in-python/
+===
+Timeout a function in Python
+ By Pradeep Kumar
+Today, We will discuss how to timeout a function in Python.
+Frequently, We need to run a function but when it takes too much time we want to terminate the function and want to continue our other task. This type of functionality can be achieved using thread.
+
+Applying timeout function using thread in Python
+If we want to implement timeout a function we need two threads-
+1. The first thread is to execute the function.
+2. The second thread is to measure the time taken by the function.
+The only second thread should whether the time is over or not.
+In this approach, we can not kill the thread in between because they hold some resources and memory spaces.
+If we kill the thread forcefully then it causes some files and database connectivity remains unreleased.
+Alternatively, we can use the event object from the threading module. Event object sends the signal from one thread to another thread
+
+Example :
+
+
+from threading import Thread, Event
+import time
+ 
+ 
+# It sends signals from one to another thread
+bridge = Event()
+ 
+ 
+def func():
+    print('func() is started')
+    """
+    func will timeout after 3 seconds it will print a number starting from 1 and wait for 1 second 
+    """
+    x = 0
+    while True:
+        x += 1
+        print(x)
+        time.sleep(1)
+ 
+        # Ensures whether the other thread sends the signals or not
+        if bridge.is_set():
+            break
+ 
+ 
+if __name__ == '__main__':
+    # Creating the main thread that executes the function
+    main_thread= Thread(target=func)
+ 
+    # We start the thread and will wait for 3 seconds then the code will continue to execute
+    main_thread.start()
+    main_thread.join(timeout=3)
+ 
+    # sends the signal to stop other thread
+    bridge.set()
+ 
+    print("The function is timed out, you can continue performing your other task")
+Output :
+
+func() is started
+1
+2
+3
+The function is timed out, you can continue performing your other task
+Note: To terminate the function it might take some time, we can not guarantee that it will take exactly 3 seconds to terminate.
+
+Drawback: If we are using an external library in our program then it may be stuck in such code where we can not access.
+
+]]
+[[
+https://alexandra-zaharia.github.io/posts/multiprocessing-in-python-with-shared-resources/
+===
+Multiprocessing in Python with shared resources
+Alexandra Zaharia on Apr 17, 2019
+Updated Dec 30, 2021 7 min read
+The problem
+In the previous post on parallelism in Python, we have seen how an external Python script performing a long computation can be ran in parallel using Python’s multiprocessing module. If you haven’t done so already, take your time to read that post before this one.
+
+Here we elaborate on the scenario presented in the previous post:
+
+As before, we have an external Python script worker.py that performs a long computation.
+As before, worker.py is launched several times in parallel using a multiprocessing pool.
+As before, the computations performed by the different worker instances are independent from each other.
+Here comes the novelty: although the different computations are independent, they need to access (read and update) a shared resource.
+The figure below shows a shared resource (SR) in yellow, that needs to be accessed by the tasks in grey (arrows). Some tasks are ran in parallel on the four available CPUs.
+
+shared resource
+
+What we need to do is enable each task to access the shared resource only if no other task is currently accessing it. This can be achieved by using a synchronization mechanism called a lock.
+
+The worker script
+First let us briefly see what is the task that we will be running in parallel. The worker.py script does just that, it performs a long “computation” (sleeping) and outputs a message at the end (for more explanations see the previous post):
+
+
+import sys
+import time
+
+
+def do_work(n):
+    time.sleep(n)
+    print('I just did some hard work for {}s!'.format(n))
+
+
+if __name__ == '__main__':
+    if len(sys.argv) != 2:
+      print('Please provide one integer argument', file=sys.stderr)
+      exit(1)
+    try:
+        seconds = int(sys.argv[1])
+        do_work(seconds)
+    except Exception as e:
+        print(e)
+The main script
+What we will be doing now is launching 100 processes in parallel on as many threads as we have CPUs. Each process launches worker.py as a Python subprocess. As we have seen above, the worker script sleeps for a given number of seconds.
+
+The shared resource
+Here is where the shared resource come into play. At the end of each “computation”, the worker process accesses this shared resource in both read and write mode. For the purpose of this example, let us imagine the shared resource is a list of results. The worker process needs to read the resource and update it with a certain value only if the value is not yet present in the list.
+
+Note: The more observant may argue that a list updated only with values that are not already included in the list is the equivalent of a set. This is correct, however:
+
+the Python multiprocessing module only allows lists and dictionaries as shared resources, and
+this is only an example meant to show that we need to reserve exclusive access to a resource in both read and write mode if what we write into the shared resource is dependent on what the shared resource already contains.
+The script
+Let us see the main script main.py right now and we’ll get into some details below:
+
+
+import subprocess
+import multiprocessing as mp
+from tqdm import tqdm
+
+NUMBER_OF_TASKS = 100
+progress_bar = tqdm(total=NUMBER_OF_TASKS)
+
+
+def work(sec_sleep, processed_values, lock):
+    seconds = int(sec_sleep) % 10 + 1
+    command = ['python', 'worker.py', str(seconds)]
+    subprocess.call(command)
+    with lock:
+        if seconds not in processed_values:
+            processed_values.append(seconds)
+
+
+def update_progress_bar(_):
+    progress_bar.update()
+
+
+if __name__ == '__main__':
+    tasks = [str(x) for x in range(1, NUMBER_OF_TASKS + 1)]
+    pool = mp.Pool()
+    manager = mp.Manager()
+    lock = manager.Lock()
+    shared_list = manager.list()
+
+    for i in tasks:
+        pool.apply_async(work, (i, shared_list, lock,),
+                         callback=update_progress_bar)
+    pool.close()
+    pool.join()
+
+    print(shared_list)
+Explanation
+Just like in the previous post, we define a pool of tasks that we want to parallelize. Although the aim is to eventually run 100 processes (NUMBER_OF_TASKS is 100, see lines 5 and 23), we cannot effectively run them all at the same time. For true parallelism, each task should be handled by a separate CPU, and the tasks should be ran at the same time. This is why we define the pool of tasks as holding as many processes as there are CPU threads at line 24 (this is the default behavior for mp.Pool() with no argument). If you want to specify a different number of processes with respect to the available number of CPU threads you may use the cpu_count() method in the multiprocessing module or in the os module (for example, mp.cpu_count() - 1).
+
+Once the multiprocessing pool is defined, we want to get stuff done. But before calling apply_async() on the pool’s processes, we first need to create both the shared resource that we’ve been talking about and the lock that will ensure that only one process may access the shared resource at a given time. Unlike in real life, if you want to get stuff done in Python’s multiprocessing module, you actually do need a Manager. We first create this manager, then use it to create the lock and the shared_list (lines 25-27).
+
+In lines 29-31, we finally apply asynchronously the work() method to the pool of processes with the task at hand (i), the shared resource (shared_list) as well as the multiprocessing synchronization mechanism (lock). We use the callback update_progress_bar() in order to, well, update the tqdm progress bar.
+
+Here is how the work() function handles the shared resource. It launches the external script worker.py using the Python subprocess module. The external script is ran with an argument representing the number of seconds (from 1 to 10) for which to run the long computation. Once the subprocess finishes, the work() method accesses the shared resource using the multiprocessing lock. In lines 13-15, the lock is acquired in order to ensure exclusive access to the shared list processed_values. Then if the number of seconds that the subprocess was called with is not already present in this list, we update the list with this value and we release the lock. Note that with lock is a shorthand notation for saying “acquire the lock before doing something, then do something, and finally release the lock after doing something”.
+
+Parallelization in practice
+Here is the output of our main.py script, truncated for brevity:
+
+
+$ python main.py
+  0%|                                                        | 0/100 [00:00<?, ?it/s]
+I just did some hard work for 2s!
+  1%|                                                        | 1/100 [00:02<03:21,  2.04s/it]
+I just did some hard work for 3s!
+  2%|█                                                       | 2/100 [00:03<02:49,  1.73s/it]
+I just did some hard work for 4s!
+  3%|█▊                                                      | 3/100 [00:04<02:26,  1.51s/it]
+I just did some hard work for 1s!
+I just did some hard work for 5s!
+  5%|██▌                                                     | 5/100 [00:05<01:54,  1.21s/it]
+I just did some hard work for 6s!
+  6%|███▌                                                    | 6/100 [00:06<01:47,  1.14s/it]
+I just did some hard work for 2s!
+I just did some hard work for 7s!
+  8%|████▎                                                   | 8/100 [00:07<01:27,  1.05it/s]
+I just did some hard work for 3s!
+I just did some hard work for 8s!
+ 10%|██████                                                 | 10/100 [00:08<01:13,  1.23it/s]
+[snip]
+ 99%|██████████████████████████████████████████████████████ | 99/100 [01:12<00:01,  1.24s/it]
+I just did some hard work for 10s!
+100%|██████████████████████████████████████████████████████| 100/100 [01:14<00:00,  1.46s/it]
+[2, 3, 4, 1, 5, 6, 7, 8, 9, 10]
+Notice how several worker processes that have been sleeping for different amounts of time finish at the same time, for example between 3% and 5% there are two workers that finished: they respectively performed a 1s-long and a 5s-long computation.
+
+The last line of the output shows the shared resource shared_list: it contains the amount of time in seconds for which the computations lasted, one item per amount of time, in the order in which the processes have been completed. No value appears twice.
+
+This example shows that the execution of the worker.py script has been parallelized on several CPU threads and that every process successfully accessed the shared resource, by reading and updating it.
+
+Further reading
+subprocess (Python documentation)
+multiprocessing (Python documentation)
+Parallel processing in Python (Frank Hofmann on stackabuse)
+multiprocessing – Manage processes like threads (Doug Hellmann on Python Module of the Week)
+ Python, concurrency, subprocess
+ python subprocess multiprocessing lock
+This post is licensed under CC BY 4.0 by the author.
+Further Reading
+Apr 17, 2019
+Run a Python script as a subprocess with the multiprocessing module
+The problem Suppose you have a Python script worker.py performing some long computation. Also suppose you need to perform these computations several times for different input data. If all the comp...
+
+Jul 5, 2021
+Kill a Python subprocess and its children when a timeout is reached
+Suppose a Python script needs to launch an external command. This can be done using the subprocess module in one of two ways: either use the “convenience” function subprocess.run() or use the...
+
+Feb 8, 2016
+Function timeout in Python using the multiprocessing module
+The problem Sometimes you may want to impose a timeout on a Python function. Why would you want to do such a thing? Let’s say you’re computing something but you know there are some hopeless scenar...
+
+
+]]
+[[
+https://alexandra-zaharia.github.io/posts/function-timeout-in-python-multiprocessing/
+===
+Function timeout in Python using the multiprocessing module
+Alexandra Zaharia on Feb 8, 2016
+Updated Dec 30, 2021 4 min read
+The problem
+Sometimes you may want to impose a timeout on a Python function. Why would you want to do such a thing? Let’s say you’re computing something but you know there are some hopeless scenarios where the computation just takes too long, and you’d be OK to just skip them and go on with the rest of the workflow.
+
+For an illustration, the figure below shows several tasks. Those that take longer than the specified timeout should be aborted (orange) and the remaining tasks that take a reasonable amount of time should be executed normally (green).
+
+A timeout is a cutoff for the duration of a task
+
+There are several ways in which setting a timeout on a function may be achieved such that the execution continues past the timed-out method. We will be examining two solutions here:
+
+in the previous post we have used the signal module;
+in this post we will be using the multiprocessing module.
+Solution using the multiprocessing module
+Just like in the previous post, suppose we have a method that can be very time-consuming:
+
+
+import time
+
+def do_stuff(n):
+    time.sleep(n)
+    print('slept for {}s'.format(n))
+For the purpose of this example, we want to let this function do_stuff() run until it either completes or hits the 5-second mark, whichever event comes first. Actually, in the previous post, we let it run just below 6 seconds, because the argument to signal.alarm() is necessarily an integer. If that argument was 5, do_stuff() would not have been allowed to run for 5 seconds. Apart from the shortcomings of the signal-based solution, the multiprocessing module also solves this nagging issue; we can now use a non-integer timeout, for example 5.01 seconds.
+
+Although multiprocessing is the package that comes to mind when attempting to parallelize processes, its basic role is to simply spawn processes, as its name implies. (Processes spawned with multiprocessing may, but do not have to, be parallel.) We can set a timeout on the processes that are spawned, which is exactly what we are looking for here.
+
+The script below runs indefinitely. At each passage through the infinite loop, it randomly selects a duration between 1 and 10 seconds. It then spawns a new multiprocessing.Process that executes the time-consuming do_stuff() function for the random duration. If do_stuff() doesn’t finish in 5 seconds (actually, 5.01 seconds), the process terminates:
+
+
+import multiprocessing as mp
+import random
+import time
+
+
+def do_stuff(n):
+    time.sleep(n)
+    print('slept for {}s'.format(n))
+
+
+def main():
+    max_duration = 5
+
+    while True:
+        duration = random.choice([x for x in range(1, 11)])
+        print('duration = {}: '.format(duration), end='', flush=True)
+
+        process = mp.Process(target=do_stuff, args=(duration,))
+        process.start()
+        process.join(timeout=max_duration + 0.01)
+
+        if process.is_alive():
+            process.terminate()
+            process.join()
+            print('took too long')
+
+
+if __name__ == '__main__':
+    main()
+A multiprocessing.Process is spawned at line 18 with do_stuff() as its target and the random duration as argument for do_stuff(). Next, we start the process at line 19, and then we “join” it (meaning we wait for it to finish) at line 20, but with a twist: it is here that we actually specify the timeout. In other words, we wait for it to finish for the specified timeout. In lines 22-25 we check whether the process actually finished, in which case is_alive() returns false. If it is still running, we terminate the process and display a message on STDOUT.
+
+Here is the output of this script:
+
+
+duration = 7: took too long
+duration = 9: took too long
+duration = 2: slept for 2s
+duration = 5: slept for 5s
+duration = 2: slept for 2s
+duration = 6: took too long
+duration = 5: slept for 5s
+duration = 3: slept for 3s
+duration = 7: ^C
+Notes
+Simply spawning processes with the multiprocessing module does not mean we have parallelism. In order to do this we’d need to add tasks to a multiprocessing.Pool. This article or this one show examples of pools.
+Care must be taken when using terminate() to stop a process. Here is what the Python documentation has to say about it:
+Warning: If this method is used when the associated process is using a pipe or queue then the pipe or queue is liable to become corrupted and may become unusable by other process [sic]. Similarly, if the process has acquired a lock or semaphore etc. then terminating it is liable to cause other processes to deadlock.
+
+Conclusion
+In this post we’ve seen another solution for setting a timeout on a function in Python, this time using the multiprocessing module. It is easy to implement and does not suffer from any of the drawbacks of the signal-based solution described in the previous post.
+
+Further reading
+multiprocessing (Python documentation)
+Parallel processing in Python (Frank Hofmann on stackabuse)
+multiprocessing – Manage processes like threads (Doug Hellmann on Python Module of the Week)
+ Python, timeout
+ python multiprocessing
+This post is licensed under CC BY 4.0 by the author.
+Further Reading
+Apr 17, 2019
+Run a Python script as a subprocess with the multiprocessing module
+The problem Suppose you have a Python script worker.py performing some long computation. Also suppose you need to perform these computations several times for different input data. If all the comp...
+
+Apr 17, 2019
+Multiprocessing in Python with shared resources
+The problem In the previous post on parallelism in Python, we have seen how an external Python script performing a long computation can be ran in parallel using Python’s multiprocessing module. If...
+
+Feb 5, 2016
+Function timeout in Python using the signal module
+The problem Sometimes you may want to impose a timeout on a Python function. Why would you want to do such a thing? Let’s say you’re computing something but you know there are some hopeless scenar...
+
+]]
+[[
+https://alexandra-zaharia.github.io/posts/function-timeout-in-python-signal/
+===
+Function timeout in Python using the signal module
+Alexandra Zaharia on Feb 5, 2016
+7 min read
+The problem
+Sometimes you may want to impose a timeout on a Python function. Why would you want to do such a thing? Let’s say you’re computing something but you know there are some hopeless scenarios where the computation just takes too long, and you’d be OK to just skip them and go on with the rest of the workflow.
+
+For an illustration, the figure below shows several tasks. Those that take longer than the specified timeout should be aborted (orange) and the remaining tasks that take a reasonable amount of time should be executed normally (green).
+
+A timeout is a cutoff for the duration of a task
+
+There are several ways in which setting a timeout on a function may be achieved such that the execution continues past the timed-out method. We will be examining two solutions here:
+
+in this post we will be using signal module;
+in the next post we will be using the multiprocessing module.
+Solution using the signal module
+What are signals?
+Signals are a form of inter-process communication that only applies to POSIX-compliant operating systems. Note that Microsoft Windows is not POSIX-compliant, so this solution cannot be used when running Python on Windows.
+
+Signals can be regarded as software interrupts sent from the kernel to a process in order to inform it that a special event took place. The process receiving the signal can choose to handle it in a specific way (if the program was written with this intention, that is). Otherwise, signals are handled in a default manner specified by the default signal handlers. For example, when you press Ctrl + C in your Linux terminal to stop a running program, you are in fact sending it the SIGINT signal. The default handler for SIGINT is to stop process execution.
+
+Check out this article for more information on handling UNIX signals in Python.
+
+Using signals to set a timeout
+Suppose we have a method do_stuff() that can sometimes be very time-consuming. We’ll be keeping this very simple:
+
+
+import time
+
+def do_stuff(n):
+    time.sleep(n)
+Let’s say we only want to run do_stuff() to completion if it finishes in less than 6 seconds. With the signal module, this can be achieved if we set a timer (an “alarm”) for 6 seconds just before calling do_stuff(). If the timer runs out before the function completes, SIGALRM is sent to the process. We will therefore be using signal.alarm(6) to set a timer for 6 seconds before calling do_stuff(). Note that the argument to signal.alarm() must be an integer. Let’s check what happens:
+
+
+import signal
+import time
+
+
+def do_stuff(n):
+    time.sleep(n)
+    print('slept for {}s'.format(n))
+
+
+def main():
+    signal.alarm(6)
+    do_stuff(2)
+    do_stuff(5)
+    do_stuff(6)
+
+
+if __name__ == '__main__':
+    main()
+Here is the output:
+
+
+$ python timeout_signal.py 
+slept for 2s
+Alarm clock
+$ echo $?
+142
+What happened? Well, the timer was set to 6 seconds and it finally ran out, one second before the second call to do_stuff() would have normally finished. The process exits with code 142 (SIGALRM). Let us change the main() function to reset the alarm after each call to do_stuff():
+
+
+def main():
+    signal.alarm(6)
+    do_stuff(2)
+    signal.alarm(0)
+
+    signal.alarm(6)
+    do_stuff(5)
+    signal.alarm(0)
+
+    signal.alarm(6)
+    do_stuff(6)
+    signal.alarm(0)
+Note that signal.alarm(delay) arms a timer for delay seconds. This means that if do_stuff() takes exactly delay seconds to complete, SIGALRM gets transmitted nonetheless.
+
+We now obtain:
+
+
+slept for 2s
+slept for 5s
+Alarm clock
+Next, we will define a handler for SIGALRM. A handler is a function that “handles a signal” in the specific way we instruct it to behave. User-defined handlers are used to override the default signal handlers. For example, suppose you want your program to ask the user to confirm her desire to quit the program when she presses Ctrl + C in the terminal. In this case you’d need a SIGINT handler that only exits upon confirmation. Note that signal handlers must respect a fixed prototype. To quote from the Python documentation:
+
+The handler is called with two arguments: the signal number and the current stack frame (…).
+
+Even if a a signal handler does not use these two arguments, they must be present in the handler’s prototype (and no other arguments may be passed). Here is our simple handler; it just throws a TimeoutError:
+
+
+def handle_timeout(sig, frame):
+    raise TimeoutError('took too long')
+This handler only makes sense if it is registered for SIGALRM. Registering handle_timeout() for SIGALRM should be added to the main() function of the script above. Here is how to do it:
+
+
+signal.signal(signal.SIGALRM, handle_timeout)
+By re-running our script, we can see that it now stops with a TimeoutError:
+
+
+slept for 2s
+slept for 5s
+Traceback (most recent call last):
+  File "timeout_signal.py", line 31, in <module>
+    main()
+  File "timeout_signal.py", line 26, in main
+    do_stuff(7)
+  File "timeout_signal.py", line 10, in do_stuff
+    time.sleep(n)
+  File "timeout_signal.py", line 6, in handle_timeout
+    raise TimeoutError('took too long')
+TimeoutError: took too long
+This is great, we have an exception now – and exceptions are something we can deal with in Python.
+
+Making execution continue past the timeout
+Next, let’s handle the TimeoutError. We will change our script such that it loops indefinitely and at each iteration through the loop it attempts to do_stuff() for a random number of seconds between 1 and 10. If do_stuff() is called with 6 seconds or more, then SIGALRM is sent and handled by raising a TimeoutError. We catch that TimeoutError and continue execution until hitting Ctrl + C. As an added bonus, we also include a handler for SIGINT (Ctrl + C).
+
+
+import sys
+import random
+import signal
+import time
+
+
+def handle_sigint(sig, frame):
+    print('SIGINT received, terminating.')
+    sys.exit()
+
+
+def handle_timeout(sig, frame):
+    raise TimeoutError('took too long')
+
+
+def do_stuff(n):
+    time.sleep(n)
+
+
+def main():
+    signal.signal(signal.SIGINT, handle_sigint)
+    signal.signal(signal.SIGALRM, handle_timeout)
+
+    max_duration = 5
+    
+    while True:
+        try:
+            duration = random.choice([x for x in range(1, 11)])
+            print('duration = {}: '.format(duration), end='', flush=True)
+            signal.alarm(max_duration + 1)
+            do_stuff(duration)
+            signal.alarm(0)
+        except TimeoutError as exc:
+            print('{}: {}'.format(exc.__class__.__name__, exc))
+        else:
+            print('slept for {}s'.format(duration))
+
+
+if __name__ == '__main__':
+    main()
+
+So how does the execution continue past the first timeout? As we’ve seen above, we installed a handler for SIGALRM (lines 12-13 and 22) that raises a TimeoutError. Exception handling is performed in the main() function inside an infinite loop (lines 26-36). If do_stuff() succeeds, the script displays a message informing the user for how long the function ran (lines 35-36). If the TimeoutError is caught, it is simply displayed and the script continues.
+
+Here is how the output might look like:
+
+
+duration = 3: slept for 3s
+duration = 1: slept for 1s
+duration = 10: TimeoutError: took too long
+duration = 7: TimeoutError: took too long
+duration = 5: slept for 5s
+duration = 9: TimeoutError: took too long
+duration = 2: slept for 2s
+duration = 5: slept for 5s
+duration = 1: slept for 1s
+duration = 6: TimeoutError: took too long
+duration = 2: slept for 2s
+duration = 10: ^CSIGINT received, terminating.
+Drawbacks
+Well, it works but there are two problems with this solution:
+
+As mentioned in the introduction to signals, this mechanism is only present on UNIX-like systems. If the script needs to run in a classic Windows environment, the signal module is not suitable.
+A SIGALRM can arrive at any time; however, its handler may only be ran between atomic instructions. By definition, atomic instructions cannot be interrupted. So if the timer runs out during such an operation, even though SIGALRM is sent, it won’t be handled until that long computation you’ve been trying to abort finally completes. Typically, when using external libraries implemented in pure C for performing long computations, the handling of SIGALRM may be delayed.
+Conclusion
+In this post we’ve seen a simple solution involving UNIX signals that may be used in some situations to set a timeout on a Python function. However, this solution is less than ideal for two reasons: the operating system must be POSIX-compliant and it can only work between atomic operations. In the next post we will examine a better solution using the multiprocessing module.
+
+Further reading
+Signals (Wikipedia)
+signal (Python documentation)
+Handling UNIX signals in Python (Frank Hofmann on stackabuse)
+ Python, timeout
+ python signal
+This post is licensed under CC BY 4.0 by the author.
+Further Reading
+Jul 5, 2021
+Kill a Python subprocess and its children when a timeout is reached
+Suppose a Python script needs to launch an external command. This can be done using the subprocess module in one of two ways: either use the “convenience” function subprocess.run() or use the...
+
+Feb 8, 2016
+Function timeout in Python using the multiprocessing module
+The problem Sometimes you may want to impose a timeout on a Python function. Why would you want to do such a thing? Let’s say you’re computing something but you know there are some hopeless scenar...
+
+Aug 24, 2021
+How to return a result from a Python thread
+The problem Suppose you have a Python thread that runs your target function. Simple scenario: That target function returns a result that you want to retrieve. A more advanced scenario: You w...
+
+
+]]
+[[
+https://alexandra-zaharia.github.io/posts/kill-subprocess-and-its-children-on-timeout-python/
+===
+
+Post
+Kill a Python subprocess and its children when a timeout is reached
+Alexandra Zaharia on Jul 5, 2021
+4 min read
+Suppose a Python script needs to launch an external command. This can be done using the subprocess module in one of two ways:
+
+either use the “convenience” function subprocess.run()
+or use the more flexible Popen interface
+Stopping a subprocess on timeout
+The “convenience” function subprocess.run() allows to do quite a number of useful things, such as capturing output, checking the external command’s return code or setting a timeout, among others.
+
+If we are simply interested in stopping the execution of the external command after a given timeout has been reached, it is sufficient to subprocess.run() the command and catch the TimeoutExpired exception if it is raised:
+
+
+import subprocess
+
+cmd = ['/path/to/cmd', 'arg1', 'arg2']  # the external command to run
+timeout_s = 10  # how many seconds to wait 
+
+try:
+    p = subprocess.run(cmd, timeout=timeout_s)
+except subprocess.TimeoutExpired:
+    print(f'Timeout for {cmd} ({timeout_s}s) expired')
+Stopping a subprocess and its children on timeout
+The situation gets more complicated when the external command may launch one or several child processes. In order to be able to stop the child processes as well as the parent, it is necessary to use the Popen constructor.
+
+Note: The following only applies to UNIX-like operating systems. (Read: it won’t work on Windows.)
+
+The reason for using the Popen constructor for this scenario is that it can be instructed to launch a new session for the external command. Then, the whole process group belonging to the external command can be terminated on timeout. A process group is simply a group of processes that can be controlled at once (via signals), while a session is a collection of process groups. Here are the official definitions, taken from the POSIX.1-2008 standard:
+
+3.296 Process Group - A collection of processes that permits the signaling of related processes. Each process in the system is a member of a process group that is identified by a process group ID. A newly created process joins the process group of its creator.
+
+3.343 Session - A collection of process groups established for job control purposes. Each process group is a member of a session. A process is considered to be a member of the session of which its process group is a member. A newly created process joins the session of its creator. A process can alter its session membership; see setsid(). There can be multiple process groups in the same session.
+
+The reason for using a session instead of a process group
+Reading the above definitions, one may wonder why should we bother with creating a new session instead of simply using a new process group for the external command. That’s an excellent question! It is technically possible, but not advisable. In order to create a process group, we’d need to call os.setpgrp() (which uses the setpgrp() system call). However, there are two problems with this approach:
+
+setpgrp() is marked as obsolete and may be removed in future versions (check the man page);
+the only way to call os.setpgrp() from within the Popen constructor is to pass it to the preexec_fn parameter, which is not thread-safe.
+The Python documentation for Popen() states the following:
+
+Warning: The preexec_fn parameter is not safe to use in the presence of threads in your application. The child process could deadlock before exec is called. If you must use it, keep it trivial! Minimize the number of libraries you call into.
+
+In the note following the warning, it is mentioned that:
+
+The start_new_session parameter can take the place of a previously common use of preexec_fn to call os.setsid() in the child.
+
+The workaround, therefore, is to simply create a new session by setting the start_new_session argument of the Popen constructor to True. According to the Python documentation, it is the equivalent of using preexec_fn=os.setsid (based on the setsid() system call), but without the un-thread-safe warning.
+
+Implementation
+With all the above explanations, the implementation is straight-forward:
+
+
+import os
+import signal
+import subprocess
+import sys
+
+cmd = ['/path/to/cmd', 'arg1', 'arg2']  # the external command to run
+timeout_s = 10  # how many seconds to wait 
+
+try:
+    p = subprocess.Popen(cmd, start_new_session=True)
+    p.wait(timeout=timeout_s)
+except subprocess.TimeoutExpired:
+    print(f'Timeout for {cmd} ({timeout_s}s) expired', file=sys.stderr)
+    print('Terminating the whole process group...', file=sys.stderr)
+    os.killpg(os.getpgid(p.pid), signal.SIGTERM)
+The Popen interface is different than that of the convenience subprocess.run() function. The timeout needs to be specified in Popen.wait(). If you want to capture stdout and stderr, you need to pass them to the Popen constructor as subprocess.PIPE and then use Popen.communicate(). Regardless of the differences, whatever can be done with subprocess.run() can also be achieved with the Popen constructor.
+
+When the timeout set in Popen.wait() has elapsed, a TimeoutExpired exception is raised. Then, in line 15, we send a SIGTERM to the whole process group (os.killpg()) of the external command (os.getpgid(p.pid)).
+
+That’s it. Happy infanticide! (Err… I was referring to child processes :grin:)
+
+Further reading
+subprocess (Python documentation)
+signal (Python documentation)
+Signals (Wikipedia)
+POSIX.1-2008 standard
+POSIX.1-2008 definitions
+ Python, subprocess, timeout
+ python process subprocess signal
+This post is licensed under CC BY 4.0 by the author.
+Further Reading
+Feb 5, 2016
+Function timeout in Python using the signal module
+The problem Sometimes you may want to impose a timeout on a Python function. Why would you want to do such a thing? Let’s say you’re computing something but you know there are some hopeless scenar...
+
+Apr 17, 2019
+Run a Python script as a subprocess with the multiprocessing module
+The problem Suppose you have a Python script worker.py performing some long computation. Also suppose you need to perform these computations several times for different input data. If all the comp...
+
+Apr 17, 2019
+Multiprocessing in Python with shared resources
+The problem In the previous post on parallelism in Python, we have seen how an external Python script performing a long computation can be ran in parallel using Python’s multiprocessing module. If...
+
+
+
+]]
+[[
+https://stackoverflow.com/questions/2196999/how-to-add-a-timeout-to-a-function-in-python
+===
+
+Stack Overflow
+Products
+How to add a timeout to a function in Python
+Many attempts have been made in the past to add timeout functionality in Python such that when a specified time limit expired, waiting code could move on. Unfortunately, previous recipes either allowed the running function to continue running and consuming resources or else killed the function using a platform-specific method of thread termination. The purpose of this wiki is to develop a cross-platform answer to this problem that many programmers have had to tackle for various programming projects.
+
+#! /usr/bin/env python
+"""Provide way to add timeout specifications to arbitrary functions.
+
+There are many ways to add a timeout to a function, but no solution
+is both cross-platform and capable of terminating the procedure. This
+module use the multiprocessing module to solve both of those problems."""
+
+################################################################################
+
+__author__ = 'Stephen "Zero" Chappell <Noctis.Skytower@gmail.com>'
+__date__ = '11 February 2010'
+__version__ = '$Revision: 3 $'
+
+################################################################################
+
+import inspect
+import sys
+import time
+import multiprocessing
+
+################################################################################
+
+def add_timeout(function, limit=60):
+    """Add a timeout parameter to a function and return it.
+
+    It is illegal to pass anything other than a function as the first
+    parameter. If the limit is not given, it gets a default value equal
+    to one minute. The function is wrapped and returned to the caller."""
+    assert inspect.isfunction(function)
+    if limit <= 0:
+        raise ValueError()
+    return _Timeout(function, limit)
+
+class NotReadyError(Exception): pass
+
+################################################################################
+
+def _target(queue, function, *args, **kwargs):
+    """Run a function with arguments and return output via a queue.
+
+    This is a helper function for the Process created in _Timeout. It runs
+    the function with positional arguments and keyword arguments and then
+    returns the function's output by way of a queue. If an exception gets
+    raised, it is returned to _Timeout to be raised by the value property."""
+    try:
+        queue.put((True, function(*args, **kwargs)))
+    except:
+        queue.put((False, sys.exc_info()[1]))
+
+class _Timeout:
+
+    """Wrap a function and add a timeout (limit) attribute to it.
+
+    Instances of this class are automatically generated by the add_timeout
+    function defined above. Wrapping a function allows asynchronous calls
+    to be made and termination of execution after a timeout has passed."""
+
+    def __init__(self, function, limit):
+        """Initialize instance in preparation for being called."""
+        self.__limit = limit
+        self.__function = function
+        self.__timeout = time.clock()
+        self.__process = multiprocessing.Process()
+        self.__queue = multiprocessing.Queue()
+
+    def __call__(self, *args, **kwargs):
+        """Execute the embedded function object asynchronously.
+
+        The function given to the constructor is transparently called and
+        requires that "ready" be intermittently polled. If and when it is
+        True, the "value" property may then be checked for returned data."""
+        self.cancel()
+        self.__queue = multiprocessing.Queue(1)
+        args = (self.__queue, self.__function) + args
+        self.__process = multiprocessing.Process(target=_target,
+                                                 args=args,
+                                                 kwargs=kwargs)
+        self.__process.daemon = True
+        self.__process.start()
+        self.__timeout = self.__limit + time.clock()
+
+    def cancel(self):
+        """Terminate any possible execution of the embedded function."""
+        if self.__process.is_alive():
+            self.__process.terminate()
+
+    @property
+    def ready(self):
+        """Read-only property indicating status of "value" property."""
+        if self.__queue.full():
+            return True
+        elif not self.__queue.empty():
+            return True
+        elif self.__timeout < time.clock():
+            self.cancel()
+        else:
+            return False
+
+    @property
+    def value(self):
+        """Read-only property containing data returned from function."""
+        if self.ready is True:
+            flag, load = self.__queue.get()
+            if flag:
+                return load
+            raise load
+        raise NotReadyError()
+
+    def __get_limit(self):
+        return self.__limit
+
+    def __set_limit(self, value):
+        if value <= 0:
+            raise ValueError()
+        self.__limit = value
+
+    limit = property(__get_limit, __set_limit,
+                     doc="Property for controlling the value of the timeout.")
+Edit: This code was written for Python 3.x and was not designed for class methods as a decoration. The multiprocessing module was not designed to modify class instances across the process boundaries.
+
+python
+process
+asynchronous
+cross-platform
+timeout
+Share
+Improve this question
+Follow
+edited Jul 10, 2010 at 19:10
+community wiki
+23 revs, 2 users 100%
+Noctis Skytower
+That exception handling only works in Python 3. In 2.x, it'll throw away the original stack trace, show the exception as originating on the "raise", and the assert won't show up in the stack trace at all. – 
+Glenn Maynard
+ Feb 4, 2010 at 9:20
+Add a comment
+5 Answers
+Sorted by:
+
+Highest score (default)
+
+13
+
+The principal problem with your code is the overuse of the double underscore namespace conflict prevention in a class that isn't intended to be subclassed at all.
+
+In general, self.__foo is a code smell that should be accompanied by a comment along the lines of # This is a mixin and we don't want arbitrary subclasses to have a namespace conflict.
+
+Further the client API of this method would look like this:
+
+def mymethod(): pass
+
+mymethod = add_timeout(mymethod, 15)
+
+# start the processing    
+timeout_obj = mymethod()
+try:
+    # access the property, which is really a function call
+    ret = timeout_obj.value
+except TimeoutError:
+    # handle a timeout here
+    ret = None
+This is not very pythonic at all and a better client api would be:
+
+@timeout(15)
+def mymethod(): pass
+
+try:
+    my_method()
+except TimeoutError:
+    pass
+You are using @property in your class for something that is a state mutating accessor, this is not a good idea. For instance, what would happen when .value is accessed twice? It looks like it would fail because queue.get() would return trash because the queue is already empty.
+
+Remove @property entirely. Don't use it in this context, it's not suitable for your use-case. Make call block when called and return the value or raise the exception itself. If you really must have value accessed later, make it a method like .get() or .value().
+
+This code for the _target should be rewritten a little:
+
+def _target(queue, function, *args, **kwargs):
+    try:
+        queue.put((True, function(*args, **kwargs)))
+    except:
+        queue.put((False, exc_info())) # get *all* the exec info, don't do exc_info[1]
+
+# then later:
+    raise exc_info[0], exc_info[1], exc_info[2]
+That way the stack trace will be preserved correctly and visible to the programmer.
+
+I think you've made a reasonable first crack at writing a useful library, I like the usage of the processing module to achieve the goals.
+
+Share
+Improve this answer
+Follow
+edited Aug 24, 2016 at 14:36
+user avatar
+Noctis Skytower
+20.4k1616 gold badges7575 silver badges111111 bronze badges
+answered Feb 4, 2010 at 3:16
+user avatar
+Jerub
+40.4k1515 gold badges7171 silver badges9090 bronze badges
+Is the double underscore not the only way to approach making a private variable in Python? Private variables are preferred in real object oriented programming as this is how encapsulation works, yeah? – 
+Bill Rosmus
+ May 10, 2013 at 19:09
+1
+@BillR: Python doesn't have "real" private variables. Except for the name mangling of double-underscore-prefixed class names outside the class, nothing else is done to enforce them being private—and you can easily get around it if you know how it works. Despite all this it's completely possible to write object-oriented code using it, so having enforced encapsulation isn't prerequisite to doing so in any programming language. – 
+martineau
+ Feb 19, 2018 at 21:23
+how coult I import timeout module? – 
+alper
+ Nov 1, 2021 at 9:06
+Add a comment
+
+6
+
+This is how to get the decorator syntax Jerub mentioned
+
+def timeout(limit=None):
+    if limit is None:
+        limit = DEFAULT_TIMEOUT
+    if limit <= 0:
+        raise TimeoutError() # why not ValueError here?
+    def wrap(function):
+        return _Timeout(function,limit)
+    return wrap
+
+@timeout(15)
+def mymethod(): pass
+Share
+Improve this answer
+Follow
+answered Feb 4, 2010 at 3:32
+user avatar
+John La Rooy
+282k5050 gold badges355355 silver badges497497 bronze badges
+I have used decorator syntax before but would not recommend it in this case. – 
+Noctis Skytower
+ Feb 12, 2010 at 17:58
+@NoctisSkytower why would you not recommend a decorator in this case? What do you feel is the disadvantage or risk? – 
+user559633
+ Oct 28, 2013 at 19:19
+@tristan: Most decorated code involves methods in classes. Based on how multiprocessing works in this example, any changes that happen in the decorated code would not be reflected in the original object. All changes stay in the second process the add_timeout function ends up creating. – 
+Noctis Skytower
+ Oct 29, 2013 at 0:38
+Add a comment
+
+2
+
+The Pebble library was designed to offer cross-platform implementation capable of dealing with problematic logic which could crash, segfault or run indefinitely.
+
+from pebble import concurrent
+
+@concurrent.process(timeout=10)
+def function(foo, bar=0):
+    return foo + bar
+
+future = function(1, bar=2)
+
+try:
+    result = future.result()  # blocks until results are ready
+except Exception as error:
+    print("Function raised %s" % error)
+    print(error.traceback)  # traceback of the function
+except TimeoutError as error:
+    print("Function took longer than %d seconds" % error.args[1])
+The decorator works as well with static and class methods. I would not recommend to decorate methods nevertheless, as it is a quite error prone practice.
+
+Share
+Improve this answer
+Follow
+edited Dec 19, 2016 at 9:51
+community wiki
+2 revs
+noxdafox
+Add a comment
+
+2
+
+This question was asked over 9 years ago, and Python has changed a decent amount since then as has my repertoire of experience. After reviewing other APIs in the standard library and wanting to partially replicate one in particular, the follow module was written to serve a similar purpose as the one posted in the question.
+
+asynchronous.py
+
+#! /usr/bin/env python3
+import _thread
+import abc as _abc
+import collections as _collections
+import enum as _enum
+import math as _math
+import multiprocessing as _multiprocessing
+import operator as _operator
+import queue as _queue
+import signal as _signal
+import sys as _sys
+import time as _time
+
+__all__ = (
+    'Executor',
+    'get_timeout',
+    'set_timeout',
+    'submit',
+    'map_',
+    'shutdown'
+)
+
+
+class _Base(metaclass=_abc.ABCMeta):
+    __slots__ = (
+        '__timeout',
+    )
+
+    @_abc.abstractmethod
+    def __init__(self, timeout):
+        self.timeout = _math.inf if timeout is None else timeout
+
+    def get_timeout(self):
+        return self.__timeout
+
+    def set_timeout(self, value):
+        if not isinstance(value, (float, int)):
+            raise TypeError('value must be of type float or int')
+        if value <= 0:
+            raise ValueError('value must be greater than zero')
+        self.__timeout = value
+
+    timeout = property(get_timeout, set_timeout)
+
+
+def _run_and_catch(fn, args, kwargs):
+    # noinspection PyPep8,PyBroadException
+    try:
+        return False, fn(*args, **kwargs)
+    except:
+        return True, _sys.exc_info()[1]
+
+
+def _run(fn, args, kwargs, queue):
+    queue.put_nowait(_run_and_catch(fn, args, kwargs))
+
+
+class _State(_enum.IntEnum):
+    PENDING = _enum.auto()
+    RUNNING = _enum.auto()
+    CANCELLED = _enum.auto()
+    FINISHED = _enum.auto()
+    ERROR = _enum.auto()
+
+
+def _run_and_catch_loop(iterable, *args, **kwargs):
+    exception = None
+    for fn in iterable:
+        error, value = _run_and_catch(fn, args, kwargs)
+        if error:
+            exception = value
+    if exception:
+        raise exception
+
+
+class _Future(_Base):
+    __slots__ = (
+        '__queue',
+        '__process',
+        '__start_time',
+        '__callbacks',
+        '__result',
+        '__mutex'
+    )
+
+    def __init__(self, timeout, fn, args, kwargs):
+        super().__init__(timeout)
+        self.__queue = _multiprocessing.Queue(1)
+        self.__process = _multiprocessing.Process(
+            target=_run,
+            args=(fn, args, kwargs, self.__queue),
+            daemon=True
+        )
+        self.__start_time = _math.inf
+        self.__callbacks = _collections.deque()
+        self.__result = True, TimeoutError()
+        self.__mutex = _thread.allocate_lock()
+
+    @property
+    def __state(self):
+        pid, exitcode = self.__process.pid, self.__process.exitcode
+        return (_State.PENDING if pid is None else
+                _State.RUNNING if exitcode is None else
+                _State.CANCELLED if exitcode == -_signal.SIGTERM else
+                _State.FINISHED if exitcode == 0 else
+                _State.ERROR)
+
+    def __repr__(self):
+        root = f'{type(self).__name__} at {id(self)} state={self.__state.name}'
+        if self.__state < _State.CANCELLED:
+            return f'<{root}>'
+        error, value = self.__result
+        suffix = f'{"raised" if error else "returned"} {type(value).__name__}'
+        return f'<{root} {suffix}>'
+
+    def __consume_callbacks(self):
+        while self.__callbacks:
+            yield self.__callbacks.popleft()
+
+    def __invoke_callbacks(self):
+        self.__process.join()
+        _run_and_catch_loop(self.__consume_callbacks(), self)
+
+    def cancel(self):
+        self.__process.terminate()
+        self.__invoke_callbacks()
+
+    def __auto_cancel(self):
+        elapsed_time = _time.perf_counter() - self.__start_time
+        if elapsed_time > self.timeout:
+            self.cancel()
+        return elapsed_time
+
+    def cancelled(self):
+        self.__auto_cancel()
+        return self.__state is _State.CANCELLED
+
+    def running(self):
+        self.__auto_cancel()
+        return self.__state is _State.RUNNING
+
+    def done(self):
+        self.__auto_cancel()
+        return self.__state > _State.RUNNING
+
+    def __handle_result(self, error, value):
+        self.__result = error, value
+        self.__invoke_callbacks()
+
+    def __ensure_termination(self):
+        with self.__mutex:
+            elapsed_time = self.__auto_cancel()
+            if not self.__queue.empty():
+                self.__handle_result(*self.__queue.get_nowait())
+            elif self.__state < _State.CANCELLED:
+                remaining_time = self.timeout - elapsed_time
+                if remaining_time == _math.inf:
+                    remaining_time = None
+                try:
+                    result = self.__queue.get(True, remaining_time)
+                except _queue.Empty:
+                    self.cancel()
+                else:
+                    self.__handle_result(*result)
+
+    def result(self):
+        self.__ensure_termination()
+        error, value = self.__result
+        if error:
+            raise value
+        return value
+
+    def exception(self):
+        self.__ensure_termination()
+        error, value = self.__result
+        if error:
+            return value
+
+    def add_done_callback(self, fn):
+        if self.done():
+            fn(self)
+        else:
+            self.__callbacks.append(fn)
+
+    def _set_running_or_notify_cancel(self):
+        if self.__state is _State.PENDING:
+            self.__process.start()
+            self.__start_time = _time.perf_counter()
+        else:
+            self.cancel()
+
+
+class Executor(_Base):
+    __slots__ = (
+        '__futures',
+    )
+
+    def __init__(self, timeout=None):
+        super().__init__(timeout)
+        self.__futures = set()
+
+    def submit(self, fn, *args, **kwargs):
+        future = _Future(self.timeout, fn, args, kwargs)
+        self.__futures.add(future)
+        future.add_done_callback(self.__futures.remove)
+        # noinspection PyProtectedMember
+        future._set_running_or_notify_cancel()
+        return future
+
+    @staticmethod
+    def __cancel_futures(iterable):
+        _run_and_catch_loop(map(_operator.attrgetter('cancel'), iterable))
+
+    def map(self, fn, *iterables):
+        futures = tuple(self.submit(fn, *args) for args in zip(*iterables))
+
+        def result_iterator():
+            future_iterator = iter(futures)
+            try:
+                for future in future_iterator:
+                    yield future.result()
+            finally:
+                self.__cancel_futures(future_iterator)
+
+        return result_iterator()
+
+    def shutdown(self):
+        self.__cancel_futures(frozenset(self.__futures))
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.shutdown()
+        return False
+
+
+_executor = Executor()
+get_timeout = _executor.get_timeout
+set_timeout = _executor.set_timeout
+submit = _executor.submit
+map_ = _executor.map
+shutdown = _executor.shutdown
+del _executor
+Share
+Improve this answer
+Follow
+edited May 17, 2019 at 14:41
+community wiki
+5 revs
+Noctis Skytower
+Add a comment
+
+0
+
+Since testing is crucial for ensuring that one's code is working correctly, a unit test was created for the linked answer. It is included down below and can be run along the side of the asynchronous module it is testing.
+
+test_asynchronous.py
+
+#! /usr/bin/env python3
+import _thread
+import atexit
+import contextlib
+import functools
+import inspect
+import itertools
+import io
+import math
+import operator
+import os
+import queue
+import sys
+import time
+import unittest
+
+import asynchronous
+
+
+# noinspection PyUnresolvedReferences
+class TestConstructor:
+    def instantiate(self, *args):
+        parameters = len(inspect.signature(self.CLASS).parameters)
+        return self.CLASS(*args[:parameters])
+
+    def test_valid_timeout(self):
+        instance = self.instantiate(None, print, (), {})
+        self.assertEqual(instance.get_timeout(), math.inf)
+        instance = self.instantiate(1, print, (), {})
+        self.assertEqual(instance.get_timeout(), 1)
+        float_timeout = (math.e ** (1j * math.pi) + 1).imag
+        self.assertIsInstance(float_timeout, float)
+        instance = self.instantiate(float_timeout, print, (), {})
+        self.assertEqual(instance.get_timeout(), float_timeout)
+
+    def test_error_timeout(self):
+        self.assertRaises(TypeError, self.instantiate, '60', print, (), {})
+        self.assertRaises(ValueError, self.instantiate, 0, print, (), {})
+        self.assertRaises(ValueError, self.instantiate, -1, print, (), {})
+
+
+# noinspection PyUnresolvedReferences
+class TestTimeout(TestConstructor):
+    def test_valid_property(self):
+        instance = self.instantiate(None, None, None, None)
+        instance.timeout = 1
+        self.assertIsInstance(instance.timeout, int)
+        instance.timeout = 1 / 2
+        self.assertIsInstance(instance.timeout, float)
+        kilo_bit = int.from_bytes(os.urandom(1 << 7), 'big')
+        instance.timeout = kilo_bit
+        self.assertEqual(instance.timeout, kilo_bit)
+
+    def test_error_property(self):
+        instance = self.instantiate(None, None, None, None)
+        for exception, value in (
+                (TypeError, 'inf'),
+                (TypeError, complex(123456789, 0)),
+                (ValueError, 0),
+                (ValueError, 0.0),
+                (ValueError, -1),
+                (ValueError, -math.pi)
+        ):
+            with self.assertRaises(exception):
+                instance.timeout = value
+            self.assertEqual(instance.timeout, math.inf)
+
+
+class Timer:
+    __timers = {}
+
+    @classmethod
+    def start_timer(cls):
+        ident, now = _thread.get_ident(), time.perf_counter()
+        if now is not cls.__timers.setdefault(ident, now):
+            raise KeyError(ident)
+
+    @classmethod
+    def stop_timer(cls, expected_time, error=None):
+        if error is None:
+            error = 1 / 4  # the default is a quarter second
+        used = time.perf_counter() - cls.__timers.pop(_thread.get_ident())
+        diff = used - expected_time
+        return -error <= diff <= +error
+
+
+# noinspection PyUnresolvedReferences
+class TestTimer(Timer):
+    def stop_timer(self, expected_time, error=None):
+        self.assertTrue(super().stop_timer(expected_time, error))
+
+
+def delay_run(delay, fn, *args, sync=True, **kwargs):
+    def wrapper():
+        time.sleep(delay)
+        return fn(*args, **kwargs)
+
+    if sync:
+        return wrapper()
+    _thread.start_new_thread(wrapper, ())
+
+
+# noinspection PyUnresolvedReferences
+class TestModuleOrInstance(TestTimer):
+    @property
+    def moi(self):
+        return self.MODULE_OR_INSTANCE
+
+    def test_valid_timeout(self):
+        self.moi.set_timeout(math.inf)
+        self.assertEqual(self.moi.get_timeout(), math.inf)
+        self.moi.set_timeout(60)
+        self.assertEqual(self.moi.get_timeout(), 60)
+        self.moi.set_timeout(0.05)
+        self.assertEqual(self.moi.get_timeout(), 0.05)
+
+    def test_error_timeout(self):
+        self.moi.set_timeout(math.inf)
+        self.assertRaises(TypeError, self.moi.set_timeout, None)
+        self.assertEqual(self.moi.get_timeout(), math.inf)
+        self.assertRaises(ValueError, self.moi.set_timeout, 0)
+        self.assertEqual(self.moi.get_timeout(), math.inf)
+        self.assertRaises(ValueError, self.moi.set_timeout, -1)
+        self.assertEqual(self.moi.get_timeout(), math.inf)
+
+    def run_submit_check(self):
+        self.start_timer()
+        future = self.moi.submit(delay_run, 0.5, operator.add, 1, 2)
+        self.assertRegex(repr(future), r'^<_Future at \d+ state=RUNNING>$')
+        self.assertEqual(future.result(), 3)
+        self.stop_timer(0.5)
+        self.assertRegex(
+            repr(future),
+            r'^<_Future at \d+ state=FINISHED returned int>$'
+        )
+
+    def test_submit_one_second_timeout(self):
+        self.moi.set_timeout(1)
+        self.run_submit_check()
+
+    def test_submit_no_timeout(self):
+        self.moi.set_timeout(math.inf)
+        self.run_submit_check()
+
+    def test_submit_short_timeout(self):
+        self.moi.set_timeout(0.5)
+        self.start_timer()
+        future = self.moi.submit(delay_run, 1, operator.add, 1, 2)
+        self.assertRegex(repr(future), r'^<_Future at \d+ state=RUNNING>$')
+        self.assertIsInstance(future.exception(), TimeoutError)
+        self.stop_timer(0.5)
+        self.assertRegex(
+            repr(future),
+            r'^<_Future at \d+ state=CANCELLED raised TimeoutError>$'
+        )
+
+    def run_map(self, *args):
+        return getattr(self.moi, self.NAME_OF_MAP)(delay_run, *args)
+
+    def test_valid_map(self):
+        self.moi.set_timeout(1.5)
+        for result in self.run_map(
+                [1, 1, 1, 1],
+                [operator.add] * 4,
+                [0, 1, 2, 3],
+                [3, 2, 1, 0]
+        ):
+            self.assertEqual(result, 3)
+
+    def test_error_map(self):
+        self.moi.set_timeout(1.5)
+        success = 0
+        with self.assertRaises(TimeoutError):
+            for result in self.run_map(
+                    [1, 1, 2, 1],
+                    [operator.add] * 4,
+                    [0, 1, 2, 3],
+                    [3, 2, 1, 0]
+            ):
+                self.assertEqual(result, 3)
+                success += 1
+        self.assertEqual(success, 2)
+
+    def run_shutdown_check(self, running, future):
+        self.assertRaises(TimeoutError, future.result)
+        running.remove(future)
+
+    def run_submit_loop(self, executor):
+        running = set()
+        done_callback = functools.partial(self.run_shutdown_check, running)
+        for _ in range(10):
+            future = executor.submit(delay_run, 2, operator.add, 10, 20)
+            running.add(future)
+            future.add_done_callback(done_callback)
+        time.sleep(0.5)
+        return running
+
+    def test_valid_shutdown(self):
+        self.moi.set_timeout(1.5)
+        running = self.run_submit_loop(self.moi)
+        self.moi.shutdown()
+        self.assertFalse(running)
+
+    def test_error_shutdown(self):
+        self.moi.set_timeout(1.5)
+        running = self.run_submit_loop(self.moi)
+        running.pop()
+        self.assertRaises(KeyError, self.moi.shutdown)
+        self.assertFalse(running)
+
+
+class TestExecutorAPI(TestTimeout, TestModuleOrInstance, unittest.TestCase):
+    CLASS = asynchronous.Executor
+    MODULE_OR_INSTANCE = CLASS()
+    NAME_OF_MAP = 'map'
+
+    def test_valid_context_manager(self):
+        with self.instantiate(1.5) as executor:
+            running = self.run_submit_loop(executor)
+        self.assertFalse(running)
+
+    def test_error_context_manager(self):
+        error = Exception()
+        with self.assertRaises(Exception) as cm:
+            with self.instantiate(1.5) as executor:
+                running = self.run_submit_loop(executor)
+                raise error
+        self.assertIs(cm.exception, error)
+        self.assertFalse(running)
+        with self.assertRaises(KeyError):
+            with self.instantiate(1.5) as executor:
+                running = self.run_submit_loop(executor)
+                running.pop()
+        self.assertFalse(running)
+
+
+class TestModuleAPI(TestModuleOrInstance, unittest.TestCase):
+    MODULE_OR_INSTANCE = asynchronous
+    NAME_OF_MAP = 'map_'
+
+
+def verify_error():
+    sys.stderr.seek(0, io.SEEK_SET)
+    for line in sys.stderr:
+        if line == 'queue.Full\n':
+            break
+    else:
+        sys.stderr.seek(0, io.SEEK_SET)
+        sys.__stderr__.write(sys.stderr.read())
+        sys.__stderr__.flush()
+
+
+def cause_error(obj):
+    sys.stderr = io.StringIO()
+    atexit.register(verify_error)
+    inspect.currentframe().f_back.f_back.f_locals['queue'].put_nowait(obj)
+
+
+def return_(obj):
+    return obj
+
+
+# noinspection PyUnusedLocal
+def throw(exception, *args):
+    raise exception
+
+
+class Silencer:
+    def __init__(self, silenced):
+        self.__silenced = silenced
+        self.__ident = _thread.get_ident()
+
+    @property
+    def silenced(self):
+        return self.__silenced
+
+    def __getattr__(self, name):
+        return (getattr(self.__silenced, name)
+                if _thread.get_ident() == self.__ident else
+                self)
+
+    def __call__(self, *args, **kwargs):
+        return self
+
+
+@contextlib.contextmanager
+def silence_other_threads():
+    sys.stdout, sys.stderr = Silencer(sys.stdout), Silencer(sys.stderr)
+    try:
+        yield
+    finally:
+        sys.stdout, sys.stderr = sys.stdout.silenced, sys.stderr.silenced
+
+
+class TestFutureAPI(TestTimer, TestTimeout, unittest.TestCase):
+    CLASS = asynchronous._Future
+
+    def test_valid_representation(self):
+        future = self.instantiate(None, time.sleep, (0.1,), {})
+        self.assertRegex(repr(future), r'^<_Future at \d+ state=PENDING>$')
+        future._set_running_or_notify_cancel()
+        self.assertRegex(repr(future), r'^<_Future at \d+ state=RUNNING>$')
+        future._set_running_or_notify_cancel()
+        self.assertRegex(
+            repr(future),
+            r'^<_Future at \d+ state=CANCELLED raised TimeoutError>$'
+        )
+        future = self.instantiate(None, time.sleep, (0.1,), {})
+        future._set_running_or_notify_cancel()
+        time.sleep(0.5)
+        self.assertRegex(
+            repr(future),
+            r'^<_Future at \d+ state=FINISHED raised TimeoutError>$'
+        )
+        self.assertIsNone(future.exception())
+        self.assertRegex(
+            repr(future),
+            r'^<_Future at \d+ state=FINISHED returned NoneType>$'
+        )
+
+    def test_error_representation(self):
+        future = self.instantiate(0.5, cause_error, (None,), {})
+        future._set_running_or_notify_cancel()
+        self.assertRaises(TypeError, future.result)
+        self.assertIsInstance(future.exception(), TimeoutError)
+        self.assertRegex(
+            repr(future),
+            r'^<_Future at \d+ state=ERROR raised TimeoutError>$'
+        )
+        future = self.instantiate(0.5, cause_error, ((False, 'okay'),), {})
+        future._set_running_or_notify_cancel()
+        self.assertEqual(future.result(), 'okay')
+        self.assertRegex(
+            repr(future),
+            r'^<_Future at \d+ state=ERROR returned str>$'
+        )
+
+    def test_cancel(self):
+        future = self.instantiate(None, time.sleep, (0.1,), {})
+        self.assertRaises(AttributeError, future.cancel)
+        future._set_running_or_notify_cancel()
+        future.cancel()
+        self.assertTrue(future.cancelled())
+        future = self.instantiate(None, time.sleep, (0.1,), {})
+        checker = set()
+        future.add_done_callback(checker.add)
+        future._set_running_or_notify_cancel()
+        future.cancel()
+        future.cancel()
+        self.assertIs(checker.pop(), future)
+        self.assertFalse(checker)
+
+    def test_cancelled(self):
+        future = self.instantiate(None, time.sleep, (0.1,), {})
+        self.assertFalse(future.cancelled())
+        future._set_running_or_notify_cancel()
+        self.assertFalse(future.cancelled())
+        self.assertIsNone(future.result())
+        self.assertFalse(future.cancelled())
+        future = self.instantiate(None, time.sleep, (0.1,), {})
+        future._set_running_or_notify_cancel()
+        future.cancel()
+        self.assertTrue(future.cancelled())
+        future = self.instantiate(0.1, time.sleep, (1,), {})
+        future._set_running_or_notify_cancel()
+        time.sleep(0.5)
+        self.assertTrue(future.cancelled())
+
+    def test_running(self):
+        future = self.instantiate(None, time.sleep, (0.1,), {})
+        self.assertFalse(future.running())
+        future._set_running_or_notify_cancel()
+        self.assertTrue(future.running())
+        self.assertIsNone(future.result())
+        self.assertFalse(future.running())
+        future = self.instantiate(None, time.sleep, (0.1,), {})
+        future._set_running_or_notify_cancel()
+        future.cancel()
+        self.assertFalse(future.running())
+        future = self.instantiate(0.1, time.sleep, (1,), {})
+        future._set_running_or_notify_cancel()
+        time.sleep(0.5)
+        self.assertFalse(future.running())
+
+    def test_done(self):
+        future = self.instantiate(None, time.sleep, (0.1,), {})
+        self.assertFalse(future.done())
+        future._set_running_or_notify_cancel()
+        self.assertFalse(future.done())
+        self.assertIsNone(future.result())
+        self.assertTrue(future.done())
+        future = self.instantiate(None, time.sleep, (None,), {})
+        future._set_running_or_notify_cancel()
+        self.assertIsInstance(future.exception(), TypeError)
+        self.assertTrue(future.done())
+
+    def test_result_immediate(self):
+        data = os.urandom(1 << 20)
+        future = self.instantiate(None, return_, (data,), {})
+        future._set_running_or_notify_cancel()
+        self.assertEqual(future.result(), data)
+        test_exception = Exception('test')
+        future = self.instantiate(None, throw, (test_exception,), {})
+        future._set_running_or_notify_cancel()
+        with self.assertRaises(Exception) as cm:
+            future.result()
+        self.assertIsInstance(cm.exception, type(test_exception))
+        self.assertEqual(cm.exception.args, test_exception.args)
+
+    def test_result_delay(self):
+        future = self.instantiate(None, delay_run, (0, operator.add, 1, 2), {})
+        self.start_timer()
+        future._set_running_or_notify_cancel()
+        self.assertEqual(future.result(), 3)
+        self.stop_timer(0.1)
+        future = self.instantiate(None, delay_run, (1, operator.add, 2, 3), {})
+        self.start_timer()
+        future._set_running_or_notify_cancel()
+        self.assertEqual(future.result(), 5)
+        self.stop_timer(1)
+        future = self.instantiate(0.5, delay_run, (0, operator.add, 1, 2), {})
+        self.start_timer()
+        future._set_running_or_notify_cancel()
+        self.assertEqual(future.result(), 3)
+        self.stop_timer(0.1)
+        future = self.instantiate(0.5, delay_run, (1, operator.add, 2, 3), {})
+        self.start_timer()
+        future._set_running_or_notify_cancel()
+        self.assertRaises(TimeoutError, future.result)
+        self.stop_timer(0.5)
+
+    def test_result_before_running(self):
+        future = self.instantiate(0.1, delay_run, (0, operator.add, 1, 2), {})
+        delay_run(0.5, future._set_running_or_notify_cancel, sync=False)
+        self.start_timer()
+        self.assertEqual(future.result(), 3)
+        self.stop_timer(0.5)
+
+    def run_time_check(self, test):
+        self.start_timer()
+        test()
+        self.stop_timer(0.5)
+
+    def run_waiter_check(self, threads, *tests):
+        future = self.instantiate(1, delay_run, (0.5, operator.add, 1, 2), {})
+        future._set_running_or_notify_cancel()
+        # noinspection PyUnresolvedReferences
+        result = queue.SimpleQueue()
+        with silence_other_threads():
+            for test in itertools.islice(itertools.cycle(tests), threads):
+                args = self.run_time_check, (lambda: test(future),), {}, result
+                _thread.start_new_thread(asynchronous._run, args)
+            for _ in range(threads):
+                error, value = result.get(True, 1.5)
+                self.assertFalse(error)
+
+    def test_result_with_waiters(self):
+        self.run_waiter_check(
+            10,
+            lambda future: self.assertEqual(future.result(), 3)
+        )
+
+    def test_exception_immediate(self):
+        data = os.urandom(1 << 20)
+        future = self.instantiate(None, return_, (data,), {})
+        future._set_running_or_notify_cancel()
+        self.assertIsNone(future.exception())
+        test_exception = Exception('test')
+        future = self.instantiate(None, throw, (test_exception,), {})
+        future._set_running_or_notify_cancel()
+        self.assertIsInstance(future.exception(), type(test_exception))
+        self.assertEqual(future.exception().args, test_exception.args)
+
+    def test_exception_delay(self):
+        future = self.instantiate(None, delay_run, (0, operator.add, 1, 2), {})
+        self.start_timer()
+        future._set_running_or_notify_cancel()
+        self.assertIsNone(future.exception())
+        self.stop_timer(0.1)
+        future = self.instantiate(None, delay_run, (1, operator.add, 2, 3), {})
+        self.start_timer()
+        future._set_running_or_notify_cancel()
+        self.assertIsNone(future.exception())
+        self.stop_timer(1)
+        future = self.instantiate(0.5, delay_run, (0, operator.add, 1, 2), {})
+        self.start_timer()
+        future._set_running_or_notify_cancel()
+        self.assertIsNone(future.exception())
+        self.stop_timer(0.1)
+        future = self.instantiate(0.5, delay_run, (1, operator.add, 2, 3), {})
+        self.start_timer()
+        future._set_running_or_notify_cancel()
+        self.assertIsInstance(future.exception(), TimeoutError)
+        self.assertFalse(future.exception().args)
+        self.stop_timer(0.5)
+
+    def test_exception_before_running(self):
+        future = self.instantiate(0.1, delay_run, (0, operator.add, 1, 2), {})
+        delay_run(0.5, future._set_running_or_notify_cancel, sync=False)
+        self.start_timer()
+        self.assertIsNone(future.exception())
+        self.stop_timer(0.5)
+
+    def test_exception_with_waiters(self):
+        self.run_waiter_check(
+            10,
+            lambda future: self.assertIsNone(future.exception())
+        )
+
+    def test_result_and_exception_waiters(self):
+        self.run_waiter_check(
+            10,
+            lambda future: self.assertEqual(future.result(), 3),
+            lambda future: self.assertIsNone(future.exception())
+        )
+        self.run_waiter_check(
+            10,
+            lambda future: self.assertIsNone(future.exception()),
+            lambda future: self.assertEqual(future.result(), 3)
+        )
+
+    def test_valid_add_done_callback(self):
+        future = self.instantiate(None, time.sleep, (0,), {})
+        requires_callback = {future}
+        future.add_done_callback(requires_callback.remove)
+        self.assertIn(future, requires_callback)
+        future._set_running_or_notify_cancel()
+        self.assertIsNone(future.exception())
+        self.assertFalse(requires_callback)
+        requires_callback.add(future)
+        future.add_done_callback(requires_callback.remove)
+        self.assertFalse(requires_callback)
+
+    def test_error_add_done_callback(self):
+        future = self.instantiate(None, time.sleep, (0,), {})
+        requires_callback = [{future} for _ in range(10)]
+        callbacks = [s.remove for s in requires_callback]
+        error = Exception()
+        callbacks.insert(5, functools.partial(throw, error))
+        for fn in callbacks:
+            future.add_done_callback(fn)
+        future._set_running_or_notify_cancel()
+        with self.assertRaises(Exception) as cm:
+            future.exception()
+        self.assertIs(cm.exception, error)
+        self.assertFalse(any(requires_callback))
+
+    def test_set_running_or_notify_cancel(self):
+        future = self.instantiate(None, time.sleep, (0.1,), {})
+        self.assertFalse(future.running() or future.done())
+        future._set_running_or_notify_cancel()
+        self.assertTrue(future.running())
+        future._set_running_or_notify_cancel()
+        self.assertTrue(future.cancelled())
+
+    def test_not_empty_queue(self):
+        data = os.urandom(1 << 20)
+        future = self.instantiate(None, return_, (data,), {})
+        future._set_running_or_notify_cancel()
+        # noinspection PyUnresolvedReferences
+        result = queue.SimpleQueue()
+        with silence_other_threads():
+            for _ in range(2):
+                delay_run(
+                    0.1,
+                    asynchronous._run,
+                    lambda: self.assertEqual(future.result(), data),
+                    (),
+                    {},
+                    result,
+                    sync=False
+                )
+            for _ in range(2):
+                error, value = result.get(True, 0.2)
+                self.assertFalse(error)
+
+
+if __name__ == '__main__':
+    unittest.main()
+
+]]
+[[
+https://stackoverflow.com/questions/492519/timeout-on-a-function-call
+===
+Timeout on a function call
+165
+I'm calling a function in Python which I know may stall and force me to restart the script.
+
+How do I call the function or what do I wrap it in so that if it takes longer than 5 seconds the script cancels it and does something else?
+
+python
+multithreading
+timeout
+python-multithreading
+Share
+Improve this question
+Follow
+edited May 23, 2016 at 20:52
+user avatar
+martineau
+114k2424 gold badges158158 silver badges280280 bronze badges
+asked Jan 29, 2009 at 17:08
+user avatar
+Teifion
+104k7575 gold badges157157 silver badges194194 bronze badges
+2
+This libray looks maintained: pypi.org/project/wrapt-timeout-decorator – 
+guettli
+ Apr 9, 2021 at 8:44
+Add a comment
+21 Answers
+Sorted by:
+
+Highest score (default)
+
+300
+
+You may use the signal package if you are running on UNIX:
+
+In [1]: import signal
+
+# Register an handler for the timeout
+In [2]: def handler(signum, frame):
+   ...:     print("Forever is over!")
+   ...:     raise Exception("end of time")
+   ...: 
+
+# This function *may* run for an indetermined time...
+In [3]: def loop_forever():
+   ...:     import time
+   ...:     while 1:
+   ...:         print("sec")
+   ...:         time.sleep(1)
+   ...:         
+   ...:         
+
+# Register the signal function handler
+In [4]: signal.signal(signal.SIGALRM, handler)
+Out[4]: 0
+
+# Define a timeout for your function
+In [5]: signal.alarm(10)
+Out[5]: 0
+
+In [6]: try:
+   ...:     loop_forever()
+   ...: except Exception, exc: 
+   ...:     print(exc)
+   ....: 
+sec
+sec
+sec
+sec
+sec
+sec
+sec
+sec
+Forever is over!
+end of time
+
+# Cancel the timer if the function returned before timeout
+# (ok, mine won't but yours maybe will :)
+In [7]: signal.alarm(0)
+Out[7]: 0
+10 seconds after the call signal.alarm(10), the handler is called. This raises an exception that you can intercept from the regular Python code.
+
+This module doesn't play well with threads (but then, who does?)
+
+Note that since we raise an exception when timeout happens, it may end up caught and ignored inside the function, for example of one such function:
+
+def loop_forever():
+    while 1:
+        print('sec')
+        try:
+            time.sleep(10)
+        except:
+            continue
+Share
+Improve this answer
+Follow
+edited Jul 25, 2020 at 11:40
+user avatar
+sweden
+10088 bronze badges
+answered Jan 30, 2009 at 2:14
+user avatar
+piro
+12.7k55 gold badges3333 silver badges3535 bronze badges
+5
+I use Python 2.5.4. There is such an error: Traceback (most recent call last): File "aa.py", line 85, in func signal.signal(signal.SIGALRM, handler) AttributeError: 'module' object has no attribute 'SIGALRM' – 
+flypen
+ May 13, 2011 at 1:59 
+17
+@flypen that's because signal.alarm and the related SIGALRM are not available on Windows platforms. – 
+Double AA
+ Aug 19, 2011 at 16:20
+4
+If there are a lot of processes, and each calls signal.signal --- will they all work properly? Won't each signal.signal call cancel "concurrent" one? – 
+brownian
+ May 10, 2012 at 8:28
+22
+I second the warning about threads. signal.alarm only works on main thread. I tried to use this in Django views - immediate fail with verbiage about main thread only. – 
+JL Peyret
+ Apr 2, 2015 at 6:51
+2
+If you need this: set the alarm back to 0 to cancel it signal.alarm(0) (see stackoverflow.com/questions/27013127/…). – 
+Michele Piccolini
+ Jun 26, 2020 at 14:45
+Show 9 more comments
+
+208
+
+You can use multiprocessing.Process to do exactly that.
+
+Code
+
+import multiprocessing
+import time
+
+# bar
+def bar():
+    for i in range(100):
+        print "Tick"
+        time.sleep(1)
+
+if __name__ == '__main__':
+    # Start bar as a process
+    p = multiprocessing.Process(target=bar)
+    p.start()
+
+    # Wait for 10 seconds or until process finishes
+    p.join(10)
+
+    # If thread is still active
+    if p.is_alive():
+        print "running... let's kill it..."
+
+        # Terminate - may not work if process is stuck for good
+        p.terminate()
+        # OR Kill - will work for sure, no chance for process to finish nicely however
+        # p.kill()
+
+        p.join()
+Share
+Improve this answer
+Follow
+edited Sep 21, 2020 at 10:08
+user avatar
+Emil
+57922 gold badges99 silver badges2222 bronze badges
+answered Feb 17, 2013 at 18:00
+user avatar
+ATOzTOA
+33k2222 gold badges9292 silver badges115115 bronze badges
+63
+How can I get the return value of the target method ? – 
+bad_keypoints
+ Aug 11, 2015 at 7:05
+6
+This doesn't seem to work if the called function gets stuck on an I/O block. – 
+sudo
+ Jul 29, 2016 at 18:35
+4
+@bad_keypoints See this answer: stackoverflow.com/a/10415215/1384471 Basically, you pass a list along that you put the answer into. – 
+Peter
+ Dec 15, 2016 at 10:19
+1
+@sudo then remove the join(). that makes your x number of concurrent subprocesses being running untill them finish their work, or amount defined in join(10). Case you have a blocking I/O for 10 processes, using join(10) you have set them to wait all of them max 10 for EACH process that has started. Use daemon flag like this example stackoverflow.com/a/27420072/2480481. Of course u can pass flag daemon=True directly to multiprocessing.Process() function. – 
+m3nda
+ Jan 2, 2017 at 11:35
+3
+@ATOzTOA the problem with this solution, at least for my purposes, is that it potentially does not allow children treads to clean after themselves. From documentation of terminate function terminate() ... Note that exit handlers and finally clauses, etc., will not be executed. Note that descendant processes of the process will not be terminated – they will simply become orphaned. – 
+abalcerek
+ May 10, 2017 at 14:03
+Show 10 more comments
+
+101
+
+How do I call the function or what do I wrap it in so that if it takes longer than 5 seconds the script cancels it?
+I posted a gist that solves this question/problem with a decorator and a threading.Timer. Here it is with a breakdown.
+
+Imports and setups for compatibility
+It was tested with Python 2 and 3. It should also work under Unix/Linux and Windows.
+
+First the imports. These attempt to keep the code consistent regardless of the Python version:
+
+from __future__ import print_function
+import sys
+import threading
+from time import sleep
+try:
+    import thread
+except ImportError:
+    import _thread as thread
+Use version independent code:
+
+try:
+    range, _print = xrange, print
+    def print(*args, **kwargs): 
+        flush = kwargs.pop('flush', False)
+        _print(*args, **kwargs)
+        if flush:
+            kwargs.get('file', sys.stdout).flush()            
+except NameError:
+    pass
+Now we have imported our functionality from the standard library.
+
+exit_after decorator
+Next we need a function to terminate the main() from the child thread:
+
+def quit_function(fn_name):
+    # print to stderr, unbuffered in Python 2.
+    print('{0} took too long'.format(fn_name), file=sys.stderr)
+    sys.stderr.flush() # Python 3 stderr is likely buffered.
+    thread.interrupt_main() # raises KeyboardInterrupt
+And here is the decorator itself:
+
+def exit_after(s):
+    '''
+    use as decorator to exit process if 
+    function takes longer than s seconds
+    '''
+    def outer(fn):
+        def inner(*args, **kwargs):
+            timer = threading.Timer(s, quit_function, args=[fn.__name__])
+            timer.start()
+            try:
+                result = fn(*args, **kwargs)
+            finally:
+                timer.cancel()
+            return result
+        return inner
+    return outer
+Usage
+And here's the usage that directly answers your question about exiting after 5 seconds!:
+
+@exit_after(5)
+def countdown(n):
+    print('countdown started', flush=True)
+    for i in range(n, -1, -1):
+        print(i, end=', ', flush=True)
+        sleep(1)
+    print('countdown finished')
+Demo:
+
+>>> countdown(3)
+countdown started
+3, 2, 1, 0, countdown finished
+>>> countdown(10)
+countdown started
+10, 9, 8, 7, 6, countdown took too long
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+  File "<stdin>", line 11, in inner
+  File "<stdin>", line 6, in countdown
+KeyboardInterrupt
+The second function call will not finish, instead the process should exit with a traceback!
+
+KeyboardInterrupt does not always stop a sleeping thread
+Note that sleep will not always be interrupted by a keyboard interrupt, on Python 2 on Windows, e.g.:
+
+@exit_after(1)
+def sleep10():
+    sleep(10)
+    print('slept 10 seconds')
+
+>>> sleep10()
+sleep10 took too long         # Note that it hangs here about 9 more seconds
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+  File "<stdin>", line 11, in inner
+  File "<stdin>", line 3, in sleep10
+KeyboardInterrupt
+nor is it likely to interrupt code running in extensions unless it explicitly checks for PyErr_CheckSignals(), see Cython, Python and KeyboardInterrupt ignored
+
+I would avoid sleeping a thread more than a second, in any case - that's an eon in processor time.
+
+How do I call the function or what do I wrap it in so that if it takes longer than 5 seconds the script cancels it and does something else?
+
+To catch it and do something else, you can catch the KeyboardInterrupt.
+
+>>> try:
+...     countdown(10)
+... except KeyboardInterrupt:
+...     print('do something else')
+... 
+countdown started
+10, 9, 8, 7, 6, countdown took too long
+do something else
+Share
+Improve this answer
+Follow
+edited May 23, 2017 at 12:34
+user avatar
+CommunityBot
+111 silver badge
+answered Jul 28, 2015 at 3:43
+user avatar
+Russia Must Remove Putin♦
+341k8484 gold badges393393 silver badges327327 bronze badges
+I didn't read your whole post yet, but I just wondered: what if flush is 0? That would be interpreted as False in the if-statement underneath, right? – 
+Koenraad van Duin
+ Mar 17, 2019 at 7:17 
+3
+Why do I have to call thread.interrupt_main(), why can't I directly raise an exception? – 
+Anirban Nag 'tintinmj'
+ Jul 30, 2019 at 20:54
+Any thoughts on wrapping multiprocessing.connection.Client with this? - Trying to solve: stackoverflow.com/questions/57817955/… – 
+wwii
+ Sep 8, 2019 at 16:59 
+It hangs on thread.interrupt_main() when I try different function instead of countdown. For example I run a subprocess() inside the count which didn't terminated even the timer is completed, I had to press ^C – 
+alper
+ Aug 6, 2020 at 12:06
+How do you stop just all processes but not raise an the error KeyboardInterrupt? – 
+JohnAndrews
+ Mar 4, 2021 at 17:46
+Show 2 more comments
+
+62
+
+I have a different proposal which is a pure function (with the same API as the threading suggestion) and seems to work fine (based on suggestions on this thread)
+
+def timeout(func, args=(), kwargs={}, timeout_duration=1, default=None):
+    import signal
+
+    class TimeoutError(Exception):
+        pass
+
+    def handler(signum, frame):
+        raise TimeoutError()
+
+    # set the timeout handler
+    signal.signal(signal.SIGALRM, handler) 
+    signal.alarm(timeout_duration)
+    try:
+        result = func(*args, **kwargs)
+    except TimeoutError as exc:
+        result = default
+    finally:
+        signal.alarm(0)
+
+    return result
+Share
+Improve this answer
+Follow
+answered Dec 11, 2012 at 13:41
+user avatar
+Alex
+39.4k7676 gold badges209209 silver badges410410 bronze badges
+3
+You should also restore the original signal handler. See stackoverflow.com/questions/492519/… – 
+Martin Konecny
+ Jun 11, 2013 at 15:21
+10
+One more note: The Unix signal method only works if you are applying it in the main thread. Applying it in a sub-thread throws an exception and will not work. – 
+Martin Konecny
+ Jun 12, 2013 at 20:23
+13
+This is not the best solution because it only works on linux. – 
+max
+ Mar 13, 2014 at 20:10
+25
+Max, not true - works on any POSIX-compliant unix. I think your comment should be more accurately, doesn't work on Windows. – 
+Chris Johnson
+ Nov 16, 2015 at 19:41
+12
+You should avoid setting kwargs to an empty dict. A common Python gotcha is that default arguments on functions are mutable. So that dictionary will be shared across all calls to timeout. It is much better to set the default to None and, on the first line of the function, add kwargs = kwargs or {}. Args is okay because tuples are not mutable. – 
+scottmrogowski
+ Aug 12, 2016 at 17:13
+Show 2 more comments
+
+37
+
+I ran across this thread when searching for a timeout call on unit tests. I didn't find anything simple in the answers or 3rd party packages so I wrote the decorator below you can drop right into code:
+
+import multiprocessing.pool
+import functools
+
+def timeout(max_timeout):
+    """Timeout decorator, parameter in seconds."""
+    def timeout_decorator(item):
+        """Wrap the original function."""
+        @functools.wraps(item)
+        def func_wrapper(*args, **kwargs):
+            """Closure for function."""
+            pool = multiprocessing.pool.ThreadPool(processes=1)
+            async_result = pool.apply_async(item, args, kwargs)
+            # raises a TimeoutError if execution exceeds max_timeout
+            return async_result.get(max_timeout)
+        return func_wrapper
+    return timeout_decorator
+Then it's as simple as this to timeout a test or any function you like:
+
+@timeout(5.0)  # if execution takes longer than 5 seconds, raise a TimeoutError
+def test_base_regression(self):
+    ...
+Share
+Improve this answer
+Follow
+edited Apr 24, 2016 at 1:33
+user avatar
+Matt Tardiff
+9,03111 gold badge1515 silver badges99 bronze badges
+answered Feb 1, 2016 at 20:02
+user avatar
+Rich
+11.1k99 gold badges5858 silver badges9191 bronze badges
+23
+Be careful since this does not terminate the function after timeout is reached! – 
+Sylvain
+ Sep 16, 2016 at 10:35
+1
+Note that on Windows, this spawns an entirely new process - which will eat into the time to timeout, perhaps by a lot if the dependencies take a long time to set up. – 
+Russia Must Remove Putin
+♦
+ Jan 11, 2017 at 17:59
+2
+Yes, this needs some tweaking. It leaves threads going forever. – 
+sudo
+ Jan 28, 2017 at 21:15 
+3
+IDK if this is the best way, but you can try/catch Exception inside of func_wrapper and do pool.close() after the catch to ensure the thread always dies afterwards no matter what. Then you can throw TimeoutError or whatever you want after. Seems to work for me. – 
+sudo
+ Jan 28, 2017 at 21:23 
+2
+This is usefull, but once I have done it lots of times, I get RuntimeError: can't start new thread. Will it still work if I ignore it or is there something else I can do to get around this? Thanks in advance! – 
+56-
+ Jul 26, 2017 at 12:39
+Show 1 more comment
+
+33
+
+The stopit package, found on pypi, seems to handle timeouts well.
+
+I like the @stopit.threading_timeoutable decorator, which adds a timeout parameter to the decorated function, which does what you expect, it stops the function.
+
+Check it out on pypi: https://pypi.python.org/pypi/stopit
+
+Share
+Improve this answer
+Follow
+answered Feb 15, 2015 at 12:43
+user avatar
+egeland
+1,1841111 silver badges1919 bronze badges
+Library claims, some functionality does not work in Windows. – 
+Stefan Simik
+ Jun 3, 2019 at 16:48
+2
+For people who might get confused as me: The stopit.utils.TimeoutException doesn't stop your code! The code continues normal after this! I have spend 30 min in a program that was functioning normally.. Really good answer! – 
+Charalamm
+ Sep 1, 2020 at 8:08 
+With stopit-1.1.2 the basic timeout decorator: @stopit.threading_timeoutable(default='not finished') works well on Linux and Windows as well. Simple and excellent solution if you only want a simple timeout. – 
+Bence Kaulics
+ Aug 19, 2021 at 7:49
+Add a comment
+
+20
+
+There are a lot of suggestions, but none using concurrent.futures, which I think is the most legible way to handle this.
+
+from concurrent.futures import ProcessPoolExecutor
+
+# Warning: this does not terminate function if timeout
+def timeout_five(fnc, *args, **kwargs):
+    with ProcessPoolExecutor() as p:
+        f = p.submit(fnc, *args, **kwargs)
+        return f.result(timeout=5)
+Super simple to read and maintain.
+
+We make a pool, submit a single process and then wait up to 5 seconds before raising a TimeoutError that you could catch and handle however you needed.
+
+Native to python 3.2+ and backported to 2.7 (pip install futures).
+
+Switching between threads and processes is as simple as replacing ProcessPoolExecutor with ThreadPoolExecutor.
+
+If you want to terminate the Process on timeout I would suggest looking into Pebble.
+
+Share
+Improve this answer
+Follow
+edited Oct 23, 2017 at 21:30
+answered May 3, 2017 at 6:28
+user avatar
+Brian
+84799 silver badges1616 bronze badges
+3
+What does "Warning: this does not terminate function if timeout" mean? – 
+Scott Stafford
+ Dec 8, 2017 at 16:25
+6
+@ScottStafford Processes/threads don't end just because a TimeoutError has been raised. So the process or the thread will still try to run to completion and will not automatically give you back control at your timeout. – 
+Brian
+ Dec 11, 2017 at 7:59
+Would this let me save any results that are intermediate at that time? e.g. if I have recursive function that I set timeout to 5, and in that time I have partial results, how do I write the function to return the partial results on timeout? – 
+SumNeuron
+ Mar 16, 2018 at 11:49
+I'm using exactly this, however I have a 1000 tasks, each is allowed 5 seconds before timeout. My problem is that cores get clogged on tasks that never end b'cause the timeout is only applied on the total of tasks not on individual tasks. concurrent.futures does not provide a solution to this afaik. – 
+Bastiaan
+ Apr 1, 2019 at 4:42
+Add a comment
+
+19
+
+I am the author of wrapt_timeout_decorator
+
+Most of the solutions presented here work wunderfully under Linux on the first glance - because we have fork() and signals() - but on windows the things look a bit different. And when it comes to subthreads on Linux, You cant use Signals anymore.
+
+In order to spawn a process under Windows, it needs to be picklable - and many decorated functions or Class methods are not.
+
+So You need to use a better pickler like dill and multiprocess (not pickle and multiprocessing) - thats why You cant use ProcessPoolExecutor (or only with limited functionality).
+
+For the timeout itself - You need to define what timeout means - because on Windows it will take considerable (and not determinable) time to spawn the process. This can be tricky on short timeouts. Lets assume, spawning the process takes about 0.5 seconds (easily !!!). If You give a timeout of 0.2 seconds what should happen ? Should the function time out after 0.5 + 0.2 seconds (so let the method run for 0.2 seconds)? Or should the called process time out after 0.2 seconds (in that case, the decorated function will ALWAYS timeout, because in that time it is not even spawned) ?
+
+Also nested decorators can be nasty and You cant use Signals in a subthread. If You want to create a truly universal, cross-platform decorator, all this needs to be taken into consideration (and tested).
+
+Other issues are passing exceptions back to the caller, as well as logging issues (if used in the decorated function - logging to files in another process is NOT supported)
+
+I tried to cover all edge cases, You might look into the package wrapt_timeout_decorator, or at least test Your own solutions inspired by the unittests used there.
+
+@Alexis Eggermont - unfortunately I dont have enough points to comment - maybe someone else can notify You - I think I solved Your import issue.
+
+Share
+Improve this answer
+Follow
+edited Jun 24, 2020 at 19:12
+user avatar
+Inaimathi
+13.5k88 gold badges4646 silver badges9090 bronze badges
+answered Apr 23, 2019 at 18:02
+user avatar
+bitranox
+1,31877 silver badges1818 bronze badges
+1
+This is a life saver for me! My problem was sometimes multiprocessing worker stalled for no reason and was consuming lot of memory and cpu in the sleep state. Tried various wrappers for multiprocessing which has an option for pool timeout but each gave me other different problems like processes not killed after the pool is terminated. Now with this decorator, simply after a long timeout, the function will be killed and the processes spawned inside it. It gives me BrokenPipeError for abruptly closing the pool, but it solved my main problem. Thank you! Any suggestions to handle BrokenPipeError ? – 
+Arjun Sankarlal
+ Jul 23, 2020 at 7:50
+2
+@Arjun Sankarlal : of course if the worker is killed, the pipe will be broken. You need to catch the broken pipe error on the scheduler task and clean up properly. – 
+bitranox
+ Jul 24, 2020 at 9:05 
+1
+Yes I understand, and I did in try/except with BrokenPipeError but it was not caught. So I am using it in a webserver. I have a catch for BrokenPipeError and general Exception. So when the timeout occurred, I was returned with general exception not with broken pipe error. But after few seconds, the server printed BrokenPipeError in the console and it server the other requests without any problem. May be I introduce a delay after to check if the pool is broken and then return !? – 
+Arjun Sankarlal
+ Jul 26, 2020 at 4:09 
+Add a comment
+
+18
+
+Great, easy to use and reliable PyPi project timeout-decorator (https://pypi.org/project/timeout-decorator/)
+
+installation:
+
+pip install timeout-decorator
+Usage:
+
+import time
+import timeout_decorator
+
+@timeout_decorator.timeout(5)
+def mytest():
+    print "Start"
+    for i in range(1,10):
+        time.sleep(1)
+        print "%d seconds have passed" % i
+
+if __name__ == '__main__':
+    mytest()
+Share
+Improve this answer
+Follow
+answered Aug 8, 2018 at 12:06
+user avatar
+Gil
+40711 gold badge55 silver badges1515 bronze badges
+6
+I appreciate the clear solution. But could anyone explain how this library works, especially when dealing with multithreading. Personally I fear to use an unknown machanism to handle threads or signals. – 
+wsysuper
+ Nov 25, 2018 at 3:07 
+@wsysuper the lib has 2 modes of operations: open new thread or a new subprocess (which suppose to be thread safe) – 
+Gil
+ Dec 2, 2018 at 13:35
+It seems that it does not work under linux as other solutions based on signal.SIGALRM – 
+Mathieu Roger
+ Feb 23, 2021 at 16:59
+1
+This solution is not working on Python 3.7.6. I though you should know! That is too bad for me. – 
+Andre Carneiro
+ May 11, 2021 at 13:55
+Add a comment
+
+18
+
+Building on and and enhancing the answer by @piro , you can build a contextmanager. This allows for very readable code which will disable the alaram signal after a successful run (sets signal.alarm(0))
+
+from contextlib import contextmanager
+import signal
+import time
+
+@contextmanager
+def timeout(duration):
+    def timeout_handler(signum, frame):
+        raise Exception(f'block timedout after {duration} seconds')
+    signal.signal(signal.SIGALRM, timeout_handler)
+    signal.alarm(duration)
+    yield
+    signal.alarm(0)
+
+def sleeper(duration):
+    time.sleep(duration)
+    print('finished')
+Example usage:
+
+In [19]: with timeout(2):
+    ...:     sleeper(1)
+    ...:     
+finished
+
+In [20]: with timeout(2):
+    ...:     sleeper(3)
+    ...:         
+---------------------------------------------------------------------------
+Exception                                 Traceback (most recent call last)
+<ipython-input-20-66c78858116f> in <module>()
+      1 with timeout(2):
+----> 2     sleeper(3)
+      3 
+
+<ipython-input-7-a75b966bf7ac> in sleeper(t)
+      1 def sleeper(t):
+----> 2     time.sleep(t)
+      3     print('finished')
+      4 
+
+<ipython-input-18-533b9e684466> in timeout_handler(signum, frame)
+      2 def timeout(duration):
+      3     def timeout_handler(signum, frame):
+----> 4         raise Exception(f'block timedout after {duration} seconds')
+      5     signal.signal(signal.SIGALRM, timeout_handler)
+      6     signal.alarm(duration)
+
+Exception: block timedout after 2 seconds
+Share
+Improve this answer
+Follow
+edited May 20, 2021 at 10:55
+user avatar
+Enginer
+2,73611 gold badge2323 silver badges2121 bronze badges
+answered Aug 23, 2020 at 12:09
+user avatar
+boogie
+26133 silver badges99 bronze badges
+1
+This is a great way of doing it indeed. Just to add for completeness, the required import for this to work: from contextlib import contextmanager – 
+mdev
+ Mar 7, 2021 at 11:35
+2
+An issue with the current implementation of this contextmanager is that an exception within the code block inside the context can result in the signal alarm not being disabled. To fix it a try + finally should be added. Similar to my timeout function decorator below (stackoverflow.com/a/66515961/1522304) – 
+mdev
+ Apr 19, 2021 at 14:33
+Add a comment
+
+9
+
+timeout-decorator don't work on windows system as , windows didn't support signal well.
+
+If you use timeout-decorator in windows system you will get the following
+
+AttributeError: module 'signal' has no attribute 'SIGALRM'
+Some suggested to use use_signals=False but didn't worked for me.
+
+Author @bitranox created the following package:
+
+pip install https://github.com/bitranox/wrapt-timeout-decorator/archive/master.zip
+Code Sample:
+
+import time
+from wrapt_timeout_decorator import *
+
+@timeout(5)
+def mytest(message):
+    print(message)
+    for i in range(1,10):
+        time.sleep(1)
+        print('{} seconds have passed'.format(i))
+
+def main():
+    mytest('starting')
+
+
+if __name__ == '__main__':
+    main()
+Gives the following exception:
+
+TimeoutError: Function mytest timed out after 5 seconds
+Share
+Improve this answer
+Follow
+answered Aug 29, 2018 at 22:28
+user avatar
+as - if
+2,1101818 silver badges2323 bronze badges
+This sound like a very nice solution. Strangely, the line from wrapt_timeout_decorator import * seems to kill some of my other imports. For example I get ModuleNotFoundError: No module named 'google.appengine', but I don't get this error if I don't import wrapt_timeout_decorator – 
+Alexis Eggermont
+ Apr 23, 2019 at 14:48
+@AlexisEggermont I was about to use this with appengine... so I am very curious ifthis error persisted? – 
+PascalVKooten
+ Sep 3, 2019 at 15:14
+when testing this, nothing seems to be printed out from either message or seconds passed – 
+Avan
+ Apr 3, 2021 at 0:12
+The 'Code Sample' worked perfectly on my Windows machine. My first attempt with Code Sample did not work because I wrongly named my file 'signal.py', and got this error "NameError: name 'timeout' is not defined". When you run Code Sample as a py file, name it 'my_signal.py' or anything other than 'signal.py'. – 
+stok
+ Oct 30, 2021 at 1:14
+Add a comment
+
+6
+
+Highlights
+Raises TimeoutError uses exceptions to alert on timeout - can easily be modified
+Cross Platform: Windows & Mac OS X
+Compatibility: Python 3.6+ (I also tested on python 2.7 and it works with small syntax adjustments)
+For full explanation and extension to parallel maps, see here https://flipdazed.github.io/blog/quant%20dev/parallel-functions-with-timeouts
+
+Minimal Example
+>>> @killer_call(timeout=4)
+... def bar(x):
+...        import time
+...        time.sleep(x)
+...        return x
+>>> bar(10)
+Traceback (most recent call last):
+  ...
+__main__.TimeoutError: function 'bar' timed out after 4s
+and as expected
+
+>>> bar(2)
+2
+Full code
+import multiprocessing as mp
+import multiprocessing.queues as mpq
+import functools
+import dill
+
+from typing import Tuple, Callable, Dict, Optional, Iterable, List, Any
+
+class TimeoutError(Exception):
+
+    def __init__(self, func: Callable, timeout: int):
+        self.t = timeout
+        self.fname = func.__name__
+
+    def __str__(self):
+            return f"function '{self.fname}' timed out after {self.t}s"
+
+
+def _lemmiwinks(func: Callable, args: Tuple, kwargs: Dict[str, Any], q: mp.Queue):
+    """lemmiwinks crawls into the unknown"""
+    q.put(dill.loads(func)(*args, **kwargs))
+
+
+def killer_call(func: Callable = None, timeout: int = 10) -> Callable:
+    """
+    Single function call with a timeout
+
+    Args:
+        func: the function
+        timeout: The timeout in seconds
+    """
+
+    if not isinstance(timeout, int):
+        raise ValueError(f'timeout needs to be an int. Got: {timeout}')
+
+    if func is None:
+        return functools.partial(killer_call, timeout=timeout)
+
+    @functools.wraps(killer_call)
+    def _inners(*args, **kwargs) -> Any:
+        q_worker = mp.Queue()
+        proc = mp.Process(target=_lemmiwinks, args=(dill.dumps(func), args, kwargs, q_worker))
+        proc.start()
+        try:
+            return q_worker.get(timeout=timeout)
+        except mpq.Empty:
+            raise TimeoutError(func, timeout)
+        finally:
+            try:
+                proc.terminate()
+            except:
+                pass
+    return _inners
+
+if __name__ == '__main__':
+    @killer_call(timeout=4)
+    def bar(x):
+        import time
+        time.sleep(x)
+        return x
+
+    print(bar(2))
+    bar(10)
+Notes
+You will need to import inside the function because of the way dill works.
+
+This will also mean these functions may not be not compatible with doctest if there are imports inside your target functions. You will get an issue with __import__ not found.
+
+Share
+Improve this answer
+Follow
+edited Jan 13, 2021 at 12:20
+answered Aug 10, 2020 at 22:57
+user avatar
+Alexander McFarlane
+9,93288 gold badges5252 silver badges9696 bronze badges
+1
+Your class TimeoutError is masking an existing builtin exception TimeoutError. – 
+gerrit
+ Feb 11, 2021 at 10:01
+Add a comment
+
+5
+
+We can use signals for the same. I think the below example will be useful for you. It is very simple compared to threads.
+
+import signal
+
+def timeout(signum, frame):
+    raise myException
+
+#this is an infinite loop, never ending under normal circumstances
+def main():
+    print 'Starting Main ',
+    while 1:
+        print 'in main ',
+
+#SIGALRM is only usable on a unix platform
+signal.signal(signal.SIGALRM, timeout)
+
+#change 5 to however many seconds you need
+signal.alarm(5)
+
+try:
+    main()
+except myException:
+    print "whoops"
+Share
+Improve this answer
+Follow
+edited Jul 26, 2013 at 9:30
+answered Jul 23, 2013 at 11:10
+user avatar
+A R
+2,50733 gold badges1818 silver badges3737 bronze badges
+2
+It would be better to choose a specific exception and to catch only it. Bare try: ... except: ... are always a bad idea. – 
+hivert
+ Jul 23, 2013 at 11:28
+I agree with you hivert. – 
+A R
+ Jul 26, 2013 at 6:58
+while I understand the reason, as a sysadmin/integrator I have disagree - python code is notorious for neglecting error handling, and handling the one thing you expect isn't good enough for quality software. you can handle the 5 things you plan for AND a generic strategy for other things. "Traceback, None" is not a strategy, it's an insult. – 
+Florian Heigl
+ Jun 19, 2020 at 0:15
+I don't understand you at all. If I'm planing do some timeout for specific function, how to do it in elegant style? What strategy must I plan when called function is depended on not elegant components? how to perfectly glue this one? please explain me with working elegant examples. – 
+Znik
+ Sep 21, 2020 at 18:50
+Add a comment
+
+5
+
+Just in case it is helpful for anyone, building on the answer by @piro, I've made a function decorator:
+
+import time
+import signal
+from functools import wraps
+
+
+def timeout(timeout_secs: int):
+    def wrapper(func):
+        @wraps(func)
+        def time_limited(*args, **kwargs):
+            # Register an handler for the timeout
+            def handler(signum, frame):
+                raise Exception(f"Timeout for function '{func.__name__}'")
+
+            # Register the signal function handler
+            signal.signal(signal.SIGALRM, handler)
+
+            # Define a timeout for your function
+            signal.alarm(timeout_secs)
+
+            result = None
+            try:
+                result = func(*args, **kwargs)
+            except Exception as exc:
+                raise exc
+            finally:
+                # disable the signal alarm
+                signal.alarm(0)
+
+            return result
+
+        return time_limited
+
+    return wrapper
+Using the wrapper on a function with a 20 seconds timeout would look something like:
+
+    @timeout(20)
+    def my_slow_or_never_ending_function(name):
+        while True:
+            time.sleep(1)
+            print(f"Yet another second passed {name}...")
+
+    try:
+        results = my_slow_or_never_ending_function("Yooo!")
+    except Exception as e:
+        print(f"ERROR: {e}")
+Share
+Improve this answer
+Follow
+answered Mar 7, 2021 at 11:26
+user avatar
+mdev
+40177 silver badges1111 bronze badges
+It doesn't work on windwos 10. ERROR: module 'signal' has no attribute 'SIGALRM' – 
+Andy Yuan
+ Dec 20, 2021 at 3:31 
+@AndyYuan - this builds on piro's answer, which states that 'signal' can be used only on UNIX – 
+mdev
+ Dec 20, 2021 at 9:36
+Add a comment
+
+3
+
+Another solution with asyncio :
+
+If you want to cancel the background task and not just timeout on the running main code, then you need an explicit communication from main thread to ask the code of the task to cancel , like a threading.Event()
+
+import asyncio
+import functools
+import multiprocessing
+from concurrent.futures.thread import ThreadPoolExecutor
+
+
+class SingletonTimeOut:
+    pool = None
+
+    @classmethod
+    def run(cls, to_run: functools.partial, timeout: float):
+        pool = cls.get_pool()
+        loop = cls.get_loop()
+        try:
+            task = loop.run_in_executor(pool, to_run)
+            return loop.run_until_complete(asyncio.wait_for(task, timeout=timeout))
+        except asyncio.TimeoutError as e:
+            error_type = type(e).__name__ #TODO
+            raise e
+
+    @classmethod
+    def get_pool(cls):
+        if cls.pool is None:
+            cls.pool = ThreadPoolExecutor(multiprocessing.cpu_count())
+        return cls.pool
+
+    @classmethod
+    def get_loop(cls):
+        try:
+            return asyncio.get_event_loop()
+        except RuntimeError:
+            asyncio.set_event_loop(asyncio.new_event_loop())
+            # print("NEW LOOP" + str(threading.current_thread().ident))
+            return asyncio.get_event_loop()
+
+# ---------------
+
+TIME_OUT = float('0.2')  # seconds
+
+def toto(input_items,nb_predictions):
+    return 1
+
+to_run = functools.partial(toto,
+                           input_items=1,
+                           nb_predictions="a")
+
+results = SingletonTimeOut.run(to_run, TIME_OUT)
+
+Share
+Improve this answer
+Follow
+edited Dec 17, 2020 at 20:59
+answered Aug 10, 2020 at 9:36
+user avatar
+raphaelauv
+43311 gold badge44 silver badges1717 bronze badges
+InternalError is not defined - might be worthwhile filling that placeholder in – 
+Alexander McFarlane
+ Aug 10, 2020 at 23:49 
+This doesn't work as you expect: gist.github.com/coxley/5879f5ceecfbb4624bee23a6cef47510 – 
+coxley
+ Dec 17, 2020 at 16:54
+docs.python.org/3/library/asyncio-task.html#timeouts If a timeout occurs, it TRY to cancels the task and raises asyncio.TimeoutError. – 
+raphaelauv
+ Dec 17, 2020 at 20:54
+Add a comment
+
+2
+
+#!/usr/bin/python2
+import sys, subprocess, threading
+proc = subprocess.Popen(sys.argv[2:])
+timer = threading.Timer(float(sys.argv[1]), proc.terminate)
+timer.start()
+proc.wait()
+timer.cancel()
+exit(proc.returncode)
+Share
+Improve this answer
+Follow
+answered Apr 27, 2016 at 13:27
+user avatar
+Hal Canary
+3611 bronze badge
+10
+While this code may answer the question, providing additional context regarding how and/or why it solves the problem would improve the answer's long-term value – 
+Dan Cornilescu
+ Apr 27, 2016 at 13:48
+I don't think this does answer the question as subprocess.Popen(sys.argv[2:]) would be used to run a command not a Python function call. Unless the intent is to wrap the other Python script in this one, but that may not make for the easiest recovery from the stall. – 
+Alex Moore-Niemi
+ Dec 5, 2020 at 22:01
+Add a comment
+
+1
+
+I had a need for nestable timed interrupts (which SIGALARM can't do) that won't get blocked by time.sleep (which the thread-based approach can't do). I ended up copying and lightly modifying code from here: http://code.activestate.com/recipes/577600-queue-for-managing-multiple-sigalrm-alarms-concurr/
+
+The code itself:
+
+#!/usr/bin/python
+
+# lightly modified version of http://code.activestate.com/recipes/577600-queue-for-managing-multiple-sigalrm-alarms-concurr/
+
+
+"""alarm.py: Permits multiple SIGALRM events to be queued.
+
+Uses a `heapq` to store the objects to be called when an alarm signal is
+raised, so that the next alarm is always at the top of the heap.
+"""
+
+import heapq
+import signal
+from time import time
+
+__version__ = '$Revision: 2539 $'.split()[1]
+
+alarmlist = []
+
+__new_alarm = lambda t, f, a, k: (t + time(), f, a, k)
+__next_alarm = lambda: int(round(alarmlist[0][0] - time())) if alarmlist else None
+__set_alarm = lambda: signal.alarm(max(__next_alarm(), 1))
+
+
+class TimeoutError(Exception):
+    def __init__(self, message, id_=None):
+        self.message = message
+        self.id_ = id_
+
+
+class Timeout:
+    ''' id_ allows for nested timeouts. '''
+    def __init__(self, id_=None, seconds=1, error_message='Timeout'):
+        self.seconds = seconds
+        self.error_message = error_message
+        self.id_ = id_
+    def handle_timeout(self):
+        raise TimeoutError(self.error_message, self.id_)
+    def __enter__(self):
+        self.this_alarm = alarm(self.seconds, self.handle_timeout)
+    def __exit__(self, type, value, traceback):
+        try:
+            cancel(self.this_alarm) 
+        except ValueError:
+            pass
+
+
+def __clear_alarm():
+    """Clear an existing alarm.
+
+    If the alarm signal was set to a callable other than our own, queue the
+    previous alarm settings.
+    """
+    oldsec = signal.alarm(0)
+    oldfunc = signal.signal(signal.SIGALRM, __alarm_handler)
+    if oldsec > 0 and oldfunc != __alarm_handler:
+        heapq.heappush(alarmlist, (__new_alarm(oldsec, oldfunc, [], {})))
+
+
+def __alarm_handler(*zargs):
+    """Handle an alarm by calling any due heap entries and resetting the alarm.
+
+    Note that multiple heap entries might get called, especially if calling an
+    entry takes a lot of time.
+    """
+    try:
+        nextt = __next_alarm()
+        while nextt is not None and nextt <= 0:
+            (tm, func, args, keys) = heapq.heappop(alarmlist)
+            func(*args, **keys)
+            nextt = __next_alarm()
+    finally:
+        if alarmlist: __set_alarm()
+
+
+def alarm(sec, func, *args, **keys):
+    """Set an alarm.
+
+    When the alarm is raised in `sec` seconds, the handler will call `func`,
+    passing `args` and `keys`. Return the heap entry (which is just a big
+    tuple), so that it can be cancelled by calling `cancel()`.
+    """
+    __clear_alarm()
+    try:
+        newalarm = __new_alarm(sec, func, args, keys)
+        heapq.heappush(alarmlist, newalarm)
+        return newalarm
+    finally:
+        __set_alarm()
+
+
+def cancel(alarm):
+    """Cancel an alarm by passing the heap entry returned by `alarm()`.
+
+    It is an error to try to cancel an alarm which has already occurred.
+    """
+    __clear_alarm()
+    try:
+        alarmlist.remove(alarm)
+        heapq.heapify(alarmlist)
+    finally:
+        if alarmlist: __set_alarm()
+and a usage example:
+
+import alarm
+from time import sleep
+
+try:
+    with alarm.Timeout(id_='a', seconds=5):
+        try:
+            with alarm.Timeout(id_='b', seconds=2):
+                sleep(3)
+        except alarm.TimeoutError as e:
+            print 'raised', e.id_
+        sleep(30)
+except alarm.TimeoutError as e:
+    print 'raised', e.id_
+else:
+    print 'nope.'
+Share
+Improve this answer
+Follow
+answered Jan 25, 2016 at 18:36
+user avatar
+James
+33711 silver badge1010 bronze badges
+This also uses signal hence won't work if called from a thread. – 
+garg10may
+ Oct 8, 2018 at 13:37
+Add a comment
+
+1
+
+I have face the same problem but my situation is need work on sub thread, signal didn't work for me, so I wrote a python package: timeout-timer to solve this problem, support for use as context or decorator, use signal or sub thread module to trigger a timeout interrupt:
+
+from timeout_timer import timeout, TimeoutInterrupt
+
+class TimeoutInterruptNested(TimeoutInterrupt):
+    pass
+
+def test_timeout_nested_loop_both_timeout(timer="thread"):
+    cnt = 0
+    try:
+        with timeout(5, timer=timer):
+            try:
+                with timeout(2, timer=timer, exception=TimeoutInterruptNested):
+                    sleep(2)
+            except TimeoutInterruptNested:
+                cnt += 1
+            time.sleep(10)
+    except TimeoutInterrupt:
+        cnt += 1
+    assert cnt == 2
+see more: https://github.com/dozysun/timeout-timer
+
+Share
+Improve this answer
+Follow
+edited Jun 6, 2021 at 9:20
+answered Jun 6, 2021 at 8:53
+user avatar
+Dozy Sun
+7166 bronze badges
+the thread timer mechanism work fine in sub thread, it will create a other sub thread as timer, after timeout seconds sub thread will call parent thread's stop which will raise a TimeoutInterrupt exception and captured in parent thread – 
+Dozy Sun
+ Sep 22, 2021 at 3:05
+Add a comment
+
+0
+
+Here is a slight improvement to the given thread-based solution.
+
+The code below supports exceptions:
+
+def runFunctionCatchExceptions(func, *args, **kwargs):
+    try:
+        result = func(*args, **kwargs)
+    except Exception, message:
+        return ["exception", message]
+
+    return ["RESULT", result]
+
+
+def runFunctionWithTimeout(func, args=(), kwargs={}, timeout_duration=10, default=None):
+    import threading
+    class InterruptableThread(threading.Thread):
+        def __init__(self):
+            threading.Thread.__init__(self)
+            self.result = default
+        def run(self):
+            self.result = runFunctionCatchExceptions(func, *args, **kwargs)
+    it = InterruptableThread()
+    it.start()
+    it.join(timeout_duration)
+    if it.isAlive():
+        return default
+
+    if it.result[0] == "exception":
+        raise it.result[1]
+
+    return it.result[1]
+Invoking it with a 5 second timeout:
+
+result = timeout(remote_calculate, (myarg,), timeout_duration=5)
+Share
+Improve this answer
+Follow
+answered Sep 6, 2012 at 8:25
+user avatar
+diemacht
+1,90477 gold badges2828 silver badges4343 bronze badges
+1
+This will raise a new exception hiding the original traceback. See my version below... – 
+Meitham
+ Dec 14, 2012 at 11:20
+1
+This is also unsafe, as if within runFunctionCatchExceptions() certain Python functions obtaining GIL are called. E.g. the following would never, or for very long time, return if called within the function: eval(2**9999999999**9999999999). See stackoverflow.com/questions/22138190/… – 
+Mikko Ohtamaa
+ Oct 27, 2014 at 12:53 
+Add a comment
+
+0
+
+Here is a POSIX version that combines many of the previous answers to deliver following features:
+
+Subprocesses blocking the execution.
+Usage of the timeout function on class member functions.
+Strict requirement on time-to-terminate.
+Here is the code and some test cases:
+
+import threading
+import signal
+import os
+import time
+
+class TerminateExecution(Exception):
+    """
+    Exception to indicate that execution has exceeded the preset running time.
+    """
+
+
+def quit_function(pid):
+    # Killing all subprocesses
+    os.setpgrp()
+    os.killpg(0, signal.SIGTERM)
+
+    # Killing the main thread
+    os.kill(pid, signal.SIGTERM)
+
+
+def handle_term(signum, frame):
+    raise TerminateExecution()
+
+
+def invoke_with_timeout(timeout, fn, *args, **kwargs):
+    # Setting a sigterm handler and initiating a timer
+    old_handler = signal.signal(signal.SIGTERM, handle_term)
+    timer = threading.Timer(timeout, quit_function, args=[os.getpid()])
+    terminate = False
+
+    # Executing the function
+    timer.start()
+    try:
+        result = fn(*args, **kwargs)
+    except TerminateExecution:
+        terminate = True
+    finally:
+        # Restoring original handler and cancel timer
+        signal.signal(signal.SIGTERM, old_handler)
+        timer.cancel()
+
+    if terminate:
+        raise BaseException("xxx")
+
+    return result
+
+### Test cases
+def countdown(n):
+    print('countdown started', flush=True)
+    for i in range(n, -1, -1):
+        print(i, end=', ', flush=True)
+        time.sleep(1)
+    print('countdown finished')
+    return 1337
+
+
+def really_long_function():
+    time.sleep(10)
+
+
+def really_long_function2():
+    os.system("sleep 787")
+
+
+# Checking that we can run a function as expected.
+assert invoke_with_timeout(3, countdown, 1) == 1337
+
+# Testing various scenarios
+t1 = time.time()
+try:
+    print(invoke_with_timeout(1, countdown, 3))
+    assert(False)
+except BaseException:
+    assert(time.time() - t1 < 1.1)
+    print("All good", time.time() - t1)
+
+t1 = time.time()
+try:
+    print(invoke_with_timeout(1, really_long_function2))
+    assert(False)
+except BaseException:
+    assert(time.time() - t1 < 1.1)
+    print("All good", time.time() - t1)
+
+
+t1 = time.time()
+try:
+    print(invoke_with_timeout(1, really_long_function))
+    assert(False)
+except BaseException:
+    assert(time.time() - t1 < 1.1)
+    print("All good", time.time() - t1)
+
+# Checking that classes are referenced and not
+# copied (as would be the case with multiprocessing)
+
+
+class X:
+    def __init__(self):
+        self.value = 0
+
+    def set(self, v):
+        self.value = v
+
+
+x = X()
+invoke_with_timeout(2, x.set, 9)
+assert x.value == 9
+Share
+Improve this answer
+Follow
+answered Aug 8, 2020 at 15:29
+user avatar
+Troels
+15722 silver badges1010 bronze badges
+Add a comment
+
+0
+
+Here is a simple example running one method with timeout and also retriev its value if successfull.
+
+import multiprocessing
+import time
+
+ret = {"foo": False}
+
+
+def worker(queue):
+    """worker function"""
+
+    ret = queue.get()
+
+    time.sleep(1)
+
+    ret["foo"] = True
+    queue.put(ret)
+
+
+if __name__ == "__main__":
+    queue = multiprocessing.Queue()
+    queue.put(ret)
+
+    p = multiprocessing.Process(target=worker, args=(queue,))
+    p.start()
+    p.join(timeout=10)
+
+    if p.exitcode is None:
+        print("The worker timed out.")
+    else:
+        print(f"The worker completed and returned: {queue.get()}")
+
+]]
+]]]

@@ -1,0 +1,838 @@
+
+e others/数学/整数分解/factorint.txt
+[[[[[
+整数分解网站:factordb.com
+
+当前看到:Number Field Sieve
+  有兴趣，未知。
+https://mathworld.wolfram.com/PrimeFactorizationAlgorithms.html
+  入口
+https://mathworld.wolfram.com/NumberFieldSieve.html
+  当前
+
+[
+===开始:自sympy.factorint.help:
+help(sympy.factorint)
+- ``use_trial``: Toggle use of trial division
+- ``use_rho``: Toggle use of Pollard's rho method
+- ``use_pm1``: Toggle use of Pollard's p-1 method
+
+Algorithm:
+    The function switches between multiple algorithms. Trial division quickly finds small factors (of the order 1-5 digits)
+    , and finds all large factors if given enough time. The Pollard rho and p-1 algorithms are used to find large factors ahead of time
+    ; they will often find factors of the order of 10 digits within a few seconds:
+>>> (10**10).bit_length()
+34
+>>> (10**11).bit_length()
+37
+]
+
+搜索:
+  - ``use_rho``: Toggle use of Pollard's rho method
+  - ``use_pm1``: Toggle use of Pollard's p-1 method
+[[[
+https://www.geeksforgeeks.org/pollards-rho-algorithm-prime-factorization/
+===
+Pollard’s Rho Algorithm for Prime Factorization
+
+Pollard’s Rho Algorithm for Prime Factorization
+
+Difficulty Level : Hard
+Last Updated : 31 May, 2022
+Given a positive integer n, and that it is composite, find a divisor of it.
+Example:
+
+Input: n = 12;
+Output: 2 [OR 3 OR 4]
+
+Input: n = 187;
+Output: 11 [OR 17]
+Brute approach: Test all integers less than n until a divisor is found. 
+Improvisation: Test all integers less than √n
+A large enough number will still mean a great deal of work. Pollard’s Rho is a prime factorization algorithm, particularly fast for a large composite number with small prime factors. The Rho algorithm’s most remarkable success was the factorization of eighth Fermat number: 1238926361552897 * 93461639715357977769163558199606896584051237541638188580280321. 
+The Rho algorithm was a good choice because the first prime factor is much smaller than the other one.
+Concepts used in Pollard’s Rho Algorithm: 
+ 
+
+Two numbers x and y are said to be congruent modulo n (x = y modulo n) if 
+their absolute difference is an integer multiple of n, OR,
+each of them leaves the same remainder when divided by n.
+The Greatest Common Divisor is the largest number which divides evenly into each of the original numbers.
+Birthday Paradox: The probability of two persons having same birthday is unexpectedly high even for small set of people.
+Floyd’s cycle-finding algorithm: If tortoise and hare start at same point and move in a cycle such that speed of hare is twice the speed of tortoise, then they must meet at some point.
+Algorithm: 
+ 
+
+
+Start with random x and c. Take y equal to x and f(x) = x2 + c.
+While a divisor isn’t obtained 
+Update x to f(x) (modulo n) [Tortoise Move]
+Update y to f(f(y)) (modulo n) [Hare Move]
+Calculate GCD of |x-y| and n
+If GCD is not unity 
+If GCD is n, repeat from step 2 with another set of x, y and c
+Else GCD is our answer
+Illustration: 
+Let us suppose n = 187 and consider different cases for different random values.
+ 
+
+An Example of random values such that algorithm finds result: 
+y = x = 2 and c = 1, Hence, our f(x) = x2 + 1. 
+ 
+PollardRho1
+
+An Example of random values such that algorithm finds result faster: 
+y = x = 110 and ‘c’ = 183. Hence, our f(x) = x2 + 183. 
+ 
+table
+
+ 
+An Example of random values such that algorithm doesn’t find result: 
+x = y = 147 and c = 67. Hence, our f(x) = x2 + 67. 
+ 
+PollardRho3
+
+Below is C/C++ implementation of above algorithm: 
+ 
+
+C++
+/* C++ program to find a prime factor of composite using
+   Pollard's Rho algorithm */
+#include<bits/stdc++.h>
+using namespace std;
+ 
+/* Function to calculate (base^exponent)%modulus */
+long long int modular_pow(long long int base, int exponent,
+                          long long int modulus)
+{
+    /* initialize result */
+    long long int result = 1;
+ 
+    while (exponent > 0)
+    {
+        /* if y is odd, multiply base with result */
+        if (exponent & 1)
+            result = (result * base) % modulus;
+ 
+        /* exponent = exponent/2 */
+        exponent = exponent >> 1;
+ 
+        /* base = base * base */
+        base = (base * base) % modulus;
+    }
+    return result;
+}
+ 
+/* method to return prime divisor for n */
+long long int PollardRho(long long int n)
+{
+    /* initialize random seed */
+    srand (time(NULL));
+ 
+    /* no prime divisor for 1 */
+    if (n==1) return n;
+ 
+    /* even number means one of the divisors is 2 */
+    if (n % 2 == 0) return 2;
+ 
+    /* we will pick from the range [2, N) */
+    long long int x = (rand()%(n-2))+2;
+    long long int y = x;
+ 
+    /* the constant in f(x).
+     * Algorithm can be re-run with a different c
+     * if it throws failure for a composite. */
+    long long int c = (rand()%(n-1))+1;
+ 
+    /* Initialize candidate divisor (or result) */
+    long long int d = 1; 
+ 
+    /* until the prime factor isn't obtained.
+       If n is prime, return n */
+    while (d==1)
+    {
+        /* Tortoise Move: x(i+1) = f(x(i)) */
+        x = (modular_pow(x, 2, n) + c + n)%n;
+ 
+        /* Hare Move: y(i+1) = f(f(y(i))) */
+        y = (modular_pow(y, 2, n) + c + n)%n;
+        y = (modular_pow(y, 2, n) + c + n)%n;
+ 
+        /* check gcd of |x-y| and n */
+        d = __gcd(abs(x-y), n);
+ 
+        /* retry if the algorithm fails to find prime factor
+         * with chosen x and c */
+        if (d==n) return PollardRho(n);
+    }
+ 
+    return d;
+}
+ 
+/* driver function */
+int main()
+{
+    long long int n = 10967535067;
+    printf("One of the divisors for %lld is %lld.",
+          n, PollardRho(n));
+    return 0;
+}
+Java
+Python3
+C#
+Javascript
+Output: 
+
+One of the divisors for 10967535067 is 104729
+Time Complexity : O(sqrt(n)*logn)
+
+Auxiliary Space: O(1)
+How does this work? 
+Let n be a composite (non-prime). Since n is composite, it has a non trivial factor f < n. In fact, there is at least one f <= √n . 
+Now suppose we have to pick two numbers x and y from the range [0, n-1]. The only time we get x = y modulo n is when x and y are identical. However, since f < √n, there is a good chance x = y modulo f even when x and y are not identical (Birthday Paradox). 
+We begin by randomly selecting x with replacement from the set {0, 1, …, n-1} to form a sequence s1, s2, s3 … Defining &sacute;i = si mod f, our sequence now has each &sacute;i belonging to {0, 1, …, f-1}. Because both the sets are finite, eventually there will be a repeated integer in both. We expect to achieve the repeat earlier in &sacute;i, since f < n. 
+ 
+Now, say &sacute;i = &sacute;j for i ≠ j, then, si = sj modulo d. And hence, |si – sj| will be a multiple of f. As per assumed above, n is also a multiple of f. Together this means that GCD of |si – sj| and n will be positive integral multiple of f, and also our candidate divisor d! The catch here is that we just knew there had to be some divisor of n, and we didn’t even care of its value. Once we hit si and sj (our final x and y) then each element in the sequence starting with si will be congruent modulo f to the corresponding element in the sequence starting with sj, and hence, a cycle. If we graph the sequence si, we will observe the shape of Greek letter Rho (ρ). 
+At the heart of Rho algorithm is picking up random values and evaluating GCDs. To decrease the costly GCD calculations, we can implement the Pollard’s Rho with Floyd’s cycle detection (which can be understood with the tortoise-hare analogy where the tortoise moves through each element one at a time in order, and the hare starts at the same point but moves twice as fast as the tortoise). We shall have some polynomial f(x) for the same, start with random x0, y0 = x0, and compute xi+1 = f(xi) and yi+1 = f(f(yi)). Since we don’t know much about d, a typical choice for the polynomial is f(x) = x2 + c (modulo n) (Yes, ‘c’ is also be chosen randomly).
+Note: 
+ 
+
+Algorithm will run indefinitely for prime numbers.
+The algorithm may not find the factors and return a failure for composite n. In that case, we use a different set of x, y and c and try again.
+The above algorithm only finds a divisor. To find a prime factor, we may recursively factorize the divisor d, run algorithm for d and n/d. The cycle length is typically of the order √d.
+Time Complexity analysis: 
+The algorithm offers a trade-off between its running time and the probability that it finds a factor. A prime divisor can be achieved with a probability around 0.5, in O(√d) <= O(n1/4) iterations. This is a heuristic claim, and rigorous analysis of the algorithm remains open.
+This article is contributed by Yash Varyani. Please write comments if you find anything incorrect, or you want to share more information about the topic discussed above
+ 
+
+
+[
+Wheel Factorization Algorithm
+  https://www.geeksforgeeks.org/wheel-factorization-algorithm/?ref=rp
+    {2,3,5}打洞 vs {2}打洞===range(1,sqrtN, 2)
+Prime Factorization using Sieve O(log n) for multiple queries
+  https://www.geeksforgeeks.org/prime-factorization-using-sieve-olog-n-multiple-queries/?ref=rp
+   store the Smallest Prime Factor(SPF) for every number.
+   To calculate to smallest prime factor for every number we will use the sieve of eratosthenes. 
+Fermat's Factorization method for large numbers
+  https://www.geeksforgeeks.org/fermats-factorization-method-for-large-numbers/?ref=rp
+    平方差, (+1)**2搜索
+    ?**2==a**2-N
+    a<-[ceil_sqrt(N)..=N//2]
+      a 更少
+    b<-[1..<N//2]
+Dixon's Factorization Method with implementation
+  https://www.geeksforgeeks.org/dixons-factorization-method-with-implementation/?ref=rp
+    该页面C++代码 错到离谱
+    ===
+    平方差, 线性组合指数凑平方
+    指定 素数集 B
+    B-smooth = 随机选数:{z | [all_prime_factors_of(z**2%B) <= B]}
+    II p**e {p}
+    {p:e}
+    选子集，使得 同素数的指数相加为偶数
+      如何选？
+      {p:e%2}
+      GF(2) 矩阵，高斯消元法
+      同素数的指数相加为0 (RHS)
+      p[i]row
+      z[j]column
+      mx<i,j> = e[i,j] = max_height_of_prime_power_(p[i], z[j])
+Euler's Factorization method
+  https://www.geeksforgeeks.org/eulers-factorization-method/?ref=rp
+  N=a**2+b**2=c**2+d**2
+    这也太难找？
+    let a>b:
+    a<-[ceil_sqrt(N/2)..=floor_sqrt(N)]
+      [0.7 sqrtN..sqrtN]
+      a 更少
+    b<-[0..floor_sqrt(N/2)]
+      [0..0.7 sqrtN]
+    N = ((K/2)**2 + (H/2)**2)(L**2 + M**2)
+    221 = 11**2 + 10**2 = 5**2 + 14**2
+    A = 11 - 5 = 6
+    B = 11 + 5 = 16
+    C = 14 - 10 = 4
+    D = 14 + 10 = 24
+    K = GCD(6, 4) = 2
+    H = GCD(16, 24) = 8
+    L = GCD(6, 24) = 3
+    M = GCD(16, 4) = 2
+Check if a number is Prime, Semi-Prime or Composite for very large numbers
+  https://www.geeksforgeeks.org/check-if-a-number-is-prime-semi-prime-or-composite-for-very-large-numbers/?ref=rp
+  错得离谱！！
+]
+
+#补偿]
+]]]
+[[[
+https://mathworld.wolfram.com/PrimeFactorizationAlgorithms.html
+===
+Number Theory > Prime Numbers > Prime Factorization >
+Recreational Mathematics > Mathematical Records >
+Prime Factorization Algorithms
+Many algorithms have been devised for determining the prime factors of a given number (a process called prime factorization). They vary quite a bit in sophistication and complexity. It is very difficult to build a general-purpose algorithm for this computationally "hard" problem, so any additional information that is known about the number in question or its factors can often be used to save a large amount of time.
+
+The simplest method of finding factors is so-called "direct search factorization" (a.k.a. trial division). In this method, all possible factors are systematically tested using trial division to see if they actually divide the given number. It is practical only for very small numbers.
+
+The fastest-known fully proven deterministic algorithm is the Pollard-Strassen method (Pomerance 1982; Hardy et al. 1990).
+
+SEE ALSO
+Brent's Factorization Method
+, Class Group Factorization Method
+
+, Continued Fraction Factorization Algorithm
+, Direct Search Factorization
+, Dixon's Factorization Method
+, Elliptic Curve Factorization Method
+, Euler's Factorization Method
+, Excludent Factorization Method
+, Fermat's Factorization Method
+, Legendre's Factorization Method
+, Number Field Sieve
+, Pollard p-1 Factorization Method
+, Pollard rho Factorization Algorithm
+, Prime Factorization
+, Prime Number
+, Quadratic Sieve
+, Quiteprime
+, Trial Division
+, Veryprime
+, Williams p+1 Factorization Method
+]]]
+[[[
+https://mathworld.wolfram.com/Pollardp-1FactorizationMethod.html
+===
+Pollard p-1 Factorization Method
+A prime factorization algorithm which can be implemented in a single-step or double-step form. In the single-step version, a prime factor p of a number n can be found if p-1 is a product of small primes by finding an m such that
+
+ m=c^q (mod n), 
+where p-1|q, with q a large number and (c,n)=1. Then since p-1|q, m=1 (mod p), so p|m-1. There is therefore a good chance that nm-1, in which case GCD(m-1,n) (where GCD is the greatest common divisor) will be a nontrivial divisor of n.
+
+In the double-step version, a prime factor p can be found if p-1 is a product of small primes and a single larger prime.
+
+===
+https://mathworld.wolfram.com/WilliamspPlus1FactorizationMethod.html
+Williams p+1 Factorization Method
+A variant of the Pollard p-1 method which uses Lucas sequences to achieve rapid factorization if some factor p of N has a decomposition of p+1 in small prime factors.
+]]]
+[[[
+https://mathworld.wolfram.com/PollardRhoFactorizationMethod.html
+===
+Pollard rho Factorization Method
+Contribute
+To this Entry »
+A prime factorization algorithm also known as Pollard Monte Carlo factorization method. There are two aspects to the Pollard rho factorization method. The first is the idea of iterating a formula until it falls into a cycle. Let n=pq, where n is the number to be factored and p and q are its unknown prime factors. Iterating the formula
+
+ x_(n+1)=x_n^2+a (mod n), 	
+(1)
+or almost any polynomial formula (an exception being x_n^2-2) for any initial value x_0 will produce a sequence of number that eventually fall into a cycle. The expected time until the x_ns become cyclic and the expected length of the cycle are both proportional to sqrt(n).
+
+However, since n=pq with p and q relatively prime, the Chinese remainder theorem guarantees that each value of x (mod n) corresponds uniquely to the pair of values (x (mod p)), x (mod q)). Furthermore, the sequence of x_ns follows exactly the same formula modulo p and q, i.e.,
+
+x_(n+1)	=	[x_n (mod p)]^2+a (mod p)	
+(2)
+x_(n+1)	=	[x_n (mod q)]^2+a (mod q).	
+(3)
+Therefore, the sequence (mod p) will fall into a much shorter cycle of length on the order of sqrt(p). It can be directly verified that two values x_1 and x_2 have the same value (mod p), by computing
+
+ GCD(|x_2-x_1|,n), 	
+(4)
+which is equal to p.
+
+The second part of Pollard's method concerns detection of the fact that a sequence has become periodic. Pollard's suggestion was to use the idea attributed to Floyd of comparing x_i to x_(2i) for all i. A different method is used in Brent's factorization method.
+
+Under worst conditions, the Pollard rho algorithm can be very slow.
+]]]
+[[[
+https://mathworld.wolfram.com/BrentsFactorizationMethod.html
+===
+Brent's Factorization Method
+The second part of Pollard rho factorization method concerns detection of the fact that a sequence has become periodic. Pollard's original suggestion was to use the idea attributed to Floyd of comparing x_i to x_(2i) for all i. Brent's improvement to Pollard's method concerns how to detect periodicity, and replaces Floyd's method with the following algorithm. Keep only one running copy of x_i. If i is a power of a base b, let y=x_i, and at each step, compare the current value x_i with the saved value y. In the factorization case, instead of comparing x_i with y, compute
+
+ GCD(|x_i-y|,n). 
+More generally, Brent (1980) considered using any base b for saving values instead of b=2. However, he found b=2 to be very close to optimal.
+]]]
+[[[
+https://mathworld.wolfram.com/NumberFieldSieve.html
+===
+Number Field Sieve
+An extremely fast factorization method developed by Pollard which was used to factor the RSA-130 number. This method is the most powerful known for factoring general numbers, and has complexity
+
+ O{exp[c(logn)^(1/3)(loglogn)^(2/3)]}, 	
+(1)
+reducing the exponent over the continued fraction factorization algorithm and quadratic sieve. There are three values of c relevant to different flavors of the method (Pomerance 1996). For the "special" case of the algorithm applied to numbers near a large power,
+
+ c=((32)/9)^(1/3)=1.526285..., 	
+(2)
+for the "general" case applicable to any odd positive number which is not a power,
+
+ c=((64)/9)^(1/3)=1.922999..., 	
+(3)
+and for a version using many polynomials (Coppersmith 1993),
+
+ c=1/3(92+26sqrt(13))^(1/3)=1.901883.... 	
+(4)
+SEE ALSO
+]]]
+[[[
+https://mathworld.wolfram.com/LucasSequence.html
+===
+Lucas Sequence
+Let P, Q be integers satisfying
+
+ D=P^2-4Q>0. 	
+(1)
+Then roots of
+
+ x^2-Px+Q=0 	
+(2)
+are
+
+a	=	1/2(P+sqrt(D))	
+(3)
+b	=	1/2(P-sqrt(D)),	
+(4)
+so
+
+a+b	=	P	
+(5)
+ab	=	1/4(P^2-D)	
+(6)
+	=	Q	
+(7)
+a-b	=	sqrt(D).	
+(8)
+Now define
+
+U_n(P,Q)	=	(a^n-b^n)/(a-b)	
+(9)
+V_n(P,Q)	=	a^n+b^n	
+(10)
+for integer n>=0, so the first few values are
+
+U_0	=	0	
+(11)
+U_1	=	1	
+(12)
+U_2	=	P	
+(13)
+U_3	=	P^2-Q	
+(14)
+U_4	=	P(P^2-2Q)	
+(15)
+U_5	=	P^4-3QP^2+Q^2	
+(16)
+U_6	=	P(P^2-3Q)(P^2-Q)	
+(17)
+U_7	=	P^6-5QP^4+6Q^2P^2-Q^3	
+(18)
+U_8	=	P(P^2-2Q)(P^4-4QP^2+2Q^2)	
+(19)
+U_9	=	(P^2-Q)(P^6-6QP^4+9Q^2P^2-Q^3)	
+(20)
+U_(10)	=	P(P^4-3QP^2+Q^2)(P^4-5QP^2+5Q^2)	
+(21)
+and
+
+V_0	=	2	
+(22)
+V_1	=	P	
+(23)
+V_2	=	P^2-2Q	
+(24)
+V_3	=	P(P^2-3Q)	
+(25)
+V_4	=	P^4-4QP^2+2Q^2	
+(26)
+V_5	=	P(P^4-5QP^2+5Q^2)	
+(27)
+V_6	=	(P^2-2Q)(P^4-4QP^2+Q^2)	
+(28)
+V_7	=	P(P^6-7QP^4+14Q^2P^2-7Q^3)	
+(29)
+V_8	=	P^8-8QP^6+20Q^2P^4-16Q^3P^2+2Q^4	
+(30)
+V_9	=	P(P^2-3Q)(P^6-6QP^4+9Q^2P^2-3Q^3)	
+(31)
+V_(10)	=	(P^2-2Q)(P^8-8QP^6+19Q^2P^4-12Q^3P^2+Q^4).	
+(32)
+Closed forms for these are given by
+
+U_n	=	2^(1-n)sum_(k=0)^(|_(n-1)/2_|)(n; 2k+1)P^(n-2k-1)(P^2-4Q)^k	
+(33)
+V_n	=	2^(1-n)sum_(k=0)^(|_n/2_|)(n; 2k)P^(n-2k)(P^2-4Q)^k.	
+(34)
+The sequences
+
+U(P,Q)	=	{U_n(P,Q):n>=1}	
+(35)
+V(P,Q)	=	{V_n(P,Q):n>=1}	
+(36)
+are called Lucas sequences, where the definition is usually extended to include
+
+ U_(-1)=(a^(-1)-b^(-1))/(a-b)=(-1)/(ab)=-1/Q. 	
+(37)
+The following table summarizes special cases of U_n(P,Q) and V_n(P,Q).
+
+(P,Q)	U_n	V_n
+(1,-1)	Fibonacci numbers	Lucas numbers
+(2,-1)	Pell numbers	Pell-Lucas numbers
+(1,-2)	Jacobsthal numbers	Pell-Jacobsthal numbers
+The Lucas sequences satisfy the general recurrence relations
+
+U_(m+n)	=	(a^(m+n)-b^(m+n))/(a-b)	
+(38)
+	=	((a^m-b^m)(a^n+b^n))/(a-b)-(a^nb^n(a^(m-n)-b^(m-n)))/(a-b)	
+(39)
+	=	U_mV_n-a^nb^nU_(m-n)	
+(40)
+V_(m+n)	=	a^(m+n)+b^(m+n)	
+(41)
+	=	(a^m+b^m)(a^n+b^n)-a^nb^n(a^(m-n)+b^(m-n))	
+(42)
+	=	V_mV_n-a^nb^nV_(m-n).	
+(43)
+Taking n=1 then gives
+
+U_m(P,Q)	=	PU_(m-1)(P,Q)-QU_(m-2)(P,Q)	
+(44)
+V_m(P,Q)	=	PV_(m-1)(P,Q)-QV_(m-2)(P,Q).	
+(45)
+Other identities include
+
+U_(2n)	=	U_nV_n	
+(46)
+U_(2n+1)	=	U_(n+1)V_n-Q^n	
+(47)
+V_(2n)	=	V_n^2-2(ab)^n	
+(48)
+	=	V_n^2-2Q^n	
+(49)
+V_(2n+1)	=	V_(n+1)V_n-PQ^n.	
+(50)
+These formulas allow calculations for large n to be decomposed into a chain in which only four quantities must be kept track of at a time, and the number of steps needed is ∼lgn. The chain is particularly simple if n has many 2s in its factorization.
+===
+[
+U[P,Q;n] = (a**n-b**n)/(a-b)
+V[P,Q;n] = a**n+b**n
+where
+  {a,b} are roots of (x**2 -P*x +Q)
+  D = P**2-4*Q >0
+  a = (P+sqrtD)/2
+  b = (P-sqrtD)/2
+
+[a+b==P][a*b==Q]
+  对称多项式基
+U[P,Q;*] = 0, 1, P, P**2-Q, ...
+V[P,Q;*] = 2, P, P**2-2*Q, P*(P**2-3*Q), ...
+
+(a**(m+n)-b**(m+n))
+  = (a**m-b**m)*(a**n+b**n) -a**m*b**n +a**n*b**m
+  = (a**m-b**m)*(a**n+b**n) -a**n*b**n*(a**(m-n) -b**(m-n))
+U[P,Q;m+n] = (a**(m+n)-b**(m+n))/(a-b)
+  = (a**m-b**m)*(a**n+b**n)/(a-b) -a**n*b**n*(a**(m-n) -b**(m-n))/(a-b)
+  = U[P,Q;m]*V[P,Q;n] -U[P,Q;m-n]*Q**n
+
+(a**(m+n)+b**(m+n))
+  = (a**m+b**m)*(a**n+b**n) -a**m*b**n -a**n*b**m
+  = (a**m+b**m)*(a**n+b**n) -a**n*b**n*(a**(m-n) +b**(m-n))
+V[P,Q;m+n] = (a**(m+n)+b**(m+n))
+  = (a**m+b**m)*(a**n+b**n) -a**n*b**n*(a**(m-n) +b**(m-n))
+  = V[P,Q;m]*V[P,Q;n] -V[P,Q;m-n]*Q**n
+
+U[P,Q;m+n] = U[P,Q;m]*V[P,Q;n] -U[P,Q;m-n]*Q**n
+V[P,Q;m+n] = V[P,Q;m]*V[P,Q;n] -V[P,Q;m-n]*Q**n
+
+U[P,Q;m+1] = U[P,Q;m]*V[P,Q;1] -U[P,Q;m-1]*Q**1
+  = U[P,Q;m]*P -U[P,Q;m-1]*Q
+V[P,Q;m+1] = V[P,Q;m]*V[P,Q;1] -V[P,Q;m-1]*Q**1
+  = V[P,Q;m]*P -V[P,Q;m-1]*Q
+
+f(m+1) = f(m)*P -f(m-1)*Q
+
+
+]
+]]]
+[[[
+https://mathworld.wolfram.com/Lucas-LehmerTest.html
+===
+Lucas-Lehmer Test
+The Lucas-Lehmer test is an efficient deterministic primality test for determining if a Mersenne number M_n is prime. Since it is known that Mersenne numbers can only be prime for prime subscripts, attention can be restricted to Mersenne numbers of the form M_p=2^p-1, where p is an odd prime.
+
+Consider the recurrence equation
+
+ s_n=s_(n-1)^2-2 (mod M_p) 	
+(1)
+with s_0=4. For example, ignoring the congruence, the first few terms of this iteration are 4, 14, 194, 37634, 1416317954, ... (OEIS A003010).
+
+It turns out that M_p is prime iff s_(p-2)=0 (mod M_p), and the value s_(p-2) (mod M_p) is called the Lucas-Lehmer residue for p.
+
+For example, the sequence obtained for p=7 is given by 4, 14, 67, 42, 111, 0, so M_7=127 is prime.
+
+For prime p, the first few Lucas-Lehmer residues are 1, 0, 0, 0, 1736, 0, 0, 0, 6107895, 458738443, 0, 117093979072, ... (OEIS A095847).
+
+This test can also be extended to arbitrary integers. Prior to the work of Pratt (1975), the Lucas-Lehmer test had been regarded purely as a heuristic that worked a lot of the time (Knuth 1969). Pratt (1975) showed that Lehmer's primality heuristic could be made a nondeterministic procedure by applying it recursively to the factors of n-1, resulting in a certification of primality that has come to be known as the Pratt certificate.
+
+A generalized version of the Lucas-Lehmer test lets
+
+ N+1=product_(j=1)^nq_j^(beta_j), 	
+(2)
+with q_j the distinct prime factors, and beta_j their respective powers. If there exists a Lucas sequence U_nu such that
+
+ GCD(U_((N+1)/q_j),N)=1 	
+(3)
+for j=1, ..., n and
+
+ U_(N+1)=0 (mod N), 	
+(4)
+then N is a prime. This reduces to the conventional Lucas-Lehmer test for Mersenne numbers.
+]]]
+[[[
+素数证书#费马小定理的逆定理-本原根
+https://mathworld.wolfram.com/PrattCertificate.html
+===
+Number Theory > Prime Numbers > Prime Factorization >
+MathWorld Contributors > Pratt >
+
+Pratt Certificate
+The Pratt certificate is a primality certificate based on Fermat's little theorem converse. Prior to the work of Pratt (1975), the Lucas-Lehmer test had been regarded purely as a heuristic that worked a lot of the time (Knuth 1969). Pratt (1975) showed that Lehmer's primality heuristic could be made a nondeterministic procedure by applying it recursively to the factors of n-1. As a consequence of this result, Pratt (1975) became the first to demonstrate that the resulting tree implies that prime factorization lies in the complexity class NP.
+
+To generate a Pratt certificate, assume that n is a positive integer and {p_i} is the set of prime factors of n-1. Suppose there exists an integer x (called a "witness") such that x^(n-1)=1 (mod n) but x^e≢1 (mod n) whenever e is one of (n-1)/p_i. Then Fermat's little theorem converse states that n is prime (Wagon 1991, pp. 278-279).
+
+By applying Fermat's little theorem converse to n and recursively to each purported factor of n-1, a certificate for a given prime number can be generated. Stated another way, the Pratt certificate gives a proof that a number a is a primitive root of the multiplicative group (mod p) which, along with the fact that a has order p-1, proves that p is a prime.
+
+PrattCertificate
+The figure above gives a certificate for the primality of n=7919. The numbers to the right of the dashes are witnesses to the numbers to left. The set {p_i} for n-1=7918 is given by {2,37,107}. Since 7^(7918)=1 (mod 7919) but 7^(7918/2), 7^(7918/37), 7^(7918/107)≢1 (mod 7919), 7 is a witness for 7919. The prime divisors of 7918=7919-1 are 2, 37, and 107. 2 is a so-called "self-witness" (i.e., it is recognized as a prime without further ado), and the remainder of the witnesses are shown as a nested tree. Together, they certify that 7919 is indeed prime. Because it requires the factorization of n-1, the method of Pratt certificates is best applied to small numbers (or those numbers n known to have easily factorable n-1).
+
+A Pratt certificate is quicker to generate for small numbers than are other types of primality certificates. The Wolfram Language function ProvablePrimeQ[n] in the Wolfram Language package PrimalityProving` therefore generates an Atkin-Goldwasser-Kilian-Morain certificate only for numbers above a certain limit (10^(10) by default), and a Pratt certificate for smaller numbers.
+
+SEE ALSO
+Atkin-Goldwasser-Kilian-Morain Certificate
+, Fermat's Little Theorem Converse
+, Lucas-Lehmer Test
+, Primality Certificate
+, Witness
+]]]
+[[[
+https://mathworld.wolfram.com/Atkin-Goldwasser-Kilian-MorainCertificate.html
+===
+Atkin-Goldwasser-Kilian-Morain Certificate
+A recursive primality certificate for a prime p. The certificate consists of a list of
+
+1. A point on an elliptic curve C
+
+ y^2=x^3+g_2x+g_3 (mod p) 
+for some numbers g_2 and g_3.
+
+2. A prime q with q>(p^(1/4)+1)^2, such that for some other number k and m=kq with k!=1, mC(x,y,g_2,g_3,p) is the identity on the curve, but kC(x,y,g_2,g_3,p) is not the identity. This guarantees primality of p by a theorem of Goldwasser and Kilian (1986).
+
+3. Each q has its recursive certificate following it. So if the smallest q is known to be prime, all the numbers are certified prime up the chain.
+
+A Pratt certificate is quicker to generate for small numbers. The Wolfram Language task ProvablePrimeQ[n] in the Wolfram Language package PrimalityProving` therefore generates an Atkin-Goldwasser-Kilian-Morain certificate only for numbers above a certain limit (10^(10) by default), and a Pratt certificate for smaller numbers.
+===
+https://mathworld.wolfram.com/PrimalityCertificate.html
+Primality Certificate
+A short set of data that proves the primality of a number. A certificate can, in general, be checked much more quickly than the time required to generate the certificate. Varieties of primality certificates include the Pratt certificate and Atkin-Goldwasser-kilian-morain certificate.
+]]]
+[[[
+https://mathworld.wolfram.com/CompositenessCertificate.html
+===
+Compositeness Certificate
+A compositeness certificate is a piece of information which guarantees that a given number p is composite. Possible certificates consist of a factor of a number (which, in general, is much quicker to check by direct division than to determine initially), or of the determination that either
+
+ a^(p-1)≢1 (mod p), 
+(i.e., p violates Fermat's little theorem), or
+
+ a!=-1,1 and a^2=1 (mod p). 
+A quantity a satisfying either property is said to be a witness to p's compositeness
+]]]
+[[[
+https://mathworld.wolfram.com/EllipticCurvePrimalityProving.html
+===
+Elliptic Curve Primality Proving
+Elliptic curve primality proving, abbreviated ECPP, is class of algorithms that provide certificates of primality using sophisticated results from the theory of elliptic curves. A detailed description and list of references are given by Atkin and Morain (1990, 1993).
+
+Adleman and Huang (1987) designed an independent algorithm using hyperelliptic curves of genus two.
+
+ECPP is the fastest known general-purpose primality testing algorithm. ECPP has a running time of O((lnN)^4). As of 2004, the program PRIMO can certify a 4769-digit prime in approximately 2000 hours of computation (or nearly three months of uninterrupted computation) on a 1 GHz processor using this technique. As of 2009, the largest prime certified using this technique was the 11th Mills' prime (http://primes.utm.edu/primes/page.php?id=77907)
+
+ (((((((((2^3+3)^3+30)^3+6)^3+80)^3+12)^3+450)^3+894)^3+3636)^3+70756)^3+97220, 
+which has 20562 decimal digits. The proof was performed using a distributed computation that started in September 2005 and ended in June 2006 and required a cumulative CPU-time corresponding to 2.39 GHz for 2219 days (just over 6 years).
+
+In March 2021, P. Underwood proved the repunit prime R_(49081) (https://primes.utm.edu/primes/page.php?id=133761) to be prime using elliptic curve primality proving. The certification took 20 months on an AMD 3990x computer with 64 cores, and verification took about 13 hours (Underwood 2022).
+]]]
+[[[
+https://mathworld.wolfram.com/Adleman-Pomerance-RumelyPrimalityTest.html
+===
+Adleman-Pomerance-Rumely Primality Test
+A modified Miller's primality test which gives a guarantee of primality or compositeness. The algorithm's running time for a number n has been proved to be as O((lnn)^(clnlnlnn)) for some c>0. It was simplified by Cohen and Lenstra (1984), implemented by Cohen and Lenstra (1987), and subsequently optimized by Bosma and van der Hulst (1990).
+===
+Bosma, W. and van der Hulst, M.-P. "Faster Primality Testing." In Advances in Cryptology, Proc. Eurocrypt '89, Houthalen, April 10-13, 1989 (Ed. J.-J. Quisquater). New York: Springer-Verlag, 652-656, 1990.
+Cohen, H. and Lenstra, A. K. "Primality Testing and Jacobi Sums." Math. Comput. 42, 297-330, 1984.
+Cohen, H. and Lenstra, A. K. "Implementation of a New Primality Test." Math. Comput. 48, 103-121, 1987.
+Adleman, L. M.; Pomerance, C.; and Rumely, R. S. "On Distinguishing Prime Numbers from Composite Number." Ann. Math. 117, 173-206, 1983.
+Brillhart, J.; Lehmer, D. H.; Selfridge, J.; Wagstaff, S. S. Jr.; and Tuckerman, B.  Factorizations of b-n+/-1, b=2, 3, 5, 6, 7, 10, 11, 12 Up to High Powers, rev. ed.  Providence, RI: Amer. Math. Soc., pp. lxxxiv-lxxxv, 1988.
+]]]
+
+[[
+下载:Number Field Sieve
+下载:Adleman-Pomerance-Rumely Primality Test
+mkdir /sdcard/Download/wget_/factorint/
+cd /sdcard/Download/wget_/factorint/
+view /sdcard/Download/wget_/factorint/On\ the\ large\ sieve\ inequality\ in\ an\ algebraic\ number\ field(1986)(Schumer).pdf
+[[[
+[[
+
+Bosma, W. and van der Hulst, M.-P. "Faster Primality Testing." In Advances in Cryptology, Proc. Eurocrypt '89, Houthalen, April 10-13, 1989 (Ed. J.-J. Quisquater). New York: Springer-Verlag, 652-656, 1990.
+  libgen没找到？！
+  wget http://www.math.ru.nl/~bosma/pubs/EUROCRYPT89.pdf  -O 'Faster Primality Testing(1990)(Bosma).pdf'
+EBookDroid miss fonts: ArialBlack -> /sdcard/fonts/
+  https://fontsfree.net/arial-black-font-download.html
+    https://fontsfree.net//wp-content/fonts/basic/sans-serif/FontsFree-Net-ariblk.ttf
+    wget 'https://fontsfree.net//wp-content/fonts/basic/sans-serif/FontsFree-Net-ariblk.ttf' -O 'ariblk.ttf'
+      165KB
+    !mkdir /sdcard/fonts/
+    !mv /sdcard/Download/wget_/factorint/ariblk.ttf  /sdcard/fonts/
+]]
+===
+Cohen, H. and Lenstra, A. K. "Primality Testing and Jacobi Sums." Math. Comput. 42, 297-330, 1984.
+  https://www.ams.org/journals/mcom/1984-42-165/S0025-5718-1984-0726006-X/
+    https://www.ams.org/journals/mcom/1984-42-165/S0025-5718-1984-0726006-X/S0025-5718-1984-0726006-X.pdf
+    wget 'https://www.ams.org/journals/mcom/1984-42-165/S0025-5718-1984-0726006-X/S0025-5718-1984-0726006-X.pdf' -O 'Primality Testing and Jacobi Sums(1984)(Cohen).pdf'
+  #https://libgen.lc/edition.php?id=55029286
+===
+Cohen, H. and Lenstra, A. K. "Implementation of a New Primality Test." Math. Comput. 48, 103-121, 1987.
+  https://www.ams.org/journals/mcom/1987-48-177/S0025-5718-1987-0866102-2/
+    https://www.ams.org/journals/mcom/1987-48-177/S0025-5718-1987-0866102-2/S0025-5718-1987-0866102-2.pdf
+    wget 'https://www.ams.org/journals/mcom/1987-48-177/S0025-5718-1987-0866102-2/S0025-5718-1987-0866102-2.pdf' -O 'Implementation of a New Primality Test(1987)(Cohen).pdf'
+  #https://libgen.lc/edition.php?id=47711192
+===
+Adleman, L. M.; Pomerance, C.; and Rumely, R. S. "On Distinguishing Prime Numbers from Composite Number." Ann. Math. 117, 173-206, 1983.
+https://math.dartmouth.edu/~carlp/
+  https://math.dartmouth.edu/~carlp/PDF/paper37.pdf
+  wget 'https://math.dartmouth.edu/~carlp/PDF/paper37.pdf' -O 'On Distinguishing Prime Numbers from Composite Number(1983)(Adleman)(Pomerance).pdf'
+]]]
+[[[
+On the large sieve inequality in an algebraic number field(1986)(Schumer).pdf
+===
+https://libgen.lc/edition.php?id=65778302
+wget 'https://libgen.rocks/get.php?md5=6691db1526569e82a3991d7a80bd1f46&key=0WIH1L3SHFXKREPA' -O 'On the large sieve inequality in an algebraic number field(1986)(Schumer).pdf'
+]]]
+[[[
+Modifications to the Number Field Sieve(1993)(Don Coppersmith).pdf
+===
+https://libgen.lc/edition.php?id=12214848
+wget 'https://libgen.rocks/get.php?md5=3fe48464929fefffefd1b3912904a552&key=A61TCDHY982SC96X' -O 'Modifications to the Number Field Sieve(1993)(Don Coppersmith).pdf'
+]]]
+[[[
+Development of the Number Field Sieve(1993)(Lenstra).djvu
+===
+https://libgen.lc/edition.php?id=135841703
+wget 'https://libgen.rocks/get.php?md5=7ae95735f558056a60c6af947d4303ba&key=4BNGI1K84EPN8PPQ' -O 'Development of the Number Field Sieve(1993)(Lenstra).djvu'
+]]]
+[[[
+Area-Time Efficient Implementation of the Elliptic Curve Method of Factoring in Reconfigurable Hardware for Application in the Number Field Sieve(2010)(Gaj).pdf
+===
+https://libgen.lc/edition.php?id=25642691
+#??wget 'https://libgen.rocks/ads.php?md5=a9c14d866bddb57b0c337e8bf2cdcdaf&downloadname=10.1109/tc.2009.191' -O 'Area-Time Efficient Implementation of the Elliptic Curve Method of Factoring in Reconfigurable Hardware for Application in the Number Field Sieve(2010)(Gaj).pdf'
+wget 'https://libgen.rocks/get.php?md5=a9c14d866bddb57b0c337e8bf2cdcdaf&key=5BHBEOI6I5KD1CDP' -O 'Area-Time Efficient Implementation of the Elliptic Curve Method of Factoring in Reconfigurable Hardware for Application in the Number Field Sieve(2010)(Gaj).pdf'
+  5MB
+]]]
+[[[
+The number field sieve for integers of low weight(2010)(Schirokauer).pdf
+===
+https://libgen.lc/edition.php?id=74440852
+wget 'https://libgen.rocks/get.php?md5=ff934eb4c4907cc24f1d7e7da031431b&key=T7VYJ7CMWDXMVO3E' -O 'The number field sieve for integers of low weight(2010)(Schirokauer).pdf'
+]]]
+[[[
+The multiple number field sieve for medium- and high-characteristic finite fields(2014)(Barbulescu).pdf
+===
+https://libgen.lc/edition.php?id=79606342
+wget 'https://libgen.rocks/get.php?md5=e1a4a4acd78d28ee0b2c95b62e7d37c7&key=7CUDESMA1WWYI6PT' -O 'The multiple number field sieve for medium- and high-characteristic finite fields(2014)(Barbulescu).pdf'
+]]]
+[[[
+Rigorous analysis of a randomised number field sieve(2018)(Lee).pdf
+===
+https://libgen.lc/edition.php?id=73420663
+wget 'https://libgen.rocks/get.php?md5=6ebc8cd4cf73b65208956b750198a9b4&key=OJK7H0HHZOJ571IU' -O 'Rigorous analysis of a randomised number field sieve(2018)(Lee).pdf'
+]]]
+[[[
+A Note on the Behaviour of the Number Field Sieve in the Medium Prime Case: Smoothness of Norms(2018)(Benger).pdf
+===
+https://libgen.lc/edition.php?id=75824235
+wget 'https://libgen.rocks/get.php?md5=d7e2bdf5b32c7621ea2733d9dc0f6a47&key=MDQU0XF2IB1S1IWM' -O 'A Note on the Behaviour of the Number Field Sieve in the Medium Prime Case--Smoothness of Norms(2018)(Benger).pdf'
+]]]
+[[[
+Refined analysis to the extended tower number field sieve(2020)(Zhu Yuqing).pdf
+===
+https://libgen.lc/edition.php?id=87147005
+wget 'https://libgen.rocks/get.php?md5=25c6d5328dab4b1bff52d7b5e4e594a6&key=A7MFU1TYST5C6LW5' -O 'Refined analysis to the extended tower number field sieve(2020)(Zhu Yuqing).pdf'
+]]]
+[[[
+On the effectiveness of a generalization of Miller’s primality theorem(2010)(ZhangZhenxiang).pdf
+===
+https://libgen.lc/edition.php?id=10031170
+wget 'https://libgen.rocks/get.php?md5=d93a8cda629e88294d1f0561220c7b5a&key=Q6RWEMID90EHY5V6' -O 'On the effectiveness of a generalization of Miller_s primality theorem(2010)(ZhangZhenxiang).pdf'
+]]]
+[[[
+On Lucas_s Test for the Primality of Mersenne's Numbers(1935)(Lehmer).pdf
+===
+https://libgen.lc/edition.php?id=27366284
+wget 'https://libgen.rocks/get.php?md5=55bee24548ed7d565255c98ed47b8f37&key=AJF1012WYKWYL2HD' -O 'On Lucas_s Test for the Primality of Mersenne_s Numbers(1935)(Lehmer).pdf'
+]]]
+[[[
+Lucas's criterion for the primality of numbers of the form N = h2n−1(1971)(Stechkin).pdf
+===
+https://libgen.lc/edition.php?id=12913115
+wget 'https://libgen.rocks/get.php?md5=4256ec791df465bb18a6c193f58c55a1&key=L5WS101XEDPGJULS' -O 'Lucas_s criterion for the primality of numbers of the form N = h2n−1(1971)(Stechkin).pdf'
+]]]
+[[[
+A Note on Primality Testing Using Lucas Sequences(1975)(Michael).pdf
+===
+https://libgen.lc/edition.php?id=42082011
+wget 'https://libgen.rocks/get.php?md5=3d286a1b5115a9b63c4f7078aa19bb03&key=1UZXSFP33ACWN7RW' -O 'A Note on Primality Testing Using Lucas Sequences(1975)(Michael).pdf'
+]]]
+[[[
+Supplement to Implementation of a New Primality Test(1987)(Cohen).pdf
+===
+https://libgen.lc/edition.php?id=52751939
+wget 'https://libgen.rocks/get.php?md5=3499219dce8a1a667cca6e1dbca16685&key=W0JLDJUOPVIZT1BC' -O 'Supplement to Implementation of a New Primality Test(1987)(Cohen).pdf'
+]]]
+[[[
+Elliptic curves and primality proving(1993)(Atkin).pdf
+===
+https://libgen.lc/edition.php?id=52445180
+wget 'https://libgen.rocks/get.php?md5=677b21442ec76c52ad402d34729de0d9&key=PGKO6SL22B096J6M' -O 'Elliptic curves and primality proving(1993)(Atkin).pdf'
+]]]
+[[[
+===
+wget '' -O ''
+  download...xxxxx TODO:download
+]]]
+[[[
+===
+wget '' -O ''
+]]]
+[[[
+===
+wget '' -O ''
+]]]
+[[[
+e others/数学/p_adic_integer_ring.txt
+wget 'https://www.ams.org/journals/mcom/1984-42-165/S0025-5718-1984-0726006-X/S0025-5718-1984-0726006-X.pdf' -O 'Primality Testing and Jacobi Sums(1984)(Cohen).pdf'
+p-adic integer
+[is_prime p]:
+  [p_adic_integer p =[def]= (?[seq :: (@[e<-[1..]] -> [[0..<p**e]])] -> @[e<-[1..]] -> [seq[e+1]%p**e==seq[e]])]
+  #coordinatewise addition and multiplication
+  [p_adic_integer_add, p_adic_integer_mul :: @[p<-all_primes] -> p_adic_integer p -> p_adic_integer p -> p_adic_integer p]
+  [p_adic_integer_add p lhs rhs =[def]= \e -> (lhs[e]+rhs[e])%p**e]
+  [p_adic_integer_mul p lhs rhs =[def]= \e -> (lhs[e]*rhs[e])%p**e]
+  [p_adic_ring p =[def]= (p_adic_integer_add, p_adic_integer_mul, p_adic_integer p)]
+  #subring
+  [ZZ <= p_adic_integer p]
+    [lift__int2p_adic p :: ZZ -> p_adic_integer p]
+    [lift__int2p_adic p =[def]= \i -> \e -> i%p**e]
+]]]
+]]
+]]]]]

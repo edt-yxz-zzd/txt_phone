@@ -1,0 +1,66 @@
+
+e others/数学/递推/一元有理分式-转化为-递推公式.txt
+
+[简化
+一元有理分式
+  前置条件:len ns = D+1 = len ds
+  前置条件:ns[D] = 0 =!= ds[D]
+  一元有理分式到递推参数 ns ds = (v, xs[1:1+D]) where
+    [v := [-ds[i]/ds[D] | [i <- [0..<D]]]]
+    [j <- [0..=D]]:
+      [xs[j] := (ns[D-j] - sum ds[i]*xs[i+j-D] {i <- [(D-j)..<D]})/ds[D]]
+      必然有[xs[0]==0]
+      先求出xs[1:D+1]
+    #bug:[n >= 0]:
+    [n >= 1]:
+      [xs[n+D] := v .*. xs[n:n+D]]
+      后续递推计算
+]
+
+
+
+[[
+TODO:generating function ~ 有理分式 ~ 展开式 ~ 多项式 除法 ...
+  多项式运算？
+  一元有理分式 转化 为 系数的递推公式
+  sum ns[i]z**i {i <- [0..<D]} / sum ds[i]z**i {i <- [0..=D]}
+  f :: [(int, int)] -> pint -> (matrix<D,D>, vector<D>, vector<D>)
+    (mx, x[:D], DV)
+    X[n+1] = (mx*X[n] + DV)
+  f :: [(int, int)] -> pint -> (vector<D>, vector<D>, Fraction)
+    (v, xs[:D], d)
+    xs[n+D] = v .*. xs[n:n+D] + d
+  f(nd_ls, b_D)
+  ----
+  f(nd_ls) -> (v, xs[1:1+D])
+    前置条件:[D+1 = len nd_ls >= 1][D >= 0]
+    前置条件:[nd_ls[-1][0] == 0]
+    前置条件:[nd_ls[-1][1] =!= 0]
+    ===
+    [poly(ks, z) =[def]= sum ks[i]*z**i {i <- [0..<len ks]}]
+    [poly(xs, 1/z) * poly(ds, z) == poly(ns, z)]
+      # xs ~ 1/z
+    [@[k <- [D,D-1..=0]] -> [ns[k] == sum ds[i]*xs[i-k] {i <- [k..=D]}]]
+    [@[k <- [-1,-2..]] -> [0 == sum ds[i]*xs[i-k] {i <- [0..=D]}]]
+
+    ##这里需要 前置条件:[ds[D] =!= 0]
+    [@[k <- [D,D-1..=0]] -> [xs[D-k] == (ns[k] - sum ds[i]*xs[i-k] {i <- [k..<D]})/ds[D]]]
+      ==>> xs[D-k]
+      ==>> xs[:D+1]
+      !![D >= 0]
+      !![ns[D]==0]
+      [xs[0] = ns[D]/ds[D] = 0]
+
+    [@[k <- [-1,-2..]] -> [xs[D-k] == -sum ds[i]*xs[i-k] {i <- [0..<D]}/ds[D]]]
+      ==>> xs[D-k]
+      ==>> xs[D+1:]
+
+    [@[j :: uint] -> [xs[j] == ([j<=D]ns[D-j] - sum ds[i]*xs[i+j-D] {i <- [max(0,D-j)..<D]})/ds[D]]]
+
+    由[@[j <- [0..=D]] -> [xs[j] == (ns[D-j] - sum ds[i]*xs[i+j-D] {i <- [(D-j)..<D]})/ds[D]]]
+    必然有[xs[0]==0]
+    先求出xs[1:D+1]
+    由[@[j <- [D+1..]] -> [xs[j] == -sum ds[i]*xs[i+j-D] {i <- [0..<D]}/ds[D]]]
+    得:[v := [-ds[i]/ds[D] | [i <- [0..<D]]]]
+    return (v, xs[1:D+1])
+]]
