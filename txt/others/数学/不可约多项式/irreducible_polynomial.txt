@@ -1,0 +1,2112 @@
+
+e others/数学/不可约多项式/irreducible_polynomial.txt
+[[[[[[[
+e others/数学/不可约多项式/irreducible_polynomial.txt
+!cp others/数学/不可约多项式/irreducible_polynomial.txt  /sdcard/0my_files/book/math/irreducible_polynomial/
+
+!mv script/primitive_irreducible_polynomial.py script/gf__enumerate_primitive_irreducible_polynomials.py
+  ##e script/primitive_irreducible_polynomial.py
+e script/gf__enumerate_primitive_irreducible_polynomials.py
+
+[[
+ZZ[x]%p
+  分解 (x**(p**m) - x)
+  bug:???[(x**(p**(m+1)) - x)%(x**(p**m) - x) == 0]???
+    #bug:???[(x**(p**(m+1)-1) - 1)%(x**(p**m-1) - 1) == 0]
+    [(x**2**3-x)%(x**2**2-x) =!= 0] ==>> bug!!!
+
+  [(x**(p**(m*n)) - x)%(x**(p**m) - x) == 0]
+    <<== @x. [x**(p**m) = x] -> [x**(p**(m*n)) == (x**(p**m))**(p**(m*(n-1))) = (x)**(p**(m*(n-1))) == ... = (x)**(p**(m*1)) = x]
+    即 所有 解 被包含 #两者 首项系数皆为1
+    [m%n==0] <==> [GF(p**n) <= GF(p**m)]
+      [GF(p**n) <= GF(p**m)]:
+        <==> 存在以GF(p**n)元素为系数的多项式 f. 满足 [GF(p**n)[x]%f(x) ~=~ GF(p**m)]
+        元素总数 两种表达 相等:
+          [(p**n)**(degree f) == p**m]
+          <==>> [n*degree f == m]
+          <==>> [m%n==0]
+  [[is_prime q] -> [GF(p**q) 只含 一个 真子域: GF(p)][不可约多项式中本原不可约多项式的比例极高]]
+
+
+  [is_prime u =[def]= [[u <- [2..]][@[d<-[2..<u]] -> [u%d=!=0]]]]
+  [all_primes =[def]= {p <- [1..] | [is_prime p]}]
+  [is_semiprime m =[def]= [?[q0,q1 <- all_primes] -> [q0=!=q1] -> [m==q0*q1]]]
+  [is_prime_power m =[def]= [?[q <- all_primes] -> ?[e <- [1..]] -> [m==q**e]]]
+
+  定义:[all_prime_factors_of :: pint -> 2**all_primes]
+    [all_prime_factors_of i =[def]= {p <- [1..=i] | [is_prime p]}]
+
+  定义:[all_divisors_of :: pint -> {pint}]
+    [all_divisors_of i =[def]= {d <- [1..=i] | [i%d==0]}]
+  [all_coprimes_of N =[def]= {i<-[0..<N] | [gcd(i,N)==1]}]
+
+  定义:[max_height_of_prime_power_ :: @[p <- all_primes] -> uint -> Either +oo uint]
+    [max_height_of_prime_power_ p i =[def]= if i==0 then +oo else
+      max{e <- [0..] | [i%p**e==0]}
+      ]
+
+  定义:[mu :: pint -> {-1,0,+1}]
+    [mu i =[def]=
+      let ps := (all_prime_factors_of i) in
+      if [i =!= II ps]/或/[?[p<-all_primes] -> [i%p**2==0]] then 0 else
+      #squarefree
+      if len ps %2 == 0
+      then +1 else -1
+      ]
+  定义:[sum_mu_mul :: Ring a => pint -> (pint -> a) -> a]
+    [sum_mu_mul m f =[def]= sum~ mu(m/d)* f(d) ~{d <- all_divisors_of m}]
+    [sum_mu_mul m f == sum~ mu(d)* f(m/d) ~{d <- all_divisors_of . II $ all_prime_factors_of m}]
+
+  定义:[phi :: pint -> uint]
+    [phi i =[def]= len {d <- [1..=i] | [gcd(d,i)==1]}]
+    [phi i == i*II~ (1-1/p) ~{p<-all_prime_factors_of i}]
+
+
+  ???不太确定???[is_primitive_factor_of d u =[def]= [u%d==0][mu d=!=0]]
+
+  下面的主要公式有：[
+    #首项系数为一的多项式总数囗公式
+        #多项式一根求根所在不可约因子的根集的公式
+        #根集求多项式囗公式
+        #多项式不可约性判定囗公式
+        #多项式强伪不可约性判定囗公式
+        #多项式强伪不可约性蕴含不可约性所需的充分条件囗公式
+    #首项系数为一的不可约多项式总数囗公式
+        # 不可约多项式一根求根集囗公式
+    #首项系数为一的本原不可约多项式总数囗公式
+        # 本原不可约多项式一根求同次其他本原不可约多项式根集囗公式
+            # 本原不可约多项式求同次其他本原不可约多项式囗公式 <<== 本原不可约多项式一根求同次其他本原不可约多项式根集囗公式+根集求多项式囗公式
+        # 本原不可约多项式一根求同次非本原不可约多项式根集囗公式
+            # 本原不可约多项式求同次非本原不可约多项式囗公式 <<== 本原不可约多项式一根求同次非本原不可约多项式根集囗公式+根集求多项式囗公式
+  ]
+
+  [%p][m::pint]:
+    [GF(p**m) == roots_of (x**p**m - x)]
+
+    [(可约+不可约)多项式 g][degree g==m]:
+      [所有degree为m的 首项系数为一的 (可约+不可约)多项式 的 总数 == p**m]
+          #首项系数为一的多项式总数囗公式
+
+      !![(a+b)**p == a**p + b**p]
+      [g(x)**p == g(x**p)]
+      [@a. [g(a)==0] -> @[i<-[0..]] -> [g(a**p**i)==0]]
+        #多项式一根求根所在不可约因子的根集的公式
+
+      [let rs := roots_of g]
+      [@[rs <- 2**GF(p**m)] -> [let g(z) == II {z-r | [r <- rs]}] -> [roots_of g == rs]]
+        #根集求多项式囗公式
+
+      [is_polynomial_irreducible__gf :: @[g :: Polynomial] -> Bool]
+      [is_polynomial_irreducible__gf g =[def]= [[x**p**m =[%g(x)]=x][@[pd<-all_prime_factors_of m] -> [gcd(x**p**(m/pd)-x, g(x))==1]]]]
+        #多项式不可约性判定囗公式
+        #
+        #40.4.1.2 Rabin’s test for irreducibility
+        #   <<== wget 'https://www.jjj.de/fxt/fxtbook.pdf' -O 'fxtbook[Matters Computational][Algorithms for Programmers].pdf'
+        #
+        #注意: x**p**i %g {i<-1..=m} 必须 一个个 求出，共m个，不可避免
+        #注意:y(x)**p = y(x**p)，所以 只需 先求出 x**(i*p) %g {i<-0..<m}，再 直接替换即可
+        #注意:可先不进行gcd，若是 [{i<-[1..=m] | [x**p**i %g == x]} =!= {m}] 则 可约，若通过(还得 不含 整数解 才可被称为 强伪不可约性，注意:某些m值，强伪不可约性<==>不可约性)，才用gcd判断素性
+        #注意:特殊类型的g(x)，比如下面的 最简模乘法囗公式 中的 (x**m+h0*x+f0)%p 低次数的模 很快(当 degree 被除数 <= 2*degree 模 -2 时)
+        #
+      # strong pseudo irreducible (SPI).
+      [is_polynomial_strong_pseudo_irreducible__gf :: @[g :: Polynomial] -> Bool]
+      [is_polynomial_strong_pseudo_irreducible__gf g =[def]= [@[i<-[1..=m]] -> [x**p**i =[%g(x)]=x] -> [i==m]]]
+        #多项式强伪不可约性判定囗公式
+      [[p==2]{#书中只关心2，未知可否泛化#} -> [m>=2]{#因为接着要求不含整数解#} -> [[@[a<-[0..<p]] -> [g(p) =!= 0]]or[gcd(x**p-x, g(x))==1]] -> [[is_prime_power m]or[is_semiprime m]or[?[q0,q1 <- all_primes] -> [q0=!=q1] -> ?[e <- [1..]] -> [m==q0*q1**e][q0 > (2**q1**e -2)/q1]]] -> [is_polynomial_strong_pseudo_irreducible__gf g] -> [is_polynomial_irreducible__gf g]]
+        #多项式强伪不可约性蕴含不可约性所需的充分条件囗公式
+        #
+        #40.4.1.3 Testing for irreducibility without GCD computations
+        #
+        #下面只排除 前两个条件:[[is_prime_power m]or[is_semiprime m]]
+        #       其中 44,52,... 满足 第三个条件
+        #http://oeis.org/A102467
+        #1, 12, 18, 20, 24, 28, 30, 36, 40, 42, 44, 45, 48, 50, 52, 54, 56, 60, 63, 66, 68, 70, 72, 75, 76, 78, 80, 84, 88, 90, 92, 96, 98, 99, 100, 102, 104, 105, 108, 110, 112, 114, 116, 117, 120, 124, 126, 130, 132, 135, 136, 138, 140, 144, 147, 148, 150, 152, 153, 154, 156 ...
+        #These are the numbers which are neither prime powers (>1) nor semiprimes. - M. F. Hasler, Jan 31 2008
+
+xxxxxxx:TODO
+
+    #primitive 的 两种不同含义
+    #primitive irreducible polynomial over GF =[def]= [x**? generate all but 0 %g(x)]
+    #vs: primitive polynomial over ZZ/?domain? =[def]= [gcd(coeffs) == 1]
+
+
+
+    [(本原+非本原)不可约多项式 h][degree h==m]:
+      [GF(p**m) ~=~ ZZ[x]%p%h(x)]
+        #the degree-m field generating irreducible polynomial
+        #   ?次数为m的 域生成用的 不可约多项式?
+        #
+      [所有degree为m的 (本原+非本原)不可约多项式 的 根 的集合
+        == {a <- GF(p**m) | [@[n <- [1..<m]] -> [m%n==0] -> [not$ a <- GF(p**n)]]}
+        == {a <- GF(p**m) | [@[n <- [1..<m]] -> [m%n==0] -> [is_prime (m/n)] -> [not$ a <- GF(p**n)]]}
+        == {a <- GF(p**m) | [@[n <- [1..<m]] -> [m%n==0] -> [is_prime (m/n)] -> [a**(p**n) =!= a]]}
+        == {a <- GF(p**m) | [@[n <- [1..<m]] -> [a**(p**n) =!= a]]}
+        ]
+      [所有degree为m的 首项系数为一的 (本原+非本原)不可约多项式 的 总数
+        == 所有degree为m的 首项系数为一的 (本原+非本原)不可约多项式 的 根 的集合 的规模/m
+        # == p**m - sum~ p**n ~{...} + 补上重复删除的...
+        == sum~ mu(m/d)* p**d ~{d <- all_divisors_of m}/m
+        == sum_mu_mul m (p**) /m
+          #首项系数为一的不可约多项式总数囗公式
+        ]
+
+      [@a. [h(a)==0]]:
+        [@[n <- [1..<m]] -> [a**(p**n) =!= a]]
+        [let rs := {a**(p**n) | [@n <- [0..<m]]}]
+        [len rs == m]
+          #???why???
+          #!!非零元素 构成 乘法群
+          #根的阶 整除 (p**m-1)
+          #假设 根的阶 整除 (p**d-1)，d为m真因子
+          #则 根**p**d=根，即 degree(gcd(h(x), x**p**d-x) <- [1..=d]
+          #     h可约，矛盾
+          #
+        [roots_of h == rs]
+      [@a. [h(a)==0] -> [roots_of h == {a**(p**n) | [@n <- [0..<m]]}]]
+        # 不可约多项式一根求根集囗公式
+
+    [本原不可约多项式 f][degree f==m]:
+      # 定义: 本原不可约多项式 f <==> (f 根 为 非零乘法群 的 生成子)
+      大前提[m>=1]
+        [m==1]:
+          [GF(p**m) ~=~ ZZ%p]
+          [f x = x - i]where[i 是 ZZ%p\-\0 的 本原根/生成子]
+          与[m>=2]的处理方式完全相同
+
+      定义:[本原不可约多项式 f]
+        <==> [@[a <- GF(p**m)] -> [f(a)==0] -> [GF(p**m)\-\{0} == {a**i | [@i <- [1..<p**m]]}]]
+        <==> [@[d <- all_divisors_of(p**m-1)] -> [d=!=(p**m-1)] -> [x**d % f(x) =!= 1]]
+        <==> [@[pd <- all_prime_factors_of(p**m-1)] -> [x**((p**m-1)/pd) % f(x) =!= 1]]
+
+      [所有degree为m的 首项系数为一的 本原不可约多项式 的 总数
+        == 所有degree为m的 首项系数为一的 本原不可约多项式 的 根 的集合 的规模/m
+        == GF(p**m)非零元素 构成的 乘法群 的生成子 的规模/m
+        == phi(p**m-1)/m
+          #首项系数为一的本原不可约多项式总数囗公式
+        ]
+        #当 两者总数 相同时:
+          #首项系数为一的本原不可约多项式总数囗公式
+            lhs := phi(p**m-1)/m
+          #首项系数为一的不可约多项式总数囗公式
+            rhs := sum_mu_mul m (p**) /m
+          ==>> ???
+          不知道，但有一个 充分条件:
+            [is_prime m]:
+              rhs*m = sum ... {d=1,m} = p**m -p**1
+            [is_prime (p**m-1)]:
+              <==> [is_Mersenne_prime (p**m-1)]
+              ==>> [p==2][is_prime m]
+              lhs*m = p**m-2 = 2**m-2
+              rhs*m = p**m -p**1 = 2**m-2
+              lhs==rhs
+            [is_Mersenne_prime (2**m-1)] -> [degree为m的不可约多项式皆本原不可约]
+              #https://primes.utm.edu/mersenne/
+              #https://www.mersenne.org/primes/
+              [2,3,5,7,13,17,19,31,61,89,107,127,521,607,1279,2203,2281,3217,4253,4423,9689,9941,11213,19937,21701,23209,44497,86243,110503,132049,216091,756839,859433,1257787,1398269,2976221,3021377,6972593,13466917,20996011,24036583,25964951,30402457,32582657,37156667,42643801,43112609,57885161        ,74207281,77232917,82589933]
+                #前48个位置固定，此后 可能有 新增的
+              #view ../../python3_src/nn_ns/math_nn/numbers/Mersenne_exponents.py
+
+            [is_prime_power m][let q**e := m][is_prime q][e>=2]:
+              rhs*m = sum ... {d=m/q,m}
+                = p**m -p**(m/q)
+                = p**(m/q) *(p**(m-m/q)-1)
+                = p**(m/q) *(p**phi(m)-1)
+              lhs*m = phi(p**m -1)
+                 = phi(p**(q**e) -1)
+                 = phi(p**(q**(e-1) * q) -1)
+                 = phi((p**(q**(e-1))) ** q -1)
+                 = ???
+
+
+      [@[a <- GF(p**m)] -> [f(a)==0] -> @[u <- [1..<p**m-1]] -> [not$ all_prime_factors_of(u) <= {p}]{#避开f的根集#} -> [gcd(u,p**m-1)==1]{#生成子#} -> [{(a**u)**(p**i) | [@i <- [0..<m]]} 是 其他 degree为m的 不等于f的 本原不可约多项式 的 根集]]
+        # 本原不可约多项式一根求同次其他本原不可约多项式根集囗公式
+        #
+        # 本原不可约多项式求同次其他本原不可约多项式囗公式 <<== 本原不可约多项式一根求同次其他本原不可约多项式根集囗公式+根集求多项式囗公式
+        #   ?对称多项式的基 之间的 转换
+        #   ?如何由 根 求出 相应 对称多项式的基
+        #       归纳法:
+        #       m=1 -> 2    -> 3 ->...
+        #       [n=1]:a0 -> a0+a1 -> a0+a1+a2 -> ...
+        #       [n=2]:0 -> a0*a1 -> a0*a1 +(a0+a1)*a2 -> a0*a1 +(a0+a1)*a2 + (a0+a1+a2)*a3 -> ...
+        #       [n=3]:0 -> 0 -> a0*a1*a2 -> a0*a1*a2 + (a0*a1 +(a0+a1)*a2)*a3 -> ...
+        #   [sp(m,n) =[def]= sum~ II~ a[k] ~{k<-ks} ~{ks <- 2**{0..<m} | [len ks == n]}]
+        #   [[not$ 0<=n<=m] -> [sp(m,n) == 0]]
+        #   [0<=n<=m]:
+        #       [[0==n<=m] -> [sp(m,n) == 1]]
+        #       [[0<=n==m] -> [sp(m,n) == II~ a[k] ~{k<-[0..<m]}]]
+        # [sp(m+1,n+1) == sp(m,n+1) + sp(m,n)*a[m]]
+        #   这计算轨迹 等同于 直接展开 II (z-a[i] {i<-[0..<m]} 有什么意思？！
+        #
+      [@[a <- GF(p**m)] -> [f(a)==0] -> @[u <- [1..<p**m-1]] -> [gcd(u,p**m-1)=!=1]{#避开-生成子->非本原#} -> [@[pd <- all_prime_factors_of m] -> [(a**u)**(p**(m/pd)) =!= (a**u)]]{#不可约#} -> [{(a**u)**(p**i) | [@i <- [0..<m]]} 是 其他 degree为m的 非本原不可约多项式 的 根集]]
+        # 本原不可约多项式一根求同次非本原不可约多项式根集囗公式
+        #
+        # 本原不可约多项式求同次非本原不可约多项式囗公式 <<== 本原不可约多项式一根求同次非本原不可约多项式根集囗公式+根集求多项式囗公式
+
+  根的阶ro:
+    [gcd(ro, p**m)==1]
+    [本原不可约] <==> [ro==p**m-1]
+    [非本原不可约] <==> [[ro<p**m-1][@[d<-all_divisors_of m] -> [(p**d-1)%ro==0] -> [d==m]]] <==> [[ro<p**m-1][@[pd<-all_prime_factors_of m] -> [(p**(m/pd)-1)%ro=!=0]]]
+    [可约] <==> [???]
+
+
+
+  [%2]:
+    x**2-x = (x-0)(x-1)
+    x**2**2-x = (x-0)(x-1)(x**2+x+1)
+    x**2**3-x = (x-0)(x-1)(x**6+x**5+x**4+x**3+x**2+x+1)
+      #GF(p**m) ~=~ ZZ[x]%f(m,x) ==>> 本原不可约多项式 次数 为 m
+      # 非零乘法群 规模 == p**m-1 #除了0
+      # 生成子 总数 = phi(非零乘法群 规模) = phi(p**m-1)
+      # monic本原不可约多项式 总数 = 生成子 总数 / 本原不可约多项式 次数 = phi(p**m-1)/m
+      #     monic #多项式首项系数为一
+      #     ???[p=2]梅森素数[m=3] phi(2**3-1)=7-1=6没有影响
+      #GF(2**3) ==>> phi(2**3-1)/3 = 2 个 次数为3的 monic本原不可约多项式
+      = (x-0)(x-1)(x**3+x+1)(x**3+x**2+1)
+  ==>> [(x**2**3-x)%(x**2**2-x) =!= 0]
+    #即 GF(2**3)不包含GF(2**2)
+
+  [%3]:
+    x**3-x = (x-0)(x-1)(x-2)
+
+GF(2**8)
+  degree(f(x))==e
+  f(x) is irreducible polynomials over ZZ%p
+  GF(p**e) ~=~ ZZ[x]%p%f(x)
+  primitive irreducible polynomials
+    f(a)==0, 根a刚好是 ZZ[a]%p 的 生成子
+    ZZ[a]%p ~=~ ZZ[x]%p%f(x)
+  GF(2**8)总数:phi(2**8-1)/8 = phi(17*5*3)/8=(17-1)(5-1)(3-1)/8=16
+
+CLASS OF IRREDUCIBLE POLYNOMIALS
+]]
+
+[[[[[
+[[[
+[[
+On the irreducible factors of a polynomial II(2020)(Jakhar).pdf
+===
+https://libgen.lc/edition.php?id=88002035
+wget 'https://libgen.rocks/get.php?md5=6bb69bef6ca7699da72d921c008d1d6e&key=UR0WGQYTBGD8RVVR' -O 'On the irreducible factors of a polynomial II(2020)(Jakhar).pdf'
+===
+On the irreducible factors of a polynomial(2019)(Jakhar).pdf
+===
+https://libgen.lc/edition.php?id=84927140
+wget 'https://libgen.rocks/get.php?md5=9dd31c8fcfd93e4ad1191973b2a5b1d6&key=SNRSWSAK2RHTQJFG' -O 'On the irreducible factors of a polynomial(2019)(Jakhar).pdf'
+  [[[
+  ===
+===
+所有因子首项次数中的最大值的下限，有用，当下限是整式首项次数时，多项式不可分解
+  #不是 所有因子首项次数的最小值的下限，不能 用来比较于 整式首项次数一半以上...
+===
+Eisenstein irreducibility criterion的泛化版:
+[[f(x) <- ZZ[x]][ks == coeffs f(x)][f(x) == sum~ ks[i]*x**i ~{i <- [0..<len ks]}][len ks >= 3][is_prime p][e <- [2..<len ks]][ks[e]%p=!=0][@[i <- [0..<e]] -> [ks[i]%p==0]][ks[0]%p**2=!=0] -> [?g(x) <- ZZ[x]][f(x)%g(x)==0][degree g(x) >= e]]
+[[f(x) <- ZZ[x]][ks == coeffs f(x)][f(x) == sum~ ks[i]*x**i ~{i <- [0..<len ks]}][len ks >= 3][is_prime p][m := len ks -1][ks[m]%p=!=0][@[i <- [0..<m]] -> [ks[i]%p==0]][w <- [0..<m//2]][ks[w]%p**2=!=0] -> [[?g(x) <- irreducible_factor_of_ ZZ[x] f(x)][degree g(x) >= m-w]]]
+    # 根据下面的泛化版 更正
+    #
+    # [... -> [?g(x),h(x) <- ZZ[x]][f(x)==g(x)*h(x)][min(degree g(x), degree h(x)) <= w]]
+    #g(x)，h(x)不可分解？
+    #只能等于，还是 多于等于2个因子？
+Eisenstein irreducibility criterion的上述泛化版的泛化版:
+Dumas irreducibility criterion的泛化版: # <<==[e==len ks-1][k==0]
+  Eisenstein irreducibility criterion是Dumas irreducibility criterion的特化版[pe_ 0 = 1]
+[[f(x) <- ZZ[x]][ks == coeffs f(x)][f(x) == sum~ ks[i]*x**i ~{i <- [0..<len ks]}][len ks >= 3][is_prime p][pe_ := \ [i <- [0..<len ks]] -> if ks[i] == 0 then +oo else max {t <- [0..] | [k[i]%p**t==0]}][e <- [2..<len ks]][pe_ e ==0][k := min([0..<w], key=\ k-> ((pe_ k)/(e-k), k))][gcd(pe_ k, e-k)==1] -> [[?g(x) <- irreducible_factor_of_ ZZ[x] f(x)][degree g(x) >= e-k]][[?h(x) <- irreducible_factor_of_ (p-adic QQ%p)[x] f(x)][e >= degree h(x) >= e-k]]]
+  #[前提:已有p,ks]: [pe_ i = max_height_of_prime_power_ p ks[i]]
+  ===
+  ]]]
+]]
+[[
+The Effect of the Primitive Irreducible Polynomial on the Quality of Cryptographic Properties of Block Ciphers(2020)(Shaukat).pdf
+===
+https://libgen.lc/edition.php?id=90256537
+wget 'https://libgen.rocks/get.php?md5=1f668a77dde4917c9e1ad42b74bf90de&key=1RFV6SXE3RD4QIMO' -O 'The Effect of the Primitive Irreducible Polynomial on the Quality of Cryptographic Properties of Block Ciphers(2020)(Shaukat).pdf'
+
+]]
+[[
+A new class of irreducible pentanomials for polynomial-based multipliers in binary fields(2018)(Banegas).pdf
+===
+https://libgen.lc/edition.php?id=80617119
+wget 'https://libgen.rocks/get.php?md5=8767c2154d445e0509cd041ba1add2bc&key=5SMGSILHT0AT9ID9' -O 'A new class of irreducible pentanomials for polynomial-based multipliers in binary fields(2018)(Banegas).pdf'
+===
+trinomial  三项式
+pentanomial五项式
+没有列出 三项式
+  #很多degree没有 不可约 三项式
+  # degree < 1000 似乎 只有 500多 degree的取值 有相应 不可约 三项式
+  # 不可约三项式 最佳
+  #     对于某些degree相应 不可约三项式 不存在时，才考虑 不可约五项式
+  #
+四项式 提都没提
+    #似乎[%2]四项式 基本都是 可约？
+    #应该说 非零系数总数为偶数的多项式 [%2]情形下 必然 被(x+1)整除
+五项式 列出一些:
+  #在degree超过某个值之后，皆有 相应的 不可约 五项式
+  # 这就是 这篇论文 将重点放在 五项式 的 原因
+  #
+  # bug:根据下面的模版[m,m-c,b,c,0]{0<c<b<m-c} ==>> 任意degree>=4皆有 不可约五项式
+  # 另外 由https://www.jjj.de/mathdata/all-irredpoly.txt 可得: 任意degree<-[4,5]的五项式 皆 不可约
+  # view ../../python3_src/c_external/fxt/_ignore__unzip/fxt/data/all-irredpoly.txt
+    [[
+        2,1,0
+
+
+        3,1,0
+        3,2,0
+
+
+        4,1,0
+        4,3,0
+        # non-primitive:
+        4,3,2,1,0
+
+
+        5,2,0
+        5,3,0
+        5,3,2,1,0
+        5,4,2,1,0
+        5,4,3,1,0
+        5,4,3,2,0
+
+
+        6,1,0
+        6,4,3,1,0
+        6,5,0
+        6,5,2,1,0
+        6,5,3,2,0
+        6,5,4,1,0
+        # non-primitive:
+        6,3,0
+        6,4,2,1,0
+        6,5,4,2,0
+    ]]
+
+  #     再根据下面的模版[m,b+1,b,b-1,0]{2<=b<=m/2-1}{m>=6} /或/[m,b+1,b,1,0]{2<=b<=m-2}{m>=4} 岂不是 任意degree>=4 [m,3,2,1,0]都 不可约？有毛病！！
+  #         [6,3,2,1,0]可约！#没在all-irredpoly.txt 中出现
+  #
+  #原论文:『Table 5 lists all irreducible pen- tanomials of our family for degrees up to 1024;』『We leave as an open problem to mathematically characterize under which conditions our pentanomials are irreducible.』
+  #     他妈的，搞了半天 都不是 不可约五项式，所以 没有 简单的 不可约多项式 生成模版？
+  #
+  # view ../../python3_src/c_external/fxt/_ignore__unzip/fxt/data/pentanomial-primpoly.txt
+  #     [72,10,9,3,0]
+  #     [360,26,25,1,0] #m=360 的 最小 本原不可约多项式
+  #
+  [[！！！模版 用于mul_mod计算量研究 并不必然生成 不可约五项式！！！
+GF(2)[x]:
+首项 正负符号(余项皆正); 系数为1的项的次数
+  %2 哪来的正负？
++;2b+c,b+c,b,c,0
+  0<c<b
+  3b > 2b+c=m > 2b ==>> m/3 < b < m/2
+  m//3 < b < (m+1)//2
+  m=2b+c>=2*2+1=5
+  #这是 这篇论文 的 重点介绍的 五项式
+-;m,b+1,b,b-1,0
+  2<=b<=m/2-1
+  m>=b+1 +1>=2+1 +1=4
+  m>=2*(b+1)>=2*(2+1)>=6
+-;m,b+1,b,1,0
+  2<=b<=m-2
+  m>=b+2>=2+2=4
+-;m,m-c,b,c,0
+  0<c<b<m-c
+  m>=b+c+1>=2+1+1=4
+-;m,a,b,c,0
+  0<c<b<a<=m/2
+  m>=2*a>=2*3==6
+-;m,m-s,m-2s,,m-3s,0
+  (m-1)/8<=s<=(m-1)/3
+  3s+1 <= m <= 8s+1
+  m > m-s
+  s >= 1
+    ==>> 8s+1 > 3(s+1)+1 即 s增长 覆盖 所有 [m >= 4] 没有 缺漏的m
+  m >= 3s+1 >= 3*1+1 = 4
+-;4c,3c,2c,c,0
+  c=5**i
+  0<=i
+  m=4c=4*5**i>=4*5**0=4
+并非不可约！！]]
+
+depicted
+wlog = without loss of generality
+
+leading term 首项
+
+reduction modulo f(m,x)
+modular reduction
+
+
+modular reduction的步骤:
+  [%2]:
+    ?[k <- [1..m-1]]. [f(m,x) = x**m + f_low(m-k,x)]
+    [[f(m,x)=0] -> [x**m == f_low(m-k,x)]]
+    g(w,x)%f(m,x) = if w < m then g(w,x) else
+        let g_low(<=m-1,x)+g_high(w-m,x)*x**m := g(w,x)
+            g_(w-k,x) := g_high(w-m,x)*f_low(m-k,x)
+              #计算热点
+        in  g_low(<=m-1,x)+ g_(w-k,x)%f(m,x)
+          #recur: w -> (w-k)
+          #recur-deepth / num-loops = ceil((w-m+1)/k) = (w-m+k)//k = (w-m)//k +1
+    [g(w,x) == h0(<m,x)*h1(<m,x)]:
+      [w <= 2m-2]
+      [recur-deepth = (w-m)//k +1 <= (m-2)//k +1]
+        #k = f(x)首项次数-次项次数
+        #   (m-k)/m越小，循环次数越少
+        #g_的求值步骤 与 f(x)的非零项数目 相关
+        #   f(x)的非零项数目 越少，g_的计算 越快
+        #所以 好的 f(x) 要求 次项次数/首项次数 小，非零项数目 少/(二项式？三项式？)
+        #固定 f(x)模版，若 recur-deepth 足够小，可以 显式列出 计算公式，再根据 模版 特征 归并 重复性的计算。
+  其实还可以这样[w<=2*m]:
+    g(w,x)%f(m,x) = if w < m then g(w,x) else
+        let g_low(<=m-1,x)+g_high(w-m,x)*x**m := g(w,x)
+          #u,t >=0
+          recur0 h(m-u,x) t = recur1 h(m-u,x)*x**min(u,t) (t-min(u,t))
+            #shift to makeup x**m
+          recur1 h(m_,x) t = if m_ < m then assert (t==0) h(m_,x) else recur2 h(m,x) t
+            #halt?
+          recur2 h(m,x) t = recur0 (h(m,x)-x**m +f_low(m-k,x)) t
+              #recur&wrap
+        in  g_low(<=m-1,x)+ recur0 g_high(w-m,x) m
+
+
+]]
+[[
+polynomial basis multipliers for irreducible trinomials(2017)(Jiajun).pdf
+===
+https://libgen.lc/edition.php?id=70286084
+wget 'https://libgen.rocks/get.php?md5=172822526c727ff32951c49abdc050db&key=RUHHVWYO7OULC8A8' -O 'polynomial basis multipliers for irreducible trinomials(2017)(Jiajun).pdf'
+(q,r) := g/%f
+g == q*f + r
+[degree r < degree f][degree f + degree q == degree g]
+[2*degree f > degree g]:
+  [degree f >= 1]
+  [degree q == degree g - degree f < degree f]
+  [let f0 := f(0)]
+  [g == q*(f-f0) +(r+q*f0)]
+  [g/%(f-f0) == (q, r+q*f0)]
+  [reducible f-f0]
+  [let x**k * h(n,x) := f-f0][h0=h(0)=!=0][k+n==degree f=m]
+  #CRT = Chinese remainder theorem
+  [g%f ~ CRT(g%x**k, g%h)]
+  [g//f ~ (g//x**k)//h(x)]
+  [(q_,r_) := divmod-CRT(g, x**k, h(x))]
+  [g%/f = (q, r) := (q_, r_-q_*f0)]
+
+  [irreducible f]:
+    ...
+  [monic trinomial f]:
+    [f(x) == x**(n+k) + h0*x**k + f0]
+    [f-f0 == x**k*(x**n+h0)]
+    [h(x) == (x**n+h0)]
+    [inv_h0 := inv[%p](h0)]
+    [n >= k]:
+      [inv_h0*h(x) %x**k ==1]
+      [inv_h0 == inv[%x**k](h(x))]
+      [x**(n-k) *x**k %h(x) == -h0]
+      [-inv_h0*x**(n-k) *x**k %h(x) == 1]
+      [-inv_h0*x**(n-k) == inv[%h(x)](x**k)]
+      #我一他零
+      [我一他零<h(x); {x**k,}> = inv[%h(x)](x**k) *x**k = -inv_h0*x**n]
+      [我一他零<x**k; {h(x),}> = inv[%x**k](h(x)) *h(x) = inv_h0*h(x)]
+      [@g. [degree g < 2*degree f] -> [g(x)%x**k=gk(x)][g(x)%h(x)=gh(x)] -> [g(x)
+        #源自 模乘法 a(x)*b(x)%f(x)
+        #   转化为 a(x)*b(x)%h(x); a(x)*b(x)%(x**k)
+        =[%f(x)]=gk(x)*inv_h0*h(x) + gh(x)*-inv_h0*x**n
+        =[%f(x)]=inv_h0*(gk(x)*h(x) - gh(x)*x**n)
+        =[%f(x)]=inv_h0*(gk(x)*(x**n+h0) - gh(x)*x**n)
+        ][g(x)%f(x) == (gk(x) + inv_h0*x**n*(gk(x) - gh(x)))%f(x)]
+        #degree gk < k <= n
+        #degree gh < degree h == n
+        =[%f(x)]=gk(x) + inv_h0*x**n*(gk(x) - gh(x))
+          #degree rhs <= n+n-1 == 2*n-1
+          #vs degree f == n+k
+          #[k==n]: rhs%f == rhs
+          #[k<n]: degree rhs <= 2n-1 >= degree f 无法比较
+          #     最大[degree rhs==2n-1>=n+k==degree f]: 最高位折叠/替换(x**(n+k)=-(h0*x**k+f0)==>>???非并行，无法达到硬件时间最优
+        ]
+
+似乎可以:
+[[最简模乘法囗公式:
+[t>=0][degree f <= degree g <= 2*degree f -(t+1)][m==degree f]:
+  [degree f >= (t+1)]
+  [(q,r) := g/%f]
+  [g == q*f + r]
+  [degree r < degree f][degree f + degree q == degree g]
+  [degree q = degree g % degree f = degree g - degree f <= degree f -(t+1)]
+  [let ft(x) := f(x)%x**(t+1)]
+  [degree ft <= t]
+  [g == q*f + r == q*(f-ft) + (r+q*ft)]
+  [degree (q*ft) = degree q + degree ft <= (degree f -(t+1)) +t == degree f -1]
+  [degree (r + q*ft) <= max{degree r, degree(q*ft)} == degree f -1]
+  [g%/(f-ft) == (q, r+q*ft)]
+  [let (q_,r_) := g%/(f-ft)]
+  [g%/f = (q,r) == (q_, r_ - q_*ft)]
+  #注意:上面[t>=0]，下面[t>=1]
+  [monic trinomial f][degree ft == t >= 1]:
+    [f(x) == x**m + h0*x + f0]
+    [m == degree f >= (t+1)]
+    [g%/(f-ft) == g/%x**m == (high(m,g), low(m,g))]
+    [g%/f == (q, r) == (q_, r_ - q_*ft) == (high(m,g), low(m,g) - high(m,g)*ft)]
+      #完美！
+      #最简模乘法囗公式
+  模乘法 中 [g(x) = a(x)*b(x)，求g(x)%f(x)][degree a < m-1][degree b <= m-1][degree g <= 2*m-2]:
+    #其实[t>1]也行，先高位折叠至[degree g <= 2*m -(t+1)]，最多折叠(t-1)位，串行耗时长
+    [choose t==1]
+    ==>>最佳模版: [m,1,0]
+    [%2]情形:
+      #https://www.jjj.de/mathdata/all-trinomial-irredpoly-short.txt
+      #or:view ../../python3_src/c_external/fxt/_ignore__unzip/fxt/data/all-lowblock-irredpoly-short.txt
+      #view ../../python3_src/c_external/fxt/_ignore__unzip/fxt/data/all-trinomial-irredpoly-short.txt
+      # [m <= 399]:只有17个m相应 的 三项式 不可约
+      #     不可约17:[2,3,4,  6,7,  9,15,22,28,30,46,60,63,127,153,172,303]
+      #
+      #view ../../python3_src/c_external/fxt/_ignore__unzip/fxt/data/all-trinomial-primpoly-short.txt
+      # [m <= 399]:只有11个m相应 的 三项式 本原不可约
+      #     [2,3,4,  6,7,  -9,15,22,-28,-30,-46,60,63,127,153,-172,-303]
+      #     本原不可约11:[2,3,4,  6,7,  15,22,60,63,127,153]
+      #     非本原不可约6:[9,28,30,46,172,303]
+      #
+      # 每个 元素需要 m比特 来表达，如果 与 8bit字节 匹配，要求[m%8==0]
+      #     但！[m%8==0] ==>> [三项式 可约]
+      #     见下面:『三项式可约的充分条件』
+      #     见下面:『任意次数的本原不可约五项式存在囗猜想』
+      #         三项式 换成 五项式，模乘法 运算更慢
+      #
+      #
+      #40.9.3 Irreducible trinomials of the form 1 + x**k+ x**m
+      #   <<== wget 'https://www.jjj.de/fxt/fxtbook.pdf' -O 'fxtbook[Matters Computational][Algorithms for Programmers].pdf'
+      #[[[m,1,0]不可约] -> A002475]
+      #     A002475 /-\ [2..=34353] == [2, 3, 4, 6, 7, 9, 15, 22, 28, 30, 46, 60, 63, 127, 153, 172, 303, 471, 532, 865, 900, 1366, 2380, 3310, 4495, 6321, 7447, 10198, 11425, 21846, 24369, 27286, 28713, 32767, 34353]
+      #
+      #[[[m,1,0]本原不可约] -> A073639]
+      #     A073639 /-\ [2..=4400] == [2, 3, 4, 6, 7, 15, 22, 60, 63, 127, 153, 471, 532, 865, 900, 1366]
+      #
+      #[[[m,2,0]不可约] -> A057460]
+      #     A057460 /-\ [3..=57341] == [3, 5, 11, 21, 29, 35, 93, 123, 333, 845, 4125, 10437, 10469, 14211, 20307, 34115, 47283, 50621, 57341]
+      #
+      #[[[m,2,0]本原不可约] -> A074710]
+      #     A074710 /-\ [3..=845] == [???]
+      #
+      #[[[m,3,0]不可约] -> A057461]
+      #     A057461 /-\ [4..=1000] == [4, 5, 6, 7, 10, 12, 17, 18, 20, 25, 28, 31, 41, 52, 66, 130, 151, 180, 196, 503, 650, 761, 986]
+      #
+      #[[[m,3,0]本原不可约] -> ???]
+      #     ??? /-\ [4..=400] == [4, 5, 7, 10, 17, 20, 25, 28, 31, 41, 52, 130, 151]
+      #
+      #[[[m,4,0]不可约] -> A057463]
+      #     A057463 /-\ [5..=1000] == [7, 9, 15, 39, 57, 81, 105]
+      #
+      #[[[m,4,0]本原不可约] -> ???]
+      #     ??? /-\ [5..=400] == [7, 9, 15, 39, 81]
+      #
+      #[[[m,5,0]不可约] -> A057474]
+      #     A057474 /-\ [6..=1000] == [6, 9, 12, 14, 17, 20, 23, 44, 47, 63, 84, 129, 236, 278, 279, 297, 300, 647, 726, 737]
+      #
+      #[[[m,5,0]本原不可约] -> ???]
+      #     ??? /-\ [6..=400] == [6, 9, 17, 23, 47, 63, 129, 236, 278, 279, 297]
+      #
+
+#40.9.3 Irreducible trinomials of the form 1 + x**k+ x**m 之前的片段:
+[[三项式可约的充分条件
+Regarding trinomials, there is a theorem by Swan (given in [327]): The trinomial x^n+x^k+1 over GF(2) has an even number of irreducible factors (and therefore is reducible) if 
+0. n, k are even.
+  [n%2==0==k%2]
+  # !![x^(2n)+x^(2k)+1 == (x^n+x^k+1)**2]
+1.  n is even, k is odd, n =!= 2k, and either nk/2 ≡ 0 mod 4 or nk/2 ≡ 1 mod 4, 
+  [[n%2==0][k%2==1][n=!=2k][n*k%8 <-[0,2]]]
+  # [n%8==0] ==>> 条件0/或/条件1
+  # 即 degree=8n 的 三项式 [%2] 可约
+  # 即 degree=8n 的 不可约三项式 [%2] 不存在
+2.  n is odd, k is even and does not divide 2n, and n ≡ ±3 mod 8, 
+  [[n%2==1][k%2==0][2n%k=!=0][n%8 <-[3,5]]]
+3.  ???bug??? n is even, k is odd and does divide 2n, and n ≡ ±1 mod 8, 
+  ???bug??? [[n%2==0][k%2==1][2n%k==0][n%8 <-[1,7]]]
+  我认为应该是:[[n%2==1][k%2==0][2n%k==0][n%8 <-[1,7]]]
+4.  any of the above holds for k replaced by n − k (that is, for the reciprocal trinomial).
+    [x^n+x^k+1 与 x^n+x^(n-k)+1 的 分解 相似，因子一一对应，都是 反转关系]
+]]
+40.9.4 Irreducible trinomials of the form 1 + x^d+ x^(k*d) 
+[[三项式不可约的充分条件
+[@i,j <- [0..]]:
+  1+x**(3**i)+x**(2*3**i)
+  1+x**(7**i)+x**(3*7**i)
+  1+x**(3**i*5**j)+x**(4*3**i*5**j)
+  皆不可约
+]]
+
+40.9.5 Primitive pentanomials
+  For all degrees n ≥ 5 an irreducible (and primitive) pentanomial seems to exist, but this has not been proved so far. 
+  # 任意次数的本原不可约五项式存在囗猜想
+
+
+]]
+
+]]
+[[
+A Chinese Remainder Theorem Approach to Bit-Parallel GF(2^n) Polynomial Basis Multipliers for Irreducible Trinomials(2016)(Haining).pdf
+===
+https://libgen.lc/edition.php?id=47328508
+wget 'https://libgen.rocks/get.php?md5=063c4bea334b9105ddfc082075f5b2cd&key=DCU18XUYR9UH454A' -O 'A Chinese Remainder Theorem Approach to Bit-Parallel GF(2^n) Polynomial Basis Multipliers for Irreducible Trinomials(2016)(Haining).pdf'
+引言极佳
+vs:
+  quadratic formula
+    ~ schoolbook methods
+  subquadratic formula
+    ~ Karatsuba formulae
+    ~ Chinese Remainder Theorem (CRT)
+        同余方程组参数 [?[n :: pint] -> ?[fm, fr :: @[i <- [0..<n]] -> Polynomial] -> [[@[i <- [0..<n]] -> [degree fr[i] < degree fm[i]]][@[i,j <- [0..<n]] -> [i<j] -> [gcd(fm[i], fm[j])==1]]]]
+          求g 满足 @i.[g%fm[i] == fr[i]]
+          解: [g =[%FM]= sum~ fr[i]*我一他零[i] ~{i<-[0..<n]}]
+          where
+            FM = II~ fm[i] ~{i<-[0..<n]}
+            我一他零 i = 逆我非零 i * 我非零他零 i
+            我非零他零 i = FM/fm[i]
+            逆我非零 i = inv<%fm[i]> (我非零他零 i)
+          关于 g%(f-f0) 见上面 另一篇论文
+
+  hybrid approach
+    ~ “1-subquadratic-and-then-quadratic” computational mode
+        只有 最外面一层 用 subquadratic~
+        数据规模变小后 用 quadratic~
+  ===
+    硬件空间复杂度~门的数量
+    硬件时间复杂度~输入到输出的最长路径上的门的数量
+    #复用可减少 空间复杂度，但 时间复杂度 增加
+    The main advantage of the subquadratic multipliers is that their space complexities are often small.  But their time complexities are often larger than their quadratic counterparts.
+vs:
+  多项式乘法
+    compute the product of two polynomials
+  矩阵乘法
+    compute a Toeplitz matrix-vector product (TMVP)
+
+
+xxxxxxx:TODO
+
+]]
+[[
+Low-Power and Low-Hardware Bit-Parallel Polynomial Basis Systolic Multiplier over GF(2^m) for Irreducible Polynomials(2017)(Mathe).pdf
+===
+https://libgen.lc/edition.php?id=72769507
+wget 'https://libgen.rocks/get.php?md5=55ab281a4799e29c0fae17ff9f61399c&key=IMSLNMWNXX64EGML' -O 'Low-Power and Low-Hardware Bit-Parallel Polynomial Basis Systolic Multiplier over GF(2^m) for Irreducible Polynomials(2017)(Mathe).pdf'
+]]
+[[
+===
+wget '' -O ''
+]]
+[[
+===
+wget '' -O ''
+]]
+[[
+===
+wget '' -O ''
+]]
+]]]
+
+
+
+[[[
+  xxxxxxx
+enumerate irreducible polynomial binary
+[[
+https://www.math.ucsd.edu/~jmckerna/Teaching/15-16/Spring/103B/l_17.pdf
+  wget https://www.math.ucsd.edu/~jmckerna/Teaching/15-16/Spring/103B/l_17.pdf -O 'Irreducible polynomials--l_17.pdf'
+]]
+[[
+https://www.intechopen.com/chapters/80483
+  排版糟糕，但内容详细
+===
+
+Table 2 lists the primitive polynomials.
+
+Number of primitive polynomials of degree N
+N	No
+1	1
+2	1
+4	2
+8	16
+16	2048
+32	67108864
+  #6710_8864 #近7千万个 monic本原不可约多项式
+  # monic #多项式首项系数为一
+Table of primitive polynomials up to degree 31
+N	Primitive polynomials
+1, 2, 3, 4, 6, 7, 15, 22	1 + X + Xn
+5, 11, 21, 29	1 + X2 + Xn
+10, 17, 20, 25, 28, 31	1 + X3 + Xn
+9	1 + X4 + Xn
+23	1 + X5 + Xn
+18	1 + X7 + Xn
+8	1 + X2 + X3 + X4 + Xn
+12	1 + X + X3 + X4 + Xn
+13	1 + X + X4 + X6 + Xn
+14, 16	1 + X + X3 + X4 + Xn
+Table 2. Primitive polynomials.
+缺:19 24 26 27 30
+]]
+[[
+[
+https://crypto.stackexchange.com/questions/20590/choosing-an-optimal-generator-for-an-irreducible-polynomial-over-a-binary-field
+    https://www.jjj.de/mathdata/all-irredpoly.txt
+    http://www.jjj.de/mathdata/
+      Tables of mathematical data
+        https://www.jjj.de/fxt/fxtpage.html#fxtbook
+          https://www.jjj.de/fxt/fxt-2022.04.13.tar.gz
+            FXT is a library of low-level algorithms. Its main focus is on bit-manipulations, combinatorial generation, and fast transforms. The library is accompanied by the fxtbook. A strong emphasis is on performance and many of the routines are among the fastest available.
+          https://www.jjj.de/fxt/fxtbook.pdf
+          https://www.jjj.de/fxt/fxtbook-errata.txt
+            "Matters Computational" (formerly titled "Algorithms for Programmers")
+            wget 'https://www.jjj.de/fxt/fxtbook.pdf' -O 'fxtbook[Matters Computational][Algorithms for Programmers].pdf'
+              5M
+            wget https://www.jjj.de/fxt/fxtbook-errata.txt
+            wget https://www.jjj.de/fxt/fxt-2022.04.13.tar.gz
+              2M
+            tar -xvzf fxt-2022.04.13.tar.gz
+              包含许多东西:13MB
+                doc/???-doc.txt
+                data/all-irredpoly.txt
+                demo/
+            du -hs fxt/
+            13M     fxt
+
+
+    wget -r -l inf --no-remove-listing --no-parent -p -k -nc -N --no-use-server-timestamps -c --random-wait --wait=8 --tries=30 --limit-rate=200K --compression=auto -U "Mozilla/5.0 (iPhone; CPU iPhone OS 12_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/12.1.1 Mobile/15E148 Safari/604.1"    http://www.jjj.de/mathdata/
+      压缩:mathdata-www.jjj.de.zip 312KB
+
+[[
+~/download/wget_ $ mv fxt-20220703-www.jjj.de/ ~/my_git_py/c_external/fxt/
+cd ~/my_git_py/c_external/fxt/fxt-20220703-www.jjj.de/
+~/.../fxt/fxt-20220703-www.jjj.de $ ls -1hs
+total 7.3M
+1.8M fxt-2022.04.13.tar.gz
+ 24K fxtbook-errata.txt
+5.2M 'fxtbook[Matters Computational][Algorithms for Programmers].pdf'
+312K mathdata-www.jjj.de.zip
+mkdir ~/my_git_py/c_external/fxt/_ignore__unzip/
+e ../../python3_src/.gitignore
+  /**/_ignore__unzip
+  /**/_ignore__build
+cd ../_ignore__unzip/
+tar -xvzf ../fxt-20220703-www.jjj.de/fxt-2022.04.13.tar.gz
+view ../../python3_src/c_external/fxt/_ignore__unzip/fxt/data/all-irredpoly.txt
+view ../../python3_src/c_external/fxt/_ignore__unzip/fxt/INSTALL.txt
+mkdir ~/my_git_py/c_external/fxt/_ignore__build/
+mkdir ~/my_git_py/c_external/fxt/_ignore__build/include/
+cd ~/my_git_py/c_external/fxt/_ignore__unzip/fxt/
+make install PREFIX=~/my_git_py/c_external/fxt/_ignore__build/
+... ...
+... ...
+: '[install OK]'
+ls ~/my_git_py/c_external/fxt/_ignore__build/
+~/.../_ignore__unzip/fxt $ ls ~/my_git_py/c_external/fxt/_ignore__build/lib
+libfxt.a
+~/.../_ignore__unzip/fxt $ ls ~/my_git_py/c_external/fxt/_ignore__build/include/fxt/ -1
+array-len.h
+aux0
+aux0-all.h
+aux1
+aux1-all.h
+aux2
+... ...
+... ...
+
+
+cp ~/my_git_py/c_external/fxt/fxt-20220703-www.jjj.de/'fxtbook[Matters Computational][Algorithms for Programmers].pdf'  ~/download/wget_/
+ls  ~/download/wget_/
+
+make demo PREFIX=~/my_git_py/c_external/fxt/_ignore__build/
+: '[chkdtim]'
+WHICH='all' ./scripts/demo.zsh
+/data/data/com.termux/files/usr/bin/sh: 1: ./scripts/demo.zsh: Permission denied
+make: *** [makefile:512: demo] Error 126
+
+
+
+mkdir ~/ex_src/
+mkdir ~/ex_src/fxt/
+cp -r ~/my_git_py/c_external/fxt/   ~/ex_src/
+~/ex_src $ du -hs ~/ex_src/fxt/
+28M     /data/data/com.termux/files/home/ex_src/fxt/
+~/ex_src $ cd ~/ex_src/fxt/_ignore__unzip/fxt/
+make demo PREFIX=~/ex_src/fxt/_ignore__build/
+... ...
+... ...
+1 warning generated.
+: '[libfxt.a]'
+: '[chkdtim]'
+WHICH='all' ./scripts/demo.zsh
+/data/data/com.termux/files/usr/bin/sh: 1: ./scripts/demo.zsh: Permission denied
+make: *** [makefile:512: demo] Error 126
+
+chmod +x ~/ex_src/fxt/_ignore__unzip/fxt/scripts/*.zsh
+chmod +x ~/ex_src/fxt/_ignore__unzip/fxt/scripts/*.sh
+chmod +x ~/ex_src/fxt/_ignore__unzip/fxt/scripts/*.pl
+
+chmod +x ~/ex_src/fxt/_ignore__unzip/fxt/scripts/attic/*.sh
+chmod +x ~/ex_src/fxt/_ignore__unzip/fxt/scripts/attic/*.pl
+
+~/.../_ignore__unzip/fxt $ make demo PREFIX=~/ex_src/fxt/_ignore__build/
+: '[chkdtim]'
+WHICH='all' ./scripts/demo.zsh
+env: ‘zsh’: No such file or directory
+make: *** [makefile:512: demo] Error 127
+~/.../_ignore__unzip/fxt $ zsh
+The program zsh is not installed. Install it by executing:
+  pkg install zsh
+~/.../_ignore__unzip/fxt $ pkg install zsh
+... ... 2MB -> 12MB
+Unpacking zsh-completions (0.34.0) ...
+Setting up attr (2.5.1) ...
+Setting up libcap (2.64) ...
+Setting up zsh (5.9) ...
+Setting up zsh-completions (0.34.0) ...
+Processing triggers for man (1.14.5-3) ...
+~/.../_ignore__unzip/fxt $ make demo PREFIX=~/ex_src/fxt/_ignore__build/
+: '[chkdtim]'
+WHICH='all' ./scripts/demo.zsh
+./scripts/demo.zsh:28: no such file or directory: /tmp/tmp-demo-out
+./scripts/demo.zsh:33: no such file or directory: /tmp/tmp-demo-out
+Nothing to do.  (?)
+~/.../_ignore__unzip/fxt $
+~/.../_ignore__unzip/fxt $ view scripts/demo.zsh
+cp scripts/demo.zsh scripts/demo.zsh--old
+vim scripts/demo.zsh
+  TMPDIR=/tmp
+  ===改为：
+  TMPDIR=~/tmp
+~/.../_ignore__unzip/fxt $ make demo PREFIX=~/ex_src/fxt/_ignore__build/
+... ...
+./demo/seq/A206702-demo.cc --> ./demo/seq/A206702-out.txt    warning: unknown warning option '-Wno-vla-larger-than'; did you mean '-Wno-frame-larger-than'? [-Wunknown-warning-option]
+1 warning generated.
+... ...
+Stats:  534 done,  2 changed,  0 new.
+~/.../_ignore__unzip/fxt $
+~/.../_ignore__unzip/fxt $ ls ~/tmp/tmp-demo-out/
+ls: cannot access '/data/data/com.termux/files/home/tmp/tmp-demo-out': No such file or directory
+~/.../_ignore__unzip/fxt $ tree demo/
+... ...
+... ...
+14 directories, 1116 files
+
+find . -path "./demo/**/*-out.txt" > ~/my_tmp/fxt_demo-all-out-txts.txt
+view /sdcard/0my_files/tmp/fxt_demo-all-out-txts.txt
+  ./demo/gf2n/all-irredpoly-out.txt
+  共556个文件
+view ../../python3_src/c_external/fxt/_ignore__unzip/fxt/demo/topics.txt
+  gf2n@ binary polynomials and finite fields @ Binary polynomials, finite fields GF(2^n) and shift registers.
+
+]]
+
+]
+
+
+===
+[https://www.jjj.de/mathdata/all-trinomial-primpoly-short.txt
+  『3: 1 2』==>> x3+x+1, x3+x2+1 是 特征2域上的 不可约 本原 三项式 #本原<==>根 是 非零乘法群 的 生成子
+===
+#
+# Complete list of primitive trinomials over GF(2)
+# up to degree 400
+# Short form:  a line of the form
+#   d:  t1 t2 t3 t4 ...tn
+# corresponds to n entries in the usual form:
+#   d, tj, 0  (j \in 1..n)
+#.
+# Generated by Joerg Arndt, 2003-March-03
+#
+
+2:  1
+3:  1 2
+4:  1 3
+5:  2 3
+6:  1 5
+7:  1 3 4 6
+9:  4 5
+10:  3 7
+11:  2 9
+15:  1 4 7 8 11 14
+17:  3 5 6 11 12 14
+18:  7 11
+20:  3 17
+21:  2 19
+22:  1 21
+23:  5 9 14 18
+25:  3 7 18 22
+28:  3 9 13 15 19 25
+29:  2 27
+31:  3 6 7 13 18 24 25 28
+33:  13 20
+35:  2 33
+36:  11 25
+39:  4 8 14 25 31 35
+41:  3 20 21 38
+47:  5 14 20 21 26 27 33 42
+49:  9 12 15 22 27 34 37 40
+52:  3 19 21 31 33 49
+55:  24 31
+57:  7 22 35 50
+58:  19 39
+60:  1 11 49 59
+63:  1 5 31 32 58 62
+65:  18 32 33 47
+68:  9 33 35 59
+71:  6 9 18 20 35 36 51 53 62 65
+73:  25 28 31 42 45 48
+79:  9 19 60 70
+81:  4 16 35 46 65 77
+84:  13 71
+87:  13 74
+89:  38 51
+93:  2 91
+94:  21 73
+95:  11 17 78 84
+97:  6 12 33 34 63 64 85 91
+98:  11 27 71 87
+100:  37 63
+103:  9 13 30 31 72 73 90 94
+105:  16 17 37 43 52 53 62 68 88 89
+106:  15 91
+108:  31 77
+111:  10 49 62 101
+113:  9 15 30 83 98 104
+118:  33 45 73 85
+119:  8 38 81 111
+121:  18 103
+123:  2 121
+124:  37 87
+127:  1 7 15 30 63 64 97 112 120 126
+129:  5 31 46 83 98 124
+130:  3 127
+132:  29 103
+134:  57 77
+135:  11 16 22 113 119 124
+137:  21 35 57 80 102 116
+140:  29 111
+142:  21 121
+145:  52 69 76 93
+148:  27 121
+150:  53 97
+151:  3 9 15 31 39 43 46 51 63 66 67 70 81 84 85 88 100 105 108 112 120 136 142 148
+153:  1 8 145 152
+159:  31 34 40 119 125 128
+161:  18 39 60 101 122 143
+167:  6 35 59 77 90 108 132 161
+169:  34 42 57 84 85 112 127 135
+170:  23 147
+172:  7 165
+174:  13 161
+175:  6 16 18 57 118 157 159 169
+177:  8 22 88 89 155 169
+178:  87 91
+183:  56 127
+185:  24 41 69 116 144 161
+191:  9 18 51 71 120 140 173 182
+193:  15 73 85 108 120 178
+194:  87 107
+198:  65 133
+199:  34 67 132 165
+201:  14 17 59 79 122 142 184 187
+202:  55 147
+207:  43 164
+209:  6 8 14 45 47 50 62 147 159 162 164 195 201 203
+212:  105 107
+215:  23 51 63 77 101 114 138 152 164 192
+217:  45 64 66 82 85 132 135 151 153 172
+218:  11 15 71 83 135 147 203 207
+223:  33 34 64 70 91 132 153 159 189 190
+225:  32 74 88 97 109 116 128 137 151 193
+231:  26 34 197 205
+233:  74 159
+234:  31 103 131 203
+236:  5 231
+239:  36 81 158 203
+241:  70 171
+247:  82 102 145 165
+249:  86 163
+250:  103 147
+252:  67 185
+255:  52 56 82 173 199 203
+257:  12 41 48 51 65 192 206 209 216 245
+258:  83 175
+263:  93 170
+265:  42 127 138 223
+266:  47 219
+268:  25 61 207 243
+270:  53 133 137 217
+271:  58 70 201 213
+273:  23 53 67 88 92 110 113 160 163 181 185 206 220 250
+274:  67 99 135 139 175 207
+278:  5 273
+279:  5 10 38 40 41 59 76 80 125 154 199 203 220 238 239 241 269 274
+281:  93 99 182 188
+282:  35 43 239 247
+284:  119 165
+286:  69 73 213 217
+287:  71 116 125 162 171 216
+289:  21 36 84 205 253 268
+292:  97 195
+294:  61 233
+295:  48 112 123 142 147 148 153 172 183 247
+297:  5 83 103 122 137 160 175 194 214 292
+300:  7 73 91 209 227 293
+302:  41 261
+305:  102 203
+313:  79 121 192 234
+314:  15 299
+316:  135 181
+319:  36 52 129 190 267 283
+321:  31 56 76 82 155 166 239 245 265 290
+322:  67 255
+327:  34 152 175 293
+329:  50 54 275 279
+332:  123 209
+333:  2 331
+337:  55 57 135 139 147 190 198 202 280 282
+342:  125 217
+343:  75 135 138 159 184 205 208 268
+345:  22 37 106 239 308 323
+350:  53 297
+351:  34 55 116 134 217 235 296 317
+353:  69 95 138 143 153 173 180 200 210 215 258 284
+359:  68 117 242 291
+362:  63 107 255 299
+364:  67 297
+366:  29 337
+367:  21 171 196 346
+369:  91 110 259 278
+370:  139 183 187 231
+375:  16 64 149 182 193 226 311 359
+377:  41 75 302 336
+378:  43 107 271 335
+380:  47 333
+382:  81 301
+383:  90 108 135 248 275 293
+385:  6 24 51 54 142 159 226 243 331 334 361 379
+386:  83 303
+390:  89 301
+391:  28 31 360 363
+393:  7 62 91 302 331 386
+394:  135 259
+396:  25 109 169 175 221 227 287 371
+]
+[https://www.jjj.de/mathdata/all-trinomial-irredpoly-short.txt
+  『3: 1 2』==>> x3+x+1, x3+x2+1 是 特征2域上的 不可约 三项式 (本原+非本原)
+===
+#
+# Complete list of irreducible trinomials over GF(2)
+# up to degree 400
+# Short form:  a line of the form
+#   d:  t1 t2 t3 t4 ...tn
+# corresponds to n entries in the usual form:
+#   d, tj, 0  (j \in 1..n)
+#.
+# Generated by Joerg Arndt, 2003-March-03
+#
+
+2:  1
+3:  1 2
+4:  1 3
+5:  2 3
+6:  1 3 5
+7:  1 3 4 6
+9:  1 4 5 8
+10:  3 7
+11:  2 9
+12:  3 5 7 9
+14:  5 9
+15:  1 4 7 8 11 14
+17:  3 5 6 11 12 14
+18:  3 7 9 11 15
+20:  3 5 15 17
+21:  2 7 14 19
+22:  1 21
+23:  5 9 14 18
+25:  3 7 18 22
+28:  1 3 9 13 15 19 25 27
+29:  2 27
+30:  1 9 21 29
+31:  3 6 7 13 18 24 25 28
+33:  10 13 20 23
+34:  7 27
+35:  2 33
+36:  9 11 15 21 25 27
+39:  4 8 14 25 31 35
+41:  3 20 21 38
+42:  7 35
+44:  5 39
+46:  1 45
+47:  5 14 20 21 26 27 33 42
+49:  9 12 15 22 27 34 37 40
+52:  3 7 19 21 31 33 45 49
+54:  9 21 27 33 45
+55:  7 24 31 48
+57:  4 7 22 25 32 35 50 53
+58:  19 39
+60:  1 9 11 15 17 23 37 43 45 49 51 59
+62:  29 33
+63:  1 5 11 28 31 32 35 52 58 62
+65:  18 32 33 47
+66:  3 63
+68:  9 33 35 59
+71:  6 9 18 20 35 36 51 53 62 65
+73:  25 28 31 42 45 48
+74:  35 39
+76:  21 55
+79:  9 19 60 70
+81:  4 16 35 46 65 77
+84:  5 9 11 13 27 35 39 45 49 57 71 73 75 79
+86:  21 65
+87:  13 74
+89:  38 51
+90:  27 63
+92:  21 71
+93:  2 91
+94:  21 73
+95:  11 17 78 84
+97:  6 12 33 34 63 64 85 91
+98:  11 27 71 87
+100:  15 19 25 37 49 51 63 75 81 85
+102:  29 37 65 73
+103:  9 13 30 31 72 73 90 94
+105:  4 7 8 16 17 28 37 43 49 52 53 56 62 68 77 88 89 97 98 101
+106:  15 91
+108:  17 27 31 33 45 63 75 77 81 91
+110:  33 77
+111:  10 49 62 101
+113:  9 15 30 83 98 104
+118:  33 45 73 85
+119:  8 38 81 111
+121:  18 30 91 103
+123:  2 121
+124:  19 37 45 55 69 79 87 105
+126:  21 49 77 105
+127:  1 7 15 30 63 64 97 112 120 126
+129:  5 31 46 83 98 124
+130:  3 127
+132:  17 29 103 115
+134:  57 77
+135:  11 16 22 29 106 113 119 124
+137:  21 35 57 80 102 116
+140:  15 29 45 65 75 95 111 125
+142:  21 121
+145:  52 69 76 93
+146:  71 75
+147:  14 49 98 133
+148:  27 121
+150:  53 73 77 97
+151:  3 9 15 31 39 43 46 51 63 66 67 70 81 84 85 88 100 105 108 112 120 136 142 148
+153:  1 8 145 152
+154:  15 139
+155:  62 93
+156:  9 11 57 61 63 65 91 93 95 99 145 147
+159:  31 34 40 119 125 128
+161:  18 39 60 101 122 143
+162:  27 63 81 99 135
+166:  37 129
+167:  6 35 59 77 90 108 132 161
+169:  34 42 57 84 85 112 127 135
+170:  11 23 147 159
+172:  1 7 81 91 165 171
+174:  13 57 117 161
+175:  6 16 18 57 118 157 159 169
+177:  8 22 88 89 155 169
+178:  31 87 91 147
+180:  3 27 33 45 55 69 111 125 135 147 153 177
+182:  81 101
+183:  56 127
+185:  24 41 69 116 144 161
+186:  11 79 107 175
+191:  9 18 51 71 120 140 173 182
+193:  15 73 85 108 120 178
+194:  87 107
+196:  3 33 67 129 163 193
+198:  9 65 133 189
+199:  34 67 132 165
+201:  14 17 59 79 122 142 184 187
+202:  55 147
+204:  27 99 105 177
+207:  43 164
+209:  6 8 14 45 47 50 62 147 159 162 164 195 201 203
+210:  7 203
+212:  105 107
+214:  73 141
+215:  23 51 63 77 101 114 138 152 164 192
+217:  45 64 66 82 85 132 135 151 153 172
+218:  11 15 71 83 99 119 135 147 203 207
+220:  7 33 49 171 187 213
+223:  33 34 64 70 91 132 153 159 189 190
+225:  32 74 88 97 109 116 128 137 151 193
+228:  113 115
+231:  26 34 91 140 197 205
+233:  74 159
+234:  31 103 131 203
+236:  5 231
+238:  73 117 121 165
+239:  36 81 158 203
+241:  70 171
+242:  95 147
+244:  111 133
+247:  82 102 145 165
+249:  35 86 163 214
+250:  103 147
+252:  15 27 33 39 53 59 67 77 81 105 109 117 135 143 147 171 175 185 193 199 213 219 225 237
+253:  46 207
+255:  52 56 82 173 199 203
+257:  12 41 48 51 65 192 206 209 216 245
+258:  71 83 175 187
+260:  15 35 95 105 155 165 225 245
+263:  93 170
+265:  42 127 138 223
+266:  47 219
+268:  25 61 207 243
+270:  53 81 133 137 189 217
+271:  58 70 201 213
+273:  23 28 53 55 56 67 88 92 98 110 113 160 163 175 181 185 206 217 218 220 245 250
+274:  67 99 135 139 175 207
+276:  63 91 185 213
+278:  5 273
+279:  5 10 38 40 41 59 73 76 80 125 154 199 203 206 220 238 239 241 269 274
+281:  93 99 182 188
+282:  35 43 63 219 239 247
+284:  53 99 119 141 143 165 185 231
+286:  69 73 213 217
+287:  71 116 125 162 171 216
+289:  21 36 84 205 253 268
+292:  37 97 195 255
+294:  33 49 61 81 213 233 245 261
+295:  48 112 123 142 147 148 153 172 183 247
+297:  5 83 103 122 137 160 175 194 214 292
+300:  5 7 45 55 57 73 75 91 111 147 153 189 209 225 227 243 245 255 293 295
+302:  41 261
+303:  1 302
+305:  102 203
+308:  15 293
+310:  93 217
+313:  79 121 192 234
+314:  15 299
+316:  63 135 181 253
+318:  45 273
+319:  36 52 129 190 267 283
+321:  31 41 56 76 82 155 166 239 245 265 280 290
+322:  67 255
+324:  51 81 93 99 135 149 175 189 225 231 243 273
+327:  34 152 175 293
+329:  50 54 275 279
+330:  99 231
+332:  89 123 209 243
+333:  2 331
+337:  55 57 135 139 147 190 198 202 280 282
+340:  45 165 175 295
+342:  125 133 209 217
+343:  75 135 138 159 184 205 208 268
+345:  22 37 106 239 308 323
+346:  63 283
+348:  103 245
+350:  53 297
+351:  34 55 79 116 134 217 235 272 296 317
+353:  69 95 138 143 153 173 180 200 210 215 258 284
+354:  99 135 219 255
+358:  57 301
+359:  68 117 242 291
+362:  63 107 255 299
+364:  9 67 297 355
+366:  29 337
+367:  21 171 196 346
+369:  91 110 259 278
+370:  139 183 187 231
+372:  111 135 165 207 237 261
+375:  16 64 149 182 193 226 311 359
+377:  41 75 302 336
+378:  43 63 107 147 231 271 315 335
+380:  47 63 105 275 317 333
+382:  81 301
+383:  90 108 135 248 275 293
+385:  6 24 51 54 111 142 159 226 243 274 331 334 361 379
+386:  83 303
+388:  159 229
+390:  9 49 89 301 341 381
+391:  28 31 360 363
+393:  7 62 91 302 331 386
+394:  135 259
+396:  25 51 87 109 169 175 221 227 287 309 345 371
+399:  26 49 86 109 154 181 218 245 290 313 350 373
+]
+[https://www.jjj.de/mathdata/all-irredpoly.txt
+===
+#
+# Complete list of binary irreducible polynomials
+# up to degree 11
+#.
+# Generated by Joerg Arndt, 2003-October-30
+#
+
+
+2,1,0
+
+
+3,1,0
+3,2,0
+
+
+4,1,0
+4,3,0
+# non-primitive:
+4,3,2,1,0
+
+
+5,2,0
+5,3,0
+5,3,2,1,0
+5,4,2,1,0
+5,4,3,1,0
+5,4,3,2,0
+
+
+6,1,0
+6,4,3,1,0
+6,5,0
+6,5,2,1,0
+6,5,3,2,0
+6,5,4,1,0
+# non-primitive:
+6,3,0
+6,4,2,1,0
+6,5,4,2,0
+
+
+7,1,0
+7,3,0
+7,3,2,1,0
+7,4,0
+7,4,3,2,0
+7,5,2,1,0
+7,5,3,1,0
+7,5,4,3,0
+7,5,4,3,2,1,0
+7,6,0
+7,6,3,1,0
+7,6,4,1,0
+7,6,4,2,0
+7,6,5,2,0
+7,6,5,3,2,1,0
+7,6,5,4,0
+7,6,5,4,2,1,0
+7,6,5,4,3,2,0
+
+
+8,4,3,2,0
+8,5,3,1,0
+8,5,3,2,0
+8,6,3,2,0
+8,6,4,3,2,1,0
+8,6,5,1,0
+8,6,5,2,0
+8,6,5,3,0
+8,6,5,4,0
+8,7,2,1,0
+8,7,3,2,0
+8,7,5,3,0
+8,7,6,1,0
+8,7,6,3,2,1,0
+8,7,6,5,2,1,0
+8,7,6,5,4,2,0
+# non-primitive:
+8,4,3,1,0
+8,5,4,3,0
+8,5,4,3,2,1,0
+8,6,5,4,2,1,0
+8,6,5,4,3,1,0
+8,7,3,1,0
+8,7,4,3,2,1,0
+8,7,5,1,0
+8,7,5,4,0
+8,7,5,4,3,2,0
+8,7,6,4,2,1,0
+8,7,6,4,3,2,0
+8,7,6,5,4,1,0
+8,7,6,5,4,3,0
+
+
+9,4,0
+9,4,3,1,0
+9,5,0
+9,5,3,2,0
+9,5,4,1,0
+9,6,4,3,0
+9,6,4,3,2,1,0
+9,6,5,3,0
+9,6,5,3,2,1,0
+9,6,5,4,2,1,0
+9,6,5,4,3,2,0
+9,7,2,1,0
+9,7,4,2,0
+9,7,5,1,0
+9,7,5,2,0
+9,7,5,3,2,1,0
+9,7,5,4,2,1,0
+9,7,5,4,3,2,0
+9,7,6,3,2,1,0
+9,7,6,4,0
+9,7,6,4,3,1,0
+9,7,6,5,4,2,0
+9,7,6,5,4,3,0
+9,8,4,1,0
+9,8,4,2,0
+9,8,4,3,2,1,0
+9,8,5,1,0
+9,8,5,4,0
+9,8,5,4,3,1,0
+9,8,6,3,2,1,0
+9,8,6,4,3,1,0
+9,8,6,5,0
+9,8,6,5,3,1,0
+9,8,6,5,3,2,0
+9,8,6,5,4,1,0
+9,8,6,5,4,3,2,1,0
+9,8,7,2,0
+9,8,7,3,2,1,0
+9,8,7,5,4,2,0
+9,8,7,5,4,3,0
+9,8,7,6,2,1,0
+9,8,7,6,3,1,0
+9,8,7,6,3,2,0
+9,8,7,6,4,2,0
+9,8,7,6,4,3,0
+9,8,7,6,5,1,0
+9,8,7,6,5,3,0
+9,8,7,6,5,4,3,1,0
+# non-primitive:
+9,1,0
+9,4,2,1,0
+9,6,3,1,0
+9,6,5,2,0
+9,7,4,3,0
+9,8,0
+9,8,6,3,0
+9,8,7,5,0
+
+
+10,3,0
+10,4,3,1,0
+10,5,2,1,0
+10,5,3,2,0
+10,6,5,2,0
+10,6,5,3,2,1,0
+10,7,0
+10,7,3,1,0
+10,7,6,2,0
+10,7,6,4,2,1,0
+10,7,6,5,2,1,0
+10,7,6,5,4,1,0
+10,7,6,5,4,3,2,1,0
+10,8,3,2,0
+10,8,4,3,0
+10,8,5,1,0
+10,8,5,4,0
+10,8,5,4,3,2,0
+10,8,6,1,0
+10,8,6,4,2,1,0
+10,8,6,5,3,1,0
+10,8,7,2,0
+10,8,7,3,2,1,0
+10,8,7,4,2,1,0
+10,8,7,5,0
+10,8,7,6,2,1,0
+10,8,7,6,5,2,0
+10,8,7,6,5,4,2,1,0
+10,8,7,6,5,4,3,1,0
+10,9,4,1,0
+10,9,4,2,0
+10,9,5,2,0
+10,9,5,4,2,1,0
+10,9,6,1,0
+10,9,6,3,2,1,0
+10,9,6,4,3,1,0
+10,9,6,5,4,3,0
+10,9,6,5,4,3,2,1,0
+10,9,7,3,0
+10,9,7,5,4,2,0
+10,9,7,6,0
+10,9,7,6,4,1,0
+10,9,7,6,4,3,2,1,0
+10,9,7,6,5,4,3,2,0
+10,9,8,4,2,1,0
+10,9,8,4,3,2,0
+10,9,8,5,0
+10,9,8,5,4,3,0
+10,9,8,6,2,1,0
+10,9,8,6,3,2,0
+10,9,8,6,4,2,0
+10,9,8,6,4,3,0
+10,9,8,6,5,1,0
+10,9,8,6,5,4,3,2,0
+10,9,8,7,3,2,0
+10,9,8,7,4,1,0
+10,9,8,7,5,4,0
+10,9,8,7,6,4,3,1,0
+10,9,8,7,6,5,4,1,0
+10,9,8,7,6,5,4,3,0
+# non-primitive:
+10,3,2,1,0
+10,4,3,2,0
+10,5,4,2,0
+10,6,2,1,0
+10,6,4,1,0
+10,6,5,1,0
+10,7,4,3,0
+10,7,5,3,0
+10,7,5,3,2,1,0
+10,7,6,3,0
+10,7,6,5,3,2,0
+10,8,3,1,0
+10,8,4,3,2,1,0
+10,8,6,5,0
+10,8,6,5,2,1,0
+10,8,7,4,3,1,0
+10,8,7,5,3,1,0
+10,8,7,5,4,3,0
+10,8,7,6,0
+10,9,5,1,0
+10,9,5,4,0
+10,9,6,4,0
+10,9,7,2,0
+10,9,7,5,2,1,0
+10,9,7,5,3,2,0
+10,9,7,5,4,3,2,1,0
+10,9,7,6,3,2,0
+10,9,7,6,5,4,2,1,0
+10,9,8,3,2,1,0
+10,9,8,4,0
+10,9,8,5,3,1,0
+10,9,8,5,4,2,0
+10,9,8,6,5,4,3,1,0
+10,9,8,7,0
+10,9,8,7,2,1,0
+10,9,8,7,5,3,0
+10,9,8,7,6,2,0
+10,9,8,7,6,5,3,1,0
+10,9,8,7,6,5,4,3,2,1,0
+
+
+11,2,0
+11,4,2,1,0
+11,5,3,1,0
+11,5,3,2,0
+11,6,2,1,0
+11,6,5,1,0
+11,6,5,2,0
+11,6,5,4,0
+11,6,5,4,3,1,0
+11,7,3,2,0
+11,7,4,2,0
+11,7,4,3,2,1,0
+11,7,5,3,0
+11,7,5,4,0
+11,7,6,3,2,1,0
+11,7,6,4,0
+11,7,6,5,0
+11,7,6,5,2,1,0
+11,7,6,5,3,1,0
+11,7,6,5,4,2,0
+11,8,3,2,0
+11,8,4,1,0
+11,8,5,2,0
+11,8,5,3,0
+11,8,5,4,3,1,0
+11,8,5,4,3,2,0
+11,8,6,2,0
+11,8,6,3,0
+11,8,6,4,0
+11,8,6,4,3,1,0
+11,8,6,5,4,1,0
+11,8,6,5,4,2,0
+11,8,6,5,4,3,2,1,0
+11,8,7,1,0
+11,8,7,3,2,1,0
+11,8,7,5,3,1,0
+11,8,7,5,3,2,0
+11,8,7,5,4,3,0
+11,8,7,6,2,1,0
+11,8,7,6,4,3,0
+11,8,7,6,5,2,0
+11,8,7,6,5,4,2,1,0
+11,9,0
+11,9,2,1,0
+11,9,4,1,0
+11,9,4,2,0
+11,9,5,3,0
+11,9,6,3,0
+11,9,6,5,0
+11,9,6,5,3,2,0
+11,9,6,5,4,3,0
+11,9,6,5,4,3,2,1,0
+11,9,7,2,0
+11,9,7,4,0
+11,9,7,4,3,2,0
+11,9,7,5,2,1,0
+11,9,7,5,3,1,0
+11,9,7,5,4,1,0
+11,9,7,5,4,2,0
+11,9,7,6,4,2,0
+11,9,7,6,4,3,2,1,0
+11,9,7,6,5,3,0
+11,9,7,6,5,3,2,1,0
+11,9,7,6,5,4,0
+11,9,7,6,5,4,3,1,0
+11,9,8,1,0
+11,9,8,3,0
+11,9,8,4,0
+11,9,8,5,4,1,0
+11,9,8,5,4,3,2,1,0
+11,9,8,6,0
+11,9,8,6,3,1,0
+11,9,8,6,4,3,0
+11,9,8,6,4,3,2,1,0
+11,9,8,6,5,2,0
+11,9,8,6,5,3,2,1,0
+11,9,8,6,5,4,3,2,0
+11,9,8,7,2,1,0
+11,9,8,7,3,1,0
+11,9,8,7,4,1,0
+11,9,8,7,4,2,0
+11,9,8,7,5,3,2,1,0
+11,9,8,7,5,4,2,1,0
+11,9,8,7,5,4,3,2,0
+11,9,8,7,6,3,0
+11,9,8,7,6,4,3,1,0
+11,9,8,7,6,4,3,2,0
+11,9,8,7,6,5,2,1,0
+11,9,8,7,6,5,3,2,0
+11,10,3,1,0
+11,10,3,2,0
+11,10,4,3,0
+11,10,4,3,2,1,0
+11,10,6,4,2,1,0
+11,10,6,5,0
+11,10,6,5,3,1,0
+11,10,6,5,4,1,0
+11,10,7,2,0
+11,10,7,3,0
+11,10,7,4,2,1,0
+11,10,7,4,3,1,0
+11,10,7,4,3,2,0
+11,10,7,5,4,1,0
+11,10,7,5,4,3,2,1,0
+11,10,7,6,2,1,0
+11,10,7,6,3,2,0
+11,10,7,6,4,1,0
+11,10,7,6,4,2,0
+11,10,7,6,5,1,0
+11,10,7,6,5,3,0
+11,10,7,6,5,4,2,1,0
+11,10,8,1,0
+11,10,8,3,2,1,0
+11,10,8,4,3,2,0
+11,10,8,5,2,1,0
+11,10,8,5,3,2,0
+11,10,8,6,0
+11,10,8,6,2,1,0
+11,10,8,6,4,2,0
+11,10,8,6,4,3,0
+11,10,8,6,5,1,0
+11,10,8,6,5,3,2,1,0
+11,10,8,6,5,4,0
+11,10,8,7,4,1,0
+11,10,8,7,4,3,2,1,0
+11,10,8,7,5,3,0
+11,10,8,7,5,4,3,1,0
+11,10,8,7,5,4,3,2,0
+11,10,8,7,6,3,0
+11,10,8,7,6,4,2,1,0
+11,10,8,7,6,4,3,1,0
+11,10,8,7,6,5,0
+11,10,8,7,6,5,2,1,0
+11,10,8,7,6,5,4,2,0
+11,10,9,2,0
+11,10,9,4,3,2,0
+11,10,9,5,0
+11,10,9,5,2,1,0
+11,10,9,5,3,1,0
+11,10,9,5,4,1,0
+11,10,9,5,4,3,0
+11,10,9,6,2,1,0
+11,10,9,6,3,1,0
+11,10,9,6,4,2,0
+11,10,9,6,4,3,2,1,0
+11,10,9,6,5,4,0
+11,10,9,6,5,4,3,1,0
+11,10,9,6,5,4,3,2,0
+11,10,9,7,0
+11,10,9,7,4,1,0
+11,10,9,7,4,3,2,1,0
+11,10,9,7,5,1,0
+11,10,9,7,5,4,3,1,0
+11,10,9,7,6,3,2,1,0
+11,10,9,7,6,4,3,2,0
+11,10,9,7,6,5,4,1,0
+11,10,9,7,6,5,4,3,0
+11,10,9,8,3,1,0
+11,10,9,8,4,3,0
+11,10,9,8,5,4,0
+11,10,9,8,5,4,2,1,0
+11,10,9,8,6,4,3,2,0
+11,10,9,8,6,5,3,1,0
+11,10,9,8,6,5,3,2,0
+11,10,9,8,6,5,4,2,0
+11,10,9,8,7,1,0
+11,10,9,8,7,4,0
+11,10,9,8,7,4,2,1,0
+11,10,9,8,7,4,3,1,0
+11,10,9,8,7,5,2,1,0
+11,10,9,8,7,5,3,2,0
+11,10,9,8,7,5,4,2,0
+11,10,9,8,7,6,3,2,0
+11,10,9,8,7,6,4,1,0
+11,10,9,8,7,6,5,2,0
+11,10,9,8,7,6,5,3,0
+# non-primitive:
+11,7,6,1,0
+11,8,5,4,2,1,0
+11,8,7,6,5,3,2,1,0
+11,9,7,6,5,1,0
+11,10,5,4,0
+11,10,6,5,4,2,0
+11,10,8,7,6,5,4,3,2,1,0
+11,10,9,7,6,3,0
+11,10,9,8,6,5,4,3,0
+11,10,9,8,7,6,5,4,3,1,0
+]
+]]
+[[
+===
+]]
+[[
+===
+]]
+[[
+===
+]]
+[[
+Concrete quantum cryptanalysis of binary elliptic curves(2020)(Gustavo).pdf
+===
+https://www.researchgate.net/figure/List-of-irreducible-polynomials-for-binary-finite-fields-used-in-this-paper_tbl1_347321760
+  https://www.researchgate.net/publication/347321760_Concrete_quantum_cryptanalysis_of_binary_elliptic_curves/download
+Table 1: List of irreducible polynomials for binary finite fields used in this paper. 
+Degree   Irreducible polynomial  Source 
+8   :   x8+ x4+ x3+ x + 1   [ACD+05] 
+16  :   x16+ x5+ x3+ x + 1  [ACD+05] 
+127 :   x127+ x + 1         [ACD+05] 
+163 :   z163+ z7+ z6+ z3+ 1 [KG13] 
+233 :   z233+ z74+ 1        [KG13] 
+283 :   z283+ z12+ z7+ z5+ 1[KG13] 
+571 :   z571+ z10+ z5+ z2+ 1[KG13]
+]]
+
+[[
+[
+分解 2**m-1, p**m-1, 因为 有限域 经常用到。
+  factor 2^k-1
+  factor integer of special form 2^k-1
+  wget 'https://www.ams.org/journals/mcom/1967-21-097/S0025-5718-67-99898-5/S0025-5718-67-99898-5.pdf' -O 'Some Factorizations of 2^n±1 and Related Results(1966)(Brillhart).pdf'
+    分解:N
+    [[N=2k+1] -> [k**2 == (k+1)**2-N]]
+      [[N=2k+1] -> [N==x**2-y**2] -> [1<x-y<=x+y<N] -> [ceil_sqrt N <=x <= k][0<=y<=x-2<=k-2]]
+    [[N%2==1][N>=3] -> [@[x <- [ceil_sqrt N..=N]] -> [not$ is_square x**2-N]] -> [is_prime N]]
+    [[N%2==1][N>=3] -> [?[x <- [ceil_sqrt N..=N//2]] -> ?[y <- [0..=x-2]] -> [y**2 == x**2-N]] -> [{(x-y), (x+y)} <= all_divisors_of(N)\-\{1,N}]]
+    #为什么不选y??因为 y的 取值范围 更大:
+    #   # [[N%2==1][N>=3] -> [@[y <- [0..<N//2]] -> [not$ is_square y**2+N]] -> [is_prime N]]
+    #
+    如何跳过无效的x?
+      moduli = 两两互素的模的集合
+        len moduli >= 21
+        模可以是 合数: 比如 17*83
+      [[M0,M1 <- moduli] -> [M0=!=M1] -> [gcd(M0,M1)==1]]
+      [is_x_ok N moduli x =[def]= [@[M <- moduli] -> [is_quadratic_residue[%M](x**2-N)]]]
+      CRT = Chinese remainder theorem
+      [all_ok_x_mod N M =[def]= {x <- [0..<M] | [is_quadratic_residue[%M](x**2-N)]}]
+      [所有有效配置 N moduli =[def]= [@[M<-moduli] -> (all_ok_x_mod N M)]]
+      每一份有效配置，可用 CRT 组合出 x0=CRT(有效配置)%II moduli, x<- 有效配置覆盖的所有有效值(N,moduli,有效配置)={x0+i*II moduli | [i<-[(ceil_sqrt N-x0-1)//II moduli +1..= (k-x0)//II moduli]]}
+      效率/划不划算:
+        每新增一个 模M，有效配置的数量 *= len(all_ok_x_mod N M)
+          #len(all_ok_x_mod N M)有没可能是1？
+          #存在，但孤例！见下面:『平方差分解法的增加新模大数零开销的充要条件』
+        但 同时 len(有效配置覆盖的所有有效值 N moduli 有效配置) 可能会有所下降，大约 (/M)
+          求 min(len(all_ok_x_mod N M)/M)
+          求 worst_efficiency(M)=max(len(all_ok_x_mod N M)/M) where gcd(N,M)==1
+
+      正整数素性判定:
+        [@[u <- [2..]] -> [?[a <- [1..<u]] -> [[a**(u-1)%u==1][@[p<-all_prime_factors_of(u-1)] -> [a**((u-1)//p)%u=!=1]]]] -> [is_prime u]]
+        #同一个a<u> --> 拆成多个a<u,p>
+        [@[u <- [2..]] -> [@[p<-all_prime_factors_of(u-1)] -> [?[a <- [1..<u]] -> [[a**(u-1)%u==1][a**((u-1)//p)%u=!=1]]]] -> [is_prime u]]
+        #如何合并a<u,p>为a<u>？难。
+        [@[p<-all_prime_factors_of(u-1)] -> [order<u>(a<u,p>)%p**max_height_of_prime_power_(p,u-1) == 0]]
+        [@[p<-all_prime_factors_of(u-1)] -> [(u-1)//order<u>(a<u,p>) % p =!= 0]]
+        [(u-1) == order<u>(a<u>)]
+        [u % order<u>(a<u>) ==1]
+        [@[p<-all_prime_factors_of(u-1)] -> [?[k <- [1..<=u-2]] -> [gcd(k,p)==1][a<u,p> =[%u]= a<u>**k =![%u]!= a<u> **((u-1)//p *k)]]]
+        方程组:
+        [@[k :: [@[p<-all_prime_factors_of(u-1)] -> [1..<=u-2]]] -> [@[p<-all_prime_factors_of(u-1)] -> [gcd(k<p>,p)==1]] -> ?[e] -> [sum e<p>*k<p> {p} =[%(u-1)]= 1]]
+          let M:=II{p}
+          let C<p>:=u//p**max_height_of_prime_power_(p,u)
+          assume e<p> == e2<p>*C<p>
+          assume k2<p> == k<p>*C<p>
+          [sum e2<p>*k<p>*C<p> {p} =[%(u-1)]= 1]
+          [sum e2<p>*k2<p> {p} =[%(u-1)]= 1]
+          k2 <- coprimes_of p**max_height_of_prime_power_(p,u)
+            搜索空间太大，离散对数 难求
+
+      ######
+      ???[len(all_ok_x_mod N M)有没可能是1]???
+        存在！
+            见下面:『平方差分解法的增加新模大数零开销的充要条件』
+            [all_ok_x_mod 2 3 == {0}]
+            分解(3k+2)型的正整数，必有：[x%3==0]
+            分解(3k+1)型的正整数，必有：[y%3==0]
+
+        # [%7]: quadratic_residue => [0, 1, 4, 2]
+        #   diff between quadratic_residue => [0=..., 1=1-0=2-1, 2=2-0=4-2, 3=0-4=4-1, {#接着只是反转#} 4=1-4=4-0, 5=0-2=2-4, 6=0-1=1-2]
+        [x**2-y**2 =[%M]= N =[%M]= a**2-b**2]
+          ==>> x,y 与 a,b 什么关系？
+            x 的解 包含{+a,-a}
+              至少2个，除非 [a==-a%M]:
+                [2*a%M==0]
+                [M%2==0]:
+                  x 的解 包含{0,M//2}
+                [M%2=!=0]
+                [a%M == 0]
+                [mu M == 0]:
+                  [?[p<-[1..<M]] -> [M%p==0] -> [(M//p)**2%M==0]]
+                  # [max_height_of_prime_power_ p M >=2]
+                  [x**2 =[%M]= 0]的解 包含{0,M//p}
+            即 [[len(all_ok_x_mod N M)==1] ==>> [(all_ok_x_mod N M) == {0}][M%2=!=0][mu M =!= 0]]
+          [N%M==0]:
+            [y =[%M]= x]or[y =[%M]= -x]
+          [M%2=!=0]:
+            [2*M//2+1 == M]
+            [2*(M//2+1)%M == 1]
+            [let inv_2 := (M//2+1)]
+
+            @u.[gcd(u,M)==1]:
+              ?inv_u. [u*inv_u=[%M]=1]
+              [let v = inv_u*N]
+              [u*v=[%M]=N]
+              [let x+y=[%M]=u]
+              [let x-y=[%M]=v]
+              [x =[%M]= (u+v)*inv_2]
+              [y =[%M]= (u-v)*inv_2]
+              [x =[%M]= (u+v)*inv_2
+                 =[%M]= (u+inv_u*N)*inv_2
+              ]
+        [[M%2=!=0] -> [(all_ok_x_mod N M) |>=| {(u+inv_u*N)*inv_2%M | [@u.[gcd(u,M)==1]]}]]
+          ??? [M=7][N=1][inv_2==4][u<-[1..=6]]:
+            (all_ok_x_mod 1 7)
+              # [[is_prime M] -> coprimes_of(M)%M = {0}]
+            |>=| inv_2 .* {u+inv_u*N}%M
+            = 4 .* {1+1,2+4,3+5,4+2,5+3,6+6}%M
+            = 4 .* {2,6,8,6,8,12}%7
+            = 4 .* {2,6,1,5}%7
+            = {8,24,4,20}%7
+            = {1,3,4,6}%7
+            #   x**2 => {1,2}%7
+            #   对应上面的:diff between quadratic_residue => [..., 1=1-0=2-1, ...}]
+        [len(all_ok_x_mod N M)==1]:
+          !![[len(all_ok_x_mod N M)==1] ==>> [(all_ok_x_mod N M) == {0}][M%2=!=0][mu M =!= 0]]
+          [(all_ok_x_mod N M) == {0}][M%2=!=0][mu M =!= 0]
+          !![[M%2=!=0] -> [(all_ok_x_mod N M) |>=| {(u+inv_u*N)*inv_2%M | [@u.[gcd(u,M)==1]]}]]
+          [(all_ok_x_mod N M) |>=| {(u+inv_u*N)*inv_2%M | [@u.[gcd(u,M)==1]]}]
+
+          !![?u.[gcd(u,M)==1]]
+          [{0} == {(u+inv_u*N)*inv_2%M | [@u.[gcd(u,M)==1]]}]
+          [@[u.[gcd(u,M)==1]] -> [(u+inv_u*N)*inv_2%M ==0]]
+          [@[u.[gcd(u,M)==1]] -> [(u+inv_u*N)%M ==0]]
+          [@[u.[gcd(u,M)==1]] -> [(u*u+u*inv_u*N)%M ==0]]
+          [@[u.[gcd(u,M)==1]] -> [(u*u+N)%M ==0]]
+          [@[u.[gcd(u,M)==1]] -> [u*u =[%M]= -N]]
+            #平方差分解法的增加新模零开销的必要条件囗过时
+          [N%M =!= 0]
+          [is_prime M]:
+            [@[u <- [1..<M]] -> [u*u =[%M]= -N]]
+            [all_quadratic_residues[%M] == {0, -N%M}]
+            [M==3]
+          [not$ is_prime M]:
+            [Mp <- all_prime_factors_of M]
+            !![M%2=!=0][len(all_ok_x_mod N M)==1]
+            [Mp%2=!=0][len(all_ok_x_mod N Mp)==1]
+            [Mp==3]
+            [M == 3**e]
+            !![mu M =!= 0]
+            [e <2]
+            !![not$ is_prime M]
+            !![M>=3]
+            [M不存在]
+          [M=3][N%M==2]:
+            is_quadratic_residue=>[0,1]
+            diff between quadratic_residue=>{0=..., 1=1-0, 2=0-1}
+            完美！
+            [all_ok_x_mod 2 3 == {0}]
+            分解(3k+2)型的正整数，必有：[x%3==0]
+            分解(3k+1)型的正整数，必有：[y%3==0]
+        平方差分解法的增加新模大数零开销的充要条件 = [M=3][N%M==2]
+          #平方差分解法的增加新模零开销的必要条件
+        !![y**2-x**2=[%M]=(-N)]
+        平方差分解法的增加新模小数零开销的充要条件 = [M=3][(-N)%M==2]
+
+
+  https://rosettacode.org/wiki/Factors_of_a_Mersenne_number
+    [d <- all_divisors_of(2**m-1)]
+      <==> [(2**m-1)%d==0]
+      <==> [2**m%d==1]
+      <==> [py.pow(2,m,d)==1]
+    [is_prime p][(2**p-1)%d == 0] -> [(d-1)%(2*p)==0][d%8 <- [1,7]]
+      #因子 必为 2*k*p+1, 8u+-1
+    https://rosettacode.org/wiki/Lucas-Lehmer_test#Python
+  divisors of integer of special form 2^k-1
+  divisors of Mersenne number
+]
+列出 m-> 最小系数的 本原不可约多项式
+  进一步 可列出 所有 本原不可约多项式
+列出 m-> 最小系数的 不可约多项式
+找到 [m,1,0]型 不可约多项式 并 判断 本原与否
+nn_ns.math_nn.numbers ++已知梅森素数列表
+    view ../../python3_src/nn_ns/math_nn/numbers/Mersenne_exponents.py
+直接求值比较，得到 无 非本原不可约多项式 的 所有m，看看有哪些不是梅森素数的相应指数/比特数
+  e script/gf__find_degrees_of_which_irreducible_polynomial_be_primitive.py
+    e ../../python3_src/nn_ns/math_nn/Mobius.py
+      factor with hints...
+  e script/gf__enumerate_primitive_irreducible_polynomials.py
+
+搜索所有 N,M:
+  见上面:『平方差分解法的增加新模大数零开销的充要条件』
+  e script/平方差分解法的增加新模零开销的必要条件.py
+
+历程:
+  原貌字符串
+  字串拟周期 与 总数
+  字串总数生成函数囗公式
+    多项式除法 无限展开
+    view others/数学/递推/一元有理分式-转化为-递推公式.txt
+  不知为何 突然转到 模乘法 ??加密??
+  有限域 多项式 模乘法 [%p][%f(x)]
+  如何 选择 f(x) 使得 模乘法 计算量少？
+    [%2]:
+      任意 偶项式 [%2] 可约
+      只考虑 奇项式:
+        三项式 最优，但 很多 次数m 的 三项式 没有 不可约 比如:[m%8==0]
+        五项式 猜想 任意 次数m 存在 本原不可约五项式
+  判定/随机搜索/枚举 有限域 本原不可约多项式 需要 分解 (p**m-1)
+  分解正整数:使用 平方差筛子
+  哪些 模/moduli 比较好用/效率高？
+xxxxxxx:TODO
+e script/gf__find_degrees_of_which_irreducible_polynomial_be_primitive.py
+e ../../python3_src/nn_ns/math_nn/Mobius.py
+e ../../python3_src/nn_ns/math_nn/factor_pint_into_prime2exp__using_hints.py
+e ../../python3_src/nn_ns/math_nn/mk_coprimes.py
+e ../../python3_src/nn_ns/math_nn/factor_pint_into_power.py
+e ../../python3_src/seed/math/max_power_of_base_as_factor_of_.py
+view ../../python3_src/seed/io/savefile/SaveFile.py
+cd ~/my_git_py
+grep 'in.*file' -r . -l -a
+grep 'InFile' -r . -l -a
+grep 'SaveFile' -r . -l -a
+
+from seed.io.savefile.SaveFile import SaveFileDict
+# path_or_iofile, kwargs
+SaveFileDict(path_or_iofile, encoding='u8', allow_create_file=False, allow_write_file=True, allow_write_header=True, kwargs=kwargs)
+factor (2^m-1) @[m<-[1..]]
+    SaveFileSet
+    SaveFileDict
+    SaveFileSeq__ObjectPerLine
+    SaveFileSeq__TuplePerBlock
+unbuffered_growonly_dict_in_file
+UnbufferedGrowonlyDictInFile
+e ../../python3_src/seed/io/savefile/UnbufferedGrowonlyDictInFile.py
+UnbufferedGrowonlyDictInFile(path_or_iofile, encoding='u8', allow_create_file=True, allow_write_file=True, allow_write_header=True, kwargs=kwargs, may_key2default=may_key2default, setitem_by_key2default_only=True)
+tabular_cached_calc(path, calc, kwargs_as_description4ofile)
+from seed.io.savefile.unbuffered_growonly_dict_in_file import tabular_cached_calc, UnbufferedGrowonlyDictInFile, UnbufferedDictInFile
+e script/factor_Mersenne_numbers.py
+e ../../python3_src/nn_ns/math_nn/numbers/Mersenne_exponents.py
+e ../../python3_src/nn_ns/math_nn/factor_Mersenne_number_into_prime2exp.py
+
+!mv ../../python3_src/seed/io/savefile/UnbufferedGrowonlyDictInFile.py ../../python3_src/seed/io/savefile/unbuffered_growonly_dict_in_file.py
+xxxxxxx:TODO
+
+类似 view script/parse_html_of_integer_factor_result_at_factordb_com.py 里的简单dispatch-main
+e script/parse_html_of_integer_factor_result_at_factordb_com.py  自动下载 所有素因子p 并递归下载 (p-1)的 整数分解 用于 证明
+  factordb.com
+    搜索 -> 整数分解 但 大数只显示部分
+    内部ID -> 大数 完整数字
+  下限阈值？或者 用sympy 分解，但 限定耗时
+e ../lots/NOTE/Python/howto/set-timeout-to-kill-thread-or-subprocess.txt
+  how python set timeout to kill thread/subprocess?
+https://alexandra-zaharia.github.io/posts/kill-subprocess-and-its-children-on-timeout-python/
+e ../lots/NOTE/Python/howto/set-timeout-to-kill-thread-or-subprocess.txt
+
+[[
+想要递归下载整数分解(factordb.com)用于证明(u->{p:e} then recur (p-1)->{...})，但又不想下载太多，下限阈值？或 使用sympy分解，并 限制时长(timeout?)
+help(sympy.factorint)
+- ``use_trial``: Toggle use of trial division
+- ``use_rho``: Toggle use of Pollard's rho method
+- ``use_pm1``: Toggle use of Pollard's p-1 method
+
+Algorithm:
+    The function switches between multiple algorithms. Trial division quickly finds small factors (of the order 1-5 digits)
+    , and finds all large factors if given enough time. The Pollard rho and p-1 algorithms are used to find large factors ahead of time
+    ; they will often find factors of the order of 10 digits within a few seconds:
+>>> (10**10).bit_length()
+34
+>>> (10**11).bit_length()
+37
+要不，直接 设置 下限阈值=10**10 得了；timeout 太麻烦
+
+
+]]
+
+e ../../python3_src/nn_ns/math_nn/factor_pint__via_cached_certificated_pint2prime2exp.py
+  Pratt Certificate
+  The Pratt certificate is a primality certificate based on Fermat's little theorem converse.
+  e script/parse_html_of_integer_factor_result_at_factordb_com.py
+    部分分解！(2**710-1)分解证书 无法完成。失败！
+
+view others/数学/整数分解/factorint.txt
+  e others/数学/p_adic_integer_ring.txt
+
+
+[%N] 互素基:
+  [is_coprime_basis_of N s =[def]= [s |<=| all_coprimes_of N][{II~ a**f(a) ~{a<-s} %N | [@f :: s->[1..]]}==all_coprimes_of(N)]]
+  极小互素基
+  [is_min_coprime_basis_of N s =[def]= [is_coprime_basis_of N s][@[a<-s] -> [not$ is_coprime_basis_of N $ s\-\{a}]]]
+  [len(all_coprimes_of N) == phi(N)]
+  [N==9]:
+    phi(9)=2*3=6
+    {2:[2,4,8,7,5,1]}
+  [N==15]:
+    phi(15)=2*4=8
+    {2:[2,4,8,1], 7:[7,4,13,1][14,11]}
+  [N==12]:
+    phi(12)=2*2=4
+    {5:[5,1], 7:[7,1][11]}
+  [N==4]:
+    phi(4)=2
+    {3:[3,1]}
+  [N==8]:
+    phi(8)=2**2=4
+    {3:[3,1], 5:[5,1][7]}
+  [N==16]:
+    phi(16)=2**3=8
+    {3:[3,9,11,1], 5:[5,9,13,1][15,7]}
+
+  如何找到(min_coprime_basis_of N):
+    N的 不同素因子的个数
+    2-power (2**e>=8) 只有2个本原根？
+    p-power (p>=3) 只有1个本原根？
+    p-power的本原根的阶 之间的 gcd关系
+
+
+e script/primality_test.py
+    wget 'https://www.ams.org/journals/mcom/1987-48-177/S0025-5718-1987-0866102-2/S0025-5718-1987-0866102-2.pdf' -O 'Implementation of a New Primality Test(1987)(Cohen).pdf'
+
+!mv /sdcard/Download/wget_/factorint/  /sdcard/0my_files/book/math/
+!mv /sdcard/Download/wget_/irreducible_polynomial/  /sdcard/0my_files/book/math/
+
+]]
+]]]
+]]]]]
+]]]]]]]

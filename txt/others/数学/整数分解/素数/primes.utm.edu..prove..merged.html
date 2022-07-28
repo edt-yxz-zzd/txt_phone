@@ -1,0 +1,1104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">
+<title>How to find primes and prove primality (merged)</title>
+<script>
+<!--
+function MM_swapImgRestore() { //v3.0
+  var i,x,a=document.MM_sr; for(i=0;a&&i<a.length&&(x=a[i])&&x.oSrc;i++) x.src=x.oSrc;
+}
+
+function MM_preloadImages() { //v3.0
+  var d=document; if(d.images){ if(!d.MM_p) d.MM_p=new Array();
+    var i,j=d.MM_p.length,a=MM_preloadImages.arguments; for(i=0; i<a.length; i++)
+    if (a[i].indexOf("#")!=0){ d.MM_p[j]=new Image; d.MM_p[j++].src=a[i];}}
+}
+
+function MM_findObj(n, d) { //v3.0
+  var p,i,x;  if(!d) d=document; if((p=n.indexOf("?"))>0&&parent.frames.length) {
+    d=parent.frames[n.substring(p+1)].document; n=n.substring(0,p);}
+  if(!(x=d[n])&&d.all) x=d.all[n]; for (i=0;!x&&i<d.forms.length;i++) x=d.forms[i][n];
+  for(i=0;!x&&d.layers&&i<d.layers.length;i++) x=MM_findObj(n,d.layers[i].document); return x;
+}
+
+function MM_swapImage() { //v3.0
+  var i,j=0,x,a=MM_swapImage.arguments; document.MM_sr=new Array; for(i=0;i<(a.length-2);i+=3)
+   if ((x=MM_findObj(a[i]))!=null){document.MM_sr[j++]=x; if(!x.oSrc) x.oSrc=x.src; x.src=a[i+2];}
+}
+//-->
+</script>
+<style>
+body {
+	/*  font-size: 14pt; */
+	font-family: "Palatino Linotype", "Book Antiqua", Palatino, serif;
+	background-color: white;
+}
+a:link { color: #309; }
+a:visited { color: #036; }
+a:active, a:hover { color: #00C; }
+
+.cc1 { border: 2px solid black; width: 100%; padding: 0px; }
+.cc0 { width: 100%; margin: 0px; }
+.cc2 { background-color: #cef; vertical-align:middle; }
+.cc3 { background-color: #0cf;}
+
+@media (max-width: 640px) {
+  .cc {
+    display: none;
+  }
+}
+
+@media (max-width: 1200px) {
+  body {
+	margin-left: 5%;
+	margin-right: 5%;
+  }
+}
+
+@media (min-width: 1201px) {
+  body {
+	max-width: 60em;
+	margin: auto;
+  }
+}
+</style>
+</head>
+<body onLoad="">
+
+<table class="cc1">
+  <tr>
+    <td> <table class="cc0">
+        <tr class="cc2">
+          <td style="padding-left: 0.4em"><span style="font-size: 150%">Finding primes &amp; proving primality</span><br>
+            <span style="font-size: 120%">How to Prove Primality (single page version)</span></td>
+          <td><a href="index.html" onMouseOut="MM_swapImgRestore()" onMouseOver="MM_swapImage('Image1','','assets/PrimalityProving2.gif',0)"><img name="Image1" src="assets/PrimalityProving.gif" width="233" height="60" alt="Primality Proving Icon"></a>
+          </td>
+        </tr>
+      </table></td>
+  </tr>
+</table>
+<table class="cc3 cc0">
+     <tr><td><span style="font-size: 60%;">File: <a href="prove1.html">prove1.html</a> "Primality Proving 1: A Quick Introduction" (<b>Chapter One: 
+            Introduction</b>)
+     </span></td></tr></table>
+<h2 style="text-align:center;">1: Introduction</h2> 
+<h4>Introduction</h4>
+<p>How do we go about finding primes?&nbsp; And once we have found them, how do we 
+prove they are truly prime?&nbsp; The answer depends on the size of the primes 
+and how sure we need to be of their primality.&nbsp; In these pages we present 
+the appropriate answers in several sections.&nbsp; Let us preview these chapters 
+one at a time.</p>
+<h4><a href="prove2.html">Chapter Two:</a> The quick tests for small 
+  numbers and probable primes</h4>
+<p>For very small primes we can use the <a href="prove2_1.html">Sieve of Eratosthenes</a> 
+  or <a href="prove2_1.html#trial">trial division</a>.&nbsp; These methods are 
+  sure, and are the best methods for small numbers, but become far too time consuming 
+  before our numbers reach thirty digits.&nbsp; </p>
+<p>If we are going to use our primes for "industrial" uses (e.g., for RSA encryption) 
+  we often do not need to prove they are prime.&nbsp; It may be enough to know 
+  that the probability they are composite is less than 0.000000000000000000000001%.&nbsp; 
+  In this case we can use (<a href="prove2_3.html">strong</a>) <a
+href="prove2_2.html">probable primality tests.</a> </p>
+<p>These probable primality tests can be combined to create a <a
+href="prove2_3.html#quick">very quick algorithm</a> for <i>proving</i> primality 
+  for integers less than 340,000,000,000,000. </p>
+<h4><a href="prove3.html">Chapter Three:</a> The classical tests</h4>
+A quick look at the list of <a href="../largest.html">largest known primes</a> 
+shows numbers with hundreds of thousands (even millions) of digits--and these 
+are all <b>proven</b> primes (not probable primes)!&nbsp; So how can we know they 
+are prime?&nbsp; Look at a portion of this list and decide what the numbers all 
+have in common. 
+<pre>
+  111  189*2^34233-1                  10308 Z  89 
+  112  15*2^34224+1                   10304 D  93 
+  113  (5452545+10^5153)*10^5147+1    10301 D  90 Palindrome 
+  114  23801#+1                       10273 C  93 primorial plus one 
+  115  63*2^34074+1                   10260 Y  95
+  116  213819*2^33869+1               10201 Y  93  
+</pre>
+<p>They are all trivial to factor if we either add, or subtract, one!&nbsp; This 
+  is no accident.</p>
+<p>It is possible to turn the probable-primality tests of chapter two for an integer 
+  <i>n</i> into primality proofs, if we know enough factors of either <a
+href="prove3_1.html"><i>n</i>+1</a> and/or <a
+href="prove3_2.html"><i>n</i>-1</a>.&nbsp; These proofs are called <b>the classical 
+  tests</b> and we survey them in our third chapter.</p>
+<p>These tests have been used for over 99.99% of the largest known primes.&nbsp; 
+  They include special cases such as the <a
+href="prove3_2.html#test">Lucas-Lehmer test</a> for Mersenne primes and <a
+href="prove3_1.html#Pepin">Pepin's Test</a> for Fermat primes.</p>
+<h4><a href="prove4.html">Chapter Four:</a> The General Purpose Tests</h4>
+<p>Finally, the obvious problem with the classical tests is that they depend on 
+  factorization--and it appears factoring is much harder than primality proving 
+  for the "average" integer.&nbsp; In fact this is the key assumption behind the 
+  popular RSA encryption method! </p>
+<p>Using complicated modern techniques, the classical tests have been improved 
+  into tests for general numbers that require no factoring such as the <a
+href="prove4_1.html">APR</a>, <a href="prove4_1.html#aprt-cl">APRT-CL</a> and 
+  the <a href="prove4_2.html">ECPP</a> algorithms.&nbsp; In chapter four we say 
+  a few words about these methods, discuss which of these test to use (classical, 
+  general purpose...), and then leave you with a few references with which to 
+  pursue these tests.</p>
+<p>In 2002 a long standing question was answered: can integers be proven prime
+   in &quot;polynomial time&quot; (that is, with time bounded by a polynomial
+   evaluated  at the number of digits).&nbsp; Some of the previous algorithms
+   come close (ECPP  is almost always polynomial, and is conjectured to always
+   be polynomial bounded).&nbsp; 
+  Agrawal, Kayal and Saxena answered this question in the affirmative by giving
+   a &quot;simple&quot; polynomial time algorithm.&nbsp; We present this algorithm
+    in chapter four.</p>
+<table class="cc3 cc0">
+     <tr><td><span style="font-size: 60%;">File: <a href="prove2.html">prove2.html</a> "Primality Proving: Contents of Section Two "The quick tests for small numbers 
+and probable primes"" (Chapter Two (contents))
+     </span></td></tr></table>
+<h2 style="text-align:center;">Chapter 2: The quick 
+            tests for small numbers and probable primes</h2> 
+<h3>Contents of this Chapter:</h3>
+<ol>
+  <li> <a href="prove2_1.html">Finding Very Small Primes</a>&nbsp;</li>
+  <li> <a href="prove2_2.html">Fermat, Probable-Primality and Pseudoprimes</a>&nbsp;</li>
+  <li> <a href="prove2_3.html">Strong Probable-Primality and a Practical Test</a>&nbsp;</li>
+</ol>
+<p>This is one of four chapters on finding primes and proving primality.&nbsp; 
+  The first is a short <a href="index.html">introduction and table of contents</a>.&nbsp; 
+  The second (these pages) chapter discusses <a href="prove2.html">finding small 
+  primes</a> and the basic probable primality tests.&nbsp; The third chapter cover 
+  the <a href="prove3.html">classical primality tests</a> that have been used 
+  to prove primality for 99.99% of the numbers on the <a href="../largest.html">largest 
+  known prime list</a>.&nbsp; The last chapter introduces the <a href="prove4.html">general 
+  purpose tests</a> that do not require factorization. </p>
+<table class="cc3 cc0">
+     <tr><td><span style="font-size: 60%;">File: <a href="prove2_1.html">prove2_1.html</a> "Primality Proving 2.1: Finding very small primes" (<a href="prove2.html">Chapter 
+      Two</a> &gt; Small Primes )
+     </span></td></tr></table>
+<h3>2.1: Finding very small 
+            primes</h3>
+<p>For finding all the small primes, say all those less than 10,000,000,000; one 
+of the most efficient ways is by using <b>the Sieve of Eratosthenes</b> (ca 240 
+BC):</p> 
+<blockquote> Make a list of all the integers less than or equal to <i>n</i> (greater 
+  than one) and strike out the multiples of all primes less than or equal to the 
+  square root of <i>n</i>, then the numbers that are left are the primes. (See 
+  also <a href="/glossary/page.php?sort=SieveOfEratosthenes">our glossary 
+  page</a>.) </blockquote>
+<p>For example, to find all the odd primes less than or equal to 100 we first 
+  list the odd numbers from 3 to 100 (why even list the evens?)&nbsp; The first 
+  number is 3 so it is the first odd prime--cross out all of its multiples.&nbsp; 
+  Now the first number left is 5, the second odd prime--cross out all of its multiples.&nbsp; 
+  Repeat with 7 and then since the first number left, 11, is larger than the square 
+  root of 100, all of the numbers left are primes.</p>
+<p>This method is so fast that there is no reason to store a large list of primes 
+  on a computer--an efficient implementation can find them faster than a computer 
+  can read from a disk.&nbsp; </p>
+<p>Bressoud has a pseudocode implementation of this algorithm [<a href="../references/refs.cgi/Bressoud89">Bressoud89</a>, 
+  p19] and Riesel a PASCAL implementation [<a href="/references/refs.cgi/Riesel94">Riesel94</a>, 
+  p6].&nbsp;  It is also possible to create an even faster sieve 
+  based on quadratic forms.</p>
+<p id="trial">To find individual small primes <b>trial division</b> 
+  works well.&nbsp; To test <i>n</i> for primality (to see if it is prime) just 
+  divide by all of the primes less than the square root of <i>n</i>.&nbsp; For 
+  example, to show is 211 is prime, we just divide by 2, 3, 5, 7, 11, and 13. 
+  (Pseudocode [<a href="../references/refs.cgi/Bressoud89">Bressoud89</a>, pp 
+  21-22], PASCAL [<a href="/references/refs.cgi/Riesel94">Riesel94</a>, pp 7-8].)&nbsp; 
+  Sometimes the form of the number <i>n</i> makes this especially effective (for 
+  examples, <a href="../notes/proofs/MerDiv.html">Mersenne divisors</a> have a 
+  special form). </p>
+<p>Rather than divide by just the primes, it is sometimes more practical to divide 
+  by 2, 3 and 5; and then by all the numbers congruent to 1, 7, 11, 13, 17, 19, 
+  23, and 29 modulo 30--again stopping when you reach the square root.&nbsp; This 
+  type of factorization is sometimes called 
+  <b><a href="/glossary/page.php?sort=WheelFactorization">wheel 
+  factorization</a></b>.&nbsp; It 
+  requires more divisions (because some of the divisors will be composite), but 
+	does not require us to have a list of primes available. </p>
+<p>Suppose <i>n</i> has twenty-five or more digits, then it is impractical to 
+  divide by the primes less than its square root.&nbsp; If <i>n</i> has two hundred 
+  digits, then trial division is impossible--so we need much faster tests.&nbsp; 
+  We discuss several such tests below.</p>
+<table class="cc3 cc0">
+     <tr><td><span style="font-size: 60%;">File: <a href="prove2_2.html">prove2_2.html</a> "Primality Proving 2.2: Fermat, probable-primality and pseudoprimes" (<a href="prove2.html">Chapter
+            Two</a> &gt; Probable Primes)
+     </span></td></tr></table>
+<h3>2.2: Fermat,
+            probable-primality and pseudoprimes</h3>
+<p>Fermat's &quot;biggest&quot;, and also his &quot;last&quot; theorem states that <i>x<sup>n</sup> + y<sup>n</sup> = z<sup>n</sup></i> has no solutions in positive integers <i>x,
+  y, z</i> with <i>n</i> &gt; 2.&nbsp; This has finally been proven by Wiles in
+  1995 [<a href="/references/refs.cgi/Wiles95">Wiles95</a>].&nbsp; What concerns
+  us here is his &quot;little&quot; theorem:</p>
+<blockquote id="FLittleT"><b>Fermat's (Little) Theorem:</b>&nbsp; If <i>p</i> is a prime and if <i>a</i> is any integer, then <i>a<sup>p</sup> ≡ 
+  a</i> (mod <i>p</i>).&nbsp; In particular, if <i>p</i> does not divide <i>a</i>, 
+  then <i>a<sup>p</sup></i><sup>-1</sup> ≡ 1 (mod <i>p</i>). ([<a href="/notes/proofs/FermatsLittleTheorem.html">proof</a>]) </blockquote>
+<p>Fermat's theorem gives us a powerful test for compositeness: Given <i>n</i> &gt; 1, choose <i>a</i> &gt; 1 and calculate <i>a</i><sup><i>n</i>-1</sup> modulo <i>n</i> (there is a very easy way to do quickly by repeated squaring,
+  see the glossary page &quot;<a 
+class="glossary" title="glossary" href="/glossary/page.php?sort=BinaryExponentiation">binary
+  exponentiation</a>&quot;).&nbsp; If the result is not one modulo <i>n</i>, then <i>n</i> is composite.&nbsp; If it is one modulo <i>n</i>, then <i>n might</i> be prime
+  so <i>n</i> is called a weak <b>probable prime base <i>a</i></b> (or just an <b><i>a</i>-PRP</b>).&nbsp;
+  Some early articles call all numbers satisfying this test pseudoprimes, but now
+  the term <b>pseudoprime</b> is properly reserved for composite probable-primes.</p>
+<p>The smallest examples of pseudoprimes (composite PRPs) are the following.&nbsp;
+  (There are more examples on the glossary page &quot;<a 
+class="glossary" title="glossary" href="/glossary/page.php?sort=PRP">probable
+  prime </a>&quot;.)</p>
+<ul>
+  <li>341 = 11.31 is a 2-PRP, (Sarrus 1819)</li>
+  <li>91 = 7.13 is a 3-PRP,</li>
+  <li>217 = 7.31 is a 5-PRP and,</li>
+  <li>25 = 5.5 is a 7-PRP.</li>
+</ul>
+<p>There are 1,091,987,405 primes less than 25,000,000,000; but only 21,853
+pseudoprimes base two [<a href="/references/refs.cgi/PSW80">PSW80</a>], so
+Henri Cohen joked that 2-PRP's are &quot;industrial grade primes&quot; [<a href="/references/refs.cgi/Pomerance84">Pomerance84</a>,
+p5].&nbsp; Fortunately, the larger <i>n</i>, the more likely (on the average)
+that a PRP test is correct--see the page &quot;<a href="/notes/prp_prob.html">How
+probable?</a>&quot;.</p>
+<p>It is interesting to note that in 1950 Lehmer, using the weaker definition <i>a<sup>n</sup></i> ≡ <i>a</i> (mod <i>n</i>) for probable/pseudo-prime, discovered 2*73*1103 =
+  161038 is an even &quot;pseudoprime&quot; base two.&nbsp; See [<a href="/references/refs.cgi/Ribenboim95">Ribenboim95</a> Chpt. 2viii] for a summary of results and history--including a debunking of the
+  Chinese connection.&nbsp; Richard Pinch listed the pseudoprimes to 10<sup>21</sup> (by various definitions) at his website.</p>
+<p>There may be relatively few pseudoprimes, but there are still <a href="/notes/proofs/a_pseudoprimes.html">infinitely
+  many of them for every base</a> <i>a</i>&gt;1, so we need a tougher test.&nbsp;
+  One way to make this test more accurate is to use multiple bases (check base 2,
+  then 3, then 5,...).&nbsp; But still we run into an interesting obstacle called
+  the <a id="carm"
+class="glossary" title="glossary" href="/glossary/page.php?sort=CarmichaelNumber">Carmichael 
+  numbers</a>.</p>
+<blockquote> <b>Definition:</b>&nbsp; The composite integer <i>n</i> is a <b>Carmichael 
+  number</b> if <i>a</i><sup><i>n</i>-1</sup>≡1 (mod&nbsp;<i>n</i>) for every 
+  integer <i>a</i> relatively prime to <i>n</i>. </blockquote>
+<p>Here is the bad news: repeated PRP tests of a Carmichael number will fail to
+show that it is composite until we run across one of its factors.&nbsp; Though
+Carmichael number are 'rare' (only 2,163 are less than 25,000,000,000), it has
+recently been shown that there are infinitely many [<a href="/references/refs.cgi/AGP94">AGP94</a>].&nbsp;
+The Carmichael numbers under 100,000 are</p>
+<blockquote> 561, 1105, 1729, 2465, 2821, 6601, 8911, 10585, 15841, 29341, 41041, 46657,
+  52633, 62745, 63973, and 75361. </blockquote>
+<p>Richard Pinch listed the Carmichael's to 10<sup>16</sup> (see [<a href="/references/refs.cgi/Pinch93">Pinch93</a>]).</p>
+<p>Note: Jon Grantham developed the idea of <b>Frobenius Pseudoprime</b> [<a href="/references/refs.cgi/Grantham2000">Grantham2000</a>] 
+  to generalize many of the standard types (Fermat, Lucas...), and to make the 
+  tests more accurate. His papers are <a href="http://www.pseudoprime.com/pseudo.html">available 
+  on-line</a>.<br>
+  </p>
+<table class="cc3 cc0">
+     <tr><td><span style="font-size: 60%;">File: <a href="prove2_3.html">prove2_3.html</a> "2.3: Strong probable-primality and a practical test" (<a href="prove2.html">Chapter
+            Two</a> &gt; Strong PRPs)
+     </span></td></tr></table>
+<h3>2.3: Strong
+            probable-primality and a practical test</h3> 
+  <p>A better way to make the Fermat test more accurate is to realize that if an
+  odd number <i>n</i> is prime, then the number 1 has just two square roots
+  modulo <i>n</i>: 1 and -1.&nbsp; So the square root of <i>a</i><sup><i>n</i>-1</sup>,
+  <i>a</i><sup>(<i>n</i>-1)/2</sup>
+  (since <i>n</i> will be odd), is either 1 or -1.&nbsp; (We actually could
+  calculate which it should be using the <a class="glossary" title="glossary" href="/glossary/page.php?sort=JacobiSymbol">Jacobi
+  symbol</a>, see the glossary page on <a class="glossary" title="glossary" href="/glossary/page.php?sort=EulerPRP">Euler
+  PRP's</a>, but we wish to develop a stronger test here.)&nbsp; If (<i>n</i>-1)/2
+  is even, we can easily take another square root...&nbsp; Let's make this into
+  an algorithm:</p>
+  <blockquote>
+    Write <i>n</i>-1 = 2<sup><i>s</i></sup><i>d</i> where <i>d</i> is odd and <i>s</i>
+    is non-negative: <i>n</i> is a <b>strong probable-prime base <i>a</i></b>
+    (an <b><i>a</i>-SPRP</b>) if either <i>a<sup>d</sup></i> ≡ 1 (mod <i>n</i>)
+    or (<i>a<sup>d</sup></i>)<sup>2<sup><i>r</i></sup></sup> ≡ -1 (mod <i>n</i>)
+    for some non-negative <i>r</i> less than <i>s</i>.
+  </blockquote>
+  <p>Again all integers <i>n</i> &gt; 1 which fail this test are composite; integers 
+    that pass it <i>might</i> be prime. The smallest odd composite SPRP's are 
+		the following. </p>
+  <ul>
+    <li>2047 = 23.89 is a 2-SPRP,</li>
+    <li>121 = 11.11 is a 3-SPRP,</li>
+    <li>781 = 11.71 is a 5-SPRP and,</li>
+    <li>25 = 5.5 is a 7-SPRP.</li>
+  </ul>
+  <p>A test based on these results is quite fast, especially when combined with 
+    trial division by the first few primes.&nbsp; If you have trouble programming 
+    these results Riesel [<a href="/references/refs.cgi/Riesel94">Riesel94</a>, 
+    p100] has PASCAL code for a SPRP test, Bressoud has pseudocode [<a href="../references/refs.cgi/Bressoud89">Bressoud89</a>, 
+    p77], and <a href="http://www.olivierlanglois.net/">Langlois</a> 
+    offers <a href="http://www.olivierlanglois.net/archive/prime_cpp.htm">C-Code</a>.&nbsp; 
+    See the glossary page &quot;<a class="glossary" title="glossary" href="/glossary/page.php?sort=StrongPRP">Strong PRP</a>&quot; 
+    for more information.&nbsp;</p>
+  <p>It has been proven ([<a href="../references/refs.cgi/Monier80">Monier80</a>]
+  and [<a href="../references/refs.cgi/Rabin80">Rabin80</a>]) that the strong
+  probable primality test is wrong no more than 1/4th of the time (3 out of 4
+  numbers which pass it will be prime).&nbsp; Jon Grantham's &quot;Frobenius
+  pseudoprimes&quot; can be used to create a test (see [<a href="../references/refs.cgi/Grantham98">Grantham98</a>])
+  that takes three times as long as the SPRP test, but is far more than three
+		times as strong (the error rate is less than 1/7710).</p>
+  <h3>Combining these tests to prove primality</h3>
+  <p id="quick">Individually these tests are still weak (and again
+  there are infinitely many <i>a</i>-SPRP's for every base <i>a</i>&gt;1 
+  [<a href="../references/refs.cgi/PSW80">PSW80</a>]),
+  but we can combine these individual tests to make powerful tests for small
+		integers <i>n</i>&gt;1 (these tests <i>prove</i> primality):</p>
+  <ul>
+    <li>If <i>n</i> &lt; 1,373,653 is a both 2 and 3-SPRP, then <i>n</i> is
+      prime [<a href="../references/refs.cgi/PSW80">PSW80</a>].</li>
+    <li>If <i>n</i> &lt; 25,326,001 is a 2, 3 and 5-SPRP, then <i>n</i> is
+      prime [<a href="../references/refs.cgi/PSW80">PSW80</a>].</li>
+    <li>If <i>n</i> &lt; 25,000,000,000 is a 2, 3, 5 and 7-SPRP, then either <i>n</i>
+      = 3,215,031,751 or <i>n</i> is prime [<a href="../references/refs.cgi/PSW80">PSW80</a>].
+      (This is actually true for <i>n</i>
+      &lt; 118,670,087,467 [<a href="../references/refs.cgi/Jaeschke93">Jaeschke93</a>].)</li>
+    <li>If <i>n</i> &lt; 2,152,302,898,747 is a 2, 3, 5, 7 and 11-SPRP, then <i>n</i>
+      is prime [<a href="../references/refs.cgi/Jaeschke93">Jaeschke93</a>].</li>
+    <li>If <i>n</i> &lt; 3,474,749,660,383 is a 2, 3, 5, 7, 11 and 13-SPRP, then
+      <i>n</i> is prime [<a href="../references/refs.cgi/Jaeschke93">Jaeschke93</a>].</li>
+    <li>If <i>n</i> &lt; 341,550,071,728,321 is a 2, 3, 5, 7, 11, 13 and
+      17-SPRP, then <i>n</i> is prime [<a href="../references/refs.cgi/Jaeschke93">Jaeschke93</a>].</li>
+  </ul>
+  The first three of these are due to Pomerance, Selfridge and Wagstaff [<a href="../references/refs.cgi/PSW80">PSW80</a>],
+  the parenthetical remark and all others are due to Jaeschke [<a href="../references/refs.cgi/Jaeschke93">Jaeschke93</a>].&nbsp;
+  (These and related results are summarized in [<a href="/references/refs.cgi/Ribenboim95">Ribenboim95</a>,
+  Chpt 2viiib].)&nbsp; In the same article Jaeschke considered other sets of
+  primes (rather than just the first primes) and found these
+  slightly better results:
+  <ul>
+    <li>If <i>n</i> &lt; 9,080,191 is a both 31 and 73-SPRP, then <i>n</i> is
+      prime.</li>
+    <li>If <i>n</i> &lt; 4,759,123,141 is a 2, 7 and 61-SPRP, then <i>n</i> is
+      prime.</li>
+  </ul>
+  Finally, Worley (<a href="http://www.gpgpgpu.com/gecco2009/6.pdf">on-web</a>, unpublished) suggests the following,
+  <ul>
+		<li>If <i>n</i> &lt; 170,584,961 is a 350 and 3958281543-SPRP, then n is prime.</li>
+	<li>If <i>n</i> &lt; 75,792,980,677 is a 2, 379215, and 457083754-SPRP, then n is prime.</li>
+	<li>If <i>n</i> &lt; 21,652,684,502,221 is a 2, 1215, 34862, and 574237825-SPRP, then n is prime.</li>
+  </ul>
+  <p>To make a quick primality test from these results, 
+    start by dividing by the first few primes (say those below 257); then perform
+    strong primality tests base 2, 3, ... until one of the criteria above is
+    met.&nbsp; For example, if <i>n</i> &lt; 25,326,001 we need only check bases
+    2, 3 and 5.&nbsp; This is much faster than trial division because someone
+    else has already done much of the work, but will only work for small numbers
+	(<i>n</i> &lt; 10<sup>16</sup> with the data above).</p>
+  
+<p>Note that these results can be strengthened by not treating them as separate
+tests, but rather realizing we are finding square root of -1.&nbsp; For example, <i>n</i> =
+46,856,248,255,981 is a 2 and 7 pseudoprime, but </p>
+  <blockquote>2<sup>(<i>n</i>-1)/4</sup> ≡ 34456063004337 (mod <i>n</i>), and <br>
+  7<sup>(<i>n</i>-1)/4</sup> ≡ 21307242304265 (mod <i>n</i>).</blockquote>
+  <p>The square of both of these is -1.&nbsp; If <i>n</i> were prime, then it
+    would have only two square root and the above would be equal or negatives
+    of each other; yet gcd(<i>n</i>,34456063004337-21307242304265) = 4840261
+    and we have factored <i>n</i>.</p>
+  <p>Finally, there is a fair amount more that could (and should) be said.&nbsp; We
+    could discuss Euler pseudoprimes and their relationship with SPRP's.&nbsp; Or
+    we could switch</p>
+  <p> to the &quot;plus side&quot; and discuss Lucas pseudoprimes,
+    or Fibonacci pseudoprimes, or the important combined tests... but that would
+    take a chapter of a book--and it has already been well written by Ribenboim
+    [<a href="/references/refs.cgi/Ribenboim95">Ribenboim95</a>].&nbsp; Let
+    us end this section with one last result: </p>
+  <blockquote id="MillersERHTest"><b>Miller's Test </b>[<a href="../references/refs.cgi/Miller76">Miller76</a>]<b>:</b> <i>If
+      the extended Riemann hypothesis is true,</i> then if <i>n</i> is an <i>a</i>-SPRP
+      for all integers <i>a</i> with 1 &lt; <i>a</i> &lt; 2(log <i>n</i>)<sup>2</sup>,
+       then 
+    <i>n</i> is prime. </blockquote>
+  <p>The <a href="../notes/rh.html#erh">extended Riemann hypothesis</a> is far
+    too complicated for us to explain here--but should it be proven, then we
+    would have a very simple primality test.&nbsp; Until it is proven, we can
+    at least expect that if <i>n</i> is
+    composite, we should be able to find an <i>a</i> that shows it is composite
+    (a witness) without searching &quot;too long.&quot;&nbsp; Most surveys cover
+    Miller's test (often with the constant 70 from [<a href="../references/refs.cgi/Osterle1979">Osterle1979</a>]
+    as Miller's article just said O((log <i>n</i>)<sup>2</sup>)); the improvable
+    constant 2 is due to Bach [<a href="../references/refs.cgi/Bach85">Bach85</a>],
+    see also [<a href="../references/refs.cgi/CP2001">CP2001</a>, pp. 129-130].&nbsp; Note
+  that <i>heuristically</i> Bach and Huelsbergen [<a href="../references/refs.cgi/BH1993">BH1993</a>]
+  argue that we should be able to replace the bound in Miller's test with a bound
+  near: </p>
+  <blockquote>(log 2)<sup>-1</sup> log <i>n</i> log log <i>n.</i></blockquote>
+  <p> Note that there is no finite set of bases that will work in Miller's test.&nbsp; In
+    fact, if for <i>n</i> composite we let W(<i>n</i>) denote the least 
+    witness for <i>n</i> (the least <i>a</i> which shows <i>n</i> is composite),
+    then there are infinitely many composite <i>n</i> with </p>
+  <blockquote>
+    W(<i>n</i>) &gt; (log <i>n</i>)<sup>1/(3 log log log <i>n</i>)</sup> &nbsp;
+    [<a href="../references/refs.cgi/AGP94">AGP94</a>]
+  </blockquote>
+<table class="cc3 cc0">
+     <tr><td><span style="font-size: 60%;">File: <a href="prove3.html">prove3.html</a> "Primality Proving: Contents of Section Three" (Chapter Three (contents))
+     </span></td></tr></table>
+<h2 style="text-align:center;">Chapter 3: The classical 
+            tests </h2> 
+<h3>Contents of this Chapter:</h3>
+<ol>
+  <li> <a href="prove3_1.html"><i>n</i>-1 Tests (and Pepin's Test for Fermats)</a>&nbsp;</li>
+  <li> <a href="prove3_2.html"><i>n</i>+1 Tests (and the Lucas-Lehmer Test for 
+    Mersennes)</a>&nbsp;</li>
+  <li> <a href="prove3_3.html">A Combined Test -- and more</a>&nbsp;</li>
+</ol>
+<p>This is one of four chapters on finding primes and proving primality.&nbsp; 
+  The first is a short <a href="index.html">introduction and table of contents</a>. 
+  The second chapter discusses <a href="prove2.html">finding small primes</a> 
+  and the basic probable primality tests.&nbsp; The third chapter (these pages) 
+  cover the <a href="prove3.html">classical primality tests</a> that have been 
+  used to prove primality for 99.99% of the numbers on the <a href="../largest.html">largest 
+  known prime list</a>.&nbsp; The last chapter introduces the <a href="prove4.html">general 
+  purpose tests</a> that do not require factorization. </p>
+<table class="cc3 cc0">
+     <tr><td><span style="font-size: 60%;">File: <a href="prove3_1.html">prove3_1.html</a> "Primality Proving 3.1: n-1 tests and Pepin's Test for Fermats" (<a href="prove3.html">Chapter
+            Three</a> &gt; <i>n</i>-1 Tests)
+     </span></td></tr></table>
+<h3>3.1: <i>n</i>-1 tests
+            and Pepin's tests for Fermats</h3> 
+<p>Have you ever looked at the list of <a href="../largest.html">largest known
+primes</a>?&nbsp; The most obvious feature of the largest few thousand primes <i>p</i>
+is that in almost every case either <i>p</i>-1 or <i>p</i>+1 is trivially
+factored.&nbsp; Why is that?&nbsp; Because these are the numbers easiest to
+prove prime!&nbsp; In this section we will show how we can use Fermat like tests
+for <i>n</i> if we know enough factors of <i>n</i>-1.&nbsp; These are tests that
+<b>prove</b> primality, they do not just suggest that primality is (however
+highly) probably.</p>
+	
+<p>In 1891 Lucas turned Fermat's Little Theorem into a practical primality test.&nbsp;
+Here is Lucas' test as strengthened by Kraitchik and Lehmer (see [<a href="../references/refs.cgi/BLS75">BLS75</a>]):</p>
+<blockquote>
+  <b id="theorem1">Theorem 1:</b> Let <i>n</i> &gt; 1.&nbsp; If for every prime factor <i>q</i>
+  of <i>n</i>-1 there is an integer <i>a</i> such that
+  <ul>
+    <li><i>a<sup>n</sup></i><sup>-1</sup> ≡ 1 (mod <i>n</i>), and</li>
+    <li><i>a</i><sup>(<i>n</i>-1)/<i>q</i></sup> is not 1 (mod <i>n</i>);</li>
+  </ul>
+  then <i>n</i> is prime.
+</blockquote>
+<p>We will prove this theorem because we have a great deal to learn from it.&nbsp; 
+(If you lose your way here, then just move on to the <a href="#Pocklington">next 
+theorem</a>--since in this case you must be taking me at my word anyway.)</p>
+<blockquote>
+  <b>Proof:</b> To show <i>n</i> is prime we need only show phi(<i>n</i>) = <i>n</i>-1
+  (here phi(<i>n</i>) is Euler totient function), or more simply, that <i>n</i>-1
+  divides phi(<i>n</i>).&nbsp; Suppose this is not the case, then there is a
+  prime <i>q</i> and exponent <i>r</i>&gt;0 such that <i>q<sup>r</sup></i>
+  divides <i>n</i>-1, but not phi(<i>n</i>).&nbsp; For this prime <i>q</i> we
+  must have an integer <i>a</i> that satisfies the conditions above.&nbsp; Now
+  let <i>m</i> be the order of <i>a</i> modulo <i>n</i>, then <i>m</i> divides <i>n</i>-1
+  (first condition), but not (<i>n</i>-1)/<i>q</i> (second condition).&nbsp; So <i>q<sup>r</sup></i>
+  divides <i>m</i> which divides phi(<i>n</i>)--a contradiction which proves the
+  theorem.
+</blockquote>
+<p>What did we do in this proof?&nbsp; We looked at a group, (<b>Z</b>/<i>n</i><b>Z</b>)*,
+which, if it had the correct size, <i>n</i>-1, would show <i>n</i> was prime.&nbsp;
+We then collected enough information (the two conditions) to show the group had
+the correct size!&nbsp; <b>This is the basis of all modern primality tests</b>
+whether they are as simple as the test above or something as elaborate such as
+	the methods using elliptic curves or number fields.</p>
+	
+<p>Theorem 1 requires a complete factorization of <i>n</i>-1.&nbsp; The key to
+strengthening this result into a form that only requires the factored part of <i>n</i>-1
+	to be roughly the square root of <i>n</i>-1 was discovered by Pocklington:</p>
+<blockquote>
+  <p id="Pocklington"><b>Pocklington's Theorem</b> (1914):&nbsp; Let <i>n</i>-1 = <i>q<sup>k</sup>R</i>
+  where <i>q</i> is a prime which does not divide <i>R.</i>&nbsp; If there is an
+  integer <i>a</i> such that <i>a<sup>n</sup></i><sup>-1</sup> ≡ 1 (mod <i>n</i>)
+  and gcd(<i>a</i><sup>(<i>n</i>-1)/<i>q</i></sup>-1,<i>n</i>) = 1, then each
+  prime factor <i>p</i> of <i>n</i> has the form <i>q<sup>k</sup>r</i>+1.</p>
+	
+  <p><b>Proof.</b>&nbsp; Let <i>p</i> be any prime divisor of <i>n</i>, and let <i>m</i>
+  be the order of <i>a</i> modulo <i>p</i>.&nbsp; As above <i>m</i> divides <i>n</i>-1
+  (first condition on <i>a</i>), but not (<i>n</i>-1)/<i>q </i>(second
+  condition); so <i>q<sup>k</sup></i> divides <i>m</i>.&nbsp; Of course <i>m</i>
+  divides <i>p</i>-1 so the conclusion follows.</p>
+</blockquote>
+<p>The result of applying Pocklington's theorem to each prime power factor of <i>n</i>
+(plus a little more work) is:</p>
+<blockquote>
+  <b id="theorem2">Theorem 2:</b>&nbsp; Suppose <i>n</i>-1 = <i>FR</i>, where <i>F</i>&gt;<i>R</i>,
+  gcd(<i>F,R</i>) is one and the factorization of <i>F</i> is known.&nbsp; If
+  for every prime factor <i>q</i> of <i>F</i> there is an integer <i>a</i>&gt;1
+  such that
+  <ol>
+    <li><i>a<sup>n</sup></i><sup>-1</sup> ≡ 1 (mod <i>n</i>), and</li>
+    <li>gcd(<i>a</i><sup>(<i>n</i>-1)/<i>q</i></sup>-1,<i>n</i>) = 1;</li>
+  </ol>
+  then <i>n</i> is prime.
+</blockquote>
+<p>(Notice that different <i>a</i>'s can be used for each prime <i>q</i>.)&nbsp;
+Theorem 2 can be improved even more: if <i>F</i>&lt;<i>R</i>, but either every
+factor of <i>R</i> is greater than sqrt(<i>R/F</i>); or <i>n</i>&lt;2<i>F</i><sup>3</sup>,
+<i>R</i>=<i>rF</i>+<i>s</i>, 0&lt;<i>s</i>&lt;<i>F</i>, and <i>r</i> is odd or <i>s</i><sup>2</sup>-4<i>r</i>
+is not a square; then <i>n</i> is prime.&nbsp; If you are interested in these
+theorems, then it is well worth going to the source: [<a href="../references/refs.cgi/BLS75">BLS75</a>].</p>
+<p>Before we switch to the plus side tests, let me quote a few classical cases
+of theorem 2.</p>
+<blockquote>
+  <b id="Pepin">Pepin's Test</b> (1877): Let F<i><sub>n</sub></i> be
+  the <i>n</i>th Fermat number (so F<i><sub>n</sub></i> = <img src="assets/Fermat_n.gif" alt="2^2^n+1" width="35" height="18">
+  ) with <i>n</i>&gt;1.&nbsp; F<i><sub>n</sub></i> is prime if and only if 3<sup>(F<sub><i>n</i>
+	</sub>-1)/2</sup> ≡ -1 (mod F<i><sub>n</sub></i>).
+  <p><b>Proof</b>.&nbsp; If&nbsp; 3<sup>(F<sub><i>n</i></sub>-1)/2</sup> ≡ -1
+  (mod F<i><sub>n</sub></i>), then F<i><sub>n</sub></i> is prime by theorem 2
+  with <i>a </i>= 3.&nbsp; If instead F<i><sub>n</sub></i> is prime, then 3<sup>(F<sub><i>n</i></sub>-1)/2</sup>
+  ≡ (3|F<i><sub>n</sub></i>) (mod F<i><sub>n</sub></i>) where (3|F<i><sub>n</sub></i>)&nbsp;
+  is the Jacobi symbol.&nbsp; It is easy to check that (3|F<i><sub>n</sub></i>)
+  = -1.</p>
+</blockquote>
+<blockquote>
+  <b id="Proth">Proth's Theorem</b> (1878): Let <i>n</i> = <i>h</i><sup>.</sup>2<i><sup>k</sup></i>+1
+  with 2<i><sup>k</sup></i> &gt; <i>h</i>.&nbsp;&nbsp; If there is an integer <i>a</i>
+  such that <i>a</i><sup>(<i>n</i>-1)/2</sup> ≡ -1 (mod <i>n</i>), then <i>n</i>
+  is prime.
+</blockquote>
+<blockquote>
+  <b id="theorem3">Theorem 3</b> (&quot;Well Known&quot;): Let <i>n</i>
+  = <i>h</i><sup>.</sup><i>q<sup>k</sup></i>+1 with <i>q</i> prime and <i>q<sup>k</sup></i>
+  &gt; <i>h</i>.&nbsp;&nbsp; If there is an integer <i>a</i> such that <i>a<sup>n</sup></i><sup>-1</sup>
+  ≡ 1 (mod <i>n</i>), and gcd(<i>a</i><sup>(<i>n</i>-1)/<i>q</i></sup>-1,<i>n</i>)
+  = 1, then <i>n</i> is prime.
+</blockquote>
+<p>Perhaps the best single source source of information on the classical tests is
+Hugh Williams book &quot;Édouard Lucas and Primality Testing&quot; [<a href="../references/refs.cgi/Williams98">Williams98</a>].&nbsp;
+Other useful sources include &quot;the&quot; <i>n</i><sup>2</sup>-1 article: [<a href="../references/refs.cgi/BLS75">BLS75</a>],
+and the standard surveys (such as [<a href="../references/refs.cgi/BLSTW88">BLSTW88</a>],
+[<a href="/references/refs.cgi/Ribenboim95">Ribenboim95</a>] and [<a href="/references/refs.cgi/Riesel94">Riesel94</a>]).&nbsp;
+These surveys include pointers to the results which use the factorization of
+other polynomials in <i>n</i> such as <i>n</i><sup>6</sup>-1, most developed by
+Williams and his associates [<a href="../references/refs.cgi/Williams78">Williams78</a>,
+<a href="../references/refs.cgi/Williams98">Williams98</a>].&nbsp; </p>
+<p>These theorems have been implemented and are available for you to use on most 
+  computer platforms.&nbsp; For example, look at Yves Gallot's <a href="/programs/gallot/index.html">Proth.exe</a> 
+  and Chris Nash's <a href="https://groups.yahoo.com/neo/groups/openpfgw/info">PrimeForm</a>).<br></p>
+<table class="cc3 cc0">
+     <tr><td><span style="font-size: 60%;">File: <a href="prove3_2.html">prove3_2.html</a> "Primality Proving 3.2 n+1 tests and the Lucas-Lehmer test" (<a href="prove3.html">Chapter 
+            Three</a> &gt; <i>n</i>+1 Tests)
+     </span></td></tr></table>
+<h3>3.2: <i>n</i>+1 tests 
+            and the Lucas-Lehmer test</h3>
+<p>About half of the primes on the list of the largest known primes are of the form <i>N</i>-1, where <i>N</i> (the prime plus one) is trivial to factor, why is that?&nbsp; 
+It is because there is a theorem similar to Fermat's Little theorem that we can 
+use here--but first we must do a little ground work.&nbsp; Again you may skip 
+the details and go straight to the theorem if you must, but you'll miss most of 
+the fun!</p>
+<p>Suppose we choose integers <i>p</i> and <i>q</i> such that <i>p</i><sup>2</sup>-4<i>q</i> is <b>not a square</b> modulo <i>n</i>, then the polynomial <i>x</i><sup>2</sup>-<i>px</i>+<i>q</i> has distinct zeros, one of which is <i>r</i> = (<i>p</i> + sqrt(<i>p</i><sup>2</sup>-4<i>q</i>))/2, 
+  and it is easy (by induction) to show <i>r</i>'s powers have the form</p>
+<blockquote id="lucas"> <b>Lemma 1:</b>&nbsp; <i>r<sup>m</sup></i> = (V(<i>m</i>) + U(<i>m</i>) sqrt(<i>p</i><sup>2</sup>-4<i>q</i>))/2 </blockquote>
+where U and V are defined recursively by
+<blockquote>U(0) = 0,&nbsp;&nbsp; U(1) = 1,&nbsp;&nbsp; U(<i>m</i>) = <i>p</i>U(<i>m</i>-1) 
+  - <i>q</i>U(<i>m</i>-2) <br>
+  V(0) = 2,&nbsp;&nbsp; V(1) = <i>p</i>,&nbsp;&nbsp; V(<i>m</i>) = <i>p</i>V(<i>m</i>-1) 
+  - <i>q</i>V(<i>m</i>-2) </blockquote>
+<p>These are the <b>Lucas sequences</b> associated with <i>p</i> and <i>q</i>.&nbsp; 
+A well known special case is given by letting <i>p</i>=1, <i>q</i>=-1, then U(<i>m</i>) 
+	is the sequence of Fibonacci numbers.</p>
+<p>These Lucas sequences have many properties (such as the following) which make 
+    them very fast to calculate (in a way analogous to how we calculate <i>x<sup>m</sup></i> by repeated squarings):</p>
+<blockquote>U(2<i>m</i>) = U(<i>m</i>)V(<i>m</i>) <br>
+  V(2<i>m</i>) = V(<i>m</i>)<sup>2</sup>-2<i>q<sup>m</sup></i>&nbsp; </blockquote>
+<p>(See [<a href="../references/refs.cgi/BLSTW88">BLSTW88</a>] or better 
+[<a href="/references/refs.cgi/Ribenboim95">Ribenboim95</a>, chpt2, iv].)</p>
+<p>Now we are ready to state our analog to Fermat's Little Theorem (keep lemma 1 
+	in mind while reading this theorem):</p>
+<blockquote><b>Lemma 2:</b>&nbsp; (With <i>p, q</i> and <i>r</i> as above so <i>p</i><sup>2</sup>-4<i>q</i> is not a square mod <i>n</i>), let 2<i>r</i> ≡ <i>a</i> + <i>b</i> sqrt(<i>p</i><sup>2</sup>-4<i>q</i>) 
+    (mod <i>n</i>) for integers <i>a</i> and <i>b</i> of the same parity.&nbsp; 
+  If <i>n</i> is prime, then 2<i>r<sup>n</sup></i> ≡ <i>a</i> - <i>b</i> sqrt(<i>p</i><sup>2</sup>-4<i>q</i>) 
+  (mod <i>n</i>). </blockquote>
+<p>That's too messy, lets restate it using our sequence U (the coefficient of sqrt(<i>p</i><sup>2</sup>-4<i>q</i>)) 
+from above.&nbsp; To do this notice that lemma 2 essentially says that <i>r<sup>n</sup></i> is the complex conjugate of <i>r</i><sup>1</sup> modulo <i>n</i>, so multiply 
+	them together.</p>
+<blockquote> <b>Lemma 3:</b>&nbsp; (With <i>p, q</i> as above) if <i>n</i> is   
+  prime, then U(<i>n</i>+1) ≡ 0 (mod <i>n</i>). </blockquote>
+<p>Now we can restate theorem 1 for the plus side:</p>
+<blockquote> <b>Theorem 4:&nbsp;</b> Let <i>n</i> &gt; 1 be an odd integer.&nbsp; 
+  If there is an integer <i>d</i> for which the <a class="glossary" title="glossary" href="/glossary/page.php?sort=JacobiSymbol">Jacobi   
+  symbol</a> (<i>d</i>|<i>n</i>) = -1 and for every prime factor <i>r</i> of <i>n</i>+1 
+  there are relatively prime integers <i>p</i> and <i>q</i> with <i>p</i><sup>2</sup>-4<i>q</i> = <i>d</i> such that
+  <ul>
+    <li> U(<i>n</i>+1) ≡ 0 (mod <i>n</i>), and</li>
+    <li> U((<i>n</i>+1)/<i>r</i>) is not 0 (mod <i>n</i>);</li>
+  </ul>
+  then <i>n</i> is prime. </blockquote>
+<p>Note that you may use different <i>p</i>'s and <i>q</i>'s as long as the discriminant <i>d</i> does not change.&nbsp; One way to alter <i>p</i> and <i>q</i> (but not <i>d</i>) is to replace (<i>p</i>,<i>q</i>) by (<i>p</i>+2,<i>p</i>+<i>q</i>+1).</p>
+<p>An interesting example of this test is found by setting S(<i>k</i>) = <img src="assets/v(2k+1)22k.gif" alt="V(2^k+1)/(2^2^k)" width="60" height="16"></p>
+<blockquote id="text"><b>Lucas-Lehmer Test</b> (1930):&nbsp; Let <em>n</em> be an odd prime.&nbsp; 
+  The Mersenne number M(<i>n</i>) = 2<i><sup>n</sup></i>-1 is prime if and only 
+  if S(<i>n</i>-2) ≡ 0 (mod M(<i>n</i>)) where S(0) = 4 and S(<i>k</i>+1) = S(<i>k</i>)<sup>2</sup>-2. </blockquote>
+<p>(The proof of sufficiency is found on a <a href="../notes/proofs/LucasLehmer.html">separate 
+page</a>.)&nbsp; This test is exceptionally fast on a binary computer because 
+it requires no division.&nbsp; It is also so easy to program that in 1978 two 
+high school students, with little understanding of the mathematics behind the 
+test, were able to use it to find the then record Mersenne prime 2<sup>21701</sup>-1 
+(see <a
+href="/mersenne/index.html">our page on Mersennes</a>).</p>
+<p>It is also easy to give a test paralleling Pocklington's theorem using Lucas 
+  sequences.&nbsp; This was first done by D. H. Lehmer in 1930 (in the same article 
+  he introduced the Lucas-Lehmer test: [<a
+href="../references/refs.cgi/Lehmer30">Lehmer30</a>]).&nbsp; See 
+  [<a
+href="../references/refs.cgi/BLSTW88">BLSTW88</a>] or [<a
+href="../references/refs.cgi/BLS75">BLS75</a>] or ... for more information 
+  on these tests.</p>
+<p>Joerg Arndt notes that a striking (but computationally useless) way to state 
+	this test is as follows:</p>
+<blockquote><b>Theorem:&nbsp;</b> <i>p</i>=2<i><sup>n</sup></i>-1 is prime if 
+  and only if <i>p</i> divides cosh(2<sup><i>n</i>-2</sup>log(2+sqrt(3))). </blockquote>
+<p>Lucas also stated one case of his theorem in this manner.</p>
+<table class="cc3 cc0">
+     <tr><td><span style="font-size: 60%;">File: <a href="prove3_3.html">prove3_3.html</a> "Primality Proving 3.3: Combined Tests" (<a href="prove3.html">Chapter 
+            Three</a> &gt; Combined Tests)
+     </span></td></tr></table>
+<h3>3.3: Combined Tests</h3> 
+<p>In previous sections we have pointed out if the factored portion of <i>n</i>-1 
+  or of <i>n</i>+1 is larger than the cube root of <i>n</i>, then we can prove 
+  <i>n</i> is prime.&nbsp; In this section we discuss the case that the product 
+  of these two factored portions is greater than the cube root of <i>n</i>, then 
+  we can prove <i>n</i> prime using a combined test.&nbsp; (If we can not find 
+  enough factors to prove <i>n</i> prime this way, then we must use the generalized 
+  tests of the <a href="prove4_1.html">following chapter</a>.)</p>
+<p>Let <i>n</i> &gt; 1 be an odd integer.&nbsp; Let <i>n</i>-1 = F<sub>1</sub>R<sub>1</sub> 
+  and <i>n</i>+1 = F<sub>2</sub>R<sub>2</sub> where F<sub>1</sub> and F<sub>2</sub> 
+  are completely factored, and gcd(F<sub>1</sub>,R<sub>1</sub>) = gcd(F<sub>2</sub>,R<sub>2</sub>) 
+  =&nbsp;1.&nbsp; The two types of tests we have applied to <i>n</i> in the previous 
+  sections are as follows.</p>
+<blockquote> <b>Condition I</b>.&nbsp; For each prime <i>p</i> dividing F<sub>1</sub> 
+  there is an integer <i>a</i> such that 
+  <ul>
+    <li><i>a<sup>n</sup></i><sup>-1</sup> ≡ 1 (mod <i>n</i>), but</li>
+    <li>gcd(<i>a</i><sup>(<i>n</i>-1)/<i>p</i></sup>-1,<i> n</i>) = 1.<br>
+    </li>
+  </ul>
+  <b>Condition II.&nbsp;</b> Let (<i>d</i>|<i>n</i>) = -1.&nbsp; For each prime 
+  <i>p</i> dividing F<sub>2</sub> there is a Lucas sequence with discriminant 
+  <i>d</i> such that 
+  <ul>
+    <li>U(<i>n</i>+1) ≡ 0 (mod <i>n</i>), and</li>
+    <li>gcd(U((<i>n</i>+1)/<i>p</i>),<i> n</i>) = 1.</li>
+  </ul>
+</blockquote>
+<p>Pocklington's theorem tells us that if (I) is true, then each prime factor <i>q</i> 
+  of <i>n</i> has the form <i>k</i>&middot;F<sub>1</sub>+1.&nbsp; About 60 years later 
+  Morrison proved that if (II) held, then each prime factor <i>q</i> 
+  of <i>n</i> has the form <i>k</i>&middot;F<sub>2</sub>&plusmn;1 [<a href="../references/refs.cgi/Morrison75">Morrison75</a>].&nbsp; 
+  Together these give us the following:</p>
+<blockquote> <b>Combined Theorem 1:&nbsp;</b> Suppose <i>n</i>, F<sub>1</sub>, 
+  F<sub>2</sub>, R<sub>1</sub>, R<sub>2</sub> are as above and conditions (I) 
+  and (II) are satisfied.&nbsp; If <i>n</i>&nbsp;&lt;&nbsp;max(F<sub>1</sub><sup>2</sup>F<sub>2</sub>/2&nbsp;, 
+  F<sub>1</sub>F<sub>2</sub><sup>2</sup>/2), then <i>n</i> is prime. 
+  <p><b>Proof.</b>&nbsp; Let <i>q</i> be a prime factor of <i>n</i> and let <i>n</i> 
+    = <i>mq</i>.&nbsp; From Condition I we have that <i>q</i> ≡ 1 (mod&nbsp;F<sub>1</sub>), 
+    so since <i>n</i> is 1 (mod F<sub>1</sub>), so is <i>m</i>.&nbsp; From Condition 
+    (II) we know <i>q</i> = &plusmn;1 (mod&nbsp;F<sub>2</sub>), so since <i>n</i> is -1 
+    (mod&nbsp;F<sub>2</sub>), either <i>q</i> or <i>m</i> is 1 (mod&nbsp;F<sub>2</sub>).&nbsp; 
+    We may assume that <i>m</i> = 1 (mod&nbsp;F<sub>2</sub>), because if every 
+    prime factor <i>q</i> of <i>n</i> was 1 (mod&nbsp;F<sub>2</sub>), we'd have 
+    the contradiction that <i>n</i> ≡ 1 (mod&nbsp;F<sub>2</sub>).&nbsp; Finally 
+    gcd(F<sub>1</sub>,F<sub>2</sub>)=2, so we can combine these to get that <i>m</i> 
+    ≡ 1 (mod&nbsp;F<sub>1</sub>F<sub>2</sub>/2). So for <i>n</i> to be composite 
+    we must have both</p>
+  <ul>
+    <li><i>n </i> =&nbsp; <i>qm </i> &gt;&nbsp; ( 1 + F<sub>1</sub>)(1 + F<sub>1</sub>F<sub>2</sub>/2)&nbsp; 
+			&gt;&nbsp; F<sub>1</sub><sup>2</sup>F<sub>2</sub>/2, and </li>
+    <li><i>n</i>&nbsp; =&nbsp; <i>qm</i>&nbsp; &gt;&nbsp; (-1 + F<sub>2</sub>)(1 
+      + F<sub>1</sub>F<sub>2</sub>/2)&nbsp; &gt;&nbsp; F<sub>1</sub>F<sub>2</sub><sup>2</sup>/2. </li>
+  </ul>
+  <p>This completes the proof of the theorem.</p>
+</blockquote>
+<h3>Adding in a factoring bound</h3>
+<p>Sometimes, if <i>n</i> is small enough that we have almost enough factors to 
+  use the above (or similar) results, it can be helpful to bring in information 
+  about how far we have tried to factor <i>n</i>&plusmn;1.&nbsp; Suppose, for example, 
+  that all of the prime factors of R<sub>1</sub> and R<sub>2</sub> are greater 
+  than B.&nbsp; Next apply the conditions above to R<sub>1</sub> and R<sub>2</sub></p>
+<blockquote> <b>Condition III.&nbsp;</b> There is an integer <i>a</i> such that 
+  <ul>
+    <li><i>a<sup>n</sup></i><sup>-1</sup> ≡ 1 (mod <i>n</i>), but</li>
+    <li>gcd(<i>a</i><sup>(<i>n</i>-1)/R<sub>1</sub></sup> -1,<i> n</i>) = 1.</li>
+  </ul>
+  <b>Condition IV.</b>&nbsp; Let (<i>d</i>|<i>n</i>) = -1.&nbsp; There is a Lucas 
+  sequence with discriminant <i>d</i> (same <i>d</i> as used in condition II) 
+  such that 
+  <ul>
+    <li>U(<i>n</i>+1) ≡ 0 (mod <i>n</i>), and</li>
+    <li>gcd(U((<i>n</i>+1)/R<sub>2</sub>), <i>n</i>) = 1.</li>
+  </ul>
+</blockquote>
+<p>These two conditions inform us respectively that every prime factor <i>q</i> 
+  of <i>n</i> has the form <i>k&middot;u</i>+1 where <i>u</i> is a prime factor of R<sub>1</sub>; 
+  and every prime factor <i>q</i> also has the form <i>k&middot;v</i>&plusmn;1 where <i>v</i> 
+  is a prime factor of R<sub>2</sub>.&nbsp; (Note that the factors <i>u</i> and 
+  <i>v</i> are dependent on <i>q</i>.)&nbsp; Of course <i>u</i> and <i>v</i> must 
+  each be larger than the factoring bound B.&nbsp; With the above notation we 
+  can now state our final classical theorems.&nbsp; (For the first the proof is 
+  virtually identical to the proof above.)</p>
+<blockquote> <b>Combined Theorem 2:&nbsp;</b> Suppose <i>n</i>, F<sub>1</sub>, 
+  F<sub>2</sub>, R<sub>1</sub>, R<sub>2</sub>, B are as above and conditions (I) 
+  through (IV) are satisfied.&nbsp; Define integers <i>r</i> and <i>s</i> by R<sub>1</sub> 
+  = <i>s</i>F<sub>2</sub>/2 + <i>r</i> with 0 <u>&lt;</u> <i>r</i> &lt; F<sub>2</sub>/2.&nbsp; 
+  If 
+  <blockquote> <i>n</i> &lt; max(B&middot;F<sub>1</sub> + 1, B&middot;F<sub>2</sub><sup> </sup>-<sup> 
+    </sup>1) (B<sup>2</sup>F<sub>1</sub>F<sub>2</sub>/2 + 1) </blockquote>
+  then <i>n</i> is prime. </blockquote>
+<blockquote> <b>Combined Theorem 3:&nbsp;</b> Suppose <i>n</i>, F<sub>1</sub>, 
+  F<sub>2</sub>, R<sub>1</sub>, R<sub>2</sub>, B are as above and conditions (I) 
+  through (IV) are satisfied.&nbsp; Again define integers <i>r</i> and <i>s</i> 
+  by R<sub>1</sub> = <i>s</i>F<sub>2</sub>/2 + <i>r</i> with 0 <u>&lt;</u> <i>r</i> 
+  &lt; F<sub>2</sub>/2.&nbsp; If for some integer <i>m</i> 
+  <blockquote> <i>n</i> &lt; (<i>m</i>&middot;F<sub>1</sub>F<sub>2</sub>&nbsp;+&nbsp;r&middot;F<sub>1 
+    </sub>+ 1) (B<sup>2</sup>F<sub>1</sub>F<sub>2</sub>/2 + 1) </blockquote>
+  <p>then either <i>n</i> is prime or <i>k</i>F<sub>1</sub>F<sub>2</sub>&nbsp;+&nbsp;
+<i>r</i>F<sub>1&nbsp;</sub>+&nbsp;1 
+    divides <i>n</i> for some non-negative integer <i>k</i> &lt; <i>m</i>.</p>
+</blockquote>
+<p>Both of these results (and more) can be found in &quot;the&quot; paper on the 
+  classical results: [<a href="../references/refs.cgi/BLS75">BLS75</a>].&nbsp; 
+  Another excellent source on these theorems and their extensions is the excellent 
+  text H. Williams &quot;&Eacute;douard Lucas and Primality testing&quot; [<a 
+href="../references/refs.cgi/Williams98">Williams98</a>]</p>
+<p>How much further can we go?&nbsp; It is possible to consider higher powers 
+  such as the factors of</p>
+<blockquote> 
+  <p><i>n</i><sup>6</sup> -1 = (<i>n</i> - 1)(<i>n</i><sup>2 </sup>+ <i>n </i>+ 
+    1)(<i>n </i>+ 1)(<i>n</i><sup>2 </sup>- <i>n </i>+ 1).</p>
+</blockquote>
+<p>(See [<a href="../references/refs.cgi/Williams78">Williams78</a>] for the theory 
+  and examples of these techniques).&nbsp; But the cost in terms of mathematical 
+  complication is very high.&nbsp; So in practice adding a few terms such as <i>n</i><sup>2</sup>+<i>n</i>+1 
+  or <i>n</i><sup>2</sup>-<i>n</i>+1 is rarely worth the effort.&nbsp; Rather 
+  it makes sense to just move on to the general primality proving methods of the 
+  next chapter.</p>
+<table class="cc3 cc0">
+     <tr><td><span style="font-size: 60%;">File: <a href="prove4.html">prove4.html</a> "Primality Proving Section Four "The General Purpose Tests"" (Chapter Four (contents))
+     </span></td></tr></table>
+<h2 style="text-align:center;">Chapter 4: The general 
+            purpose tests</h2> 
+<h3>Contents of this Chapter: </h3>
+<ol>
+  <li> <a href="prove4_1.html">The Neoclassical Tests, especially APR and APR-CL</a></li>
+  <li> <a href="prove4_2.html">Using Elliptic Curves, especially the ECPP Test</a></li>
+  <li><a href="prove4_3.html">A Polynomial Time Algorithm</a></li>
+  <li> <a href="prove5.html">Conclusion and Suggestions</a></li>
+</ol>
+<p>This is one of four chapters on finding primes and proving primality.&nbsp; 
+  The first is a short <a href="index.html">introduction and table of contents</a>.&nbsp;  The second chapter discusses <a href="prove2.html">finding small primes</a> 
+  and the basic probable primality tests.&nbsp; The third chapter covers the <a href="prove3.html">classical 
+  primality tests</a> that have been used to prove primality for 99.99% of the 
+  numbers on the <a href="../largest.html">largest known prime list</a>.&nbsp; 
+  This chapter introduces the <a href="prove4.html">general 
+  purpose tests</a> that do not require factorization. </p>
+<table class="cc3 cc0">
+     <tr><td><span style="font-size: 60%;">File: <a href="prove4_1.html">prove4_1.html</a> "Primality Proving 4.1: Extending the classical tests" (<a href="prove4.html">Chapter 
+      Four</a> &gt; APR and APR-CL)
+     </span></td></tr></table>
+<h3>4.1 Neoclassical tests: 
+            APR and APR-CL</h3> <br>
+How do we improve on the tests of the <a href="prove3.html">previous chapter</a>?&nbsp; 
+The way Williams and others began in the 70's was to use the factors of other 
+polynomials of <i>n</i> such as <i>n</i><sup>2</sup>+1, <i>n</i><sup>2</sup>+<i>n</i>+1 
+and <i>n</i><sup>2</sup>-<i>n</i>+1 [<a
+href="../references/refs.cgi/Williams78">Williams78</a>].&nbsp; But why stop there?&nbsp; 
+Why not try <i>n<sup>m</sup></i>-1 for a higher exponent <i>m</i> such as 5040, 
+then every prime <i>q</i> such that <i>q</i>-1 divides 5040 (which does not divide 
+<i>n</i>) must divide <i>n<sup>5040</sup></i>-1 (by Fermats Little Theorem).&nbsp; 
+<p>This (with much more cleverness) makes (for <i>m</i> = 5040) a product of primes 
+  <i>q</i> which is greater than 10<sup>52</sup>.&nbsp; So after we show there 
+  are theorems similar to the classical theorems which only require a factorization 
+  to the square root of <i>n</i>, then using this same <i>m</i>, 5040, we will 
+  be done for all numbers with less than 100 digits--without any (explicit) factoring 
+  (the same <i>q</i>'s work for all of these <i>n</i>'s).</p>
+<p>What about even larger <i>N's</i>?&nbsp; It is always possible to find the 
+  necessary factors.&nbsp; In fact it has been shown that there is always an integer 
+  <i>m</i> with </p>
+<blockquote><i>m</i> &lt; (log <i>n</i>)<sup>log log log <i>n</i></sup> </blockquote>
+for which the factors <i>q</i> dividing <i>n<sup>m</sup></i>-1 with <i>q</i>-1 
+dividing <i>m</i>, have a product at least the size of the square root of <i>n</i>. 
+Usually <i>m</i> is around 100,000,000 for numbers <i>n</i> with about 3,000 digits. 
+<p>This is roughly (very roughly!) how Adleman, Pomerance and Rumely began the 
+  modern age of primality testing by introducing the <b>APR</b> primality test 
+  [<a href="/references/refs.cgi/APR83">APR83</a>] in 1979.&nbsp; The running 
+  time of their method is almost polynomial--its running time <i>t</i> is bounded 
+  as follows 
+<blockquote> (log <i>n</i>)<sup>(<i>c</i><sub>1</sub> log log log <i>n</i>)</sup> 
+  &lt; <i>t</i> &lt; (log <i>n</i>)<sup>(<i>c</i><sub>2</sub> log log log <i>n</i>)</sup> 
+</blockquote>
+<p>(recognize those bounds?)</p>
+<p id="aprt-cl">Soon Cohen and Lenstra [<a href="/references/refs.cgi/CL84">CL84</a>] improved 
+  this test into a practical version called <b>APRT-CL</b> that handles 100 digit 
+  numbers in a matter of seconds (see also [<a
+href="/references/refs.cgi/CL87">CL87</a>], [<a
+href="/references/refs.cgi/Mihailescu98">Mihailescu98</a>], and [<a
+href="/references/refs.cgi/BH90">BH90</a>]).&nbsp; (They improved it by replacing 
+  the general reciprocity law for the power residue symbol with much easier to 
+  calculate Jacobi sums.)</p>
+<p>It is also possible to mix the two approaches (the classical using large 
+  factors of <i>n</i>&plusmn;1 and the neoclassical above using many small factors 
+  of <i>n<sup>m</sup></i>-1).&nbsp; One example of this mixed approach is Tony 
+  Forbes VFYPR <span class="descript">(limited to 2982 digits).</span></p>
+<table class="cc3 cc0">
+     <tr><td><span style="font-size: 60%;">File: <a href="prove4_2.html">prove4_2.html</a> "Primality Proving 4.2: Elliptic curves and the ECPP test" (<a href="prove4.html">Chapter 
+      Four</a> &gt; Elliptic Curves )
+     </span></td></tr></table>
+<h3>4.2: 
+            Using elliptic curves and the ECPP test</h3> 
+	<h3>Elliptic Curves</h3>
+<p>What is the next big leap in primality proving?&nbsp; To switch from Galois groups 
+to some other, perhaps easier to work with groups--in this case the points on 
+Elliptic Curves modulo <i>n</i>.&nbsp; An Elliptic curve is a curve of genus one, 
+that is a curve that can be written in the form</p> 
+<blockquote><b>E(<i>a</i>,<i>b</i>)</b> : <i>y</i><sup>2</sup> = <i>x</i><sup>3</sup> 
+  + <i>ax</i> + <i>b</i> (with 4<i>a</i><sup>3</sup> + 27<i>b</i><sup>2</sup> 
+  not zero)</blockquote>
+<p>They are called &quot;elliptic&quot; because these equations first arose in 
+  the calculation of the arc-lengths of ellipses.&nbsp; </p>
+<p><img src="assets/elliptic_curve.gif" width="202" height="162" style="float: right;" alt="Sketch of the cord and tangent method">The 
+  rational points on such a curve form a group with addition defined using the 
+  &quot;chord and tangent method:&quot;&nbsp; That is, if the two points P<sub>1</sub> 
+  and P<sub>2</sub> are rational (have rational coefficients), then the line through 
+  P<sub>1</sub> and P<sub>2</sub> intersects the curve again in a third rational 
+  point which we call -(P<sub>1</sub>+P<sub>2</sub>) (the negative is to make 
+  the associative law work out).&nbsp; Reflect through the <i>x</i>-axis to get 
+  P<sub>1</sub>+P<sub>2</sub>.&nbsp; (If P<sub>1</sub> and P<sub>2</sub> are not 
+  distinct, then use the tangent line at P<sub>1</sub>.)</p>
+<p>If we then reduce this group modulo a prime <i>p</i> we get a small group E(<i>a</i>,<i>b</i>)/<i>p</i> 
+  whose size can be used in roughly the way we use the size of (<b>Z</b>/<i>p</i><b>Z</b>)<sup>*</sup> 
+  in the first of the classical tests.&nbsp; Let |E| be the order (the size) of the 
+  group E: </p>
+<blockquote><b>Theorem:</b> |E(<i>a</i>,<i>b</i>)/<i>p</i>| lies in the interval 
+  (<i>p</i>+1-2sqrt(<i>p</i>),<i>p</i>+1+2sqrt(<i>p</i>)) and the orders are fairly 
+  uniformly distributed (as we vary <i>a</i> and <i>b</i>).</blockquote>
+Obviously we are again getting out of our depth, but perhaps you see that we now 
+have replaced the groups of order <i>n</i>-1 and <i>n</i>+1 used in the classical 
+test with a far larger range of group sizes.&nbsp; We can keep switching curves 
+until we find one we can &quot;factor.&quot;&nbsp; This improvement comes at the 
+cost of having to do a great deal of work to find the actual size of these groups. 
+<p>About 1986, S. Goldwasser &amp; J. Kilian [<a
+href="../references/refs.cgi/GK86">GK86</a>] and A. O. L. Atkin [<a
+href="../references/refs.cgi/Atkin86">Atkin86</a>] introduced elliptic curve primality 
+  proving methods.&nbsp; Atkin's method, ECPP, was implemented by a number of 
+  mathematicians, including Atkin &amp; Morain [<a
+href="../references/refs.cgi/AM93">AM93</a>]. Fran&ccedil;ois Morain's C-code 
+  (discussed in [<a href="../references/refs.cgi/AM93">AM93</a>]) is <a
+href="http://www.lix.polytechnique.fr/~morain/Prgms/ecpp.english.html">available 
+  on the web</a> for many platforms.&nbsp; For Windows based platforms <a href="http://www.ellipsa.eu/">the 
+	Primo implementation</a> is easier to use. </p>
+<p><i>Heuristically</i>, the best version of ECPP is O((log <i>n</i>)<sup>4+<i>eps</i></sup>) for 
+  some <i>eps</i> &gt; 0 [<a href="../references/refs.cgi/LL90">LL90</a>] (see also D. J. Bernstein's page <a
+href="http://cr.yp.to/primetests.html">http://cr.yp.to/primetests.html</a>).&nbsp; It has been proven to 
+be polynomial time for almost all choices of inputs.</p> 
+<table class="cc3 cc0">
+     <tr><td><span style="font-size: 60%;">File: <a href="prove4_3.html">prove4_3.html</a> "Primality Proving 4.3: A polynomial-time algorithm" (<a href="prove4.html">Chapter 
+            Four</a> &gt; A Polynomial-Time Algorithm)
+     </span></td></tr></table>
+<h3>4.3: A Polynomial-Time 
+            Algorithm </h3>
+<p> As we mentioned before, many of the primality proving methods are conjectured 
+  to be polynomial-time.&nbsp; For example, <a href="prove2_3.html#MillersERHTest">Miller's 
+  test</a> is polynomial if ERH is true (and Rabin gave a version of this test 
+  that was unconditionally randomized polynomial-time 
+  [<a href="../references/refs.cgi/Rabin80">Rabin80</a>]).&nbsp; Adleman and Hang [<a href="../references/refs.cgi/AH1992">AH1992</a>] 
+  modified the Goldwasser-Killian algorithm [<a href="../references/refs.cgi/GK86">GK86</a>] 
+  to produce a randomized polynomial time algorithm that always produced a certificate 
+  of primality...&nbsp; So it is not surprising that there exists a polynomial-time 
+  algorithm for proving primality.&nbsp; But what is surprising is that in 2002 
+  Agrawal, Kayal and Saxena [<a href="../references/refs.cgi/AKS2002">AKS2002</a>] 
+  found a relatively simple <i>deterministic</i> algorithm which relies on <i>no 
+  unproved assumptions</i>.&nbsp; We present this algorithm below then briefly 
+  refer to a related algorithm of Bernstein.</p>
+<p>The key to AKS' result is another simple version of <a href="prove2_2.html#FLittleT">Fermat's 
+  Little Theorem</a>:</p>
+<blockquote>
+  <p><b>Theorem:</b>&nbsp; Suppose that <i>a</i> and <i>p</i> are relatively prime 
+    integers with <i>p</i> &gt; 1.&nbsp; <i>p</i> is prime if and only if</p>
+  <div style="text-align: center;">
+    (<i>x</i>-<i>a</i>)<sup><i>p</i></sup> ≡ (<i>x<sup>p</sup></i>-<i>a</i>) &nbsp; 
+    (mod <i>p</i>)
+  </div>
+</blockquote>
+<blockquote><b>Proof.</b>&nbsp; If <i>p</i> is prime, then <i>p</i> divides the 
+  binomial coefficients <sub><i>p</i></sub>C<sub><i>r</i></sub> for <i>r</i> = 
+  1, 2, ... <i>p</i>-1.&nbsp; This shows that (<i>x</i>-<em>a</em>)<sup><i>p</i></sup> ≡ (<i>x<sup>p</sup></i>-<i>a<sup>p</sup></i>) (mod <i>p</i>), and the equation 
+  above follows via Fermat's Little Theorem.&nbsp; On the other hand, if <i>p</i> &gt; 1 is composite, then it has a prime divisor <i>q</i>.&nbsp; Let <i>q<sup>k</sup></i> be the greatest power of <i>q</i> that divides <i>p</i>. Then <i>q<sup>k</sup></i> does not divide <sub><i>p</i></sub>C<sub><i>q</i></sub> and is relatively prime 
+  to <i>a<sup>p-q</sup></i>, so the coefficient of the term <i>x<sup>q</sup></i> on the left of the equation in the theorem is not zero, but it is on the right.</blockquote>
+<p>(This result was used to create a randomized polynomial-time algorithm by Agrawal 
+  and Biswas [<a href="../references/refs.cgi/AB1999">AB1999</a>].)</p>
+<p>Of course in this form it is too difficult to use because there are just far 
+  too many coefficients to check.&nbsp; Their idea was to look at the simpler 
+  condition: </p>
+<div style="align-content:center">
+  (<i>x</i>-<i>a</i>)<sup><i>p</i></sup> ≡ (<i>x<sup>p</sup></i>-<i>a</i>) &nbsp; 
+  (mod <i>x<sup>r</sup></i>-1,<i>p</i>)
+</div>
+<p>This must hold if <i>p</i> is prime and it is conjectured (see [<a href="../references/refs.cgi/BP2001">BP2001</a>, <a href="../references/refs.cgi/KS2002">KS2002</a>]) that if <i>r</i> &gt;1 
+  does not divide <i>p</i> and the above congruence holds, then either <i>p</i> is prime or <i>p</i><sup>2</sup> is 1 modulo <i>r</i>.</p>
+<p>Agrawal, Kayal and Saxena managed to reformulate this into the following algorithm 
+  which they proved would run in at most O((log <i>n</i>)<sup>12</sup><i>f</i>(log 
+  log <i>n</i>)) time where <i>f</i> is a polynomial. (This means the time it 
+  takes to run the algorithm is at most a constant times the number of digits 
+  to the twelfth power times a polynomial evaluated at the log of the number of 
+  digits.) </p>
+<blockquote> <code>Input: Integer <i>n</i> &gt; 1<br>
+  <br>
+  if (<i>n</i> is has the form <i>a<sup>b</sup></i> with <i>b</i> &gt; 1) then 
+  output COMPOSITE<br>
+  <br>
+  <i>r</i> := 2<br>
+  while (<i>r</i> &lt; <i>n</i>) {<br>
+  &nbsp; &nbsp; if (gcd(<i>n</i>,<i>r</i>) is not 1) then output COMPOSITE<br>
+  &nbsp; &nbsp; if (<i>r</i> is prime greater than 2) then {<br>
+  &nbsp; &nbsp; &nbsp; &nbsp; let <i>q</i> be the largest factor of <i>r</i>-1<br>
+  &nbsp; &nbsp; &nbsp; &nbsp; if (<i>q</i> &gt; 4sqrt(<i>r</i>)log <i>n</i>) and 
+  (<i>n</i><sup>(<i>r</i>-1)/<i>q</i></sup> is not 1 (mod <i>r</i>)) then break<br>
+  &nbsp; &nbsp; }<i><br>
+  &nbsp; &nbsp; r</i> := <i>r</i>+1<br>
+  }<br>
+  <br>
+  for <i>a</i> = 1 to 2sqrt(<i>r</i>)log <i>n</i> {<br>
+  &nbsp; &nbsp; if ( (<i>x</i>-<i>a</i>)<sup><i>n</i></sup> is not (<i>x</i><i><sup>n</sup></i>-<i>a</i>) 
+  (mod <i>x</i><i><sup>r</sup></i>-1,<i>n</i>) ) then output COMPOSITE<br>
+  }<br>
+  <br>
+  output PRIME;</code> </blockquote>
+<p>The proof [<a href="../references/refs.cgi/AKS2002">AKS2002</a>] is relatively 
+  straightforward, and perhaps the most advanced result necessary is a sieve result 
+  required to show the necessary <i>q</i> exists for each composite ([<a href="../references/refs.cgi/F1985">F1985</a>], 
+  [<a href="../references/refs.cgi/BH1996">BH1996</a>]).&nbsp; (Note that the first 
+  step, determining if the number is a perfect power, can be done in essentially 
+  linear time [<a href="../references/refs.cgi/Bernstein1998b">Bernstein1998b</a>].) </p>
+<p>AKS also showed that if <a class="glossary" title="glossary" href="/glossary/page.php?sort=SophieGermainPrime">Sophie 
+  Germain primes</a> have the expected distribution [<a href="../references/refs.cgi/HL23">HL23</a>] 
+  (and they certainly should!), then the exponent 12 in the time estimate can 
+  be reduced to 6, bringing it much closer to the (probabilistic) <a href="prove4_2.html">ECPP 
+  method</a>.&nbsp; But of course <b>when actually finding primes it is the unlisted 
+  constants<sup><a href="#note1">1</a></sup> that make all of the difference</b>!&nbsp; 
+  We will have to wait for efficient implementations of this algorithm (and hopefully 
+  clever restatements of the painful<code> for loop</code>) to see how it compares 
+  to the others for integers of a few thousand digits.&nbsp; Until then, at least 
+  we have learned that there is a polynomial-time algorithm for all integers that 
+  both is deterministic and relies on no unproved conjectures! </p>
+<p id="note1">Note: D. J. Bernstein's <a href="http://cr.yp.to/papers.html#aks">exposition 
+  of the Agrawal-Kayal-Saxena theorem</a> (mentioned above) contains improvements 
+  by many diferent researchers which reduce the constants involved in the time 
+  analysis by at least a factor of 2,000,000.&nbsp; This is perhaps the best source 
+  for the present state of the algorithm. </p>
+<h3>Related Approaches</h3>
+<p> Berrizbeitia [<a href="../references/refs.cgi/Berrizbeitia2003">Berrizbeitia2003</a>] 
+  found a way to save time in AKS-type primality proofs for some primes <i>n</i>, 
+  reducing the exponent from 6+o(1) to 4+o(1).&nbsp; Cheng [<a href="../references/refs.cgi/Cheng2003">Cheng2003</a>] 
+  extended Berrizbeitia's idea to more primes <i>n</i>, and Bernstein [<a href="../references/refs.cgi/Bernstein2003">Bernstein2003</a>] 
+  extended it to all primes <i>n</i>.&nbsp; The algorithm for finding these proofs 
+  relies on some randomness, unlike the original AKS algorithm. </p>
+<p>It seems plausible that a variant of AKS may soon compete in practice with 
+  ECPP for 'general' primality proofs.&nbsp; This field is in great deal of flux.</p>
+<p> Other useful links:</p>
+<ul>
+  <li><a href="http://www.instantlogic.net/publications/PRIMES%20is%20in%20P%20little%20FAQ.htm">Primes 
+    in P little faq</a> by Anton Stiglic </li>
+  <li><a href="https://en.wikipedia.org/wiki/AKS_primality_test">AKS primality test</a> Wikipedia</li>
+  <li><a href="http://cr.yp.to/primetests.html">Distinguishing prime numbers from 
+    composite numbers</a> by D. J. Bernstein (an excellent comparision of many 
+    methods).</li>
+</ul>
+<table class="cc3 cc0">
+     <tr><td><span style="font-size: 60%;">File: <a href="prove5.html">prove5.html</a> "Primality Proving 5: Conclusion and suggestions" (Chapter 
+            Five: Conclusion )
+     </span></td></tr></table>
+<h2 style="text-align:center;">4.3: 
+            Conclusion and suggestions</h2> 
+<h3>Conclusion</h3>
+<p>In practice it is easy to decide what method of primality proof to use:&nbsp;</p>
+<ul>
+  <li>If all you want to do is find any number of large enough to make the list 
+    of largest known primes, use a version of <a href="prove3_1.html#Proth">Proth's Theorem</a> 
+		such as <a href="prove3_1.html#theorem3">theorem 3</a> (or an equivalent plus side theorem).</li>
+  <li>If you are aiming for the money, then either join GIMPS (as Mersenne's have 
+    held the record for quite awhile now) or look for a very large generalized 
+    Fermat.</li>
+  <li>If instead of looking for <i>n</i>, you are given <i>n</i>, first check 
+    for small factors.&nbsp; If it has none, try a Fermat test to see if it is 
+    a probable prime.&nbsp; If so, try briefly to factor <i>n</i>+1, <i>n</i>-1... 
+    &nbsp;If these factor substantially use the classical methods, if not, then 
+		reach for a <a href="prove4_1.html">modern method</a>.</li>
+</ul>
+<p>When programming the classical methods, the most difficult aspect is multiplying 
+  quickly.&nbsp; Fortunately someone has done much of the work for us!&nbsp; 
+  There are several large free libraries for arithmetic with large integers as 
+  well as for proving the primality of large integers.</p>
+<p>With the classical methods you can easily handle a 100,000 digit number.&nbsp; 
+  With the modern methods you will work very hard to handle a 5,000 digit number!&nbsp; 
+  Unless you are very brave I would suggest you look for an already coded 
+  version of the modern algorithms, they are quite difficult to implement. 
+<p>At this site we keep a list of the 5000 largest known primes, so if you do 
+  find new record primes, <a 
+href="/primes/submit.php">why 
+not let us know</a>?&nbsp; 
+  <br>
+  &nbsp;<br>
+<table class="cc3 cc0">
+     <tr><td><span style="font-size: 60%;">File: <a href="references.html">references.html</a> "Primality Proving: References" (References)
+     </span></td></tr></table>
+<h2 style="text-align:center;">References for primality 
+            proving pages</h2>
+These are the references used in our primality proving pages.  They are a subset of the
+<a href="../references/refs.cgi">Prime Pages' references</a>.
+<!-- ChrisReferencesBegin -->
+<blockquote><DL>
+<DT>AB1999<DD class=BibItem> <B>M. Agrawal</B> and <B>S. Biswas</B>, <I>Primality and identity testing via Chinese remaindering</I>.&nbsp; In "40th Annual Symposium on Foundations of Computer Science (New York, 1999)," IEEE Computer Soc., Los Alamitos, CA, 1999.&nbsp; pp. 202--208, <b><a href="http://www.ams.org/mathscinet-getitem?mr=MR1917560">MR1917560</a></b>
+<DT>AGP94<DD class=BibItem> <B>W. R. Alford</B>, <B>A. Granville</B> and <B>C. Pomerance</B>, "There are infinitely many Carmichael numbers," <I>Ann. of Math. (2)</I>, <B>139</B> (1994) 703--722.&nbsp; <b><a href="http://www.ams.org/mathscinet-getitem?mr=95k:11114">MR 95k:11114</a></b>
+<DT>AH1992<DD class=BibItem> <B>L. M. Adlemann</B> and <B>M. D. Huang</B>, <I>Primality testing and two dimensional Abelian varieties over finite fields.</I>, Lecture Notes in Mathematics Vol, 1512, Springer-Verlag, Berlin, 1992.&nbsp; pp. viii+142, ISBN 3-540-55308-8. <b><a href="http://www.ams.org/mathscinet-getitem?mr=93g:11128">MR 93g:11128</a></b>
+<DT>AKS2002<DD class=BibItem> <B>M. Agrawal</B>, <B>N. Kayal</B> and <B>N. Saxena</B>, "PRIMES in P," <I>Ann. of Math. (2)</I>, <B>160</B>:2 (2004) 781--793.&nbsp; Available from <a href="http://www.cse.iitk.ac.in/users/manindra/">http://www.cse.iitk.ac.in/users/manindra/</a>.&nbsp; <b><a href="http://www.ams.org/mathscinet-getitem?mr=MR2123939">MR2123939</a></b> <blockquote><b>Abstract:</b>
+We present a deterministic polynomial-time algorithm that determines whether an input number <i>n</i> is prime or composite.
+</blockquote>
+
+<DT>AM93<DD class=BibItem> <B>A. O. L. Atkin</B> and <B>F. Morain</B>, "Elliptic curves and primality proving," <I>Math. Comp.</I>, <B>61</B>:203 (July 1993) 29--68.&nbsp; <b><a href="http://www.ams.org/mathscinet-getitem?mr=93m:11136">MR 93m:11136</a></b>
+<DT>APR83<DD class=BibItem> <B>L. M. Adleman</B>, <B>C. Pomerance</B> and <B>R. S. Rumely</B>, "On distinguishing prime numbers from composite numbers," <I>Ann. Math.</I>, <B>117</B>:1 (1983) 173--206.&nbsp; <b><a href="http://www.ams.org/mathscinet-getitem?mr=84e:10008">MR 84e:10008</a></b> <span style="color: #000033;">[The first of the <a href="/prove/prove4.html">modern primality tests</a>.]</span>
+<DT>Atkin86<DD class=BibItem> <B>A. O. L. Atkin</B>, "Lecture notes of a conference," Boulder Colorado, (August 1986) Manuscript. <span style="color: #000033;">[See also [<a href="/references/refs.cgi?item=AM93">AM93</a>].]</span>
+<DT>Bach85<DD class=BibItem> <B>E. Bach</B>, <I>Analytic methods in the analysis and design of number-theoretic algorithms</I>, A.C.M. Distinguished Dissertations The MIT Press, Cambridge, MA, 1985.&nbsp; pp. xiii+48, ISBN 0-262-02219-2. <b><a href="http://www.ams.org/mathscinet-getitem?mr=87i:11185">MR 87i:11185</a></b>
+<DT>Bernstein1998b<DD class=BibItem> <B>D. Berstein</B>, "Detecting perfect powers in essentially linear time," <I>Math. Comp.</I>, <B>67</B>:223 (1998) 1253--1283.&nbsp; Available from <a href="http://cr.yp.to/papers.html">http://cr.yp.to/papers.html</a>.&nbsp; <b><a href="http://www.ams.org/mathscinet-getitem?mr=98j:11121">MR 98j:11121</a></b> (<a href="/references/refs.cgi?long=Bernstein1998b" class=bib
+		title="Entry with abstract">Abstract available</a>)
+<DT>Bernstein2003<DD class=BibItem> <B>D. J. Bernstein</B>, "Proving primality in essentially quartic random time," (2003) Draft available from <a href="http://cr.yp.to/papers.html">http://cr.yp.to/papers.html</a>. <blockquote><b>Abstract:</b>
+This paper presents an algorithm that, given a prime <i>n</i>, finds and verifies a proof of the primality of <i>n</i> in random time (<i>lg n</i>)<sup>4<i>+o</i>(1)</sup>.
+</blockquote>
+
+<DT>Berrizbeitia2003<DD class=BibItem> <B>P. Berrizbeitia</B>, "Sharpening "Primes is in P" for a large family of numbers," (2003) Available from <a href="http://arxiv.org/abs/math.NT/0211334">http://arxiv.org/abs/math.NT/0211334</a>. (<a href="/references/refs.cgi?long=Berrizbeitia2003" class=bib
+		title="Entry with annotation">Annotation available</a>)
+<DT>BH1993<DD class=BibItem> <B>E. Bach</B> and <B>L. Huelsbergen</B>, "Statistical evidence for small generating sets," <I>Math. Comp.</I>, <B>61</B>:203 (1993) 69--82.&nbsp; <b><a href="http://www.ams.org/mathscinet-getitem?mr=MR1195432">MR1195432</a></b> 
+<DT>BH1996<DD class=BibItem> <B>R. C. Baker</B> and <B>G. Harman</B>, <I>The Brun-Titchmarsh theorem on average</I>.&nbsp; In "Proc. Conf. in Honor of Heini Halberstam (Allerton Park, IL, 1995)," Progr. Math. Vol, 138, Birkh&auml;user Boston, Boston, MA, 1996.&nbsp; pp. 39--103, <b><a href="http://www.ams.org/mathscinet-getitem?mr=97h:11096">MR 97h:11096</a></b>
+<DT>BH90<DD class=BibItem> <B>W. Bosma</B> and <B>M. P. van der Hulst</B>, <I>Faster primality testing</I>.&nbsp; In "Advances in Cryptology--EUROCRYPT '89 Proceedings," J. J. Quisquater and J. Vandewalle editors, Springer-Verlag, 1990.&nbsp; pp. 652--656, 
+<DT>BLS75<DD class=BibItem> <B>J. Brillhart</B>, <B>D. H. Lehmer</B> and <B>J. L. Selfridge</B>, "New primality criteria and factorizations of 2<sup><i>m</i></sup> &plusmn; 1," <I>Math. Comp.</I>, <B>29</B> (1975) 620--647.&nbsp; <b><a href="http://www.ams.org/mathscinet-getitem?mr=52:5546">MR 52:5546</a></b> <span style="color: #000033;">[<i>The</i> article for the classical (<i>n</i><sup>2</sup><i> -</i>1) <a href="/prove/prove2.html">primality tests</a>. Table errata in [<a href="/references/refs.cgi?item=Brillhart1982">Brillhart1982</a>]]</span>
+<DT>BLSTW88<DD class=BibItem> <B>J. Brillhart</B>, <B>D. H. Lehmer</B>, <B>J. L. Selfridge</B>, <B>B. Tuckerman</B> and <B>S. S. Wagstaff, Jr.</B>, <I>Factorizations of <i>b</i><sup><i>n</i></sup> &plusmn; 1, <i>b=</i>2<i>,</i>3<i>,</i>5<i>,</i>6<i>,</i>7<i>,</i>10<i>,</i>12 up to high powers</I>, Amer. Math. Soc., Providence RI, 1988.&nbsp; pp. xcvi+236, ISBN 0-8218-5078-4. <b><a href="http://www.ams.org/mathscinet-getitem?mr=90d:11009">MR 90d:11009</a></b> (<a href="/references/refs.cgi?long=BLSTW88" class=bib
+		title="Entry with annotation">Annotation available</a>)
+<DT>BP2001<DD class=BibItem> <B>R. Bhattacharjee</B> and <B>P. Pandey</B>, "Primality testing," IIT Kanpur, (2001)
+<DT>Bressoud89<DD class=BibItem> <B>D. M. Bressoud</B>, <I>Factorizations and primality testing</I>, Springer-Verlag, New York, NY, 1989.&nbsp; ISBN 0387970401. <b><a href="http://www.ams.org/mathscinet-getitem?mr=91e:11150">MR 91e:11150</a></b> <span style="color: #000033;">[QA161.F3B73]</span>
+<DT>Cheng2003<DD class=BibItem> <B>Q. Cheng</B>, "Primality proving via one round of ECPP and one iteration in AKS," Crypto 2003, Santa Barbara, (2003) Available from <a href="http://www.cs.ou.edu/~qcheng/">http://www.cs.ou.edu/~qcheng/</a>.
+<DT>CL84<DD class=BibItem> <B>H. Cohen</B> and <B>Lenstra, Jr., H. W.</B>, "Primality testing and Jacobi sums," <I>Math. Comp.</I>, <B>42</B> (1984) 297--330.&nbsp; <b><a href="http://www.ams.org/mathscinet-getitem?mr=86g:11078">MR 86g:11078</a></b> <span style="color: #000033;">[APRT-CL test introduced.]</span>
+<DT>CL87<DD class=BibItem> <B>H. Cohen</B> and <B>A. K. Lenstra</B>, "Implementation of a new primality test," <I>Math. Comp.</I>, <B>48</B> (1987) 103--121.&nbsp; <b><a href="http://www.ams.org/mathscinet-getitem?mr=88c:11080">MR 88c:11080</a></b> <span style="color: #000033;">[APRT-CL test implemented.]</span>
+<DT>CP2001<DD class=BibItem> <B>R. Crandall</B> and <B>C. Pomerance</B>, <I>Prime numbers: a computational perspective</I>, Springer-Verlag, New York, NY, 2001.&nbsp; pp. xvi+545, ISBN 0-387-94777-9. <b><a href="http://www.ams.org/mathscinet-getitem?mr=2002a:11007">MR 2002a:11007</a></b> (<a href="/references/refs.cgi?long=CP2001" class=bib
+		title="Entry with abstract">Abstract available</a>) <span style="color: #000033;">[This is a valuable text written by true experts in two different areas: computational and theoretical respectively. There is now a second edition [<a href="/references/refs.cgi?item=CP2005">CP2005</a>].]</span>
+<DT>F1985<DD class=BibItem> <B>E. Fouvry</B>, "Th&eacute;or&egrave;me de Brun-Titchmarsh; application au th&eacute;or&egrave;m de Fermat," <I>Ivent. Math.</I>, <B>79</B>:2 (1985) 383--407.&nbsp; <b><a href="http://www.ams.org/mathscinet-getitem?mr=86g:11052">MR 86g:11052</a></b>
+<DT>GK86<DD class=BibItem> <B>S. Goldwasser</B> and <B>J. Kilian</B>, <I>Almost all primes can be quickly certified</I>.&nbsp; In "STOC'86, Proceedings of the 18th Annual ACM Symposium on the Theory of Computing (Berkeley, CA, 1986)," ACM, May 1986.&nbsp; New York, NY, pp. 316--329, 
+<DT>Grantham2000<DD class=BibItem> <B>J. Grantham</B>, "Frobenius pseudoprimes," <I>Math. Comp.</I>, <B>70</B> (2001) 873--891.&nbsp; <b><a href="http://www.ams.org/mathscinet-getitem?mr=2001g:11191">MR 2001g:11191</a></b> (<a href="/references/refs.cgi?long=Grantham2000" class=bib
+		title="Entry with abstract">Abstract available</a>)
+<DT>Grantham98<DD class=BibItem> <B>J. Grantham</B>, "A probable prime test with high confidence," <I>J. Number Theory</I>, <B>72</B> (1998) 32--47.&nbsp; <b><a href="http://www.ams.org/mathscinet-getitem?mr=2000e:11160">MR 2000e:11160</a></b>
+<DT>HL23<DD class=BibItem> <B>G. H. Hardy</B> and <B>J. E. Littlewood</B>, "Some problems of `partitio numerorum' : III: on the expression of a number as a sum of primes," <I>Acta Math.</I>, <B>44</B> (1923) 1-70.&nbsp; Reprinted in "Collected Papers of G. H. Hardy," Vol. I, pp. 561-630, Clarendon Press, Oxford, 1966.
+<DT>Jaeschke93<DD class=BibItem> <B>G. Jaeschke</B>, "On strong pseudoprimes to several bases," <I>Math. Comp.</I>, <B>61</B> (1993) 915-926.&nbsp; <b><a href="http://www.ams.org/mathscinet-getitem?mr=94d:11004">MR 94d:11004</a></b>
+<DT>KS2002<DD class=BibItem> <B>N. Kayal</B> and <B>N. Saxena</B>, "Towards adeterministic polynomial-time test," (2002) Available from <a href="http://www.cse.iitk.ac.in/research/btp2002/primality.html">http://www.cse.iitk.ac.in/research/btp2002/primality.html</a>.
+<DT>Lehmer30<DD class=BibItem> <B>D. N. Lehmer</B>, "An extended theory of Lucas' functions," <I>Ann. Math.</I>, <B>31</B> (1930) 419-448.&nbsp; Reprinted in <i>Selected Papers</i>, D. McCarthy editor, v. <b>1</b>, Ch. Babbage Res. Center, St. Pierre, Manitoba Canada, pp. 11-48 (1981).
+<DT>LL90<DD class=BibItem> <B>Lenstra, Jr., A. K.</B> and <B>Lenstra, Jr., H. W.</B>, <I>Algorithms in number theory</I>.&nbsp; In "Handbook of Theoretical Computer Science, Vol A: Algorithms and Complexity," The MIT Press, Amsterdam and New York, 1990.&nbsp; pp. 673-715, <b><a href="http://www.ams.org/mathscinet-getitem?mr=1%20127%20178">MR 1 127 178</a></b>
+<DT>Mihailescu98<DD class=BibItem> <B>P. Mihailescu</B>, <I>Cyclotomy primality proving -- recent developments</I>.&nbsp; In "Proceedings of the III Applied Number Theory Seminar, ANTS III, Portland, Oregon 1998," Lecture Notes in Computer Science Vol, 1423, 1998.&nbsp; pp. 95--110, <b><a href="http://www.ams.org/mathscinet-getitem?mr=2000j:11195">MR 2000j:11195</a></b>
+<DT>Miller76<DD class=BibItem> <B>G. Miller</B>, "Riemann's hypothesis and tests for primality," <I>J. Comput. System Sci.</I>, <B>13</B> (1976) 300--317.&nbsp; <b><a href="http://www.ams.org/mathscinet-getitem?mr=58:470a">MR 58:470a</a></b>
+<DT>Monier80<DD class=BibItem> <B>L. Monier</B>, "Evaluation and comparsion of two efficient probablistic primality testing algorithms," <I>Theoretical Computer Science</I>, <B>12</B>:1 (1980) 97--108.&nbsp; <b><a href="http://www.ams.org/mathscinet-getitem?mr=82a:68078">MR 82a:68078</a></b>
+<DT>Morrison75<DD class=BibItem> <B>M. Morrison</B>, "A note on primality testing using Lucas sequences," <I>Math. Comp.</I>, <B>29</B> (1975) 181--182.&nbsp; <b><a href="http://www.ams.org/mathscinet-getitem?mr=51:5469">MR 51:5469</a></b>
+<DT>Osterle1979<DD class=BibItem> <B>Oesterl&eacute;, J.</B>, <I>Versions effectives du th&eacute;or&egrave;me de chebotarev sous l'hypoth&egrave;se de riemann g&eacute;n&eacute;ralis&eacute;e</I>.&nbsp; In "Journ{\'e}es Arithm{\'e}tiques de Luminy (20 Juin--24 Juin 1978)," Ast&eacute;risque 61 Soci&eacute;t&eacute; Math&eacute;matique de France, 1979.&nbsp; Paris, pp. 165--167, 
+<DT>Pinch93<DD class=BibItem> <B>R. Pinch</B>, "The Carmichael numbers up to 10<sup>15</sup>," <I>Math. Comp.</I>, <B>61</B>:203 (1993) 381-391.&nbsp; <b><a href="http://www.ams.org/mathscinet-getitem?mr=93m:11137">MR 93m:11137</a></b>
+<DT>Pomerance84<DD class=BibItem> <B>C. Pomerance</B>, <I>Lecture notes on primality testing and factoring (notes by G. M. Gagola Jr.)</I>, Notes Vol, 4, Mathematical Association of America, 1984.&nbsp; pp. 34 pages, 
+<DT>PSW80<DD class=BibItem> <B>C. Pomerance</B>, <B>J. L. Selfridge</B> and <B>Wagstaff, Jr., S. S.</B>, "The pseudoprimes to 25 &middot; 10<sup>9</sup>," <I>Math. Comp.</I>, <B>35</B>:151 (1980) 1003-1026.&nbsp; <b><a href="http://www.ams.org/mathscinet-getitem?mr=82g:10030">MR 82g:10030</a></b>
+<DT>Rabin80<DD class=BibItem> <B>M. O. Rabin</B>, "Probabilistic algorithm for testing primality," <I>J. Number Theory</I>, <B>12</B> (1980) 128--138.&nbsp; <b><a href="http://www.ams.org/mathscinet-getitem?mr=81f:10003">MR 81f:10003</a></b>
+<DT>Ribenboim95<DD class=BibItem> <B>P. Ribenboim</B>, <I>The new book of prime number records</I>, 3rd edition, Springer-Verlag, 1995.&nbsp; New York, NY, pp. xxiv+541, ISBN 0-387-94457-5. <b><a href="http://www.ams.org/mathscinet-getitem?mr=96k:11112">MR 96k:11112</a></b> <span style="color: #000033;">[An excellent resource for those with some college mathematics. Basically a Guinness Book of World Records for primes with much of the relevant mathematics. The extensive bibliography is seventy-five pages.]</span>
+<DT>Riesel94<DD class=BibItem> <B>H. Riesel</B>, <I>Prime numbers and computer methods for factorization</I>, Progress in Mathematics Vol, 126, Birkh&auml;user Boston, 1994.&nbsp; Boston, MA, ISBN 0-8176-3743-5. <b><a href="http://www.ams.org/mathscinet-getitem?mr=95h:11142">MR 95h:11142</a></b> <span style="color: #000033;">[An excellent reference for those who want to start to program some of these algorithms. Code is provided in Pascal. Previous edition was vol. 57, 1985.]</span>
+<DT>Wiles95<DD class=BibItem> <B>A. Wiles</B>, "Modular elliptic curves and Fermat's last theorem," <I>Ann. Math.</I>, <B>141</B>:3 (1995) 443--551.&nbsp; <b><a href="http://www.ams.org/mathscinet-getitem?mr=96d:11071">MR 96d:11071</a></b> (<a href="/references/refs.cgi?long=Wiles95" class=bib
+		title="Entry with annotation">Annotation available</a>)
+<DT>Williams78<DD class=BibItem> <B>H. C. Williams</B>, "Primality testing on a computer," <I>Ars Combin.</I>, <B>5</B> (1978) 127--185.&nbsp; <b><a href="http://www.ams.org/mathscinet-getitem?mr=80d:10002">MR 80d:10002</a></b> <span style="color: #000033;">[A survey of the classical primality tests.]</span>
+<DT>Williams98<DD class=BibItem> <B>H. C. Williams</B>, <I>&Eacute;douard Lucas and primality testing</I>, Canadian Math. Soc. Series of Monographs and Adv. Texts Vol, 22, John Wiley \& Sons, 1998.&nbsp; New York, NY, pp. x+525, ISBN 0-471-14852-0. <b><a href="http://www.ams.org/mathscinet-getitem?mr=2000b:11139">MR 2000b:11139</a></b> (<a href="/references/refs.cgi?long=Williams98" class=bib
+		title="Entry with annotation">Annotation available</a>)</DL></blockquote>
+
+<!-- ChrisReferencesEnd -->
+<table class="cc1">
+  <tr>
+    <td>
+	<table class="cc0">
+        <tr class="cc2">
+  	  <td style="padding-left: 0.4em">The Prime Pages &copy; Chris Caldwell &lt;<i>&#99;&#97;&#108;&#100;&#119;&#101;&#108;&#108; AT &#117;&#116;&#109;&#46;&#101;&#100;&#117;</i>&gt;</td>
+        </tr>
+      </table></td>
+  </tr>
+</table>
+</body>
