@@ -811,8 +811,271 @@ mv ~/download/wget_/'primes.utm.edu..prove..merged.html' ~/my_txt/others/数学/
 view others/数学/整数分解/素数/primes.utm.edu..prove..merged.html
 当下只有『Privacy_Browser』APP能够浏览 本地网页
   content://com.simplemobiletools.filemanager.pro.provider/external_files/storage/emulated/0/0my_files/git_repos/txt_phone/txt/others/%E6%95%B0%E5%AD%A6/%E6%95%B4%E6%95%B0%E5%88%86%E8%A7%A3/%E7%B4%A0%E6%95%B0/primes.utm.edu..prove..merged.html
+    无法访问？只能通过『文件管理器』访问？
+  file:///storage/emulated/0/0my_files/git_repos/txt_phone/txt/others/%E6%95%B0%E5%AD%A6/%E6%95%B4%E6%95%B0%E5%88%86%E8%A7%A3/%E7%B4%A0%E6%95%B0/primes.utm.edu..prove..merged.html
+    net::ERR_ACCESS_DENIED
+  content://media/external/file/255422
+    路径怎么来的？
+  content://media/external/file/255422
+    稳定？看来不是 临时PIPE之类的标识
+    休眠后无法打开，但通过 文件管理器 打开后，就可以了
+
+  [[
+  [n <- [2..]]:
+    #n is a strong probable-prime base a
+    [is_SPRP_base_ a n =[def]= [s:=max_power_of_base_as_factor_of_(2, n-1)][d := (n-1)///2**s][[a**d %n ==1]or[?[r <- [0..<s]] -> [(a**d%n)**(2**r)==n-1]]]]
+
+  [
+  ###
+  If n < 1373653 is a both 2 and 3-SPRP, then n is prime [PSW80].
+  If n < 25326001 is a 2, 3 and 5-SPRP, then n is prime [PSW80].
+  If n < 25000000000 is a 2, 3, 5 and 7-SPRP, then either n = 3215031751 or n is prime [PSW80]. (This is actually true for n < 118670087467 [Jaeschke93].)
+  If n < 2152302898747 is a 2, 3, 5, 7 and 11-SPRP, then n is prime [Jaeschke93].
+  If n < 3474749660383 is a 2, 3, 5, 7, 11 and 13-SPRP, then n is prime [Jaeschke93].
+  If n < 341550071728321 is a 2, 3, 5, 7, 11, 13 and 17-SPRP, then n is prime [Jaeschke93].
+  ###
+  If n < 9080191 is a both 31 and 73-SPRP, then n is prime.
+  If n < 4759123141 is a 2, 7 and 61-SPRP, then n is prime.
+  ###
+  If n < 170584961 is a 350 and 3958281543-SPRP, then n is prime.
+  If n < 75792980677 is a 2, 379215, and 457083754-SPRP, then n is prime.
+  If n < 21652684502221 is a 2, 1215, 34862, and 574237825-SPRP, then n is prime.
+  ###
+  It has been proven ([Monier80] and [Rabin80]) that the strong probable primality test is wrong no more than 1/4th of the time (3 out of 4 numbers which pass it will be prime).
+  Probability[is_prime n](num_rounds) = 1-1/4**num_rounds
+  ###
+  Miller's Test [Miller76]: If the extended Riemann hypothesis is true, then if n is an a-SPRP for all integers a with 1 < a < 2(log n)**2, then n is prime.
+  [[n <- [2..]] -> [extended_Riemann_hypothesis] -> [@[a<-[2..<2*(ln n)**2]] -> [is_SPRP_base_ a n]] -> [is_prime n]]
+  ###
+  ]
+
+  #正整数素性判定
+  # (n-1) test
+  [@[u <- [2..]] -> [?[a <- [1..<u]] -> [[a**(u-1)%u==1][@[p<-all_prime_factors_of(u-1)] -> [a**((u-1)///p)%u=!=1]]]] -> [is_prime u]]
+  #同一个a<u> --> 拆成多个a<u,p>
+  [@[u <- [2..]] -> [@[p<-all_prime_factors_of(u-1)] -> [?[a <- [1..<u]] -> [[a**(u-1)%u==1][a**((u-1)///p)%u=!=1]]]] -> [is_prime u]]
+  #
+  #Pocklington's Theorem (1914):  Let n-1 = q**k * R where q is a prime which does not divide R.  If there is an integer a such that a**(n-1) ≡ 1 (mod n) and gcd(a**((n-1)/q)-1,n) = 1, then each prime factor p of n has the form q**k * r + 1.
+  [@[u <- [2..]] -> @[p <- all_prime_factors_of(u-1)] -> [k := max_power_of_base_as_factor_of_(p,u-1)] -> @[a <- [1..]] -> [a**(u-1) %u ==1] -> [gcd(a**((u-1)///p)-1, u) ==1] -> @[q<-all_prime_factors_of(u)] -> [max_power_of_base_as_factor_of_(p, q-1) >= k]]
+    [proof:
+      [m := order_mod(q;a) = min{i <-[1..] | [a**i %q ==1]}]
+      [(q-1) %m ==0]
+
+      !![a**(u-1) %u ==1]
+      [a**(u-1) %q ==1]
+      [(u-1)%m ==0]
+
+      !![gcd(a**((u-1)///p)-1, u) ==1]
+      [gcd(a**((u-1)///p)-1, q) ==1]
+      [a**((u-1)///p) %q =!= 1]
+      [(u-1)///p %m =!=0]
+      !![(u-1)%m ==0]
+      [max_power_of_base_as_factor_of_(p, m) == max_power_of_base_as_factor_of_(p, u-1) == k]
+      !![(q-1) %m ==0]
+      [max_power_of_base_as_factor_of_(p, q-1) >= max_power_of_base_as_factor_of_(p, m) == k]
+    ]
+  ...
+  [@[u <- [2..]] -> @[F,R <- [1..]] -> [u-1 == F*R] -> [F > R] -> [gcd(F,R) ==1] -> @[a <- [1..<u]] -> [a**(u-1)%u==1] -> [@[p<-all_prime_factors_of(F)] -> [gcd(u, a**((u-1)///p) -1) ==1]] -> [is_prime u]]
+    # (Notice that different a's can be used for each prime q.)  Theorem 2 can be improved even more: if F<R, but either every factor of R is greater than sqrt(R/F); or n<2F3, R=rF+s, 0<s<F, and r is odd or s2-4r is not a square; then n is prime.  If you are interested in these theorems, then it is well worth going to the source: [BLS75].
+  #a<u> ---> a<u,p>
+  [@[u <- [2..]] -> @[F,R <- [1..]] -> [u-1 == F*R] -> [F > R] -> [gcd(F,R) ==1] -> [@[p<-all_prime_factors_of(F)] -> ?[a <- [1..<u]] -> [[a**(u-1)%u==1][gcd(u, a**((u-1)///p) -1) ==1]]] -> [is_prime u]]
+    #特化推论:
+    [@[h <- [1..]] -> @[k <- [1..]] -> @[p<-all_primes] -> [h < p**k] -> [n := h*p**k +1] -> @[a<-[1..]] -> [gcd(n, a**((n-1)///p) -1) ==1] -> [is_prime n]]
+    [@[h <- [1..]] -> @[k <- [1..]] -> [h < 2**k] -> [n := h*2**k +1] -> @[a<-[1..]] -> [a**((n-1)///2) %n ==-1] -> [is_prime n]]
+    [n <- [0..]]:
+      [Fermat_number n =[def]= 2**(2**n) +1]
+    #Pepin's Test (1877)
+    [[n <- [0..]] -> [[is_prime (Fermat_number n)] <-> [3**((Fermat_number n -1)/2) =[%Fermat_number n]= Jacobi_symbol(Fermat_number n, 3) == -1]]]
+  ###我重述:
+  [@[u <- [2..]] -> @[F,R <- [1..]] -> [u-1 == F*R] -> [@[p<-all_prime_factors_of(F)] -> ?[a <- [1..<u]] -> [[a**(u-1)%u==1][gcd(u, a**((u-1)///p) -1) ==1]]] -> @[q<-all_prime_factors_of(u)] -> [(q-1)%F == 0]]
+    # [not$ is_prime u]:
+    #   [u >= (F+1)**2 == F*(F+2) +1][R >= F+2]
+    #   [h <- [1..]][@[i<-[1..<h]] -> [not$ is_prime (i*F+1)]]:
+    #       [u >= (h*F+1)**2 == F*h*(h*F+2) +1][R >= h*(h*F+2)]
+  [@[u <- [2..]] -> @[F,R <- [1..]] -> [u-1 == F*R] -> @[h <- [1..]] -> [@[i<-[1..<h]] -> [not$ is_prime (i*F+1)]] -> [R < h**2*F+2*h] -> [@[p<-all_prime_factors_of(F)] -> ?[a <- [1..<u]] -> [[a**(u-1)%u==1][gcd(u, a**((u-1)///p) -1) ==1]]] -> [is_prime u]]
+    #特例:[h==1]:
+      [@[u <- [2..]] -> @[F,R <- [1..]] -> [u-1 == F*R] -> [R < F+2] -> [@[p<-all_prime_factors_of(F)] -> ?[a <- [1..<u]] -> [[a**(u-1)%u==1][gcd(u, a**((u-1)///p) -1) ==1]]] -> [is_prime u]]
+
+  #我:
+  [@[u <- [2..]] -> @[F,R <- [1..]] -> [u-1 == F*R] -> [gcd(F,R)==1] -> [?[a <- [1..<u]] -> [[a**(u-1)%u==1][gcd(u, a**((u-1)///R) -1) ==1]]] -> [
+    [@[q<-all_prime_factors_of(u)] -> [
+      [gcd(q-1,R) > 1]
+      [?[p<-all_prime_factors_of(R)] -> [(q-1)%p==0]]
+      [@[B<-[2..]] -> [@[p<-all_prime_factors_of(R)] -> [p >= B]] -> [q>=B+1]]
+      ]]
+    [#[n<(B+1)**2]这个要求使得下面毫无意义
+      [@[B<-[2..]] -> [@[p<-all_prime_factors_of(R)] -> [p >= B]] -> [n<(B+1)**2] -> [is_prime u]]
+      ]
+    ]]
+    [proof:
+      [m := order_mod(q;a) = min{i <-[1..] | [a**i %q ==1]}]
+      [(q-1) %m ==0]
+
+      !![a**(u-1) %u ==1]
+      [a**(u-1) %q ==1]
+      [(u-1)%m ==0]
+
+      !![gcd(a**((u-1)///R)-1, u) ==1]
+      [gcd(a**((u-1)///R)-1, q) ==1]
+      [a**((u-1)///R) %q =!= 1]
+      [(u-1)///R %m =!=0]
+      [gcd((u-1)///R,m) < m]
+      !![u-1 == F*R]
+      [gcd(F,m) < m]
+      !![u-1 == F*R]
+      !![gcd(F,R)==1]
+      [gcd(u-1,m)==gcd(F,m)*gcd(R,m)]
+      [gcd(R,m) == gcd(u-1,m)///gcd(F,m)]
+      !![(u-1)%m ==0]
+      [gcd(u-1,m)==m]
+      !![gcd(F,m) < m]
+      [gcd(R,m) == gcd(u-1,m)///gcd(F,m) > 1]
+      !![(q-1) %m ==0]
+      [gcd(q-1,R) >= gcd(m,R) > 1]
+    ]
+  #减少计算量:
+    #1:
+    [b<p> := a<p>**((n-1)///(2*p)) % n]
+    [b<p> =!= n-1]
+    [b<p>**p %n == n-1] #复用[a<p1>==a<p2>]，则此步可省
+    #2:多次gcd -> 一次gcd
+    [gcd(n, II a<p[i]>**((n-1)///p[i]) -1 {p[i]}) =!=1]
+  #######
+  # (n+1) test
+  see also:
+    #view others/数学/Lucas-Lehmer\ primality\ test/Lucas-Lehmer\ primality\ test.txt
+    view others/数学/整数分解/factorint.txt
+
+#copy from:view others/数学/整数分解/factorint.txt::LucasSequence相关
+TODO:copy
+  ]]
 https://primes.utm.edu/glossary/page.php?sort=JacobiSymbol
+
+.,$s/content:[/][/]media[/]/https:\/\/primes.utm.edu\//g
+https://primes.utm.edu/external/references/refs.cgi/Williams78
+Williams78
+H. C. Williams, "Primality testing on a computer," Ars Combin., 5 (1978) 127--185.  MR 80d:10002 [A survey of the classical primality tests.]
+wget 'https://www.ams.org/mcom/1978-32-143/S0025-5718-1978-0476625-0/S0025-5718-1978-0476625-0.pdf' -O 'Primality testing on a computer(1978)(Williams).pdf'
+已下载
+
+https://primes.utm.edu/external/references/refs.cgi/Williams98
+Williams98
+H. C. Williams, Édouard Lucas and primality testing, Canadian Math. Soc. Series of Monographs and Adv. Texts Vol, 22, John Wiley \& Sons, 1998.  New York, NY, pp. x+525, ISBN 0-471-14852-0. MR 2000b:11139 (Annotation available)
+https://libgen.ee/book_86581965
+wget 'https://libgen.rocks/get.php?md5=cf1442d3f874b61b880ee88101f9e213&key=VQE1PWKA9CCQO0MU' -O 'Edouard Lucas and primality testing(1998)(Williams).pdf'
+已下载
+
+
+https://primes.utm.edu/references/refs.cgi/APR83
+APR83
+L. M. Adleman, C. Pomerance and R. S. Rumely, "On distinguishing prime numbers from composite numbers," Ann. Math., 117:1 (1983) 173--206.  MR 84e:10008 [The first of the modern primality tests.]
+已下载
+
+https://primes.utm.edu/references/refs.cgi/CL84
+CL84
+H. Cohen and Lenstra, Jr., H. W., "Primality testing and Jacobi sums," Math. Comp., 42 (1984) 297--330.  MR 86g:11078 [APRT-CL test introduced.]
+已下载
+
+https://primes.utm.edu/references/refs.cgi/CL87
+CL87
+H. Cohen and A. K. Lenstra, "Implementation of a new primality test," Math. Comp., 48 (1987) 103--121.  MR 88c:11080 [APRT-CL test implemented.]
+已下载
+
+https://primes.utm.edu/references/refs.cgi/Mihailescu98
+Mihailescu98
+P. Mihailescu, Cyclotomy primality proving -- recent developments.  In "Proceedings of the III Applied Number Theory Seminar, ANTS III, Portland, Oregon 1998," Lecture Notes in Computer Science Vol, 1423, 1998.  pp. 95--110, MR 2000j:11195
+Cyclotomy primality proving -- recent developments(1998)(Mihailescu).pdf
+搜索:Mihailescu。查看1998前后
+https://libgen.ee/book_15227248
+wget 'https://libgen.rocks/get.php?md5=8ed816eb441785423dfac4cc489539ea&key=JAASW4PFQH9ZLKF4' -O 'Recent developments in primality proving(1999)(Mihailescu).pdf'
+已下载
+
+https://primes.utm.edu/references/refs.cgi/BH90
+BH90
+W. Bosma and M. P. van der Hulst, Faster primality testing.  In "Advances in Cryptology--EUROCRYPT '89 Proceedings," J. J. Quisquater and J. Vandewalle editors, Springer-Verlag, 1990.  pp. 652--656,
+Faster primality testing(1990)(Bosma).pdf
+已下载
+
+https://primes.utm.edu/references/refs.cgi/BLS75
+  J. Brillhart, D. H. Lehmer and J. L. Selfridge, "New primality criteria and factorizations of 2m ± 1," Math. Comp., 29 (1975) 620--647.  MR 52:5546 [The article for the classical (n2 -1) primality tests. Table errata in [Brillhart1982]]
+wget -c 'https://www.ams.org/journals/mcom/1975-29-130/S0025-5718-1975-0384673-1/S0025-5718-1975-0384673-1.pdf' -O 'New primality criteria and factorizations of 2m ± 1(1975)(Brillhart).pdf'
+已下载
+
 https://primes.utm.edu/references/refs.cgi/Ribenboim95
+  # 数据列表:[n<?][n is {???}-SPRP] -> [is_prime n]
+  #     Strong probable-primality
+  #
+  P. Ribenboim, The new book of prime number records, 3rd edition, Springer-Verlag, 1995.  New York, NY, pp. xxiv+541, ISBN 0-387-94457-5. MR 96k:11112 [An excellent resource for those with some college mathematics. Basically a Guinness Book of World Records for primes with much of the relevant mathematics. The extensive bibliography is seventy-five pages.]
+https://libgen.lc/edition.php?id=135789101
+wget 'http://62.182.86.140/main/11000/d46c0428209914a6acfaede707854241/Paulo%20Ribenboim%20-%20The%20new%20book%20of%20prime%20number%20records-Springer%20%281996%29.djvu' -O 'The new book of prime number records(3ed)(1996)(Ribenboim).djvu'
+
+
+
+https://primes.utm.edu/references/refs.cgi/Bernstein1998b
+  #determining if the number is a perfect power, can be done in essentially linear time [Bernstein1998b].
+  D. Berstein, "Detecting perfect powers in essentially linear time," Math. Comp., 67:223 (1998) 1253--1283.  Available from http://cr.yp.to/papers.html.  MR 98j:11121 (Abstract available)
+wget 'http://cr.yp.to/papers/powers-19971106-retypeset20220326.pdf' -O 'Detecting perfect powers in essentially linear time(1998)(Berstein).pdf'
+
+[[
+Jacobi symbol
+https://www.planetmath.org/CalculatingTheJacobiSymbol
+https://brilliant.org/wiki/jacobi-symbol/
+
+The Jacobi symbol is a generalization of the Legendre symbol. Introduced by Jacobi in 1837, it is of theoretical interest in modular arithmetic and other branches of number theory, but its main use is in computational number theory, especially primality testing and integer factorization; these in turn are important in cryptography.
+
+The Jacobi symbol is a generalization of the Legendre symbol, which can be used to simplify computations involving quadratic residues. It shares many of the properties of the Legendre symbol, and can be used to state and prove an extended version of the law of quadratic reciprocity.
+
+[is_prime p]:
+  [Legendre_symbol(p,a) =[def]= if [@x. [(x**2 -a)%p =!= 0]] then -1 else +1]
+[m > 0][m%2==1]:
+  [Jacobi_symbol(m,a) =[def]= II Legendre_symbol(p, a)**max_power_of_base_as_factor_of_(p,m) {p <- all_prime_factors_of(m)}]
+  ###
+  [Jacobi_symbol(m,a) ==
+    if [gcd(a,m) =!= 1] then 0 else
+    if [not$ 0 < a < m] then Jacobi_symbol(m,a%m) else
+    if [a==2] then (-1)**((m**2-1)/8) else
+      # Jacobi_symbol(m,2) = [m%8 <- {1,7}](+1) + [m%8 <- {3,5}](-1)
+    if [a%2==0] then let [a == 2**e * b][b%2==1] in Jacobi_symbol(m,2)**(e%2) * Jacobi_symbol(m, b) else
+    # [a%2==1][0 < a < m][gcd(a,m)==1]
+    (-1)**((a-1)*(m-1)/4) * Jacobi_symbol(a,m)
+  ]
+
+###
+The Legendre symbol measures whether a is a square mod p. Unfortunately, the Jacobi symbol does not retain this property:
+  If gcd(a,m)=1 and a is a square mod m, where m is an odd positive integer, then Jacobi_symbol(m,a)=1; but the converse is not true.
+    Jacobi_symbol(9,2) = Jacobi_symbol(3,2)**2 = (-1)**2 = 1
+    Jacobi_symbol(35,3) = Jacobi_symbol(5,3)*Jacobi_symbol(7,3) = (-1)*(-1) = 1
+
+[m > 0][m%2==1]:
+  [a=[%m]=b]:
+    [Jacobi_symbol(m,a) == Jacobi_symbol(m,b)]
+
+  #completely multiplicative function
+  [Jacobi_symbol(m, a*b) == Jacobi_symbol(m,a)*Jacobi_symbol(m,b)]
+
+  [n > 0][n%2==1]:
+    [Jacobi_symbol(m*n, a) == Jacobi_symbol(m,a)*Jacobi_symbol(n,a)]
+
+  [n > 0][n%2==1][gcd(m,n)==1]:
+    [Jacobi_symbol(m,n)*Jacobi_symbol(n,m) == (-1)**((m-1)/2) * (-1)**((n-1)/2)]
+    # 比Legendre_symbol(m,n)计算更方便，无需完全分解n
+
+  [Jacobi_symbol(m,-1) = (-1)**((m-1)/2)]
+    # =1 <==> [m%4 == 1]
+    # 4k+1型 素数p:  z**2=[%p]=-1, p=x**2+y**2, (x+y*j) = u*gcd(p, z+1*j), u <- {+1,-1,+j,-j}
+  [Jacobi_symbol(m,2) = (-1)**((m**2-1)/8)]
+    # =1 <==> [m%8 ≡ ±1]
+
+#Euler's criterion
+[is_prime p][a%p =!= 0]:
+  [Legendre_symbol(p,a) =[%p]= a**((p-1)/2)]
+gives a criterion for primality:
+  [m > 0][m%2==1]:
+    [gcd(a,m)==1][[Jacobi_symbol(m,a) =![%m]!= a**((m-1)/2)] -> [not$ is_prime m]]
+  It is not hard to show that if m is composite, then at least half the positive a less than m that are coprime to m satisfy this condition. Choosing random values of a k times leads to a probability of (1/2**k) that none of the random values are witnesses to the compositeness of m in this way. This probabilistic primality test is called the Solovay-Strassen primality test, and is quite efficient in practice.
+  One interesting feature of the test is that it can be used to prove that numbers are composite without explicitly determining a nontrivial factor.
+
+]]
 ]]]
 
 [[[logarithm

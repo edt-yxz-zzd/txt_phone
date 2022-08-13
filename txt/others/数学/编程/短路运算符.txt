@@ -1,0 +1,43 @@
+
+e others/数学/编程/短路运算符.txt
+
+类似 python::and,or
+类似 C/C++::(&&),(||),(?:)
+
+常见可推广至:
+  乘法:
+    [a ?* b =[def]= if a==0 then 0 else mul(a,b)]
+      [条件]*(受保护表达式)
+      [条件][受保护条件]
+  幂运算:
+    [a **? e =[def]= 1*a*...*a = if e==0 then 1 else pow(a,e)]
+      [0**0 == 1]
+
+
+统一:
+  操作符格式:
+    (?<op>)左短路
+    (<op>?)右短路
+    (分支值? : : ...)分支表达式
+      分支值 :: uint%M
+  ===
+  op :: a -> b -> c
+  on_a :: a -> Maybe c
+  on_b :: b -> Maybe c
+  impl_left_short_pass_op :: (a -> b -> c) -> (a -> Maybe c) -> (a -> (()->b) -> c)
+  impl_right_short_pass_op :: (a -> b -> c) -> (b -> Maybe c) -> ((()->a) -> b -> c)
+
+  a ?<op> lazy_b =[def]= impl_left_short_pass_op op on_a a lazy_b
+  lazy_a <op>? b =[def]= impl_left_short_pass_op op on_b lazy_a b
+
+
+短路函数:
+  函数参数:
+    * 编译期
+    * 运行期
+    函数名(编译期参数;; 运行期参数)
+  函数参数@某期:
+    函数名(勤性表达式;? [受保护惰性表达式])
+  函数参数@类型依赖于前值:
+    函数名(动态类型前值; [动态类型后值])
+

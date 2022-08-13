@@ -69,3 +69,560 @@
 
 
 
+[[
+Jacobi symbol
+https://www.planetmath.org/CalculatingTheJacobiSymbol
+https://brilliant.org/wiki/jacobi-symbol/
+
+The Jacobi symbol is a generalization of the Legendre symbol. Introduced by Jacobi in 1837, it is of theoretical interest in modular arithmetic and other branches of number theory, but its main use is in computational number theory, especially primality testing and integer factorization; these in turn are important in cryptography.
+
+The Jacobi symbol is a generalization of the Legendre symbol, which can be used to simplify computations involving quadratic residues. It shares many of the properties of the Legendre symbol, and can be used to state and prove an extended version of the law of quadratic reciprocity.
+
+[is_prime p]:
+  [Legendre_symbol(p,a) =[def]= if [a%p==0] then 0 else if [@[x<-[1..<p]] -> [(x**2 -a)%p =!= 0]] then -1 else +1]
+[m::int][m%2==1]
+  #[m > 0][m%2==1]:  #??? [a::int][a=!=0]:
+  [Jacobi_symbol(m,a) =[def]= II Legendre_symbol(p, a)**max_power_of_base_as_factor_of_(p,m) {p <- all_prime_factors_of(m)}]
+  ###
+  [Jacobi_symbol(m,a) ==
+    if [gcd(a,m) =!= 1] then 0 else
+    if [m < 0] then Jacobi_symbol(-m,a) else
+    if [m==1] then +1 else
+    if [not$ 0 < a < m] then Jacobi_symbol(m,a%m) else
+    #if [a==1] then +1 else
+    if [a==2] then (-1)**((m**2-1)/8) else
+      # Jacobi_symbol(m,2) = [m%8 <- {1,7}](+1) + [m%8 <- {3,5}](-1)
+    if [a%2==0] then let [a == 2**e * b][b%2==1] in Jacobi_symbol(m,2)**(e%2) * Jacobi_symbol(m, b) else
+    # [a%2==1][0 < a < m][gcd(a,m)==1]
+    (-1)**((a-1)*(m-1)/4) * Jacobi_symbol(a,m)
+      # 此时 可能有[a==1]: [Jacobi_symbol(1,m)==1]
+  ]
+
+###
+The Legendre symbol measures whether a is a square mod p. Unfortunately, the Jacobi symbol does not retain this property:
+  If gcd(a,m)=1 and a is a square mod m, where m is an odd positive integer, then Jacobi_symbol(m,a)=1; but the converse is not true.
+    Jacobi_symbol(9,2) = Jacobi_symbol(3,2)**2 = (-1)**2 = 1
+    Jacobi_symbol(35,3) = Jacobi_symbol(5,3)*Jacobi_symbol(7,3) = (-1)*(-1) = 1
+
+[m > 0][m%2==1]:
+  [a=[%m]=b]:
+    [Jacobi_symbol(m,a) == Jacobi_symbol(m,b)]
+
+  #completely multiplicative function
+  [Jacobi_symbol(m, a*b) == Jacobi_symbol(m,a)*Jacobi_symbol(m,b)]
+
+  [n > 0][n%2==1]:
+    [Jacobi_symbol(m*n, a) == Jacobi_symbol(m,a)*Jacobi_symbol(n,a)]
+
+  [n > 0][n%2==1][gcd(m,n)==1]:
+    [Jacobi_symbol(m,n)*Jacobi_symbol(n,m) == (-1)**((m-1)/2) * (-1)**((n-1)/2)]
+    # 比Legendre_symbol(m,n)计算更方便，无需完全分解n
+
+  [Jacobi_symbol(m,-1) = (-1)**((m-1)/2)]
+    # =1 <==> [m%4 == 1]
+    # 4k+1型 素数p:  z**2=[%p]=-1, p=x**2+y**2, (x+y*j) = u*gcd(p, z+1*j), u <- {+1,-1,+j,-j}
+  [Jacobi_symbol(m,2) = (-1)**((m**2-1)/8)]
+    # =1 <==> [m%8 ≡ ±1]
+  [Jacobi_symbol(m,1) = 1]
+
+#Euler's criterion
+[is_prime p][a%p =!= 0]:
+  [Legendre_symbol(p,a) =[%p]= a**((p-1)/2)]
+gives a criterion for primality:
+  [m > 0][m%2==1]:
+    [gcd(a,m)==1][[Jacobi_symbol(m,a) =![%m]!= a**((m-1)/2)] -> [not$ is_prime m]]
+  It is not hard to show that if m is composite, then at least half the positive a less than m that are coprime to m satisfy this condition. Choosing random values of a k times leads to a probability of (1/2**k) that none of the random values are witnesses to the compositeness of m in this way. This probabilistic primality test is called the Solovay-Strassen primality test, and is quite efficient in practice.
+  One interesting feature of the test is that it can be used to prove that numbers are composite without explicitly determining a nontrivial factor.
+
+]]
+
+
+
+[[[[[见下面:平方剩余判定整体算法
+
+
+@[M,N::int]:
+  [mod(M;N) =[def]= N%M =[def]= N if M==0 else N-floor_div(N,M)*M]
+  [?[q::int] -> [N == q*M + (N%M)]]
+
+  [divs(M;N) =[def]= M\\\N =[def]= [?[q::int] -> [N==q*M]]]
+  [0\\\0]
+  [@[x::int] -> [x\\\0]]
+
+  [M\\\N][M=!=0]:
+    [exact_div_(M;N) =[def]= N///M =[def]= (N/M)]
+
+  @[a,b :: int]:
+    [[a =[%M]= b] =[def]= [a%M == b%M]]
+    [[a =[%M]= b] == [(a-b)%M == 0]]
+
+
+  [is_square_residual_mod(M;N) =[def]= [?[x::int] -> [(x**2-N)%M == 0]]]
+  [is_square(N) =[def]= [?[x::int] -> [(x**2-N) == 0]]]
+  [is_square_residual_mod(0;N) == is_square(N)]
+
+  @[p::int][is_prime p][p=!=2]:
+    [Legendre_symbol(p;N) =[def]= (if N%p==0 then 0 else if is_square_residual_mod(p;N) then +1 else -1)]
+
+  @[a,b :: int][gcd(a,b)==1]:
+    [[is_square_residual_mod(a*b;N)] <-> [[is_square_residual_mod(a;N)][is_square_residual_mod(b;N)]]]
+      ##中国剩余定理CRT组合可行解
+      #平方剩余判定囗分解模
+  @[a,b :: int]:
+    [[is_square_residual_mod(a*b;N)] -> [[is_square_residual_mod(a;N)][is_square_residual_mod(b;N)]]]
+      #不论a*b是否为0
+  @[d :: int][d\\\M]:
+    [[is_square_residual_mod(M;N)] -> [is_square_residual_mod(d;N)]]
+  [[is_square_residual_mod(0;N)] -> [is_square_residual_mod(M;N)]]
+  [[is_square(N)] -> [is_square_residual_mod(M;N)]]
+
+  @[a,b :: int]:
+    [[[is_square_residual_mod(M;a)][is_square_residual_mod(M;b)]] -> [is_square_residual_mod(M;a*b)]]
+
+
+  [M=!=0]:
+    [max_power_of_base_as_factor_of_(M;N) =[def]= if N==0 then +oo else max{e <- [0..] | [M**e \\\ N]}]
+
+  @[p,i,j::int][is_prime p][i>=1][j>=0][N%p=!=0]:
+    [[j>=i] -> [is_square_residual_mod(p**i;N*p**j)]]
+    [[j<i] -> [j%2==1] -> [not$ is_square_residual_mod(p**i;N*p**j)]]
+      [proof:
+        @[x::int][(x**2-N*p**j)%p**i==0][u:=(j-1)///2]:
+          [j==2*u+1]
+          [u>=0]
+          !![j<i]
+          !![(x**2-N*p**j)%p**i==0]
+          [(x**2-N*p**j)%p**(j+1)==0]
+          [(x**2-N*p**j)%p**j==0]
+          [(x**2)%p**j==0]
+          [x%p**(u+1)==0]
+          [(x**2)%p**(2*u+2)==0]
+          [(x**2)%p**(j+1)==0]
+          !![(x**2-N*p**j)%p**(j+1)==0]
+          [(-N*p**j)%p**(j+1)==0]
+          [-N%p==0]
+          [N%p==0]
+          !![N%p=!=0]
+          _L
+      ]
+    [[is_square_residual_mod(p**i;N*p**j)] <-> [
+      [i<=j]
+      or[[j<i][j%2==0][is_square_residual_mod(p**(i-j);N)]]
+      ]]
+
+  #[[
+  #####
+  @[p::int][is_prime p]:
+    [[is_square_residual_mod(M;N)] -> [
+      [is_square_residual_mod(p**max_power_of_base_as_factor_of_(p;M);N)]
+      [[max_power_of_base_as_factor_of_(p;N)>=max_power_of_base_as_factor_of_(p;M)]or[max_power_of_base_as_factor_of_(p;N)%2==0]]
+      ]]
+      # 不论是否[M%p==0]
+
+
+  @[p::int][is_prime p][N=!=0]:
+    [max_power_of_base_as_factor_of_(p;N) <= floor_log2(N)]
+    [gcd(N,p**floor_log2(N)) == p**max_power_of_base_as_factor_of_(p;N)]
+    [gcd(p,N///gcd(N,p**floor_log2(N))) == 1]
+  [N=!=0]:
+    [factor_out_anti_coprime_part_with(M;N) =[def]= gcd(N,gcd(M,N)**floor_log2(N))]
+    [factor_out_coprime_part_with(M;N) =[def]= (N///factor_out_anti_coprime_part_with(M;N))]
+    [factor_out_coprime_part_and_cofactor_with(M;N) =[def]= (factor_out_anti_coprime_part_with(M;N), factor_out_anti_coprime_part_with(M;N))]
+
+    [N == factor_out_anti_coprime_part_with(M;N) * factor_out_coprime_part_with(M;N)]
+    [gcd(M,factor_out_coprime_part_with(M;N))==1]
+    [all_prime_factors_of(factor_out_anti_coprime_part_with(M;N)) |<=| all_prime_factors_of(M)]
+      # [all_prime_factors_of(0)==all_primes]
+  #####
+  #####
+  #####
+  [M*N=!=0]:
+    [g:=gcd(M,N)]
+    [gM:=gcd(g,M///g)] #gM的素因子在M的幂大于在N的幂
+    [M_part4even_exp_test := factor_out_anti_coprime_part_with(gM;M)]
+    [N_part4even_exp_test := gcd(N,M_part4even_exp_test)]
+    [M_coprime_part := factor_out_coprime_part_with(g;M)]
+
+    [[is_square_residual_mod(M;N)] <-> [
+      [is_square_residual_mod(M_part4even_exp_test;N)]
+      [is_square_residual_mod(M_coprime_part;N)]
+      #节省:[is_square_residual_mod(M///(M_part4even_exp_test*M_coprime_part);N)]
+      ] <-> [
+      [is_square_residual_mod(M_coprime_part;N)]
+        #[gcd(M_coprime_part,N)==1]
+      [is_square(N_part4even_exp_test)]
+      [is_square_residual_mod(M_part4even_exp_test///N_part4even_exp_test;N///N_part4even_exp_test)]
+        #[gcd(M_part4even_exp_test///N_part4even_exp_test,N///N_part4even_exp_test)==1]
+      ]
+      #也就是将 任意非零俩数的平方剩余判定 降解为 平方数判定+非零互素俩数的平方剩余判定
+    ]
+  #上面是 任意非零俩数的平方剩余判定
+  #下面是 含零俩数的平方剩余判定
+  [[is_square_residual_mod(0;N)] <-> [is_square(N)]]
+  [is_square_residual_mod(M;0)]
+  [is_square_residual_mod(0;0)]
+  #####
+  #####
+  #####
+
+  # %2**i -> %2**(i+1)
+  # %p**i -> %p**(i+1)
+  @[p,i::int][is_prime p][i>=1][
+    [x :<- [0..<p**i]]
+    [u :<- [0..<p]]
+    [x1 := x + u*p**i]
+    ]:
+    [x1 <- [0..<p**(i+1)]]
+    [u == (x1-x)///p**i]
+
+    !![i>=1]
+    [(x1**2%p**(i+1) - x**2%p**i)
+      == (x**2 + 2*x*u*p**i + (u*p**i)**2)%p**(i+1) - x**2%p**i
+      == (x**2 + 2*x*u*p**i)%p**(i+1) - x**2%p**i
+      == (x**2 //p**i + 2*x*u)*p**i %p**(i+1)
+      == (x**2 //p**i + 2*x*u)%p *p**i
+      ]
+    [(p**i) \\\ (x1**2%p**(i+1) - x**2%p**i)]
+    [k := (x1**2%p**(i+1) - x**2%p**i) ///p**i %p]
+    [x1**2%p**(i+1) == x**2%p**i + k*p**i]
+        # 固定x: k%p的数量 决定 x1**2%p**(i+1)的数量
+    [k == (x**2 //p**i + 2*x*u)%p]
+    [2*x*u%p == (k - x**2 //p**i %p)%p]
+
+    #bug: # *[x==0]or[p==2]: # *[x=!=0][p=!=2]:
+    #   since [x :<- [0..<p**i]] not [x :<- [0..<p]]
+    *[x%p==0]or[p==2]:
+      [2*x %p == 0]
+      [k == (x**2 //p**i + 2*x*u)%p == x**2 //p**i %p]
+        # k 与u无关
+        # 固定x: k%p唯一 ==>> x1**2%p**(i+1)唯一
+        #   但 (u,x1)有 p个，下一级的k会增加多少？
+        *[x%p==0]:
+          [e := max_power_of_base_as_factor_of_(p;x)]
+          [e>=1]
+          [k == x**2 //p**i %p == ???]
+          * [x==0]:
+            [e==+oo]
+            [k==0]
+          * [x=!=0]:
+            !![x :<- [0..<p**i]]
+            [1 <= e < i]
+            [i>=2]
+            * [2*e >= i+1]:
+              [k==0]
+            * [2*e < i+1]:
+              [x_pe := x///p**e]
+              [x_pe <- [0..<p**(i-e)]]
+              [x_pe%p =!= 0]
+              [k == x_pe**2*p**(2*e) //p**i %p
+                == x_pe**2 //p**(i-2*e) %p
+                ]
+        * [p==2][x%2==1]:
+          [k == x**2 //p**i %p == ???]
+          # 2**1: 1
+          #     [x<-{1}][x1==({1}.+s*2**1).%2**2 <- {1,3}]
+          # 2**2: 1
+          #     {1,3}.**2%2**2 == {1}
+          #     [x<-{1,3}][x1==({1,3}.+s*2**2).%2**3 <- {1,5,3,7}]
+          # 2**3: 1
+          #     {1,5,3,7}.**2%2**3 == {1}
+          #     [x<-{1,5,3,7}][x1==({1,5,3,7}.+s*2**3).%2**4 <- {1,9,5,13,3,11,7,15}]
+          # 2**4: 1,9
+          #     {1,9,5,13,3,11,7,15}.**2%2**4 == {1,9}
+          @[y::int][y<-[0..<2**i]][y**2 =[%2**i]= x**2]:
+            * [i==1]:
+              [x==1]
+              [y==1]
+              [y <- {x} == {1}]
+              [k<y> == y**2 //p**i %p <- {0}]
+            * [i==2]:
+              [y <- {x,2**i-x} == {1,3}]
+              #2个不同的解
+              [k<y> == y**2 //p**i %p <- {0}]
+            * [i>=3]:
+              [y <- {x%2**(i-1),2**i-x%2**(i-1),2**(i-1) + x%2**(i-1),2**(i-1) - x%2**(i-1)}]
+                # == {2**(i-1) + sign*(x%2**(i-1)), 2**(i-1) + sign*(2**(i-1) - x%2**(i-1))}
+                # == {2**(i-1) + sign*X}
+              #4个不同的解
+              [2**(i-1) - x%2**(i-1) == x%2**(i-1)]:
+                #相同则悖
+                [x%2**(i-1) == 2**(i-2)]
+                !![i>=3]
+                [x%2**(i-1) %2 == 2**(i-2) %2 == 0]
+                [x%2==0]
+                !![x%2==1]
+                _L
+              ?X.[y==2**(i-1) + sign*X]
+              [X <- {(x%2**(i-1)), (2**(i-1) - x%2**(i-1))}]
+              [X%2==1]
+              [k<y> == y**2 //p**i %p
+                == (2**(i-1) + sign*X)**2 //2**i %2
+                == (2**(i+(i-2)) + 2**i*sign*X + X**2) //2**i %2
+                == (2**(i-2) + sign*X + X**2//2**i) %2
+                !![i>=3]
+                == (sign*X + X**2//2**i) %2
+                == (X + X**2//2**i) %2
+                !![X%2==1]
+                == (1 + X**2//2**i) %2
+                == 1 - X**2//2**i %2
+                ]
+              [(2**(i-1) - x%2**(i-1))**2//2**i %2
+                !!同上
+                == (-x%2**(i-1) + (x%2**(i-1))**2//2**i) %2
+                !![x%2==1]
+                == (1 + (x%2**(i-1))**2//2**i) %2
+                == 1 - (x%2**(i-1))**2//2**i %2
+                == 1 - x**2//2**i %2
+                ]
+              [(x%2**(i-1))**2//2**i %2
+                == x**2//2**i %2
+                ]
+              [X**2//2**i %2
+                <- {(x%2**(i-1)), (2**(i-1) - x%2**(i-1))}.**2//2**i %2
+                == {x**2//2**i %2, 1-x**2//2**i %2}
+                == {0,1}
+                ]
+              [k<y> == 1 - X**2//2**i %2 <- {0,1}]
+              # 互素平方剩余:任意拓展皆是！
+              # 2**3: xx<-{1}
+              # 2**4: xx<-{1+0,1+8}=={1,9}
+              # 2**5: xx<-{1+0,1+16,9+0,9+16}=={1,17=49,9,25}
+              #
+              #
+              #互素平方根提升:
+              # [k<y> := (xx-y**2)///2**i%2]
+              #只有[2**(i+1) \\\ (xx-y**2)]即[k<y>==0]的y，才可用于计算x1，此时u无关，故有2对(u,x1)
+              # [y:=2**(i-1) + sign*X]
+              # [k<y> := 1 - X<y>**2//2**i %2]
+              # xx := 1
+              # 2**3: x<-{1,3,5,7}
+              # 2**4: x<-{1,9,7,15} #i=3=>i+1=4, {x%p**(i-1):{X:{y}:k<y>}}={1:{1:{3,5}:1,3:{1,7}:0}}, {x1}={1+0,1+8,7+0,7+8}
+              # 2**5: x<-{1,17,15,31} #i=4=>i+1=5, {x%p**(i-1):{X:{y}:k<y>}}={1:{1:{7,9}:1,7:{1,15}:0}}, {x1}={1+0,1+16,15+0,15+16}
+
+
+    *[x%p=!=0][p=!=2]:
+      [u == inv_mod_(p;2*x)*(k - x**2 //p**i %p)%p]
+        # 固定x: 任意k，有相应(u,x1)，x1**2%p**(i+1)的数量 == k%p的数量 == p
+          # 互素平方剩余:任意拓展皆是！
+          # 3**1:xx<-{1}
+          # 3**2:xx<-{1,4=1+3,7=16=1+2*3} # =[%3]= 1
+          #     2,5,8 # =[%3]= 2
+          #     0,3,6 # =[%3]= 0
+          # 3**3:xx<-{1,1+9=10=64,1+18=19=100,4,4+9=13=121,4+18=22=49,7,7+9=16,7+18=25}
+
+    #####综上所述:
+    [@[xx::int] -> [p=!=2] -> [xx%p=!=0] -> [[is_square_residual_mod(p**i;xx)] <-> [is_square_residual_mod(p**(i+1);xx)]]]
+    [@[xx::int] -> [i>=3] -> [xx%2=!=0] -> [[is_square_residual_mod(2**i;xx)] <-> [is_square_residual_mod(2**(i+1);xx)]]]
+  #####
+  #]]
+  #模为素数幂的互素平方剩余判定
+  [@[p,i,xx::int] -> [is_prime p] -> [p=!=2] -> [i>=1] -> [xx%p=!=0] -> [[Jacobi_symbol(p;xx) == +1] <-> [is_square_residual_mod(p;xx)] <-> [is_square_residual_mod(p**i;xx)]]]
+  [@[i,xx::int] -> [i>=3] -> [xx%2=!=0] -> [[xx%8==1] <-> [is_square_residual_mod(2**i;xx)]]]
+  [@[xx::int] -> [xx%2=!=0] -> [[xx%4==1] <-> [is_square_residual_mod(2**2;xx)]]]
+  [@[xx::int] -> [[xx%4 <- {0,1}] <-> [is_square_residual_mod(2**2;xx)]]]
+  [@[xx::int] -> [is_square_residual_mod(2**1;xx)]]
+
+
+
+
+[[
+平方根提升:
+  # 允许[x%p==0]非互素
+@[p,i,j::int][is_prime p][1<=j<=i][
+  [x :<- [0..<p**i]]
+  [u :<- [0..<p**j]]
+  [xj := x + u*p**i]
+  ]:
+  [xj <- [0..<p**(i+j)]]
+  [u == (xj-x)///p**i]
+
+  [high_digits := (xj**2%p**(i+j) - x**2%p**i)]
+  [high_digits <- [0..<p**(i+j)]]
+  !![1<=j<=i]
+  [high_digits
+    == (x**2 + 2*x*u*p**i + (u*p**i)**2)%p**(i+j) - x**2%p**i
+    == (x**2 + 2*x*u*p**i)%p**(i+j) - x**2%p**i
+    == (x**2 //p**i + 2*x*u)*p**i %p**(i+j)
+    == (x**2 //p**i + 2*x*u)%p**j *p**i
+    ]
+  [(p**i) \\\ high_digits]
+  [k := high_digits ///p**i %p**j]
+  [k <- [0..<p**j]]
+  [xj**2%p**(i+j) == x**2%p**i + k*p**i]
+      # 固定x: k%p**j的数量 决定 xj**2%p**(i+j)的数量
+  [k == (x**2 //p**i + 2*x*u)%p**j]
+  [2*x*u%p**j == (k - x**2 //p**i)%p**j]
+
+  ##已知:xx_ij, x
+  #     前置条件:[xx_ij%p**i == x**2%p**i]
+  #     后置条件:[xx_ij==xj**2%p**(i+j)] #xj为输出
+  ##==>>已知:x**2%p**i
+  ##==>>已知:high_digits
+  ##==>>已知:k
+  ##求xj # 即 提升x为xj
+  ##<==>求u
+  [e := max_power_of_base_as_factor_of_(p;2*x)]
+  [e>=0] # [x==0] ==>> [e==+oo]
+  [k := xx_ij //p**i %p**j]
+  * [2*x%p =!= 0]:
+    [e==0]
+    [u == u%p**j == inv_mod_(p**j;2*x)*(k - x**2 //p**i)%p**j]
+          # (u,xj) 唯一
+    [p**min(e,j)==p**e==p**0==1]
+  * [2*x%p == 0]:
+    [e>=1]
+    [2*x%p**j==0] <==> [e>=j]
+    * [e>=j]:
+      [k == (x**2 //p**i + 2*x*u)%p**j == (x**2 //p**i)%p**j]
+          # k与u无关
+      !![k := xx_ij //p**i %p**j]
+      [xx_ij //p**i %p**j == (x**2 //p**i)%p**j]
+      !![xx_ij%p**i == x**2%p**i]
+      [xx_ij %p**(i+j) == (x**2)%p**(i+j)]
+      * [xx_ij %p**(i+j) == (x**2)%p**(i+j)]:
+        [u <- [0..<p**j]]
+            # (u,xj) 共有p**j对
+        [p**min(e,j)==p**j]
+      * [xx_ij %p**(i+j) =!= (x**2)%p**(i+j)]:
+        [u <- {}]
+            # (u,xj) 共有0对无解
+    * [e<j]:
+      [x2_pe := 2*x///p**e]
+      [x2_pe <- [0..<2*p**(i-e)]]
+      [x2_pe%p =!= 0]
+      [2*x == x2_pe*p**e]
+      [k == (x**2 //p**i + 2*x*u)%p**j
+        == (x**2 //p**i + x2_pe*p**e*u)%p**j
+        ]
+      [x2_pe*p**e*u =[%p**j]= (k - x**2 //p**i)]
+      * [p**e \\\ (k - x**2 //p**i)]:
+        [x2_pe*u =[%p**(j-e)]= (k - x**2 //p**i) ///p**e]
+        [u =[%p**(j-e)]= (k - x**2 //p**i) ///p**e *inv_mod_(p**(j-e);x2_pe)]
+        [u0 := (k - x**2 //p**i) ///p**e *inv_mod_(p**(j-e);x2_pe) %p**(j-e)]
+        [u0 <- [0..<p**(j-e)]]
+        [u%p**(j-e) == u0]
+        !![u :<- [0..<p**j]]
+        [u <- {u0+v*p**(j-e) | [v :<- [0..<p**e]]}]
+            # (u,xj) 共有p**e对
+        [p**min(e,j)==p**e]
+      * [not$ p**e \\\ (k - x**2 //p**i)]:
+        [u <- {}]
+            # (u,xj) 共有0对无解
+  综上:[(u,xj)共有p**min(e,j)对 if [p**(min(e,j)+i) \\\ (xx_ij - x**2)] else 0对无解]
+  统一解形式:
+    [mej := min(e,j)]
+    [x2_p_mej := x///p**mej] #注意:x2_pe在[x==0]未定义
+    [xj <- {x+(u0+v*p**(j-mej))*p**i | [u0 :<- (if [p**(mej+i) \\\ (xx_ij - x**2)] then {(xx_ij - x**2) ///p**(mej+i) *inv_mod_(p**(j-mej);x2_p_mej) %p**(j-mej)} else {})][v :<- [0..<p**mej]]}]
+
+  #####
+  #最快提升:
+  [j==i]:
+    !![x :<- [0..<p**i]]
+    * [x==0]:
+      [e == +oo > i]
+    * [x=!=0][p==2]:
+      [e <- [1..=i]]
+    * [x=!=0][p=!=2]:
+      [e <- [0..<i]]
+      [e < i]
+    #####
+    [mej == j]
+      <==> [e >= j]
+      <==> [e >= i]
+      <==> [[x==0]or[p==2][x==2**(i-1)]]
+    #####实例:
+        # xx_ij = 1
+        # p = 2
+        # i = j = 5
+        # e = 1
+        # mej = 1
+        # k = 0
+        # 2**5: x <- {1,17,15,31}
+        # 过滤:[xx_ij =[%p**(i+mej)==2**6]= x**2]
+        # {x:x**2%2**6} = {1:1,17:33,15:33,31:1}
+        ##只有[x<-{1,31}]合格
+        # {x:may u0<x>} == {1:0,17:/,15:/,31:-15*15%2**4==15}
+        # {x:{xj}} == {1:{1+(0+0*16)*32=1,1+(0+1*16)*32=513},17:{},15:{},31:{31+(15+0*16)*32=511,31+(15+1*16)*32=1023}}
+        # {xj} == {1,2**9-1,2**9+1,2**10-1}
+
+
+]]
+
+
+
+@[N::int][N>0]:
+  [factor_as_power(N) =[def]= if N==1 then (1,0) else min{(x,e) | [x:<-[2..=N]][e:=max_power_of_base_as_factor_of_(x;N)][x**e==N]}]
+
+
+平方剩余判定:
+  见上面:
+    含零俩数的平方剩余判定
+    任意非零俩数的平方剩余判定
+    平方剩余判定囗分解模
+    模为素数幂的互素平方剩余判定
+    #平方根提升
+
+#平方剩余判定整体算法:
+[is_square_residual_mod(M;N) ==
+  #含零俩数的平方剩余判定
+  if N == 0 then True else
+  if M == 0 then is_square(N) else
+  if M < 0 then is_square_residual_mod(-M;N) else
+  if M == 1 then True else
+  if not 0 < N < M then is_square_residual_mod(M;N%M) else
+  #[0 < N < M] #[M>=2]
+  if not [gcd(M,N) == 1] then
+  #任意非零俩数的平方剩余判定
+  let[
+    [g:=gcd(M,N)]
+    [gM:=gcd(g,M///g)] #gM的素因子在M的幂大于在N的幂
+    [M_part4even_exp_test := factor_out_anti_coprime_part_with(gM;M)]
+    [N_part4even_exp_test := gcd(N,M_part4even_exp_test)]
+    [M_coprime_part := factor_out_coprime_part_with(g;M)]
+    ]in[
+    [is_square(N_part4even_exp_test)]
+    [is_square_residual_mod(M_coprime_part;N)]
+      #[gcd(M_coprime_part,N)==1]
+    [is_square_residual_mod(M_part4even_exp_test///N_part4even_exp_test;N///N_part4even_exp_test)]
+      #[gcd(M_part4even_exp_test///N_part4even_exp_test,N///N_part4even_exp_test)==1]
+    ]
+  else
+  #[gcd(M,N) == 1]
+  let [(rt,e):=factor_as_power(M)] in if not is_prime(rt) then
+  #平方剩余判定囗分解模
+  let [p2e:=factor_pint(M)] in
+    #需要分解整数，效率是个大问题...
+    all(is_square_residual_mod(p**e; N) for p,e in p2e.items())
+  else
+  #[0 < N < M==rt**e][gcd(rt,N) == 1][is_prime(rt)][e>=1]
+  let [p:=rt] in
+  #模为素数幂的互素平方剩余判定
+  if p==2 then
+    if e == 1 then True else
+    if e == 2 then N == 1 else
+    [N%8==1]
+  else
+    Jacobi_symbol(p;N)==+1
+  ]
+
+]]]]]
+
+[[
+平方数开头结尾
+研究 平方数 的 所有可能的 开头数串 与 结尾数串
+  用于 拼凑 N == x**2-y**2
+
+
+R is radix
+L is length
+???all_square_lead_digits_of_len_(R;L)
+all_square_tail_digits_of_len_(R;L)
+
+@[R,L::int][R>=2][L>=0]:
+  ???[all_square_lead_digits_of_len_(R;L) =[def]= {???}]
+  [all_square_tail_digits_of_len_(R;L) =[def]= {x**2%R**L | [x :<- [0..]}]]
+
+view script/整数分解囗平方差囗中国剩余定理.py
+view others/数学/我的猜想.txt
+拼凑平方差: xs<M;N> = {x | x**2=[%M]=N+y**2}, len(xs<prime**e;N>)大约是phi(prime**e)的一半
+]]

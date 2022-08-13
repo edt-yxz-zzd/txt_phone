@@ -1,0 +1,66 @@
+
+e others/数学/我的猜想.txt
+
+[[猜想已被证明
+主要猜想:
+[@[M,N::int] -> [M > 0] -> [gcd(M,N)==1] -> [len{(x,y) | [x,y:<- [0..<M]][(x**2-y**2-N) %M ==0]} == phi(2*M)]]
+  即:[[gcd(M,N)==1] -> [num_solutions_of_square_diff_mod(M;N) == phi(2*M)]]
+另外推论:
+[@[p,e,N::int] -> [[is_prime p][p%2==1][e>=1][N%p =!= 0]] -> [num_part1_of_solutions_of_square_diff_mod(p**e;N) == (p**(e-1)*(p-1)///2 -[Jacobi_symbol(p;N)==+1]*(p**(e-1) - p**(1-e%2)*(p**(e+e%2-2)-1)///(p+1) -2))]]
+[@[e,N::int] -> [[e>=3][N%2 == 1]] -> [num_part1_of_solutions_of_square_diff_mod(2**e;N) == (2**(e-2) -[N%8==5]*(2**(e-2)-2**max(2,e-3)) -[N%8==1]*(2**(e-2) -[e>=5]*(4+2**(3-e%2)*(2**(e+e%2-6) -1)///3) -4))]]
+
+===from:
+view script/整数分解囗平方差囗中国剩余定理.py
+猜想已被证明:
+    [M > 0][gcd(M,N)==1]:
+        [len(求平方差分解囗模囗暴力(M, N)) == phi(M)*2**[M%2==0] == phi(2*M)]
+
+@[M,N::int][M =!= 0][gcd(M,N)==1]:
+    #####
+    [num_solutions_of_square_diff_mod(M;N) =[def]= len{(x,y) | [x,y:<- [0..<abs(M)]][(x**2-y**2-N) %M ==0]}]
+    #####
+    [num_solutions_of_square_diff_mod(M;+N) == num_solutions_of_square_diff_mod(M;-N)]
+    #####
+    [num_part1_of_solutions_of_square_diff_mod(M;N) =[def]= len{x | [x,y:<- [0..<abs(M)]][(x**2-y**2-N) %M ==0]}]
+    [num_part2_of_solutions_of_square_diff_mod(M;N) =[def]= len{y | [x,y:<- [0..<abs(M)]][(x**2-y**2-N) %M ==0]}]
+    #####
+    [num_part2_of_solutions_of_square_diff_mod(M;+N) == num_part1_of_solutions_of_square_diff_mod(M;-N)]
+    #####
+    [num_part1_square_of_solutions_of_square_diff_mod(M;N) =[def]= len{x**2%M | [x,y:<- [0..<abs(M)]][(x**2-y**2-N) %M ==0]}]
+        #比num_part1_of_solutions_of_square_diff_mod(M;N)少一半(p==2时剩1/4)，再少[x**2=[%M]=z][gcd(z,M)=!=1]的根(每组根计一)
+    [num_part2_square_of_solutions_of_square_diff_mod(M;N) =[def]= len{y**2%M | [x,y:<- [0..<abs(M)]][(x**2-y**2-N) %M ==0]}]
+    #####
+    [num_part2_square_of_solutions_of_square_diff_mod(M;+N) == num_part1_square_of_solutions_of_square_diff_mod(M;-N)]
+    #####
+    #####
+    # odd_prime:[sz_xx == sz_yy == (sz_x + sz_y - sz_xy///2)///2]
+    # even_prime:[sz_xx == sz_yy == (sz_x + sz_y - sz_xy///4)///4]
+    [@[p,e,N::int] -> [[is_prime p][p%2==1][e>=1][N%p =!= 0]] -> [num_part1_square_of_solutions_of_square_diff_mod(p**e;+N) == num_part1_square_of_solutions_of_square_diff_mod(p**e;-N) == (num_part1_of_solutions_of_square_diff_mod(p**e;+N) + num_part1_of_solutions_of_square_diff_mod(p**e;-N) - num_solutions_of_square_diff_mod(p**e;N)///2)///2]]
+    [@[e,N::int] -> [[e>=3][N%2==1]] -> [num_part1_square_of_solutions_of_square_diff_mod(2**e;+N) == num_part1_square_of_solutions_of_square_diff_mod(2**e;-N) == (num_part1_of_solutions_of_square_diff_mod(2**e;+N) + num_part1_of_solutions_of_square_diff_mod(2**e;-N) - num_solutions_of_square_diff_mod(2**e;N)///4)///4]]
+    #####
+
+[is_prime p][p%2==1][e>=1][N%p =!= 0][(x**2-y**2-N)%p**e==0]:
+    [sz_xy := num_solutions_of_square_diff_mod(p**e;N)]
+        # 猜想已被证明[sz_xy==phi(2*p**e) == phi(p**e)]
+    [sz_x := num_part1_of_solutions_of_square_diff_mod(p**e;N)
+        == sz_xy///2 - [Jacobi_symbol(p;N)==+1]*(p**(e-1) - p**(1-e%2)*(p**(e+e%2-2)-1)///(p+1) -2)
+        =[猜想已被证明]= p**(e-1)*(p-1)///2 -[Jacobi_symbol(p;N)==+1]*(p**(e-1) - p**(1-e%2)*(p**(e+e%2-2)-1)///(p+1) -2)
+            #？大约phi(p**e)一半？
+        =[简化]= p**(e-1)*(p-1)///2 -sp*((p**e -(1+e%2)*p-(2-e%2))///(p+1))
+    ]
+
+[e>=3][N%2==1][(x**2-y**2-N)%2**e==0]:
+    [sz_xy := num_solutions_of_square_diff_mod(2**e;N)]
+        # 猜想已被证明[sz_xy==phi(2*2**e) == (2**e)]
+    [sz_x := num_part1_of_solutions_of_square_diff_mod(2**e;N)
+        == sz_xy///4 -[N%8==5]*(2**(e-2)-2**max(2,e-3)) -[N%8==1]*(2**(e-2) -[e>=5]*(4+2**(3-e%2)*(2**(e+e%2-6) -1)///3) -4)
+        =[猜想已被证明]= 2**(e-2) -[N%8==5]*(2**(e-2)-2**max(2,e-3)) -[N%8==1]*(2**(e-2) -[e>=5]*(4+2**(3-e%2)*(2**(e+e%2-6) -1)///3) -4)
+            #？大约phi(2**e)一半？
+        =[简化]= [3<=e<5]*(4-2*[e==3][N%4==3]) + [e>=5]*([N%4==3]*2**(e-2) +[N%8==5]*(2**(e-3)) +[N%8==1]*(4*(2**(e-5) +(4 +e%2))///3))
+        =[简化补充]= [1<=e<3]*2 + [3<=e<5]*(4-2*[e==3][N%4==3]) + [e>=5]*([N%4==3]*2**(e-2) +[N%8==5]*(2**(e-3)) +[N%8==1]*(4*(2**(e-5) +(4 +e%2))///3))
+    ]
+
+]]
+
+
+

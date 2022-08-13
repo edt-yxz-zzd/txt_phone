@@ -1,0 +1,249 @@
+
+e others/数学/本原根.txt
+
+Fermat's little theorem:
+[is_prime p]:
+  [@[i<-[0..<p]] -> [i**p%p == i]]
+  [@[i<-[1..<p]] -> [i**(p-1)%p == 1]]
+
+Euler's totient function:
+[n <- [1..]]:
+  [phi(n) =[def]= len({i | [i<-[1..=n]][gcd(n,i)==1]})]
+  [phi(n) == n * II (1-1/p) {p<-all_prime_factors_of(n)}]
+  [@[i<-[1..=n]] -> [gcd(n,i)==1] -> [i**phi(n)%n == 1]]
+  [i<-[1..=n]][gcd(n,i)==1]:
+    [order_mod(n;i) =[def]= min{e | [i<-[1..=phi(n)]][i**e%n==1]}]
+  [max_order_mod(n) =[def]= max{order_mod(n;i) | [i<-[1..=n]][gcd(n,i)==1]}]
+  [max_order_mod(1) == 1]
+  [max_order_mod(2) == 1]
+  [max_order_mod(4) == 2]
+  [@[s<-[3..]] -> [max_order_mod(2**s) == 2**(s-2)]]
+    #[max_order_mod(8) == 2]
+    #[max_order_mod(16) == 4]
+  [@[p<-all_primes] -> [p%2==1] -> @[e<-[1..]] -> [max_order_mod(p**e) == phi(p**e) == (p-1)*p**(e-1)]]
+  [max_order_mod(n) == lcm{max_order_mod(p**e) | [p<-all_prime_factors_of(n)][e:=max_power_of_base_as_factor_of_(p,n)]}]
+  [[max_order_mod(n)%2 == 1] <==> [n <- {1,2}]]
+  [[max_order_mod(n) == phi(n)] <==> [n <- {1,2,4}\-/{m | [p<-all_primes][p%2==1][e<-[1..]][m <- {p**e, 2*p**e}]}]]
+    #也就是说，只有这些n，有『本原根』
+  [max_order_mod(n) == phi(n)][g::int]:
+    [is_primitive_root_modulo(n;g) =[def]= [order_mod(n;g) == phi(n)]]
+[p<-all_primes][p%2==1][g::int]:
+  [[is_primitive_root_modulo(p**2;g)]
+    <==> [@[e<-[1..]] -> [is_primitive_root_modulo(p**e;g)]]
+    <==> [[is_primitive_root_modulo(p;g)][g**(p-1)%p**2 =!= 1]]
+    ]
+
+  #我:
+  [@[e<-[1..]] -> [
+    [is_primitive_root_modulo(p**e;g)]
+    <==> [@[q<-all_prime_factors_of(phi(p**e))] -> [g**(phi(p**e)///q) %p**e =!= 1]]
+    <==> [
+        [@[q<-all_prime_factors_of(p-1)] -> [g**(phi(p**e)///q) %p**e =!= 1]]
+        [[e>=2]->[g**(phi(p**(e-1))) %p**e =!= 1]]
+        ]
+    ]]
+  [@[e<-[1..]] -> [is_primitive_root_modulo(p**e;g)] -> [[is_primitive_root_modulo(p**(e+1);g)] <-> [g**phi(p**e) %p**(e+1) =!= 1]]]
+    [proof:
+      !![is_primitive_root_modulo(p**e;g)]
+      [@[q<-all_prime_factors_of(p-1)] -> [g**(phi(p**e)///q) %p**e =!= 1]]
+      !![gcd(p-1,p)==1]
+      [@[q<-all_prime_factors_of(p-1)] -> [(g**(phi(p**e)///q))**p %p**e =!= 1]]
+      [@[q<-all_prime_factors_of(p-1)] -> [g**(phi(p**(e+1))///q) %p**e =!= 1]]
+      [@[q<-all_prime_factors_of(p-1)] -> [g**(phi(p**(e+1))///q) %p**(e+1) =!= 1]]
+      !![[is_primitive_root_modulo(p**(e+1);g)] <-> [[g**phi(p**e) %p**(e+1) =!= 1][@[q<-all_prime_factors_of(p-1)] -> [g**(phi(p**(e+1))///q) %p**(e+1) =!= 1]]]]
+      [[is_primitive_root_modulo(p**(e+1);g)] <-> [g**phi(p**e) %p**(e+1) =!= 1]]
+    ]
+  [[is_primitive_root_modulo(p;g)] -> [
+    [{(g**(p-1)%p**2 -1) ///p *g %p} == {k <- [0..<p] | [is_primitive_root_modulo(p**2;g+k*p)]}]
+    [1 == len{k <- [0..<p] | [is_primitive_root_modulo(p**2;g+k*p)]}]
+    [[is_primitive_root_modulo(p**2;g)]or[is_primitive_root_modulo(p**2;g+p)]]
+    ]]
+    [proof:
+      [is_primitive_root_modulo(p**2;g+k*p)]:
+        <==> [(g+k*p)**(p-1) %p**2 =!= 1]
+
+      !![is_primitive_root_modulo(p;g)]
+      [g**(p-1)%p==1]
+      [u := (g**(p-1)%p**2 -1) ///p]
+      [g**(p-1)%p**2 == 1+u*p]
+
+      [inv_g := inv_mod_(p**2;g)]
+      [inv_g*g %p**2 ==1]
+      [g**(p-2) %p**2 == inv_g*g**(p-1) %p**2 == inv_g*(1+u*p) %p**2]
+
+      [(g+k*p)**(p-1) %p**2
+        == (g**(p-1)+(p-1)*k*p*g**(p-2)) %p**2
+        == (g-p*k)*g**(p-2) %p**2
+        == (g-k*p)*inv_g*(1+u*p) %p**2
+        == (1-inv_g*k*p)*(1+u*p) %p**2
+        == (1-inv_g*k*p+u*p) %p**2
+        == (1+(u-inv_g*k)*p) %p**2
+        ]
+      [(g+k*p)**(p-1) %p**2 == 1]
+        <==> [(1+(u-inv_g*k)*p) %p**2 == 1]
+        <==> [(u-inv_g*k)*p %p**2 == 0]
+        <==> [(u-inv_g*k) %p == 0]
+        <==> [g*(u-inv_g*k) %p == 0]
+        !![g%p =!= 0]
+        <==> [(g*u-k) %p == 0]
+        <==> [k == g*u %p]
+        !![u := (g**(p-1)%p**2 -1) ///p]
+        <==> [k == (g**(p-1)%p**2 -1) ///p *g %p]
+      [1 == len{k <- [0..<p] | [is_primitive_root_modulo(p**2;g+k*p)]}]
+    ]
+  [@[e<-[2..]] -> [is_primitive_root_modulo(p**e;g)] -> [
+    [(g**phi(p**e)-1)///p**e %p == (g**phi(p**(e-1))-1)///p**(e-1) %p =!= 0]
+    [g**phi(p**e)%p**(e+1) =!= 1]
+    [is_primitive_root_modulo(p**(e+1);g)]
+    ]]
+    [proof:
+      !![is_primitive_root_modulo(p**e;g)]
+      [is_primitive_root_modulo(p**(e-1);g)]
+
+      [g**phi(p**e)%p**e == 1]
+      [g**phi(p**(e-1))%p**e =!= 1]
+
+      [g**phi(p**(e-1))%p**(e-1) == 1]
+      [g**phi(p**(e-2))%p**(e-1) =!= 1]
+
+      [u := (g**phi(p**(e-1))-1) ///p**(e-1)]
+      [g**phi(p**(e-1)) == 1+u*p**(e-1)]
+      !![g**phi(p**(e-1))%p**e =!= 1]
+      [u%p =!= 0]
+
+      !![is_prime p][p%2==1]
+      [@[i<-[1..<p]] -> [choose_(p;i)%p==0]]
+      !![e>=2]
+      [e-1>=1]
+      [1+(e-1)*2 >= 1+(e-1)+1 == e+1]
+      [choose_(p;2)*(u*p**(e-1))**2 %p**(e+1) ==0]
+
+      !![e-1>=1]
+      [3*(e-1)>=e-1+2*1==e+1]
+      [(p**(e-1)) **3 %p**(e+1) == p**(3*(e-1)) %p**(e+1) ==0]
+      [@[i<-[3..]] -> [(u*p**(e-1)) **i %p**(e+1) ==0]]
+      [g**phi(p**e) %p**(e+1)
+        == (g**phi(p**(e-1)))**p %p**(e+1)
+        == (1+u*p**(e-1))**p %p**(e+1)
+        == (1+p*u*p**(e-1)) %p**(e+1)
+        == (1+u*p**e) %p**(e+1)
+        ]
+      [(g**phi(p**e)-1)///p**e %p == u%p == (g**phi(p**(e-1))-1)///p**(e-1) %p =!= 0]
+
+    ]
+  [@[e<-[2..]] -> [is_primitive_root_modulo(p**e;g)] -> [p == len{k <- [0..<p] | [is_primitive_root_modulo(p**(e+1);g+k*p**e)]}]]
+    [proof:
+      !![is_primitive_root_modulo(p**e;g)]
+      [is_primitive_root_modulo(p**e;g+k*p**e)]
+      [[is_primitive_root_modulo(p**(e+1);g+k*p**e)] <-> [(g+k*p**e)**phi(p**e) %p**(e+1) =!= 1]]
+
+      !![e>=2]
+      [phi(p**e)*p**e %p**(e+1)
+        == (p-1)*p**(e-1)*p**e %p**(e+1)
+        == 0
+        ]
+      [(g+k*p**e)**phi(p**e) %p**(e+1)
+        == (g**phi(p**e)+phi(p**e)*k*p**e*g**(phi(p**e)-1)) %p**(e+1)
+        == g**phi(p**e) %p**(e+1)
+        ]
+      [(g+k*p**e)**phi(p**e) %p**(e+1) == 1]
+        <==> [g**phi(p**e)%p**(e+1) == 1]
+      [(if [g**phi(p**e)%p**(e+1) == 1] then 0 else p) == len{k <- [0..<p] | [is_primitive_root_modulo(p**(e+1);g+k*p**e)]}]
+
+      !![is_primitive_root_modulo(p**e;g)]
+      !![e>=2]
+      [is_primitive_root_modulo(p**(e+1);g)]
+      [g**phi(p**e)%p**(e+1) =!= 1]
+      [p == len{k <- [0..<p] | [is_primitive_root_modulo(p**(e+1);g+k*p**e)]}]
+
+    ]
+
+#我的:伪本原根
+[n <- [1..]][g::int]:
+  [is_pseudo_primitive_root_modulo(n;g) =[def]= [[gcd(n,g)==1][order_mod(n;g)==max_order_mod(n)]]]
+[e<-[3..]]:
+  [{1,2**e-1, 2**(e-1)-1, 2**(e-1)+1} == {x<-[0..<2**e] | [x**2 %2**e == 1]}]
+  [@[k::int] -> [len{x<-[0..<2**e] | [x**2 =[%2**e]= 2*k+1]} <- {0,4}]]
+  [@[k,x0::int] -> [x0**2 =[%2**e]= 2*k+1] -> [{x<-[0..<2**e] | [x**2 =[%2**e]= 2*k+1]} == {x0*sqrt1 %2**e | [sqrt1 <- {1,2**e-1, 2**(e-1)-1, 2**(e-1)+1}]}]]
+  [s <- {+1,-1}]:
+    [s**2==1]
+    [2**e*s%2**(e+1) == 2**e]
+    [@[g :: int] -> [g%2**e == 2**(e-1)+s] -> [g**2%2**(e+1) == 2**e+1]]
+      proof:
+        !![e >= 3]
+        [(2*e-2) == e + (e-2) >= e+1]
+        [2**(2*e-2)%2**(e+1) == 0]
+        [g**2%2**(e+1) == (2**(2*e-2) + 2*2**(e-1)*s+s**2)%2**(e+1) == (0 + 2**e*s + 1)%2**(e+1) == 2**e+1]
+  [5**(2**(e-3))%2**e == 2**e+1]
+  [[e>=4] -> [3**(2**(e-3))%2**e == 2**e+1]]
+  !![max_order_mod(2**e) == 2**(e-2)]
+  [is_pseudo_primitive_root_modulo(2**e;3)]
+  [is_pseudo_primitive_root_modulo(2**e;5)]
+  ##2**e 伪本原根 的 数量:
+  [[0..<2**e]内奇数数量== 2**(e-1)
+    == 2*1[#+1,-1]+2[#x**2,-x**2#]*sum 2**i {i<-[0..=e-3]} = 2+2*(2**(e-2)-1)/(2-1) == 2**(e-1)]
+  ==>> [[e>=4] -> [2**e 伪本原根的数量==2*(2**(e-3)) == 2**(e-2)]]
+  [2**3 伪本原根的数量==1+2**(3-2)==1+2==3]#多了个(-1)
+  ==>> 至少一半奇数是 2**e的 伪本原根
+  [[#下面，顶层行是 [模:1的平方根]，余行是[平方剩余x:x的平方根]，注意:3,5在缩进最多的行里，即是 伪本原根
+  8: 1; 3,5,7
+  16: 1; 7,9,15;
+    9:5, 3,13,11
+  32: 1; 15,17,31;
+    17:9, 7,25,23
+      9:3, 13,19,29
+      25:5, 11,21,27
+  64: 1; 31,33,63;
+    33:17, 15,49,47
+      49:7, 25,39,57
+        25:5, 27,37,59
+        57:11, 21,43,53
+      17:9, 23,41,55
+        9:3, 29,35,61
+        41:13, 19,45,51
+  ]]
+
+
+Euler multiplicity:
+[m <- [1..]]:
+  [Euler_multiplicity_of(m) =[def]= the_valence_function_of_phi(m) =[def]= len({n | [n <- [1..]][phi(n)==m]})]
+[Euler_multiplicity_of(1) == 2]
+[@[m <- [3,5..]] -> [Euler_multiplicity_of(m) == 0]]
+[Euler_multiplicity_of(2) == 3]
+  {3,4,6}
+Carmichael's conjecture
+  ??? [@[m <- [1..]] -> [Euler_multiplicity_of(m) =!= 1]] ???
+  #要么 不存在，要么 不止一个
+  [@[m <- [1..=10**10**7]] -> [Euler_multiplicity_of(m) =!= 1]]
+[map Euler_multiplicity_of [2,4..=42] == [3,4,4,5,  2,6,0,6,  4,5,2,10,  0,2,2,7,  0,8,0,9,  4]]
+
+Sierpifiski conjecture
+??? [{2..} |<=| image<Euler_multiplicity_of>] ???
+
+??? [@[k <- [0..]] -> [len({m | [m <- [1..]][Euler_multiplicity_of(m) == k]}) <- {0,+oo}]] ???
+
+
+[12 == max{n<-[1..] | @[a<-[1..<n]][gcd(n,a)==1]}]
+
+
+[[
+view ../../python3_src/seed/math/lcm_parts_of.py
+源自:高斯 求 本原根%p 的 算法中
+    素数p
+    s = order<%p>(a)
+    任选b <- {1..<p} \-\ {a**i %p | [i<-[1..=s]]}
+    t = order<%p>(b)
+    [s%t =!= 0]
+    [lcm(s,t) =!= s]
+    [lcm(s,t) > s]
+    [lcm(s,t) >= t]
+    ?m,n. [m*n == lcm(s,t)][gcd(m,n)==1][s%m==0][t%n==0]
+    c = a**(s///m) * b**(t///n) %p
+    [order<%p>(c) == m*n == lcm(s,t) > s]
+    即 由a找到c，order增加
+    ###
+    https://libgen.lc/edition.php?id=135789101
+    wget 'http://62.182.86.140/main/11000/d46c0428209914a6acfaede707854241/Paulo%20Ribenboim%20-%20The%20new%20book%20of%20prime%20number%20records-Springer%20%281996%29.djvu' -O 'The new book of prime number records(3ed)(1996)(Ribenboim).djvu'
+
+
+]]
