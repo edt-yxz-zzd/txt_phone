@@ -1,0 +1,478 @@
+
+e others/数学/divmod加速.txt
+
+加速divmod
+加速mul_mod_
+加速pow_mod_
+使用mod__half+sign分支控制
+  [M > 0]
+  [0 <= mod_(M;n) <= M-1]
+  [-((M-1)//2) <= mod__half(M;n) <= +(M//2)]
+  [mod__half__sign_abs(M;n) =[def]= let [sr := mod__half(M;n)][r := abs(sr)][s := sign_of(sr)] in (s, r)]
+  [0 <= mod__half__sign_abs(M;n)[-1] <= +(M//2)]
+  [mul_mod_(M; lhs, rhs) == lhs*rhs %M == (lhs%M)*(rhs%M) %M == let [(sL,rL) := mod__half__sign_abs(M;lhs)][(sR,rR) := mod__half__sign_abs(M;rhs)] in rL*rR %M *(sL*sR) %M]
+    [0 <= (lhs%M)*(rhs%M) <= (M-1)**2]
+    [0 <= rL*rR <= (M//2)**2]
+使用2阶DFT<Ring=int,N=2,w=-1>
+  [[
+  [(high_lhs, low_lhs) := divmod(lhs%M, 2**e)]
+  [(high_rhs, low_rhs) := divmod(rhs%M, 2**e)]
+  [mul_mod_(M; lhs, rhs) == lhs*rhs %M == (lhs%M)*(rhs%M) %M == (high_lhs*2**e +low_lhs)*(high_rhs*2**e +low_rhs) %M]
+
+  [f(lhs,rhs,e;X,Y) := (high_lhs*X+low_lhs*Y)*(high_rhs*X+low_rhs*Y)]
+  [f(lhs,rhs,e;X,Y) == (high_lhs*high_rhs*X**2+low_lhs*low_rhs*Y**2) + (high_rhs*low_lhs+high_lhs*low_rhs)*X*Y]
+  [f(lhs,rhs,e;2**e,1) == (lhs%M)*(rhs%M)]
+  @[y][gcd(y,M)==1][inv_y := inv_mod_(M;y)][x := y*2**e %M]:
+    # 要求[(x**2 %M), (y**2 %M), (x*y %M) 远小于M]
+    #   [M=2**2**3+1=257][e=8][y=???]
+    [inv_y*y %M == 1]
+    [f(lhs,rhs,e;x,y) == (high_lhs*high_rhs*x**2+low_lhs*low_rhs*y**2) + (high_rhs*low_lhs+high_lhs*low_rhs)*x*y]
+    [f(lhs,rhs,e;x,-y) == (high_lhs*high_rhs*x**2+low_lhs*low_rhs*y**2) - (high_rhs*low_lhs+high_lhs*low_rhs)*x*y]
+    [(high_lhs*high_rhs*x**2+low_lhs*low_rhs*y**2) == (f(lhs,rhs,e;x,y) +f(lhs,rhs,e;x,-y))///2]
+    [(high_rhs*low_lhs+high_lhs*low_rhs)*x*y == (f(lhs,rhs,e;x,y) -f(lhs,rhs,e;x,-y))///2]
+
+
+  [g(lhs,rhs,e;A,B,C,D) := (high_lhs*A+low_lhs*B)*(high_rhs*C+low_rhs*D)]
+  [g(lhs,rhs,e;2**e,1,2**e,1) == (lhs%M)*(rhs%M)]
+  [A*D =[%M]= B*C]:
+    [g(lhs,rhs,e;A,B,C,D) =[%M]= (high_lhs*high_rhs*A*C+low_lhs*low_rhs*B*D) + (high_rhs*low_lhs+high_lhs*low_rhs)*A*D]
+    [gcd(B*D,M)==1][inv_BD := inv_mod_(M;B*D)][A*C =[%M]= B*D*2**(2*e)]:
+      # 要求[(A*C %M), (B*D %M), (A*D %M) 远小于M]
+      [g(lhs,rhs,e;A,-B,C,-D) =[%M]= (high_lhs*high_rhs*A*C+low_lhs*low_rhs*B*D) - (high_rhs*low_lhs+high_lhs*low_rhs)*A*D]
+      [(high_lhs*high_rhs*A*C+low_lhs*low_rhs*B*D) =[%M]= (g(lhs,rhs,e;A,B,C,D) +g(lhs,rhs,e;A,-B,C,-D))///2]
+      [(high_rhs*low_lhs+high_lhs*low_rhs)*A*D =[%M]= (g(lhs,rhs,e;A,B,C,D) -g(lhs,rhs,e;A,-B,C,-D))///2]
+  ]]
+
+
+
+见:
+view others/数学/prime\ in\ spec\ form.txt
+  加速divmod(n, d)
+  [d == k*2**e+1] #不要求是素数
+  [1 <= n <= p*(p-1) > (p-1)**2]
+  divmod(k,e;n) = (q,r) where
+    [q_ := (n>>e)//k]
+    [r_ := (((n>>e) -q_*k)<<e) ^ (n&((1<<e)-1))]
+    # [[-(p-1) <= n <= p*(p-1)] -> [divmod((r_-q_),p) <- {(0,(r_-q_)), (-1,(r_-q_)+p)}]]
+    # [(_q, _r) := divmod((r_-q_), p)]
+    [(_q, _r) := if (r_-q_) >= 0 then (0,(r_-q_)) else (-1,(r_-q_)+p)]
+    !! [r := (r_-q_)%p]
+    !! [q := q_ +(r_-q_)//p]
+    [r := _r]
+    [q := q_ + _q]
+
+
+
+
+[[divmod(n, k*2**e)
+===
+[n,k,e :: int][k,e >= 0]:
+  [divmod__k_mul_2_power(k,e;n) =[def]= divmod(n, k*2**e)]
+===
+[ne := (n>>e)]
+[mask := ((1<<e)-1)]
+[(q,r) := divmod(n, k*2**e)]
+[q == n//(k*2**e) == n//2**e //k == ne//k]
+[r == n - ((q*k)<<e) == ((ne -q*k)<<e) ^ (n%2**e)]
+[(q_,r_) := divmod(ne, k)]
+[q == q_]
+[r == (r_<<e) ^ (n&mask)]
+
+]]
+
+[[divmod(n, d_+dd)
+===
+[dd, n, d, d_ :: int][d := d_+dd][d_ >= 1][d >= 1]:
+  [divmod__dd_(dd, d_;n) =[def]= divmod(n, d_+dd)]
+===
+[(q,r) := divmod(n, d)]
+[(q_,r_) := divmod(n, d_)]
+[n == q*d +r]
+[n == q_*d_ +r_ == q_*(d-dd) +r_ == q_*d + (r_-dd*q_)]
+[(q-q_)*d == (r_-dd*q_-r)]
+[d \\\ (r_-dd*q_-r)]
+[q == q_ +(r_-dd*q_-r)///d]
+
+[(r_-dd*q_-r)%d ==0]
+!![0 <= r < d]
+[r == (r_-dd*q_)%d]
+[q == q_ +(r_-dd*q_-r)///d == q_ +(r_-dd*q_-r +r)//d == q_ +(r_-dd*q_)//d]
+[q == q_ +(r_-dd*q_)//d]
+
+综上所述，计算次序为:
+  divmod__dd_(dd,d_;n) = (q,r) where
+    [(q_,r_) := divmod(n, d_)]
+    [(_q, _r) := divmod((r_-dd*q_), d)]
+      #见下面ver1加速 计算，用减法实现除模
+    !! [r == (r_-dd*q_)%d]
+    !! [q == q_ +(r_-dd*q_)//d]
+    [r := _r]
+    [q := q_ + _q]
+
+
+
+[[[见verify_ver1_too_narrow:最接近正确的版本 ver2/ver3有bug
+
+[[加速[(_q, _r) := divmod((r_-dd*q_), d)]计算:ver2:bug
+!![(_q, _r) := divmod((r_-dd*q_), d)]
+[_q == (r_-dd*q_)//d]
+[_r == (r_-dd*q_)%d == (r_-dd*q_) -_q*d]
+[@[u,v::int] -> [[_r == (r_-dd*q_)%d <- {(r_-dd*q_)+i*d | [i :<- [u..=v]]}] <-> [-v <= _q <= -u]]]
+
+[ceil_div(n,d) == (n+d-1)//d == (n-1)//d +1]
+[(-n)//d == -ceil_div(n,d) == -1 - ((n-1)//d)]
+[s_dd := sign_of(dd)]
+[abs_dd := abs(dd)]:
+@[u,v::int][-v <= _q <= -u]:
+  !![_r == (r_-dd*q_)%d == (r_-dd*q_) -_q*d]
+  !![0 <= _r <= d-1]
+  [0 <= (r_-dd*q_) -_q*d <= d-1]
+  [1-d <= dd*q_ - r_ +_q*d <= 0]
+  [1-d +r_ -_q*d <= dd*q_ <= r_ -_q*d]
+  [1 +r_ -(_q+1)*d <= dd*q_ <= r_ -_q*d]
+  [dd =!= 0]:
+    [ceil_div(1 +r_ -(_q+1)*d, abs_dd) <= s_dd*q_ <= (r_ -_q*d)//abs_dd]
+    [(r_ -(_q+1)*d)//abs_dd +1 <= s_dd*q_ <= (r_ -_q*d)//abs_dd]
+    !![0 <= r_ <= d_-1]
+    [(0 -(_q+1)*d)//abs_dd +1 <= s_dd*q_ <= ((d_-1) -_q*d)//abs_dd]
+      #充要条件#q_,r_不相干，无需『左侧使用(max r_) 右侧使用(min r_)』
+    [(0 -(_q+1)*d)//abs_dd +1 == -1 - ((_q+1)*d-1)//abs_dd +1 == -(((_q+1)*d-1)//abs_dd)]
+    [-(((1+_q)*d-1)//abs_dd) <= s_dd*q_ <= ((1-_q)*d-1)//abs_dd]
+    !![-v <= _q <= -u]
+    !![d > 0]
+    [-(((1-u)*d-1)//abs_dd) <= s_dd*q_ <= ((1+v)*d-1)//abs_dd]
+      bug!!!见下面[_q(n)并非 非严格单调递增]，但可用作排除范围(还是出错！！)
+    [[-v <= _q <= -u] -> [-(((1-u)*d-1)//abs_dd) <= s_dd*q_ <= ((1+v)*d-1)//abs_dd]]
+    [[-oo <= _q <= -(v+1)] -> [
+      [-(((1-(v+1))*d-1)//abs_dd) <= s_dd*q_ <= ((1+ +oo)*d-1)//abs_dd]
+      [-((-v*d-1)//abs_dd) <= s_dd*q_ <= +oo]
+      ]]
+    [[-(u-1) <= _q <= +oo] -> [
+      [-(((1- -oo)*d-1)//abs_dd) <= s_dd*q_ <= ((1+(u-1))*d-1)//abs_dd]
+      [-oo <= s_dd*q_ <= (u*d-1)//abs_dd]
+      ]]
+    [导出[-v <= _q <= -u]的充分条件: [((u*d-1)//abs_dd)+1 <= s_dd*q_ <= -((-v*d-1)//abs_dd)-1]]
+    !![(-n)//d == -ceil_div(n,d) == -1 - ((n-1)//d)]
+    [导出[-v <= _q <= -u]的充分条件: [(((u*d-1)//abs_dd)+1) <= s_dd*q_ <= (v*d//abs_dd)]]
+
+
+
+    [[ver2:bug:
+    !![d_ > 0]
+    [-(((1-u)*d-1)//abs_dd)*d_ <= s_dd*q_*d_ == s_dd*(n-r_) <= (((1+v)*d-1)//abs_dd)*d_]
+    * [s_dd==+1]:
+      [-(((1-u)*d-1)//abs_dd)*d_ <= +(n-r_) <= (((1+v)*d-1)//abs_dd)*d_]
+      [-(((1-u)*d-1)//abs_dd)*d_ +r_ <= n <= (((1+v)*d-1)//abs_dd)*d_ +r_]
+      [-(((1-u)*d-1)//abs_dd)*d_ +0 <= n <= (((1+v)*d-1)//abs_dd)*d_ +(d_-1)]
+        #无需反转左右侧r_极值
+    * [s_dd==-1]:
+      [-(((1-u)*d-1)//abs_dd)*d_ <= -(n-r_) <= (((1+v)*d-1)//abs_dd)*d_]
+      [+(((1-u)*d-1)//abs_dd)*d_ >= (n-r_) >= -(((1+v)*d-1)//abs_dd)*d_]
+      [-(((1+v)*d-1)//abs_dd)*d_ +r_ <= n <= +(((1-u)*d-1)//abs_dd)*d_ +r_]
+      [-(((1+v)*d-1)//abs_dd)*d_ +0 <= n <= +(((1-u)*d-1)//abs_dd)*d_ +(d_-1)]
+        #无需反转左右侧r_极值
+    bug!!!
+    见下面:verify_ver2_too_wide(dd=-7, d=19, u=-3, v=5)
+    ]]==>>排除范围:
+    [[ver3:bug,too:
+    !![导出[-v <= _q <= -u]的充分条件: [(((u*d-1)//abs_dd)+1) <= s_dd*q_ <= (v*d//abs_dd)]]
+    !![d_ > 0]
+    [(((u*d-1)//abs_dd)+1)*d_ <= s_dd*q_*d_ == s_dd*(n-r_) <= (v*d//abs_dd)*d_]
+    * [s_dd==+1]:
+      [(((u*d-1)//abs_dd)+1)*d_ <= +(n-r_) <= (v*d//abs_dd)*d_]
+      [(((u*d-1)//abs_dd)+1)*d_ +r_ <= n <= (v*d//abs_dd)*d_ +r_]
+      [(((u*d-1)//abs_dd)+1)*d_ +0 <= n <= (v*d//abs_dd)*d_ +(d_-1)]
+        #无需反转左右侧r_极值
+    * [s_dd==-1]:
+      [(((u*d-1)//abs_dd)+1)*d_ <= -(n-r_) <= (v*d//abs_dd)*d_]
+      [-(v*d//abs_dd)*d_ +r_ <= n <= -(((u*d-1)//abs_dd)+1)*d_ +r_]
+      [-(v*d//abs_dd)*d_ +0 <= n <= -(((u*d-1)//abs_dd)+1)*d_ +(d_-1)]
+        #无需反转左右侧r_极值
+    verify_ver3__buggy(dd=-7, d=19, u=-3, v=5)
+    ]]
+
+]]
+
+
+
+[[加速[(_q, _r) := divmod((r_-dd*q_), d)]计算:ver1:过度缩放:见ver2/ver3:发现ver1才是最接近正确的！
+[_r == (r_-dd*q_)%d <- {(r_-dd*q_)+i*d | [i :<- [u..=v]]}]:
+  [?[i :<- [u..=v]] -> [0 <= _r == (r_-dd*q_+i*d) < d]]
+  [i :<- [u..=v]][0 <= _r == ((r_-dd*q_) +i*d) < d]:
+    !![0 <= _r == ((r_-dd*q_) +i*d) < d]
+    [((r_-dd*q_) +i*d)//d == 0]
+    [-i == (r_-dd*q_)//d == _q]
+    !![i :<- [u..=v]]
+    [u <= i <= v]
+    [-v <= -i <= -u]
+    [-v <= _q <= -u]
+
+
+
+    !![d > 0]
+    !![0 <= (r_-dd*q_+i*d) < d]
+    [-v*d <= -i*d <= (r_-dd*q_) <= d-1 -i*d  <= d-1 -u*d == (1-u)*d -1]
+    [(u-1)*d +1 <= (dd*q_-r_) <= v*d]
+
+    [-v <= (r_-dd*q_)//d < (1-u)]
+    !![(_q, _r) := divmod((r_-dd*q_), d)]
+    [_q == (r_-dd*q_)//d]
+    [-v <= _q < (1-u)]
+    [-v <= _q <= -u]
+
+    [[#再证:[-v <= _q <= -u]
+      !![(_q, _r) := divmod((r_-dd*q_), d)]
+      [(r_-dd*q_) == _q*d + _r]
+      [_r == (r_-dd*q_)%d == (r_-dd*q_) -_q*d]
+      [?[i :<- [u..=v]] -> [_r == (r_-dd*q_+i*d)]]
+      [-_q <- [u..=v]]
+      [_q <- [-v..=-u]]
+      [-v <= _q <= -u]
+    ]]
+    !![0 <= _r <= d-1]
+    [_q*d <= (_q*d + _r) <= _q*d + d-1 == (_q+1)*d-1]
+    !![(r_-dd*q_) == (_q*d + _r)]
+    [_q*d <= (r_-dd*q_) <= (_q+1)*d-1]
+    [1-(_q+1)*d <= (dd*q_-r_) <= -_q*d]
+    [1+((-_q)-1)*d <= (dd*q_-r_) <= (-_q)*d]
+    !![u <= -_q <= v]
+    !![d > 0]
+    [1+(u-1)*d <= (dd*q_-r_) <= v*d]
+  [-v <= _q <= -u][0 <= (r_-dd*q_ - _q*d) < d]
+  [(u-1)*d +1 <= (dd*q_-r_) <= v*d]
+
+
+
+  !![(q_,r_) := divmod(n, d_)]
+  [0 <= r_ < d_]
+  [dd*n -r_*d == dd*(q_*d_ +r_) -r_*d == dd*q_*(d-dd) +dd*r_ -r_*d == (dd*q_-r_)*(d-dd)]
+  #注意:dd可能为负数
+  !![(d-dd) == d_ > 0]
+  !![(u-1)*d +1 <= (dd*q_-r_) <= v*d]
+  [((u-1)*d +1)*(d-dd) <= dd*n -r_*d <= v*d*(d-dd)]
+  [r_*d +(u-1)*d*(d-dd) +(d-dd) <= dd*n <= r_*d +v*d*(d-dd)]
+    !![d==d_+dd][d%d_==dd%d_]
+    [ineqn_lhs%d_ == dd*r_%d_ == ineqn_rhs%d_]
+  充分条件:
+    !![d > 0]
+    !![0 <= r_ <= d_-1 == d-dd-1]
+    # [min r_ == 0]
+    # [max r_ == d-dd-1]
+    <<== [(d-dd-1)*d +(u-1)*d*(d-dd) +(d-dd) <= dd*n <= 0*d +v*d*(d-dd)]
+    <<== [-d +u*d*(d-dd) +(d-dd) <= dd*n <= v*d*(d-dd)]
+    <<== [u*d*d_ -dd <= dd*n <= v*d*d_]
+      #注意:dd可能为负数
+    [dd =!= 0][s_dd := sign_of(dd)][abs_dd := abs(dd)]:
+      [u*d*d_ -dd <= dd*n <= v*d*d_]
+        <==> [ceil_div(u*d*d_ -dd, abs_dd) <= s_dd*n <= v*d*d_//abs_dd]
+        <==> [(u*d*d_ -dd +abs_dd-1)//abs_dd <= s_dd*n <= v*d*d_//abs_dd]
+        <==> [(u*d*d_ -dd -1)//abs_dd +1 <= s_dd*n <= v*d*d_//abs_dd]
+      * [s_dd==+1]:
+        <==> [(u*d*d_ -abs_dd -1)//abs_dd +1 <= +n <= v*d*d_//abs_dd]
+        <==> [(u*d*d_ -1)//abs_dd <= +n <= v*d*d_//abs_dd]
+      * [s_dd==-1]:
+        <==> [(u*d*d_ +abs_dd -1)//abs_dd +1 <= -n <= v*d*d_//abs_dd]
+        <==> [-(v*d*d_//abs_dd) <= n <= -((u*d*d_ -1)//abs_dd +2)]
+
+
+
+
+    检验[[r == _r][q == q_ + _q][-v <= _q <= -u]]:
+      [dd==-7][d==19][u==-3][v==+5]:
+        [d_==26]
+        verify_ver1_too_narrow(dd=-7, d=19, u=-3, v=5)
+
+  #用减法实现除模
+  [[u <= v] -> [u*d*d_ -dd <= dd*n <= v*d*d_] -> [[-v <= _q <= -u][(_q,_r) :<- {(_q,_r) | [i :<- [u..=v]][_r := (r_-q_)+i*d][_q:=-i][0 <= _r < d]}]]]
+]]
+
+[[:[_q(n)并非 非严格单调递增]:[n取值范围的微调]:
+!![_q == (r_-dd*q_)//d]
+!![r == _r == (r_-dd*q_)%d]
+!![q == q_ + _q]
+!![d-d_==dd] #dd正负符号决定(d,d_)的大小关系
+[n增1，则:
+  * (r_<d_-1;r_增1,q_不变;(r_-dd*q_)增1;(r<(d-1);r增1,_q不变) 或 (r==(d-1);r减(d-1),_q增1))
+    (n增min((d_-1)-r_,(d-1)-r))->(q_不变;_q不变;q不变)
+    (n减min(r_,r))->(q_不变;_q不变;q不变)
+  * (r_==d_-1;r_减(d_-1),q_增1;(r_-dd*q_)减少(d_-1+dd)=(d-1);(r<(d-1);r增1,_q减1) 或 (r==(d-1);r减(d-1),_q不变))
+    ((d_-r_)<(d-r);n增(d_-r_))->(q_增1;_q减1;q不变)
+    #这里关注_q的取值范围
+    #故 保持_q不变，而非q不变
+    ((d_-r_)==(d-r);n增(d_-r_))->(q_增1;_q不变;q增1)
+    ((d_-r_)==(d-r);n增((d_-r_)+min(d_-1,d-1)))->(q_增1;_q不变;q增1)
+    ===
+    (r_==r;n减(r_+1))->(q_减1;_q不变;q减1)
+    (r_==r;n减((r_+1)+min(d_-1,d-1)))->(q_减1;_q不变;q减1)
+    ===
+]即[_q(n)并非 非严格单调递增]
+故此,ver1 才是正确的路，但还可微调拓展n的取值范围
+
+ver1:[u*d*d_ -dd <= dd*n <= v*d*d_]:
+  [dd==-1][u==-1]:
+    [n <= d*d_-1]
+    [n == d*d_-1]:
+      [r == n%d == d-1]
+      [r_ == n%d_ == d_-1]
+      [d_-r_ == 1 == d-r]
+      !!((d_-r_)==(d-r);n增((d_-r_)+min(d_-1,d-1)))->(q_增1;_q不变;q增1)
+      !![d == d_+dd < d_]
+      [n增d;_q不变;]
+  [n{[dd==-1][u==-1]}取值范围上限微调为:d*d_-1 +d==d*(d+1)-1 +d==d*d+2*d-1==(d+1)**2-2]
+
+  [dd==-1][v==0]:
+    [n >= 0]
+    [n == 0]:
+      [r == n%d == 0]
+      [r_ == n%d_ == 0]
+      [r_ == r]
+      !!(r_==r;n减((r_+1)+min(d_-1,d-1)))->(q_减1;_q不变;q减1)
+      !![d == d_+dd < d_]
+      [n减d;_q不变;]
+  [n{[dd==-1][v==0]}取值范围下限微调为:0-d==-d]
+
+  [dd==1][v==1]:
+    [n <= d*d_]
+    [n == d*d_]:
+      [r == n%d == 0]
+      [r_ == n%d_ == 0]
+      [d_-r_ == d_ < d == d-r]
+      # 无法匹配:((d_-r_)==(d-r);n增((d_-r_)+min(d_-1,d-1)))->(q_增1;_q不变;q增1)
+      !!(n增min((d_-1)-r_,(d-1)-r))->(q_不变;_q不变;q不变)
+      [n增(d_-1);_q不变;]
+  [n{[dd==1][v==1]}取值范围上限微调为:d*d_+(d_-1)==d*(d-1)+(d-2)==d*d-2]
+  [dd==1][u==0]:
+    [n >= -1]
+    [n == -1]:
+      [r == n%d == d-1]
+      [r_ == n%d_ == d_-1]
+      [r_ == d_-1 < d-1 == r]
+      # 无法匹配:(r_==r;n减((r_+1)+min(d_-1,d-1)))->(q_减1;_q不变;q减1)
+      !!(n减min(r_,r))->(q_不变;_q不变;q不变)
+      [n减(d_-1);_q不变;]
+  [n{[dd==1][u==0]}取值范围下限微调为:-1-(d_-1)==-1-(d-2)==-(d-1)]
+
+  ===小结:
+  [n{[dd==-1][u==-1]}取值范围上限微调为:(d+1)**2-2]
+  [n{[dd==-1][v==0]}取值范围下限微调为:-d]
+  [n{[dd==1][v==1]}取值范围上限微调为:(d**2-2)]
+  [n{[dd==1][u==0]}取值范围下限微调为:-(d-1)]
+]]
+
+[[
+#[(((u*d-1)//abs_dd)+1)*d_ <= s_dd*q_*d_ == s_dd*(n-r_) <= (v*d//abs_dd)*d_]
+def verify_ver3__buggy(*, dd,d,u,v):
+  assert dd;d_=d-dd;assert d>0;assert d_>0;abs_dd=abs(dd);s_dd=dd//abs_dd;snr_low=(((u*d-1)//abs_dd)+1)*d_; snr_up=(v*d//abs_dd)*d_;(nr_low,nr_up)=(snr_low,snr_up) if dd>0 else (-snr_up,-snr_low);assert nr_low <= nr_up, (dd, snr_low,snr_up);n_low=nr_low+0;n_up=nr_up+d_-1;ns=[n_low,n_up, n_low-1,n_up+1, n_low-4,n_low-5 ,n_up-6,n_up-5]
+  for i in range(len(ns)):
+    n=ns[i];(q,r)=divmod(n,d);(q_,r_)=divmod(n,d_);(_q,_r) = divmod((r_-dd*q_),d);print([n, (q,r), (q_,r_), (_q,_r)]);print([[r == _r],[q == q_ + _q],[-v <= _q <= -u]]);
+
+verify_ver3__buggy(dd=-7, d=19, u=-3, v=5)
+  正确答案应是:(-361,227)
+[-338, (-18, 4), (-13, 0), (-5, 4)]
+[[True], [True], [True]]
+[233, (12, 5), (8, 25), (4, 5)]
+[[True], [True], [False]]
+[-339, (-18, 3), (-14, 25), (-4, 3)]
+[[True], [True], [True]]
+[234, (12, 6), (9, 0), (3, 6)]
+[[True], [True], [True]]
+[-342, (-18, 0), (-14, 22), (-4, 0)]
+[[True], [True], [True]]
+[-343, (-19, 18), (-14, 21), (-5, 18)]
+[[True], [True], [True]]
+[227, (11, 18), (8, 19), (3, 18)]
+[[True], [True], [True]]
+[228, (12, 0), (8, 20), (4, 0)]
+[[True], [True], [False]]
+
+
+
+
+def verify_ver2_too_wide(*, dd,d,u,v):
+  assert dd;d_=d-dd;assert d>0;assert d_>0;abs_dd=abs(dd);s_dd=dd//abs_dd;snr_low=-(((1-u)*d-1)//abs_dd)*d_; snr_up=(((1+v)*d-1)//abs_dd)*d_;(nr_low,nr_up)=(snr_low,snr_up) if dd>0 else (-snr_up,-snr_low);assert nr_low <= nr_up, (dd, snr_low,snr_up);n_low=nr_low+0;n_up=nr_up+d_-1;ns=[n_low,n_up, n_low-1,n_up+1, n_low+24,n_up-20, n_low+23,n_up-19]
+  for i in range(len(ns)):
+    n=ns[i];(q,r)=divmod(n,d);(q_,r_)=divmod(n,d_);(_q,_r) = divmod((r_-dd*q_),d);print([n, (q,r), (q_,r_), (_q,_r)]);print([[r == _r],[q == q_ + _q],[-v <= _q <= -u]]);
+
+verify_ver2_too_wide(dd=-7, d=19, u=-3, v=5)
+[-416, (-22, 2), (-16, 0), (-6, 2)]
+[[True], [True], [False]]
+[285, (15, 0), (10, 25), (5, 0)]
+[[True], [True], [False]]
+[-417, (-22, 1), (-17, 25), (-5, 1)]
+[[True], [True], [True]]
+  -417 在外反而一切正常; -416反而失败
+
+def verify_ver1_too_narrow(*, dd,d,u,v):
+  d_=d-dd; sn_low=(u*d*d_ -dd-1)//abs(dd) +1; sn_up=(v*d*d_)//abs(dd); (n_low,n_up)=(sn_low,sn_up) if dd>0 else (-sn_up,-sn_low);assert n_low <= n_up, (dd, sn_low,sn_up);ns=[n_low,n_up, n_low-1,n_up+1, n_low-9,n_low-10 ,n_up+17,n_up+18 ,n_up+36,n_up+37]
+  for i in range(len(ns)):
+    n=ns[i];(q,r)=divmod(n,d);(q_,r_)=divmod(n,d_);(_q,_r) = divmod((r_-dd*q_),d);print([n, (q,r), (q_,r_), (_q,_r)]);print([[r == _r],[q == q_ + _q],[-v <= _q <= -u]]);
+
+verify_ver1_too_narrow(dd=-7, d=19, u=-3, v=5)
+  此时(n_low-9=-361,n_up+17=227)才是极限！为什么？
+[-352, (-19, 9), (-14, 12), (-5, 9)]
+[[True], [True], [True]]
+[210, (11, 1), (8, 2), (3, 1)]
+[[True], [True], [True]]
+[-353, (-19, 8), (-14, 11), (-5, 8)]
+[[True], [True], [True]]
+[211, (11, 2), (8, 3), (3, 2)]
+[[True], [True], [True]]
+[-361, (-19, 0), (-14, 3), (-5, 0)]
+[[True], [True], [True]]
+[-362, (-20, 18), (-14, 2), (-6, 18)]
+[[True], [True], [False]]
+[227, (11, 18), (8, 19), (3, 18)]
+[[True], [True], [True]]
+[228, (12, 0), (8, 20), (4, 0)]
+[[True], [True], [False]]
+[246, (12, 18), (9, 12), (3, 18)]
+[[True], [True], [True]]
+[247, (13, 0), (9, 13), (4, 0)]
+[[True], [True], [False]]
+
+]]
+]]]
+
+
+
+#ver1:用减法实现除模
+!![(_q, _r) := divmod((r_-dd*q_), d)]
+!![[u <= v] -> [u*d*d_ -dd <= dd*n <= v*d*d_] -> [[-v <= _q <= -u][(_q,_r) :<- {(_q,_r) | [i :<- [u..=v]][_r := (r_-q_)+i*d][_q:=-i][0 <= _r < d]}]]]
+[dd:=+1][u:=0][v:=1]:
+  [[-1 <= n <= d*(d-1)] -> [[-1 <= _q <= 0][divmod((r_-dd*q_), d) :<- {(0,(r_-q_)), (-1,(r_-q_)+d)}]]]
+  !![见上面:[n取值范围的微调]
+    [n{[dd==1][v==1]}取值范围上限微调为:(d**2-2)]
+    [n{[dd==1][u==0]}取值范围下限微调为:-(d-1)]
+    ]
+  [[-(d-1) <= n <= d**2-2] -> [[-1 <= _q <= 0][divmod((r_-dd*q_), d) :<- {(0,(r_-q_)), (-1,(r_-q_)+d)}]]]
+
+[[d>=2] -> [-(d-1) <= n <= d**2-2] -> [0 <= n//(d-1) - n//d <= 1]]
+  #有用的定理
+
+
+
+##长除法转化为短除法:凑成 divmod(~T**3,~T**2)
+[T := 2**e][1 <= dd <= T][u:=0][v:=1]:
+  [u*d*d_ -dd <= dd*n <= v*d*d_]:
+    <==> [-1 <= n <= d*d_//dd >= (d*d_) >> e]
+    <<== [-1 <= n <= (d*d_) >> e]
+  [d ~= T**2]:
+    充分条件: [0 <= n ~< T**3]
+  [dd := d & (T-1)]:
+    [dd == d%T]
+    [0 <= dd < T]
+    [d_ == d-dd == d//T *T == (d>>e)<<e]
+    充分条件: [0 <= n <= d*(d>>e)<<e]
+    [d%2 == 1][2**(2*e) < d < 2**(2*e+2)]:
+      [T**2 < d < 4*T**2]
+      [d_ == (d>>e)<<e >= T<<e == T**2]
+      [d*d_ > T**4]
+      !![dd == d%T]
+      !![d%2 == 1]
+      [0 < dd < T]
+      [d*d_//dd > T**4/T == T**3]
+      充分条件: [0 <= n <= T**3]
+      [T**3 > (d/4)**(3/2)]
+      [divmod(n, d) 转化为 divmod(n, d_)+后处理 转化为 divmod(n>>e, d>>e)+后处理;输入规模由(2*e+2;3*e)降为(e+2;2*e) --> 递归则有(2*(e/2);3*(e/2)两次子递归调用;]
+
+]]

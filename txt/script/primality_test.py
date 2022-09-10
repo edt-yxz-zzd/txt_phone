@@ -38,6 +38,10 @@ tabulate_best_u2eu__lt另一种方案:
 
 
 e script/primality_test.py
+see also:
+    view script/primality_test.py
+    view ../../python3_src/nn_ns/math_nn/inv_phi.py
+
 py script/primality_test.py --tabulate_best_u2eu__lt 100
 py script/primality_test.py --tabulate_best_u2eu__lt 10000 -o script/primality_test.py.out.tabulate_best_u2eu__lt.10000.txt
 view  script/primality_test.py.out.tabulate_best_u2eu__lt.10000.txt
