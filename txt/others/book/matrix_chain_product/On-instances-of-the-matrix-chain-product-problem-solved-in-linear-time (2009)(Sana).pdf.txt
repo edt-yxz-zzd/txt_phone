@@ -1,0 +1,137 @@
+[[[[[[[
+古典的动态编程(保存中间变量):O(N**3) #表格规模为O(N**2)，其中每一项的计算(min{...})为O(N)
+
+e others/book/matrix_chain_product/矩阵乘法链.txt
+e others/book/matrix_chain_product/On-instances-of-the-matrix-chain-product-problem-solved-in-linear-time (2009)(Sana).pdf.txt
+    论文 只考察 单调的 矩阵乘法链维数序列 及其循环移动变体
+      O(N)
+
+e others/book/matrix_chain_product/Computation of matrix chain products I,II(1984)(Hu)(Shing)[polygon partitioning].pdf.txt
+      O(NlogN)
+
+
+最少操作数MNO/minimal number of operations
+最优矩阵链打括号方案OCP/optimal chain parenthesization
+非降序列NDS/non decreasing sequence
+左结合优先LRO/left-right order
+
+
+[ls :: [pint]{len>=2}]:
+  [MNO(ls) =[def]= if len(ls) < 3 then 0 else min{(MNO(ls[:i+1])+MNO(ls[i:])+ls[0]*ls[i]*ls[-1]) | [i :<- [1..=len(ls)-2]]}]
+[[a,b,c::pint] -> [MNO([a,b,c]) == a*b*c]]
+
+[[矩阵乘法链维数序列 <- 非降序列] -> [左结合优先 <- 最优矩阵链打括号方案]]
+  [[proof:
+  [ls := 矩阵乘法链维数序列]
+  [L := len(ls)]
+  * [L == 2]: ok!
+  * [L > 2][归纳法-假设]:
+    [左结合优先操作数囗(ls) == ls[0]*sum{ls[i]*ls[i+1] | [i :<- [1..=L-2]]}]
+    [MNO(ls)
+    = min{(MNO(ls[:i+1])+MNO(ls[i:])+ls[0]*ls[i]*ls[L-1]) | [i :<- [1..=L-2]]}
+    = min{(左结合优先操作数囗(ls[:i+1])+左结合优先操作数囗(ls[i:])+ls[0]*ls[i]*ls[L-1]) | [i :<- [1..=L-2]]}
+    = min{((ls[0]*sum{ls[j]*ls[j+1] | [j :<- [1..=i+1-2]]})+(ls[i]*sum{ls[k]*ls[k+1] | [k :<- [i+1..=L-2]]})+ls[0]*ls[i]*ls[L-1]) | [i :<- [1..=L-2]]}
+    ]
+    [MNO(ls) -左结合优先操作数囗(ls)
+    = min{((ls[0]*sum{ls[j]*ls[j+1] | [j :<- [1..=i+1-2]]})+(ls[i]*sum{ls[k]*ls[k+1] | [k :<- [i+1..=L-2]]})+ls[0]*ls[i]*ls[L-1]) | [i :<- [1..=L-2]]}
+    - (ls[0]*sum{ls[t]*ls[t+1] | [t :<- [1..=L-2]]})
+    = min{(
+      +(ls[0]*sum{ls[j]*ls[j+1] | [j :<- [1..=i+1-2]]})
+      +(ls[i]*sum{ls[k]*ls[k+1] | [k :<- [i+1..=L-2]]})
+      +ls[0]*ls[i]*ls[L-1]
+      -(ls[0]*sum{ls[t]*ls[t+1] | [t :<- [1..=L-2]]})
+      ) | [i :<- [1..=L-2]]}
+    = min{(
+      +(ls[i]*sum{ls[k]*ls[k+1] | [k :<- [i+1..=L-2]]})
+      +ls[0]*ls[i]*ls[L-1]
+      -(ls[0]*sum{ls[t]*ls[t+1] | [t :<- [i..=L-2]]})
+      ) | [i :<- [1..=L-2]]}
+    = min{(
+      +((ls[i]-ls[0])*sum{ls[k]*ls[k+1] | [k :<- [i+1..=L-2]]})
+      +ls[0]*ls[i]*ls[L-1]
+      -ls[0]*ls[i]*ls[i+1]
+      ) | [i :<- [1..=L-2]]}
+    !!非降序列:[ls[0] <= ls[i]][ls[i+1] <= ls[L-1]]
+    >= 0
+    ]
+    [左结合优先操作数囗(ls) <= MNO(ls)]
+    !![左结合优先操作数囗(ls) >= MNO(ls)]
+    [左结合优先操作数囗(ls) == MNO(ls)]
+  DONE
+  ]]
+
+
+
+[循环左移 :: [a] -> [a]]
+[循环左移(ls) =[def]= (ls[1:]++ls[:1])]
+
+[[ls :: [pint]] -> [L := len(ls)] -> [L >= 2] -> [i :<- [0..=L]] -> [MNO(ls[i:]++ls[:i]) == MNO(ls)]]
+  #直接引用自:Computation of matrix chain products I,II(1984)(Hu)(Shing)[polygon partitioning].pdf
+  #     证明 见下面[矩阵乘法链维数序列循环移动操作数集合不变]
+[[ls :: [pint]{len>=2}] -> [MNO(ls[1:]++ls[:1]) == MNO(ls)]]
+[[ls :: [pint]{len>=2}] -> [MNO(循环左移(ls)) == MNO(ls)]]
+
+datatype 矩阵链打括号方案<Int_ge2> = () | (PInt, 矩阵链打括号方案, 矩阵链打括号方案)
+[@[cp <- 矩阵链打括号方案<2>] -> [cp == ()]]
+[@[L > 2] -> @[cp <- 矩阵链打括号方案<L>] -> ?[i <- [1..=L-2]] -> ?[cpL <- 矩阵链打括号方案<i+1>] -> ?[cpR <- 矩阵链打括号方案<L-i>] -> [cp == (i, cpL, cpR)]]
+  # ls[i] 同时出现在左右两边#重复-对接-接口
+
+[左结合优先 :: 矩阵链打括号方案]
+[左结合优先<L> =[def]= if L==2 then () else (L-2,左结合优先<L-1>,())]
+[右结合优先 :: 矩阵链打括号方案]
+[右结合优先<L> =[def]= if L==2 then () else (1,(),右结合优先<L-1>)]
+
+[[ls0 :: [pint]] -> [ls1 := 循环左移(ls0)] -> [L := len(ls)] -> [L >= 2] -> [cps <- 所有矩阵链打括号方案(L)] -> @[cp0 <- cps] -> ?[cp1 <- cps] -> [操作数囗(cp1,ls1) == 操作数囗(cp0,ls0)]] # :=[def]= [矩阵乘法链维数序列循环移动操作数集合不变]
+  [[proof:
+  * [L == 2]:
+    [cps == {()}]
+    [操作数囗(cp1,ls1) == 0 == 操作数囗(cp0,ls0)]
+  * [L > 2][归纳法-假设]:
+    # [cp1 := ...cp0作为二叉树，将最左叶节点的所有祖上节点删断，再将最左叶节点移至最右，所有余下的子树依照现在的次序，按 右结合优先 连接起来成为新的二叉树，即是cp1...]
+    * [cp0 == 左结合优先<L>]:
+      [cp1 := 右结合优先<L>]
+      [操作数囗(cp0,ls0)
+      = 左结合优先操作数囗(ls0)
+      = ls0[0]*sum{ls0[i]*ls0[i+1] | [i :<- [1..=L-2]]}
+      ]
+      [操作数囗(cp1,ls1)
+      = 右结合优先操作数囗(ls1)
+      = sum{ls1[i-1]*ls1[i] | [i :<- [1..=L-2]]}*ls1[L-1]
+      = sum{ls0[i]*ls0[i+1] | [i :<- [1..=L-2]]}*ls0[0]
+      = 操作数囗(cp0,ls0)
+      ]
+    * [cp0 =!= 左结合优先<L>]:
+      # 不含ls0的部分 当作 一个矩阵，由 [归纳法-假设] 可证
+      [f :: (矩阵链打括号方案,[pint]) -> (矩阵链打括号方案,[pint], 矩阵链打括号方案,pint,pint)]
+      [f (cp0,ls0) =[def]= let L:=len(ls0) in case cp0 of
+        (L-2,cp0L,()) -> let (cp1_,ls1_, cpX,begin,end) := f (cp0L,ls0[:-1]) in ((len(ls1_)+1-2,cp1_,()), ls1_++ls0[-1:], cpX,begin,end)
+        (i,cp0L,cp0R@(_,_,_)) -> let {lenL := i+1; lenR := L-i} in ((i,cp0L,()), ls0[:lenL]++ls0[-1:], cp0R,lenL, L-1) # [1 <= i < L-2] ==>> [del ls0[lenL:L-1] 非空]
+        () -> error "not [cp0 =!= 左结合优先<L>]"
+      ]
+      [(cp0_,ls0_, cpX,begin,end) := f (cp0,ls0)]
+      [2 <= begin < end <= L-1]
+        # ls0[0],ls0[1],ls0[-1] 保持不变
+      [3 <= len(ls0_) == L-(end-begin) < L]
+      [L_ := len(ls0_)]
+      [ls1_ := 循环左移(ls0_)]
+      !![归纳法-假设]
+      ?:[cp1_ <- 所有矩阵链打括号方案<L_>] -> [操作数囗(cp1_,ls1_) == 操作数囗(cp0_,ls0_)]
+      [g :: (矩阵链打括号方案,pint) -> 矩阵链打括号方案]
+      [g (cp1_,begin) =[def]= case cp1_ of
+        () -> assert (begin==0) cpX
+        (i,cp1L,cp1R) -> if i < begin then (i, cp1L, g (cp1R, begin-i-1)) else (i+(end-begin),g (cp1L,begin),cp1R)
+      ]
+      [cp1 := g (cp1_,begin)]
+      [cp0 == g (cp0_,begin)]
+      [操作数囗(cp1,ls1)
+      = 操作数囗(cp1_,ls1_) + 操作数囗(cpX,ls0[begin-1:end+1])
+      = 操作数囗(cp0_,ls0_) + 操作数囗(cpX,ls0[begin-1:end+1])
+      = 操作数囗(cp0,ls0)
+      ]
+  DONE
+  ]]
+
+
+
+
+]]]]]]]

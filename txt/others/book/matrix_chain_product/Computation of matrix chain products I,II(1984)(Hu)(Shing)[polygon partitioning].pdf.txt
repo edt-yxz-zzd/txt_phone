@@ -1,0 +1,447 @@
+
+e others/book/matrix_chain_product/Computation of matrix chain products I,II(1984)(Hu)(Shing)[polygon partitioning].pdf.txt
+
+e script/matrix_chain_product.py
+
+三角化方案partition
+
+[矩阵乘法链:存在 O(N) 次优解 操作数 小于等于 最优解 的 1.25倍]
+
+[@[N>=3] -> [N边-多边形 被不相交的对角线 完全三角化 的 分割方式的总数 为 Catalan_number(N-2)]]
+  Catalan_number
+  view ../../python3_src/nn_ns/math_nn/numbers/ballot_number.py
+  view ../../python3_src/nn_ns/RMQ/LeftBiasedRMQ/ballot_number/Catalan_number.py
+    [Catalan_number(n) == C(2n, n)/(n+1) == xballot_number(n,n)]
+
+[@[N>=3] -> [N边-多边形 任选一边 作为 地面，剩下(N-1)边 每边代表一个矩阵[#共N-1#]，每个顶点代表矩阵维数[#共N#]，每一个 三角化方案 代表 一个 矩阵链打括号方案<N>，每一个 三角形 代表 一次矩阵乘法-其顶点对应的矩阵维数之积即是操作数]]
+
+
+[[ls0 :: [pint]] -> [ls1 := 循环左移(ls0)] -> [L := len(ls)] -> [L >= 2] -> [cps <- 所有矩阵链打括号方案(L)] -> @[cp0 <- cps] -> ?[cp1 <- cps] -> [操作数囗(cp1,ls1) == 操作数囗(cp0,ls0)]] # :=[def]= [矩阵乘法链维数序列循环移动操作数集合不变]
+  证明:多边形相同，三角化方案 也相同
+  另:证明:见:view others/book/matrix_chain_product/On-instances-of-the-matrix-chain-product-problem-solved-in-linear-time (2009)(Sana).pdf.txt
+
+
+
+[[ls :: [pint]] -> [L := len(ls)] -> [L >= 3] -> [ls[0] <= ls[1]] -> [ls[2] <= ls[L-1]] -> [操作数囗多边形三角化囗(多边形三角化方案:={对角线(1,i) | [i :<- [3..=L-1]]};多边形囗顶点权重:=ls) >= 操作数囗多边形三角化囗(多边形三角化方案:={对角线(0,i) | [i :<- [2..=L-2]]};多边形囗顶点权重:=ls)]] # :=[def]= [聚焦型多边形三角化方案的优化]
+  [[proof:
+  [lhs - rhs
+  = ls[1]*(ls[0]*ls[L-1] + sum{ls[i-1]*ls[i] | [i :<- [3..=L-1]]})
+  - ls[0]*(sum{ls[i-1]*ls[i] | [i :<- [2..=L-1]]})
+  = ls[1]*ls[0]*ls[L-1] + ls[1]*(sum{ls[i-1]*ls[i] | [i :<- [3..=L-1]]})
+  - ls[0]*ls[1]*ls[2] - ls[0]*(sum{ls[i-1]*ls[i] | [i :<- [3..=L-1]]})
+  = ls[1]*ls[0]*(ls[L-1]-ls[2]) + (ls[1] -ls[0])*(sum{ls[i-1]*ls[i] | [i :<- [3..=L-1]]})
+  !![ls[2] <= ls[L-1]]
+  !![ls[0] <= ls[1]]
+  >= 0
+  ]
+  DONE
+  ]]
+
+[[ls :: [pint]] -> [L := len(ls)] -> [L >= 3] -> [ls_del1 := (ls[:1]++ls[2:])] -> [ls[0] <= {ls[1],ls[2]} <= min([+oo]++ls[3:])] -> [操作数囗多边形三角化囗(多边形三角化方案:={对角线(1,i) | [i :<- [3..=L-1]]};多边形囗顶点权重:=ls) >= 操作数囗多边形三角化囗(多边形三角化方案:={对角线(0,i) | [i :<- [2..=L-2]]};多边形囗顶点权重:=ls) >= MNO(ls[:3]) + MNO(ls_del1)]]
+
+
+
+bug:[[ls :: [pint]] -> [L := len(ls)] -> [L >= 3] -> [ls_del1 := (ls[:1]++ls[2:])] -> [ls[1] <= {ls[0],ls[2]} <= min([+oo]++ls[3:])] -> [MNO(ls) == MNO(ls[:3]) + MNO(ls_del1)]]
+  反例:[ls == [3,2,4,6]]
+    [3*2 *6 + 2*4*6 == 36+48 == 84 < 96 == 24+72 == 3*2*4 + 3* 4*6]
+
+
+[[ls :: [pint]] -> [L := len(ls)] -> [L >= 3] -> [ls[0] <= ls[1]] -> [ls[2] == min(ls)] -> [操作数囗多边形三角化囗(多边形三角化方案:={对角线(1,i) | [i :<- [3..=L-1]]};多边形囗顶点权重:=ls) >= 操作数囗多边形三角化囗(多边形三角化方案:={对角线(0,i) | [i :<- [2..=L-2]]};多边形囗顶点权重:=ls)]] # :=[def]= [聚焦型多边形三角化方案的优化囗推论一]
+  <<== [聚焦型多边形三角化方案的优化]
+
+[[ls :: [pint]] -> [L := len(ls)] -> [L >= 3] -> [ls[1] == max(ls)] -> [ls[2] == min(ls)] -> [操作数囗多边形三角化囗(多边形三角化方案:={对角线(1,i) | [i :<- [3..=L-1]]};多边形囗顶点权重:=ls) >= 操作数囗多边形三角化囗(多边形三角化方案:={对角线(0,i) | [i :<- [2..=L-2]]};多边形囗顶点权重:=ls)]]
+
+[[ls :: [pint]] -> [L := len(ls)] -> [L >= 3] -> [ls[0] <= ls[1]] -> [ls[2] == min(ls)] -> [?[tpg :: 最优多边形三角化方案<ls>] -> [(0,2)是tpg中三角形的边]]] # :=[def]= [聚焦型多边形三角化方案的优化囗推论二]
+  [[proof:
+  * [L==3]: ok!
+  * [L>3][归纳法-假设]:
+      [tpg :<- 最优多边形三角化方案<ls>]
+      [tpg_ := {对角线(0,i) | [i :<- [2..=L-2]]}]
+      * [tpg == {对角线(1,i) | [i :<- [3..=L-1]]}]:
+        !![聚焦型多边形三角化方案的优化]
+        [MNO(ls) <= 操作数囗多边形三角化囗(tpg_;多边形囗顶点权重:=ls) <= 操作数囗多边形三角化囗(tpg;多边形囗顶点权重:=ls) == MNO(ls)]
+        [MNO(ls) == 操作数囗多边形三角化囗(tpg_;多边形囗顶点权重:=ls)]
+        [tpg_ <- 最优多边形三角化方案<ls>]
+        [(0,2) 是 tpg_中的三角边]
+      * [tpg =!= {对角线(1,i) | [i :<- [3..=L-1]]}]:
+        ?:[(i,j)是 tpg中的内边/对角线] -> [i =!= 1 =!= j]
+        [对角线(i,j)将 多边形 切成更小的两半，其一包含顶点:{0,1,2}，将这一半的参数记为ls_half]
+        !![ls[2] == min(ls)]
+        [ls_half[2] == min(ls_half)]
+        !![ls[0] <= ls[1]]
+        [ls_half[0] <= ls_half[1]]
+        !![归纳法-假设]
+        [?[tpg_half :: 最优多边形三角化方案<ls_half>] -> [(0,2)是tpg_half中三角形的边]]
+        [tpg_half_update := tpg_half 结合 tpg 另一半]
+        [tpg_half_update <- 最优多边形三角化方案<ls>]
+        [(0,2) 是 tpg_half_update中的三角边]
+
+  DONE
+  ]]
+[[ls :: [pint]] -> [L := len(ls)] -> [L >= 3] -> [i,j,k :<- [0..<L]] -> [{i,k} == {(j-1)%L,(j+1)%L}] -> [ls[i] <= ls[j]] -> [ls[k] == min(ls)] -> [?[tpg :: 最优多边形三角化方案<ls>] -> [(i,k)是tpg中三角形的边]]] # :=[def]= [聚焦型多边形三角化方案的优化囗推论三]
+  #也就是说：最小处往外 只能是 上升，连续2个？
+
+
+
+
+[ls :: [pint]][L := len(ls)][idc :: strict_sorted[int%L]]:
+  [del_(ls; *idc) =[def]= for i in reversed(idc): del ls[i]]
+
+[[ls :: [pint]] -> [L := len(ls)] -> [L >= 3] -> [i,j,k :: int%L] -> [len{i,j,k} == 3] -> [ls[i] == min(ls)] -> [ls[j] == min(del_(ls;i))] -> [ls[k] == min(del_(ls;i,j))] -> [
+    [i =!= j]
+    [i =!= k]
+    [j =!= k]
+    [0 <= {i,j,k} < L]
+    [min(ls) == ls[i] <= ls[j] <= ls[k] == min(del_(ls;i,j))]
+    [?[tpg :: 多边形三角化方案<L>] -> [[操作数囗多边形三角化囗(tpg;多边形囗顶点权重:=ls) == MNO(ls)][(i,j),(i,k)皆是tpg中三角形的边]]]
+      #可能 为tpg的 内边、外边
+    [?[tpg :: 最优多边形三角化方案<ls>] -> [(i,j),(i,k)皆是tpg中三角形的边]]
+  ]]
+  [[proof:
+  * [L==3]: ok!
+  * [L>3][归纳法-假设]:
+    ?:[u <- [0..<L]] -> [[u !<- {i,j,k}][ls[u] == min(del_(ls;i,j,k))]]
+    * ?[tpg :<- 最优多边形三角化方案<ls>] -> [tpg中i的度>2]:
+        [含i的内边 将tpg3切成更小的两半]
+        归纳ok!
+    * @[tpg :<- 最优多边形三角化方案<ls>] -> [tpg中i的度==2]:
+      [tpg :<- 最优多边形三角化方案<ls>]
+      [tpg中i的度==2]
+      [vs2 := {tpg中所有度为2的顶点}]
+      [i <- vs2]
+      [len(vs2) >= 2]
+      [vs2_not_min := vs2 \-\ {i,j,k}]
+      * [len(vs2_not_min) > 0]:
+        [v :<- vs2_not_min]
+        [tpg_ := tpg移除顶点v]
+        [ls_ := del_(ls;v)]
+        [tpg_是ls_的 最优解]
+        !![归纳法-假设]
+        ?:[tpg_2是ls_的 最优解] -> [(i,j),(i,k)皆是tpg_2中三角形的边]
+        [tpg2 := tpg_2添加顶点v]
+        [MNO(ls)
+        == 操作数<tpg_> + ls[v]*ls[(v+1)%L]*ls[(v-1)%L]
+        = MNO(ls_) + ls[v]*ls[(v+1)%L]*ls[(v-1)%L]
+        = 操作数<tpg_2> + ls[v]*ls[(v+1)%L]*ls[(v-1)%L]
+        = 操作数<tpg2>
+        ]
+        [tpg2是ls的 最优解][(i,j),(i,k)皆是tpg2中三角形的边]
+
+      * [len(vs2_not_min) == 0]:
+        [vs2 |<=| {i,j,k}]
+        !![i <- vs2]
+        [{i} |<=| vs2 |<=| {i,j,k}]
+        !![len(vs2) >= 2]
+        [[{i,j} |<=| vs2]or[{i,k} |<=| vs2]]
+        [[{i,j} == vs2]or[{i,k} == vs2][{i,j,k} == vs2]]
+
+        * [{i,j} == vs2]:
+          !![L > 3][{i,j} == vs2]
+          [i,j不相邻]
+          [(i,j)不是tpg的外边]
+          [(i,j)不是tpg的三角边]
+          !![归纳法-假设]
+          移除顶点j再补回，得:[tpg3:<-最优解<L>][tpg3中j的度为2][(i,k),(i,u)为tpg3的三角边]
+          [tpg3中i的度==2]
+          [(i,k),(i,u)为tpg3的外边]
+          [(k,u)为tpg3的内边]
+          [i,k相邻][i,u相邻]
+
+          !![归纳法-假设]
+          移除顶点i再补回，得:[tpg4:<-最优解<L>][tpg4中i的度为2][(j,k),(j,u),(k,u)为tpg4的三角边]
+          !![i,k相邻][i,u相邻]
+          [(i,k),(i,u)为tpg4的三角边]
+          [(i,k),(i,u),(j,k),(j,u),(k,u)为tpg4的三角边]
+          [{(i,k),(i,u),(j,k),(j,u),(k,u)} <- 最优多边形三角化方案<ls[i,k,j,u]>]
+          !!镜像对称等价
+          !!循环移动等价
+          !![聚焦型多边形三角化方案的优化]
+          [作为多边形三角化方案:{(i,k),(i,u),(j,k),(j,u),(i,j)} 不劣于 {(i,k),(i,u),(j,k),(j,u),(k,u)}]
+          [{(i,k),(i,u),(j,k),(j,u),(i,j)} <- 最优多边形三角化方案<ls[i,k,j,u]>]
+          !![最优解中i的度数只能是2]
+          _L
+
+        * [{i,k} == vs2]:
+          同理于:[{i,j} == vs2]
+          _L
+        * [{i,j,k} == vs2]:
+          同理于:[{i,j} == vs2]
+          _L
+        _L
+  DONE
+  ]]
+
+[所有索引序列囗升像囗 :: Ord a => [a]{len==L} -> {permutation[0..<L]/unique[int%L]{len==L}}]
+[所有索引序列囗升像囗(ls) =[def]= let L := len(ls) in {idc | [[idc :: permutation[0..<L]][len(idc)==L][@[i::int] -> [0 <= i < L] -> [0 <= idc[i] < L]][@[i,j::int] -> [0 <= i <= j < L] -> [ls[idc[i]] <= ls[idc[j]]]][@[i,j::int] -> [0 <= i < j < L] -> [idc[i] =!= idc[j]]]]}]
+
+[[ls :: [pint]] -> [L := len(ls)] -> [L >= 3] -> [idc :<- 所有索引序列囗升像囗(ls)] -> [i,j,k := idc[:3]] -> [
+    [?[tpg :: 最优多边形三角化方案<ls>] -> [(i,j),(i,k)皆是tpg中三角形的边]] # :=[def]= [最低两边为某最优解的三角边]
+  ]]
+
+[[ls :: [pint]] -> [L := len(ls)] -> [L >= 4] -> [idc :<- 所有索引序列囗升像囗(ls)] -> [i,j,k,u := idc[:4]] -> [(i,j),(i,k)皆是 多边形囗(ls)的外边] -> [
+    [?[tpg :: 最优多边形三角化方案<ls>] -> [
+      [[not [(j,k)是tpg中的 内边]] -> [(i,u)是tpg中的 内边]]
+      [[(j,k)是tpg中的 内边] -> [[(j,u)是tpg中的 三角边][1/ls[i]+1/ls[u] <= 1/ls[j]+1/ls[k]]]]
+      # 外边{(i,j),(i,k)} 即 基本多边形 ==>> {(j,k),(j,u)}or{(i,u)}
+      ]] # :=[def]= [基本多边形的任意最优解的内边必含有低二之三边或低一之四边]
+  ]]
+  [[proof:
+  [tpg :<- 最优多边形三角化方案<ls>]
+
+  * [not [(j,k)是tpg中的 内边]]:
+    !![L >= 4][(i,j),(i,k)皆是 多边形囗(ls)的外边]
+    [tpg中i的度>2]
+    ?:[v <- [0..<L]] -> [(i,t)是tpg中的 内边]
+    [(i,t)将tpg分割成更小的两半:j,k被分开；至少一半含u]
+    !![最低两边为某最优解的三角边]
+    [?[tpg5 :: 最优多边形三角化方案<ls>] -> [(i,u)是tpg5中的 内边]]
+
+  * [(j,k)是tpg中的 内边]:
+    !![(i,j),(i,k)皆是 多边形囗(ls)的外边]
+    [tpg中i的度==2]
+    !![最低两边为某最优解的三角边]
+    移除顶点i再补回，得:[tpg6:<-最优解<L>][tpg6中i的度为2][(j,k),(j,u)为tpg6的三角边]
+    [(j,u)为tpg6的三角边]
+
+    # (j,u)切掉tpg6的一半，以成为外边
+    * [(i+1)%L == j]:
+      [(i-1)%L == k]
+      [(ls_;i_,j_,k_,u_;tpg6_) := ls删去 j,u 之间不含{i,k}的外环上的顶点 并 相应变量的更新值]
+      [ls[k,i,j,u] == ls_[k_,i_,j_,u_]]
+      [(k_+1)%L == i_]
+      [(i_+1)%L == j_]
+      [(j_+1)%L == u_]
+      [(k_,i_)是tpg6_中的 外边]
+      [(i_,j_)是tpg6_中的 外边]
+      [(j_,u_)是tpg6_中的 外边]
+      [tpg6_ <- 最优多边形三角化方案<ls_>]
+      [tpg6_中i_的度为2]
+      [(j_,k_)是tpg6_中的 内边]
+      [ls[k]*ls[i]*ls[j]+MNO(del_(ls_;i_)) == MNO(ls_) <= ls[i]*ls[j]*ls[u]+MNO(del_(ls_;j_))]
+
+      [+ls[i]*ls[j]*ls[u]-ls[k]*ls[i]*ls[j]
+      >=+MNO(del_(ls_;i_))-MNO(del_(ls_;j_))
+      let[ls_2 := (循环左移**(j_+1))(ls_)[:-2]]
+      ==+MNO(ls_2++[ls[j]])-MNO(ls_2++[ls[i]])
+      let[tpg_n1 :<- 最优多边形三角化方案<(ls_2++[ls[j]])>]
+      ==+操作数囗多边形三角化囗(tpg_n1;多边形囗顶点权重:=(ls_2++[ls[j]]))-MNO(ls_2++[ls[i]])
+      >=+操作数囗多边形三角化囗(tpg_n1;多边形囗顶点权重:=(ls_2++[ls[j]]))-操作数囗多边形三角化囗(tpg_n1;多边形囗顶点权重:=(ls_2++[ls[i]]))
+      == (ls[j]-ls[i])*sum{ls_2[a1]*ls_2[a2] | [{(L-2),a1,a2} :<- tpg_n1中所有含顶点(L-2)的三角]}
+      >= (ls[j]-ls[i])*sum{ls[k]*ls[u] | [{(L-2),a1,a2} :<- tpg_n1中所有含顶点(L-2)的三角]}
+      >= (ls[j]-ls[i])*(ls[k]*ls[u]*1)
+      ]
+      [+ls[i]*ls[j]*ls[u]-ls[k]*ls[i]*ls[j]
+      >= (ls[j]-ls[i])*(ls[k]*ls[u]*1)
+      ]
+      [1/ls[k]-1/ls[u] >= 1/ls[i]-1/ls[j]]
+      [1/ls[k]+1/ls[j] >= 1/ls[i]+1/ls[u]]
+      [1/ls[i]+1/ls[u] <= 1/ls[j]+1/ls[k]]
+
+      # [tpg7_ := tpg6_删去内边(j_,k_)，新增内边(i_,u_)]
+        #bug:没有[tpg6_中j_的度为2]，不能添加(i_,u_)
+      #[tpg7_ <- 多边形三角化方案<len(ls_)>] #不一定最优
+
+    * [(i-1)%L == j]:
+      !!镜像对称等价
+      同理于:[(i+1)%L == j]
+      [1/ls[i]+1/ls[u] <= 1/ls[j]+1/ls[k]]
+    [1/ls[i]+1/ls[u] <= 1/ls[j]+1/ls[k]]
+
+  DONE
+  ]]
+
+
+[四稳定多边形三角化方案 =[def]= 任意相邻两个三角构成的四边形最优的多边形三角化方案]#对角线局部稳定
+[最优多边形三角化方案 必是 四稳定多边形三角化方案]
+[四稳定多边形三角化方案 不必是 最优多边形三角化方案]
+  例:
+    [ls := [10,11,25,40,12]]
+    [左结合优先方案<5> = 聚焦于ls[0]的方案 <- 四稳定多边形三角化方案<ls>]
+    [右结合优先方案<5> = 聚焦于ls[-1]的方案 <- 最优多边形三角化方案<ls>]
+
+
+
+识别可分解的多边形:
+  [聚焦型多边形三角化方案的优化囗推论三]
+  [最低两边为某最优解的三角边]
+  [基本多边形的任意最优解的内边必含有低二之三边或低一之四边]
+  ===
+  [[ls :: [pint]][L := len(ls)][L >= 4][idc :<- 所有索引序列囗升像囗(ls)][i,j,k,u := idc[:4]]]:
+      [ls[(i+1)%L] >= ls[(i+2)%L]]:
+        !![聚焦型多边形三角化方案的优化囗推论三]
+        [(i,(i+2)%L)必是 多边形囗(ls)的内边，可用于切分]
+
+      [ls[(i-1)%L] >= ls[(i-2)%L]]:
+        !![聚焦型多边形三角化方案的优化囗推论三]
+        [(i,(i-2)%L)必是 多边形囗(ls)的内边，可用于切分]
+        # 不可降解的多边形最小处相邻点的外向边必须严格递增
+
+      [ls[i] == ls[j]]:
+        !![最低两边为某最优解的三角边]
+        [(i,j),(i,k),(j,k)必有 多边形囗(ls)的内边，可用于切分]
+        # 不可降解的多边形只有一个最小处
+
+      [ls[k] == ls[u]]:
+        !![最低两边为某最优解的三角边]
+        [(i,j),(i,k),(i,u)必有 多边形囗(ls)的内边，可用于切分]
+        # 不可降解的多边形第三第四最小值不同
+
+      [{j,k} =!= {(i-1)%L,(i+1)%L}]:
+        !![最低两边为某最优解的三角边]
+        [(i,j),(i,k)必有 多边形囗(ls)的内边，可用于切分]
+        # 不可降解的多边形第二第三最小处在最小处两侧
+
+      [{j,k} == {(i-1)%L,(i+1)%L}][1/ls[i]+1/ls[u] > 1/ls[j]+1/ls[k]]:
+        !![基本多边形的任意最优解的内边必含有低二之三边或低一之四边]
+        [(i,u)必是 多边形囗(ls)的内边，可用于切分]
+        # 不可降解的多边形必有[1/ls[i]+1/ls[u] <= 1/ls[j]+1/ls[k]]
+
+至此，得到 不可降解的多边形
+  !![L>=4]的不可降解的多边形
+  [ls[i] < ls[j] <= ls[k] < ls[u]] # ==>> {i,j,k} 唯一 # ==>> i,{j,k} 唯一
+  [{j,k} == {(i-1)%L,(i+1)%L}]
+  [1/ls[i]+1/ls[u] <= 1/ls[j]+1/ls[k]]
+  [ls[(i-1)%L] < ls[(i-2)%L]]
+  [ls[(i+1)%L] < ls[(i+2)%L]]
+
+  进一步，可能非最优的『局部极大处 移除』贪婪算法:
+    需要标识出:最终保留的3顶点，即{i,j,k}
+    其余 局部极大处 可无序移除，不影响最终收集到的 切分用到的 对角线集合
+
+
+??? @论文Part I pg22[24/128]:one_sweep_algorithm有bug!
+  [ls == [11,44,33,22]]
+  one_sweep_algorithm(&ph_arcs,&stack;ls);
+    ==>> [ph_arcs=={(0,2),(0,3)}][stack==[11,22]]
+      [2 == len(ph_arcs) =!= L-3 == 1]
+      提前 标识出 {i,j,k} 是有必要的！
+  事实上，最终必然有[len(stack)==2][len(ph_arcs)==L-2]
+  也不一定:第一阶段只处理(L-1)个，最后一个只参加第二阶段？？
+    第一阶段:pop前要求:[len(stack)>=2]
+    第二阶段:pop前要求:[len(stack)>=3]
+
+
+
+
+
+
+
+# O(N)特例:单调的矩阵乘法链维数序列
+[[ls :: [pint]] -> [L := len(ls)] -> [L >= 2] -> [?[k,i :<- [0..<L]] -> [[ls_ := (循环左移**k)(ls)][ls_[:i] 非严格单调递增][ls_[i:] 非严格单调递减]]] -> [计算MNO(ls)存在O(L)算法]]
+
+[所有单调的矩阵乘法链维数序列 =[def]= {ls | [[ls :: [pint]][L := len(ls)][L >= 2][?[k,i :<- [0..<L]] -> [[ls_ := (循环左移**k)(ls)][ls_[:i] 非严格单调递增][ls_[i:] 非严格单调递减]]]]}]
+[[ls :<- 所有单调的矩阵乘法链维数序列] -> [计算MNO(ls)存在O(L)算法]]
+
+
+
+[[[ls :: [pint]][L := len(ls)][L >= 2][idc :<- 所有索引序列囗升像囗(ls)]] -> [inv_idc := inv_permutation_(idc)] -> [@[i,j <- [0..<L]] -> [inv_idc[i] < inv_idc[j]] -> [ls[i] <= ls[j]]]] #inv_idc 与ls有近似的升降周期，是ls的某个升降严格版
+[ls = idx2real_value = i2rv]
+[idc = order2idx = virtual_value2idx = ord2idx = vv2i]
+[inv_idc = idx2order = idx2virtual_value = idx2ord = i2vv]
+
+[[ls :: [pint]][L := len(ls)][L >= 3]]:
+  #tpg==arcs4idc
+  #三角边=内边\-/外边
+  [所有多边形三角化方案(L) :: {{{int%L, int%L}{.len==2}}{.len==L-3+L}}]
+  [所有多边形三角化方案(L) =[def]= let js:=[0..<L] in if L == 3 then {{0,1},{0,2},{1,2}} else 所有多边形三角化方案(L-1) \-/ 囗索引回归囗(所有多边形三角化方案(L-1), (js[:-2]++js[-1])) \-/ unions{囗索引回归囗(所有多边形三角化方案(i+2), (js[:i+1]++js[-1])) \-/ 囗索引回归囗(所有多边形三角化方案(L-i-1), (js[i:-1])) \-/ {{L-2,L-1}} | [i :<- [1..=L-4]]}]
+
+  [所有最优多边形三角化方案(ls) =[def]= {arcs4idc | [[arcs4idc :<- 所有多边形三角化方案(L)][操作数囗多边形三角化囗(多边形三角化方案:=arcs4idc;多边形囗顶点权重:=ls) == MNO(ls)]]}]
+
+[[ls :: [pint]][L := len(ls)][L >= 3][idc :<- 所有索引序列囗升像囗(ls)]]:
+  [最优多边形三角化方案囗升像索引序列的索引最小版囗(ls;idc) =[def]= min{arcs4idc4idc | [[arcs4idc4idc :: sorted[(int%L, int%L)]][len(arcs4idc4idc)==L-3+L][tpg := {{idc[i],idc[j]} | [(i,j) :<- arcs4idc4idc]}][tpg <- 所有最优多边形三角化方案(ls)]]}]
+
+
+
+[[[ls :: [pint]][L := len(ls)][L >= 3][idc :<- 所有索引序列囗升像囗(ls)]] -> [ltpg := 最优多边形三角化方案囗升像索引序列的索引最小版囗(ls;idc)] -> [
+  !![最低两边为某最优解的三角边]
+  [(0,1) <- ltpg]
+  [(0,2) <- ltpg]
+
+  !![基本多边形的任意最优解的内边必含有低二之三边或低一之四边]
+  [[[L>=4][{idc[1],idc[2]} == {(idc[0]-1)%L,(idc[0]+1)%L}]] -> [[(0,3) <- ltpg]or[(1,2) <- ltpg]]]
+
+  [[L>=4] -> [[(0,3) <- ltpg]or[(1,2) <- ltpg]]]
+    #对比 上面:
+    #无需 是 基本多边形
+    #不论0,3是否被1,2隔开
+    #(0,3)不一定是 内边
+    #(1,2)不一定是 内边
+    # :=[def]= [任意多边形的最优多边形三角化方案囗升像索引序列的索引最小版的三角边必含有低二之三边或低一之四边]
+  ]]
+
+[[[L::int][L >= 3][ls :<- permutation[0..<L]][idc :<- 所有索引序列囗升像囗(ls)][inv_idc := inv_permutation_(idc)]] -> [
+  [inv_idc == ls]
+  ]]
+
+[[[ls :: [pint]][L := len(ls)][L >= 3][idc :<- 所有索引序列囗升像囗(ls)][inv_idc := inv_permutation_(idc)]] -> [
+  [idc <- 所有索引序列囗升像囗(inv_idc)]
+  [{idc} == 所有索引序列囗升像囗(inv_idc)]
+    # 良定义:[strict_ltpg := 最优多边形三角化方案囗升像索引序列的索引最小版囗(inv_idc;idc)]
+  ]]
+
+[[[ls :: [pint]][L := len(ls)][L >= 3][idc :<- 所有索引序列囗升像囗(ls)][inv_idc := inv_permutation_(idc)][i2rv := ls][i2vv := inv_idc][vv2i := idc]] -> [ltpg := 最优多边形三角化方案囗升像索引序列的索引最小版囗(ls;idc)] -> [strict_ltpg := 最优多边形三角化方案囗升像索引序列的索引最小版囗(inv_idc;idc)] -> [
+    #(ls,idc),inv_idc 或者说ltpg,strict_ltpg 这俩 潜在的横对角线ph_arcs 相同
+    #基本多边形的ltpg中:横对角线(2,3) vs 竖对角线(0,4)，等MNO情形下，竖对角线 更优
+    #以下顶点 使用 ltpg的表达 即 idx4idc 即 inv_idc的元素值 即 order 即 virtual_value
+    #横对角线(x,y) ==>> [[?[b] -> [idx[0,x,y,b]成环]][@[b] -> [idx[0,x,y,b]成环] -> [0 < x < y < b]]]
+    #[所有潜在的横对角线 =[def]= {{x,y} | [?[a,b] -> [[a < x < y < b][idx[a,x,y,b]成环]]]}]
+    #[所有潜在的横对角线不相交]
+    #   !![[[{x,y},{a,b} <- 所有潜在的横对角线][len{0,x,y,a,b}==5][x<y][a<b][vv2i{x,y},vv2i{a,b} 相交]] -> [[0<x<y<max(a,b)==b][0<a<b<max(x,y)==y][b<y<b][矛盾]]]
+    #[切除最大处的对角线 == {i2vv[vv2i[-1]-1)%L], i2vv[vv2i[-1]+1)%L]}]
+    #[含0的 切除最大处的对角线 <- ltpg] #潜在的竖对角线
+    #   !![聚焦型多边形三角化方案的优化囗推论三]
+    #   [ltpg判定中等MNO下含0对角线 优于 不含0的] #需要 归纳法 证明
+    #[不含0的 切除最大处的对角线 <- 所有潜在的横对角线]
+    #   依此有one_sweep_algorithm:并不需要 单调的矩阵乘法链维数序列#得到的是 所有潜在的横对角线\-/部分潜在的竖对角线
+  ]]
+
+
+[[L :: int][L >= 3][i :<- [0..<L]]]:
+  [聚焦型多边形三角化方案的内边囗(L; i) =[def]= {对角线{i,k_%L} | [k_ :<- [i+2..=i+L-2]]}]
+[[L :: int][L >= 3][i,j :<- [0..<L]][i=!=j]]:
+  #[circle_path_(L; i, j) =[def]= [k | [[i_ := if i < j then i else i-L][k_ :<- [i_..=j]][k := k_%L]]]]
+  [circle_path_(L; i, j) =[def]= [k | [[i_ := j - (j-i)%L][k_ :<- [i_..=j]][k := k_%L]]]]
+
+[[ls :: [pint]][L := len(ls)][L >= 3][i,j :<- [0..<L]][i=!=j]]:
+  [side_product(ls; i, j) =[def]= sum{ls[k]*ls[(k+1)%L] | [k_ <- circle_path_(L;i,j)][k=!=j]}]
+  [base_product(ls; i, j) =[def]= ls[i]*ls[j]]
+[[ls :: [pint]][L := len(ls)][L >= 3][i :<- [0..<L]]]:
+  [操作数囗聚焦型多边形三角化囗(ls;i) =[def]= 操作数囗多边形三角化囗(多边形三角化方案:=聚焦型多边形三角化方案的内边囗(L; i);多边形囗顶点权重:=ls)]
+[[ls :: [pint]][L := len(ls)][L >= 3][i,j,k :<- [0..<L]][len{i,j,k}==3]]:
+  [操作数囗一半最优一半聚焦型多边形三角化囗(ls;i;j,k) =[def]= let [[xs := circle_path_(L;j,k)][ys := circle_path_(L;k,j)][(us,vs,j_,k_) := if i <- xs then (xs,ys,j,k) else (ys,xs,k,j)]] in (操作数囗聚焦型多边形三角化囗(ls[*us,];(i-j_)%L) + MNO(ls[*vs,]))]
+
+[[[ls :: [pint]][L := len(ls)][L >= 3][i :<- [0..<L]]] -> [操作数囗聚焦型多边形三角化囗(ls;i) == (ls[i]*side_product(ls; (i+1)%L,(i-1)%L))]]
+  # H0 := 操作数囗聚焦型多边形三角化囗
+
+[[[ls :: [pint]][L := len(ls)][L >= 3][i,j,k :<- [0..<L]][len{i,j,k}==3]] -> [[操作数囗一半最优一半聚焦型多边形三角化囗(ls;i;j,k) < 操作数囗聚焦型多边形三角化囗(ls;i)] <-> [
+  [[xs := circle_path_(L;j,k)][ys := circle_path_(L;k,j)][(us,vs,j_,k_) := if i <- xs then (xs,ys,j,k) else (ys,xs,k,j)][D<vs> := (side_product(vs; 0,len(vs)-1) -base_product(vs; 0,len(vs)-1))][D<vs> > 0][MNO(ls[*vs,])//D<vs> < ls[i]]]
+    #vs 不含i ==>> 最终判别式(vs,ls[i])，与us中除i,j,k外的其余点无关！
+    #us 含i
+    #us := [j_..=k_]%L
+    #vs := [k_..=j_]%L
+    #[i:=imin]:[横对角线判定式(ls;j,k) =[def]= [[D<vs> > 0][MNO(ls[*vs,])//D<vs> < ls[imin]]]]
+    #[i:=imin][D<vs> > 0]:[supporting_weight(ls;j,k) =[def]= MNO(ls[*vs,])//D<vs>]
+    #   #[i:=imin] 即 取j,k剖分不含imin的那一半作vs
+  ]]]
+  [[proof:
+  [[xs := circle_path_(L;j,k)][ys := circle_path_(L;k,j)][(us,vs,j_,k_) := if i <- xs then (xs,ys,j,k) else (ys,xs,k,j)]]
+  [操作数囗一半最优一半聚焦型多边形三角化囗(ls;i;j,k) - 操作数囗聚焦型多边形三角化囗(ls;i)
+  = (操作数囗聚焦型多边形三角化囗(ls[*us,];(i-j_)%L) + MNO(ls[*vs,]))
+  - 操作数囗聚焦型多边形三角化囗(ls;i)
+  = MNO(ls[*vs,])
+  + (ls[i]*base_product(ls; k_%L,j_%L))
+  - (ls[i]*side_product(ls; k_%L,j_%L))
+  = MNO(ls[*vs,])
+  + (ls[i]*base_product(vs; 0,len(vs)-1))
+  - (ls[i]*side_product(vs; 0,len(vs)-1))
+  ]
+  let [diff := ...above expr...]
+  [diff < 0]
+    <==> [MNO(ls[*vs,]) < (ls[i]*side_product(vs; 0,len(vs)-1)) -(ls[i]*base_product(vs; 0,len(vs)-1))]
+    <==> [MNO(ls[*vs,]) < ls[i]*(side_product(vs; 0,len(vs)-1) -base_product(vs; 0,len(vs)-1))]
+    <==> [D := (side_product(vs; 0,len(vs)-1) -base_product(vs; 0,len(vs)-1))][D > 0][MNO(ls[*vs,])//D < ls[i]]
+  ]]
+
+
+[[[ls :: [pint]][L := len(ls)][L >= 3][idc :<- 所有索引序列囗升像囗(ls)][inv_idc := inv_permutation_(idc)][i2rv := ls][i2vv := inv_idc][vv2i := idc]] -> [imin := vv2i[0]] -> [
+  ]]
