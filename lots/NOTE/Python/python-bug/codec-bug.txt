@@ -1,0 +1,101 @@
+
+e ../lots/NOTE/Python/python-bug/codec-bug.txt
+
+
+
+[[[
+bug:utf8-decoder reuse exc obj, update (.start, .end) but not (.args)
+===
+from:view script/欧路词典囗汉语大辞典.py
+===
+from codecs import lookup_error, register_error
+from seed.seq_tools.find_all import find_all_, iter_all_
+_handler4replace8errors_ = lookup_error('replace')
+    #codecs.replace_errors
+
+def mk_handler4replace8errors_(from_replacement, /):
+    #handler must be a callable object, that will be called with an exception instance containing information about the location of the encoding/decoding error and must return a (replacement, new position) tuple.
+    def _handler4replace8errors(exc, /):
+        args = (
+        (exc.encoding
+        ,exc.object
+        ,exc.start
+        ,exc.end
+        ,exc.reason
+        ))
+        (encoding, object, start, end, reason) = exc.args
+        if 0:
+            for x, y in zip(exc.args, args):
+                assert x is y, ((x,y), (start,end), (exc.start,exc.end))
+                    #AssertionError: ((20, 26), (20, 21), (26, 27))
+        if 1:
+            print(((start,end), (exc.start,exc.end)))
+            print(hex(id(exc)))
+            r'''
+            ((20, 21), (20, 21))
+            0x70c2ce1ec0
+            ((20, 21), (26, 27))
+            0x70c2ce1ec0
+            ... ...
+            ((20, 21), (122, 123))
+            0x70c2ce1ec0
+            ((20, 21), (124, 125))
+            0x70c2ce1ec0
+            ---
+            我猜可能是 重用 第一个exc
+                exc.start = ...
+                exc.end = ...
+                但没有:
+                    exc.args = ...
+                ==>>以 (exc.start,exc.end) 为准，不使用 exc.args
+            #'''
+        (_replacement, new_position) = _handler4replace8errors_(exc)
+        assert exc.end == new_position, (exc.end, new_position)
+        #raise ValueError((_replacement, new_position, exc)) from exc
+        replacement = from_replacement(_replacement)
+        return (replacement, new_position)
+    return _handler4replace8errors
+
+if 1:
+    register_error('replace_by_newline', mk_handler4replace8errors_(lambda s:'\n'))
+    _1 = lookup_error('replace_by_newline')
+    register_error('replace_by_newline', mk_handler4replace8errors_(lambda s:s+'\n'))
+    _2 = lookup_error('replace_by_newline')
+    assert _1 is not _2
+if 1:
+    register_error('replace_by_newline', mk_handler4replace8errors_(lambda s:s+'\n'))
+else:
+    register_error('replace_by_newline', mk_handler4replace8errors_(lambda s:'\n'))
+
+def _handler4raise_from_replace(exc, /):
+    (_replacement, new_position) = _handler4replace8errors_(exc)
+    raise ValueError((_replacement, new_position, exc)) from exc
+register_error('raise_from_replace', _handler4raise_from_replace)
+
+def _test__replace_by_newline():
+    bs = (
+b'V\x11m\x03\x00\x00`9\x01\x00\x02\x00\x00\x004\x0c'
+b'\x03\x00\x00\x00\xb6KRE>x\xb3mP\xd2^\xfe'
+b'Y\xa1\x88\x96*\x14\xafw\xf0\x96T\xa1\xf8\xaa\xaat'
+b'\xa46&\x946\x8f1\xa3`@p\xa9\x90\xd0R>'
+b"[\tsh'\xf1c\xf33\x17\xc4 \xf7\xb1L\x93"
+b'\xcd?\xc9\x19\xab\xca\xc7\xcao\xe55\xea\xa4\x05\xe6 '
+b'C\x15E\xef7BL\xb2\xd33`\x1f\xca\x11\xab\xaf'
+b'\xf3\xdc\xdbQ\x079\x92\x91A\xa9\xf9B\xbbyN-'
+    )
+    #bs.decode(encoding='u8', errors='raise_from_replace')
+        #UnicodeDecodeError: 'utf-8' codec can't decode byte 0xb6 in position 20: invalid start byte
+        #ValueError: ('�', 21, UnicodeDecodeError('utf-8', bs, 20, 21, 'invalid start byte'))
+            #UnicodeDecodeError((encoding, object, start, end, reason))
+
+    s = bs.decode(encoding='u8', errors='replace_by_newline')
+    print(s)
+    print(repr(s))
+    if 0:
+        print(repr(bs[20:21]))
+        print(repr(bs[26:27]))
+    assert bs[20:21] == b'\xb6'
+    assert bs[26:27] == b'\xb3'
+
+
+]]]

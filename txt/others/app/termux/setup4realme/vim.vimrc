@@ -46,6 +46,30 @@ set showbreak=------>\  " line up soft-wrap prefix with the line numbers
 set cpoptions+=n        " start soft-wrap lines (and any prefix) in the line-number area
 
 
+" 20230419
+" copy from: view others/app/gvim/complete.txt
+" default: complete=.,w,b,u,t,i
+  " when there are big files loaded
+  "   search other file would be slow!
+set complete=.
+  " only search current file
+
+
+" 20221111
+" copy from: view others/app/gvim/set_color.txt
+:set background=dark
+:highlight Normal ctermbg=Black
+:hi Comment   ctermfg=DarkGreen
+:hi String   ctermfg=LightRed
+:hi Constant ctermfg=Yellow
+:hi Normal ctermfg=LightGreen
+" <==> :hi Normal ctermfg=121
+:hi Identifier cterm=bold ctermfg=159
+:hi! link Function Identifier
+:hi Statement ctermfg=11
+:hi! link Operator Statement
+:hi! link Keyword Statement
+
 
 
 

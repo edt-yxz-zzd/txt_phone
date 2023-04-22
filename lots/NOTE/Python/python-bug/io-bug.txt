@@ -1,0 +1,71 @@
+
+e ../lots/NOTE/Python/python-bug/io-bug.txt
+
+[[
+NOT BUG
+xxx bug found from:
+  view ../../python3_src/seed/io/savefile__str_tuple.py
+===
+not-bug: .write() replace '\n', .read() keep original, incompatible, multi read write unstable
+  故意如此，但还是恶心
+
+not-bug: .newlines -> None !! when set '\r\n', '\r' !!
+  [[
+===
+stream.newlines
+    不是 构建参数 newline!!
+    只在universal_newline模式下起作用:
+        只记录连续读操作中，遇到的newline类型
+            写操作清零
+#test .newlines
+    case param newline of
+        None | '' -> None | '\r' | '\n' | '\r\n' | ('\r', '\n', '\r\n') | ('\r', '\n'), ...
+        _ -> None
+    只在universal_newline模式下起作用:
+        #write() null .newlines
+        #read() extend .newlines
+        #tell() donot change .newlines
+        #seek() donot change .newlines
+.newlines 声明:
+ |  newlines
+ |      Line endings translated so far.
+ |      Only line endings translated during reading are considered.
+===
+
+  ]]
+
+===
+Python 3.10.5 (main, Jun  7 2022, 03:52:12) [Clang 12.0.8 (https://android.googlesource.com/toolchain/llvm-project c935d99d7 on linux
+===
+>>> from io import StringIO, BytesIO, TextIOWrapper
+
+## no replace
+>>> ifile = TextIOWrapper(ibfile, encoding='u8', newline='\r\n')
+>>> ifile.newlines is None  #WTF?!
+True
+>>> __ = ifile.seek(0)
+>>> ifile.read()
+'\r\n|\n\r-\r\t\n'
+>>> __ = ifile.seek(0)
+>>> [*ifile]
+['\r\n', '|\n\r-\r\t\n']
+>>> __ = ifile.detach()
+
+
+>>> ibfile = BytesIO()
+
+
+## replace '\n' by '\r\n'
+>>> ifile = TextIOWrapper(ibfile, encoding='u8', newline='\r\n')
+>>> ifile.write('\r\n|\n\r-\r\t\n')
+9
+>>> __ = ifile.seek(0)
+>>> ifile.read()  #WTF?!
+'\r\r\n|\r\n\r-\r\t\r\n'
+>>> __ = ifile.detach()
+>>> ibfile.getvalue()
+b'\r\r\n|\r\n\r-\r\t\r\n'
+
+
+]]
+
