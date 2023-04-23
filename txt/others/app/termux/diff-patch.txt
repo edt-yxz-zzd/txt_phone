@@ -1,0 +1,48 @@
+
+e others/app/termux/diff-patch.txt
+
+
+diff lhs rhs > patch
+patch    lhs -o rhs  -i patch
+patch -R rhs -o lhs  -i patch
+but complain:
+  patch: **** Can't create file ...rhs... : Cross-device link
+
+patch    lhs2rhs  -i patch
+patch -R rhs2lhs  -i patch
+    !!!without 『-o』==>> inpace-patch !!!
+    !!!danger!!!
+
+$ info
+    搜索 /path
+    得: realpath, readlink
+opath=$( realpath "$opath" )
+  ok!
+
+[[[
+my bash script: patch_o
+===
+usage ()
+{
+cat >&2 <<__doc__
+patch -ib ipath4base -ip ipath4patch -o opath
+__doc__
+}
+if ! [ $# -ge 6 ] ; then { echo 'num-args SHOULD BE >= 6' >&2 ; usage ; exit 1 ; } fi
+if ! [[ $1 = '-ib' && $3 = '-ip' && $5 = '-o' ]] ; then { usage ; exit 1 ; } fi
+
+ipath4base="$2"
+ipath4patch="$4"
+opath="$6"
+if ! shift 6 ; then { echo logic-err >&2 ; exit 9 ; } fi
+
+if [ -e "$opath" ] ; then { echo 'opath exist:' "$opath" >&2 ; exit 9 ; } fi
+if ! [ -e "$ipath4base" ] ; then { echo 'ipath4base not exist:' "$ipath4base" >&2 ; exit 9 ; } fi
+if ! [ -e "$ipath4patch" ] ; then { echo 'ipath4patch not exist:' "$ipath4patch" >&2 ; exit 9 ; } fi
+
+opath=$( realpath "$opath" )
+patch "$ipath4base" -i "$ipath4patch" -o "$opath" "$@"
+  # "$@" for -R
+
+]]]
+

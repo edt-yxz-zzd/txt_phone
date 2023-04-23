@@ -176,6 +176,12 @@ hBc
 py -m nn_ns.app.args 'echo "$-" ; echo "$$" ; echo '"\'"'"$!"'"\'"' ;' xxx yyy -333 -ab
 xxx py -m nn_ns.app.args "$1" 'echo "$-" ; echo "$$" ; echo '"'"'"$!"'"'"' ;' xxx yyy -333 -ab
 
+help shift
+a1="$1"
+a2="$2"
+if ! shift 2 ; then { echo bad >&2 ; exit 1 ; } ; fi
+  #输入不足2个
+
 
 help if
   if: if COMMANDS; then COMMANDS; [ elif COMMANDS; then COMMANDS; ]... [ else COMMANDS; ] fi

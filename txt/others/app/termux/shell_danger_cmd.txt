@@ -1,0 +1,45 @@
+
+cp, mv, rm
+
+cp src dst
+  * [dst is file]:
+      overwrite dst silently
+  * [dst is directory]:
+      copy into
+      what if [src is directory too]?
+        copy into or merge??
+        ambiguity
+SHOULD:
+  cp -n -t dst_dir src...
+    #cp: target directory '...': Not a directory
+  cp -n -T src dst_file
+  # -n => no overwrite, but also silently skip, why not complain??!
+  #
+
+  mv -n -t dst_dir src...
+  mv -n -T src dst_file
+
+[[[
+view ../../python3_src/bash_script/app/cp_xr_T
+===
+opath="$1"
+ipath="$2"
+if ! shift 2 ; then { echo args-too-fews >&2 ; exit 1 ; } ; fi
+if ! [ $# = 0 ] ; then { echo args-too-many >&2 ; exit 1 ; } ; fi
+if [ -e "$opath" ] ; then { echo exist: "$opath" >&2 ; exit 1 ; } ; fi
+if ! [ -e "$ipath" ] ; then { echo not exist: "$ipath" >&2 ; exit 1 ; } ; fi
+
+cp "$@" -n -T "$ipath" -- "$opath"
+  # "$@" => cp: extra operand '...'
+  #-n: silently skip instead silently overwrite
+  #-T: -T src dst_file
+
+#exit 0
+
+if ! diff -q -- "$opath" "$ipath" ; then { echo  logic-err: file-exist?: "$opath" >&2 ; exit 1 ; } ; fi
+  # same -> 0
+  # if null => `then` !!!
+exit 0
+
+]]]
+
