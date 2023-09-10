@@ -1,0 +1,3494 @@
+
+e others/数学/polynomial/real_root_isolation_method.txt
+
+view others/数学/整数分解/trial_division.txt
+  区间 - 一元二次函数 - 整数根 - 试除
+
+root isolation methods
+root finding methods
+
+
+
+
+多项式根 在区间内数量
+univariate, square-free polynomial
+  real root isolation method
+    Vincent's theorem
+      Descartes' Rule of Signs
+        计数将重根当多个算，只是上限估计({0,1}则为确切值)(固定区间:正实数)
+    Sturm's theorem
+        计数将重根当单个算，确切值(前提:区间两端不是零点)
+
+
+
+全部假设 针对 一元无平方因子的多项式
+
+实数区间表达:
+    [x,y] or [=x,y=]
+    ]x,y[ or [>x,y>]
+
+Vincent's theorem 使用 Descartes' Rule of Signs，实在没有新东西
+  只不过做了一个变换f(x) --> f((a*x+b)/(c*x+d))
+  连分数模式 不断选择 某个正根 的 连分数 逼近分数的相应区间，将之变为[>0,+oo>] 以应用 系数符合改变规则。
+  重点在于 错误区间(不含根的区间)，很快会被抛弃。(终止条件)(保证终止，且十分快)
+  难点在于 如何隔离 不同的根，或者说，找到『足够好』的 根的上下限估计值。(否则就是指数算法)
+      然而 本来就是用它来隔离 实数根，逻辑死循环。
+  痛点在于 度数极高的多项式 以及 稀疏多项式(大部分系数为0)
+
+
+
+正实数根 下限估计:
+  [x:=1/x]转化为 上限估计
+正实数根 上限估计:
+  可以找出不同区间，在这些区间内，各项绝对值的大小次序保持不变
+  这些切分点在: [i>j>=0][a[i]*x**i == a[j]*x**j]
+    即 [ln(a[i]) + i*ln(x) == ln(a[j]) + j*ln(x)]
+    即 [b[i] + i*y == b[j] + j*y]
+    即 [y == (b[j] -b[i])/(i-j)]
+  称 某区间内 最大项 为 统治项
+  假设 可以先找出 最后一串『最大负项不为统治项』的连续区间，再左右推敲
+
+
+
+p' (p1) 零点 切分 p (p0)的单调区间
+  d-1 点 切出 d区间
+  d-1 点 采样 p2 与p0同号
+  deg(p2) <= d-2
+  事实上，由于p[m]是恒量，在[x: -oo --> +oo]过程中，符号改变总数 不断下降，意味着 符号 不断下沉(可将 相邻的相同符号 归为一组)，但存在无效反复
+  如何分隔零点？
+      * 步长不断翻倍
+      * 导数序列 全体零点 分隔
+          序列长度必然是d
+          但是 非零项数量 递减
+      * sturm序列 全体零点 分隔?
+          序列长度可能小于d
+          但是 非零项数量 可能爆炸
+
+#见下面:wget_U 'http://www.ub.edu/arcades/jan31.pdf' -O 'Resultants and Subresultants-Univariate vs Multivariate Case(after2005)(Andrea).pdf'
+  终于看到Subresultants的定义...
+  [homogeneous齐次多项式f(x,y),g(x,y)][deg f == m][deg g == n][0 <= j <= k <= min(m,n)]:
+      [scalar_subresultant(m,n;k,j;f(x,y),g(x,y)) =[def]= determinant(like-SylvesterMatrix{(m+n-2*k)-square-matrix}{前(n-k)行，用f系数；后(m-k)行使用g系数。每下降一行，系数不断向后平移}{但最后一列不同，最低为f的x**(m-j)*y**j(或g的x**(n-j)*y**j)的系数，每上升一行系数对应的项的x/y的指数加一})]
+      [subresultant(m,n;k;f(x),g(y)) =[def]= sum scalar_subresultant(m,n;k,j;f,g)*x**j*y**(k-j) {j :<- [0..=k]}]
+      [resultant(m,n;k;f(x),g(y)) == subresultant(m,n;0;f(x),g(y)) == scalar_subresultant(m,n;0,0;f(x),g(y))]
+      [[deg gcd(f,g) == k] <-> [[scalar_subresultant(m,n;k,k;f(x,y),g(x,y)) =!= 0][@[j :<- [0..<k]] -> [scalar_subresultant(m,n;j,j;f(x,y),g(x,y)) == 0]]]]
+      [gcd(f,g) == let [k := min{k :<- [0..=min(m,n)] | [scalar_subresultant(m,n;k,k;f(x,y),g(x,y)) =!= 0]}] in subresultant(m,n;k;f(x),g(y))]
+
+
+######################
+######################
+'2110.15364-A New Proof of Sturm Theorem via Matrix Theory(2021)(Kaiwen).pdf'
+'A Simple Proof of Descartes Rule of Signs(2004)(Xiaoshen).pdf'
+'Finding All the Roots-Sturm Theorem(ppt)(2013)(Bartlett).pdf'
+'Sturm Theorem with Endpoints(2017)(Pebay).pdf'
+'Sturm theorem proof(not-quiet-right).pdf'
+'Sturm_Sequences-A Formalisation of Sturm Theorem(2022)(Eberl).pdf'
+'The Fundamental Theorem of Algebra made effective-an elementary real-algebraic proof via Sturm chains(2012)(Eisermann).pdf'
+'VINCENT FORGOTTEN THEOREM-ITS EXTENSION AND APPLICATION(1981)(Akritas).pdf'
+'Vincent theorem from a modern point of view(2000)(Alesina).pdf'
+'Vincent theorem of 1836-Overview and future research(2010)(Akritas)[researchgate].pdf'
+'Vincent theorem of 1836-overview and future research(2010)(Akritas).pdf'
+Vincent_theorem-handwiki.html
+
+
+######################
+'2202.04889-Limits of real bivariate rational functions(2022)(Dinh).pdf'
+######################
+######################
+'2309.00698-A novel Newton-Raphson style root finding algorithm(2023)(Komi).pdf'
+'A Geometrical Root Finding Method for Polynomials with Complexity Analysis(2013)(Luis).pdf'
+'An Introduction to Root-Finding Algorithms(ppt)(2013)(Bartlett).pdf'
+'Interpretation of the Schur-Cohn test in terms of canonical systems(2021)(Suzuki).pdf'
+'METHODS OF SEARCH FOR SOLVING POLYNOMIAL EQUATIONS(1969)(Henrici).pdf'
+'Modeling, Estimation and Optimal Filtering in Signal Processing-Appendix F-The Schur-Cohn Algorithm(2008)(Najim).pdf'
+'Modified Schur-Cohn Criterion for Stability of Delayed Systems(2015)(Martinez).pdf'
+'Nonnegativity of uncertain polynomials(1998)(Siljak).pdf'
+'On Infinitely Many Algorithms for Solving Equations(1870)(Schroder)(1993)(Stewart).pdf'
+'Root Finding with Engineering Application(NONLINEAR PROBLEMs)(ppt)(2016)(Tekle).pdf'
+'Root Finding(cos323)(ppt)(princeton.edu).pdf'
+'Schur-Cohn theorem for matrix polynomials(1990)(Harry).pdf'
+
+
+######################
+######################
+'Multivariate subresultants using Jouanolou resultant(2007)(Szanto).pdf'
+'Recursive Polynomial Remainder Sequence and the Nested Subresultants(2008)(Terui).pdf'
+'Resultants and Subresultants-Univariate vs Multivariate Case(after2005)(Andrea).pdf'
+'Subresultant PRS Algorithm(1978)(brown).pdf'
+'Subresultant of several univariate polynomials(2021)(Hong)(not been peer reviewed yet).pdf'
+'Subresultants and Reduced Polynomial Remainder Sequences(1967)(collins).pdf'
+'Variants of Bezout Subresultants for Several Univariate Polynomials(2023)(Weidong).pdf'
+
+######################
+######################
+
+
+
+
+
+######################
+######################
+######################
+######################
+######################
+######################
+######################
+######################
+######################
+######################
+######################
+######################
+######################
+######################
+######################
+######################
+######################
+######################
+######################
+######################
+######################
+######################
+######################
+######################
+######################
+######################
+######################
+######################
+######################
+######################
+######################
+######################
+######################
+######################
+
+Descartes' Rule of Signs
+
+https://www.researchgate.net/publication/245067545_A_Simple_Proof_of_Descartes%27s_Rule_of_Signs
+  https://www.researchgate.net/profile/Xiaoshen-Wang/publication/245067545_A_Simple_Proof_of_Descartes's_Rule_of_Signs/links/56df040d08ae979addef4d34/A-Simple-Proof-of-Descartess-Rule-of-Signs.pdf?_tp=eyJjb250ZXh0Ijp7ImZpcnN0UGFnZSI6InB1YmxpY2F0aW9uIiwicGFnZSI6InB1YmxpY2F0aW9uIn19
+A Simple Proof of Descartes's Rule of Signs
+Taylor & Francis
+June 2004The American Mathematical Monthly 111(6)
+DOI:10.2307/4145072
+Authors:
+Xiaoshen Wang
+University of Arkansas at Little Rock
+A Simple Proof of Descartes Rule of Signs(2004)(Xiaoshen).pdf
+
+
+https://www.cuemath.com/algebra/descartes-rule-of-signs/
+By Descartes' rule of signs, if a polynomial in one variable, f(x) = an xn + an-1xn-1 + an-2xn-2 + ...+ a1x + a0 is arranged in the descending order of the exponents of the variable, then:
+
+The number of positive real zeros of f(x) is either equal to the number of sign changes in f(x) or less than the number of sign changes by an even number.
+The same rule applies to find the number of negative real zeros as well, but then we count the sign changes of f(-x).
+:
+
+"A polynomial function f(x) (whose terms are arranged in the descending order of the powers of variable) cannot have more positive real roots than the number of sign changes in it."
+note that the number of roots of a polynomial function (considering the roots with multiplicities to be independent roots) is equal to the degree of the polynomial. Thus, the number of complex roots can be obtained by subtracting the sum of positive and real roots from the degree of the polynomial.
+各项依度数有序排列，不考虑系数为0的项，计数包含重根，只是考虑正实数根数量，只考虑上限(但上限为0、1，则为确切数量有限)，真实数量与上限奇偶性相同
+  负实数根 考察f(-x)
+  非实根:排除0根、正根、负根(因为计数包含重根)(有点多，组合...)
+
+
+
+Sturm's theorem
+wget_U 'https://lara.epfl.ch/w/_media/sar10:sturms_proof.pdf' -O 'Sturm theorem proof()().pdf'
+Sturm theorem proof(not-quiet-right).pdf
+  里面定义『Sturm sequence』感觉不对，缺失某些重要条件
+    依其定义『f0:=f; f1:=1』是合法的『Sturm sequence』，但显然没用
+  证明过程用到额外条件『[f1(a)>0][f0(a)==0] -> [f0(a--)<0][f0(a++)>0]』显然与导数相关
+  另外，不能明确该序列是否足够长以保证符号改变的上限。大于 根数量
+
+
+
+wget_U 'https://www.math.tamu.edu/~rojas/sturm.pdf' -O 'Sturm theorem.pdf'
+Sturm Theorem with Endpoints(2017)(Pebay).pdf
+    good
+Sturm’s Theorem with Endpoints
+Philippe Pebay
+J. Maurice Rojas
+David C. Thompson
+February 23, 2017
+
+
+
+wget_U 'https://web.math.ucsb.edu/~padraic/mathcamp_2013/root_find_alg/Mathcamp_2013_Root-Finding_Algorithms_Day_1.pdf' -O 'An Introduction to Root-Finding Algorithms(ppt)(2013)(Bartlett).pdf'
+
+wget_U 'https://www.cs.princeton.edu/courses/archive/fall12/cos323/notes/cos323_f12_lecture02_rootfinding.pdf' -O 'Root-Finding2.pdf'
+  Root Finding(cos323)(ppt)(princeton.edu).pdf
+    good
+
+https://www.researchgate.net/publication/345066412_Root_Finding_with_Engineering_Application
+  https://www.researchgate.net/profile/Tekle-Gemechu/publication/345066412_Root_Finding_with_Engineering_Application/links/60869dee881fa114b42b5580/Root-Finding-with-Engineering-Application.pdf?_tp=eyJjb250ZXh0Ijp7ImZpcnN0UGFnZSI6InB1YmxpY2F0aW9uIiwicGFnZSI6InB1YmxpY2F0aW9uIn19
+Root Finding with Engineering Application(NONLINEAR PROBLEMs)(ppt)(2016)(Tekle).pdf
+Root Finding with Engineering Application
+May 2016
+DOI:10.13140/RG.2.2.36690.58568
+Conference: The 5th Annual National Research Workshop, WSU
+Authors:
+Tekle Gemechu
+Adama University, ASTU
+
+
+
+https://arxiv.org/abs/2309.00698
+wget_U 'https://arxiv.org/pdf/2309.00698.pdf' -O '2309.00698-A novel Newton-Raphson style root finding algorithm(2023)(Komi).pdf'
+Submitted on 1 Sep 2023]
+A novel Newton-Raphson style root finding algorithm
+Komi Agbalenyo, Vincent Cailliez, Jonathan Cailliez
+
+[[
+https://www.mathworks.com/matlabcentral/fileexchange/73705-a-few-root-finding-algorithms/
+A Few Root-Finding Algorithms
+Version 1.0.0 (4.36 KB) by Gatech AE
+This contains four different root-finding algorithms, each having a niche region of utility.
+Updated 16 Dec 2019
+
+Four standard root-finding functions.
+- Bisection method for bounded searching.
+- Secant method for slope-based root finding
+- Fixed point iteration for fast solving in constrained circumstances
+- Mueller's method that can solve most root-finding problems that even fzero might not
+
+
+]]
+[[[
+https://mathworld.wolfram.com/Root-FindingAlgorithm.html
+===
+]]]
+
+
+
+wget_U 'https://web.math.ucsb.edu/~padraic/mathcamp_2013/root_find_alg/Mathcamp_2013_Root-Finding_Algorithms_Day_2.pdf' -O 'Sturm theorem2.pdf'
+Finding All the Roots-Sturm Theorem(ppt)(2013)(Bartlett).pdf
+  [[
+Root-Finding Algorithms
+Instructor: Padraic Bartlett
+Finding All the Roots: Sturm’s Theorem
+2013
+===
+1.1 Definitions and Notation
+Definition.  A Sturm chain is a finite sequence of polynomials p0(x),p1(x),...pm(x) of decreasing degree with the following properties:
+  1. p0(x) is square-free: i.e.  it has no factors of the form (q(x))**2, for any polynomial q(x).
+  2. If a is a root of p(x), then the sign of p1(a) is the same as the sign of p'(a), and in particular is nonzero.
+  3. If a is a root of p[i](x) for some i with 0 < i < m, then both p[i−1](a),p[i+1](a) are nonzero.  Moreover, the sign of p[i−1](a) is the opposite of the sign of p[i+1](a).
+  4. pm(x)’s sign is constant and nonzero for all x.
+
+  ]]
+
+wget_U 'https://www.math.tamu.edu/~rojas/mishra.pdf' -O 'Sturm theorem3.pdf'
+    xxx fail too slow
+
+wget_U 'https://www.isa-afp.org/browser_info/current/AFP/Sturm_Sequences/outline.pdf' -O 'Sturm_Sequences.pdf'
+Sturm_Sequences-A Formalisation of Sturm Theorem(2022)(Eberl).pdf
+A Formalisation of Sturm’s Theorem
+Manuel Eberl
+October 27, 2022
+  形式证明！HOL,有点难看
+  [[
+2.2 Definition of Sturm sequences locale
+We first define the notion of a “Quasi-Sturm sequence”, which is a weakening of a Sturm sequence that captures the properties that are fulfilled by a nonempty sufix of a Sturm sequence:
+• The sequence is nonempty.
+• The last polynomial does not change its sign.
+• If the middle one of three adjacent polynomials has a root at x, the other two have opposite and nonzero signs at x.
+Now we define a Sturm sequence p1,...,pn of a polynomial p in the following way:
+#这里少了:• The last polynomial does not change its sign.
+• The sequence contains at least two elements.
+• p is the first polynomial, i.e.  p1= p.
+• At any root x of p, p2 and p have opposite sign left of x and the same sign right of x in some neighbourhood around x.
+• The first two polynomials in the sequence have no common roots.
+• If the middle one of three adjacent polynomials has a root at x, the other two have opposite and nonzero signs at x.
+  ]]
+
+[[[
+https://arxiv.org/abs/0808.0097
+https://arxiv.org/pdf/0808.0097.pdf
+wget_U 'https://arxiv.org/pdf/0808.0097.pdf' -O 'The Fundamental Theorem of Algebra made effective-an elementary real-algebraic proof via Sturm chains(2012)(Eisermann).pdf'
+===
+
+arXiv:0808.0097 (math)
+[Submitted on 1 Aug 2008 (v1), last revised 26 Mar 2012 (this version, v4)]
+The Fundamental Theorem of Algebra made effective: an elementary real-algebraic proof via Sturm chains
+Michael Eisermann
+Download PDF
+Sturm's theorem (1829/35) provides an elegant algorithm to count and locate the real roots of any real polynomial. In his residue calculus (1831/37) Cauchy extended Sturm's method to count and locate the complex roots of any complex polynomial. For holomorphic functions Cauchy's index is based on contour integration, but in the special case of polynomials it can effectively be calculated via Sturm chains using euclidean division as in the real case. In this way we provide an algebraic proof of Cauchy's theorem for polynomials over any real closed field. As our main tool, we formalize Gauss' geometric notion of winding number (1799) in the real-algebraic setting, from which we derive a real-algebraic proof of the Fundamental Theorem of Algebra. The proof is elementary inasmuch as it uses only the intermediate value theorem and arithmetic of real polynomials. It can thus be formulated in the first-order language of real closed fields. Moreover, the proof is constructive and immediately translates to an algebraic root-finding algorithm.
+]]]
+
+wget_U 'https://link.springer.com/content/pdf/10.1007/3-540-54522-0_120.pdf' -O 'Multivariate Sturm theory(1991)(Pedersen).pdf'
+  下载有毛病
+  https://page-one.springer.com/pdf/preview/10.1007/3-540-54522-0_120
+
+Multivariate Sturm theory 1 Introduction geometric - Springer
+Web[P 1991]). Our result provides a natural geometric extension of Sturm theory to arbitrary dimensions, unlike the result of Tarski [Tar 1951], which is also sometimes referred to as a generalization of Sturm's theorem. The basic object of our study is a 0-dimensional aifine subvariety Vc = {c~1,..., ~D} C
+
+Author: Paul Pedersen
+Publish Year: 1991
+
+
+count complex roots Sturm
+  https://math.stackexchange.com/questions/2592347/how-many-complex-roots
+  the argument principle and Rouche's theorem
+  [[
+https://math.libretexts.org/Bookshelves/Analysis/Complex_Variables_with_Applications_(Orloff)/12%3A_Argument_Principle/12.01%3A_Principle_of_the_Argument
+留数定理？
+留数定理(The Residue Theorem)是复变函数理论的一个重要内容。 The Argument Principle 是留数定理的一个重要结果，该原理将一个曲线的环饶数(winding number)与曲线内包含的零点和极点联系了起来。
+https://math.stackexchange.com/questions/269962/complex-analysis-argument-principle-vs-rouches-theorem
+The Argument Principle
+
+Suppose a function f is meromorphic on an open set that contains a circle C and its interior. Further assume that f has no zeroes on C (but may have zeroes in the interior of C). Then,
+
+∮(C;DDD(z;ln(f(z)))) /(2*π*i)=∮(C;f′(z)/f(z))dz /(2*π*i)= the number of zeroes of f in the interior of C (counted with multiplicity) minus the number of poles of f in the interior of C (counted with multiplicity).
+
+Rouche's Theorem
+
+Suppose that f and g are holomorphic functions on a domain and let C be a circle whose interior also lies in the domain. If |f(z)−g(z)|<|f(z)| for all z on C, then f and g have the same number of zeroes in the interior of C, counting multiplicities.
+  ]]
+
+
+generalization Sturm's theorem
+Multivariate Sturm's theorem
+  https://mathoverflow.net/questions/43979/counting-roots-multidimensional-sturms-theorem
+  NP-hard
+
+
+  [[
+u(x,y),v(x,y) :: RR[X,Y]
+极限存在与否:limit u(x,y)/v(x,y) {(x,y): --> (a,b)}
+===
+https://arxiv.org/abs/2202.04889
+https://arxiv.org/pdf/2202.04889.pdf
+[Submitted on 10 Feb 2022]
+Limits of real bivariate rational functions
+Si Tiep Dinh, Feng Guo, Hong Duc Nguyen, Tien Son Pham
+wget_U 'https://arxiv.org/pdf/2202.04889.pdf' -O '2202.04889-Limits of real bivariate rational functions(2022)(Dinh).pdf'
+===
+https://www.sciencedirect.com/science/article/abs/pii/S0747717119300215
+  网页版？
+===
+https://www.researchgate.net/publication/331337734_Determining_the_limits_of_bivariate_rational_functions_by_Sturm's_theorem
+Determining the limits of bivariate rational functions by Sturm's theorem
+February 2019Journal of Symbolic Computation 96
+DOI:10.1016/j.jsc.2019.02.010
+Authors:
+Xiaoning Zeng
+Shuijing Xiao
+Nanchang University
+
+Abstract
+In this paper, we present an algorithm for determining the limits of real rational functions in two variables, based on Sturm's familiar theorem and the general Sturm–Tarski theorem for counting certain roots of univariate polynomials in a real closed field. Let R[x,y] be the ring of polynomials with real coefficients in two variables x, y, and let u(x,y), v(x,y)∈R[x,y] be two non-zero polynomials such that u(a,b)=v(a,b)=0 for a, b∈R. The purpose of this paper is to decide the existence of lim (x,y)→(a,b) ⁡[Formula presented] and compute the limit if it exists. Our algorithm needs no assumption on the denominators and does not involve the computation of Puiseux series.
+  ]]
+
+
+
+https://arxiv.org/abs/2110.15364
+wget_U 'https://arxiv.org/pdf/2110.15364.pdf' -O '2110.15364-A New Proof of Sturm Theorem via Matrix Theory(2021)(Kaiwen).pdf'
+ Oct 2021
+ A New Proof of Sturm's Theorem via Matrix Theory
+ Kaiwen Hou, Bin Li
+ [[
+By the classical Sturm's theorem, the number of distinct real roots of a given real polynomial f(x) within any interval (a,b] can be expressed by the number of variations in the sign of the Sturm chain at the bounds. Through constructing the "Sturm matrix", a symmetric matrix associated with f(x) over R[x], variations in the sign of f(x) can be characterized by the negative index of inertia. Therefore, this paper offers a new proof of Sturm's theorem using matrix theory.
+ ]]
+
+
+
+
+https://www.mathsisfun.com/algebra/polynomials-rule-signs.html
+https://zhuanlan.zhihu.com/p/341873822?utm_id=0
+如何估计多项式正根与负根个数？(Descartes' Rule of Signs)
+
+
+
+
+https://math.stackexchange.com/questions/3213397/counting-the-number-of-real-roots-of-a-polynomial
+en.wikipedia.org/wiki/Budan%27s_theorem – 
+saulspatz
+ May 4, 2019 at 15:15
+For some reason lesser known but more efficient than Sturm's theorem is Vincent's theorem.
+
+Vincent's theorem
+Sturm's theorem
+p0 = f
+p1 = Df
+p[i] = -p[i-2] mod p[i-1]
+V(a) := num_sign_changes_(p[i](a) for i in [0..deg p0])
+Sturm's theorem states that V(a)−V(b) is the number of real roots between a and b.
+V(-oo) -V(+oo)
+
+The only trick to proving this, at least in the square-free case, is to consider what happens to sign changes in this sequence as one moves along the real line: The number of sign changes can only change near a root of one of the polynomials. However, note that, for some polynomial c, we have the following relationship:
+Pn=cPn+1−Pn+2
+Note that if Pn+1 has a root at a place where Pn doesn't, then near that root, Pn and Pn+2 must have opposite signs, since Pn=−Pn+2 at the root. So long as P0 was squarefree (i.e. has no multiple roots), we can note that no consecutive terms share a root, so this always happens. As a result, the zero of Pn+1 does not affect the number of sign changes. However, if P0 has a root, then the number of sign changes decreases by one there, since, near that root, f and f′ have opposite signs prior to the root and equal signs after.
+Just to add on the requirement that f be squarefree: The multiple roots of f are just the roots of the (more harmless) polynomial gcd(f,f′)
+
+Method 2:
+
+Use Sturm's theorem. Construct the (Sturm) sequence of remainders in applying the Euclidean division algorithm to h and h′. Let V(ξ) be the number of sign alternations (ignoring zeroes) in the Sturm sequence when its members are evaluated at x=ξ. Then V(ab)−V(b) is the number of real roots on the interval (a,b].
+
+Share
+
+
+
+
+univariate, square-free polynomial
+
+wget_U 'https://faculty.e-ce.uth.gr/akritas/articles/18.pdf' -O 'VINCENT FORGOTTEN THEOREM-ITS EXTENSION AND APPLICATION(1981)(Akritas).pdf'
+
+https://www.researchgate.net/publication/250797375_Vincent's_theorem_of_1836_Overview_and_future_research
+  https://www.researchgate.net/profile/Alkiviadis-Akritas-2/publication/250797375_Vincent's_theorem_of_1836_Overview_and_future_research/links/5460bc5d0cf27487b4525b39/Vincents-theorem-of-1836-Overview-and-future-research.pdf?_tp=eyJjb250ZXh0Ijp7ImZpcnN0UGFnZSI6InB1YmxpY2F0aW9uIiwicGFnZSI6InB1YmxpY2F0aW9uIn19
+Vincent's theorem of 1836: Overview and future research
+July 2010Journal of Mathematical Sciences 168(3):309-325
+DOI:10.1007/s10958-010-9982-1
+Authors:
+Alkiviadis G. Akritas
+University of Thessaly
+Vincent theorem of 1836-Overview and future research(2010)(Akritas)[researchgate].pdf
+
+https://www.researchgate.net/publication/265567325_Vincent's_theorem_from_a_modern_point_of_view
+  https://www.researchgate.net/profile/Alberto-Claudio-Alesina/publication/265567325_Vincent's_theorem_from_a_modern_point_of_view/links/545fda120cf27487b450ab7f/Vincents-theorem-from-a-modern-point-of-view.pdf
+Vincent’s theorem from a modern point of view
+January 2000Rendiconti del Circolo Matematico di Palermo Serie II. Suppl 64(2000):pp. 179-191
+Authors:
+Alberto Claudio Alesina
+University of Milan
+Massimo Galuzzi
+University of Milan
+
+Vincent theorem from a modern point of view(2000)(Alesina).pdf
+
+https://link.springer.com/article/10.1007/s10958-010-9982-1
+Published: 09 July 2010
+Vincent’s theorem of 1836: overview and future research
+A. G. Akritas 
+Vincent theorem of 1836-overview and future research(2010)(Akritas).pdf
+
+
+In this paper, we present two different versions of Vincent’s theorem of 1836 and discuss various real root isolation methods derived from them: one using continued fractions and two using bisections, the former being the fastest real root isolation method. Regarding the continued fractions method, we first show how, using a recently developed quadratic complexity bound on the values of the positive roots of polynomials, its performance has been improved by an average of 40% over its initial implementation, and then we indicate directions for future research. Bibliography: 45 titles.
+
+
+[[[
+Vincent's theorem
+https://handwiki.org/wiki/Vincent%27s_theorem
+wget_U 'https://handwiki.org/wiki/Vincent%27s_theorem' -O 'Vincent_theorem-handwiki.html'
+===
+Vincent's theorem
+From HandWiki
+
+
+In mathematics, Vincent's theorem—named after Alexandre Joseph Hidulphe Vincent—is a theorem that isolates the real roots of polynomials with rational coefficients. Even though Vincent's theorem is the basis of the fastest method for the isolation of the real roots of polynomials, it was almost totally forgotten, having been overshadowed by Sturm's theorem; consequently, it does not appear in any of the classical books on the theory of equations (of the 20th century), except for Uspensky's book. Two variants of this theorem are presented, along with several (continued fractions and bisection) real root isolation methods derived from them.
+
+Contents
+1 Sign variation
+1.1 Vincent's theorem: Continued fractions version (1834 and 1836)
+1.2 Vincent's theorem: Bisection version (Alesina and Galuzzi 2000)
+1.2.1 The Alesina–Galuzzi "a_b roots test"
+1.3 Sketch of a proof
+2 Historical background
+2.1 Early applications of Vincent's theorem
+2.2 Disappearance of Vincent's theorem
+2.3 Comeback of Vincent's theorem
+3 Real root isolation methods derived from Vincent's theorem
+4 Continued fractions method
+4.1 Vincent–Akritas–Strzeboński (VAS, 2005)
+4.2 Example of VAS(p, M)
+4.2.1 Iteration 1
+4.2.2 Iteration 2
+4.2.3 Iteration 3
+4.2.4 Iteration 4
+4.2.5 Iteration 5
+4.2.6 Conclusion
+5 Bisection methods
+5.1 Vincent–Collins–Akritas (VCA, 1976)
+5.2 Example of VCA(p, (a,b))
+5.2.1 Iteration 1
+5.2.2 Iteration 2
+5.2.3 Iteration 3
+5.2.4 Iteration 4
+5.2.5 Iteration 5
+5.2.6 Iteration 6
+5.2.7 Iteration 7
+5.2.8 Conclusion
+5.3 Vincent–Alesina–Galuzzi (VAG, 2000)
+5.4 Example of VAG(p, (a,b))
+5.4.1 Iteration 1
+5.4.2 Iteration 2
+5.4.3 Iteration 3
+5.4.4 Iteration 4
+5.4.5 Iteration 5
+5.4.6 Iteration 6
+5.4.7 Iteration 7
+5.4.8 Conclusion
+6 See also
+7 References
+8 External links
+Sign variation
+Let c0, c1, c2, ... be a finite or infinite sequence of real numbers. Suppose l < r and the following conditions hold:
+If r = l+1 the numbers cl and cr have opposite signs.
+If r ≥ l+2 the numbers cl+1, ..., cr−1 are all zero and the numbers cl and cr have opposite signs.
+This is called a sign variation or sign change between the numbers cl and cr.
+When dealing with the polynomial p(x) in one variable, one defines the number of sign variations of p(x) as the number of sign variations in the sequence of its coefficients.
+Two versions of this theorem are presented: the continued fractions version due to Vincent,[1][2][3] and the bisection version due to Alesina and Galuzzi.[4][5]
+
+Vincent's theorem: Continued fractions version (1834 and 1836)
+If in a polynomial equation with rational coefficients and without multiple roots, one makes successive transformations of the form
+
+[math]\displaystyle{ x = a_1 + \frac{1}{x'},\quad x' = a_2 + \frac{1}{x''},\quad x'' = a_3 + \frac{1}{x'''}, \ldots }[/math]
+where [math]\displaystyle{ a_1, a_2, a_3,\ldots }[/math] are any positive numbers greater than or equal to one, then after a number of such transformations, the resulting transformed equation either has zero sign variations or it has a single sign variation. In the first case there is no root, whereas in the second case there is a single positive real root. Furthermore, the corresponding root of the proposed equation is approximated by the finite continued fraction:[1][2][3]
+
+[math]\displaystyle{ a_1 + \cfrac{1}{a_2 + \cfrac{1}{a_3 + \cfrac{1}{\ddots}}} }[/math]
+Moreover, if infinitely many numbers [math]\displaystyle{ a_1, a_2, a_3,\ldots }[/math] satisfying this property can be found, then the root is represented by the (infinite) corresponding continued fraction.
+
+The above statement is an exact translation of the theorem found in Vincent's original papers;[1][2][3] however, the following remarks are needed for a clearer understanding:
+
+If [math]\displaystyle{ f_n(x) }[/math] denotes the polynomial obtained after n substitutions (and after removing the denominator), then there exists N such that for all [math]\displaystyle{ n\ge N }[/math] either [math]\displaystyle{ f_n(x) }[/math] has no sign variation or it has one sign variation. In the latter case [math]\displaystyle{ f_n(x) }[/math] has a single positive real root for all [math]\displaystyle{ n\ge N }[/math].
+The continued fraction represents a positive root of the original equation, and the original equation may have more than one positive root. Moreover, assuming [math]\displaystyle{ a_1 \ge 1 }[/math], we can only obtain a root of the original equation that is > 1. To obtain an arbitrary positive root we need to assume that [math]\displaystyle{ a_1 \ge 0 }[/math].
+Negative roots are obtained by replacing x by −x, in which case the negative roots become positive.
+Vincent's theorem: Bisection version (Alesina and Galuzzi 2000)
+Let p(x) be a real polynomial of degree deg(p) that has only simple roots. It is possible to determine a positive quantity δ so that for every pair of positive real numbers a, b with [math]\displaystyle{ |b-a| \lt \delta }[/math], every transformed polynomial of the form
+
+[math]\displaystyle{ f(x) = (1+x)^{\deg(p)}p \left (\frac{a+bx}{1+x} \right ) }[/math]
+
+ 
+
+ 
+
+ 
+
+ 
+
+(1)
+
+has exactly 0 or 1 sign variations. The second case is possible if and only if p(x) has a single root within (a, b).
+
+The Alesina–Galuzzi "a_b roots test"
+From equation (1) the following criterion is obtained for determining whether a polynomial has any roots in the interval (a, b):
+
+Perform on p(x) the substitution
+
+[math]\displaystyle{ x \leftarrow \frac{a+bx}{1+x} }[/math]
+and count the number of sign variations in the sequence of coefficients of the transformed polynomial; this number gives an upper bound on the number of real roots p(x) has inside the open interval (a, b). More precisely, the number ρab(p) of real roots in the open interval (a, b)—multiplicities counted—of the polynomial p(x) in R[x], of degree deg(p), is bounded above by the number of sign variations varab(p), where
+
+[math]\displaystyle{ \operatorname{var}_{ab}(p) = \operatorname{var} \left ((1+x)^{\deg(p)}p\left (\frac{a+bx}{1+x} \right ) \right ), }[/math]
+[math]\displaystyle{ \operatorname{var}_{ab}(p) = \operatorname{var}_{ba}(p) \ge \rho_{ab}(p). }[/math]
+As in the case of Descartes' rule of signs if varab(p) = 0 it follows that ρab(p) = 0 and if varab(p) = 1 it follows that ρab(p) = 1.
+
+A special case of the Alesina–Galuzzi "a_b roots test" is Budan's "0 1 roots test".
+
+Sketch of a proof
+A detailed discussion of Vincent's theorem, its extension, the geometrical interpretation of the transformations involved and three different proofs can be found in the work by Alesina and Galuzzi.[4][5] A fourth proof is due to Ostrowski[6] who rediscovered a special case of a theorem stated by Obreschkoff,[7] p. 81, in 1920–1923.
+
+To prove (both versions of) Vincent's theorem Alesina and Galuzzi show that after a series of transformations mentioned in the theorem, a polynomial with one positive root eventually has one sign variation. To show this, they use the following corollary to the theorem by Obreschkoff of 1920–1923 mentioned earlier; that is, the following corollary gives the necessary conditions under which a polynomial with one positive root has exactly one sign variation in the sequence of its coefficients; see also the corresponding figure.
+
+Corollary. (Obreschkoff's cone or sector theorem, 1920–1923[7] p. 81): If a real polynomial has one simple root x0, and all other (possibly multiple) roots lie in the sector
+[math]\displaystyle{ S_{\sqrt{3}}= \left \{x = -\alpha+i\beta \ : \ |\beta| \le \sqrt{3} |\alpha|, \alpha\gt 0 \right \} }[/math]
+then the sequence of its coefficients has exactly one sign variation.
+
+Obreschkoff's [math]\displaystyle{ S_{\sqrt{3}} }[/math] sector and his famous eight-shaped figure (of circles).
+Consider now the Möbius transformation
+
+[math]\displaystyle{ M(x)=\frac{ax+b}{cx+d}, \qquad a,b,c,d \in \mathbb{Z}_{\gt 0} }[/math]
+and the three circles shown in the corresponding figure; assume that  
+a
+/
+c
+ < 
+b
+/
+d
+.
+
+The (yellow) circle
+[math]\displaystyle{ \left |x-\tfrac{1}{2}\left(\tfrac{a}{c} + \tfrac{b}{d} \right ) \right |=\tfrac{1}{2}\left (\tfrac{b}{d} - \tfrac{a}{c} \right ) }[/math]
+whose diameter lies on the real axis, with endpoints 
+a
+/
+c
+ and 
+b
+/
+d
+, is mapped by the inverse Möbius transformation
+[math]\displaystyle{ M^{-1}(x)=\frac{dx-b}{-cx+a} }[/math]
+onto the imaginary axis. For example the point
+[math]\displaystyle{ \tfrac{1}{2}\left(\tfrac{a}{c} + \tfrac{b}{d} \right )+\tfrac{i}{2}\left (\tfrac{b}{d} - \tfrac{a}{c} \right ) }[/math]
+gets mapped onto the point −i 
+d
+/
+c
+. The exterior points get mapped onto the half-plane with Re(x) < 0.
+The two circles (only their blue crescents are visible) with center
+[math]\displaystyle{ \tfrac{1}{2}\left(\tfrac{a}{c} + \tfrac{b}{d} \right ) \pm \tfrac{i}{2\sqrt{3}} \left (\tfrac{b}{d} - \tfrac{a}{c} \right ) }[/math]
+and radius
+[math]\displaystyle{ \tfrac{1}{\sqrt{3}} \left ( \tfrac{b}{d}-\tfrac{a}{c} \right ) }[/math]
+are mapped by the inverse Möbius transformation
+[math]\displaystyle{ M^{-1}(x)=\frac{dx-b}{-cx+a} }[/math]
+onto the lines Im(x) = ±√3 Re(x). For example the point
+[math]\displaystyle{ \tfrac{1}{2} \left(\tfrac{a}{c} + \tfrac{b}{d} \right )-\tfrac{3i}{2\sqrt{3}} \left (\tfrac{b}{d} - \tfrac{a}{c} \right ) }[/math]
+gets mapped to the point
+[math]\displaystyle{ \tfrac{-d}{2c}\left (1-i\sqrt{3} \right ). }[/math]
+The exterior points (those outside the eight-shaped figure) get mapped onto the [math]\displaystyle{ S_{\sqrt{3}} }[/math] sector.
+From the above it becomes obvious that if a polynomial has a single positive root inside the eight-shaped figure and all other roots are outside of it, it presents one sign variation in the sequence of its coefficients. This also guarantees the termination of the process.
+
+Historical background
+Early applications of Vincent's theorem
+In his fundamental papers,[1][2][3] Vincent presented examples that show precisely how to use his theorem to isolate real roots of polynomials with continued fractions. However the resulting method had exponential computing time, a fact that mathematicians must have realized then, as was realized by Uspensky[8] p. 136, a century later.
+
+
+Vincent's search for a root (applying Budan's theorem)
+The exponential nature of Vincent's algorithm is due to the way the partial quotients ai (in Vincent's theorem) are computed. That is, to compute each partial quotient ai (that is, to locate where the roots lie on the x-axis) Vincent uses Budan's theorem as a "no roots test"; in other words, to find the integer part of a root Vincent performs successive substitutions of the form x ← x+1 and stops only when the polynomials p(x) and p(x+1) differ in the number of sign variations in the sequence of their coefficients (i.e. when the number of sign variations of p(x+1) is decreased).
+
+See the corresponding diagram where the root lies in the interval (5, 6). It can be easily inferred that, if the root is far away from the origin, it takes a lot of time to find its integer part this way, hence the exponential nature of Vincent's method. Below there is an explanation of how this drawback is overcome.
+
+Disappearance of Vincent's theorem
+Vincent was the last author in the 19th century to use his theorem for the isolation of the real roots of a polynomial.
+
+The reason for that was the appearance of Sturm's theorem in 1827, which solved the real root isolation problem in polynomial time, by defining the precise number of real roots a polynomial has in a real open interval (a, b). The resulting (Sturm's) method for computing the real roots of polynomials has been the only one widely known and used ever since—up to about 1980, when it was replaced (in almost all computer algebra systems) by methods derived from Vincent's theorem, the fastest one being the Vincent–Akritas–Strzeboński (VAS) method.[9]
+
+Serret included in his Algebra,[10] pp 363–368, Vincent's theorem along with its proof and directed all interested readers to Vincent's papers for examples on how it is used. Serret was the last author to mention Vincent's theorem in the 19th century.
+
+Comeback of Vincent's theorem
+In the 20th century Vincent's theorem cannot be found in any of the theory of equations books; the only exceptions are the books by Uspensky[8] and Obreschkoff,[7] where in the second there is just the statement of the theorem.
+
+It was in Uspensky's book[8] that Akritas found Vincent's theorem and made it the topic of his Ph.D. Thesis "Vincent's Theorem in Algebraic Manipulation", North Carolina State University, USA, 1978. A major achievement at the time was getting hold of Vincent's original paper of 1836, something that had eluded Uspensky—resulting thus in a great misunderstanding. Vincent's original paper of 1836 was made available to Akritas through the commendable efforts (interlibrary loan) of a librarian in the Library of the University of Wisconsin–Madison, USA.
+
+Real root isolation methods derived from Vincent's theorem
+Isolation of the real roots of a polynomial is the process of finding open disjoint intervals such that each contains exactly one real root and every real root is contained in some interval. According to the French school of mathematics of the 19th century, this is the first step in computing the real roots, the second being their approximation to any degree of accuracy; moreover, the focus is on the positive roots, because to isolate the negative roots of the polynomial p(x) replace x by −x (x ← −x) and repeat the process.
+
+The continued fractions version of Vincent's theorem can be used to isolate the positive roots of a given polynomial p(x) of degree deg(p). To see this, represent by the Möbius transformation
+
+[math]\displaystyle{ M(x)=\frac{ax+b}{cx+d}, \qquad a,b,c,d \in \mathbb{N} }[/math]
+the continued fraction that leads to a transformed polynomial
+
+[math]\displaystyle{ f(x) = (cx+d)^{\deg(p)}p \left (\frac{ax+b}{cx+d} \right ) }[/math]
+
+ 
+
+ 
+
+ 
+
+ 
+
+(2)
+
+with one sign variation in the sequence of its coefficients. Then, the single positive root of f(x) (in the interval (0, ∞)) corresponds to that positive root of p(x) that is in the open interval with endpoints [math]\displaystyle{ \frac{b}{d} }[/math] and [math]\displaystyle{ \frac{a}{c} }[/math]. These endpoints are not ordered and correspond to M(0) and M(∞) respectively.
+
+Therefore, to isolate the positive roots of a polynomial, all that must be done is to compute—for each root—the variables a, b, c, d of the corresponding Möbius transformation
+
+[math]\displaystyle{ M(x)=\frac{ax+b}{cx+d} }[/math]
+that leads to a transformed polynomial as in equation (2), with one sign variation in the sequence of its coefficients.
+
+Crucial Observation: The variables a, b, c, d of a Möbius transformation
+
+[math]\displaystyle{ M(x)=\frac{ax+b}{cx+d} }[/math]
+(in Vincent's theorem) leading to a transformed polynomial—as in equation (2)—with one sign variation in the sequence of its coefficients can be computed:
+
+either by continued fractions, leading to the Vincent–Akritas–Strzebonski (VAS) continued fractions method,[9]
+or by bisection, leading to (among others) the Vincent–Collins–Akritas (VCA) bisection method.[11]
+The "bisection part" of this all important observation appeared as a special theorem in the papers by Alesina and Galuzzi.[4][5]
+
+All methods described below (see the article on Budan's theorem for their historical background) need to compute (once) an upper bound, ub, on the values of the positive roots of the polynomial under consideration. Exception is the VAS method where additionally lower bounds, lb, must be computed at almost every cycle of the main loop. To compute the lower bound lb of the polynomial p(x) compute the upper bound ub of the polynomial [math]\displaystyle{ x^{\deg(p)}p\left (\frac{1}{x} \right ) }[/math] and set [math]\displaystyle{ lb = \frac{1}{ub} }[/math].
+
+Excellent (upper and lower) bounds on the values of just the positive roots of polynomials have been developed by Akritas, Strzeboński and Vigklas based on previous work by Doru Stefanescu. They are described in P. S. Vigklas' Ph.D. Thesis[12] and elsewhere.[13] These bounds have already been implemented in the computer algebra systems Mathematica, SageMath, SymPy, Xcas etc.
+
+All three methods described below follow the excellent presentation of François Boulier,[14] p. 24.
+
+Continued fractions method
+Only one continued fractions method derives from Vincent's theorem. As stated above, it started in the 1830s when Vincent presented, in the papers[1][2][3] several examples that show how to use his theorem to isolate the real roots of polynomials with continued fractions. However the resulting method had exponential computing time. Below is an explanation of how this method evolved.
+
+Vincent–Akritas–Strzeboński (VAS, 2005)
+This is the second method (after VCA) developed to handle the exponential behavior of Vincent's method.
+
+The VAS continued fractions method is a direct implementation of Vincent's theorem. It was originally presented by Vincent from 1834 to 1938 in the papers [1][2][3] in a exponential form; namely, Vincent computed each partial quotient ai by a series of unit increments ai ← ai + 1, which are equivalent to substitutions of the form x ← x + 1.
+
+Vincent's method was converted into its polynomial complexity form by Akritas, who in his 1978 Ph.D. Thesis (Vincent's theorem in algebraic manipulation, North Carolina State University, USA) computed each partial quotient ai as the lower bound, lb, on the values of the positive roots of a polynomial. This is called the ideal positive lower root bound that computes the integer part of the smallest positive root (see the corresponding figure). To wit, now set ai ← lb or, equivalently, perform the substitution x ← x + lb, which takes about the same time as the substitution x ← x + 1.
+
+
+VAS searching for a root: The ideal lower bound is 5, hence x ← x + 5.
+Finally, since the ideal positive lower root bound does not exist, Strzeboński[15] introduced in 2005 the substitution [math]\displaystyle{ x \leftarrow lb_{computed}*x }[/math], whenever [math]\displaystyle{ lb_{computed}\gt 16 }[/math]; in general [math]\displaystyle{ lb \gt lb_{computed} }[/math] and the value 16 was determined experimentally. Moreover, it has been shown[15] that the VAS (continued fractions) method is faster than the fastest implementation of the VCA (bisection) method,[16] a fact that was confirmed[17] independently; more precisely, for the Mignotte polynomials of high degree VAS is about 50,000 times faster than the fastest implementation of VCA.
+
+In 2007, Sharma[18] removed the hypothesis of the ideal positive lower bound and proved that VAS is still polynomial in time.
+
+VAS is the default algorithm for root isolation in Mathematica, SageMath, SymPy, Xcas.
+
+For a comparison between Sturm's method and VAS use the functions realroot(poly) and time(realroot(poly)) of Xcas. By default, to isolate the real roots of poly realroot uses the VAS method; to use Sturm's method write realroot(sturm, poly). See also the External links for an application by A. Berkakis for Android devices that does the same thing.
+
+Here is how VAS(p, M) works, where for simplicity Strzeboński's contribution is not included:
+
+Let p(x) be a polynomial of degree deg(p) such that p(0) ≠ 0. To isolate its positive roots, associate with p(x) the Möbius transformation M(x) = x and repeat the following steps while there are pairs {p(x), M(x)} to be processed.
+Use Descartes' rule of signs on p(x) to compute, if possible, (using the number var of sign variations in the sequence of its coefficients) the number of its roots inside the interval (0, ∞). If there are no roots return the empty set, ∅ whereas if there is one root return the interval (a, b), where a = min(M(0), M(∞)), and b = max(M(0), M(∞)); if b = ∞ set b = ub, where ub is an upper bound on the values of the positive roots of p(x).[12][13]
+If there are two or more sign variations Descartes' rule of signs implies that there may be zero, one or more real roots inside the interval (0, ∞); in this case consider separately the roots of p(x) that lie inside the interval (0, 1) from those inside the interval (1, ∞). A special test must be made for 1.
+To guarantee that there are roots inside the interval (0, 1) the ideal lower bound, lb is used; that is the integer part of the smallest positive root is computed with the help of the lower bound,[12][13] [math]\displaystyle{ lb_{computed} }[/math], on the values of the positive roots of p(x). If [math]\displaystyle{ lb_{computed}\gt 1 }[/math], the substitution [math]\displaystyle{ x \leftarrow x+lb_{computed} }[/math] is performed to p(x) and M(x), whereas if [math]\displaystyle{ lb_{computed} \le 1 }[/math] use substitution(s) x ← x+1 to find the integer part of the root(s).
+To compute the roots inside the interval (0, 1) perform the substitution [math]\displaystyle{ x \leftarrow \frac{1}{1+x} }[/math] to p(x) and M(x) and process the pair
+[math]\displaystyle{ \left \{(1+x)^{\deg(p)}p\left (\tfrac{1}{1+x} \right ), M(\tfrac{1}{1+x}) \right\}, }[/math]
+whereas to compute the roots in the interval (1, ∞) perform the substitution x ← x + 1 to p(x) and M(x) and process the pair {p(1 + x), M(1 + x)}. It may well turn out that 1 is a root of p(x), in which case, M(1) is a root of the original polynomial and the isolation interval reduces to a point.
+Below is a recursive presentation of VAS(p, M).
+
+VAS(p, M):
+
+Input: A univariate, square-free polynomial [math]\displaystyle{ p(x) \in \mathbb{Z}[x], p(0) \neq 0 }[/math], of degree deg(p), and the Möbius transformation
+
+[math]\displaystyle{ M(x)= \frac{ax+b}{cx+d}=x, \qquad a, b, c, d \in \mathbb{N}. }[/math]
+Output: A list of isolating intervals of the positive roots of p(x).
+
+1 var ← the number of sign variations of p(x) // Descartes' rule of signs;
+2 if var = 0 then RETURN ∅;
+3 if var = 1 then RETURN {(a, b)} // a = min(M(0), M(∞)), b = max(M(0), M(∞)), but if b = ∞ set b = ub, where ub is an upper bound on the values of the positive roots of p(x);
+4 lb ← the ideal lower bound on the positive roots of p(x);
+5 if lb ≥ 1 then p ← p(x + lb), M ← M(x + lb);
+6 p01 ← (x + 1)deg(p) p(
+1
+/
+x + 1
+), M01 ← M(
+1
+/
+x + 1
+) // Look for real roots in (0, 1);
+7 m ← M(1) // Is 1 a root?
+8 p1∞ ← p(x + 1), M1∞ ← M(x + 1) // Look for real roots in (1, ∞);
+9 if p(1) ≠ 0  then
+10 RETURN VAS(p01, M01) ∪ VAS(p1∞, M1∞)
+11 else
+12 RETURN VAS(p01, M01) ∪ {[m, m]} ∪ VAS(p1∞, M1∞)
+13 end
+Remarks
+
+For simplicity Strzeboński's contribution is not included.
+In the above algorithm with each polynomial there is associated a Möbius transformation M(x).
+In line 1 Descartes' rule of signs is applied.
+If lines 4 and 5 are removed from VAS(p, M) the resulting algorithm is Vincent's exponential one.
+Any substitution performed on the polynomial p(x) is also performed on the associated Möbius transformation M(x) (lines 5 6 and 8).
+The isolating intervals are computed from the Möbius transformation in line 3, except for integer roots computed in line 7 (also 12).
+Example of VAS(p, M)
+We apply the VAS method to p(x) = x3 − 7x + 7 (note that: M(x) = x).
+
+Iteration 1
+VAS(x3 − 7x + 7, x)
+1 var ← 2 // the number of sign variations in the sequence of coefficients of p(x) = x3 − 7x + 7
+4 lb ← 1 // the ideal lower bound—found using lbcomputed and substitution(s) x ← x + 1
+5 p ← x3 + 3x2 − 4x + 1, M ← x + 1
+6 p01 ← x3 − x2 − 2x + 1, M01 ← 
+x + 2
+/
+x + 1
+
+7 m ← 1
+8 p1∞ ← x3 + 6x2 + 5x + 1, M1∞ ← x + 2
+10          RETURN VAS(x3 − x2 − 2x + 1, 
+x + 2
+/
+x + 1
+) ∪ VAS(x3 + 6x2 + 5x + 1, x + 2)
+List of isolation intervals: { }.
+
+List of pairs {p, M} to be processed:
+
+[math]\displaystyle{ \left \{ \left \{x^3-x^2-2x+1,\tfrac{x+2}{x+1} \right \}, \{x^3+6x^2+5x+1,x+2\} \right \}. }[/math]
+Remove the first and process it.
+
+Iteration 2
+VAS(x3 − x2 − 2x + 1, 
+x + 2
+/
+x + 1
+)
+1 var ← 2 // the number of sign variations in the sequence of coefficients of p(x) = x3 − x2 − 2x + 1
+4 lb ← 0 // the ideal lower bound—found using lbcomputed and substitution(s) x ← x + 1
+6 p01 ← x3 + x2 − 2x − 1, M01 ← 
+2x + 3
+/
+x + 1
+
+7 m ← 
+3
+/
+2
+
+8 p1∞ ← x3 + 2x2 − x − 1, M1∞ ← 
+x + 3
+/
+x + 2
+
+10          RETURN VAS(x3 + x2 − 2x − 1, 
+2x + 3
+/
+x + 2
+) ∪ VAS(x3 + 2x2 − x − 1, 
+x + 3
+/
+x + 2
+)
+List of isolation intervals: { }.
+
+List of pairs {p, M} to be processed:
+
+[math]\displaystyle{ \left \{ \left \{x^3+x^2-2x-1,\tfrac{2x+3}{x+2} \right \}, \left \{x^3+2x^2-x-1,\tfrac{x+3}{x+2} \right \}, \{x^3+6x^2+5x+1,x+2\} \right\}. }[/math]
+Remove the first and process it.
+
+Iteration 3
+VAS(x3 + x2 − 2x − 1, 
+2x + 3
+/
+x + 2
+)
+1 var ← 1 // the number of sign variations in the sequence of coefficients of p(x) = x3 + x2 − 2x − 1
+3          RETURN {(
+3
+/
+2
+, 2)}
+List of isolation intervals: {(
+3
+/
+2
+, 2)}.
+
+List of pairs {p, M} to be processed:
+
+[math]\displaystyle{ \left \{ \left \{x^3+2x^2-x-1,\tfrac{x+3}{x+2} \right \},\{x^3+6x^2+5x+1,x+2\} \right \}. }[/math]
+Remove the first and process it.
+
+Iteration 4
+VAS(x3 + 2x2 − x − 1, 
+x + 3
+/
+x + 2
+)
+1 var ← 1 // the number of sign variations in the sequence of coefficients of p(x) = x3 + 2x2 − x − 1
+3          RETURN {(1, 
+3
+/
+2
+)}
+List of isolation intervals: {(1, 
+3
+/
+2
+), (
+3
+/
+2
+, 2)}.
+
+List of pairs {p, M} to be processed:
+
+[math]\displaystyle{ \left \{ \left \{x^3+6x^2+5x+1,x+2 \right \} \right \}. }[/math]
+Remove the first and process it.
+
+Iteration 5
+VAS(x3 + 6x2 + 5x + 1, x + 2)
+1 var ← 0 // the number of sign variations in the sequence of coefficients of p(x) = x3 + 6x2 + 5x + 1
+2          RETURN ∅
+List of isolation intervals: {(1, 
+3
+/
+2
+), (
+3
+/
+2
+, 2)}.
+
+List of pairs {p, M} to be processed: ∅.
+
+Finished.
+
+Conclusion
+Therefore, the two positive roots of the polynomial p(x) = x3 − 7x + 7 lie inside the isolation intervals (1, 
+3
+/
+2
+) and (
+3
+/
+2
+, 2)}. Each root can be approximated by (for example) bisecting the isolation interval it lies in until the difference of the endpoints is smaller than 10−6; following this approach, the roots turn out to be ρ1 = 1.3569 and ρ2 = 1.69202.
+
+Bisection methods
+There are various bisection methods derived from Vincent's theorem; they are all presented and compared elsewhere.[19] Here the two most important of them are described, namely, the Vincent–Collins–Akritas (VCA) method and the Vincent–Alesina–Galuzzi (VAG) method.
+
+The Vincent–Alesina–Galuzzi (VAG) method is the simplest of all methods derived from Vincent's theorem but has the most time consuming test (in line 1) to determine if a polynomial has roots in the interval of interest; this makes it the slowest of the methods presented in this article.
+
+By contrast, the Vincent–Collins–Akritas (VCA) method is more complex but uses a simpler test (in line 1) than VAG. This along with certain improvements[16] have made VCA the fastest bisection method.
+
+Vincent–Collins–Akritas (VCA, 1976)
+This was the first method developed to overcome the exponential nature of Vincent's original approach, and has had quite an interesting history as far as its name is concerned. This method, which isolates the real roots, using Descartes' rule of signs and Vincent's theorem, had been originally called modified Uspensky's algorithm by its inventors Collins and Akritas.[11] After going through names like "Collins–Akritas method" and "Descartes' method" (too confusing if ones considers Fourier's article[20]), it was finally François Boulier, of Lille University, who gave it the name Vincent–Collins–Akritas (VCA) method,[14] p. 24, based on the fact that "Uspensky's method" does not exist[21] and neither does "Descartes' method".[22] The best implementation of this method is due to Rouillier and Zimmerman,[16] and to this date, it is the fastest bisection method. It has the same worst case complexity as Sturm's algorithm, but is almost always much faster. It has been implemented in Maple's RootFinding package.
+
+Here is how VCA(p, (a, b)) works:
+
+Given a polynomial porig(x) of degree deg(p), such that porig(0) ≠ 0, whose positive roots must be isolated, first compute an upper bound,[12][13] ub on the values of these positive roots and set p(x) = porig(ub * x) and (a, b) = (0, ub). The positive roots of p(x) all lie in the interval (0, 1) and there is a bijection between them and the roots of porig(x), which all lie in the interval (a, b) = (0, ub) (see the corresponding figure); this bijection is expressed by α(a,b) = a +α(0,1)(b − a). Likewise, there is a bijection between the intervals (0, 1) and (0, ub).
+
+Bijection between the roots of porig(x) and p(x).
+Repeat the following steps while there are pairs {p(x), (a, b)} to be processed.
+Use Budan's "0 1 roots test" on p(x) to compute (using the number var of sign variations in the sequence of its coefficients) the number of its roots inside the interval (0, 1). If there are no roots return the empty set, ∅ and if there is one root return the interval (a, b).
+If there are two or more sign variations Budan's "0 1 roots test" implies that there may be zero, one, two or more real roots inside the interval (0, 1). In this case cut it in half and consider separately the roots of p(x) inside the interval (0, 
+1
+/
+2
+)—and that correspond to the roots of porig(x) inside the interval (a, 
+1
+/
+2
+(a + b)) from those inside the interval (
+1
+/
+2
+, 1) and correspond to the roots of porig(x) inside the interval (
+1
+/
+2
+(a + b), b); that is, process, respectively, the pairs
+[math]\displaystyle{ \left \{2^{\deg(p)}p(\tfrac{x}{2}), (a, \tfrac{1}{2}(a+b)) \right \}, \quad \left \{2^{\deg(p)}p(\tfrac{1}{2} (x+1)), (\tfrac{1}{2}(a+b), b) \right \} }[/math]
+(see the corresponding figure). It may well turn out that 
+1
+/
+2
+ is a root of p(x), in which case 
+1
+/
+2
+(a + b) is a root of porig(x) and the isolation interval reduces to a point.
+
+Bijections between the roots of p(x) and those of p(
+x
+/
+2
+) and p(
+x + 1
+/
+2
+).
+Below is a recursive presentation of the original algorithm VCA(p, (a, b)).
+
+VCA(p, (a, b))
+
+Input: A univariate, square-free polynomial p(ub * x) ∈ Z[x], p(0) ≠ 0 of degree deg(p), and the open interval (a, b) = (0, ub), where ub is an upper bound on the values of the positive roots of p(x). (The positive roots of p(ub * x) are all in the open interval (0, 1)).
+Output: A list of isolating intervals of the positive roots of p(x)
+
+1 var ← the number of sign variations of (x + 1)deg(p)p(
+1
+/
+x + 1
+) // Budan's "0 1 roots test";
+2 if var = 0 then RETURN ∅;
+3 if var = 1 then RETURN {(a, b)};
+4 p0
+1
+/
+2
+ ← 2deg(p)p(
+x
+/
+2
+) // Look for real roots in (0, 
+1
+/
+2
+);
+5 m ← 
+1
+/
+2
+(a + b) // Is 
+1
+/
+2
+ a root?
+6 p
+1
+/
+2
+1 ← 2deg(p)p(
+x + 1
+/
+2
+) // Look for real roots in (
+1
+/
+2
+, 1);
+7 if p(
+1
+/
+2
+) ≠ 0 then
+8         RETURN VCA (p0
+1
+/
+2
+, (a, m)) ∪ VCA (p
+1
+/
+2
+1, (m, b))
+9 else
+10        RETURN VCA (p0
+1
+/
+2
+, (a, m)) ∪ {[m, m]} ∪ VCA (p
+1
+/
+2
+1, (m, b))
+11 end
+Remark
+
+In the above algorithm with each polynomial there is associated an interval (a, b). As shown elsewhere,[22] p. 11, a Möbius transformation can also be associated with each polynomial in which case VCA looks more like VAS.
+In line 1 Budan's "0 1 roots test" is applied.
+Example of VCA(p, (a,b))
+Given the polynomial porig(x) = x3 − 7x + 7 and considering as an upper bound[12][13] on the values of the positive roots ub = 4 the arguments of the VCA method are: p(x) = 64x3 − 28x + 7 and (a, b) = (0, 4).
+
+Iteration 1
+1 var ← 2 // the number of sign variations in the sequence of coefficients of (x + 1)3p(
+1
+/
+x + 1
+) = 7x3 − 7x2 − 35x + 43
+4 p0
+1
+/
+2
+ ← 64x3 − 112x + 56
+5 m ← 2
+6 p
+1
+/
+2
+1 ← 64x3 + 192x2 + 80x + 8
+7 p(
+1
+/
+2
+) = 1
+8          RETURN VCA(64x3 − 112x + 56, (0, 2)) ∪ VCA(64x3 + 192x2 + 80x + 8, (2, 4))
+List of isolation intervals: { }.
+
+List of pairs {p, I} to be processed:
+
+[math]\displaystyle{ \left \{ \left \{64x^3-112x+56,(0,2) \right \}, \left \{64x^3+192x^2+80x+8,(2,4) \right\} \right\}. }[/math]
+Remove the first and process it.
+
+Iteration 2
+VCA(64x3 − 112x + 56, (0, 2))
+1 var ← 2 // the number of sign variations in the sequence of coefficients of (x + 1)3p(
+1
+/
+x + 1
+) = 56x3 + 56x2 − 56x + 8
+4 p0
+1
+/
+2
+ ← 64x3 − 448x + 448
+5 m ← 1
+6 p
+1
+/
+2
+1 ← 64x3 + 192x2 − 256x + 64
+7 p(
+1
+/
+2
+) = 8
+8          RETURN VCA(64x3 − 448x + 448, (0, 1)) ∪ VCA(64x3 + 192x2 − 256x + 64, (1, 2))
+List of isolation intervals: { }.
+
+List of pairs {p, I} to be processed:
+
+[math]\displaystyle{ \left \{ \left \{64x^3-448x+448,(0,1) \right \}, \left \{64x^3+192x^2-256x+64,(1,2) \right \}, \left \{64x^3+192x^2+80x+8,(2,4)\right\} \right\}. }[/math]
+Remove the first and process it.
+
+Iteration 3
+VCA(64x3 − 448x + 448, (0, 1))
+1 var ← 0 // the number of sign variations in the sequence of coefficients of (x + 1)3p(
+1
+/
+x + 1
+) = 448x3 + 896x2 + 448x + 64
+2          RETURN ∅
+List of isolation intervals: { }.
+
+List of pairs {p, I} to be processed:
+
+[math]\displaystyle{ \left \{ \left \{64x^3+192x^2-256x+64,(1,2) \right \}, \left \{64x^3+192x^2+80x+8,(2,4) \right \} \right \}. }[/math]
+Remove the first and process it.
+
+Iteration 4
+VCA(64x3 + 192x2 − 256x + 64, (1, 2))
+1 var ← 2 // the number of sign variations in the sequence of coefficients of (x + 1)3p(
+1
+/
+x + 1
+) = 64x3 − 64x2 − 128x + 64
+4 p0
+1
+/
+2
+ ← 64x3 + 384x2 − 1024x + 512
+5 m ← 
+3
+/
+2
+
+6 p
+1
+/
+2
+1 ← 64x3 + 576x2 − 64x + 64
+7 p(
+1
+/
+2
+) = −8
+8 RETURN VCA(64x3 + 384x2 − 1024x + 512, (1, 
+3
+/
+2
+)) ∪ VCA(64x3 + 576x2 − 64x − 64, (
+3
+/
+2
+, 2))
+List of isolation intervals: { }.
+
+List of pairs {p, I} to be processed:
+
+[math]\displaystyle{ \left \{ \left \{64x^3+384x^2-1024x+512, \left (1,\tfrac{3}{2} \right ) \right \}, \left \{64x^3+576x^2-64x-64, \left(\tfrac{3}{2},2 \right ) \right \}, \left \{64x^3+192x^2+80x+8,(2,4) \right \} \right \}. }[/math]
+Remove the first and process it.
+
+Iteration 5
+VCA(64x3 + 384x2 − 1024x + 512, (1, 
+3
+/
+2
+))
+1 var ← 1 // the number of sign variations in the sequence of coefficients of (x + 1)3p(
+1
+/
+x + 1
+) = 512x3 + 512x2 − 128x − 64
+3 RETURN {(1, 
+3
+/
+2
+)}
+List of isolation intervals: {(1, 
+3
+/
+2
+)}.
+
+List of pairs {p, I} to be processed:
+
+[math]\displaystyle{ \left \{ \left \{64x^3+576x^2-64x-64, \left (\tfrac{3}{2},2 \right ) \right \}, \left \{64x^3+192x^2+80x+8, (2,4) \right \} \right \}. }[/math]
+Remove the first and process it.
+
+Iteration 6
+VCA(64x3 + 576x2 − 64x − 64, (
+3
+/
+2
+, 2))
+
+1 var ← 1 // the number of sign variations in the sequence of coefficients of (x + 1)3p(
+1
+/
+x + 1
+) = −64x3 − 256x2 + 256x + 512
+3 RETURN {(
+3
+/
+2
+, 2)}
+List of isolation intervals: {(1, 
+3
+/
+2
+), (
+3
+/
+2
+, 2)}.
+
+List of pairs {p, I} to be processed:
+
+[math]\displaystyle{ \left \{ \left \{64x^3+192x^2+80x+8, (2,4) \right\} \right\}. }[/math]
+Remove the first and process it.
+
+Iteration 7
+VCA(64x3 + 192x2 + 80x + 8, (2, 4))
+1 var ← 0 // the number of sign variations in the sequence of coefficients of (x + 1)3p(
+1
+/
+x + 1
+) = 8x3 + 104x2 + 376x + 344
+2 RETURN ∅
+List of isolation intervals: {(1, 
+3
+/
+2
+), (
+3
+/
+2
+, 2)}.
+
+List of pairs {p, I} to be processed: ∅.
+
+Finished.
+
+Conclusion
+Therefore, the two positive roots of the polynomial p(x) = x3 − 7x + 7 lie inside the isolation intervals (1, 
+3
+/
+2
+) and (
+3
+/
+2
+, 2)}. Each root can be approximated by (for example) bisecting the isolation interval it lies in until the difference of the endpoints is smaller than 10−6; following this approach, the roots turn out to be ρ1 = 1.3569 and ρ2 = 1.69202.
+
+Vincent–Alesina–Galuzzi (VAG, 2000)
+This was developed last and is the simplest real root isolation method derived from Vincent's theorem.
+
+Here is how VAG(p, (a, b)) works:
+
+Given a polynomial p(x) of degree deg(p), such that p(0) ≠ 0, whose positive roots must be isolated, first compute an upper bound,[12][13] ub on the values of these positive roots and set (a, b) = (0, ub). The positive roots of p(x) all lie in the interval (a, b).
+Repeat the following steps while there are intervals (a, b) to be processed; in this case the polynomial p(x) stays the same.
+Use the Alesina–Galuzzi "a b roots test" on p(x) to compute (using the number var of sign variations in the sequence of its coefficients) the number of its roots inside the interval (a, b). If there are no roots return the empty set, ∅ and if there is one root return the interval (a, b).
+If there are two or more sign variations the Alesina–Galuzzi "a b roots test" implies that there may be zero, one, two or more real roots inside the interval (a, b). In this case cut it in half and consider separately the roots of p(x) inside the interval (a, 
+1
+/
+2
+(a + b)) from those inside the interval (
+1
+/
+2
+(a + b), b); that is, process, respectively, the intervals (a, 
+1
+/
+2
+(a + b)) and (
+1
+/
+2
+(a + b), b). It may well turn out that 
+1
+/
+2
+(a + b) is a root of p(x), in which case the isolation interval reduces to a point.
+Below is a recursive presentation of VAG(p, (a, b)).
+
+VAG(p, (a, b))
+Input: A univariate, square-free polynomial p(x) ∈ Z[x], p(0) ≠ 0 of degree deg(p) and the open interval (a, b) = (0, ub), where ub is an upper bound on the values of the positive roots of p(x).
+Output: A list of isolating intervals of the positive roots of p(x).
+
+1 var ← the number of sign variations of (x + 1)deg(p) p(
+a + bx
+/
+1 + x
+) // The Alesina–Galuzzi "a b roots test";
+2 if var = 0 then RETURN ∅;
+3 if var = 1 then RETURN {(a, b)};
+4 m ← 
+1
+/
+2
+(a + b) // Subdivide the interval (a, b) in two equal parts;
+5 if p(m) ≠ 0 then
+6        RETURN VAG(p, (a, m)) ∪ VAG(p, (m, b))
+7 else
+8        RETURN VAG(p, (a, m)) ∪  {[m, m]} ∪ VAG(p, (m, b))
+9 end
+Remarks
+
+Compared to VCA the above algorithm is extremely simple; by contrast, VAG uses the time consuming "a b roots test" and that makes it much slower than VCA.[19]
+As Alesina and Galuzzi point out,[5] p. 189, there is a variant of this algorithm due to Donato Saeli. Saeli suggested that the mediant of the endpoints be used instead of their midpoint 
+1
+/
+2
+(a + b). However, it has been shown[19] that using the mediant of the endpoints is in general much slower than the "mid-point" version.
+Example of VAG(p, (a,b))
+Given the polynomial p(x) = x3 − 7x + 7 and considering as an upper bound[12][13] on the values of the positive roots ub = 4 the arguments of VAG are: p(x) = x3 − 7x + 7 and (a, b) = (0, 4).
+
+Iteration 1
+1 var ← 2 // the number of sign variations in the sequence of coefficients of (x + 1)3p(
+4x
+/
+x + 1
+) = 43x3 − 35x2 − 7x + 7
+4 m ← 
+1
+/
+2
+(0 + 4) = 2
+5 p(m) = 1
+8          RETURN VAG(x3 − 7x + 7, (0, 2)) ∪ VAG(x3 − 7x + 7, (2, 4)
+List of isolation intervals: {}.
+
+List of intervals to be processed: {(0, 2), (2, 4)}.
+
+Remove the first and process it.
+
+Iteration 2
+VAG(x3 − 7x + 7, (0, 2))
+1 var ← 2 // the number of sign variations in the sequence of coefficients of (x + 1)3p(
+2x
+/
+x + 1
+) = x3 − 7x2 + 7x + 7
+4 m ← 
+1
+/
+2
+(0 + 2) = 1
+5 p(m) = 1
+8          RETURN VAG(x3 − 7x + 7, (0, 1)) ∪ VAG(x3 − 7x + 7, (1, 2)
+List of isolation intervals: {}.
+
+List of intervals to be processed: {(0, 1), (1, 2), (2, 4)}.
+
+Remove the first and process it.
+
+Iteration 3
+VAG(x3 − 7x + 7, (0, 1))
+1 var ← 0 // the number of sign variations in the sequence of coefficients of (x + 1)3p(
+x
+/
+x + 1
+) = x3 + 7x2 + 14x + 7
+2          RETURN ∅
+List of isolation intervals: {}.
+
+List of intervals to be processed: {(1, 2), (2, 4)}.
+
+Remove the first and process it.
+
+Iteration 4
+VAG(x3 − 7x + 7, (1, 2))
+1 var ← 2 // the number of sign variations in the sequence of coefficients of (x + 1)3p(
+2x + 1
+/
+x + 1
+) = x3 − 2x2 − x + 1
+4 m ← 
+1
+/
+2
+(1 + 2) = 
+3
+/
+2
+
+5 p(m) = −
+1
+/
+8
+
+8          RETURN VAG(x3 − 7x + 7, (1, 
+3
+/
+2
+)) ∪ VAG(x3 − 7x + 7, (
+3
+/
+2
+, 2))
+List of isolation intervals: {}.
+
+List of intervals to be processed: {(1, 
+3
+/
+2
+), (
+3
+/
+2
+, 2), (2, 4)}.
+
+Remove the first and process it.
+
+Iteration 5
+VAG(x3 − 7x + 7, (1, 
+3
+/
+2
+))
+1 var ← 1 // the number of sign variations in the sequence of coefficients of 23(x + 1)3p(
+3
+/
+2
+x + 1
+/
+x + 1
+) = x3 + 2x2 − 8x − 8
+3          RETURN (1, 
+3
+/
+2
+)
+List of isolation intervals: {(1, 
+3
+/
+2
+)}.
+
+List of intervals to be processed: {(
+3
+/
+2
+, 2), (2, 4)}.
+
+Remove the first and process it.
+
+Iteration 6
+VAG(x3 − 7x + 7, (
+3
+/
+2
+, 2))
+1 var ← 1 // the number of sign variations in the sequence of coefficients of 23(x + 1)3p(
+2x + 
+3
+/
+2
+/
+x + 1
+) = 8x3 + 4x2 − 4x − 1
+3          RETURN (
+3
+/
+2
+, 2)
+List of isolation intervals: {(1, 
+3
+/
+2
+), (
+3
+/
+2
+, 2)}.
+
+List of intervals to be processed: {(2, 4)}.
+
+Remove the first and process it.
+
+Iteration 7
+VAG(x3 − 7x + 7, (2, 4))
+1 var ← 0 // the number of sign variations in the sequence of coefficients of (x + 1)3p(
+4x + 2
+/
+x + 1
+) = 344x3 + 376x2 + 104x + 8
+2          RETURN ∅
+List of isolation intervals: {(1, 
+3
+/
+2
+), (
+3
+/
+2
+, 2)}.
+
+List of intervals to be processed: ∅.
+
+Finished.
+
+Conclusion
+Therefore, the two positive roots of the polynomial p(x) = x3 − 7x + 7 lie inside the isolation intervals (1, 
+3
+/
+2
+) and (
+3
+/
+2
+, 2)}. Each root can be approximated by (for example) bisecting the isolation interval it lies in until the difference of the endpoints is smaller than 10−6; following this approach, the roots turn out to be ρ1 = 1.3569 and ρ2 = 1.69202.
+
+See also
+Properties of polynomial roots
+Root-finding algorithm
+Vieta's formulas
+Newton's method
+
+References
+↑ 1.0 1.1 1.2 1.3 1.4 1.5 Vincent, Alexandre Joseph Hidulphe (1834). "Mémoire sur la résolution des équations numériques". Mémoires de la Société Royale des Sciences, de l' Agriculture et des Arts, de Lille: 1–34. http://gallica.bnf.fr/ark:/12148/bpt6k57787134/f4.image.r=Agence%20Rol.langEN.
+↑ 2.0 2.1 2.2 2.3 2.4 2.5 Vincent, Alexandre Joseph Hidulphe (1836). "Note sur la résolution des équations numériques". Journal de Mathématiques Pures et Appliquées 1: 341–372. http://sites.mathdoc.fr/JMPA/PDF/JMPA_1836_1_1_A28_0.pdf.
+↑ 3.0 3.1 3.2 3.3 3.4 3.5 Vincent, Alexandre Joseph Hidulphe (1838). "Addition à une précédente note relative à la résolution des équations numériques". Journal de Mathématiques Pures et Appliquées 3: 235–243. http://math-doc.ujf-grenoble.fr/JMPA/PDF/JMPA_1838_1_3_A19_0.pdf.
+↑ 4.0 4.1 4.2 Alesina, Alberto; Massimo Galuzzi (1998). "A new proof of Vincent's theorem". L'Enseignement Mathématique 44 (3–4): 219–256. http://retro.seals.ch/cntmng?type=pdf&rid=ensmat-001:1998:44::149&subp=hires.
+↑ 5.0 5.1 5.2 5.3 Alesina, Alberto; Massimo Galuzzi (2000). "Vincent's Theorem from a Modern Point of View". Categorical Studies in Italy 2000, Rendiconti del Circolo Matematico di Palermo, Serie II, N. 64: 179–191. http://inf-server.inf.uth.gr/~akritas/Alessina_Galuzzi_b.pdf.
+↑ Ostrowski, A. M. (1950). "Note on Vincent's theorem". Annals of Mathematics. Second Series 52 (3): 702–707. doi:10.2307/1969443.
+↑ 7.0 7.1 7.2 Obreschkoff, Nikola (1963). Verteilung und Berechnung der Nullstellen reeller Polynome. Berlin: VEB Deutscher Verlag der Wissenschaften.
+↑ 8.0 8.1 8.2 Uspensky, James Victor (1948). Theory of Equations. New York: McGraw–Hill Book Company. https://www.google.com/search?q=uspensky+theory+of+equations&btnG=Search+Books&tbm=bks.
+↑ 9.0 9.1 Akritas, Alkiviadis G.; A.W. Strzeboński; P.S. Vigklas (2008). "Improving the performance of the continued fractions method using new bounds of positive roots". Nonlinear Analysis: Modelling and Control 13 (3): 265–279. doi:10.15388/NA.2008.13.3.14557. http://www.lana.lt/journal/30/Akritas.pdf.
+↑ Serret, Joseph A. (1877). Cours d'algèbre supérieure. Tome I. Gauthier-Villars. https://archive.org/details/coursdalgbresu01serruoft.
+↑ 11.0 11.1 Collins, George E.; Alkiviadis G. Akritas (1976). "Polynomial real root isolation using Descarte's rule of signs". Polynomial Real Root Isolation Using Descartes' Rule of Signs. SYMSAC '76, Proceedings of the third ACM symposium on Symbolic and algebraic computation. Yorktown Heights, NY, USA: ACM. pp. 272–275. doi:10.1145/800205.806346. ISBN 9781450377904. http://doi.acm.org/10.1145/800205.806346.
+↑ 12.0 12.1 12.2 12.3 12.4 12.5 12.6 Vigklas, Panagiotis, S. (2010). Upper bounds on the values of the positive roots of polynomials. Ph. D. Thesis, University of Thessaly, Greece. http://www.e-ce.uth.gr/wp-content/uploads/formidable/phd_thesis_vigklas.pdf.
+↑ 13.0 13.1 13.2 13.3 13.4 13.5 13.6 Akritas, Alkiviadis, G. (2009). "Linear and Quadratic Complexity Bounds on the Values of the Positive Roots of Polynomials". Journal of Universal Computer Science 15 (3): 523–537. http://www.jucs.org/jucs_15_3/linear_and_quadratic_complexity.
+↑ 14.0 14.1 Boulier, François (2010). Systèmes polynomiaux : que signifie " résoudre " ?. Université Lille 1. http://www.lifl.fr/~boulier/polycopies/resoudre.pdf.
+↑ 15.0 15.1 Akritas, Alkiviadis G.; Adam W. Strzeboński (2005). "A Comparative Study of Two Real Root Isolation Methods". Nonlinear Analysis: Modelling and Control 10 (4): 297–304. doi:10.15388/NA.2005.10.4.15110. http://www.lana.lt/journal/19/Akritas.pdf.
+↑ 16.0 16.1 16.2 Rouillier, F.; P. Zimmerman (2004). "Efficient isolation of polynomial's real roots". Journal of Computational and Applied Mathematics 162: 33–50. doi:10.1016/j.cam.2003.08.015. http://dl.acm.org/citation.cfm?id=972166.
+↑ Tsigaridas, Elias P.; Emiris, Ioannis Z. (2006). "Algorithms – ESA 2006, 14th Annual European Symposium, Zurich, Switzerland, September 11–13, 2006, Proceedings". in Azar, Yossi; Erlebach, Thomas. 4168. Springer. pp. 817–828. doi:10.1007/11841036_72.
+↑ Sharma, Vikram (2007). Complexity Analysis of Algorithms in Algebraic Computation. Ph.D. Thesis, Courant Institute of Mathematical Sciences, New York University,USA. http://www.cs.nyu.edu/web/Research/Theses/sharma_vikram.pdf.
+↑ 19.0 19.1 19.2 Akritas, Alkiviadis G.; Adam W. Strzeboński; Panagiotis S. Vigklas (2008). "On the Various Bisection Methods Derived from Vincent's Theorem". Serdica Journal of Computing 2 (1): 89–104. doi:10.55630/sjc.2008.2.89-104. http://sci-gems.math.bas.bg:8080/jspui/handle/10525/376.
+↑ Fourier, Jean Baptiste Joseph (1820). "Sur l'usage du théorème de Descartes dans la recherche des limites des racines". Bulletin des Sciences, par la Société Philomatique de Paris: 156–165. https://archive.org/details/bulletindesscien20soci.
+↑ Akritas, Alkiviadis G. (1986). "There is no "Uspensky's method."". There's no "Uspensky's Method". In: Proceedings of the fifth ACM Symposium on Symbolic and Algebraic Computation (SYMSAC '86, Waterloo, Ontario, Canada), pp. 88–90. pp. 88–90. doi:10.1145/32439.32457. ISBN 0897911997. http://dl.acm.org/citation.cfm?id=32457.
+↑ 22.0 22.1 Akritas, Alkiviadis G. (2008). There is no "Descartes' method". In: M.J.Wester and M. Beaudin (Eds), Computer Algebra in Education, AullonaPress, USA, pp. 19–35. ISBN 9780975454190. https://books.google.com/books?id=SJR2ybQdZFgC&pg=PR1.
+External links
+Berkakis, Antonis: RealRoots, a free App for Android devices to compare Sturm's method and VAS
+https://play.google.com/store/apps/details?id=org.kde.necessitas.berkakis.realroots
+
+Public domain	
+0.00
+ (0 votes)
+Original source: https://en.wikipedia.org/wiki/Vincent's theorem. Read more
+
+Retrieved from "https://handwiki.org/wiki/index.php?title=Vincent%27s_theorem&oldid=2627874"
+Category:
+Mathematical theorems
+
+Encyclopedia of Knowledge
+]]]
+
+
+
+
+
+[[[
+https://mathworld.wolfram.com/Root-FindingAlgorithm.html
+===
+]]]
+[[[
+https://mathworld.wolfram.com/BrentsMethod.html
+===
+Brent's Method
+Brent's method is a root-finding algorithm which combines root bracketing, bisection, and inverse quadratic interpolation. It is sometimes known as the van Wijngaarden-Deker-Brent method. Brent's method is implemented in the Wolfram Language as the undocumented option Method -> Brent in FindRoot[eqn, {x, x0, x1}].
+
+Brent's method uses a Lagrange interpolating polynomial of degree 2. Brent (1973) claims that this method will always converge as long as the values of the function are computable within a given region containing a root. Given three points x_1, x_2, and x_3, Brent's method fits x as a quadratic function of y, then uses the interpolation formula
+
+ x=([y-f(x_1)][y-f(x_2)]x_3)/([f(x_3)-f(x_1)][f(x_3)-f(x_2)])+([y-f(x_2)][y-f(x_3)]x_1)/([f(x_1)-f(x_2)][f(x_1)-f(x_3)])+([y-f(x_3)][y-f(x_1)]x_2)/([f(x_2)-f(x_3)][f(x_2)-f(x_1)]).  	
+(1)
+Subsequent root estimates are obtained by setting y=0, giving
+
+ x=x_2+P/Q, 	
+(2)
+where
+
+P	=	S[T(R-T)(x_3-x_2)-(1-R)(x_2-x_1)]	
+(3)
+Q	=	(T-1)(R-1)(S-1)	
+(4)
+with
+
+R	=	(f(x_2))/(f(x_3))	
+(5)
+S	=	(f(x_2))/(f(x_1))	
+(6)
+T	=	(f(x_1))/(f(x_3))	
+(7)
+(Press et al. 1992).
+]]]
+[[[
+https://mathworld.wolfram.com/MullersMethod.html
+===
+Muller's Method
+Generalizes the secant method of root finding by using quadratic 3-point interpolation
+
+ q=(x_n-x_(n-1))/(x_(n-1)-x_(n-2)). 	
+(1)
+Then define
+
+A	=	qP(x_n)-q(1+q)P(x_(n-1))+q^2P(x_(n-2))	
+(2)
+B	=	(2q+1)P(x_n)-(1+q)^2P(x_(n-1))+q^2P(x_(n-2))	
+(3)
+C	=	(1+q)P(x_n),	
+(4)
+and the next iteration is
+
+ x_(n+1)=x_n-(x_n-x_(n-1))(2C)/(max(B+/-sqrt(B^2-4AC))). 	
+(5)
+This method can also be used to find complex zeros of analytic functions.
+]]]
+[[[
+https://mathworld.wolfram.com/LagrangeInterpolatingPolynomial.html
+===
+Lagrange Interpolating Polynomial
+
+LagrangeInterpolatingPoly
+The Lagrange interpolating polynomial is the polynomial P(x) of degree <=(n-1) that passes through the n points (x_1,y_1=f(x_1)), (x_2,y_2=f(x_2)), ..., (x_n,y_n=f(x_n)), and is given by
+
+ P(x)=sum_(j=1)^nP_j(x), 	
+(1)
+where
+
+ P_j(x)=y_jproduct_(k=1; k!=j)^n(x-x_k)/(x_j-x_k). 	
+(2)
+Written explicitly,
+
+P(x)	=	((x-x_2)(x-x_3)...(x-x_n))/((x_1-x_2)(x_1-x_3)...(x_1-x_n))y_1+((x-x_1)(x-x_3)...(x-x_n))/((x_2-x_1)(x_2-x_3)...(x_2-x_n))y_2+...+((x-x_1)(x-x_2)...(x-x_(n-1)))/((x_n-x_1)(x_n-x_2)...(x_n-x_(n-1)))y_n.	
+(3)
+The formula was first published by Waring (1779), rediscovered by Euler in 1783, and published by Lagrange in 1795 (Jeffreys and Jeffreys 1988).
+
+Lagrange interpolating polynomials are implemented in the Wolfram Language as InterpolatingPolynomial[data, var]. They are used, for example, in the construction of Newton-Cotes formulas.
+
+When constructing interpolating polynomials, there is a tradeoff between having a better fit and having a smooth well-behaved fitting function. The more data points that are used in the interpolation, the higher the degree of the resulting polynomial, and therefore the greater oscillation it will exhibit between the data points. Therefore, a high-degree interpolation may be a poor predictor of the function between points, although the accuracy at the data points will be "perfect."
+
+For n=3 points,
+
+P(x)	=	((x-x_2)(x-x_3))/((x_1-x_2)(x_1-x_3))y_1+((x-x_1)(x-x_3))/((x_2-x_1)(x_2-x_3))y_2+((x-x_1)(x-x_2))/((x_3-x_1)(x_3-x_2))y_3	
+(4)
+P^'(x)	=	(2x-x_2-x_3)/((x_1-x_2)(x_1-x_3))y_1+(2x-x_1-x_3)/((x_2-x_1)(x_2-x_3))y_2+(2x-x_1-x_2)/((x_3-x_1)(x_3-x_2))y_3.	
+(5)
+Note that the function P(x) passes through the points (x_i,y_i), as can be seen for the case n=3,
+
+P(x_1)	=	((x_1-x_2)(x_1-x_3))/((x_1-x_2)(x_1-x_3))y_1+((x_1-x_1)(x_1-x_3))/((x_2-x_1)(x_2-x_3))y_2+((x_1-x_1)(x_1-x_2))/((x_3-x_1)(x_3-x_2))y_3=y_1	
+(6)
+P(x_2)	=	((x_2-x_2)(x_2-x_3))/((x_1-x_2)(x_1-x_3))y_1+((x_2-x_1)(x_2-x_3))/((x_2-x_1)(x_2-x_3))y_2+((x_2-x_1)(x_2-x_2))/((x_3-x_1)(x_3-x_2))y_3=y_2	
+(7)
+P(x_3)	=	((x_3-x_2)(x_3-x_3))/((x_1-x_2)(x_1-x_3))y_1+((x_3-x_1)(x_3-x_3))/((x_2-x_1)(x_2-x_3))y_2+((x_3-x_1)(x_3-x_2))/((x_3-x_1)(x_3-x_2))y_3=y_3.	
+(8)
+Generalizing to arbitrary n,
+
+ P(x_j)=sum_(k=1)^nP_k(x_j)=sum_(k=1)^ndelta_(jk)y_k=y_j. 	
+(9)
+The Lagrange interpolating polynomials can also be written using what Szegö (1975) called Lagrange's fundamental interpolating polynomials. Let
+
+pi(x)	=	product_(k=1)^(n)(x-x_k)	
+(10)
+pi(x_j)	=	product_(k=1)^(n)(x_j-x_k),	
+(11)
+pi^'(x_j)	=	[(dpi)/(dx)]_(x=x_j)	
+(12)
+	=	product_(k=1; k!=j)^(n)(x_j-x_k)	
+(13)
+so that pi(x) is an nth degree polynomial with zeros at x_1, ..., x_n. Then define the fundamental polynomials by
+
+ pi_nu(x)=(pi(x))/(pi^'(x_nu)(x-x_nu)), 	
+(14)
+which satisfy
+
+ pi_nu(x_mu)=delta_(numu), 	
+(15)
+where delta_(numu) is the Kronecker delta. Now let y_1=P(x_1), ..., y_n=P(x_n), then the expansion
+
+ P(x)=sum_(k=1)^npi_k(x)y_k=sum_(k=1)^n(pi(x))/((x-x_k)pi^'(x_k))y_k 	
+(16)
+gives the unique Lagrange interpolating polynomial assuming the values y_k at x_k. More generally, let dalpha(x) be an arbitrary distribution on the interval [a,b], {p_n(x)} the associated orthogonal polynomials, and l_1(x), ..., l_n(x) the fundamental polynomials corresponding to the set of zeros of a polynomial P_n(x). Then
+
+ int_a^bl_nu(x)l_mu(x)dalpha(x)=lambda_mudelta_(numu) 	
+(17)
+for nu,mu=1, 2, ..., n, where lambda_nu are Christoffel numbers.
+
+Lagrange interpolating polynomials give no error estimate. A more conceptually straightforward method for calculating them is Neville's algorithm.
+]]]
+[[[
+https://mathworld.wolfram.com/NevillesAlgorithm.html
+===
+Neville's Algorithm
+Neville's algorithm is an interpolation algorithm which proceeds by first fitting a polynomial of degree 0 through the point (x_k,y_k) for k=1, ..., n, i.e., P_k(x)=y_k. A second iteration is then performed in which P_i and P_(i+1) are combined to fit through pairs of points, yielding P_(12), P_(23), .... The procedure is repeated, generating a "pyramid" of approximations until the final result is reached
+
+ P_1; P_2; P_3; P_4P_(12); P_(23); P_(34)P_(123); P_(234)P_(1234). 
+The final result is
+
+ P_(i(i+1)...(i+m))=((x-x_(i+m))P_(i(i+1)...(i+m-1)))/(x_i-x_(i+m))+((x_i-x)P_((i+1)(i+2)...(i+m)))/(x_i-x_(i+m)). 
+]]]
+[[[
+https://mathworld.wolfram.com/BernoullisMethod.html
+===
+Bernoulli's Method
+In order to find a root of a polynomial equation
+
+ a_0x^n+a_1x^(n-1)+...+a_n=0, 	
+(1)
+consider the difference equation
+
+ a_0y(t+n)+a_1y(t+n-1)+...+a_ny(t)=0, 	
+(2)
+which is known to have solution
+
+ y(t)=w_1x_1^t+w_2x_2^t+...+w_nx_n^t+..., 	
+(3)
+where w_1, w_2, ..., are arbitrary functions of t with period 1, and x_1, ..., x_n are roots of (1). In order to find the absolutely greatest root (1), take any arbitrary values for y(0), y(1), ..., y(n-1). By repeated application of (2), calculate in succession the values y(n), y(n+1), y(n+2), .... Then the ratio of two successive members of this sequence tends in general to a limit, which is the absolutely greatest root of (1).
+]]]
+[[[
+https://mathworld.wolfram.com/BairstowsMethod.html
+===
+Bairstow's Method
+A procedure for finding the quadratic factors for the complex conjugate roots of a polynomial P(x) with real coefficients.
+
+ [x-(a+ib)][x-(a-ib)]=x^2+2ax+(a^2+b^2)=x^2+Bx+C. 	
+(1)
+Now write the original polynomial as
+
+P(x)=(x^2+Bx+C)Q(x)+Rx+S 	
+(2)
+R(B+deltaB,C+deltaC) approx R(B,C)+(partialR)/(partialB)dB+(partialR)/(partialC)dC 	
+(3)
+S(B+deltaB,C+deltaC) approx S(B,C)+(partialS)/(partialB)dB+(partialS)/(partialC)dC 	
+(4)
+(partialP)/(partialC)=0=(x^2+Bx+C)(partialQ)/(partialC)+Q(x)+x(partialR)/(partialC)+(partialS)/(partialC) 	
+(5)
+-Q(x)=(x^2+Bx+C)(partialQ)/(partialC)+x(partialR)/(partialC)+(partialS)/(partialC) 	
+(6)
+(partialP)/(partialB)=0=(x^2+Bx+C)(partialQ)/(partialB)+xQ(x)+x(partialR)/(partialB)+(partialS)/(partialB) 	
+(7)
+-xQ(x)=(x^2+Bx+C)(partialQ)/(partialB)+x(partialR)/(partialB)+(partialS)/(partialB). 	
+(8)
+Now use the two-dimensional Newton's method to find the simultaneous solutions.
+]]]
+[[[
+https://mathworld.wolfram.com/SecantMethod.html
+===
+Secant Method
+
+SecantMethod
+A root-finding algorithm which assumes a function to be approximately linear in the region of interest. Each improvement is taken as the point where the approximating line crosses the axis. The secant method retains only the most recent estimate, so the root does not necessarily remain bracketed. The secant method is implemented in the Wolfram Language as the undocumented option Method -> Secant in FindRoot[eqn, {x, x0, x1}].
+
+When the algorithm does converge, its order of convergence is
+
+ lim_(k->infty)|epsilon_(k+1)| approx C|epsilon|^phi, 	
+(1)
+where C is a constant and phi is the golden ratio.
+
+ f^'(x_(n-1)) approx (f(x_(n-1))-f(x_(n-2)))/(x_(n-1)-x_(n-2)) 	
+(2)
+ f(x_n) approx f(x_(n-1))+f^'(x_(n-1))(x_n-x_(n-1))=0 	
+(3)
+ f(x_(n-1))+(f(x_(n-1))-f(x_(n-2)))/(x_(n-1)-x_(n-2))(x_n-x_(n-1))=0, 	
+(4)
+so
+
+ x_n=x_(n-1)-(f(x_(n-1))(x_(n-1)-x_(n-2)))/(f(x_(n-1))-f(x_(n-2))). 	
+(5)
+The secant method can be implemented in the Wolfram Language as
+
+  SecantMethodList[f_, {x_, x0_, x1_}, n_] :=
+    NestList[Last[#] - {0, (Function[x, f][Last[#]]*
+      Subtract @@ #)/Subtract @@
+      Function[x, f] /@ #}&, {x0, x1}, n]
+]]]
+[[[
+https://mathworld.wolfram.com/MethodofFalsePosition.html
+===
+Method of False Position
+
+FalsePosition
+An algorithm for finding roots which retains that prior estimate for which the function value has opposite sign from the function value at the current best estimate of the root. In this way, the method of false position keeps the root bracketed (Press et al. 1992).
+
+Using the two-point form of the line
+
+ y-y_1=(f(x_(n-1))-f(x_1))/(x_(n-1)-x_1)(x_n-x_1) 
+with y=0, using y_1=f(x_1), and solving for x_n therefore gives the iteration
+
+ x_n=x_1-(x_(n-1)-x_1)/(f(x_(n-1))-f(x_1))f(x_1). 
+]]]
+[[[
+https://mathworld.wolfram.com/RiddersMethod.html
+===
+Ridders' Method
+A variation of the method of false position for finding roots which fits the function in question with an exponential.
+]]]
+[[[
+https://mathworld.wolfram.com/InverseQuadraticInterpolation.html
+===
+Inverse Quadratic Interpolation
+The use of three prior points in a root-finding algorithm to estimate the zero crossing.
+]]]
+[[[
+https://mathworld.wolfram.com/NewtonsMethod.html
+===
+Newton's Method
+
+Newton's method, also called the Newton-Raphson method, is a root-finding algorithm that uses the first few terms of the Taylor series of a function f(x) in the vicinity of a suspected root. Newton's method is sometimes also known as Newton's iteration, although in this work the latter term is reserved to the application of Newton's method for computing square roots.
+
+For f(x) a polynomial, Newton's method is essentially the same as Horner's method.
+
+The Taylor series of f(x) about the point x=x_0+epsilon is given by
+
+ f(x_0+epsilon)=f(x_0)+f^'(x_0)epsilon+1/2f^('')(x_0)epsilon^2+.... 	
+(1)
+Keeping terms only to first order,
+
+ f(x_0+epsilon) approx f(x_0)+f^'(x_0)epsilon. 	
+(2)
+Equation (2) is the equation of the tangent line to the curve at (x_0,f(x_0)), so (x_1,0) is the place where that tangent line intersects the x-axis. A graph can therefore give a good intuitive idea of why Newton's method works at a well-chosen starting point and why it might diverge with a poorly-chosen starting point.
+
+This expression above can be used to estimate the amount of offset epsilon needed to land closer to the root starting from an initial guess x_0. Setting f(x_0+epsilon)=0 and solving (2) for epsilon=epsilon_0 gives
+
+ epsilon_0=-(f(x_0))/(f^'(x_0)), 	
+(3)
+which is the first-order adjustment to the root's position. By letting x_1=x_0+epsilon_0, calculating a new epsilon_1, and so on, the process can be repeated until it converges to a fixed point (which is precisely a root) using
+
+ epsilon_n=-(f(x_n))/(f^'(x_n)). 	
+(4)
+Unfortunately, this procedure can be unstable near a horizontal asymptote or a local extremum. However, with a good initial choice of the root's position, the algorithm can be applied iteratively to obtain
+
+ x_(n+1)=x_n-(f(x_n))/(f^'(x_n)) 	
+(5)
+for n=1, 2, 3, .... An initial point x_0 that provides safe convergence of Newton's method is called an approximate zero.
+
+Newton's method can be implemented in the Wolfram Language as
+
+  NewtonsMethodList[f_, {x_, x0_}, n_] :=
+    NestList[# - Function[x, f][#]/
+      Derivative[1][Function[x, f]][#]& , x0, n]
+Assume that Newton's iteration x_(k+1) converges toward x^* with f^'(x^*)!=0, and define the error after the kth step by
+
+ x_k=x^*+epsilon_k. 	
+(6)
+Expanding f(x_k) about x^* gives
+
+f(x_k)	=	f(x^*)+f^'(x^*)epsilon_k+1/2f^('')(x^*)epsilon_k^2+...	
+(7)
+	=	f^'(x^*)epsilon_k+1/2f^('')(x^*)epsilon_k^2+...	
+(8)
+f^'(x_k)	=	f^'(x^*)+f^('')(x^*)epsilon_k+....	
+(9)
+But
+
+epsilon_(k+1)	=	epsilon_k+(x_(k+1)-x_k)	
+(10)
+	=	epsilon_k-(f(x_k))/(f^'(x_k))	
+(11)
+	 approx 	epsilon_k-(f^'(x^*)epsilon_k+1/2f^('')(x^*)epsilon_k^2)/(f^'(x^*)+f^('')(x^*)epsilon_k).	
+(12)
+Taking the second-order expansion
+
+ (aepsilon+1/2bepsilon^2+cepsilon^3)/(a+bepsilon+depsilon^2) approx epsilon-b/(2a)epsilon^2 	
+(13)
+gives
+
+ epsilon_(k+1) approx (f^('')(x^*))/(2f^'(x^*))epsilon_k^2. 	
+(14)
+Therefore, when the method converges, it does so quadratically.
+
+NewtonsMethodBasins
+Applying Newton's method to the roots of any polynomial of degree two or higher yields a rational map of C, and the Julia set of this map is a fractal whenever there are three or more distinct roots. Iterating the method for the roots of z^n-1=0 with starting point z_0 gives
+
+ z_(i+1)=z_i-(z_i^n-1)/(nz_i^(n-1)) 	
+(15)
+(Mandelbrot 1983, Gleick 1988, Peitgen and Saupe 1988, Press et al. 1992, Dickau 1997). Since this is an nth order polynomial, there are n roots to which the algorithm can converge. Coloring the basin of attraction (the set of initial points z_0 that converge to the same root) for each root a different color then gives the above plots.
+
+NewtonsMethodCross
+Fractals typically arise from non-polynomial maps as well. The plot above shows the number of iterations needed for Newton's method to converge for the function z^2-2^z (D. Cross, pers. comm., Jan. 10, 2005) and z^3-3^z.
+]]]
+[[[
+https://mathworld.wolfram.com/HornersMethod.html
+===
+Horner's Method
+A method for finding roots of a polynomial equation f(x)=0. Now find an equation whose roots are the roots of this equation diminished by r, so
+
+ 0=f(x+r)=f(r)+xf^'(r)+1/2x^2f^('')(r)+1/3x^3f^(''')(r)+.... 	
+(1)
+The expressions for f(r), f^'(r), ... are then found as in the following example, where
+
+ f(x)=Ax^5+Bx^4+Cx^3+Dx^2+Ex+F. 	
+(2)
+Write the coefficients A, B, ..., F in a horizontal row, and let a new letter shown as a denominator stand for the sum immediately above it so, in the following example, P=Ar+B. The result is the following table.
+
+A	B	C	D	E	F
+(Ar)/P	(Pr)/Q	(Qr)/R	(Rr)/S	(Sr)/omega
+(Ar)/T	(Tr)/U	(Ur)/R	(Vr)/chi	
+(Ar)/W	(Wr)/X	(Xr)/psi		
+(Ar)/Y	(Yr)/phi			
+(Ar)/theta				
+Solving for the quantities theta, phi, psi, chi, and omega gives
+
+theta	=	5Ar+B=1/(4!)f^((iv))(r)	
+(3)
+phi	=	10Ar^2+4Br+C=1/(3!)f^(''')(r)	
+(4)
+psi	=	10Ar^3+6Br^2+3Cr+D=1/(2!)f^('')(r)	
+(5)
+chi	=	5Ar^4+4Br^3+3Cr^2+2Dr+E=f^'(r)	
+(6)
+omega	=	Ar^5+Br^4+Cr^3+Dr^2+Er+F=f(r),	
+(7)
+so the equation whose roots are the roots of f(x)=0, each diminished by r, is
+
+ 0=Ax^5+thetax^4+phix^3+psix^2+chix+omega 	
+(8)
+(Whittaker and Robinson 1967).
+
+To apply the procedure, first determine the integer part of the root through whatever means are needed, then reduce the equation by this amount. This gives the second digit, by which the equation is once again reduced (after suitable multiplication by 10) to find the third digit, and so on.
+
+HornersMethod
+To see the method applied, consider the problem of finding the smallest positive root of
+
+ x^3-4x^2+5=0. 	
+(9)
+This root lies between 1 and 2, so diminish the equation by 1, resulting in the left table shown above. The resulting diminished equation is
+
+ x^3-x^2-5x+2=0, 	
+(10)
+and roots which are ten times the roots of this equation satisfy the equation
+
+ x^3-10x^2-500x+2000=0. 	
+(11)
+The root of this equation between 1 and 10 lies between 3 and 4, so reducing the equation by 3 produces the right table shown above, giving the transformed equation
+
+ x^3-x^2-533+437=0. 	
+(12)
+This procedure can be continued to yield the root as approximately 1.3819659.
+
+Horner's process really boils down to the construction of a divided difference table (Whittaker and Robinson 1967).
+]]]
+[[[
+https://mathworld.wolfram.com/DividedDifference.html
+===
+Divided Difference
+The divided difference f[x_0,x_1,x_2,...,x_n], sometimes also denoted [x_0,x_1,x_2,...,x_n] (Abramowitz and Stegun 1972), on n+1 points x_0, x_1, ..., x_n of a function f(x) is defined by f[x_0]=f(x_0) and
+
+ f[x_0,x_1,...,x_n]=(f[x_0,...,x_(n-1)]-f[x_1,...,x_n])/(x_0-x_n) 	
+(1)
+for n>=1. The first few differences are
+
+f[x_0,x_1]	=	(f_0-f_1)/(x_0-x_1)	
+(2)
+f[x_0,x_1,x_2]	=	(f[x_0,x_1]-f[x_1,x_2])/(x_0-x_2)	
+(3)
+f[x_0,x_1,...,x_n]	=	(f[x_0,...,x_(n-1)]-f[x_1,...,x_n])/(x_0-x_n).	
+(4)
+Defining
+
+ pi_n(x)=(x-x_0)(x-x_1)...(x-x_n) 	
+(5)
+and taking the derivative
+
+ pi_n^'(x_k)=(x_k-x_0)...(x_k-x_(k-1))(x_k-x_(k+1))...(x_k-x_n) 	
+(6)
+gives the identity
+
+ f[x_0,x_1,...,x_n]=sum_(k=0)^n(f_k)/(pi_n^'(x_k)). 	
+(7)
+Consider the following question: does the property
+
+ f[x_1,x_2,...,x_n]=h(x_1+x_2+...+x_n) 	
+(8)
+for n>=2 and h(x) a given function guarantee that f(x) is a polynomial of degree <=n? Aczél (1985) showed that the answer is "yes" for n=2, and Bailey (1992) showed it to be true for n=3 with differentiable f(x). Schwaiger (1994) and Andersen (1996) subsequently showed the answer to be "yes" for all n>=3 with restrictions on f(x) or h(x).
+]]]
+[[[
+https://mathworld.wolfram.com/NewtonsDividedDifferenceInterpolationFormula.html
+===
+Newton's Divided Difference Interpolation Formula
+Let
+
+ pi_n(x)=product_(k=0)^n(x-x_k), 	
+(1)
+then
+
+ f(x)=f_0+sum_(k=1)^npi_(k-1)(x)[x_0,x_1,...,x_k]+R_n, 	
+(2)
+where [x_1,...] is a divided difference, and the remainder is
+
+ R_n(x)=pi_n(x)[x_0,...,x_n,x]=pi_n(x)(f^((n+1))(xi))/((n+1)!) 	
+(3)
+for x_0<xi<x_n.
+]]]
+[[[
+https://mathworld.wolfram.com/SchroedersMethod.html
+===
+Schröder's Method
+Two families of equations used to find roots of nonlinear functions of a single variable. The "B" family is more robust and can be used in the neighborhood of degenerate multiple roots while still providing a guaranteed convergence rate. Almost all other root-finding methods can be considered as special cases of Schröder's method. Householder humorously claimed that papers on root-finding could be evaluated quickly by looking for a citation of Schröder's paper; if the reference were missing, the paper probably consisted of a rediscovery of a result due to Schröder (Stewart 1993).
+
+One version of the "A" method is obtained by applying Newton's method to f/f^',
+
+ x_(n+1)=x_n-(f(x_n)f^'(x_n))/([f^'(x_n)]^2-f(x_n)f^('')(x_n)) 
+(Scavo and Thoo 1995).
+]]]
+[[[
+https://archive.lib.msu.edu/crcmath/math/math/s/s092.htm
+===
+
+Stewart, G. W. ``On Infinitely Many Algorithms for Solving Equations.'' English translation of Schröder's original paper. College Park, MD: University of Maryland, Institute for Advanced Computer Studies, Department of Computer Science, 1993. ftp://thales.cs.umd.edu/pub/reports/imase.ps.
+===
+https://drum.lib.umd.edu/handle/1903/577
+
+wget_U 'https://drum.lib.umd.edu/bitstreams/57e5cfc6-b092-427f-b0c9-136a63655482/download' -O 'On Infinitely Many Algorithms for Solving Equations(1870)(Schroder)(1993)(Stewart).pdf'
+  .pdf version
+https://drum.lib.umd.edu/bitstreams/4be08321-9747-4b92-a571-ae0acbf40091/download
+  .ps version
+
+]]]
+[[[
+https://mathworld.wolfram.com/GraeffesMethod.html
+===
+Graeffe's Method
+A root-finding method which was among the most popular methods for finding roots of univariate polynomials in the 19th and 20th centuries. It was invented independently by Graeffe, Dandelin, and Lobachevsky (Householder 1959, Malajovich and Zubelli 2001). Graeffe's method has a number of drawbacks, among which are that its usual formulation leads to exponents exceeding the maximum allowed by floating-point arithmetic and also that it can map well-conditioned polynomials into ill-conditioned ones. However, these limitations are avoided in an efficient implementation by Malajovich and Zubelli (2001).
+
+The method proceeds by multiplying a polynomial f(x) by f(-x) and noting that
+
+f(x)	=	(x-a_1)(x-a_2)...(x-a_n)	
+(1)
+f(-x)	=	(-1)^n(x+a_1)(x+a_2)...(x+a_n)	
+(2)
+so the result is
+
+ f(x)f(-x)=(-1)^n(x^2-a_1^2)(x^2-a_2^2)...(x^2-a_n^2). 	
+(3)
+repeat nu times, then write this in the form
+
+ y^n+b_1y^(n-1)+...+b_n=0 	
+(4)
+where y=x^(2nu). Since the coefficients are given by Vieta's formulas
+
+b_1	=	-(y_1+y_2+...+y_n)	
+(5)
+b_2	=	(y_1y_2+y_1y_3+...+y_(n-1)y_n)	
+(6)
+b_n	=	(-1)^ny_1y_2...y_n,	
+(7)
+and since the squaring procedure has separated the roots, the first term is larger than rest. Therefore,
+
+b_1	 approx 	-y_1	
+(8)
+b_2	 approx 	y_1y_2	
+(9)
+b_n	 approx 	(-1)^ny_1y_2...y_n,	
+(10)
+giving
+
+y_1	 approx 	-b_1	
+(11)
+y_2	 approx 	-(b_2)/(b_1)	
+(12)
+y_n	 approx 	-(b_n)/(b_(n-1)).	
+(13)
+Solving for the original roots gives
+
+a_1	 approx 	RadicalBox[{-, {b, _, 1}}, {2, nu}]	
+(14)
+a_2	 approx 	RadicalBox[{-, {{(, {b, _, 2}, )}, /, {(, {b, _, 1}, )}}}, {2, nu}]	
+(15)
+a_n	 approx 	RadicalBox[{-, {{(, {b, _, n}, )}, /, {(, {b, _, {(, {n, -, 1}, )}}, )}}}, {2, nu}].	
+(16)
+This method works especially well if all roots are real.
+]]]
+[[[
+https://mathworld.wolfram.com/HalleysIrrationalFormula.html
+===
+Halley's Irrational Formula
+A root-finding algorithm which makes use of a third-order Taylor series
+
+ f(x)=f(x_n)+f^'(x_n)(x-x_n)+1/2f^('')(x_n)(x-x_n)^2+.... 	
+(1)
+A root of f(x) satisfies f(x)=0, so
+
+ 0 approx f(x_n)+f^'(x_n)(x_(n+1)-x_n)+1/2f^('')(x_n)(x_(n+1)-x_n)^2. 	
+(2)
+Using the quadratic equation then gives
+
+ x_(n+1)=x_n+(-f^'(x_n)+/-sqrt([f^'(x_n)]^2-2f(x_n)f^('')(x_n)))/(f^('')(x_n)). 	
+(3)
+Picking the plus sign gives the iteration function
+
+ C_f(x)=x-(1-sqrt(1-(2f(x)f^('')(x))/([f^'(x)]^2)))/((f^('')(x))/(f^'(x))). 	
+(4)
+This equation can be used as a starting point for deriving Halley's method.
+
+If the alternate form of the quadratic equation is used instead in solving (◇), the iteration function becomes instead
+
+ C_f(x)=x-(2f(x))/(f^'(x)+/-sqrt([f^'(x)]^2-2f(x)f^('')(x))). 	
+(5)
+This form can also be derived by setting n=2 in Laguerre's method. Numerically, the sign in the denominator is chosen to maximize its absolute value. Note that in the above equation, if f^('')(x)=0, then Newton's method is recovered. This form of Halley's irrational formula has cubic convergence, and is usually found to be substantially more stable than Newton's method. However, it does run into difficulty when both f(x) and f^'(x) or f^'(x) and f^('')(x) are simultaneously near zero.
+]]]
+[[[
+https://mathworld.wolfram.com/HalleysMethod.html
+===
+Halley's Method
+A root-finding algorithm also known as the tangent hyperbolas method or Halley's rational formula. As in Halley's irrational formula, take the second-order Taylor series
+
+ f(x)=f(x_n)+f^'(x_n)(x-x_n)+1/2f^('')(x_n)(x-x_n)^2+.... 	
+(1)
+A root of f(x) satisfies f(x)=0, so
+
+ 0 approx f(x_n)+f^'(x_n)(x_(n+1)-x_n)+1/2f^('')(x_n)(x_(n+1)-x_n)^2. 	
+(2)
+Now write
+
+ 0=f(x_n)+(x_(n+1)-x_n)[f^'(x_n)+1/2f^('')(x_n)(x_(n+1)-x_n)], 	
+(3)
+giving
+
+ x_(n+1)=x_n-(f(x_n))/(f^'(x_n)+1/2f^('')(x_n)(x_(n+1)-x_n)). 	
+(4)
+Using the result from Newton's method,
+
+ x_(n+1)-x_n=-(f(x_n))/(f^'(x_n)), 	
+(5)
+gives
+
+ x_(n+1)=x_n-(2f(x_n)f^'(x_n))/(2[f^'(x_n)]^2-f(x_n)f^('')(x_n)), 	
+(6)
+so the iteration function is
+
+ H_f(x)=x-(2f(x)f^'(x))/(2[f^'(x)]^2-f(x)f^('')(x)). 	
+(7)
+This satisfies H_f^'(alpha)=H_f^('')(alpha)=0 where alpha is a root, so it is third order for simple zeros. Curiously, the third derivative
+
+ H_f^(''')(alpha)=-{(f^(''')(alpha))/(f^'(alpha))-3/2[(f^('')(alpha))/(f^'(alpha))]^2} 	
+(8)
+is the Schwarzian derivative. Halley's method may also be derived by applying Newton's method to ff^('-1/2). It may also be derived by using an osculating curve of the form
+
+ y(x)=((x-x_n)+c)/(a(x-x_n)+b). 	
+(9)
+Taking derivatives,
+
+f(x_n)	=	c/b	
+(10)
+f^'(x_n)	=	(b-ac)/(b^2)	
+(11)
+f^('')(x_n)	=	(2a(ac-b))/(b^3),	
+(12)
+which has solutions
+
+a	=	-(f^('')(x_n))/(2[f^'(x_n)]^2-f(x_n)f^('')(x_n))	
+(13)
+b	=	(2f^'(x_n))/(2[f^'(x_n)]^2-f(x_n)f^('')(x_n))	
+(14)
+c	=	(2f(x_n)f^'(x_n))/(2[f^'(x_n)]^2-f(x_n)f^('')(x_n)),	
+(15)
+so at a root, y(x_(n+1))=0 and
+
+ x_(n+1)=x_n-c, 	
+(16)
+which is Halley's method.
+]]]
+[[[
+https://mathworld.wolfram.com/HouseholdersMethod.html
+===
+Householder's Method
+
+A root-finding algorithm based on the iteration formula
+
+ x_(n+1)=x_n-(f(x_n))/(f^'(x_n)){1+(f(x_n)f^('')(x_n))/(2[f^'(x_n)]^2)}. 
+This method, like Newton's method, has poor convergence properties near any point where the derivative f^'(x)=0.
+
+HouseholdersMethodBasins
+A fractal is obtained by applying Householders's method to finding a root of z^n-1=0. Coloring the basin of attraction (the set of initial points z_0 which converge to the same root) for each root a different color then gives the above plots.
+]]]
+[[[
+https://mathworld.wolfram.com/LambertsMethod.html
+===
+Lambert's Method
+A root-finding algorithm also called Bailey's method and Hutton's method. For a function of the form g(x)=x^d-r, Lambert's method gives an iteration function
+
+ H_g(x)=((d-1)x^d+(d+1)r)/((d+1)x^d+(d-1)r)x, 
+so
+
+ x_(n+1)=x_n+H_g(x_n). 
+]]]
+[[[
+https://mathworld.wolfram.com/LaguerresMethod.html
+===
+Laguerre's Method
+
+A root-finding algorithm which converges to a complex root from any starting position. To motivate the formula, consider an nth order polynomial and its derivatives,
+
+P_n(x)	=	(x-x_1)(x-x_2)...(x-x_n)	
+(1)
+P_n^'(x)	=	(x-x_2)...(x-x_n)+(x-x_1)...(x-x_n)+...	
+(2)
+			
+(3)
+	=	P_n(x)(1/(x-x_1)+...+1/(x-x_n)).	
+(4)
+Now consider the logarithm and logarithmic derivatives of P_n(x)
+
+ln|P_n(x)|	=	ln|x-x_1|+ln|x-x_2|+...+ln|x-x_n|	
+(5)
+(dln|P_n(x)|)/(dx)	=	1/(x-x_1)+1/(x-x_2)+...+1/(x-x_n)	
+(6)
+	=	(P_n^'(x))/(P_n(x))	
+(7)
+	=	G(x)	
+(8)
+-(d^2ln|P_n(x)|)/(dx^2)	=	1/((x-x_1)^2)+1/((x-x_2)^2)+...+1/((x-x_n)^2)	
+(9)
+	=	[(P_n^'(x))/(P_n(x))]^2-(P_n^('')(x))/(P_n(x))=H(x).	
+(10)
+Now make "a rather drastic set of assumptions" that the root x_1 being sought is a distance a from the current best guess, so
+
+ a=x-x_1, 	
+(11)
+while all other roots are at the same distance b, so
+
+ b=x-x_i 	
+(12)
+for i=2, 3, ..., n (Acton 1990; Press et al. 1992, p. 365). This allows G and H to be expressed in terms of a and b as
+
+G	=	1/a+(n-1)/b	
+(13)
+H	=	1/(a^2)+(n-1)/(b^2),	
+(14)
+Solving these simultaneously for a gives
+
+ a=n/(max[G+/-sqrt((n-1)(nH-G^2))]), 	
+(15)
+where the sign is taken to give the largest magnitude for the denominator.
+
+To apply the method, calculate a for a trial value x, then use x-a as the next trial value, and iterate until a becomes sufficiently small. For example, for the polynomial 4x^3+3x^2+2x+1 with starting point x_0=-1.0, the algorithmic converges to the real root very quickly as (-1.0, -0.58113883008419, -0.60582958618827).
+
+Setting n=2 gives Halley's irrational formula.
+]]]
+[[[
+https://mathworld.wolfram.com/Lehmer-SchurMethod.html
+===
+Lehmer-Schur Method
+An algorithm which isolates roots in the complex plane by generalizing one-dimensional bracketing.
+===
+===
+In mathematics, the Lehmer–Schur algorithm (named after Derrick Henry Lehmer and Issai Schur) is a root-finding algorithm extending the idea of enclosing roots like in the one-dimensional bisection method to the complex plane. It uses the Schur–Cohn test to test increasingly smaller disks for the presence or absence of roots.
+Schur–Cohn test
+Schur–Cohn criterion
+Schur-Cohn procedure
+===
+xxx wget_U 'https://onlinelibrary.wiley.com/doi/pdf/10.1002/9780470611104.app6' -O 'Schura Cohn Algorithm.pdf'
+  Modeling  Estimation and Optimal Filtering in Signal Processing - 2008 - Najim.pdf
+Modeling, Estimation and Optimal Filtering in Signal Processing-Appendix F-The Schur-Cohn Algorithm(2008)(Najim).pdf
+Mohamed Najim
+Copyright 0 2008, ISTE Ltd.
+===
+Nonnegativity of uncertain polynomials(1998)(Siljak).pdf
+
+https://www.researchgate.net/publication/27366179_Nonnegativity_of_uncertain_polynomials
+Nonnegativity of uncertain polynomials
+Hindawi
+January 1998
+Mathematical Problems in Engineering 4(2)
+DOI:10.1155/S1024123X98000763
+LicenseCC BY 3.0
+Authors:
+D. Siljak
+Santa Clara University
+Matija D. Šiljak
+
+Abstract
+The purpose of this paper is to derive tests for robust nonnegativity of scalar and matrix polynomials, which are algebraic, recursive, and can be completed in finite number of steps. Polytopic families of polynomials are considered with various characterizations of parameter uncertainty including affine, multilinear, and polynomic structures. The zero exclusion condition for polynomial positivity is also proposed for general parameter dependencies. By reformulating the robust stability problem of complex polynomials as positivity of real polynomials, we obtain new sufficient conditions for robust stability involving multilinear structures, which can be tested using only real arithmetic. The obtained results are applied to robust matrix factorization, strict positive realness, and absolute stability of multivariable systems involving parameter dependent transfer function matrices.
+===
+Modified Schur-Cohn Criterion for Stability of Delayed Systems(2015)(Martinez).pdf
+https://www.researchgate.net/publication/273774460_Modified_Schur-Cohn_Criterion_for_Stability_of_Delayed_Systems
+Modified Schur-Cohn Criterion for Stability of Delayed Systems
+Hindawi
+January 2015
+Mathematical Problems in Engineering 2015
+DOI:10.1155/2015/846124
+LicenseCC BY
+Authors:
+Juan Mulero Martinez
+Universidad Politécnica de Cartagena
+
+Abstract and Figures
+A modified Schur-Cohn criterion for time-delay linear time-invariant systems is derived. The classical Schur-Cohn criterion has two main drawbacks; namely, (i) the dimension of the Schur-Cohn matrix generates some round-off errors eventually resulting in a polynomial of s with erroneous coefficients and (ii) imaginary roots are very hard to detect when numerical errors creep in. In contrast to the classical Schur-Cohn criterion an alternative approach is proposed in this paper which is based on the application of triangular matrices over a polynomial ring in a similar way as in the Jury test of stability for discrete systems. The advantages of the proposed approach are that it halves the dimension of the polynomial and it only requires seeking real roots, making this modified criterion comparable to the Rekasius substitution criterion.
+===
+Schur-Cohn theorem for matrix polynomials(1990)(Harry).pdf
+https://www.researchgate.net/publication/231999267_A_Schur-Cohn_theorem_for_matrix_polynomials
+  https://www.researchgate.net/profile/Nicholas-Young-5/publication/231999267_A_Schur-Cohn_theorem_for_matrix_polynomials/links/56e01a2508aee77a15fe8915/A-Schur-Cohn-theorem-for-matrix-polynomials.pdf?_tp=eyJjb250ZXh0Ijp7ImZpcnN0UGFnZSI6InB1YmxpY2F0aW9uIiwicGFnZSI6InB1YmxpY2F0aW9uIn19
+ Schur-Cohn theorem for matrix polynomials
+ October 1990
+ Proceedings of the Edinburgh Mathematical Society 33(03):337 - 366
+ DOI:10.1017/S0013091500004806
+ Authors:
+ Harry Dym
+ Nicholas Young
+ University of Leeds
+
+===
+'On the unit circle problem-The Schur-Cohn procedure revisited(1992)(Stoica).pdf'
+  fail
+
+https://www.sciencedirect.com/science/article/abs/pii/0165168492900574
+
+On the unit circle problem: The Schur-Cohn procedure revisited
+Author Petre Stoica, Randolph L. Moses
+Signal Processing
+Volume 26, Issue 1, January 1992, Pages 95-118
+Abstract
+This paper presents several results concerned with finding the zero distribution of a polynomial with respect to the unit circle using variants of the Schur-Cohn procedure. First, new and simple proofs of the Schur-Cohn procedure in the regular and singular cases are presented. A new method for handling one type of singular case is also developed. Next, we consider several aspects of the ‘inverse problem’, in which one wishes to alter a given polynomial to have a prescribed zero distribution. Three methods for forcing all zeros of a polynomial to lie inside the unit circle are derived. Also, two algorithms for solving singular inverse problems are presented; specifically, one corrects a symmetric polynomial to ensure that all its zeros lie on the unit circle, and the other corrects a symmetric polynomial to ensure that none of its zeros lie on the unit circle. The inverse problems have applications in spectral estimation, signal processing and system identification.
+===
+===
+https://arxiv.org/abs/1308.4217
+wget_U 'https://arxiv.org/pdf/1308.4217.pdf' -O 'A Geometrical Root Finding Method for Polynomials with Complexity Analysis(2013)(Luis).pdf'
+
+[Submitted on 20 Aug 2013]
+A Geometrical Root Finding Method for Polynomials, with Complexity Analysis
+Juan Luis García Zapata, Juan Carlos Díaz Martín
+Download PDF
+The usual methods for root finding of polynomials are based on the iteration of a numerical formula for improvement of successive estimations. The unpredictable nature of the iterations prevents to search roots inside a pre-specified region of complex plane. This work describes a root finding method that overcomes this disadvantage. It is based on the winding number of plane curves, a geometric construct that is related to the number of zeros of each polynomial. The method can be restrained to search inside a pre-specified region. It can be easily parallelized. Its correctness is formally proven, and its computational complexity is also analyzed.
+Comments:	56 pages
+===
+===
+wget_U 'https://arxiv.org/pdf/2106.04061.pdf' -O 'Interpretation of the Schur-Cohn test in terms of canonical systems(2021)(Suzuki).pdf'
+
+https://arxiv.org/abs/2106.04061
+[Submitted on 8 Jun 2021]
+Interpretation of the Schur-Cohn test in terms of canonical systems
+Masatoshi Suzuki
+Download PDF
+We solve direct and inverse problems for two-dimensional (quasi) canonical systems related to exponential polynomials of a specific but sufficiently general type. The approach to the inverse problem in this paper provides an interpretation of the matrices and their determinants in the classical Schur-Cohn test for polynomials in terms of Hamiltonians of canonical system.
+Comments:	30 pages
+===
+===
+wget_U 'http://i.stanford.edu/pub/cstr/reports/cs/tr/69/145/CS-TR-69-145.pdf' -O 'METHODS OF SEARCH FOR SOLVING POLYNOMIAL EQUATIONS(1969)(Henrici).pdf'
+Peter Henrici
+TECHNICAL REPORT NO. CS 145
+DECEMBER 1969
+
+Stanford University
+http://i.stanford.edu/pub/cstr/reports/cs/tr/69/145/CS-TR-69-145.pdf
+[PDF]METHODS OF SEARCH FOR SOLVING. . POLYNOMIAL EQUATIONS * BY…
+Lehmer's "machine method" for solving polynomial equations is a special case. The use of the Schur-Cohn algorithm in Lehmer's method is replaced by a more general proximity test which reacts positively if applied at a point close to a zero of a polynomial. Various such tests are described, and the work involved in their use is estimated.
+===
+===
+]]]
+[[[
+https://mathworld.wolfram.com/MaehlysProcedure.html
+===
+Maehly's Procedure
+A method for finding roots which defines
+
+ P_j(x)=(P(x))/((x-x_1)...(x-x_j)), 	
+(1)
+so the derivative is
+
+ P_j^'(x)=(P^'(x))/((x-x_1)...(x-x_j))-(P(x))/((x-x_1)...(x-x_j))sum_(i=1)^j(x-x_i)^(-1). 	
+(2)
+One step of Newton's method can then be written as
+
+ x_(k+1)=x_k-(P(x_k))/(P^'(x_k)-P(x_k)sum_(i=1)^(j)(x_k-x_i)^(-1)). 	
+(3)
+]]]
+[[[
+https://mathworld.wolfram.com/QuarticEquation.html
+===
+Quartic Equation
+
+A quartic equation is a fourth-order polynomial equation of the form
+
+ z^4+a_3z^3+a_2z^2+a_1z+a_0=0. 	
+(1)
+While some authors (Beyer 1987b, p. 34) use the term "biquadratic equation" as a synonym for quartic equation, others (Hazewinkel 1988, Gellert et al. 1989) reserve the term for a quartic equation having no cubic term, i.e., a quadratic equation in x^2.
+
+Ferrari was the first to develop an algebraic technique for solving the general quartic, which was stolen and published in Cardano's Ars Magna in 1545 (Boyer and Merzbach 1991, p. 283). The Wolfram Language can solve quartic equations exactly using the built-in command Solve[a4 x^4 + a3 x^3 + a2 x^2 + a1 x + a0 == 0, x]. The solution can also be expressed in terms of Wolfram Language algebraic root objects by first issuing SetOptions[Roots, Quartics -> False].
+
+The roots of this equation satisfy Vieta's formulas:
+
+x_1+x_2+x_3+x_4=-a_3 	
+(2)
+x_1x_2+x_1x_3+x_1x_4+x_2x_3+x_2x_4+x_3x_4=a_2 	
+(3)
+x_1x_2x_3+x_2x_3x_4+x_1x_2x_4+x_1x_3x_4=-a_1 	
+(4)
+x_1x_2x_3x_4=a_0, 	
+(5)
+where the denominators on the right side are all a_4=1. Writing the quartic in the standard form
+
+ x^4+px^2+qx+r=0, 	
+(6)
+the properties of the symmetric polynomials appearing in Vieta's formulas then give
+
+z_1^2+z_2^2+z_3^2+z_4^2	=	-2p	
+(7)
+z_1^3+z_2^3+z_3^3+z_4^3	=	-3q	
+(8)
+z_1^4+z_2^4+z_3^4+z_4^4	=	2p^2-4r	
+(9)
+z_1^5+z_2^5+z_3^5+z_4^5	=	5pq.	
+(10)
+Eliminating p, q, and r, respectively, gives the relations
+
+ z_1z_2(p+z_1^2+z_1z_2+z_2^2)-r=0 	
+(11)
+ z_1^2z_2(z_1+z_2)-qz_1-r=0 	
+(12)
+ q+pz_2+z_2^3=0, 	
+(13)
+as well as their cyclic permutations.
+
+Ferrari was the first to develop an algebraic technique for solving the general quartic. He applied his technique (which was stolen and published by Cardano) to the equation
+
+ x^4+6x^2-60x+36=0 	
+(14)
+(Smith 1994, p. 207).
+
+The x^3 term can be eliminated from the general quartic (◇) by making a substitution of the form
+
+ z=x-lambda, 	
+(15)
+so
+
+ x^4+(a_3-4lambda)x^3+(a_2-3a_3lambda+6lambda^2)x^2 
+ +(a_1-2a_2lambda+3a_3lambda^2-4lambda^3)x+(a_0-a_1lambda+a_2lambda^2-a_3lambda^3+lambda^4).  	
+(16)
+Letting lambda=a_3/4 so
+
+ z=x-1/4a_3 	
+(17)
+then gives the standard form
+
+ x^4+px^2+qx+r=0, 	
+(18)
+where
+
+p	=	a_2-3/8a_3^2	
+(19)
+q	=	a_1-1/2a_2a_3+1/8a_3^3	
+(20)
+r	=	a_0-1/4a_1a_3+1/(16)a_2a_3^2-3/(256)a_3^4.	
+(21)
+The quartic can be solved by writing it in a general form that would allow it to be algebraically factorable and then finding the condition to put it in this form. The equation that must be solved to make it factorable is called the resolvent cubic. To do this, note that the quartic will be factorable if it can be written as the difference of two squared terms,
+
+ P^2-Q^2=(P+Q)(P-Q). 	
+(22)
+It turns out that a factorization of this form can be obtained by adding and subtracting x^2u+u^2/4 (where u is for now an arbitrary quantity, but which will be specified shortly) to equation (◇) to obtain
+
+ (x^4+x^2u+1/4u^2)-x^2u-1/4u^2+px^2+qx+r=0. 	
+(23)
+This equation can be rewritten
+
+ (x^2+1/2u)^2-[(u-p)x^2-qx+(1/4u^2-r)]=0 	
+(24)
+(Birkhoff and Mac Lane 1966). Note that the first term is immediately a perfect square P^2 with
+
+ P=x^2+1/2u, 	
+(25)
+and the second term will be a perfect square Q^2 if u is chosen to that the square can be completed in
+
+ Q^2=(u-p)(x^2-q/(u-p)x+(1/4u^2-r)/(u-p)). 	
+(26)
+This means we want
+
+ Q^2=(u-p)(x-sqrt((1/4u^2-r)/(u-p)))^2 	
+(27)
+which requires that
+
+ 2sqrt((1/4u^2-r)/(u-p))=q/(u-p), 	
+(28)
+or
+
+ q^2=4(u-p)(1/4u^2-r). 	
+(29)
+This is the resolvent cubic.
+
+Since an analytic solution to the cubic is known, we can immediately solve algebraically for one of the three solution of equation (29), say u_1, and plugging equation (29) into equation (26) then gives
+
+ Q=Ax-q/(2A) 	
+(30)
+with
+
+ A=sqrt(u_1-p). 	
+(31)
+Q therefore is linear in x and P is quadratic in x, so each term P+Q and P-Q is quadratic and can be solved using the quadratic formula, thus giving all four solutions to the original quartic.
+
+Explicitly, plugging p, q, and r back into (◇) gives
+
+ u^3+(3/8a_3^2-a_2)u^2+(3/(64)a_3^4-1/4a_2a_3^2+a_1a_3-4a_0)u+(1/(512)a_3^6-1/(64)a_2a_3^4+1/8a_1a_3^3-3/2a_0a_3^2+4a_0a_2-a_1^2).  	
+(32)
+This can be simplified by making the substitution
+
+ u=y-1/8a_3^2, 	
+(33)
+which gives the resolvent cubic equation
+
+ y^3-a_2y^2+(a_1a_3-4a_0)y+(4a_2a_0-a_1^2-a_3^2a_0)=0. 	
+(34)
+Let y_1 be a real root of (34), then the four roots of the original quartic are given by the roots of the equation
+
+ x^2+1/2(a_3+/-sqrt(a_3^2-4a_2+4y_1))x+1/2(y_1+/-sqrt(y_1^2-4a_0))=0, 	
+(35)
+which are
+
+z_1	=	-1/4a_3+1/2R+1/2D	
+(36)
+z_2	=	-1/4a_3+1/2R-1/2D	
+(37)
+z_3	=	-1/4a_3-1/2R+1/2E	
+(38)
+z_4	=	-1/4a_3-1/2R-1/2E,	
+(39)
+where
+
+R	=	sqrt(1/4a_3^2-a_2+y_1)	
+(40)
+D	=	{sqrt(3/4a_3^2-R^2-2a_2+1/4(4a_3a_2-8a_1-a_3^3)R^(-1)) for R!=0; sqrt(3/4a_3^2-2a_2+2sqrt(y_1^2-4a_0)) for R=0	
+(41)
+E	=	{sqrt(3/4a_3^2-R^2-2a_2-1/4(4a_3a_2-8a_1-a_3^3)R^(-1)) for R!=0; sqrt(3/4a_3^2-2a_2-2sqrt(y_1^2-4a_0)) for R=0	
+(42)
+(Abramowitz and Stegun 1972, p. 17; Beyer 1987a, p. 12). This result is sometimes known as the quartic formula.
+
+Another approach to solving the quartic (◇) defines
+
+alpha	=	(x_1+x_2)(x_3+x_4)=-(x_1+x_2)^2	
+(43)
+beta	=	(x_1+x_3)(x_2+x_4)=-(x_1+x_3)^2	
+(44)
+gamma	=	(x_1+x_4)(x_2+x_3)=-(x_2+x_3)^2,	
+(45)
+where the second forms follow from
+
+ x_1+x_2+x_3+x_4=-a_3=0, 	
+(46)
+and defining
+
+h(x)	=	(x-alpha)(x-beta)(x-gamma)	
+(47)
+	=	x^3-(alpha+beta+gamma)x^2+(alphabeta+alphagamma+betagamma)x-alphabetagamma.	
+(48)
+This equation can be written in terms of the original coefficients p, q, and r as
+
+ h(x)=x^3-2px^2+(p^2-4r)x+q^2. 	
+(49)
+The roots of this cubic equation then give alpha, beta, and gamma, and the equations (◇) to (◇) can be solved for the four roots x_i of the original quartic (Faucette 1996).
+]]]
+[[[
+https://mathworld.wolfram.com/CubicFormula.html
+===
+Cubic Formula
+
+The cubic formula is the closed-form solution for a cubic equation, i.e., the roots of a cubic polynomial. A general cubic equation is of the form
+
+ z^3+a_2z^2+a_1z+a_0=0 	
+(1)
+(the coefficient a_3 of z^3 may be taken as 1 without loss of generality by dividing the entire equation through by a_3). The Wolfram Language can solve cubic equations exactly using the built-in command Solve[a3 x^3 + a2 x^2 + a1 x + a0 == 0, x]. The solution can also be expressed in terms of the Wolfram Language algebraic root objects by first issuing SetOptions[Roots, Cubics -> False].
+
+The solution to the cubic (as well as the quartic) was published by Gerolamo Cardano (1501-1576) in his treatise Ars Magna. However, Cardano was not the original discoverer of either of these results. The hint for the cubic had been provided by Niccolò Tartaglia, while the quartic had been solved by Ludovico Ferrari. However, Tartaglia himself had probably caught wind of the solution from another source. The solution was apparently first arrived at by a little-remembered professor of mathematics at the University of Bologna by the name of Scipione del Ferro (ca. 1465-1526). While del Ferro did not publish his solution, he disclosed it to his student Antonio Maria Fior (Boyer and Merzbach 1991, p. 283). This is apparently where Tartaglia learned of the solution around 1541.
+
+To solve the general cubic (1), it is reasonable to begin by attempting to eliminate the a_2 term by making a substitution of the form
+
+ z=x-lambda. 	
+(2)
+Then
+
+(x-lambda)^3+a_2(x-lambda)^2+a_1(x-lambda)+a_0=0 	
+(3)
+(x^3-3lambdax^2+3lambda^2x-lambda^3)+a_2(x^2-2lambdax+lambda^2)+a_1(x-lambda)+a_0=0 	
+(4)
+x^3+(a_2-3lambda)x^2+(a_1-2a_2lambda+3lambda^2)x+(a_0-a_1lambda+a_2lambda^2-lambda^3)=0. 	
+(5)
+The x^2 is eliminated by letting lambda=a_2/3, so
+
+ z=x-1/3a_2. 	
+(6)
+Then
+
+z^3	=	(x-1/3a_2)^3=x^3-a_2x^2+1/3a_2^2x-1/(27)a_2^3	
+(7)
+a_2z^2	=	a_2(x-1/3a_2)^2=a_2x^2-2/3a_2^2x+1/9a_2^3	
+(8)
+a_1z	=	a_1(x-1/3a_2)=a_1x-1/3a_1a_2,	
+(9)
+so equation (◇) becomes
+
+x^3+(-a_2+a_2)x^2+(1/3a_2^2-2/3a_2^2+a_1)x-(1/(27)a_2^3-1/9a_2^3+1/3a_1a_2-a_0)=0 	
+(10)
+x^3+(a_1-1/3a_2^2)x-(1/3a_1a_2-2/(27)a_2^3-a_0)=0 	
+(11)
+x^3+3·(3a_1-a_2^2)/9x-2·(9a_1a_2-27a_0-2a_2^3)/(54)=0. 	
+(12)
+Defining
+
+p	=	(3a_1-a_2^2)/3	
+(13)
+q	=	(9a_1a_2-27a_0-2a_2^3)/(27)	
+(14)
+then allows (◇) to be written in the standard form
+
+ x^3+px=q. 	
+(15)
+The simplest way to proceed is to make Vieta's substitution
+
+ x=w-p/(3w), 	
+(16)
+which reduces the cubic to the equation
+
+ w^3-(p^3)/(27w^3)-q=0, 	
+(17)
+which is easily turned into a quadratic equation in w^3 by multiplying through by w^3 to obtain
+
+ (w^3)^2-q(w^3)-1/(27)p^3=0 	
+(18)
+(Birkhoff and Mac Lane 1996, p. 106). The result from the quadratic formula is
+
+w^3	=	1/2(q+/-sqrt(q^2+4/(27)p^3))	
+(19)
+	=	1/2q+/-sqrt(1/4q^2+1/(27)p^3)	
+(20)
+	=	R+/-sqrt(R^2+Q^3),	
+(21)
+where Q and R are sometimes more useful to deal with than are p and q. There are therefore six solutions for w (two corresponding to each sign for each root of w^3). Plugging w back in to (19) gives three pairs of solutions, but each pair is equal, so there are three solutions to the cubic equation.
+
+Equation (◇) may also be explicitly factored by attempting to pull out a term of the form (x-B) from the cubic equation, leaving behind a quadratic equation which can then be factored using the quadratic formula. This process is equivalent to making Vieta's substitution, but does a slightly better job of motivating Vieta's "magic" substitution, and also at producing the explicit formulas for the solutions. First, define the intermediate variables
+
+Q	=	(3a_1-a_2^2)/9	
+(22)
+R	=	(9a_2a_1-27a_0-2a_2^3)/(54)	
+(23)
+(which are identical to p and q up to a constant factor). The general cubic equation (◇) then becomes
+
+ x^3+3Qx-2R=0. 	
+(24)
+Let B and C be, for the moment, arbitrary constants. An identity satisfied by perfect cubic polynomial equations is that
+
+ x^3-B^3=(x-B)(x^2+Bx+B^2). 	
+(25)
+The general cubic would therefore be directly factorable if it did not have an x term (i.e., if Q=0). However, since in general Q!=0, add a multiple of (x-B)--say C(x-B)--to both sides of (25) to give the slightly messy identity
+
+ (x^3-B^3)+C(x-B)=(x-B)(x^2+Bx+B^2+C)=0, 	
+(26)
+which, after regrouping terms, is
+
+ x^3+Cx-(B^3+BC)=(x-B)[x^2+Bx+(B^2+C)]=0. 	
+(27)
+We would now like to match the coefficients C and -(B^3+BC) with those of equation (◇), so we must have
+
+ C=3Q 	
+(28)
+ B^3+BC=2R. 	
+(29)
+Plugging the former into the latter then gives
+
+ B^3+3QB=2R. 	
+(30)
+Therefore, if we can find a value of B satisfying the above identity, we have factored a linear term from the cubic, thus reducing it to a quadratic equation. The trial solution accomplishing this miracle turns out to be the symmetrical expression
+
+ B=[R+sqrt(Q^3+R^2)]^(1/3)+[R-sqrt(Q^3+R^2)]^(1/3). 	
+(31)
+Taking the second and third powers of B gives
+
+B^2	=	[R+sqrt(Q^3+R^2)]^(2/3)+2[R^2-(Q^3+R^2)]^(1/3)+[R-sqrt(Q^3+R^2)]^(2/3)	
+(32)
+	=	[R+sqrt(Q^3+R^2)]^(2/3)+[R-sqrt(Q^3+R^2)]^(2/3)-2Q	
+(33)
+B^3	=	-2QB+{[R+sqrt(Q^3+R^2)]^(1/3)+[R-sqrt(Q^3+R^2)]^(1/3)}×{[R+sqrt(Q^3+R^2)]^(2/3)+[R-sqrt(Q^3+R^2)]^(2/3)}	
+(34)
+	=	[R+sqrt(Q^3+R^2)]+[R-sqrt(Q^3+R^2)]+[R+sqrt(Q^3+R^2)]^(1/3)[R-sqrt(Q^3+R^2)]^(2/3)+[R+sqrt(Q^3+R^2)]^(2/3)[R-sqrt(Q^3+R^2)]^(1/3)-2QB	
+(35)
+	=	-2QB+2R+[R^2-(Q^3+R^2)]^(1/3)×[(R+sqrt(Q^3+R^2))^(1/3)+(R-sqrt(Q^3+R^2))^(1/3)]	
+(36)
+	=	-2QB+2R-QB	
+(37)
+	=	-3QB+2R.	
+(38)
+Plugging B^3 and B into the left side of (◇) gives
+
+ (-3QB+2R)+3QB=2R, 	
+(39)
+so we have indeed found the factor (x-B) of (◇), and we need now only factor the quadratic part. Plugging C=3Q into the quadratic part of (◇) and solving the resulting
+
+ x^2+Bx+(B^2+3Q)=0 	
+(40)
+then gives the solutions
+
+x	=	1/2[-B+/-sqrt(B^2-4(B^2+3Q))]	
+(41)
+	=	-1/2B+/-1/2sqrt(-3B^2-12Q)	
+(42)
+	=	-1/2B+/-1/2sqrt(3)isqrt(B^2+4Q).	
+(43)
+These can be simplified by defining
+
+A	=	[R+sqrt(Q^3+R^2)]^(1/3)-[R-sqrt(Q^3+R^2)]^(1/3)	
+(44)
+A^2	=	[R+sqrt(Q^3+R^2)]^(2/3)-2[R^2-(Q^3+R^2)]^(1/3)+[R-sqrt(Q^3+R^2)]^(2/3)	
+(45)
+	=	[R+sqrt(Q^3+R^2)]^(2/3)+[R-sqrt(Q^3+R^2)]^(2/3)+2Q	
+(46)
+	=	B^2+4Q,	
+(47)
+so that the solutions to the quadratic part can be written
+
+ x=-1/2B+/-1/2sqrt(3)iA. 	
+(48)
+Defining
+
+D	=	Q^3+R^2	
+(49)
+S	=	RadicalBox[{R, +, {sqrt(, D, )}}, 3]	
+(50)
+T	=	RadicalBox[{R, -, {sqrt(, D, )}}, 3],	
+(51)
+where D is the polynomial discriminant (which is defined slightly differently, including the opposite sign, by Birkhoff and Mac Lane 1996) then gives very simple expressions for A and B, namely
+
+B	=	S+T	
+(52)
+A	=	S-T.	
+(53)
+Therefore, at last, the roots of the original equation in z are then given by
+
+z_1	=	-1/3a_2+(S+T)	
+(54)
+z_2	=	-1/3a_2-1/2(S+T)+1/2isqrt(3)(S-T)	
+(55)
+z_3	=	-1/3a_2-1/2(S+T)-1/2isqrt(3)(S-T),	
+(56)
+with a_2 the coefficient of z^2 in the original equation, and S and T as defined above. These three equations giving the three roots of the cubic equation are sometimes known as Cardano's formula. Note that if the equation is in the standard form of Vieta
+
+ x^3+px=q, 	
+(57)
+in the variable x, then a_2=0, a_1=p, and a_0=-q, and the intermediate variables have the simple form (cf. Beyer 1987)
+
+Q	=	1/3p	
+(58)
+R	=	1/2q	
+(59)
+D	=	Q^3+R^2=(p/3)^3+(q/2)^2.	
+(60)
+The solutions satisfy Vieta's formulas
+
+z_1+z_2+z_3	=	-a_2	
+(61)
+z_1z_2+z_2z_3+z_1z_3	=	a_1	
+(62)
+z_1z_2z_3	=	-a_0.	
+(63)
+In standard form (◇), a_2=0, a_1=p, and a_0=-q, so eliminating q gives
+
+ p=-(z_i^2+z_iz_j+z_j^2) 	
+(64)
+for i!=j, and eliminating p gives
+
+ q=-z_iz_j(z_i+z_j) 	
+(65)
+for i!=j. In addition, the properties of the symmetric polynomials appearing in Vieta's formulas give
+
+z_1^2+z_2^2+z_3^2	=	-2p	
+(66)
+z_1^3+z_2^3+z_3^3	=	3q	
+(67)
+z_1^4+z_2^4+z_3^4	=	2p^2	
+(68)
+z_1^5+z_2^5+z_3^5	=	-5pq.	
+(69)
+The equation for z_1 in Cardano's formula does not have an i appearing in it explicitly while z_2 and z_3 do, but this does not say anything about the number of real and complex roots (since S and T are themselves, in general, complex). However, determining which roots are real and which are complex can be accomplished by noting that if the polynomial discriminant D>0, one root is real and two are complex conjugates; if D=0, all roots are real and at least two are equal; and if D<0, all roots are real and unequal. If D<0, define
+
+ theta=cos^(-1)(R/(sqrt(-Q^3))). 	
+(70)
+Then the real solutions are of the form
+
+z_1	=	2sqrt(-Q)cos(theta/3)-1/3a_2	
+(71)
+z_2	=	2sqrt(-Q)cos((theta+2pi)/3)-1/3a_2	
+(72)
+z_3	=	2sqrt(-Q)cos((theta+4pi)/3)-1/3a_2.	
+(73)
+This procedure can be generalized to find the real roots for any equation in the standard form (◇) by using the identity
+
+ sin^3theta-3/4sintheta+1/4sin(3theta)=0 	
+(74)
+(Dickson 1914) and setting
+
+ x=sqrt((4|p|)/3)y 	
+(75)
+(Birkhoff and Mac Lane 1996, pp. 90-91), then
+
+ ((4|p|)/3)^(3/2)y^3+psqrt((4|p|)/3)y=q 	
+(76)
+ y^3+3/4p/(|p|)y=(3/(4|p|))^(3/2)q 	
+(77)
+ 4y^3+3sgn(p)y=1/2q(3/(|p|))^(3/2)=C. 	
+(78)
+If p>0, then use
+
+ sinh(3theta)=4sinh^3theta+3sinhtheta 	
+(79)
+to obtain
+
+ y=sinh(1/3sinh^(-1)C). 	
+(80)
+If p<0 and |C|>=1, use
+
+ cosh(3theta)=4cosh^3theta-3coshtheta, 	
+(81)
+and if p<0 and |C|<=1, use
+
+ cos(3theta)=4cos^3theta-3costheta, 	
+(82)
+to obtain
+
+ y={cosh(1/3cosh^(-1)C)   for C>=1; -cosh(1/3cosh^(-1)|C|)   for C<=-1; cos(1/3cos^(-1)C) [three solutions]   for |C|<1. 	
+(83)
+The solutions to the original equation are then
+
+ x_i=2sqrt((|p|)/3)y_i-1/3a_2. 	
+(84)
+An alternate approach to solving the cubic equation is to use Lagrange resolvents (Faucette 1996). Let omega=e^(2pii/3), define
+
+(1,x_1)	=	x_1+x_2+x_3	
+(85)
+(omega,x_1)	=	x_1+omegax_2+omega^2x_3	
+(86)
+(omega^2,x_1)	=	x_1+omega^2x_2+omegax_3,	
+(87)
+where x_i are the roots of
+
+ x^3+px-q=0, 	
+(88)
+and consider the equation
+
+ [x-(u_1+u_2)][x-(omegau_1+omega^2u_2)][x-(omega^2u_1+omegau_2)]=0, 	
+(89)
+where u_1 and u_2 are complex numbers. The roots are then
+
+ x_j=omega^ju_1+omega^(2j)u_2 	
+(90)
+for j=0, 1, 2. Multiplying through gives
+
+ x^3-3u_1u_2x-(u_1^3+u_2^3)=0, 	
+(91)
+which can be written in the form (88), where
+
+u_1^3+u_2^3	=	q	
+(92)
+u_1^3u_2^3	=	-(p/3)^3.	
+(93)
+Some curious identities involving the roots of a cubic equation due to Ramanujan are given by Berndt (1994).
+]]]
+[[[
+https://mathworld.wolfram.com/QuarticFormula.html
+===
+Quartic Formula
+The quartic formula is a name sometimes given to one of the related explicit formulas for the four roots z_1, ..., z_4 of an arbitrary quartic equation with real coefficients
+
+ z^4+a_3z^3+a_2z^2+a_1z+a_0=0. 	
+(1)
+Let y_1 be a real root of the resolvent cubic equation
+
+ y^3-a_2y^2+(a_1a_3-4a_0)y+(4a_2a_0-a_1^2-a_3^2a_0)=0. 	
+(2)
+Then one of its most common forms of the quartic formula is given by
+
+z_1	=	-1/4a_3+1/2R+1/2D	
+(3)
+z_2	=	-1/4a_3+1/2R-1/2D	
+(4)
+z_3	=	-1/4a_3-1/2R+1/2E	
+(5)
+z_4	=	-1/4a_3-1/2R-1/2E,	
+(6)
+where
+
+R	=	sqrt(1/4a_3^2-a_2+y_1)	
+(7)
+D	=	{sqrt(3/4a_3^2-R^2-2a_2+1/4(4a_3a_2-8a_1-a_3^3)R^(-1)) for R!=0; sqrt(3/4a_3^2-2a_2+2sqrt(y_1^2-4a_0)) for R=0	
+(8)
+E	=	{sqrt(3/4a_3^2-R^2-2a_2-1/4(4a_3a_2-8a_1-a_3^3)R^(-1)) for R!=0; sqrt(3/4a_3^2-2a_2-2sqrt(y_1^2-4a_0)) for R=0	
+(9)
+(Abramowitz and Stegun 1972, p. 17; Beyer 1987a, p. 12).
+
+Ferrari was the first to develop an algebraic technique for solving the general quartic, which was stolen and published in Cardano's Ars Magna in 1545 (Boyer and Merzbach 1991, p. 283).
+]]]
+[[[
+https://mathworld.wolfram.com/PolynomialDiscriminant.html
+===
+Polynomial Discriminant
+
+A polynomial discriminant is the product of the squares of the differences of the polynomial roots r_i. The discriminant of a polynomial is defined only up to constant factor, and several slightly different normalizations can be used. For a polynomial
+
+ p(z)=a_nz^n+a_(n-1)z^(n-1)+...+a_1z+a_0 	
+(1)
+of degree n, the most common definition of the discriminant is
+
+ D(p)=a_n^(2n-2)product_(i,j; i<j)^n(r_i-r_j)^2, 	
+(2)
+which gives a homogenous polynomial of degree 2(n-1) in the coefficients of p.
+
+The discriminant of a polynomial p is given in terms of a resultant as
+
+ D(p)=(-1)^(n(n-1)/2)R(p,p^')a_n^(n-k-2), 	
+(3)
+where p^' is the derivative of p and k is the degree of p^'. For fields of infinite characteristic, k=n-1 so the formula reduces to
+
+ D(p)=((-1)^(n(n-1)/2)R(p,p^'))/(a_n). 	
+(4)
+The discriminant of a univariate polynomial p(x) is implemented in the Wolfram Language as Discriminant[p, x].
+
+The discriminant of the quadratic equation
+
+ a_2z^2+a_1z+a_0=0 	
+(5)
+is given by
+
+ D_2=a_1^2-4a_0a_2. 	
+(6)
+The discriminant of the cubic equation
+
+ a_3z^3+a_2z^2+a_1z+a_0=0 	
+(7)
+is given by
+
+ D_3=a_1^2a_2^2-4a_0a_2^3-4a_1^3a_3+18a_0a_1a_2a_3-27a_0^2a_3^2 	
+(8)
+The discriminant of a quartic equation
+
+ a_4z^4+a_3z^3+a_2z^2+a_1z+a_0=0 	
+(9)
+is
+
+ D_4=[(a_1^2a_2^2a_3^2-4a_1^3a_3^3-4a_1^2a_2^3a_4+18a_1^3a_2a_3a_4-27a_1^4a_4^2+256a_0^3a_4^3)+a_0(-4a_2^3a_3^2+18a_1a_2a_3^3+16a_2^4a_4-80a_1a_2^2a_3a_4-6a_1^2a_3^2a_4+144a_1^2a_2a_4^2)+a_0^2(-27a_3^4+144a_2a_3^2a_4-128a_2^2a_4^2-192a_1a_3a_4^2)]  	
+(10)
+(Schroeppel 1972).
+]]]
+[[[
+https://mathworld.wolfram.com/Resultant.html
+===
+Resultant
+
+Given a polynomial
+
+ p(x)=a_nx^n+a_(n-1)x^(n-1)+...+a_1x+a_0 	
+(1)
+of degree n with roots alpha_i, i=1, ..., n and a polynomial
+
+ q(x)=b_mx^m+b_(m-1)x^(m-1)+...+b_1x+b_0 	
+(2)
+of degree m with roots beta_j, j=1, ..., m, the resultant rho(p,q), also denoted R(p,q) and also called the eliminant, is defined by
+
+ rho(p,q)=a_n^mb_m^nproduct_(i=1)^nproduct_(j=1)^m(alpha_i-beta_j) 	
+(3)
+(Trott 2006, p. 26).
+
+Amazingly, the resultant is also given by the determinant of the corresponding Sylvester matrix.
+
+Kronecker gave a series of lectures on resultants during the summer of 1885 (O'Connor and Robertson 2005).
+
+An important application of the resultant is the elimination of one variable from a system of two polynomial equations (Trott 2006, p. 26).
+
+The resultant of two polynomials can be computed using the Wolfram Language function Resultant[poly1, poly2, var]. This command accepts the following methods: Automatic, SylvesterMatrix, BezoutMatrix, Subresultants, and Modular, where the optimal choice depends dramatically on the concrete polynomial pair under consideration and typically requires some experimentation. For high-order univariate polynomials over the integers, the option setting Modular is frequently the fastest (Trott 2006, p. 29).
+
+There exists an algorithm similar to the Euclidean algorithm for computing resultants (Pohst and Zassenhaus 1989).
+
+Resultants for a few simple pairs of polynomials include
+
+rho(x-a,x-b)	=	a-b	
+(4)
+rho((x-a)(x-b),x-c)	=	(a-c)(b-c)	
+(5)
+rho((x-a)(x-b),(x-c)(x-d))	=	(a-c)(b-c)(a-d)(b-d).	
+(6)
+Given p and q, then
+
+ h(x)=rho(q(t),p(x-t)) 	
+(7)
+is a polynomial of degree mn, having as its roots all sums of the form alpha_i+beta_j.
+]]]
+[[[
+https://mathworld.wolfram.com/SylvesterMatrix.html
+===
+Sylvester Matrix
+
+For two polynomials P_1(x)=a_mx^m+...+a_0 and P_2=b_nx^n+...+b_0 of degrees m and n, respectively, the Sylvester matrix is an (m+n)×(m+n) matrix formed by filling the matrix beginning with the upper left corner with the coefficients of P_1(x), then shifting down one row and one column to the right and filling in the coefficients starting there until they hit the right side. The process is then repeated for the coefficients of P_2(x).
+
+The Sylvester matrix can be implemented in the Wolfram Language as:
+
+  SylvesterMatrix1[poly1_, poly2_,  var_] :=
+    Function[{coeffs1, coeffs2}, With[
+      {l1 = Length[coeffs1], l2 = Length[coeffs2]},
+        Join[
+          NestList[RotateRight, PadRight[coeffs1,
+            l1 + l2 -  2], l2 - 2],
+          NestList[RotateRight, PadRight[coeffs2,
+            l1 + l2 - 2], l1 - 2]
+        ]
+      ]
+    ][
+      Reverse[CoefficientList[poly1, var]],
+      Reverse[CoefficientList[poly2, var]]
+  ]
+For example, the Sylvester matrix for P_1(x)=a_3x^3+a_2x^2+a_1x+a_0 and P_2(x)=b_2x^2+b_1x+b_0 is
+
+ [a_3 a_2 a_1 a_0 0; 0 a_3 a_2 a_1 a_0; b_2 b_1 b_0 0 0; 0 b_2 b_1 b_0 0; 0 0 b_2 b_1 b_0]. 
+The determinant of the Sylvester matrix of two polynomials is the resultant of the polynomials.
+
+SylvesterMatrix is an (undocumented) method for the Resultant function in the Wolfram Language (although it is documented in Trott 2006, p. 29).
+]]]
+[[[
+https://mathworld.wolfram.com/Determinant.html
+===
+Determinant
+
+Determinants are mathematical objects that are very useful in the analysis and solution of systems of linear equations. As shown by Cramer's rule, a nonhomogeneous system of linear equations has a unique solution iff the determinant of the system's matrix is nonzero (i.e., the matrix is nonsingular). For example, eliminating x, y, and z from the equations
+
+a_1x+a_2y+a_3z	=	0	
+(1)
+b_1x+b_2y+b_3z	=	0	
+(2)
+c_1x+c_2y+c_3z	=	0	
+(3)
+gives the expression
+
+ a_1b_2c_3-a_1b_3c_2+a_2b_3c_1-a_2b_1c_3+a_3b_1c_2-a_3b_2c_1=0, 	
+(4)
+which is called the determinant for this system of equation. Determinants are defined only for square matrices.
+
+If the determinant of a matrix is 0, the matrix is said to be singular, and if the determinant is 1, the matrix is said to be unimodular.
+
+The determinant of a matrix A,
+
+ |a_1 a_2 ... a_n; b_1 b_2 ... b_n; | | ... |; z_1 z_2 ... z_n| 	
+(5)
+is commonly denoted det(A), |A|, or in component notation as sum(+/-a_1b_2c_3...), D(a_1b_2c_3...), or |a_1b_2c_3...| (Muir 1960, p. 17). Note that the notation det(A) may be more convenient when indicating the absolute value of a determinant, i.e., |det(A)| instead of ||A||. The determinant is implemented in the Wolfram Language as Det[m].
+
+A 2×2 determinant is defined to be
+
+ det[a b; c d]=|a b; c d|=ad-bc. 	
+(6)
+A k×k determinant can be expanded "by minors" to obtain
+
+ |a_(11) a_(12) a_(13) ... a_(1k); a_(21) a_(22) a_(23) ... a_(2k); | | | ... |; a_(k1) a_(k2) a_(k3) ... a_(kk)|=a_(11)|a_(22) a_(23) ... a_(2k); | | ... |; a_(k2) a_(k3) ... a_(kk)| 
+ -a_(12)|a_(21) a_(23) ... a_(2k); | | ... |; a_(k1) a_(k3) ... a_(kk)|+...+/-a_(1k)|a_(21) a_(22) ... a_(2(k-1)); | | ... |; a_(k1) a_(k2) ... a_(k(k-1))|.   	
+(7)
+A general determinant for a matrix A has a value
+
+ |A|=sum_(i=1)^ka_(ij)C_(ij), 	
+(8)
+with no implied summation over j and where C_(ij) (also denoted a^(ij)) is the cofactor of a_(ij) defined by
+
+ C_(ij)=(-1)^(i+j)M_(ij). 	
+(9)
+and M_(ij) is the minor of matrix A formed by eliminating row i and column j from A. This process is called determinant expansion by minors (or "Laplacian expansion by minors," sometimes further shortened to simply "Laplacian expansion").
+
+A determinant can also be computed by writing down all permutations of {1,...,n}, taking each permutation as the subscripts of the letters a, b, ..., and summing with signs determined by epsilon_p=(-1)^(i(p)), where i(p) is the number of permutation inversions in permutation p (Muir 1960, p. 16), and epsilon_(n_1n_2...) is the permutation symbol. For example, with n=3, the permutations and the number of inversions they contain are 123 (0), 132 (1), 213 (1), 231 (2), 312 (2), and 321 (3), so the determinant is given by
+
+ |a_1 a_2 a_3; b_1 b_2 b_3; c_1 c_2 c_3| =a_1b_2c_3-a_1b_3c_2-a_2b_1c_3+a_2b_3c_1+a_3b_1c_2-a_3b_2c_1. 	
+(10)
+If a is a constant and A an n×n square matrix, then
+
+ |aA|=a^n|A|. 	
+(11)
+Given an n×n determinant, the additive inverse is
+
+ |-A|=(-1)^n|A|. 	
+(12)
+Determinants are also distributive, so
+
+ |AB|=|A||B|. 	
+(13)
+This means that the determinant of a matrix inverse can be found as follows:
+
+ |I|=|AA^(-1)|=|A||A^(-1)|=1, 	
+(14)
+where I is the identity matrix, so
+
+ |A|=1/(|A^(-1)|). 	
+(15)
+Determinants are multilinear in rows and columns, since
+
+ |a_1 a_2 a_3; a_4 a_5 a_6; a_7 a_8 a_9|=|a_1 0 0; a_4 a_5 a_6; a_7 a_8 a_9|+|0 a_2 0; a_4 a_5 a_6; a_7 a_8 a_9|+|0 0 a_3; a_4 a_5 a_6; a_7 a_8 a_9| 	
+(16)
+and
+
+ |a_1 a_2 a_3; a_4 a_5 a_6; a_7 a_8 a_9|=|a_1 a_2 a_3; 0 a_5 a_6; 0 a_8 a_9|+|0 a_2 a_3; a_4 a_5 a_6; 0 a_8 a_9|+|0 a_2 a_3; 0 a_5 a_6; a_7 a_8 a_9|. 	
+(17)
+The determinant of the similarity transformation of a matrix is equal to the determinant of the original matrix
+
+|BAB^(-1)|	=	|B||A||B^(-1)|	
+(18)
+	=	|B||A|1/(|B|)	
+(19)
+	=	|A|.	
+(20)
+The determinant of a similarity transformation minus a multiple of the unit matrix is given by
+
+|B^(-1)AB-lambdaI|	=	|B^(-1)AB-B^(-1)lambdaIB|	
+(21)
+	=	|B^(-1)(A-lambdaI)B|	
+(22)
+	=	|B^(-1)||A-lambdaI||B|	
+(23)
+	=	|A-lambdaI|.	
+(24)
+The determinant of a transpose equals the determinant of the original matrix,
+
+ |A|=|A^(T)|, 	
+(25)
+and the determinant of a complex conjugate is equal to the complex conjugate of the determinant
+
+ |A^_|=|A|^_. 	
+(26)
+Let epsilon be a small number. Then
+
+ |I+epsilonA|=1+epsilonTr(A)+O(epsilon^2), 	
+(27)
+where Tr(A) is the matrix trace of A. The determinant takes on a particularly simple form for a triangular matrix
+
+ |a_(11) a_(21) ... a_(k1); 0 a_(22) ... a_(k2); | | ... |; 0 0 ... a_(kk)|=product_(n=1)^ka_(nn). 	
+(28)
+Important properties of the determinant include the following, which include invariance under elementary row and column operations.
+
+1. Switching two rows or columns changes the sign.
+
+2. Scalars can be factored out from rows and columns.
+
+3. Multiples of rows and columns can be added together without changing the determinant's value.
+
+4. Scalar multiplication of a row by a constant c multiplies the determinant by c.
+
+5. A determinant with a row or column of zeros has value 0.
+
+6. Any determinant with two rows or columns equal has value 0.
+
+Property 1 can be established by induction. For a 2×2 matrix, the determinant is
+
+|a_1 b_1; a_2 b_2|	=	a_1b_2-b_1a_2	
+(29)
+	=	-(b_1a_2-a_1b_2)	
+(30)
+	=	-|b_1 a_1; b_2 a_2|	
+(31)
+For a 3×3 matrix, the determinant is
+
+ |a_1 b_1 c_1; a_2 b_2 c_2; a_3 b_3 c_3|=a_1|b_2 c_2; b_3 c_3|-b_1|a_2 c_2; a_3 c_3|+c_1|a_2 b_2; a_3 b_3| 
+=-(a_1|c_2 b_2; c_3 b_3|+b_1|a_2 c_2; a_3 c_3|-c_1|a_2 b_2; a_3 b_3|)=-|a_1 c_1 b_1; a_2 c_2 b_2; a_3 c_3 b_3| 
+=-(-a_1|b_2 c_2; b_3 c_3|+b_1|a_2 c_2; a_3 c_3|+c_1|b_2 a_2; b_3 a_3|)=-|b_1 a_1 c_1; b_2 a_2 c_2; b_3 a_3 c_3| 
+=-(a_1|c_2 b_2; c_3 b_3|-b_1|c_2 a_2; c_3 a_3|+c_1|b_2 a_2; b_3 a_3|)=-|c_1 b_1 a_1; c_2 b_2 a_2; c_3 b_3 a_3|.  	
+(32)
+Property 2 follows likewise. For 2×2 and 3×3 matrices,
+
+|ka_1 b_1; ka_2 b_2|	=	k(a_1b_2)-k(b_1a_2)	
+(33)
+	=	k|a_1 b_1; a_2 b_2|	
+(34)
+and
+
+|ka_1 b_1 c_1; ka_2 b_2 c_2; ka_3 b_3 c_3|	=	ka_1|b_2 c_2; b_3 c_3|-b_1|ka_2 c_2; ka_3 c_3|+c_1|ka_2 b_2; ka_3 b_3|	
+(35)
+	=	k|a_1 b_1 c_1; a_2 b_2 c_2; a_3 b_3 c_3|.	
+(36)
+Property 3 follows from the identity
+
+ |a_1+kb_1 b_1 c_1; a_2+kb_2 b_2 c_2; a_3+kb_3 b_3 c_3|=(a_1+kb_1)|b_2 c_2; b_3 c_3|-b_1|a_2+kb_2 c_2; a_3+kb_3 c_3|+c_1|a_2+kb_2 b_2; a_3+kb_3 b_3|. 	
+(37)
+If a_(ij) is an n×n matrix with a_(ij) real numbers, then det[a_(ij)] has the interpretation as the oriented n-dimensional content of the parallelepiped spanned by the column vectors [a_(i,1)], ..., [a_(i,n)] in R^n. Here, "oriented" means that, up to a change of + or - sign, the number is the n-dimensional content, but the sign depends on the "orientation" of the column vectors involved. If they agree with the standard orientation, there is a + sign; if not, there is a - sign. The parallelepiped spanned by the n-dimensional vectors v_1 through v_i is the collection of points
+
+ t_1v_1+...+t_iv_i, 	
+(38)
+where t_j is a real number in the closed interval [0,1].
+
+Several accounts state that Lewis Carroll (Charles Dodgson) sent Queen Victoria a copy of one of his mathematical works, in one account, An Elementary Treatise on Determinants. Heath (1974) states, "A well-known story tells how Queen Victoria, charmed by Alice in Wonderland, expressed a desire to receive the author's next work, and was presented, in due course, with a loyally inscribed copy of An Elementary Treatise on Determinants," while Gattegno (1974) asserts "Queen Victoria, having enjoyed Alice so much, made known her wish to receive the author's other books, and was sent one of Dodgson's mathematical works." However, in Symbolic Logic (1896), Carroll stated, "I take this opportunity of giving what publicity I can to my contradiction of a silly story, which has been going the round of the papers, about my having presented certain books to Her Majesty the Queen. It is so constantly repeated, and is such absolute fiction, that I think it worth while to state, once for all, that it is utterly false in every particular: nothing even resembling it has occurred" (Mikkelson and Mikkelson).
+
+DetComplexMatrix
+Hadamard (1893) showed that the absolute value of the determinant of a complex n×n matrix with entries in the unit disk satisfies
+
+ |detA|<=n^(n/2) 	
+(39)
+(Brenner 1972). The plots above show the distribution of determinants for random n×n complex matrices with entries satisfying |a_(ij)|<1 for n=2, 3, and 4.
+]]]
+[[[
+https://mathworld.wolfram.com/Subresultant.html
+===
+Subresultant
+
+Subresultants can be viewed as a generalization of resultants, which are the product of the pairwise differences of the roots of polynomials. Subresultants are the most commonly used tool to compute the resultant or greatest common divisor of two polynomials with coefficients in an integral ring. Subresultants for a few simple pairs of polynomials include
+
+S(x-a,x-b)	=	{a-b,1}	
+(1)
+S((x-a)(x-b),x-c)	=	{(a-c)(b-c),1}	
+(2)
+S((x-a)(x-b),(x-c)(x-d))	=	{(a-c)(b-c)(a-d)(b-d),a+b-c-d,1}.	
+(3)
+The principal subresultants of two polynomials can be computed using the Wolfram Language function Subresultants[poly1, poly2, var]. The first k subresultants of two polynomials p_1 and p_2, both with leading coefficient one, are zero when p_1 and p_2 have k common roots.
+]]]
+[[[
+https://mathworld.wolfram.com/GroebnerBasis.html
+===
+Gröbner Basis
+A Gröbner basis G for a system of polynomials A is an equivalence system that possesses useful properties, for example, that another polynomial f is a combination of those in A iff the remainder of f with respect to G is 0. (Here, the division algorithm requires an order of a certain type on the monomials.) Furthermore, the set of polynomials in a Gröbner basis have the same collection of roots as the original polynomials. For linear functions in any number of variables, a Gröbner basis is equivalent to Gaussian elimination.
+
+The algorithm for computing Gröbner bases is known as Buchberger's algorithm. Calculating a Gröbner basis is typically a very time-consuming process for large polynomial systems (Trott 2006, p. 37).
+
+Gröbner bases are pervasive in the construction of symbolic algebra algorithms, and Gröbner bases with respect to lexicographic order are very useful for solving equations and for elimination of variables. For example, the following Wolfram Language command solves for the onset of the period-4 bifurcation in parameter r the logistic map by eliminating the variables x_1, x_2, x_3, and x_4 from a set of five equations describing the system.
+
+  Factor /@ GroebnerBasis[
+    {
+      x2 - r x1(1 - x1),
+      x3 - r x2(1 - x2),
+      x4 - r x3(1 - x3),
+      x1 - r x4(1 - x4),
+      r^4(1 - 2x1)(1 - 2x2)(1 - 2x3)(1 - 2x4) + 1
+    },
+    r,
+    {x1, x2, x3, x4},
+    MonomialOrder -> EliminationOrder
+  ]
+Because computing a Gröbner basis can be so computationally expensive, variables can sometimes be eliminated more readily from a system of equations by manually computing the resultant of successive pairs of equations to iteratively eliminate one variable at each step.
+
+The determination of a Gröbner basis is very roughly analogous to computing an orthonormal basis from a set of basis vectors and can be described roughly as a combination of Gaussian elimination (for linear systems) and the Euclidean algorithm (for univariate polynomials over a field).
+
+The time and memory required to calculate a Gröbner basis depend very much on the variable ordering, monomial ordering, and on which variables are regarded as constants. Gröbner bases are used implicitly in many routines in the Wolfram Language, and can be called explicitly with the command GroebnerBasis[{poly1, poly2, ...}, {x1, x2, ...}].
+
+In the common case of computing a Gröbner basis to eliminate trigonometric functions from a system of equations, the Weierstrass substitution
+
+cost	=	(1-h^2)/(1+h^2)	
+(1)
+sint	=	(2h)/(1+h^2)	
+(2)
+where h=tan(t/2) can be (but are not always) preferable to using c=cost and s=sint with the additional equation c^2+s^2=1 because they reduce the number of variables (Trott 2006, p. 39).
+
+A bibliography about Gröbner bases is maintained by Buchberger and Zapletal.
+
+In the Season 4 opening episode "Trust Metric" (2007) of the television crime drama NUMB3RS, math genius Charlie Eppes mentions that he used Gröbner bases in an attempt to derive an equation describing friendship.
+
+SEE ALSO
+Buchberger's Algorithm, Commutative Algebra, Euclidean Algorithm, Gaussian Elimination, Gröbner Walk, Monomial, Orthonormal Basis
+]]]
+[[[
+===
+Subresultant of several univariate polynomials(2021)(Hong)(not been peer reviewed yet).pdf
+    good
+
+https://www.researchgate.net/publication/357526091_Subresultant_of_several_univariate_polynomials
+Subresultant of several univariate polynomials
+December 2021
+LicenseCC BY 4.0
+Authors:
+Hoon Hong
+Jing Yang
+Preprints and early-stage research may not have been peer reviewed yet.
+Download file PDF
+
+References (39)
+
+Abstract
+Subresultant of two univariate polynomials is a fundamental object in computational algebra and geometry with many applications (for instance, parametric GCD and parametric multiplicity of roots).
+In this paper, we generalize the theory of subresultants of two polynomials to arbitrary number of polynomials, resulting in multi-polynomial subresultants.
+Specifically,
+1. we propose a definition of multi-polynomial subresultants, which is an expression in terms of roots;
+2. we illustrate the usefulness of the proposed definition via the following two fundamental applications: - parametric GCD of multi-polynomials, and - parametric multiplicity of roots of a polynomial;
+3. we provide several expressions for the multi-polynomials subresultants in terms of coefficients, for computation.
+===
+===
+wget_U 'http://www.ub.edu/arcades/jan31.pdf' -O 'Resultants and Subresultants-Univariate vs Multivariate Case(after2005)(Andrea).pdf'
+  good
+  终于看到Subresultants的定义...
+  [homogeneous齐次多项式f(x,y),g(x,y)][deg f == m][deg g == n][0 <= j <= k <= min(m,n)]:
+      [scalar_subresultant(m,n;k,j;f(x,y),g(x,y)) =[def]= determinant(like-SylvesterMatrix{(m+n-2*k)-square-matrix}{前(n-k)行，用f系数；后(m-k)行使用g系数。每下降一行，系数不断向后平移}{但最后一列不同，最低为f的x**(m-j)*y**j(或g的x**(n-j)*y**j)的系数，每上升一行系数对应的项的x/y的指数加一})]
+      [subresultant(m,n;k;f(x),g(y)) =[def]= sum scalar_subresultant(m,n;k,j;f,g)*x**j*y**(k-j) {j :<- [0..=k]}]
+      [resultant(m,n;k;f(x),g(y)) == subresultant(m,n;0;f(x),g(y)) == scalar_subresultant(m,n;0,0;f(x),g(y))]
+      [[deg gcd(f,g) == k] <-> [[scalar_subresultant(m,n;k,k;f(x,y),g(x,y)) =!= 0][@[j :<- [0..<k]] -> [scalar_subresultant(m,n;j,j;f(x,y),g(x,y)) == 0]]]]
+      [gcd(f,g) == let [k := min{k :<- [0..=min(m,n)] | [scalar_subresultant(m,n;k,k;f(x,y),g(x,y)) =!= 0]}] in subresultant(m,n;k;f(x),g(y))]
+ub.edu
+http://www.ub.edu/arcades/jan31.pdf
+[PDF]Resultants and Subresultants: Univariate vs. Multivariate Case
+Moreover, the polynomial subresultants Sres_k(f;g) are determinant expressions for modified remainders in the Euclidean algorithm. In particular, for the first k such that S(k) k 6= 0, gcd(f;g) = Sres_k(f;g): The theory of resultants and subresultants of two univariate polynomials go back to Leibniz, Euler, Bezout and Jacobi.
+Carlos D’Andrea
+
+===
+===
+berkeley.edu
+wget_U 'https://people.eecs.berkeley.edu/~fateman/282/readings/collins.pdf' -O 'Subresultants and Reduced Polynomial Remainder Sequences(1967)(collins).pdf'
+
+
+===
+wget_U 'https://people.eecs.berkeley.edu/~fateman/282/readings/brown.pdf' -O 'Subresultant PRS Algorithm(1978)(brown).pdf'
+berkeley.edu
+https://people.eecs.berkeley.edu/~fateman/282/readings/brown.pdf
+[PDF]The Subresultant PRS Algorithm - University of California,…
+A possible alternative method of constructing a subresultant PRS is to evaluate all the subresultants directly from Sylvester's determinant via expansion by minors A complexity analysis is given m conclusion, along hnes pioneered by Gentleman and Johnson, showing that the subresultant PRS ...
+===
+===
+wget_U 'https://aszanto.math.ncsu.edu/Jouan_Revised.pdf' -O 'Multivariate subresultants using Jouanolou resultant(2007)(Szanto).pdf'
+ncsu.edu
+https://aszanto.math.ncsu.edu/Jouan_Revised.pdf
+[PDF]Multivariate subresultants using Jouanolou’s resultant…
+WebIn subsection 3.2 we de ne the subresultants as the ratios of two minors of the resultant matrices of Jouanolou. We prove that the subresultants are poly-nomials in the coe cients of the given polynomial system of the same de-gree as the subresultants constructed from Macaulay’s matrix. Furthermore,
+===
+===
+wget_U 'https://arxiv.org/pdf/0806.0488.pdf' -O 'Recursive Polynomial Remainder Sequence and the Nested Subresultants(2008)(Terui).pdf'
+
+https://arxiv.org/abs/0806.0488
+arXiv.org
+https://arxiv.org/pdf/0806.0488.pdf
+[PDF]Recursive Polynomial Remainder Sequence and theNested…
+We give two new expressions of subresultants, nested sub- resultant and reduced nested subresultant, for the recursive polynomial remainder sequence (PRS) which has been introduced by the author.
+
+
+[Submitted on 3 Jun 2008]
+Recursive Polynomial Remainder Sequence and the Nested Subresultants
+Akira Terui
+Download PDF
+We give two new expressions of subresultants, nested subresultant and reduced nested subresultant, for the recursive polynomial remainder sequence (PRS) which has been introduced by the author. The reduced nested subresultant reduces the size of the subresultant matrix drastically compared with the recursive subresultant proposed by the authors before, hence it is much more useful for investigation of the recursive PRS. Finally, we discuss usage of the reduced nested subresultant in approximate algebraic computation, which motivates the present work.
+Comments:	12 pages. Presented at CASC 2005 (Kalamata, Greece, Septermber 12-16, 2005
+===
+===
+Variants of Bezout Subresultants for Several Univariate Polynomials(2023)(Weidong).pdf
+
+https://www.researchgate.net/publication/369760288_Variants_of_Bezout_Subresultants_for_Several_Univariate_Polynomials
+Variants of Bezout Subresultants for Several Univariate Polynomials
+April 2023
+LicenseCC BY 4.0
+Authors:
+Weidong Wang
+Jing Yang
+Preprints and early-stage research may not have been peer reviewed yet.
+Download file PDF
+
+References (20)
+
+Abstract
+In this paper, we develop two variants of Bezout subresultants for several polynomials, i.e., hybrid Bezout subresultant and non-homogeneous Bezout subresultant. They are the extensions of the variants of Bezout subresultants for two polynomials to arbitrary number of polynomials. Experimental results show that the Bezout-type subresultants behave better than other known formulas when used to compute multi-polynomial subresultants, among which the non-homogeneous Bezout formula shows the best performance.
+ResearchGate Logo
+Discover the world's research
+
+25+ million members
+160+ million publication pages
+2.3+ billion citations
+Join for free
+
+Public Full-text 1
+
+Available via license: CC BY 4.0
+Content may be subject to copyright.
+Variants of B´ezout Subresultants for SeveralUnivariate PolynomialsWeidong Wang and Jing Yang∗HCIC–School of Mathematics and Physics,Center for Applied Mathematics of Guangxi,Guangxi Minzu University, Nanning 530006, ChinaAbstractIn this paper, we develop two variants of B´ezout subresultants for sev-eral polynomials, i.e., hybrid B´ezout subresultant and non-homogeneousB´ezout subresultant. They are the extensions of the variants of B´ezoutsubresultants for two polynomials to arbitrary number of polynomials.Experimental results show that the B´ezout-type subresultants behave bet-ter than other known formulas when used to compute multi-polynomialsubresultants, among which the non-homogeneous B´ezout formula showsthe best performance.1 IntroductionResultant and subresultant are the most important objects in resultant theorywhich has numerous applications (e.g., [1, 7, 14, 19, 20]). Due to their impor-tance, extensive research has been carried out both in theoretical and practicalaspects on resultants, subresultants and their variants [3,5, 6, 8, 11, 12,15,17,18].One of the essential topics in resultant theory is the representation of resul-tant and subresultants. Good representations with nice structures often bringlots of convenience for theoretical development and subsequent applications,among which determinental formulas for subresultants are a class of represen-tations with prominent merits especially in the developments of theory andeﬃcient algorithms. For this reason, people constructed various types of deter-minental formulas for subresultants since the concept was proposed, includingSylvester-type [16, 17], B´ezout-type [13], Barnett-type [4, 9], and so on [10].However, the classical subresultant is only deﬁned for two polynomials. In [12],Hong and Yang extended the concept of subresultant for two polynomials to themulti-polynomial case and gave three types of determinental formulas for the∗Corresponding author: yangjing0930@gmail.com1arXiv:2304.00262v1  [cs.SC]  1 Apr 2023
+
+Citations (0)
+
+References (20)
+
+Cylindrical Algebraic Decomposition I: The Basic Algorithm
+Article
+Full-text available
+Nov 1984
+Dennis S. ArnonGeorge E. Collins
+Scott Mccallum
+View
+Show abstract
+Subresultants and the Shape Lemma
+Article
+Apr 2023
+David A. CoxCarlos D’Andrea
+View
+Show abstract
+Subresultant Chains Using Bézout Matrices
+Chapter
+Jan 2022
+Mohammadali Asadi
+Alexander Brandt
+David J. JeffreyMarc Moreno Maza
+View
+Show abstract
+A condition for multiplicity structure of univariate polynomials
+Article
+Aug 2020
+Hoon HongJing Yang
+View
+Show abstract
+Partial cylindrical algebraic decomposition for quantifier elimination
+Article
+Jan 1998
+G.E. CollinsH. Hong
+View
+Subresultants in multiple roots: An extremal case
+Article
+Aug 2016LINEAR ALGEBRA APPL
+Carlos D'AndreaTeresa Krick
+Agnes SzantoMarcelo Valdettaro
+View
+Show abstract
+Subresultants with the Bézout Matrix
+Article
+Jan 2000
+Xiaorong Hou
+Dongming Wang
+View
+Show abstract
+On a Theory of the Syzygetic Relations of Two Rational Integral Functions, Comprising an Application to the Theory of Sturm's Functions, and That of the Greatest Algebraical Common Measure
+Article
+Jan 1853
+J. J. Sylvester
+View
+Show abstract
+Polynomials and Linear Control Systems
+Article
+Jan 1983
+Stephen Barnett
+View
+A new approach for constructing subresultants
+Article
+Dec 2006APPL MATH COMPUT
+Yong-Bin Li
+View
+Show abstract
+Show more
+Recommended publications
+Discover more about: Polynomials
+Conference Paper
+Complex Roots of Quaternion Polynomials
+July 2017
+Petroula Dospra
+Dimitrios Poulakis
+In this paper, using hybrid Bézout matrices, we give necessary and sufficient conditions, for a quaternion polynomial to have a complex root, a spherical root, and a complex isolated root. These conditions can be easily checked since these matrices are implemented in the computational system MAPLE. Moreover, we compute upper bounds for the norm of the roots of a quaternion polynomial.
+Read more
+Article
+Randomization, Sums of Squares, Near-Circuits, and Faster Real Root Counting May 31, 2011
+August 2012
+Osbert Bastani
+Christopher HillarDimitar Popov
+Joseph Maurice Rojas
+Suppose that f is a real univariate polynomial of degree D with exactly 4 monomial terms. We present a deterministic algorithm of complexity polynomial in log D that, for most inputs, counts the number of real roots of f . The best previous algorithms have complexity super-linear in D. We also discuss connections to sums of squares and A-discriminants, including explicit obstructions to ... [Show full abstract]Read more
+Preprint
+Full-text available
+Minimum of the Interpolating Polynomial with Applications in Cyclic Coordinate Descent
+May 2023
+Jan de Leeuw
+Given two vectors x and y of the same length n, the univariate interpolating polynomial p of degree n − 1 has p(x i) = y i. We give code in C and R to compute the minimum of this interpolating polynomial, which is useful in cyclic coordinate descent algorithms. Various applications in data analysis are discussed.
+View full-text
+Preprint
+Computing Igusa's local zeta function of univariates in deterministic polynomial-time
+June 2020
+Ashish Dwivedi
+Nitin Saxena
+Igusa's local zeta function $Z_{f,p}(s)$ is the generating function that counts the number of integral roots, $N_{k}(f)$, of $f(\mathbf x) \bmod p^k$, for all $k$. It is a famous result, in analytic number theory, that $Z_{f,p}$ is a rational function in $\mathbb{Q}(p^s)$. We give an elementary proof of this fact for a univariate polynomial $f$. Our proof is constructive as it gives a closed-form ... [Show full abstract]Read more
+Last Updated: 17 Apr 2023
+ResearchGate Logo
+
+Join for free
+Login
+App Store
+Get it on Google Play
+Company
+About us
+News
+Careers
+Support
+Help Center
+Business solutions
+Advertising
+Recruiting
+© 2008-2023 ResearchGate GmbH. All rights reserved.
+TermsPrivacyCopyrightImprint
+===
+===
+===
+]]]
+[[[
+===
+]]]
+[[[
+===
+]]]
+[[[
+===
+]]]
+[[[
+===
+]]]
+[[[
+===
+]]]
+[[[
+===
+]]]
+[[[
+===
+]]]
+
+
+
+
+
+
+
+
+

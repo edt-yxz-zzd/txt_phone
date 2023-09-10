@@ -1,0 +1,153 @@
+
+e others/数学/整数分解/整数幂方分解.txt
+view /sdcard/0my_files/book/math/factorint/snd/Detecting\ perfect\ powers\ in\ essentially\ linear\ time(1998)(Berstein).pdf
+  浮点数
+
+不喜欢浮点数
+用 中国剩余定理 吧
+
+perfect kth roots test
+  [x**t-n==0]
+  [t%(p-1)==1]:
+    [n =[%p]= x**t =[%p]= x]
+  但t小，n大，没有足够多的p，怎么办？
+  [x**t == n]
+  [x**(a*t) == n**a]
+  [(a*t)%(p-1)==1]:
+    [n**a =[%p]= x**(a*t) =[%p]= x]
+  [gcd(t,p-1) == 1]:
+    [pow(n%p, inv_mod_(p-1;t%(p-1)),p) =[%p]= x**(a*t) =[%p]= x]
+    中国剩余定理
+
+
+from seed.math.factor_pint_into_strong_pseudoprimes_by_quadratic_sieve_ import factor_pint_as_pefect_power_, detect_pefect_kth_root_
+  将它移出，独立
+e ../../python3_src/seed/math/factor_pint_as_pefect_power_.py
+from seed.math.factor_pint_as_pefect_power_ import factor_pint_as_pefect_power_
+
+
+
+[[
+CRT-ver-factor_pint_as_pefect_power_:
+    O(lbN**3/lblbN)
+        lbN**3 come from:
+            apply_raw_CRT__inc::num_ps4rt<k>**3
+
+    CRT-ver little better than floor_kth_root_-ver which gives:O(lbN**3)
+        CRT-ver:
+            [total k == O(lbN/lb_max_p/lblbN) == O(lbN/lblbN**2)]
+                #since trial_division enlarge min prime factor(k-th root) of n
+
+        floor_kth_root_-ver:
+            [total k == O(lbN/lblbN)]
+                # since k is prime
+            per k:O(lbN**2 *lblbN)
+            total:O(lbN**3)
+
+CRT-ver-detect_pefect_kth_root_:
+    O(lbN**3 *(k///odd4k)/k**3 +lbN**2)
+    CRT-ver worse than floor_kth_root_-ver which gives: O(lbN**2 *lblbN)
+
+]]
+
+
+
+算法大纲:
+input:
+    n
+output:
+    (t, rt){[rt**t == n]}
+# [n >= 3][n%2==1]:
+[n >= 2]:
+    [lb_n := floor_log2(n)]
+    [2**lb_n <= n < 2**(lb_n+1)]
+    [t :<- PRIMES][3 <= t <= lb_n]:
+        # t_SHOULD_BE_odd:goto
+        [2**(lb_n/t) <= n**(1/t) < 2**((lb_n+1)/t)]
+        [rt == n**(1/t)]:
+            [(lb_n/t) <= log2(rt) < ((lb_n+1)/t)]
+            [floor(lb_n/t) <= floor_log2(rt) < ceil((lb_n+1)/t)]
+            [(lb_n//t) <= floor_log2(rt) < (lb_n//t +1)]
+            [floor_log2(rt) == (lb_n//t)]
+        [lb_rt := (lb_n//t)]
+        * [lb_rt < LOW_BOUND4lb_rt]:
+           [_rt :<- [2**lb_rt..<2*2**lb_rt]]:
+              ...try factorout [n == _rt**e * uuu]...
+              ... if e%t =!=0: t fail; next t...
+          ...if all _rt is not rt, then t fail; next t...
+
+        * [lb_rt >= LOW_BOUND4lb_rt]:
+            ...call main_routine(n, lb_n, t, lb_rt)...
+main_routine(n, lb_n, t, lb_rt) =[def]=:
+[n >= 2][lb_n := floor_log2(n)][t :<- PRIMES][2 <= t <= lb_n][lb_rt := (lb_n//t)][lb_rt >= LOW_BOUND4lb_rt]:
+    [acc_num_bits := 0]
+    [acc_num_bits4good := 0]
+    [bad_p2rts := {}]
+    [good_p2rt := {}]
+    [partial_rt := 0]
+    [partial_M := 1]
+    [p :<- PRIMES][not$ [acc_num_bits > lb_n][acc_num_bits4good > lb_rt]]:
+      * [n%p == 0]:
+          ...try factorout [n == p**e * uuu]...
+          ... if e%t =!=0: t fail; next t...
+          ... otherwise reduce n, recur call(n///p**e); update result...
+      * [n%p =!= 0]:
+        #bug:let q :=> [q :<- PRIMES][2 <= q < p][is_primitive_root_mod_(p;q)]
+            #here require [p=!=2]
+            #给定素数p，p最小 的 本原根 不一定是 素数
+            # [is_least_primitive_root_mod_(41;6)]
+        let gr :=> [gr :<- [1..<p][is_primitive_root_mod_(p;gr)]
+        [gc := gcd(t,p-1)]
+        [acc_num_bits :+= floor_log2(p)]
+        [i2pows := [gr**i %p | [i :<- [0..<p-1]]]]
+        # !! [n%p =!= 0]
+        [idx4n := i2pows.index(n%p)]
+
+        * [gcd(t,p-1) =!= 1]:
+            # t_SHOULD_BE_odd:here
+            * [idx4n%gc =!= 0]:
+                ...t fail; next t...
+            * [idx4n%gc == 0]:
+                [M := (p-1)///gc]
+                # [rt**t =[%p]= n]
+                # [(gr**idx4rt)**t =[%p]= (gr**idx4n)]
+                # [idx4rt*t =[%(p-1)]= (idx4n)]
+                # [idx4rt*(t///gc) =[%((p-1)///gc)]= (idx4n///gc)]
+                # [idx4rt =[%M]= inv_mod_(M; t///gc)*(idx4n///gc)]
+                # [idx4rt =[%p]= inv_mod_(M; t///gc)*(idx4n///gc) %M +k*M]
+                [idx4rt__M := inv_mod_(M; t///gc) *(idx4n///gc)  %M]
+                [idc4rt__p := [(idx4rt__M + k*M) | [k :<- [0..<gc]]]]
+                [rts__p := {i2pows[i] | [i :<- idc4rt__p]}]
+                #save:
+                [bad_p2rts[p] := rts__p]
+        * [gcd(t,p-1) == 1]:
+            [inv_t := inv_mod_(p-1;t)]
+            # [rt**t =[%p]= n]
+            # [rt**(t*inv_t) =[%p]= n**inv_t]
+            # [rt**((t*inv_t)%(p-1)) =[%p]= n**inv_t]
+            # [rt =[%p]= n**inv_t]
+            # [rt =[%p]= (gr**idx4n)**inv_t]
+            # [rt =[%p]= gr**(idx4n*inv_t%(p-1))]
+            [idx4rt__p := (idx4n*inv_t%(p-1))]
+            [rt__p := i2pows[idx4rt__p]]
+            * [acc_num_bits4good > lb_rt]:
+                #test
+                ...if [partial_rt%p =!= rt__p], then t fail, next t...
+            * [acc_num_bits4good <= lb_rt]:
+                  #update partial result
+                  [(partial_M,partial_rt) := Chinese_Remainder_Theorem((partial_M,partial_rt), (rt__p,p))]
+            #save:
+            # [good_p2rt[p] := rt__p]
+            [acc_num_bits4good :+= floor_log2(p)]
+
+        * [acc_num_bits4good > lb_rt]:
+            #test:
+            ...if [?[(p,rts__p) :<- bad_p2rts.items()] -> [partial_rt%p <- rts__p]], then t fail, next t...
+            ...otherwise clear bad_p2rts...
+        * [acc_num_bits4good <= lb_rt]:
+            pass
+    [[acc_num_bits > lb_n][acc_num_bits4good > lb_rt]]:
+        [rt := partial_rt]
+        ...since all test pass, rt must be t-th root, return (t, rt)...
+
+

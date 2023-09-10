@@ -1,0 +1,1389 @@
+
+e others/数学/整数分解/sparse-matrix.txt
+view others/数学/整数分解/Quadratic-Sieve-Method.txt
+
+
+
+
+The Compressed Sparse Row (CSR) format represents a sparse matrix using three arrays, which we denote by data, indices, and indptr.
+
+def get_item4CSR(data, indices, indptr; irow, icol):
+    begin4irow = indptr[irow]
+    end4irow = indptr[irow+1]
+    icols6irow = indices[begin4irow:end4irow]
+
+    imay_idata = bisearch(indices, begin4irow, end4irow; icol)
+    if imay_idata == -1:
+        return 0
+    idata = imay_idata
+    assert begin4irow <= idata < end4irow
+    assert indices[idata] == icol
+    return data[idata]
+
+
+
+
+sparse matrix gaussian elimination
+
+/sdcard/0my_files/book/math/matrix/Gaussian Elimination for Sparse Matrices(2013)(parnum)[good].pdf
+[[[
+wget_U 'https://www5.in.tum.de/lehre/vorlesungen/parnum/WS13/vorlesung/20131210-parnum.pdf' -O 'Gaussian Elimination for Sparse Matrices(2013)(parnum).pdf'
+===
+Die Technische Universität München
+https://www5.in.tum.de/lehre/vorlesungen/parnum/WS13/vorlesung/...
+[PDF]4.4. Gaussian Elimination for Sparse Matrices - TUM
+Gaussian Elimination for Sparse Matrices 4.4.1. Algebraic Pivoting in GE Numerical pivoting: for eliminating elements in column k choose large(st) entry in column/row/block k and permute this element on the diagonal position. Disadvantage: may lead to large fill in in the sparsity pattern of A.
+
+]]]
+[[[
+wget_U 'https://courses.csail.mit.edu/18.337/2005/book/Lecture_05-Sparse_Linear_Algebra.pdf' -O 'Sparse Linear Algebra(2005)().pdf'
+===
+courses.csail.mit.edu
+https://courses.csail.mit.edu/18.337/2005/book/Lecture_05-Sparse...
+[PDF]Sparse Linear Algebra - Massachusetts Institute of Technology
+5.2.1 LU Decomposition and Gaussian Elimination The basis of direct methods for linear system is Gaussian Elimination, a process where we zero out certain entry of the original matrix in a systematically way. Assume we want to solve Ax = b where A is a sparse n n symmetric positive de nite matrix. The basic idea of the direct method is to
+]]]
+[[[
+wget_U 'https://www-users.cselabs.umn.edu/classes/Spring-2019/csci8314/FILES/LecN6.pdf' -O 'SPARSE GAUSSIAN ELIMINATION (introduction)(2019)().pdf'
+===
+umn.edu
+https://www-users.cselabs.umn.edu/classes/Spring-2019/csci8314/...
+[PDF]SPARSE GAUSSIAN ELIMINATION (introduction) - University of…
+Webä Direct methods : based on sparse Gaussian eimination, sparse Cholesky,.. ä Iterative methods: compute a sequence of iterates which converge to the solution - preconditioned Krylov methods.. ä Special purpose methods: Multigrid, Fast-Poisson solvers, ... Remark: The rst 2 classes of methods have always been in competition.
+]]]
+[[[
+===
+]]]
+[[[
+===
+]]]
+[[[
+===
+]]]
+
+[[[
+https://eng.libretexts.org/Bookshelves/Mechanical_Engineering/Math_Numerics_and_Programming_(for_Mechanical_Engineers)/05%3A_Unit_V_-_(Numerical)_Linear_Algebra_2_-_Solution_of_Linear_Systems/27%3A_Gaussian_Elimination_-_Sparse_Matrices
+===
+27: Gaussian Elimination - Sparse Matrices
+CCBYNCSA
+26.5: Tridiagonal Systems
+27.1: Banded Matrices
+ 
+Masayuki Yano, James Douglass Penn, George Konidaris, & Anthony T Patera
+Massachusetts Institute of Technology via MIT OpenCourseWare
+In the previous chapter, we observed that the number of floating point operations required to solve a  n×n  tridiagonal system scales as  O(n)  whereas that for a general (dense)  n×n  system scales as  O(n3) . We achieved this significant reduction in operation count by taking advantage of the sparsity of the matrix. In this chapter, we will consider solution of more general sparse linear systems.
+
+27.1: Banded Matrices
+27.2: Matrix-Vector Multiplications
+27.3: Gaussian Elimination and Back Substitution
+27.4: Fill-in and Reordering
+27.5: The Evil Inverse
+This page titled 27: Gaussian Elimination - Sparse Matrices is shared under a CC BY-NC-SA 4.0 license and was authored, remixed, and/or curated by Masayuki Yano, James Douglass Penn, George Konidaris, & Anthony T Patera (MIT OpenCourseWare) via source content that was edited to the style and standards of the LibreTexts platform; a detailed edit history is available upon request.
+
+ 
+26.5: Tridiagonal Systems 27.1: Banded Matrices
+]]]
+
+[[[
+https://eng.libretexts.org/Bookshelves/Mechanical_Engineering/Math_Numerics_and_Programming_(for_Mechanical_Engineers)/05%3A_Unit_V_-_(Numerical)_Linear_Algebra_2_-_Solution_of_Linear_Systems/27%3A_Gaussian_Elimination_-_Sparse_Matrices/27.01%3A_Banded_Matrices
+===
+27.1: Banded Matrices
+CCBYNCSA
+27: Gaussian Elimination - Sparse Matrices
+27.2: Matrix-Vector Multiplications
+ 
+Masayuki Yano, James Douglass Penn, George Konidaris, & Anthony T Patera
+Massachusetts Institute of Technology via MIT OpenCourseWare
+Table of contents
+mb=1 
+mb=2 
+A class of sparse matrices that often arise in engineering practice - especially in continuum mechanics - is the banded matrix. An example of banded matrix is shown in Figure 27.1. As the figure shows, the nonzero entries of a banded matrix is confined to within  mb  entries of the main diagonal. More precisely,
+Aij=0, for j>i+mb or j<i−mb,(27.1.1)
+and  A  may take on any value within the band (including zero). The variable  mb  is referred to as the bandwidth. Note that the number of nonzero entries in a  n×n  banded matrix with a bandwidth  mb  is less than  n(2mb+1) .
+
+Let us consider a few different types of banded matrices.
+
+Screen Shot 2022-03-28 at 11.50.54 AM.png
+Figure 27.1: A banded matrix with bandwidth  mb .
+Screen Shot 2022-03-28 at 11.51.23 AM.png
+Figure 27.2: A spring-mass system whose equilibrium state calculation gives rise to a pentadiagonal matrix.
+Example 27.1.1 Tridiagonal matrix:  mb=1 
+As we have discussed in the previous two chapters, tridiagonal matrices have nonzero entries only along the main diagonal, sub-diagonal, and super-diagonal. Pictorially, a tridiagonal matrix takes the following form:
+
+Screen Shot 2022-03-28 at 11.52.20 AM.png
+
+Clearly the bandwidth of a tridiagonal matrix is  mb=1 . A  n×n  tridiagonal matrix arise from, for example, computing the equilibrium displacement of  n  masses connected by springs, as we have seen in previous chapters.
+
+Example 27.1.2 Pentadiagonal matrix:  mb=2 
+As the name suggests, a pentadiagonal matrix is characterized by having nonzero entries along the main diagonal and the two diagonals above and below it, for the total of five diagonals. Pictorially, a pentadigonal matrix takes the following form:
+
+Screen Shot 2022-03-28 at 11.53.12 AM.png
+Figure  27.2–––– .
+Example 27.1.3 "Outrigger" matrix
+Another important type of banded matrix is a matrix whose zero entries are confined to within the  mb  band of the main diagonal but for which a large number of entries between the main diagonal and the most outer band is zero. We will refer to such a matrix as "outrigger." An example of such a matrix is
+
+Screen Shot 2022-03-28 at 11.54.27 AM.png
+
+In this example, there are five nonzero diagonal bands, but the two outer bands are located far from the middle three bands. The bandwidth of the matrix,  mb , is specified by the location of the outer diagonals. (Note that this is not a pentadiagonal matrix since the nonzero entries are not confined to within  mb=2 .) "Outrigger" matrices often arise from finite difference (or finite element) discretization of partial differential equations in two or higher dimensions.
+
+This page titled 27.1: Banded Matrices is shared under a CC BY-NC-SA 4.0 license and was authored, remixed, and/or curated by Masayuki Yano, James Douglass Penn, George Konidaris, & Anthony T Patera (MIT OpenCourseWare) via source content that was edited to the style and standards of the LibreTexts platform; a detailed edit history is available upon request.
+
+Back to top
+ 
+27: Gaussian Elimination - Sparse Matrices 27.2: Matrix-Vector Multiplications
+]]]
+
+[[[
+https://eng.libretexts.org/Bookshelves/Mechanical_Engineering/Math_Numerics_and_Programming_(for_Mechanical_Engineers)/05%3A_Unit_V_-_(Numerical)_Linear_Algebra_2_-_Solution_of_Linear_Systems/27%3A_Gaussian_Elimination_-_Sparse_Matrices/27.02%3A_Matrix-Vector_Multiplications
+===
+27.2: Matrix-Vector Multiplications
+CCBYNCSA
+27.1: Banded Matrices
+27.3: Gaussian Elimination and Back Substitution
+ 
+Masayuki Yano, James Douglass Penn, George Konidaris, & Anthony T Patera
+Massachusetts Institute of Technology via MIT OpenCourseWare
+Table of contents
+To introduce the concept of sparse operations, let us first consider multiplication of a  n×n  sparse matrix with a (dense)  n -vector. Recall that matrix-vector multiplication may be interpreted rowwise or column-wise. In row-wise interpretation, we consider the task of computing  w=Av  as performing  n  inner products, one for each entry of  w , i.e.
+wi=(Ai1Ai2…Ain)⎛⎝⎜⎜⎜⎜v1v2⋮vn⎞⎠⎟⎟⎟⎟,i=1,…,n(27.2.1)
+If the matrix  A  is dense, the  n  inner products of  n -vectors requires  n⋅(2n)=2n2  FLOPs. However, if the matrix  A  is sparse, then each row of  A  contains few nonzero entries; thus, we may skip a large number of trivial multiplications in our inner products. In particular, the operation count for the inner product of a sparse  n -vector with a dense  n -vector is equal to twice the number of nonzero entries in the sparse vector. Thus, the operation count for the entire matrix-vector multiplication is equal to twice the number of nonzero entries in the matrix, i.e.  2⋅nnz(A) , where  nnz(A)  is the number of nonzero entries in  A . This agrees with our intuition because the matrix-vector product requires simply visiting each nonzero entry of  A , identifying the appropriate multiplier in  v  based on the column index, and adding the product to the appropriate entry of  w  based on the row index.
+
+Now let us consider a column interpretation of matrix-vector multiplication. In this case, we interpret  w=Av  as
+⎛⎝⎜⎜⎜⎜w1w2⋮wn⎞⎠⎟⎟⎟⎟=v1⎛⎝⎜⎜⎜⎜A11A21⋮An1⎞⎠⎟⎟⎟⎟+v2⎛⎝⎜⎜⎜⎜A12A22⋮An2⎞⎠⎟⎟⎟⎟+⋯+vn⎛⎝⎜⎜⎜⎜A1nA2n⋮Ann⎞⎠⎟⎟⎟⎟.(27.2.2)
+If  A  is sparse then, each column of  A  contains few nonzero entries. Thus, for each column we simply need to scale these few nonzero entries by the appropriate entry of  v  and augment the corresponding entries of  w ; the operation count is twice the number of nonzero entries in the column. Repeating the operation for all columns of  A , the operation count for the entire matrix-vector multiplication is again  2⋅nnz(A) .
+
+Because the number of nonzero entries in a sparse matrix is (by definition)  O(n) , the operation count for sparse matrix-vector product is  2⋅nnz(A)∼O(n) . For example, for a banded matrix with a bandwidth  mb , the operation count is at most  2n(2mb+1) . Thus, we achieve a significant reduction in the operation count compared to dense matrix-vector multiplication, which requires  2n2  operations.
+
+This page titled 27.2: Matrix-Vector Multiplications is shared under a CC BY-NC-SA 4.0 license and was authored, remixed, and/or curated by Masayuki Yano, James Douglass Penn, George Konidaris, & Anthony T Patera (MIT OpenCourseWare) via source content that was edited to the style and standards of the LibreTexts platform; a detailed edit history is available upon request.
+
+Back to top
+ 
+27.1: Banded Matrices 27.3: Gaussian Elimination and Back Substitution
+]]]
+
+[[[
+https://eng.libretexts.org/Bookshelves/Mechanical_Engineering/Math_Numerics_and_Programming_(for_Mechanical_Engineers)/05%3A_Unit_V_-_(Numerical)_Linear_Algebra_2_-_Solution_of_Linear_Systems/27%3A_Gaussian_Elimination_-_Sparse_Matrices/27.03%3A_Gaussian_Elimination_and_Back_Substitution
+===
+27.3: Gaussian Elimination and Back Substitution
+CCBYNCSA
+27.2: Matrix-Vector Multiplications
+27.4: Fill-in and Reordering
+ 
+Masayuki Yano, James Douglass Penn, George Konidaris, & Anthony T Patera
+Massachusetts Institute of Technology via MIT OpenCourseWare
+Table of contents
+Gaussian Elimination
+We now consider the operation count associated with solving a sparse linear system  Au=f  using Gaussian elimination and back substitution introduced in the previous chapter. Recall that the Gaussian elimination is a process of turning a linear system into an upper triangular system, i.e.
+STEP1:Au=f→U(n×n) upper  triangular u=f^(27.3.1)
+For a  n×n  dense matrix, Gaussian elimination requires approximately  23n3FLOPsS .
+
+Densely-Populated Banded Systems
+Now, let us consider a  n×n  banded matrix with a bandwidth  mb . To analyze the worst case, we assume that all entries within the band are nonzero. In the first step of Gaussian elimination, we identify the first row as the "pivot row" and eliminate the first entry (column 1) of the first  mb  rows by adding appropriately scaled pivot row; column 1 of rows  mb+2,…,n  are already zero. Elimination of column 1 of a given row requires addition of scaled  mb+1  entries of the pivot row, which requires  2(mb+1)  operations. Applying the operation to  mb  rows, the operation count for the first step is approximately  2(mb+1)2 . Note that because the nonzero entries of the pivot row is confined to the first  mb+1  entries, addition of the scaled pivot row to the first  mb+1  rows does not increase the bandwidth of the system (since these rows already have nonzero entries in these columns). In particular, the sparsity pattern of the upper part of  A  is unaltered in the process.
+
+The second step of Gaussian elimination may be interpreted as applying the first step of Gaussian elimination to  (n−1)×(n−1)  submatrix, which itself is a banded matrix with a bandwidth  mb  (as the first step does not alter the bandwidth of the matrix). Thus, the second elimination step also requires approximately  2(mb+1)2  FLOPs. Repeating the operation for all  n  pivots of the matrix, the total operation count for Gaussian elimination is approximately  2n(mb+1)2∼O(n) . The final upper triangular matrix  U  takes the following form:
+
+Screen Shot 2022-03-28 at 11.56.58 AM.png
+
+The upper triangular matrix has approximately  n(mb+1)∼O(n)  nonzero entries. Both the operation count and the number of nonzero in the final upper triangular matrix are  O(n) , compared to  O(n3)  operations and  O(n2)  entries for a dense system. (We assume here  mb  is fixed independent of  n .)
+
+In particular, as discussed in the previous chapter, Gaussian elimination of a tridiagonal matrix yields an upper bidiagonal matrix
+U=(_main, main +1 diagonals 0(27.3.2)
+in approximately  5n  operations (including the formation of the modified right-hand side  f^  ). Similarly, Gaussian elimination of a pentadiagonal system results in an upper triangular matrix of the form
+U=(0main, main +1,+2 diagonals (27.3.3)
+and requires approximately  14n  operations.
+
+"Outrigger" Systems: Fill-Ins
+Now let us consider application of Gaussian elimination to an "outrigger" system. First, because a  n×n  "outrigger" system with a bandwidth  mb  is a special case of a "densely-populated banded" system with a bandwidth  mb  considered above, we know that the operation count for Gaussian elimination is at most  n(mb+1)2  and the number of nonzero in the upper triangular matrix is at most  n(mb+1) . In addition, due to a large number of zero entries between the outer bands of the matrix, we hope that the operation count and the number of nonzero are less than those for the "densely-populated banded" case. Unfortunately, inspection of the Gaussian elimination procedure reveals that this reduction in the cost and storage is not achieved in general.
+
+The inability to reduce the operation count is due to the introduction of "fill-ins": the entries of the sparse matrix that are originally zero but becomes nonzero in the Gaussian elimination process. The introduction of fill-ins is best described graphically. Figure  27.3––––  shows a sequence of matrices generated through Gaussian elimination of a  25×25  outrigger system. In the subsequent figures, we color code entries of partially processed  U  : the shaded area represents rows or columns of pivots already processed; the unshaded area represents the rows and columns of pivots not yet processed; the blue represent initial nonzeros in  A  which remain nonzeros in  U -to-be; and the red are initial zeros of  A  which become nonzero in  U -to-be, i.e. fill-ins.
+
+As Figure 27.3(a) shows, the bandwidth of the original matrix is  mb=5 . (The values of the entries are hidden in the figure as they are not important in this discussion of fill-ins.) In the first elimination step, we first eliminate column 1 of row 2 by adding an appropriately scaled row 1 to the row. While we succeed in eliminating column 1 of row 2 , note that we introduce a nonzero element in column 6 of row 2 as column 6 of row 1 "falls" to row 2 in the elimination process. This nonzero element is called a "fill-in." Similarly, in eliminating column 1 of row 6 , we introduce a "fill-in" in column 2 as column 2 of row 1 "falls" to row 6 in the elimination process. Thus, we have introduced two fill-ins in this first elimination step as shown in Figure 27.3(b): one in the upper part and another in the lower part.
+
+Now, consider the second step of elimination starting from Figure 27.3(b). We first eliminate column 2 of row 3 by adding appropriately scaled row 2 to row 3 . This time, we introduce fill in not only from column 7 of row 2 "falling" to row 3, but also from column 6 of row 2 "falling" to row 3. Note that the latter is in fact a fill-in introduced in the first step. In general, once a fill-in is introduced in the upper part, the fill-in propagates from one step to the next, introducing further fill-ins as it "falls" through. Next, we need to eliminate column 2 of row 6 ; this entry was zero in the original matrix but was filled in the first elimination step. Thus, fill-in introduced in the lower part increases the number of rows whose leading entry must be eliminated in the upper-triangulation process. The matrix after the second step is shown in Figure 27.3(c). Note that the number of fill-in continue to increase, and we begin to lose the zero entries between the outer bands of the outrigger system.
+
+As shown in Figure  27.3(e)––––––– , by the beginning of the fifth elimination step, the "outrigger"
+
+Screen Shot 2022-03-28 at 11.58.14 AM.png
+
+(a) original system  A 
+
+Screen Shot 2022-03-28 at 11.58.21 AM.png
+
+(b) beginning of step  2,U~(k=1) 
+
+Screen Shot 2022-03-28 at 11.58.28 AM.png
+
+(c) beginning of step  3,U~(k=2) 
+
+Screen Shot 2022-03-28 at 11.58.38 AM.png
+
+(d) beginning of step  4,U~(k=3) 
+
+Screen Shot 2022-03-28 at 11.58.45 AM.png
+
+(e) beginning of step  5,U~(k=4) 
+
+Screen Shot 2022-03-28 at 11.58.50 AM.png
+
+(f) beginning of step  15,U~(k=14) 
+
+Figure 27.3: Illustration of Gaussian elimination applied to a  25×25  "outrigger" system. The blue entries are the entries present in the original system, and the red entries are "fill-in" introduced in the factorization process. The pivot for each step is marked by a red square.
+
+system has largely lost its sparse structure in the leading  (mb+1)×(mb+1)  subblock of the working submatrix. Thus, for the subsequent  n−mb  steps of Gaussian elimination, each step takes  2m2b  FLOPs, which is approximately the same number of operations as the densely-populated banded case. Thus, the total number of operations required for Gaussian elimination of an outrigger system is approximately  2n(mb+1)2 , the same as the densely-populated banded case. The final matrix takes the form:
+
+Screen Shot 2022-03-28 at 12.01.01 PM.png
+
+Note that the number of nonzero entries is approximately  n(mb+1) , which is much larger than the number of nonzero entries in the original "outrigger" system.
+
+The "outrigger" system, such as the one considered above, naturally arise when a partial differential equation (PDE) is discretized in two or higher dimensions using a finite difference or finite element formulation. An example of such a PDE is the heat equation, describing, for example, the equilibrium temperature of a thermal system shown in Figure  27.4 . With a natural ordering of the degrees of freedom of the discretized system, the bandwidth  mb  is equal to the number of grid points in one coordinate direction, and the number of degrees of freedom of the linear system is  n=m2b  (i.e. product of the number of grid points in two coordinate directions). In other words, the bandwidth is the square root of the matrix size, i.e.  mb=n1/2 . Due to the outrigger structure of the resulting system, factorizing the system requires approximately  n(mb+1)2≈n2  FLOPs. This is in contrast to one-dimensional case, which yields a tridiagonal system, which can be solved in  O(n)  operations. In fact, in three dimensions, the bandwidth is equal to the product of the number of grid points in two coordinate directions, i.e.  mb=(n1/3)2=n2/3 . The number of operations required for factorization is  n(mb+1)2≈n7/3 . Thus, the cost of solving a PDE is significantly higher in three dimensions than in one dimension even if both discretized systems had the same number of unknowns.  − 
+
+Back Substitution
+Having analyzed the operation count for Gaussian elimination, let us inspect the operation count for back substitution. First, recall that back substitution is a process of finding the solution of an upper triangular system, i.e.
+ STEP 2: Uu=f^→u.(27.3.4)
+Furthermore, recall that the operation count for back substitution is equal to twice the number of nonzero entries in  U . Because the matrix  U  is unaltered, we can simply count the number of
+
+1  Not unknowns per dimension, but the total number of unknowns.
+
+Screen Shot 2022-03-28 at 12.03.02 PM.png
+Figure 27.4: Heat equation in two dimensions. Discretization of the equation by finite difference (FD) or finite element (FE) method yields an "outrigger" system.
+nonzero entries in the  U  that we obtain after Gaussian elimination; there is nothing equivalent to "fill-in" - modifications to the matrix that increases the number of entries in the matrix and hence the operation count - in back substitution.
+
+Densely-Populated Banded Systems
+For a densely-populated banded system with a bandwidth  mb , the number of unknowns in the factorized matrix  U  is approximately equal to  n(mb+1) . Thus, back substitution requires approximately  2n(mb+1)  FLOPs. In particular, back substitution for a tridiagonal system (which yields an upper bidiagonal  U  ) requires approximately  3n  FLOPs. A pentadiagonal system requires approximately  5n  FLOPs.
+
+"Outrigger"
+As discussed above, a  n×n  outrigger matrix of bandwidth  mb  produces an upper triangular matrix  U  whose entries between the main diagonal and the outer band are nonzero due to fill-ins. Thus, the number of nonzeros in  U  is approximately  n(mb+1) , and the operation count for back substitution is approximately  2n(mb+1) . (Note in particular that even if an outrigger system only have five bands (as in the one shown in Figure  27.3  ), the number of operations for back substitution is  2n(mb+1)  and not  5n .  ) 
+
+This page titled 27.3: Gaussian Elimination and Back Substitution is shared under a CC BY-NC-SA 4.0 license and was authored, remixed, and/or curated by Masayuki Yano, James Douglass Penn, George Konidaris, & Anthony T Patera (MIT OpenCourseWare) via source content that was edited to the style and standards of the LibreTexts platform; a detailed edit history is available upon request.
+
+Back to top
+ 
+27.2: Matrix-Vector Multiplications 27.4: Fill-in and Reordering
+]]]
+
+[[[
+https://eng.libretexts.org/Bookshelves/Mechanical_Engineering/Math_Numerics_and_Programming_(for_Mechanical_Engineers)/05%3A_Unit_V_-_(Numerical)_Linear_Algebra_2_-_Solution_of_Linear_Systems/27%3A_Gaussian_Elimination_-_Sparse_Matrices/27.04%3A_Fill-in_and_Reordering
+===
+27.4: Fill-in and Reordering
+CCBYNCSA
+27.3: Gaussian Elimination and Back Substitution
+27.5: The Evil Inverse
+ 
+Masayuki Yano, James Douglass Penn, George Konidaris, & Anthony T Patera
+Massachusetts Institute of Technology via MIT OpenCourseWare
+Table of contents
+Begin Advanced Material
+The previous section focused on the computational cost of solving a linear system governed by banded sparse matrices. This section introduces a few additional sparse matrices and also discussed additional concepts on Gaussian elimination for sparse systems.
+
+Cyclic System
+First, let us show that a small change in a physical system - and hence the corresponding linear system  A  - can make a large difference in the sparsity pattern of the factored matrix  U . Here, we consider a modified version of  n -mass mass-spring system, where the first mass is connected to the last mass, as shown in Figure 27.5. We will refer to this system as a "cyclic" system, as the springs form a circle. Recall that a spring-mass system without the extra connection yields a tridiagonal system. With the extra connection between the first and the last mass, now the  (1,n)  entry and  (n,1)  entry of the matrix are nonzero as shown in Figure  27.6(a)  (for  n=25  ); clearly, the matrix
+
+Screen Shot 2022-03-28 at 12.06.14 PM.png
+Figure 27.5: "Cyclic" spring-mass system with  n=6  masses.
+Screen Shot 2022-03-28 at 12.06.27 PM.png
+
+(a) original matrix  A 
+
+Screen Shot 2022-03-28 at 12.06.41 PM.png
+
+(b) beginning of step 5
+
+Screen Shot 2022-03-28 at 12.06.46 PM.png
+
+(c) final matrix  U 
+
+Figure 27.6: Illustration of Gaussian elimination applied to a  25×25  "arrow" system. The red entries are "fill-in" introduced in the factorization process. The pivot for each step is marked by a red square.
+
+is no longer tridiagonal. In fact, if apply our standard classification for banded matrices, the cyclic matrix would be characterized by its bandwidth of  mb=n−1 .
+
+Applying Gaussian elimination to the "cyclic" system, we immediately recognize that the  (1,n)  entry of the original matrix "falls" along the last column, creating  n−2  fill-ins (see Figures  27.6( b)  and  27.6(c)) . In addition, the original  (n,1)  entry also creates a nonzero entry on the bottom row, which moves across the matrix with the pivot as the matrix is factorized. As a result, the operation count for the factorization of the "cyclic" system is in fact similar to that of a pentadiagonal system: approximately  14n  FLOPs. Applying back substitution to the factored matrix - which contains approximately  3n  nonzeros - require  5n  FLOPs. Thus, solution of the cyclic system - which has just two more nonzero entries than the tridiagonal system - requires more than twice the operations  (19n  vs.  8n) . However, it is also important to note that this  O(n)  operation count is a significant improvement compared to the  O(n(mb+1)2)=O(n3)  operation estimate based on classifying the system as a standard "outrigger" with a bandwidth  mb=n−1 .
+
+We note that the fill-in structure of  U  takes the form of a skyline defined by the envelope of the columns of the original matrix  A . This is a general principal.
+
+Reordering
+In constructing a linear system corresponding to our spring-mass system, we associated the  jth   entry of the solution vector - and hence the  jth   column of the matrix - with the displacement of the  jth   mass (counting from the wall) and associated the  ith   equation with the force equilibrium condition
+
+Screen Shot 2022-03-28 at 12.09.07 PM.png
+
+(a)  A  (natural,  nnz(A)=460) 
+
+Screen Shot 2022-03-28 at 12.09.17 PM.png
+
+(b)  U  (natural,  nnz(U)=1009  )
+
+Screen Shot 2022-03-28 at 12.09.26 PM.png
+
+(c)  A′(AMD,nnz(A′)=460) 
+
+Screen Shot 2022-03-28 at 12.09.40 PM.png
+
+(d)  U′(AMD,nnz(U′)=657) 
+
+Figure 27.7: Comparison of the sparsity pattern and Gaussian elimination fill-ins for a  n=100  "outrigger" system resulting from natural ordering and an equivalent system using the approximate minimum degree (AMD) ordering.
+
+of the  ith   mass. While this is arguably the most "natural" ordering for the spring-mass system, we could have associated a given column and row of the matrix with a different displacement and force equilibrium condition, respectively. Note that this "reordering" of the unknowns and equations of the linear system is equivalent to "swapping" the rows of columns of the matrix, which is formally known as permutation. Importantly, we can describe the same physical system using many different orderings of the unknowns and equations; even if the matrices appear different, these matrices describing the same physical system may be considered equivalent, as they all produce the same solution for a given right-hand side (given both the solution and right-hand side are reordered in a consistent manner).
+
+Reordering can make a significant difference in the number of fill-ins and the operation count. Figure  27.7  shows a comparison of number of fill-ins for an  n=100  linear system arising from two different orderings of a finite different discretization of two-dimensional heat equation on a  10×10  computational grid. An "outrigger" matrix of bandwidth  mb=10  arising from "natural" ordering is shown in Figure 27.7(a). The matrix has 460 nonzero entries. As discussed in the previous section, Gaussian elimination of the matrix yields an upper triangular matrix  U  with approximately  n(mb+1)=1100  nonzero entries (more precisely 1009 for this particular case), which is shown in Figure 27.7(b). An equivalent system obtained using the approximate minimum degree (AMD) ordering is shown in Figure 27.7(c). This newly reordered matrix  A′  also has 460 nonzero entries because permuting (or swapping) rows and columns clearly does not change the number of nonzeros. On the other hand, application of Gaussian elimination to this reordered matrix yields an upper triangular matrix  U  shown in Figure  27.7( d) , which has only 657 nonzero entries. Note that the number of fill-in has been reduced by roughly a factor of two: from  1009−280=729  for the "natural" ordering to  657−280=377  for the AMD ordering. (The original matrix  A  has 280 nonzero entries in the upper triangular part.)
+
+In general, using an appropriate ordering can significantly reduced the number of fill-ins and hence the computational cost. In particular, for a sparse matrix arising from  n -unknown finite difference (or finite element) discretization of two-dimensional PDEs, we have noted that "natural" ordering produces an "outrigger" system with  mb=n−−√ ; Gaussian elimination of the system yields an upper triangular matrix with  n(mb+1)≈n3/2  nonzero entries. On the other hand, the number of fill-ins for the same system with an optimal (i.e. minimum fill-in) ordering yields an upper triangular matrix with  O(nlog(n))  unknowns. Thus, ordering can have significant impact in both the operation count and storage for large sparse linear systems.
+
+Advanced Material
+This page titled 27.4: Fill-in and Reordering is shared under a CC BY-NC-SA 4.0 license and was authored, remixed, and/or curated by Masayuki Yano, James Douglass Penn, George Konidaris, & Anthony T Patera (MIT OpenCourseWare) via source content that was edited to the style and standards of the LibreTexts platform; a detailed edit history is available upon request.
+
+Back to top
+ 
+27.3: Gaussian Elimination and Back Substitution 27.5: The Evil Inverse
+]]]
+
+[[[
+https://eng.libretexts.org/Bookshelves/Mechanical_Engineering/Math_Numerics_and_Programming_(for_Mechanical_Engineers)/05%3A_Unit_V_-_(Numerical)_Linear_Algebra_2_-_Solution_of_Linear_Systems/27%3A_Gaussian_Elimination_-_Sparse_Matrices/27.05%3A_The_Evil_Inverse
+===
+27.5: The Evil Inverse
+CCBYNCSA
+27.4: Fill-in and Reordering
+28: Sparse Matrices in Matlab
+ 
+Masayuki Yano, James Douglass Penn, George Konidaris, & Anthony T Patera
+Massachusetts Institute of Technology via MIT OpenCourseWare
+Table of contents
+In solving a linear system  Au=f , we advocated a two-step strategy that consists of Gaussian elimination and back substitution, i.e.
+ Gaussian elimination:  Back substitution: Au=f⇒Uu=f^Uu=f^⇒u.
+Alternatively, we could find  u  by explicitly forming the inverse of  A,A−1 . Recall that if  A  is nonsingular (as indicated by, for example, independent columns), there exists a unique matrix  A−1  such that
+AA−1=I and A−1A=I.(27.5.1)
+The inverse matrix  A−1  is relevant to solution systems because, in principle, we could
+
+Construct  A−1 ;
+Evaluate  u=A−1f  (i.e. matrix-vector product).
+Note that the second step follows from the fact that
+AuA−1AuIu=f=A−1f=A−1f.
+ 
+While the procedure is mathematically valid, we warn that a linear system should never be solved by explicitly forming the inverse.
+
+To motivate why explicitly construction of inverse matrices should be avoided, let us study the sparsity pattern of the inverse matrix for a  n -mass spring-mass system, an example of which for  n=5  is shown in Figure  27.8 . We use the column interpretation of the matrix and associate the column  j  of  A−1  with a vector  pj , i.e.
+
+Screen Shot 2022-03-28 at 12.12.59 PM.png
+Figure 27.8: Response of a  n=5  spring-mass system to unit loading on mass 3.
+Screen Shot 2022-03-28 at 12.14.36 PM.png
+
+Since  Au=f  and  u=A−1f , we have (using one-handed matrix-vector product),
+
+Screen Shot 2022-03-28 at 12.14.44 PM.png
+
+From this expression, it is clear that the vector  pj  is equal to the displacements of masses due to the unit force acting on mass  j . In particular the  ith   entry of  pj  is the displacement of the  ith   mass due to the unit force on the  jth   mass.
+
+Now, to deduce nonzero pattern of a vector  pj , let us focus on the case shown in Figure  27.8 ; we will deduce the nonzero entries of  p3  for the  n=5  system. Let us consider a sequence of events that takes place when  f3  is applied (we focus on qualitative result rather than quantitative result, i.e. whether masses move, not by how much):
+
+Mass 3 moves to the right due to the unit load  f3 .
+Force exerted by the spring connecting mass 3 and 4 increases as the distance between mass 3 and 4 decreases.
+Mass 4 is no longer in equilibrium as there is a larger force from the left than from the right (i.e. from the spring connecting mass 3 and 4, which is now compressed, than from the spring connecting mass 4 and 5 , which is neutral). 4. Due to the unbalanced force mass 4 moves to the right.
+The movement of mass 4 to the left triggers a sequence of event that moves mass 5 , just as the movement of mass 3 displaced mass 4. Namely, the force on the spring connecting mass 4 and 5 increases, mass 5 is no longer in equilibrium, and mass 5 moves to the right.
+Thus, it is clear that the unit load on mass 3 not only moves mass 3 but also mass 4 and 5 in Figure  27.8 . Using the same qualitative argument, we can convince ourselves that mass 1 and 2 must also move when mass 3 is displaced by the unit load. Thus, in general, the unit load  f3  on mass 3 results in displacing all masses of the system. Recalling that the  ith   entry of  p3  is the displacement of the  ith   mass due to the unit load  f3 , we conclude that all entries of  p3  are nonzero. (In absence of damping, the system excited by the unit load would oscillate and never come to rest; in a real system, intrinsic damping present in the springs brings the system to a new equilibrium state.)
+
+Generalization of the above argument to a  n -mass system is straightforward. Furthermore, using the same argument, we conclude that forcing of any of one of the masses results in displacing all masses. Consequently, for  p1,…,pn , we have
+
+Recalling that  pj  is the  jth   column of  A−1 , we conclude that
+A−1=(p1p2⋯pn)(27.5.2)
+is full even though (here)  A  is tridiagonal. In general  A−1  does not preserve sparsity of  A  and is in fact often full. This is unlike the upper triangular matrix resulting from Gaussian elimination, which preserves a large number of zeros (modulo the fill-ins).
+
+Figure  27.9  shows the system matrix and its inverse for the  n=10  spring-mass system. The colors represent the value of each entries; for instance, the  A  matrix has the typical  [−12−1]  pattern, except for the first and last equations. Note that the inverse matrix is not sparse and is in fact full. In addition, the values of each column of  A−1  agrees with our physical intuition about the displacements to a unit load. For example, when a unit load is applied to mass 3 , the distance between the wall and mass 1 increases by 1 unit, the distance between mass 1 and 2 increases by 1 unit, and the distance between mass 3 and 2 increases by 1 unit; the distances between the remaining masses are unaltered because there is no external force acting on the remaining system at equilibrium (because our system is not clamped on the right end). Accumulating displacements starting with mass 1 , we conclude that mass 1 moves by 1 , mass 2 moves by 2 (the sum of the increased distances between mass 1 and 2 and mass 2 and 3), mass 3 moves by 3 , and all the remaining masses move by 3 . This is exactly the information contained in the third column of  A−1 , which reads  [1233…3]T .
+
+In concluding the section, let us analyze the operation count for solving a linear system by explicitly forming the inverse and performing matrix-vector multiplication. We assume that our  n×n  matrix  A  has a bandwidth of  mb . First, we construct the inverse matrix one column at a time
+u[ for f=(10⋯0)T]=p1← nonzero in all entries! u[ for f=(01⋯0)T]=p2← nonzero in all entries! u[ for f=(00⋯0)T]=pn← nonzero in all entries! 
+ 
+Screen Shot 2022-03-28 at 12.16.14 PM.png
+
+(a)  A 
+
+Screen Shot 2022-03-28 at 12.16.19 PM.png
+
+(b)  A−1 
+
+Figure 27.9: Matrix  A  for the  n=10  spring-mass system and its inverse  A−1 . The colors represent the value of each entry as specified by the color bar.
+
+by solving for the equilibrium displacements associated with unit load on each mass. To this end, we first compute the LU factorization of  A  and then repeat forward/backward substitution. Recalling the operation count for a single forward/backward substitution is  O(nm2b) , the construction of  A−1  requires
+Ap1=Apn⎛⎝⎜⎜⎜⎜10⋮0⎞⎠⎟⎟⎟⎟⇒p1O(nm2b)FLOPs⋮=⎛⎝⎜⎜⎜⎜00⋮1⎞⎠⎟⎟⎟⎟⇒pnO(nm2b)FLOPs
+for the total work of  n⋅O(nm2b)∼O(n2m2b)  FLOPs. Once we formed the inverse matrix, we can solve for the displacement by performing (dense) matrix-vector multiplication, i.e.
+⎛⎝⎜⎜⎜⎜u1u2⋮un⎞⎠⎟⎟⎟⎟=⎛⎝⎜⎜⎜⎜⎜⎜⎜⎜⎜⎜××⋮×A−1fnx×⋮×( full )⋯⋯⋱⋯O(n⋅n)=O(n2)FLOPs××⋮×⎞⎠⎟⎟⎟⎟⎟⎟⎟⎟⎟⎟ one-handed or two-handed (27.5.3)
+Thus, both the construction of the inverse matrix and the matrix-vector multiplication require  O(n2)  operations. In contrast recall that Gaussian elimination and back substitution solves a sparse linear system in  O(n)  operations. Thus, a large sparse linear system should never be solved by explicitly forming its inverse.
+
+
+]]]
+[[[
+https://eng.libretexts.org/Bookshelves/Mechanical_Engineering/Math_Numerics_and_Programming_(for_Mechanical_Engineers)/05%3A_Unit_V_-_(Numerical)_Linear_Algebra_2_-_Solution_of_Linear_Systems/28%3A_Sparse_Matrices_in_Matlab/28.01%3A_The_Matrix_Vector_Product
+===
+28.1: The Matrix Vector Product
+CCBYNCSA
+28: Sparse Matrices in Matlab
+28.2: Sparse Gaussian Elimination
+ 
+Masayuki Yano, James Douglass Penn, George Konidaris, & Anthony T Patera
+Massachusetts Institute of Technology via MIT OpenCourseWare
+Table of contents
+To illustrate some of the fundamental aspects of computations with sparse matrices we shall consider the calculation of the matrix vector product,  w=Av , for  A  a given  n×n  sparse matrix as defined above and  v  a given  n×1  vector. (Note that we considering here the simpler forward problem, in which  v  is known and  w  unknown; in a later section we consider the more difficult "inverse" problem, in which  w  is known and  v  is unknown.)
+
+Mental Model
+We first consider a mental model which provides intuition as to how the sparse matrix vector product is calculated. We then turn to actual MATLAB implementation which is different in detail from the mental model but very similar in concept. There are two aspects to sparse matrices: how these matrices are stored (efficiently); and how these matrices are manipulated (efficiently). We first consider storage.
+
+Storage
+By definition our matrix  A  is mostly zeros and hence it would make no sense to store all the entries. Much better is to just store the  nnz(A)  nonzero entries with the convention that all other entries are indeed zero. This can be done by storing the indices of the nonzero entries as well as the values, as indicated in (28.1).
+I(m),J(m),1≤m≤nnz(A): indices i=I(m),j=J(m) for which Aij≠0VA(m),1≤m≤nnz(A): value of AI(m),J(m)⎫⎭⎬⎪⎪⎪⎪⎪⎪⎪⎪⎪⎪⎪⎪⎪⎪O(nnz(A)) storage ≪n2 if sparse 
+Here  m  is an index associated to each nonzero entry,  I(m),J(m)  are the indices of the  mth   nonzero entry, and  VA(m)  is the value of  A  associated with this index,  VA(m)≡AI(m),J(m) . Note that  VA  is a vector and not a matrix. It is clear that if  A  is in fact dense then the scheme (28.1) actually requires more storage than the conventional non-sparse format since we store values of the indices as well as the values of the matrix; but for sparse matrices the scheme (28.1) can result in significant economies.
+
+As a simple example we consider  A=I , the  n×n  identity matrix, for which  nnz(A)=n  - a very sparse matrix. Here our sparse storage scheme can be depicted as in (28.2).
+
+Screen Shot 2022-03-28 at 10.25.02 PM.png
+
+We note that the mapping between the index  m  and the nonzero entries of  A  is of course nonunique; in the above we identify  m  with the row (or equivalently, column) of the entry on the main diagonal, but we could equally well number backwards or "randomly."
+
+Operations
+We now consider the sparse matrix-vector product in terms of the storage scheme introduced above. In particular, we claim that
+wto find =Avgiven (28.1.1)
+can be implemented as
+w=zeros(n,1)(28.1.2)
+ for m=1:nnz(A)w(I(m))=w(I(m))+VA(m)×v(J(m))
+end
+
+We now discuss why this algorithm yields the desired result. We first note that for any  i  such that  I(m)≠i  for any  m  - in other words, a row  i  of  A  which is entirely zero -  w(i)  should equal zero by the usual row interpretation of the matrix vector product:  w(i)  is the inner product between the  ith   row of  A  - all zeros - and the vector  v , which vanishes for any  v .
+i→⎛⎝⎜⎜⎜⎜⎜⎜0Avx0⋯00⎞⎠⎟⎟⎟⎟⎟⎟⎛⎝⎜xxw⎞⎠⎟=(0w)(28.1.3)
+On the other hand, for any  i  such that  I(m)=i  for some  m ,
+w(i)=∑j=1nAijvj=∑j=1Aij≠0nAijvj.(28.1.4)
+In both cases the sparse procedure yields the correct result and furthermore does not perform all the unnecessary operations associated with elements  Aij  which are zero and which will clearly not contribute to the matrix vector product: zero rows of  A  are never visited; and in rows of  A  with nonzero entries only the nonzero columns are visited. We conclude that the operation count is  O(nnz(A))  which is much less than  n2  if our matrix is indeed sparse.
+
+We note that we have not necessarily used all possible sparsity since in addition to zeros in  A  there may also be zeros in  v ; we may then not only disregard any row of  A  which are is zero but we may also disregard any column  k  of  A  for which  vk=0 . In practice in most MechE examples the sparsity in  A  is much more important to computational efficiency and arises much more often in actual practice than the sparsity in  v , and hence we shall not consider the latter further.
+
+Matlab Implementation
+It is important to recognize that sparse is an attribute associated not just with the matrix  A  in a linear algebra or mathematical sense but also an attribute in MATLAB (or other programming languages) which indicates a particular data type or class (or, in MATLAB, attribute). In situations in which confusion might occur we shall typically refer to the former simply as sparse and the latter as "declared" sparse. In general we will realize the computational savings associated with a mathematically sparse matrix  A  only if the corresponding MATLAB entity, A, is also declared sparse - it is the latter that correctly invokes the sparse storage and algorithms described in the previous section. (We recall here that the MATLAB implementation of sparse storage and sparse methods is conceptually similarly to our mental model described above but not identical in terms of details.)
+
+Storage
+We proceed by introducing a brief example which illustrates most of the necessary MATLAB functionality and syntax. In particular, the script
+
+n = 5;
+K = spalloc(n,n,3*n);
+K(1,1) = 2; 
+K(1,2) = -1; 
+for i = 2:n-1 
+    K(i,i) = 2; 
+    K(i,i-1) = -1; 
+    K(i,i+1) = -1; 
+end 
+K(n,n) = 1; 
+K(n,n-1) = -1;
+
+is_K_sparse = issparse(K)
+
+K 
+
+num_nonzeros_K = nnz(K)
+
+spy(K) 
+
+K_full = full(K) 
+
+K_sparse_too = sparse(K_full)
+yields the output
+
+is_K_sparse = 
+    1
+
+K = (1,1)  2 
+    (2,1) -1 
+    (1,2) -1 
+    (2,2)  2 
+    (3,2) -1 
+    (2,3) -1 
+    (3,3)  2 
+    (4,3) -1 
+    (3,4) -1 
+    (4,4)  2 
+    (5,4) -1 
+    (4,5) -1 
+    (5,5)  1 
+    
+num_nonzeros_K =
+Screen Shot 2022-03-28 at 10.29.48 PM.png
+Figure 28.1: Output of spy (K).
+    13
+K_full = 2 -1  0  0  0 
+        -1  2 -1  0  0 
+         0 -1  2 -1  0 
+         0  0 -1  2 -1 
+         0  0  0 -1  1
+         
+K_sparse_too = 
+    (1,1)  2 
+    (2,1) -1 
+    (1,2) -1 
+    (2,2)  2 
+    (3,2) -1 
+    (2,3) -1 
+    (3,3)  2 
+    (4,3) -1 
+    (3,4) -1 
+    (4,4)  2 
+    (5,4) -1 
+    (4,5) -1 
+    (5,5)  1
+as well as Figure  28.1. 
+
+We now explain the different parts in more detail:
+
+First,  M=spalloc(n1,n2,k)(i)  creates a declared sparse array  M  of size  n1×n2  with allocation for  k  nonzero matrix entries, and then  (ii  ) initializes the array M to all zeros. (If later in the script this allocation may be exceeded there is no failure or error, however efficiency will suffer as memory will not be as contiguously assigned.) In our case here, we anticipate that  K  will be tri-diagonal and hence there will be less than  3∗  nonzero entries.
+
+Then we assign the elements of  K  - we create a simple tri-diagonal matrix associated with  n=5  springs in series. Note that although  K  is declared sparse we do not need to assign values according to any complicated sparse storage scheme: we assign and more generally refer to the elements of  K  with the usual indices, and the sparse storage bookkeeping is handled by MATLAB under the hood.
+
+We can confirm that a matrix  M  is indeed (declared) sparse with issparse - issparse(M) returns a logical 1 if  M  is sparse and a logical 0 if  M  is not sparse. (In the latter case, we will not save on memory or operations.) As we discuss below, some MATLAB operations may accept sparse operands but under certain conditions return non-sparse results; it is often important to confirm with issparse that a matrix which is intended to be sparse is indeed (declared) sparse.
+
+Now we display  K . We observe directly the sparse storage format described in the previous section: MATLAB displays effectively  (I(m),J(m),VA(m))  triplets (MATLAB does not display  m , which as we indicated is in any event an arbitrary label).
+
+The MATLAB built-in function  nnz(M)  returns the number of nonzero entries in a matrix M. The MATLAB built-in function spy  (M)  displays the  n1×  n2 matrix M as a rectangular grid with (only) the nonzero entries displayed as blue filled circles - Figure  28.1  displays spy (K). In short, nnz and spy permit us to quantify the sparsity and structure, respectively, of a matrix  M .
+
+The MATLAB built-in functions full and sparse create a full matrix from a (declared) sparse matrix and a (declared) sparse matrix from a full matrix respectively. Note however, that it is better to initialize a sparse matrix with spalloc rather than simply create a full matrix and then invoke sparse; the latter will require at least temporarily (but sometimes fatally) much more memory than the former.
+
+There are many other sparse MATLAB built-in functions for performing various operations.
+
+Operations
+This section is very brief: once a matrix A is declared sparse, then the MATLAB statement  w=A∗v  will invoke the efficient sparse matrix vector product described above. In short, the (matrix) multiplication operator  ∗  recognizes that A is a (declared) sparse matrix object and then automatically invokes the correct/efficient "method" of interpretation and evaluation. Note in the most common application and in our case most relevant application the matrix A will be declared sparse, the vector v will be full (i.e., not declared sparse), and the output vector w will be full (i.e., not declared sparse).  1  We emphasize that if the matrix A is mathematically sparse but not declared sparse then the MATLAB * operand will invoke the standard full matrix-vector multiply and we not realize the potential computational savings.
+
+1  Note if the vector  v  is also declared sparse then the result  w  will be declared sparse as well.
+
+This page titled 28.1: The Matrix Vector Product is shared under a CC BY-NC-SA 4.0 license and was authored, remixed, and/or curated by Masayuki Yano, James Douglass Penn, George Konidaris, & Anthony T Patera (MIT OpenCourseWare) via source content that was edited to the style and standards of the LibreTexts platform; a detailed edit history is available upon request.
+
+Back to top
+ 
+28: Sparse Matrices in Matlab 28.2: Sparse Gaussian Elimination
+]]]
+[[[
+https://eng.libretexts.org/Bookshelves/Mechanical_Engineering/Math_Numerics_and_Programming_(for_Mechanical_Engineers)/05%3A_Unit_V_-_(Numerical)_Linear_Algebra_2_-_Solution_of_Linear_Systems/28%3A_Sparse_Matrices_in_Matlab/28.02%3A_Sparse_Gaussian_Elimination
+===
+28.2: Sparse Gaussian Elimination
+CCBYNCSA
+28.1: The Matrix Vector Product
+6: Unit VI - Nonlinear Equations
+ 
+Masayuki Yano, James Douglass Penn, George Konidaris, & Anthony T Patera
+Massachusetts Institute of Technology via MIT OpenCourseWare
+Table of contents
+This section is also very brief. As we already described in Unit III, in order to solve the matrix system  Au=f  in MATLAB we need only write  u=A∖f  - the famous backslash operator. We can now reveal, armed with the material from the current unit, that the backslash operator in fact performs Gaussian elimination (except for overdetermined systems, in which case the least-squares problem is solved by a QR algorithm). The backslash will automatically perform partial pivoting - permutations of rows to choose the maximum-magnitude available pivot - to ensure for a nonsingular matrix  K  that a zero pivot is never encountered and that furthermore amplification of numerical round-off errors (in finite precision) is minimized.
+
+The sparse case is similarly streamlined. If  A  is a mathematically sparse matrix and we wish to solve  Au=f  by sparse Gaussian elimination as described in the previous chapter, we need only make sure that  A  is declared sparse and then write  u=A∖f . (As for the matrix vector product,  f  need not be declared sparse and the result  u  will not be sparse.) In this case the backslash does more than simply eliminate unnecessary calculations with zero operands: the backslash will permute columns (a reordering) in order to minimize fill-in during the elimination procedure. (As for the non-sparse case, row permutations will also be pursued, for purposes of numerical stability.)
+
+The case of  A  SPD is noteworthy. As already indicated, in this case the Gaussian elimination process is numerically stable without any row permutations. For an SPD matrix, the backslash operator will thus permute the rows in a similar fashion to the columns; the columns, as before, are permuted to minimize fill-in, as described in the previous chapter. A particular variant of Gaussian elimination, the Cholesky factorization, is pursued in the SPD case.
+
+This page titled 28.2: Sparse Gaussian Elimination is shared under a CC BY-NC-SA 4.0 license and was authored, remixed, and/or curated by Masayuki Yano, James Douglass Penn, George Konidaris, & Anthony T Patera (MIT OpenCourseWare) via source content that was edited to the style and standards of the LibreTexts platform; a detailed edit history is available upon request.
+
+Back to top
+ 
+28.1: The Matrix Vector Product 6: Unit VI - Nonlinear Equations
+]]]
+[[[
+===
+]]]
+[[[
+===
+]]]
+
+
+
+[[[
+https://phys.libretexts.org/Bookshelves/Mathematical_Physics_and_Pedagogy/Computational_Physics_(Chong)/08%3A_Sparse_Matrices/8.02%3A_Sparse_Matrix_Formats
+===
+8.2: Sparse Matrix Formats
+CCBYSA
+8.1: Sparse Matrix Algebra
+8.3: Using Sparse Matrices
+ 
+Y. D. Chong
+Nanyang Technological University
+Table of contents
+8.2.1 List of Lists (LIL)
+The List of Lists sparse matrix format (which is, for some unknown reason, abbreviated as LIL rather than LOL) is one of the simplest sparse matrix formats. It is shown schematically in the figure below. Each non-zero matrix row is represented by an element in a kind of list structure called a "linked list". Each element in the linked list records the row number, and the column data for the matrix entries in that row. The column data consists of a list, where each list element corresponds to a non-zero matrix element, and stores information about (i) the column number, and (ii) the value of the matrix element.
+
+clipboard_e031de9de6a344016e713f78c1e8eea19.png
+Figure  8.2.1 : A sparse matrix and its representation in List-of-Lists (LIL) format.
+Evidently, this format is pretty memory-efficient. The list of rows only needs to be as long as the number of non-zero matrix rows; the rest are omitted. Likewise, each list of column data only needs to be as long as the number of non-zero elements on that row. The total amount of memory required is proportional to the number of non-zero elements, regardless of the size of the matrix itself.
+
+Compared to the other sparse matrix formats which we'll discuss, accessing an individual matrix element in LIL format is relatively slow. This is because looking up a given matrix index  (i,j)  requires stepping through the row list to find an element with row index  i ; and if one is found, stepping through the column row to find index  j . Thus, for example, looking up an element in a diagonal  N×N  matrix in the LIL format takes  O(N)  time! As we'll see, the CSR and CSC formats are much more efficient at element access. For the same reason, matrix arithmetic in the LIL format is very inefficient.
+
+One advantage of the LIL format, however, is that it is relatively easy to alter the "sparsity structure" of the matrix. To add a new non-zero element, one simply has to step through the row list, and either (i) insert a new element into the linked list if the row was not previously on the list (this insertion takes  O(1)  time), or (ii) modify the column list (which is usually very short if the matrix is very sparse).
+
+For this reason, the LIL format is preferred if you need to construct a sparse matrix where the non-zero elements are not distributed in any useful pattern. One way is to create an empty matrix, then fill in the elements one by one, as shown in the following example. The LIL matrix is created by the lil_matrix function, which is provided by the scipy.sparse module.
+
+Here is an example program which constructs a LIL matrix, and prints it:
+
+from scipy import *
+import scipy.sparse as sp
+
+A = sp.lil_matrix((4,5))     # Create empty 4x5 LIL matrix
+A[0,1] = 1.0
+A[1,1] = 2.0
+A[1,2] = -1.0
+A[3,0] = 6.6
+A[3,4] = 1.4
+
+## Verify the matrix contents by printing it
+print(A)
+When we run the above program, it displays the non-zero elements of the sparse matrix:
+
+ (0, 1)	1.0
+ (1, 1)	2.0
+ (1, 2)	-1.0
+ (3, 0)	6.6
+ (3, 4)	1.4
+You can also convert the sparse matrix into a conventional 2D array, using the toarray method. Suppose we replace the line print(A) in the above program with
+
+B = A.toarray()
+print(B)
+The result is:
+
+[[ 0.   1.   0.   0.   0. ]
+ [ 0.   2.  -1.   0.   0. ]
+ [ 0.   0.   0.   0.   0. ]
+ [ 6.6  0.   0.   0.   1.4]]
+Note: be careful when calling toarray in actual code. If the matrix is huge, the 2D array will eat up unreasonable amounts of memory. It is not uncommon to work with sparse matrices with sizes on the order of 10^5 \times 10^5, which can take up less an 1MB of memory in a sparse format, but around 80 GB of memory in array format!
+
+8.2.2 Diagonal Storage (DIA)
+The Diagonal Storage (DIA) format stores the contents of a sparse matrix along its diagonals. It makes use of a 2D array, which we denote by data, and a 1D integer array, which we denote by offsets. A typical example is shown in the following figure:
+
+clipboard_ed498a7c76b0cd1232cd730e599b951b8.png
+Figure  8.2.2 : A sparse matrix and its representation in Diagonal Storage (DIA) format.
+Each row of the data array stores one of the diagonals of the matrix, and offsets[i] records which diagonal that row of the data corresponds to, with "offset 0" corresponding to the main diagonal. For instance, in the above example, row  0  of data contains the entries [6.6,0,0,0,0]), and offsets[0] contains the value  −3 , indicating that the entry  6.6  occurs along the  −3  subdiagonal, in column  0 . (The extra elements in that row of data lie outside the bounds of the matrix, and are ignored.) Diagonals containing only zero are omitted.
+
+For sparse matrices with very few non-zero diagonals, such as diagonal or tridiagonal matrices, the DIA format allows for very quick arithmetic operations. Its main limitation is that looking up each matrix element requires performing a blind search through the offsets array. That's fine if there are very few non-zero diagonals, as offsets will be small. But if the number of non-zero diagonals becomes large, performance becomes very poor. In the worst-case scenario of an anti-diagonal matrix, element lookup takes  O(N)  time!
+
+You can create a sparse matrix in the DIA format, using the dia_matrix function, which is provided by the scipy.sparse module. Here is an example program:
+
+from scipy import *
+import scipy.sparse as sp
+
+N = 6  # Matrix size
+ 
+diag0 = -2 * ones(N)
+diag1 = ones(N)
+
+A = sp.dia_matrix(([diag1, diag0, diag1], [-1,0,1]), shape=(N,N))
+
+## Verify the matrix contents by printing it
+print(A.toarray())
+Here, the first input to dia_matrix is a tuple of the form (data, offsets), where data and offsets are arrays of the sort described above. This returns a sparse matrix in the DIA format, with the specified contents (the elements in data which lie outside the bounds of the matrix are ignored). In this example, the matrix is tridiagonal with -2 along the main diagonal and 1 along the +1 and -1 diagonals. Running the above program prints the following:
+
+[[-2.  1.  0.  0.  0.  0.]
+ [ 1. -2.  1.  0.  0.  0.]
+ [ 0.  1. -2.  1.  0.  0.]
+ [ 0.  0.  1. -2.  1.  0.]
+ [ 0.  0.  0.  1. -2.  1.]
+ [ 0.  0.  0.  0.  1. -2.]]
+Another way to create a DIA matrix is to first create a matrix in another format (e.g. a conventional 2D array), and provide that as the input to dia_matrix. This returns a sparse matrix with the same contents, in DIA format.
+
+8.2.3 Compressed Sparse Row (CSR)
+The Compressed Sparse Row (CSR) format represents a sparse matrix using three arrays, which we denote by data, indices, and indptr. An example is shown in the following figure:
+
+clipboard_e63d081d1b185bbde3dfc1f34354a9b17.png
+Figure  8.2.3 : A sparse matrix and its representation in Compressed Sparse Row (CSR) format.
+The array denoted data stores the values of the non-zero elements of the matrix, in sequential order from left to right along each row, then from the top row to the bottom. The array denoted indices records the column index for each of these elements. In the above example, data[3] stores a value of  6.6 , and indices[3] has a value of  0 , indicating that a matrix element with value  6.6  occurs in column  0 . These two arrays have the same length, equal to the number of non-zero elements in the sparse matrix.
+
+The array denoted indptr (which stands for "index pointer") provides an association between the row indices and the matrix elements, but in an indirect manner. Its length is equal to the number of matrix rows (including zero rows). For each row  i , if the row is non-zero, indptr[i] records the index in the data and indices arrays corresponding to the first non-zero element on row  i . (For a zero row, indptr records the index of the next non-zero element occurring in the matrix.)
+
+For example, consider looking up index  (1,2)  in the above figure. The row index is 1, so we examine indptr[1] (whose value is  1 ) and indptr[2] (whose value is  3 ). This means that the non-zero elements for matrix row  1  correspond to indices  1≤n<3  of the data and indices arrays. We search indices[1] and indices[2], looking for a column index of  2 . This is found in indices[2], so we look in data[2] for the value of the matrix element, which is  −1.0 .
+
+It is clear that looking up an individual matrix element is very efficient. Unlike the LIL format, where we need to step through a linked list, in the CSR format the indptr array lets us to jump straight to the data for the relevant row. For the same reason, the CSR format is efficient for row slicing operations (e.g., A[4,:]), and for matrix-vector products like  Ax⃗   (which involves taking the product of each matrix row with the vector  x⃗  ).
+
+The CSR format does have several downsides. Column slicing (e.g. A[:,4]) is inefficient, since it requires searching through all elements of the indices array for the relevant column index. Changes to the sparsity structure (e.g., inserting new elements) are also very inefficient, since all three arrays need to be re-arranged.
+
+To create a sparse matrix in the CSR format, we use the csr_matrix function, which is provided by the scipy.sparse module. Here is an example program:
+
+from scipy import *
+import scipy.sparse as sp
+
+data = [1.0, 2.0, -1.0, 6.6, 1.4]
+rows = [0, 1, 1, 3, 3]
+cols = [1, 1, 2, 0, 4]
+
+A = sp.csr_matrix((data, [rows, cols]), shape=(4,5))
+print(A)
+Here, the first input to csr_matrix is a tuple of the form (data, idx), where data is a 1D array specifying the non-zero matrix elements, idx[0,:] specifies the row indices, and idx[1,:] specifies the column indices. Running the program produces the expected results:
+
+ (0, 1)	1.0
+ (1, 1)	2.0
+ (1, 2)	-1.0
+ (3, 0)	6.6
+ (3, 4)	1.4
+The csr_matrix function figures out and generates the three CSR arrays automatically; you don't need to work them out yourself. But if you like, you can inspect the contents of the CSR arrays directly:
+
+>>> A.data
+array([ 1. ,  2. , -1. ,  6.6,  1.4])
+>>> A.indices
+array([1, 1, 2, 0, 4], dtype=int32)
+>>> A.indptr
+array([0, 1, 3, 3, 5], dtype=int32)
+(There is an extra trailing element of  5  in the indptr array. For simplicity, we didn't mention this in the above discussion, but you should be able to figure out why it's there.)
+
+Another way to create a CSR matrix is to first create a matrix in another format (e.g. a conventional 2D array, or a sparse matrix in LIL format), and provide that as the input to csr_matrix. This returns the specified matrix in CSR format. For example:
+
+>>> A = sp.lil_matrix((6,6))
+>>> A[0,1] = 4.0
+>>> A[2,0] = 5.0
+>>> B = sp.csr_matrix(A)
+8.2.4 Compressed Sparse Column (CSC)
+The Compressed Sparse Column (CSC) format is very similar to the CSR format, except that the role of rows and columns is swapped. The data array stores non-zero matrix elements in sequential order from top to bottom along each column, then from the left-most column to the right-most. The indices array stores row indices, and each element of the indptr array corresponds to one column of the matrix. An example is shown below:
+
+clipboard_e4e6a46ce5ff9c0267d3b538c7c5ad5a8.png
+Figure  8.2.4 : A sparse matrix and its representation in Compressed Sparse Column (CSC) format.
+The CSC format is efficient at matrix lookup, column slicing operations (e.g., A[:,4]), and vector-matrix products like  x⃗ TA  (which involves taking the product of the vector  x⃗   with each matrix column). However, it is inefficient for row slicing (e.g. A[4,:]), and for changes to the sparsity structure.
+
+To create a sparse matrix in the CSC format, we use the csc_matrix function. This is analogous to the csr_matrix function for CSR matrices. For example,
+
+>>> from scipy import *
+>>> import scipy.sparse as sp
+>>> data = [1.0, 2.0, -1.0, 6.6, 1.4]
+>>> rows = [0, 1, 1, 3, 3]
+>>> cols = [1, 1, 2, 0, 4]
+>>> 
+>>> A = sp.csc_matrix((data, [rows, cols]), shape=(4,5))
+>>> A
+<4x5 sparse matrix of type '<class 'numpy.float64'>'
+  with 5 stored elements in Compressed Sparse Column format>
+This page titled 8.2: Sparse Matrix Formats is shared under a CC BY-SA 4.0 license and was authored, remixed, and/or curated by Y. D. Chong via source content that was edited to the style and standards of the LibreTexts platform; a detailed edit history is available upon request.
+
+Back to top
+ 
+8.1: Sparse Matrix Algebra 8.3: Using Sparse Matrices
+
+]]]
+
+
+[[[
+https://zhuanlan.zhihu.com/p/188700729?utm_id=0
+===
+Sparse稀疏矩阵主要存储格式总结
+2 年前 · 来自专栏 细思极趣的机器学习
+Gemini向光性
+在数据科学和深度学习等领域会采用矩阵来存储数据，但当矩阵较为庞大且非零元素较少时，运算效率和存储有效率并不高。所以，一般情况我们采用Sparse稀疏矩阵的方式来存储矩阵，来提高存储和运算效率。下面将对SciPy中七种常见的存储方式（COO/ CsR/ CSC/ BSR/ DOK/ LIL/ DIA）的概念和用法进行介绍和对比总结。
+
+本文首发于个人博客，排版格式更加友好，欢迎访问
+
+稀疏矩阵简介
+稀疏矩阵
+
+
+稀疏矩阵
+具有少量非零项的矩阵 - Number of Non-Zero (NNZ) < 0.5
+（在矩阵中，若数值0的元素数目远多于非0元素的数目，并且非0元素分布没有规律）
+矩阵的稠密度
+非零元素的总数比上矩阵所有元素的总数为矩阵的稠密度。
+
+By Matt (https://matteding.github.io/2019/04/25/sparse-matrices/)
+压缩存储
+存储矩阵的一般方法是采用二维数组，其优点是可以随机地访问每一个元素，因而能够容易实现矩阵的各种运算。
+对于稀疏矩阵，它通常具有很大的维度，有时甚大到整个矩阵（零元素）占用了绝大部分内存
+采用二维数组的存储方法既浪费大量的存储单元来存放零元素，又要在运算中浪费大量的时间来进行零元素的无效运算。因此必须考虑对稀疏矩阵进行压缩存储（只存储非零元素）。
+
+from scipy import sparse
+help(sparse)
+
+'''
+Sparse Matrix Storage Formats
+There are seven available sparse matrix types:
+
+        1. csc_matrix: Compressed Sparse Column format
+        2. csr_matrix: Compressed Sparse Row format
+        3. bsr_matrix: Block Sparse Row format
+        4. lil_matrix: List of Lists format
+        5. dok_matrix: Dictionary of Keys format
+        6. coo_matrix: COOrdinate format (aka IJV, triplet format)
+        7. dia_matrix: DIAgonal format
+        8. spmatrix: Sparse matrix base clas
+'''
+矩阵属性
+from scipy.sparse import csr_matrix
+
+### 共有属性
+mat.shape  # 矩阵形状
+mat.dtype  # 数据类型
+mat.ndim  # 矩阵维度
+mat.nnz   # 非零个数
+mat.data  # 非零值, 一维数组
+
+### COO 特有的
+coo.row  # 矩阵行索引
+coo.col  # 矩阵列索引
+
+### CSR\CSC\BSR 特有的
+bsr.indices    # 索引数组
+bsr.indptr     # 指针数组
+bsr.has_sorted_indices  # 索引是否排序
+bsr.blocksize  # BSR矩阵块大小
+通用方法
+import scipy.sparse as sp
+
+### 转换矩阵格式
+tobsr()、tocsr()、to_csc()、to_dia()、to_dok()、to_lil()
+mat.toarray()  # 转为array
+mat.todense()  # 转为dense
+# 返回给定格式的稀疏矩阵
+mat.asformat(format)
+# 返回给定元素格式的稀疏矩阵
+mat.astype(t)  
+
+### 检查矩阵格式
+issparse、isspmatrix_lil、isspmatrix_csc、isspmatrix_csr
+sp.issparse(mat)
+
+### 获取矩阵数据
+mat.getcol(j)  # 返回矩阵列j的一个拷贝，作为一个(mx 1) 稀疏矩阵 (列向量)
+mat.getrow(i)  # 返回矩阵行i的一个拷贝，作为一个(1 x n)  稀疏矩阵 (行向量)
+mat.nonzero()  # 非0元索引
+mat.diagonal()   # 返回矩阵主对角元素
+mat.max([axis])  # 给定轴的矩阵最大元素
+
+### 矩阵运算
+mat += mat     # 加
+mat = mat * 5  # 乘
+mat.dot(other)  # 坐标点积
+
+
+resize(self, *shape)
+transpose(self[, axes, copy])
+稀疏矩阵分类
+1. COO - coo_matrix
+Coordinate Matrix 对角存储矩阵
+采用三元组(row, col, data)(或称为ijv format)的形式来存储矩阵中非零元素的信息
+三个数组 row 、col 和 data 分别保存非零元素的行下标、列下标与值（一般长度相同）
+故 coo[row[k]][col[k]] = data[k] ，即矩阵的第 row[k] 行、第 col[k] 列的值为 data[k]
+
+当 row[0] = 1 , column[0] = 1 时， data[0] = 2 ，故 coo[1][1] = 2
+当 row[3] = 0 , column[3] = 2 时， data[3] = 9 ，故 coo[0][3] = 9
+适用场景
+主要用来创建矩阵，因为coo_matrix无法对矩阵的元素进行增删改等操作
+一旦创建之后，除了将之转换成其它格式的矩阵，几乎无法对其做任何操作和矩阵运算
+优缺点
+①优点
+转换成其它存储格式很快捷简便（tobsr()、tocsr()、to_csc()、to_dia()、to_dok()、to_lil()）
+能与CSR / CSC格式的快速转换
+允许重复的索引（例如在1行1列处存了值2.0，又在1行1列处存了值3.0，则转换成其它矩阵时就是2.0+3.0=5.0）
+②缺点
+不支持切片和算术运算操作
+如果稀疏矩阵仅包含非0元素的对角线，则对角存储格式(DIA)可以减少非0元素定位的信息量
+这种存储格式对有限元素或者有限差分离散化的矩阵尤其有效
+实例化方法
+coo_matrix(D)：D代表密集矩阵；
+coo_matrix(S)：S代表其他类型稀疏矩阵
+coo_matrix((M, N), [dtype])：构建一个shape为M*N的空矩阵，默认数据类型是d，
+coo_matrix((data, (i, j)), [shape=(M, N)]))：三元组初始化
+i[:] : 行索引
+j[:] : 列索引
+A[i[k], j[k]]=data[k]
+特殊属性
+data：稀疏矩阵存储的值，是一个一维数组
+row：与data同等长度的一维数组，表征data中每个元素的行号
+col：与data同等长度的一维数组，表征data中每个元素的列号
+代码示例
+# 数据
+row = [0, 1, 2, 2]
+col = [0, 1, 2, 3]
+data = [1, 2, 3, 4]
+
+# 生成coo格式的矩阵
+# <class 'scipy.sparse.coo.coo_matrix'>
+coo_mat = sparse.coo_matrix((data, (row, col)), shape=(4, 4),  dtype=np.int)
+
+# coordinate-value format
+print(coo)
+'''
+(0, 0)        1
+(1, 1)        2
+(2, 2)        3
+(3, 3)        4
+'''
+
+# 查看数据
+coo.data
+coo.row
+coo.col
+
+# 转化array
+# <class 'numpy.ndarray'>
+coo_mat.toarray()
+'''
+array([[1, 0, 0, 0],
+       [0, 2, 0, 0],
+       [0, 0, 3, 4],
+       [0, 0, 0, 0]])
+'''
+2. CSR - csr_matrix
+Compressed Sparse Row Matrix 压缩稀疏行格式
+csr_matrix是按行对矩阵进行压缩的
+通过 indices, indptr，data 来确定矩阵。
+data 表示矩阵中的非零数据
+对于第 i 行而言，该行中非零元素的列索引为 indices[indptr[i]:indptr[i+1]]
+可以将 indptr 理解成利用其自身索引 i 来指向第 i 行元素的列索引
+根据[indptr[i]:indptr[i+1]]，我就得到了该行中的非零元素个数，如
+若 index[i] = 3 且 index[i+1] = 3 ，则第 i 行的没有非零元素
+若 index[j] = 6 且 index[j+1] = 7 ，则第 j 行的非零元素的列索引为 indices[6:7]
+得到了行索引、列索引，相应的数据存放在： data[indptr[i]:indptr[i+1]]
+
+对于矩阵第 0 行，我们需要先得到其非零元素列索引
+由 indptr[0] = 0 和 indptr[1] = 2 可知，第 0 行有两个非零元素。
+它们的列索引为 indices[0:2] = [0, 2] ，且存放的数据为 data[0] = 8 ， data[1] = 2
+因此矩阵第 0 行的非零元素 csr[0][0] = 8 和 csr[0][2] = 2
+对于矩阵第 4 行，同样我们需要先计算其非零元素列索引
+由 indptr[4] = 3 和 indptr[5] = 6 可知，第 4 行有3个非零元素。
+它们的列索引为 indices[3:6] = [2, 3，4] ，且存放的数据为 data[3] = 7 ，data[4] = 1 ，data[5] = 2
+因此矩阵第 4 行的非零元素 csr[4][2] = 7 ， csr[4][3] = 1 和 csr[4][4] = 2
+适用场景
+常用于读入数据后进行稀疏矩阵计算，运算高效
+优缺点
+①优点
+高效的稀疏矩阵算术运算
+高效的行切片
+快速地矩阵矢量积运算
+②缺点
+较慢地列切片操作（可以考虑CSC）
+转换到稀疏结构代价较高（可以考虑LIL，DOK）
+实例化
+csr_matrix(D)：D代表密集矩阵；
+csr_matrix(S)：S代表其他类型稀疏矩阵
+csr_matrix((M, N), [dtype])：构建一个shape为M*N的空矩阵，默认数据类型是d，
+csr_matrix((data, (row_ind, col_ind)), [shape=(M, N)]))
+三者关系：a[row_ind[k], col_ind[k]] = data[k]
+csr_matrix((data, indices, indptr), [shape=(M, N)])
+第i行的列索引存储在其中indices[indptr[i]:indptr[i+1]]
+其对应值存储在中data[indptr[i]:indptr[i+1]]
+特殊属性
+data ：稀疏矩阵存储的值，一维数组
+indices ：存储矩阵有有非零值的列索引
+indptr ：类似指向列索引的指针数组
+has_sorted_indices：索引 indices 是否排序
+# 生成数据
+indptr = np.array([0, 2, 3, 3, 3, 6, 6, 7])
+indices = np.array([0, 2, 2, 2, 3, 4, 3])
+data = np.array([8, 2, 5, 7, 1, 2, 9])
+
+# 创建矩阵
+csr = sparse.csr_matrix((data, indices, indptr))
+
+# 转为array
+csr.toarray()
+'''
+array([[8, 0, 2, 0, 0],
+       [0, 0, 5, 0, 0],
+       [0, 0, 0, 0, 0],
+       [0, 0, 0, 0, 0],
+       [0, 0, 7, 1, 2],
+       [0, 0, 0, 0, 0],
+       [0, 0, 0, 9, 0]])
+'''
+3.CSC - csc_matrix
+Compressed Sparse Column Matrix 压缩稀疏列矩阵
+csc_matrix是按列对矩阵进行压缩的
+通过 indices, indptr，data 来确定矩阵，可以对比CSR
+data 表示矩阵中的非零数据
+对于第 i 列而言，该行中非零元素的行索引为indices[indptr[i]:indptr[i+1]]
+可以将 indptr 理解成利用其自身索引 i 来指向第 i 列元素的列索引
+根据[indptr[i]:indptr[i+1]]，我就得到了该行中的非零元素个数，如
+若 index[i] = 1 且 index[i+1] = 1 ，则第 i 列的没有非零元素
+若 index[j] = 4 且 index[j+1] = 6 ，则第 j列的非零元素的行索引为 indices[4:6]
+得到了列索引、行索引，相应的数据存放在： data[indptr[i]:indptr[i+1]]
+
+对于矩阵第 0 列，我们需要先得到其非零元素行索引
+由 indptr[0] = 0 和 indptr[1] = 1 可知，第 0列行有1个非零元素。
+它们的行索引为 indices[0:1] = [0] ，且存放的数据为 data[0] = 8
+因此矩阵第 0 行的非零元素 csc[0][0] = 8
+对于矩阵第 3 列，同样我们需要先计算其非零元素行索引
+由 indptr[3] = 4 和 indptr[4] = 6 可知，第 4 行有2个非零元素。
+它们的行索引为 indices[4:6] = [4, 6] ，且存放的数据为 data[4] = 1 ，data[5] = 9
+因此矩阵第 i 行的非零元素 csr[4][3] = 1 ， csr[6][3] = 9
+应用场景
+参考CSR
+
+优缺点
+对比参考CSR
+
+实例化
+csc_matrix(D)：D代表密集矩阵；
+csc_matrix(S)：S代表其他类型稀疏矩阵
+csc_matrix((M, N), [dtype])：构建一个shape为M*N的空矩阵，默认数据类型是d，
+csc_matrix((data, (row_ind, col_ind)), [shape=(M, N)]))
+三者关系：a[row_ind[k], col_ind[k]] = data[k]
+csc_matrix((data, indices, indptr), [shape=(M, N)])
+第i列的列索引存储在其中indices[indptr[i]:indptr[i+1]]
+其对应值存储在中data[indptr[i]:indptr[i+1]]
+特殊属性
+data ：稀疏矩阵存储的值，一维数组
+indices ：存储矩阵有有非零值的行索引
+indptr ：类似指向列索引的指针数组
+has_sorted_indices ：索引是否排序
+# 生成数据
+row = np.array([0, 2, 2, 0, 1, 2])
+col = np.array([0, 0, 1, 2, 2, 2])
+data = np.array([1, 2, 3, 4, 5, 6])
+
+# 创建矩阵
+csc = sparse.csc_matrix((data, (row, col)), shape=(3, 3)).toarray()
+
+# 转为array
+csc.toarray()
+'''
+array([[1, 0, 4],
+       [0, 0, 5],
+       [2, 3, 6]], dtype=int64)
+'''
+
+# 按col列来压缩
+# 对于第i列，非0数据行是indices[indptr[i]:indptr[i+1]] 数据是data[indptr[i]:indptr[i+1]]
+# 在本例中
+# 第0列，有非0的数据行是indices[indptr[0]:indptr[1]] = indices[0:2] = [0,2]
+# 数据是data[indptr[0]:indptr[1]] = data[0:2] = [1,2],所以在第0列第0行是1，第2行是2
+# 第1行，有非0的数据行是indices[indptr[1]:indptr[2]] = indices[2:3] = [2]
+# 数据是data[indptr[1]:indptr[2] = data[2:3] = [3],所以在第1列第2行是3
+# 第2行，有非0的数据行是indices[indptr[2]:indptr[3]] = indices[3:6] = [0,1,2]
+# 数据是data[indptr[2]:indptr[3]] = data[3:6] = [4,5,6],所以在第2列第0行是4，第1行是5,第2行是6
+4. BSR - bsr_matrix
+Block Sparse Row Matrix 分块压缩稀疏行格式
+基于行的块压缩，与csr类似，都是通过data，indices，indptr来确定矩阵
+与csr相比，只是data中的元数据由0维的数变为了一个矩阵（块），其余完全相同
+块大小 blocksize
+块大小 (R, C) 必须均匀划分矩阵 (M, N) 的形状。
+R和C必须满足关系：M % R = 0 和 N % C = 0
+适用场景及优点参考csr
+实例化
+bsr_matrix(D)：D代表密集矩阵；
+bsr_matrix(S)：S代表其他类型稀疏矩阵
+bsr_matrix((M, N), [blocksize =(R,C), [dtype])：构建一个shape为M*N的空矩阵，默认数据类型是d，
+(data, ij), [blocksize=(R,C), shape=(M, N)]
+两者关系：a[ij[0,k], ij[1,k]] = data[k]]
+bsr_matrix((data, indices, indptr), [shape=(M, N)])
+第i行的块索引存储在其中indices[indptr[i]:indptr[i+1]]
+其相应块值存储在中data[indptr[i]:indptr[i+1]]
+特殊属性
+data ：稀疏矩阵存储的值，一维数组
+indices ：存储矩阵有有非零值的列索引
+indptr ：类似指向列索引的指针数组
+blocksize ：矩阵的块大小
+has_sorted_indices：索引 indices 是否排序
+代码示例
+# 生成数据
+indptr = np.array([0,2,3,6])
+indices = np.array([0,2,2,0,1,2])
+data = np.array([1,2,3,4,5,6]).repeat(4).reshape(6,2,2)
+
+# 创建矩阵
+bsr = bsr_matrix((data, indices, indptr), shape=(6,6)).todense()
+
+# 转为array
+bsr.todense()
+matrix([[1, 1, 0, 0, 2, 2],
+        [1, 1, 0, 0, 2, 2],
+        [0, 0, 0, 0, 3, 3],
+        [0, 0, 0, 0, 3, 3],
+        [4, 4, 5, 5, 6, 6],
+        [4, 4, 5, 5, 6, 6]])
+优缺点
+①优点
+与csr很类似
+更适合于适用于具有密集子矩阵的稀疏矩阵
+在某些情况下比csr和csc计算更高效。
+5. DOK- dok_matrix
+Dictionary of Keys Matrix 按键字典矩阵
+采用字典来记录矩阵中不为0的元素
+字典的 key 存的是记录元素的位置信息的元组， value 是记录元素的具体值
+适用场景
+逐渐添加矩阵的元素
+实例化方法
+dok_matrix(D)：D代表密集矩阵；
+dok_matrix(S)：S代表其他类型稀疏矩阵
+dok_matrix((M, N), [dtype])：构建一个shape为M*N的空矩阵，默认数据类型是d
+优缺点
+①优点
+对于递增的构建稀疏矩阵很高效，比如定义该矩阵后，想进行每行每列更新值，可用该矩阵。
+可以高效访问单个元素，只需要O(1)
+②缺点
+不允许重复索引（coo中适用），但可以很高效的转换成coo后进行重复索引
+代码示例
+dok = sparse.dok_matrix((5, 5), dtype=np.float32)
+for i in range(5):
+    for j in range(5):
+        dok[i,j] = i+j    # 更新元素
+
+# zero elements are accessible
+dok[(0, 0)]  # = 0
+
+dok.keys()
+# {(0, 0), ..., (4, 4)}
+
+dok.toarray()
+'''
+[[0. 1. 2. 3. 4.]
+ [1. 2. 3. 4. 5.]
+ [2. 3. 4. 5. 6.]
+ [3. 4. 5. 6. 7.]
+ [4. 5. 6. 7. 8.]]
+ '''
+6. LIL - lil_matrix
+Linked List Matrix 链表矩阵
+
+使用两个列表存储非0元素data
+rows保存非零元素所在的列
+可以使用列表赋值来添加元素，如 lil[(0, 0)] = 8
+
+lil[(0, -1)] = 4 ：第0行的最后一列元素为4
+lil[(4, 2)] = 5 ：第4行第2列的元素为5
+适用场景
+适用的场景是逐渐添加矩阵的元素（且能快速获取行相关的数据）
+需要注意的是，该方法插入一个元素最坏情况下可能导致线性时间的代价，所以要确保对每个元素的索引进行预排序
+优缺点
+①优点
+适合递增的构建成矩阵
+转换成其它存储方式很高效
+支持灵活的切片
+②缺点
+当矩阵很大时，考虑用coo
+算术操作，列切片，矩阵向量内积操作慢
+实例化方法
+lil_matrix(D)：D代表密集矩阵；
+lil_matrix(S)：S代表其他类型稀疏矩阵
+lil_matrix((M, N), [dtype])：构建一个shape为M*N的空矩阵，默认数据类型是d
+特殊属性
+data：存储矩阵中的非零数据
+rows：存储每个非零元素所在的列（行信息为列表中索引所表示）
+代码示例
+# 创建矩阵
+lil = sparse.lil_matrix((6, 5), dtype=int)
+
+# 设置数值
+# set individual point
+lil[(0, -1)] = -1
+# set two points
+lil[3, (0, 4)] = [-2] * 2
+# set main diagonal
+lil.setdiag(8, k=0)
+
+# set entire column
+lil[:, 2] = np.arange(lil.shape[0]).reshape(-1, 1) + 1
+
+# 转为array
+lil.toarray()
+'''
+array([[ 8,  0,  1,  0, -1],
+       [ 0,  8,  2,  0,  0],
+       [ 0,  0,  3,  0,  0],
+       [-2,  0,  4,  8, -2],
+       [ 0,  0,  5,  0,  8],
+       [ 0,  0,  6,  0,  0]])
+'''
+
+# 查看数据
+lil.data
+'''
+array([list([0, 2, 4]), list([1, 2]), list([2]), list([0, 2, 3, 4]),
+       list([2, 4]), list([2])], dtype=object)
+'''
+lil.rows
+'''
+array([[list([8, 1, -1])],
+       [list([8, 2])],
+       [list([3])],
+       [list([-2, 4, 8, -2])],
+       [list([5, 8])],
+       [list([6])]], dtype=object)
+'''
+7. DIA - dia_matrix
+Diagonal Matrix 对角存储格式
+
+最适合对角矩阵的存储方式
+dia_matrix通过两个数组确定： data 和 offsets
+data ：对角线元素的值
+offsets ：第 i 个 offsets 是当前第 i 个对角线和主对角线的距离
+data[k:] 存储了 offsets[k] 对应的对角线的全部元素
+
+当 offsets[0] = 0 时，表示该对角线即是主对角线，相应的值为 [1, 2, 3, 4, 5]
+当 offsets[2] = 2 时，表示该对角线为主对角线向上偏移2个单位，相应的值为 [11, 12, 13, 14, 15]
+但该对角线上元素仅有三个 ，于是采用先出现的元素无效的原则
+即前两个元素对构造矩阵无效，故该对角线上的元素为 [13, 14, 15]
+实例化方法
+dia_matrix(D)：D代表密集矩阵；
+dia_matrix(S)：S代表其他类型稀疏矩阵
+dia_matrix((M, N), [dtype])：构建一个shape为M*N的空矩阵，默认数据类型是d
+dia_matrix((data, offsets)), [shape=(M, N)]))：data[k,:] 存储着对角偏移量为 offset[k] 的对角值
+特殊属性
+data：存储DIA对角值的数组
+offsets：存储DIA对角偏移量的数组
+代码示例
+# 生成数据
+data = np.array([[1, 2, 3, 4], [5, 6, 0, 0], [0, 7, 8, 9]])
+offsets = np.array([0, -2, 1])
+
+# 创建矩阵
+dia = sparse.dia_matrix((data, offsets), shape=(4, 4))
+
+# 查看数据
+dia.data
+'''
+array([[[1 2 3 4]
+        [5 6 0 0]
+        [0 7 8 9]])
+'''
+
+# 转为array
+dia.toarray()
+'''
+array([[1 7 0 0]
+       [0 2 8 0]
+       [5 0 3 9]
+       [0 6 0 4]])
+'''
+矩阵格式对比
+
+稀疏矩阵存取
+存储 - save_npz
+scipy.sparse.save_npz('sparse_matrix.npz', sparse_matrix)
+sparse_matrix = scipy.sparse.load_npz('sparse_matrix.npz')
+读取 - load_npz
+# 从npz文件中读取
+test_x = sparse.load_npz('./data/npz/test_x.npz')
+存储大小比较
+a = np.arange(100000).reshape(1000,100)
+a[10: 300] = 0
+b = sparse.csr_matrix(a)
+
+# 稀疏矩阵压缩存储到npz文件
+sparse.save_npz('b_compressed.npz', b, True)  # 文件大小：100KB
+
+# 稀疏矩阵不压缩存储到npz文件
+sparse.save_npz('b_uncompressed.npz', b, False)  # 文件大小：560KB
+
+# 存储到普通的npy文件
+np.save('a.npy', a)  # 文件大小：391KB
+
+# 存储到压缩的npz文件
+np.savez_compressed('a_compressed.npz', a=a)  # 文件大小：97KB• 1
+对于存储到npz文件中的CSR格式的稀疏矩阵，内容为：
+
+data.npy
+format.npy
+indices.npy
+indptr.npy
+shape.npy
+参考
+Sparse matrices (scipy.sparse)
+Sparse Matrices
+python稀疏矩阵的存储与表示
+python scipy 稀疏矩阵详解
+SciPy教程 - 稀疏矩阵库scipy.sparse
+编辑于 2020-12-04 22:59
+有哪些令人浑身发抖的故事？
+
+知乎用户86k2...
+4984 点赞 · 105 评论 · 盐选推荐
+评论 16
+
+写评论
+
+r1-12king
+感谢，懂了不少。另外，说句题外话，您的博客是用的什么写的？Hexo？wordpress之类的，挺好看的
+2020-10-26
+​回复
+
+2
+
+Gemini向光性
+作者
+是hexo的NexT主题
+2020-10-27
+​
+
+1
+
+王氏天下
+看了您的详细描述，以及生动的图片，终于懂了，非常感
+2020-10-22
+​回复
+
+2
+
+Gemini向光性
+作者
+也很幸运能帮助到您
+2020-10-24
+​
+
+1
+
+杨某某
+懂了，非常感谢！不过dia的代码示例中，dia.data 下面那一块注释似乎不太对。此外，dia.toarray()下方那一块注释似乎也不对（因为你之前dia.data.ravel()[9:12]=0 的时候更改了data，所以输出不应该是这个值）。
+2020-10-31
+​回复
+
+1
+
+Gemini向光性
+作者
+感谢您的指正，我已修改
+2020-11-02
+​
+
+1
+
+孙梓轩
+
+您好，想问一下 图片中的动画是怎么做的 是用的什么库绘制的[爱]
+06-26
+​回复
+
+喜欢
+
+遗物喜
+CSC赶紧改了，误导人。
+03-01
+​回复
+
+喜欢
+
+遗物喜
+是对了😅
+03-01
+​
+
+喜欢
+
+海洋
+想知道如果非常大的矩阵，如何啊啊存取，借助外部记事本存储数据。如何在利用这些数据
+2021-08-10
+​回复
+
+喜欢
+
+怪力乱神
+请问，个人直觉感觉稀疏矩阵比起稠密矩阵好处理多了，但发现讲稀疏矩阵的多一些，为何呢？再一个，稀疏矩阵求逆，LU分解，高斯消元等，复杂度也是立方？这个更奇怪了，那么多零，无需计算，怎么就立方了呢？如此地话，与稠密矩阵岂不是没什么区别了？
+2021-01-12
+​回复
+
+喜欢
+
+老大
+你先看看数据在底层的表示和处理就明白了
+2021-06-15
+​
+
+喜欢
+
+哈哈哈哈
+csr部分的代码是不是有错误
+2020-12-04
+​回复
+
+喜欢
+
+Gemini向光性
+作者
+感谢反馈、指正，已修改
+2020-12-04
+​
+
+喜欢
+
+刘萌萌
+感觉CSC那里的行列说法有些对不上呀
+2020-11-16
+
+]]]
+

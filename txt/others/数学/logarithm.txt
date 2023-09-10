@@ -1,0 +1,2548 @@
+e others/数学/logarithm.txt
+logarithm
+
+logarithm    continued fraction
+logarithm    series
+  series for logarithm
+
+TaylorsTheorem:
+  TaylorSeries +TaylorsInequality
+    +LagrangeRemainder/CauchyRemainder/SchloemilchRemainder
+
+  [MaclaurinSeries < TaylorSeries < LaurentSeries]
+  [MaclaurinSeries < PowerSeries < LaurentSeries]
+
+GeneralizedContinuedFraction > SimpleContinuedFraction > RegularContinuedFraction
+  GeneralizedContinuedFraction 分子、分母 无约束
+  SimpleContinuedFraction 分子 为1；分母 无约束
+  RegularContinuedFraction 分子 为1；分母 为 整数，非首项 为 正整数
+
+Engel Expansion
+  整数部分 1+1+... 很难看
+  (1/a0)*(1+(1/a1)*(1+(1/a2)*(1+...)))
+Lochs' Theorem
+  连分数表达的效率 只比 十进制 高出一点
+  连分数项目数量/浮点数长度 --> 0.97027014...
+Khinchin's Constant
+  K=2.685452001... =[def]= 大部分连分数的前几项的几何平均值 的 极限
+    这不应该，毕竟各项可以任意取
+      这概率分布怕不是用的浮点数平均分布？对 连分数表达 而言 不公正
+
+
+The square root of a squarefree integer has a periodic continued fraction of the form
+   sqrt(n)=[a_0;a_1,a_2,a_3,...,a_2,a_1,2a_0^_] 	(1)
+  (Rose 1994, p. 130), where the repeating portion (excluding the last term) is symmetric upon reversal, and the central term may appear either once or twice.
+  类似 gcd(f, Df)?
+  平方因子检测？不过没有用，周期可能是 xxx O(n) --> O(ln n * sqrt n)
+  An upper bound for the length of the period is roughly O(lnDsqrt(D)). The least positive ns such that the continued fraction of sqrt(n) has period p=1, 2, ... are 2, 3, 41, 7, 13, 19, 58, 31, 106, ... (OEIS A013646). The first few values of n such that the continued fraction of sqrt(n) has period p are summarized below for small p.
+
+https://wims.univ-cotedazur.fr/~wims/en_tool~number~contfrac.en.html
+  The page computes the continued fraction expansion of a real number.
+
+wget https://wims.univ-cotedazur.fr/~wims/en_tool~number~contfrac.en.html
+  fail
+
+我想到的，早已有人想到，这种感觉真奇妙。
+  * Gosper's algorithm
+    连分数 四则运算 8变量
+  * logarithm output continued fraction
+
+
+wget http://www.claysturner.com/dsp/BinaryLogarithm.pdf
+
+[[[
+===
+https://exstrom.com/blog/abrazolica/posts/logarithm.html
+===
+Calculating Logarithms With Continued Fractions
+Stefan Hollos    
+posted on: Monday, February 16th, 2015, 11:36
+tagged as: logarithm     continued fraction     approximation    
+
+This is a note on how to calculate logarithms in terms of continued fractions. The number \(x=\log_b{a}\) is the log of \(a\) to the base \(b\). It solves the equation \(a=b^x\). To find \(x\), we start by finding the integer \(n_0 \ge 0\) such that
+
+\[b^{n_0} < a < b^{n_0+1}\]
+
+Given \(n_0\), we can write \(a\) as \(a=b^{n_0+1/x_1}\) for some yet to be determined number \(1/x_1 < 1\). Our logarithm is then \(x=n_0+1/x_1\) and the problem is to find \(x_1\). We get an equation for \(x_1\) by defining \(b_1=a/b^{n_0}=b^{1/x_1}\) or \(b=b_1^{x_1}\). This shows that \(x_1\) is the log of \(b\) to the base \(b_1\). As above, we next find the integer \(n_1 \ge 0\) such that
+
+\[b_1^{n_1} < b < b_1^{n_1+1}\]
+
+We can then write \(b\) as \(b=b_1^{n_1+1/x_2}\) for a yet to be determined number \(1/x_2 < 1\). So we have \(x_1=n_1+1/x_2\) and the same procedure repeats to find \(x_2\), \(x_3\), and so on. These terms are related as follows
+
+\[x=n_0+1/x_1\] \[x_1=n_1+1/x_2\] \[x_2=n_2+1/x_3\] \[\cdots\]
+
+In continued fraction form \(x\) is then
+
+\[x = n_0 + \cfrac{1}{n_1 + \cfrac{1}{n_2 + \cfrac{1}{n_3 + \cdots}}}\]
+
+What we have described so far is basically Shanks' algorithm for calculating logarithms. For more information on this algorithm see the following references.
+
+"A Logarithm Algorithm", Daniel Shanks, Mathematical Tables and Other Aids to Computation, Vol. 8, No. 46 (April 1954), pp. 60-64
+
+"On Shanks' Algorithm For Computing The Continued Fraction Of logb.", Terence Jackson and Keith Matthews, Journal of Integer Sequences, 5.2 (2002): 3.
+
+One way to improve the algorithm is to use the following approximation for \(x_i\)
+
+\[x_i=\frac{b_i+1}{b_i-1}\frac{b_{i-1}-1}{b_{i-1}+1}\]
+
+This is an excellent approximation for \(x_i=\log_{b_i}{b_{i-1}}\) in the range \(1\le b_{i-1}\le b_i\). At the endpoints of the range the approximation gives the correct answers \(x_i=0\) and \(x_i=1\). The figure below shows \(x=\log_2{b}\) and the approximation \(x=3\frac{b-1}{b+1}\) for \(1\le b\le 2\). The approximation is excellent near the endpoints of the range and is worse near the center.
+
+log_2{b} and approximation 3(b-1)/(b+1)
+It is easy to see that the \(b_i\) terms in the above algorithm approach \(1\) for increasing \(i\) so the approximation for \(x_i\) will also improve. It is always possible to get \(n_i\) by taking the integer part of \(x_i\) but we can also get \(n_{i+1}\) and more terms by doing a continued fraction expansion of \(x_i\). For example we have
+
+\[n_{i+1}=\left\lfloor{\frac{1}{x_i-n_i}}\right\rfloor\]
+
+With \(b_{i-1}\approx 1\) you can get \(n_{i+2}\), \(n_{i+3}\) and more terms from \(x_i\). If the goal is to calculate the logarithm and not the continued fraction then the approximation for \(x_i\) can be used as the last term in the continued fraction for an excellent and fast approximation of the logarithm.
+
+
+© 2010-2015 Stefan Hollos and Richard Hollos
+
+]]]
+[[[
+https://oeis.org/A016730
+===
+(Greetings from The On-Line Encyclopedia of Integer Sequences!)
+A016730		Continued fraction for log(2).		11
+0, 1, 2, 3, 1, 6, 3, 1, 1, 2, 1, 1, 1, 1, 3, 10, 1, 1, 1, 2, 1, 1, 1, 1, 3, 2, 3, 1, 13, 7, 4, 1, 1, 1, 7, 2, 4, 1, 1, 2, 5, 14, 1, 10, 1, 4, 2, 18, 3, 1, 4, 1, 6, 2, 7, 3, 3, 1, 13, 3, 1, 4, 4, 1, 3, 1, 1, 1, 1, 2, 17, 3, 1, 2, 32, 1, 1, 1 (list; graph; refs; listen; history; text; internal format)
+OFFSET	
+1,3
+COMMENTS	
+Continued fraction for 1/log(2) is the same but without the initial zero.
+LINKS	
+Harry J. Smith, Table of n, a(n) for n = 1..20000
+G. Xiao, Contfrac
+Eric Weisstein's World of Mathematics, Natural Logarithm of 2
+Index entries for continued fractions for constants
+EXAMPLE	
+log(2) = 0.6931471805599453094... = 0 + 1/(1 + 1/(2 + 1/(3 + 1/(1 + ...)))). - Harry J. Smith, Apr 21 2009
+MATHEMATICA	
+ContinuedFraction[Log[2], 80] (* Alonso del Arte, Oct 03 2017 *)
+PROG	
+(PARI) { allocatemem(932245000); default(realprecision, 21000); x=contfrac(log(2)); for (n=1, 20000, write("b016730.txt", n, " ", x[n])); } \\ Harry J. Smith, Apr 21 2009
+(Magma) ContinuedFraction(Log(2)); // G. C. Greubel, Sep 15 2018
+CROSSREFS	
+Cf. A120754, A120755, A002162 (decimal expansion).
+Sequence in context: A165742 A162984 A166295 * A319192 A114576 A198724
+Adjacent sequences:  A016727 A016728 A016729 * A016731 A016732 A016733
+KEYWORD	
+nonn,cofr
+AUTHOR	
+N. J. A. Sloane
+STATUS	
+approved
+Last modified August 8 05:49 EDT 2023. Contains 364498 sequences. (Running on oeis4.)
+]]]
+
+
+[[[
+WWW Interactive Multipurpose Server (WIMS)
+https://wims.univ-cotedazur.fr/~wims/en_tool~number~contfrac.en.html
+表达式 示例
+===
+https://wims.univ-cotedazur.fr/~wims/wims.cgi?session=NT49D828B2.1&+lang=en&+module=tool%2Fnumber%2Fcontfrac.en&+cmd=help&+help_subject=example2
+===
+wims.univ-cotedazur.fr
+Contfrac --- Help ---
+Examples of expressions, and how to enter them
+For the expression	You may type	Which gives
+lcm(15,70)-gcd(21,33)	lcm(15,70)-gcd(21,33)	207
+sum(n=1,10,n^2+n)	440
+ 
+prod(n=1,10,n^2/(n^2+1))	
+ 
+binomial(30,12)	86493225
+integral part of 	truncate(exp(4))	54
+2^(2^(2^2))-8!	25216
+root of  between 0 and 1 (golden ratio)	solve(x=0,1,x^2+x-1)	0.618033988...
+Elementary examples.
+
+For more information on the functions and their names, please consult the manual of pari.
+
+Back to work
+Author of the page: Gang XIAO
+Version 1.04, © 1998-1999 (GNU GPL) 2022
+===
+https://wims.univ-cotedazur.fr/~wims/wims.cgi?session=NT49D828B2.2&+lang=en&+module=tool%2Fnumber%2Fcontfrac.en&+cmd=help&+help_subject=example1
+===
+wims.univ-cotedazur.fr
+Contfrac --- Help ---
+Examples of expressions, and how to enter them
+For the expression	You may type	Which gives
+pi^2-3*e	1.7147589...
+sqrt(2)+5^(1/3)	3.1241895...
+4^6-3^6-2^6	3303
+2^22-10!	565504
+(3^5-1)*(2^5-1)-1	7501
+ 
+(15+77-2)/(2^3*3^5-1)	90/1943
+More advanced examples .
+Back to work
+Author of the page: Gang XIAO
+Version 1.04, © 1998-1999 (GNU GPL) 2022
+===
+]]]
+[[[
+https://wims.univ-cotedazur.fr/~wims/wims.cgi?wims_window=new&+session=NT49D828B2_mhelp&+lang=en&+module=tool%2Fnumber%2Fcontfrac.en&+cmd=help&+special_parm=about
+===
+WIMS
+WWW Interactive Multipurpose Server
+Back
+Contfrac
+This is a module under the WWW Interactive Multipurpose Server (WIMS).
+Support software requirements
+
+pari
+Module Informations
+Name	Contfrac
+Address	tool/number/contfrac.en
+Permalink
+(Link for bookmark)
+"Normal" link: https://wims.univ-cotedazur.fr/~wims/wims.cgi?module=tool/number/contfrac.en
+"Light" link (without interface):
+https://wims.univ-cotedazur.fr/~wims/wims.cgi?module=adm/raw&job=lightpopup&emod=tool/number/contfrac.en&&option=noabout
+Embeddable player
+(Share this module)
+Copy and paste the code on your site 
+<iframe src="https://wims.univ-cotedazur.fr/~wims/wims.cgi?module=tool/number/contfrac.en&module=adm/raw&job=lightpopup&emod=https://wims.univ-cotedazur.fr/~wims/wims.cgi?module=tool/number/contfrac.en" width="100%" height="100%"></iframe>
+Description	expand a real number into continued fraction.
+Level(s)	
+Keywords	number, continued_fraction
+Domain	algebra, analysis, number
+Version	1.04
+Required WIMS version	ge 4.06
+Language	English
+Author	Gang XIAO
+Maintainer	WIMS EDU
+Copyright	© 1998-1999 (GNU GPL) 2022
+Softwares used in this module:
+
+GP/PARI CALCULATOR Version 2.7.6 (released).
+Version 1.04: 2022-08-05
+  typo
+Version 1.03: 2022-08-05
+  Italian version merged (MC)
+Version 1.02: 2022-07-29
+  multilangage, html, fr version (bpr)
+
+Back
+]]]
+
+
+
+
+Gauss's continued fraction
+[[[
+https://mathworld.wolfram.com/GausssContinuedFraction.html
+===
+Gauss's Continued Fraction
+Gauss's continued fraction is given by the continued fraction
+
+ (_2F_1(a,b+1;c+1;z))/(_2F_1(a,b;c;z))=1/(1-((a(c-b))/(c(c+1))z)/(1-(((b+1)(c-a+1))/((c+1)(c+2))z)/(1-(((a+1)(c-b+1))/((c+2)(c+3))z)/(1-(((b+2)(c-a+2))/((c+3)(c+4))z)/(1-...))))), 
+where _2F_1(a,b;c;z) is a hypergeometric function. Many analytic expressions for continued fractions of functions can be derived from this formula.
+]]]
+
+[[[
+https://mathworld.wolfram.com/HypergeometricFunction.html
+===
+Hypergeometric Function
+A generalized hypergeometric function _pF_q(a_1,...,a_p;b_1,...,b_q;x) is a function which can be defined in the form of a hypergeometric series, i.e., a series for which the ratio of successive terms can be written
+
+ (c_(k+1))/(c_k)=(P(k))/(Q(k))=((k+a_1)(k+a_2)...(k+a_p))/((k+b_1)(k+b_2)...(k+b_q)(k+1))x. 	
+(1)
+(The factor of k+1 in the denominator is present for historical reasons of notation.)
+
+The function _2F_1(a,b;c;x) corresponding to p=2, q=1 is the first hypergeometric function to be studied (and, in general, arises the most frequently in physical problems), and so is frequently known as "the" hypergeometric equation or, more explicitly, Gauss's hypergeometric function (Gauss 1812, Barnes 1908). To confuse matters even more, the term "hypergeometric function" is less commonly used to mean closed form, and "hypergeometric series" is sometimes used to mean hypergeometric function.
+
+The hypergeometric functions are solutions to the hypergeometric differential equation, which has a regular singular point at the origin. To derive the hypergeometric function from the hypergeometric differential equation
+
+ z(1-z)y^('')+[c-(a+b+1)z]y^'-aby=0, 	
+(2)
+use the Frobenius method to reduce it to
+
+ sum_(n=0)^infty{(n+1)(n+c)A_(n+1)-[n^2+(a+b)n+ab]A_n}z^n=0, 	
+(3)
+giving the indicial equation
+
+ A_(n+1)=((n+a)(n+b))/((n+1)(n+c))A_n. 	
+(4)
+Plugging this into the ansatz series
+
+ y=sum_(n=0)^inftyA_nz^n 	
+(5)
+then gives the solution
+
+ y=A_0[1+(ab)/(1!c)z+(a(a+1)b(b+1))/(2!c(c+1))z^2+...]. 	
+(6)
+This is the so-called regular solution, denoted
+
+_2F_1(a,b;c;z)	=	1+(ab)/(1!c)z+(a(a+1)b(b+1))/(2!c(c+1))z^2+...	
+(7)
+	=	sum_(n=0)^(infty)((a)_n(b)_n)/((c)_n)(z^n)/(n!),	
+(8)
+which converges if c is not a negative integer (1) for all of |z|<1 and (2) on the unit circle |z|=1 if R[c-a-b]>0. Here, (a)_n is a Pochhammer symbol.
+
+The complete solution to the hypergeometric differential equation is
+
+ y=A_2F_1(a,b;c;z)+Bz^(1-c)_2F_1(a+1-c,b+1-c;2-c;z). 	
+(9)
+The hypergeometric series is convergent for arbitrary a, b, and c for real -1<z<1, and for z=+/-1 if c>a+b.
+
+Derivatives of _2F_1(a,b;c;z) are given by
+
+(d_2F_1(a,b;c;z))/(dz)	=	(ab)/c_2F_1(a+1,b+1;c+1;z)	
+(10)
+(d^2_2F_1(a,b;c;z))/(dz^2)	=	(a(a+1)b(b+1))/(c(c+1))_2F_1(a+2,b+2;c+2;z)	
+(11)
+(Magnus and Oberhettinger 1949, p. 8).
+
+Hypergeometric functions with special arguments reduce to elementary functions, for example,
+
+_2F_1(1,1;1;z)	=	1/(1-z)	
+(12)
+_2F_1(1,1;2;z)	=	-(ln(1-z))/z	
+(13)
+_2F_1(1,2;1;z)	=	1/((1-z)^2)	
+(14)
+_2F_1(1,2;2;z)	=	1/(1-z).	
+(15)
+An integral giving the hypergeometric function is
+
+ _2F_1(a,b;c;z)=(Gamma(c))/(Gamma(b)Gamma(c-b))int_0^1(t^(b-1)(1-t)^(c-b-1))/((1-tz)^a)dt 	
+(16)
+as shown by Euler in 1748 (Bailey 1935, pp. 4-5). Barnes (1908) gave the contour integral
+
+ _2F_1(a,b;c;z)=1/(2pii)int_(-iinfty)^(iinfty)(Gamma(a+s)Gamma(b+s)Gamma(-s))/(Gamma(c-s))(-z)^sds, 	
+(17)
+where |arg(-z)|<pi and the path is curved (if necessary) to separate the poles s=-a-n, s=-b-n, ... (n=0, 1, ...) from the poles s=0, 1 ... (Bailey 1935, pp. 4-5; Whittaker and Watson 1990).
+
+Curiously, at a number of very special points, the hypergeometric functions can assume rational,
+
+_2F_1(1/3,2/3;5/6;(27)/(32))	=	8/5	
+(18)
+_2F_1(1/4,1/2;3/4;(80)/(81))	=	9/5	
+(19)
+(M. Trott, pers. comm., Aug. 5, 2002; Zucker and Joyce 2001), quadratic surd
+
+_2F_1(1/8,3/8;1/2;(2400)/(2401))	=	2/3sqrt(7)	
+(20)
+_2F_1(1/6,1/3;1/2;(25)/(27))	=	3/4sqrt(3)	
+(21)
+(Zucker and Joyce 2001), and other exact values
+
+_2F_1(1/6,1/2;2/3;(125)/(128))	=	4/32^(1/6)	
+(22)
+_2F_1(1/(12),5/(12);1/2;(1323)/(1331))	=	3/4(11)^(1/4)	
+(23)
+_2F_1(1/(12),5/(12);1/2;(121)/(125))	=	(2^(1/6)(15)^(1/4))/(4sqrt(pi))([Gamma(1/3)]^3)/([Gamma(1/4)]^2)(1+sqrt(3))	
+(24)
+(Zucker and Joyce 2001, 2003).
+
+An infinite family of rational values for well-poised hypergeometric functions with rational arguments is given by
+
+ _kF_(k-1)(1/(k+1),...,k/(k+1);2/k,3/k,...,(k-1)/k,(k+1)/k;((x(1-x^k))/(f_k))^k)=1/(1-x^k)   	
+(25)
+for k=2, 3, ..., 0<=x<=(k+1)^(-1/k), and
+
+ f_k=k/((1+k)^(1+1/k)) 	
+(26)
+(M. L. Glasser, pers. comm., Sept. 26, 2003). This gives the particular identity
+
+ _2F_1(1/3,2/3;3/2;(27)/4x^2(1-x^2)^2) 
+=(2sin[1/3sin^(-1)(3/2sqrt(3)x(1-x^2))])/(sqrt(3)x(1-x^2)) 
+=1/(1-x^2)  	
+(27)
+for 0<=x<=sqrt(3)/3.
+
+A hypergeometric function can be written using Euler's hypergeometric transformations
+
+t	->	t	
+(28)
+t	->	1-t	
+(29)
+t	->	(1-z-tz)^(-1)	
+(30)
+t	->	(1-t)/(1-tz)	
+(31)
+in any one of four equivalent forms
+
+_2F_1(a,b;c;z)	=	(1-z)^(-a)_2F_1(a,c-b;c;z/(z-1))	
+(32)
+	=	(1-z)^(-b)_2F_1(c-a,b;c;z/(z-1))	
+(33)
+	=	(1-z)^(c-a-b)_2F_1(c-a,c-b;c;z)	
+(34)
+(Abramowitz and Stegun 1972, p. 559).
+
+It can also be written as a linear combination
+
+ _2F_1(a,b;c;z)=(Gamma(c)Gamma(c-a-b))/(Gamma(c-a)Gamma(c-b))_2F_1(a,b;a+b+1-c;1-z) 
+ +(Gamma(c)Gamma(a+b-c))/(Gamma(a)Gamma(b))(1-z)^(c-a-b)_2F_1(c-a,c-b;1+c-a-b;1-z)   	
+(35)
+(Barnes 1908; Bailey 1935, pp. 3-4; Whittaker and Watson 1990, p. 291).
+
+Kummer found all six solutions (not necessarily regular at the origin) to the hypergeometric differential equation:
+
+u_1(x)	=	_2F_1(a,b;c;z)	
+(36)
+u_2(x)	=	_2F_1(a,b;a+b+1-c;1-z)	
+(37)
+u_3(x)	=	z^(-a)_2F_1(a,a+1-c;a+1-b;z^(-1))	
+(38)
+u_4(x)	=	z^(-b)_2F_1(b+1-c,b;b+1-a;z^(-1))	
+(39)
+u_5(x)	=	z^(1-c)_2F_1(b+1-c,a+1-c;2-c;z)	
+(40)
+u_6(x)	=	(1-z)^(c-a-b)_2F_1(c-a,c-b;c+1-a-b;1-z)	
+(41)
+(Abramowitz and Stegun 1972, p. 563).
+
+Applying Euler's hypergeometric transformations to the Kummer solutions then gives all 24 possible forms which are solutions to the hypergeometric differential equation:
+
+u_1^((1))(x)	=	_2F_1(a,b;c;z)	
+(42)
+u_1^((2))(x)	=	(1-z)^(c-a-b)_2F_1(c-a,c-b;c;z)	
+(43)
+u_1^((3))(x)	=	(1-z)^(-a)_2F_1(a,c-b;c;z/(z-1))	
+(44)
+u_1^((4))(x)	=	(1-z)^(-b)_2F_1(c-a,b;c;z/(z-1))	
+(45)
+u_2^((1))(x)	=	_2F_1(a,b;a+b+1-c;1-z)	
+(46)
+u_2^((2))(x)	=	z^(1-c)_2F_1(a+1-c,b+1-c;a+b+1-c;1-z)	
+(47)
+u_2^((3))(x)	=	z^(-a)_2F_1(a,a+1-c;a+b+1-c;1-z^(-1))	
+(48)
+u_2^((4))(x)	=	z^(-b)_2F_1(b+1-c,b;a+b+1-c;1-z^(-1))	
+(49)
+u_3^((1))(x)	=	(-z)^(-a)_2F_1(a,a+1-c;a+1-b;z^(-1))	
+(50)
+u_3^((2))(x)	=	(-z)^(b-c)(1-z)^(c-a-b)_2F_1(1-b,c-b;a+1-b;z^(-1))	
+(51)
+u_3^((3))(x)	=	(1-z)^(-a)_2F_1(a,c-b;a+1-b;(1-z)^(-1))	
+(52)
+u_3^((4))(x)	=	(-z)^(1-c)(1-z)^(c-a-1)_2F_1(a+1-c,1-b;a+1-b;(1-z)^(-1))	
+(53)
+u_4^((1))(x)	=	(-z)^(-b)_2F_1(b+1-c,b;b+1-a;z^(-1))	
+(54)
+u_4^((2))(x)	=	(-z)^(a-c)(1-z)^(c-a-b)_2F_1(1-a,c-a;b+1-a;z^(-1))	
+(55)
+u_4^((3))(x)	=	(1-z)^(-b)_2F_1(b,c-a;b+1-a;(1-z)^(-1))	
+(56)
+u_4^((4))(x)	=	(-z)^(1-c)(1-z)^(c-b-1)_2F_1(b+1-c,1-a;b+1-a;(1-z)^(-1))	
+(57)
+u_5^((1))(x)	=	z^(1-c)_2F_1(a+1-c,b+1-c;2-c;z)	
+(58)
+u_5^((2))(x)	=	z^(1-c)(1-z)^(c-a-b)_2F_1(1-a,1-b;2-c;z)	
+(59)
+u_5^((3))(x)	=	z^(1-c)(1-z)^(c-a-1)_2F_1(a+1-c,1-b;2-c;z/(z-1))	
+(60)
+u_5^((4))(x)	=	z^(1-c)(1-z)^(c-b-1)_2F_1(b+1-c,1-a;2-c;z/(z-1))	
+(61)
+u_6^((1))(x)	=	(1-z)^(c-a-b)_2F_1(c-a,c-b;c+1-a-b;1-z)	
+(62)
+u_6^((2))(x)	=	z^(1-c)(1-z)^(c-a-b)_2F_1(1-a,1-b;c+1-a-b;1-z)	
+(63)
+u_6^((3))(x)	=	z^(a-c)(1-z)^(c-a-b)_2F_1(c-a,1-a;c+1-a-b;1-z^(-1))	
+(64)
+u_6^((4))(x)	=	z^(b-c)(1-z)^(c-a-b)_2F_1(c-b,1-b;c+1-a-b;1-z^(-1))	
+(65)
+(Kummer 1836; Erdélyi et al. 1981, pp. 105-106).
+
+Goursat (1881) and Erdélyi et al. (1981) give many hypergeometric transformation formulas, including several cubic transformations.
+
+Many functions of mathematical physics can be expressed as special cases of the hypergeometric functions. For example,
+
+ _2F_1(-l,l+1;1;(1-z)/2)=P_l(z), 	
+(66)
+where P_l(z) is a Legendre polynomial.
+
+ (1+z)^n=_2F_1(-n,b;b;-z) 	
+(67)
+ ln(1+z)=z_2F_1(1,1;2;-z) 	
+(68)
+Complete elliptic integrals and the Riemann P-series can also be expressed in terms of _2F_1(a,b;c;z). Special values include
+
+_2F_1(a,b;a-b+1;-1)=2^(-a)sqrt(pi)(Gamma(1+a+b))/(Gamma(1+1/2a-b)Gamma(1/2+1/2a)) 	
+(69)
+_2F_1(1,-a;a;-1)=(sqrt(pi))/2(Gamma(a))/(Gamma(a+1/2))+1 	
+(70)
+_2F_1(a,b;c;1/2)=2^a_2F_1(a,c-b;c;-1) 	
+(71)
+_2F_1(a,b;1/2(a+b+1);1/2)=(Gamma(1/2)Gamma[1/2(1+a+b)])/(Gamma[1/2(1+a)]Gamma[1/2(1+b)]) 	
+(72)
+_2F_1(a,1-a;c;1/2)=(Gamma(1/2c)Gamma[1/2(c+1)])/(Gamma[1/2(a+c)]Gamma[1/2(1+c-a)]) 	
+(73)
+_2F_1(a,b;c;1)=(Gamma(c)Gamma(c-a-b))/(Gamma(c-a)Gamma(c-b)). 	
+(74)
+Kummer's first formula gives
+
+ _2F_1(1/2+m-k,-n;2m+1;1)=(Gamma(2m+1)Gamma(m+1/2+k+n))/(Gamma(m+1/2+k)Gamma(2m+1+n)), 	
+(75)
+where m!=-1/2, -1, -3/2, .... Many additional identities are given by Abramowitz and Stegun (1972, p. 557).
+
+Hypergeometric functions can be generalized to generalized hypergeometric functions
+
+ _nF_m(a_1,...,a_n;b_1,...,b_m;z). 	
+(76)
+A function of the form _1F_1(a;b;z) is called a confluent hypergeometric function of the first kind, and a function of the form _0F_1(;b;z) is called a confluent hypergeometric limit function.
+
+SEE ALSO
+Appell Hypergeometric Function, Barnes' Lemma, Bradley's Theorem, Cayley's Hypergeometric Function Theorem, Clausen Formula, Closed Form, Confluent Hypergeometric Function of the First Kind, Confluent Hypergeometric Function of the Second Kind, Confluent Hypergeometric Limit Function, Contiguous Function, Darling's Products, Generalized Hypergeometric Function, Gosper's Algorithm, Hypergeometric Identity, Hypergeometric Series, Jacobi Polynomial, Kummer's Formulas, Kummer's Quadratic Transformation, Kummer's Relation, Multivariate Hypergeometric Function, Orr's Theorem, Pfaff Transformation, q-Hypergeometric Function, Ramanujan's Hypergeometric Identity, Saalschützian, Sister Celine's Method, Zeilberger's Algorithm
+EXPLORE WITH WOLFRAM|ALPHA
+WolframAlpha
+hypergeometric function
+
+More things to try:
+
+ hypergeometric function
+ identities 2F1(a,b,c,z)
+ representations 2F1(a,b,c,z)
+REFERENCES
+Abramowitz, M. and Stegun, I. A. (Eds.). "Hypergeometric Functions." Ch. 15 inHandbook of Mathematical Functions with Formulas, Graphs, and Mathematical Tables, 9th printing. New York: Dover, pp. 555-566, 1972.
+Appell, P. and Kampé de Fériet, J. Fonctions hypergéométriques et hypersphériques: polynomes d'Hermite. Paris: Gauthier-Villars, 1926.
+Arfken, G. "Hypergeometric Functions." §13.5 in Mathematical Methods for Physicists, 3rd ed. Orlando, FL: Academic Press, pp. 748-752, 1985.
+Bailey, W. N. Generalised Hypergeometric Series. Cambridge, England: University Press, 1935.
+Barnes, E. W. "A New Development in the Theory of the Hypergeometric Functions." Proc. London Math. Soc. 6, 141-177, 1908.
+Borwein, J.; Bailey, D.; and Girgensohn, R. Experimentation in Mathematics: Computational Paths to Discovery. Wellesley, MA: A K Peters, 2004.
+Emmanuel, J. "Évaluation rapide de fonctions hypergéométriques." Report RT-0242. INRIA, Jul 2000. http://www.inria.fr/rrrt/rt-0242.html.
+Erdélyi, A.; Magnus, W.; Oberhettinger, F.; and Tricomi, F. G. Higher Transcendental Functions, Vol. 1. New York: Krieger, 1981.
+Exton, H. Handbook of Hypergeometric Integrals: Theory, Applications, Tables, Computer Programs. Chichester, England: Ellis Horwood, 1978.
+Fine, N. J. Basic Hypergeometric Series and Applications. Providence, RI: Amer. Math. Soc., 1988.
+Gasper, G. and Rahman, M. Basic Hypergeometric Series. Cambridge, England: Cambridge University Press, 1990.
+Gauss, C. F. "Disquisitiones Generales Circa Seriem Infinitam [(alphabeta)/(1·gamma)]x+[(alpha(alpha+1)beta(beta+1))/(1·2·gamma(gamma+1))]x^2 +[(alpha(alpha+1)(alpha+2)beta(beta+1)(beta+2))/(1·2·3·gamma(gamma+1)(gamma+2))]x^3+ etc. Pars Prior." Commentationes Societiones Regiae Scientiarum Gottingensis Recentiores, Vol. II. 1812. Reprinted in Gesammelte Werke, Bd. 3, pp. 123-163 and 207-229, 1866.
+Gessel, I. and Stanton, D. "Strange Evaluations of Hypergeometric Series." SIAM J. Math. Anal. 13, 295-308, 1982.
+Gosper, R. W. "Decision Procedures for Indefinite Hypergeometric Summation." Proc. Nat. Acad. Sci. USA 75, 40-42, 1978.
+Goursat, M. E. "Sur l'équation différentielle linéaire qui admet pour intégrale la série hypergéométrique." Ann. Sci. École Norm. Super. Sup. 10, S3-S142, 1881.
+Graham, R. L.; Knuth, D. E.; and Patashnik, O. Concrete Mathematics: A Foundation for Computer Science, 2nd ed. Reading, MA: Addison-Wesley, 1994.
+Hardy, G. H. "A Chapter from Ramanujan's Note-Book." Proc. Cambridge Philos. Soc. 21, 492-503, 1923.
+Hardy, G. H. "Hypergeometric Series." Ch. 7 in Ramanujan: Twelve Lectures on Subjects Suggested by His Life and Work, 3rd ed. New York: Chelsea, pp. 101-112, 1999.
+Iyanaga, S. and Kawada, Y. (Eds.). "Hypergeometric Functions and Spherical Functions." Appendix A, Table 18 in Encyclopedic Dictionary of Mathematics. Cambridge, MA: MIT Press, pp. 1460-1468, 1980.
+Kampé de Fériet, J. La fonction hypergéométrique. Paris: Gauthier-Villars, 1937.
+Kohno, M. Global Analysis in Linear Differential Equations. Dordrecht, Netherlands: Kluwer, 1999.
+Krattenthaler, C. "HYP and HYPQ." J. Symb. Comput. 20, 737-744, 1995.
+Kummer, E. E. "Über die Hypergeometrische Reihe." J. reine angew. Math. 15, 39-83 and 127-172, 1836.
+Magnus, W. and Oberhettinger, F. Formulas and Theorems for the Special Functions of Mathematical Physics. New York: Chelsea, 1949.
+Morse, P. M. and Feshbach, H. Methods of Theoretical Physics, Part I. New York: McGraw-Hill, pp. 541-547, 1953.
+Petkovšek, M.; Wilf, H. S.; and Zeilberger, D. A=B. Wellesley, MA: A K Peters, 1996. http://www.cis.upenn.edu/~wilf/AeqB.html.
+Press, W. H.; Flannery, B. P.; Teukolsky, S. A.; and Vetterling, W. T. "Hypergeometric Functions." §6.12 in Numerical Recipes in FORTRAN: The Art of Scientific Computing, 2nd ed. Cambridge, England: Cambridge University Press, pp. 263-265, 1992.
+Roach, K. "100,000+ Hypergeometric Formulas." http://www.planetquantum.com/HyperF/.
+Seaborn, J. B. Hypergeometric Functions and Their Applications. New York: Springer-Verlag, 1991.
+Snow, C. Hypergeometric and Legendre Functions with Applications to Integral Equations of Potential Theory. Washington, DC: U. S. Government Printing Office, 1952.
+Spanier, J. and Oldham, K. B. "The Gauss Function F(a,b;c;x)." Ch. 60 in An Atlas of Functions. Washington, DC: Hemisphere, pp. 599-607, 1987.
+Thomae. J. reine angew. Math. 87, 222-349, 1879.
+Trott, M. "The Mathematica Guidebooks Additional Material: Rational Values of Gauss Hypergeometric Function." http://www.mathematicaguidebooks.org/additions.shtml#S_3_01.
+Watson, G. N. "Ramanujan's Note Books." J. London Math. Soc. 6, 137-153, 1931.
+Weisstein, E. W. "Books about Hypergeometric Functions." http://www.ericweisstein.com/encyclopedias/books/HypergeometricFunctions.html.
+Whittaker, E. T. and Watson, G. N. A Course in Modern Analysis, 4th ed. Cambridge, England: Cambridge University Press, 1990.
+Yoshida, M. Hypergeometric Functions, My Love: Modular Interpretations of Configuration Spaces. Braunschweig, Germany: Vieweg, 1997.
+Zucker, I. J. and Joyce, G. S. "Special Values of the Hypergeometric Series II." Math. Proc. Cambridge Philos. Soc. 131, 309-319, 2001.
+Zucker, I. J. and Joyce, G. S. "Special Values of The Hypergeometric Series III." Math. Proc. Cambridge Philos. Soc. 133, 213-222, 2003.
+REFERENCED ON WOLFRAM|ALPHA
+Hypergeometric Function
+CITE THIS AS:
+Weisstein, Eric W. "Hypergeometric Function." From MathWorld--A Wolfram Web Resource. https://mathworld.wolfram.com/HypergeometricFunction.html
+
+SUBJECT CLASSIFICATIONS
+Calculus and Analysis  Special Functions  Hypergeometric Functions  Gauss Hypergeometric Functions 
+Calculus and Analysis  Special Functions  Hypergeometric Functions  Generalized Hypergeometric Functions 
+MathWorld Contributors  Glasser 
+More...
+About MathWorld MathWorld Classroom Send a Message MathWorld Book wolfram.com
+13,928 Entries Last Updated: Sat Jul 29 2023 ©1999–2023 Wolfram Research, Inc. Terms of Use
+Created, developed and nurtured by Eric Weisstein at Wolfram Research
+]]]
+[[[
+https://mathworld.wolfram.com/ContinuedFraction.html
+===
+Number Theory  Continued Fractions 
+History and Terminology  Wolfram Language Commands 
+Continued Fraction
+The term "continued fraction" is used to refer to a class of expressions of which generalized continued fraction of the form
+
+ b_0+(a_1)/(b_1+(a_2)/(b_2+(a_3)/(b_3+...))) 
+ =b_0+K_(n=1)^infty(a_n)/(b_n)   
+(and the terms may be integers, reals, complexes, or functions of these) are the most general variety (Rocket and Szüsz 1992, p. 1).
+
+Wallis first used the term "continued fraction" in his Arithmetica infinitorum of 1653 (Havil 2003, p. 93), although other sources list the publication date as 1655 or 1656. An archaic word for a continued fraction is anthyphairetic ratio.
+
+The simple continued fraction takes a_n=1 for all n, leaving
+
+ b_0+1/(b_1+1/(b_2+1/(b_3+...)))=b_0+K_(n=1)^infty1/(b_n). 
+If b_0 is an integer and the remainder of the partial denominators b_k for k>0 are positive integers, the continued fraction is known as a regular continued fraction.
+
+SEE ALSO
+Continued Fraction Constants, Convergent, Generalized Continued Fraction, Regular Continued Fraction, Simple Continued Fraction
+]]]
+[[[
+https://mathworld.wolfram.com/ContinuedFractionConstants.html
+===
+Continued Fraction Constants
+A number of closed-form constants can be obtained for generalized continued fractions having particularly simple partial numerators and denominators.
+
+The Ramanujan continued fractions provide a fascinating class of continued fraction constants. The Trott constants are unexpected constants whose partial numerators and denominators correspond to their decimal digits (though to achieve this, it is necessary to allow some partial numerators to equal 0).
+
+The first in a series of other famous continued fraction constants is the infinite regular continued fraction
+
+C_1	=	K_(n=1)^(infty)1/n	
+(1)
+	=	1/(1+1/(2+1/(3+1/(4+1/(5+...))))).	
+(2)
+The first few convergents A_n/B_n of the constant are 0, 1, 2/3, 7/10, 30/43, 157/225, 972/1393, 6961/9976, ... (OEIS A001053 and A001040).
+
+Both numerator A_n and denominator B_n satisfy the recurrence relation
+
+ f_(n+1)=nf_n+f_(n-1), 	
+(3)
+where A_n has the initial conditions A_1=0, A_2=1 and B_n has the initial conditions B_0=0, B_1=1. These can be solved exactly to yield
+
+A_n	=	(I_n(-2)K_1(2)-I_1(-2)K_n(2))/(I_2(-2)K_1(2)-I_1(-2)K_2(2))	
+(4)
+	=	2[(-1)^nI_n(2)K_1(2)+I_1(2)K_n(2)]	
+(5)
+B_n	=	(I_n(-2)K_0(2)-I_0(-2)K_n(2))/(I_1(-2)K_0(2)-I_0(-2)K_1(2))	
+(6)
+	=	2[(-1)^(n-1)I_n(2)K_0(2)+I_0(2)K_n(2)],	
+(7)
+where I_n(x) is a modified Bessel function of the first kind and K_n(x) is a modified Bessel function of the second kind. Therefore, as n->infty, the infinite continued fraction is given by
+
+C_1	=	lim_(n->infty)(A_n)/(B_n)	
+(8)
+	=	(I_1(2))/(I_0(2))	
+(9)
+	=	0.697774658...	
+(10)
+(OEIS A052119; Lehmer 1973, Rabinowitz 1990; Borwein et al. 2004, p. 35).
+
+The related constant defined by the generalized continued fraction
+
+C_2	=	K_(n=1)^(infty)n/n	
+(11)
+	=	1/(1+2/(2+3/(3+4/(4+5/(5+...)))))	
+(12)
+has nth convergent is given by
+
+ (A_n)/(B_n)=[(Gamma(n+2))/(!(n+1))-1]^(-1), 	
+(13)
+where Gamma(n) is the gamma function and !n is the subfactorial. The first few convergents A_n/B_n are therefore 1, 1/2, 3/5, 11/19, 53/91, 103/177, ... (OEIS A053557 and A103816). As n->infty, this gives the value
+
+C_2	=	1/(e-1)	
+(14)
+	=	0.581976...	
+(15)
+(OEIS A073333).
+
+Another similar continued fraction constant that can be computed in closed form is
+
+C_3	=	1+K_(n=1)^(infty)n/1	
+(16)
+	=	1+1/(1+2/(1+3/(1+4/(1+5/(6+...)))))	
+(17)
+	=	sqrt(2/(epi))[erfc(2^(-1/2))]^(-1)	
+(18)
+	=	1.5251352...	
+(19)
+(OEIS A111129), where erfc is the complementary error function. No closed form is known for the convergents, but for n=1, 2, ..., the first few convergents are 1, 1/3, 2/3, 4/9, 7/12, 19/39, 68/123, ... (OEIS A225435 and A225436).
+
+Another closed-form continued fraction is given by
+
+C_4	=	1+K_(n=1)^(infty)(2n)/(2n+1)	
+(20)
+	=	1+2/(3+4/(5+6/(7+8/(9+(10)/(11+...)))))	
+(21)
+	=	(sqrt(e)-1)^(-1)	
+(22)
+	=	1.5414940...	
+(23)
+(OEIS A113011). The first few convergents are 5/3, 29/19, 233/151, 2329/1511, 27949/18131, 78257/50767, ... (OEIS A113012 and A113013).
+
+The general infinite continued fraction [b_0;b_1,b_2...] with partial quotients that are in arithmetic progression is given by
+
+ [A+D,A+2D,A+3D,...]=(I_(A/D)(2/D))/(I_(1+A/D)(2/D)) 	
+(24)
+(Schroeppel 1972) for real A and D!=0.
+
+Perron (1954-57) discusses continued fractions having terms even more general than the arithmetic progression and relates them to various special functions. He does not, however, appear to specifically consider equation (24).
+
+SEE ALSO
+Continued Fraction, e, Generalized Continued Fraction, Golden Ratio, Modified Bessel Function of the First Kind, Modified Bessel Function of the Second Kind, Nested Radical Constant, Pi, Rabbit Constant, Ramanujan Continued Fractions, Thue-Morse Constant, Trott Constants
+]]]
+
+[[[
+https://mathworld.wolfram.com/GeneralizedContinuedFraction.html
+===
+Generalized Continued Fraction
+A generalized continued fraction is an expression of the form
+
+ b_0+(a_1)/(b_1+(a_2)/(b_2+(a_3)/(b_3+...))), 	
+(1)
+where the partial numerators a_1,a_2,... and partial denominators b_0,b_1,b_2,... may in general be integers, real numbers, complex numbers, or functions (Rockett and Szüsz, 1992, p. 1). Generalized continued fractions may also be written in the forms
+
+ x=b_0+(a_1)/(b_1+)(a_2)/(b_2+)... 	
+(2)
+or
+
+ x=b_0+K_(n=1)^infty(a_n)/(b_n). 	
+(3)
+Note that letters other than a_n/b_n are sometimes also used; for example, the documentation for ContinuedFractionK[f, g, {i, imin, imax}] in the Wolfram Language uses f_n/g_n.
+
+Padé approximants provide another method of expanding functions, namely as a ratio of two power series. The quotient-difference algorithm allows interconversion of continued fraction, power series, and rational function approximations.
+
+A small sample of closed-form continued fraction constants is given in the following table (cf. Euler 1775). The Ramanujan continued fractions provide another fascinating class of continued fraction constants, and the Rogers-Ramanujan continued fraction is an example of a convergent generalized continued fraction function where a simple definition leads to quite intricate structure.
+
+continued fraction	value	approximate	OEIS
+K_(n=1)^(infty)1/k	(I_1(2))/(I_0(2))	0.697774...	A052119
+K_(n=1)^(infty)k/k	(e-1)^(-1)	0.581976...	A073333
+1+K_(n=1)^(infty)k/1	sqrt(2/(epi))[erfc(2^(-1/2))]^(-1)	1.525135...	A111129
+K_(n=1)^(infty)k/k	(sqrt(e)-1)^(-1)	1.541494...	A113011
+The value
+
+ (A_n)/(B_n)=b_0+K_(k=1)^n(a_k)/(b_k) 	
+(4)
+is known as the nth convergent of the continued fraction.
+
+A regular continued fraction representation (which is usually what is meant when the term "continued fraction" is used without qualification) of a number x is one for which the partial quotients are all unity (a_n=1), b_0 is an integer, and b_1, b_2, ... are positive integers (Rockett and Szüsz, 1992, p. 3).
+
+Euler showed that if a convergent series can be written in the form
+
+ c_1+c_1c_2+c_1c_2c_3+..., 	
+(5)
+then it is equal to the continued fraction
+
+ (c_1)/(1-(c_2)/(1+c_2-(c_3)/(1+c_3-...))) 	
+(6)
+(Borwein et al. 2004, p. 30).
+
+To "round" a regular continued fraction, truncate the last term unless it is +/-1, in which case it should be added to the previous term (Gosper 1972, Item 101A). To take one over a simple continued fraction, add (or possibly delete) an initial 0 term. To negate, take the negative of all terms, optionally using the identity
+
+ [-a,-b,-c,-d,...]=[-a-1,1,b-1,c,d,...]. 	
+(7)
+A particularly beautiful identity involving the terms of the continued fraction is
+
+ ([a_0,a_1,...,a_n])/([a_0,a_1,...,a_(n-1)])=([a_n,a_(n-1),...,a_1,a_0])/([a_n,a_(n-1),...,a_1]). 	
+(8)
+There are two possible representations for a finite simple fraction:
+
+ [a_0,...,a_n]={[a_0,...,a_(n-1),a_n-1,1]   for a_n>1; [a_0,...,a_(n-2),a_(n-1)+1]   for a_n=1. 	
+(9)
+SEE ALSO
+Continued Fraction, Continued Fraction Constants, Convergent, Lehner Continued Fraction, Padé Approximant, Partial Denominator, Partial Numerator, Ramanujan Continued Fractions, Regular Continued Fraction, Rogers-Ramanujan Continued Fraction, Simple Continued Fraction
+]]]
+[[[
+https://mathworld.wolfram.com/SimpleContinuedFraction.html
+===
+Simple Continued Fraction
+A simple continued fraction is a special case of a generalized continued fraction for which the partial numerators are equal to unity, i.e., a_n=1 for all n=1, 2, .... A simple continued fraction is therefore an expression of the form
+
+ b_0+1/(b_1+1/(b_2+1/(b_3+...))). 	
+(1)
+When used without qualification, the term "continued fraction" is often used to mean "simple continued fraction" or, more specifically, regular (i.e., a simple continued fraction whose partial denominators b_0, b_1, ... are positive integer; Rockett and Szüsz 1992, p. 3). Care must therefore be taken to identify the intended meaning based on the context in which such terminology is encountered.
+
+A simple continued fraction can be written in a compact abbreviated notation as
+
+ x=K_(k=1)^N1/(b_k) 	
+(2)
+or
+
+ x=[b_0;b_1,b_2,b_3,...], 	
+(3)
+where N may be finite (for a finite continued fraction) or infty (for an infinite continued fraction). In contexts where only simple continued fractions are considered, the partial denominators are often denoted [a_0;a_1,a_2,...] instead of [b_0;b_1,b_2,...] (e.g., Rockett and Szüsz 1992, p. 3), a practice which unfortunately conflicts with the common notation for generalized continued fractions in which a_n denotes a partial numerator.
+
+Further care is needed when encountering bracket notation for simple continued fractions since some authors replace the semicolon with a normal comma and begin indexing the terms at b_1 instead of b_0, writing [b_0,b_1,b_2,...] instead of [b_0;b_1,b_2,...] or b_0+[b_1,b_2,...], causing ambiguity in the meaning of the initial term and resulting in the parity of certain fundamental results in continued fraction theory to be reversed. To complicate matters a bit further, Gaussian brackets use the notation [a_1,a_2,...,a_n] to denote a different (but closely related) combination of partial denominators.
+
+The terms b_0 through b_(n-1) of the simple continued fraction of a number x can be computed in the Wolfram Language using the command ContinuedFraction[x, n]. Similarly, the n convergent of simple continued fraction with partial denominators b_k can be continued using ContinuedFractionK[a[k], {k, n}], where n may be Infinity.
+
+SEE ALSO
+Continued Fraction, Convergent, Gaussian Brackets, Partial Denominator, Partial Numerator, Regular Continued Fraction
+]]]
+
+[[[
+https://mathworld.wolfram.com/RegularContinuedFraction.html
+===
+Regular Continued Fraction
+A regular continued fraction is a simple continued fraction
+
+x	=	b_0+1/(b_1+1/(b_2+1/(b_3+...)))	
+(1)
+	=	K_(k=1)^(infty)1/(b_k)	
+(2)
+	=	[b_0;b_1,b_2,...],	
+(3)
+where b_0 is an integer and b_k is a positive integer for k>0 (Rockett and Szüsz 1992, p. 3).
+
+While regular continued fractions are not the only possible representation of real numbers in terms of a sequence of integers (others include the decimal expansion and Engel expansion), they are a very common such representation that arises most frequently in number theory. Lochs' theorem relates the efficiency of a regular continued fraction expansion with that of a decimal expansion in representing a real number.
+
+A finite regular continued fraction representation terminates after a finite number of terms and therefore corresponds to a rational number. (Bach and Shallit (1996) show how to compute the Jacobi symbol in terms of the simple continued fraction of a rational number a/b.) On the other hand, an infinite regular continued fraction represents a unique irrational number, and each irrational number has a unique infinite continued fraction. Infinite periodic continued fractions have a number of special properties.
+
+Regular continued fractions are also useful for finding near commensurabilities between events with different periods. For example, the Metonic cycle used for calendrical purposes by the Greeks consists of 235 lunar months which very nearly equal 19 solar years, and 235/19 is the sixth convergent of the ratio of the lunar phase (synodic) period and solar period (365.2425/29.53059). Regular continued fractions can also be used to calculate gear ratios, and were used for this purpose by the ancient Greeks (Guy 1990).
+
+The error in approximating a number by a given convergent is roughly the multiplicative inverse of the square of the denominator of the first neglected term.
+
+Lagrange's continued fraction theorem states that a quadratic surd has an eventually periodic continued fraction. For example, the Pythagoras's constant sqrt(2)=1.41421356... has continued fraction [1; 2, 2, 2, 2, ...]. As a result, an exact representation for a numeric constant can sometimes be inferred if it is suspected to represent an unknown quadratic surd.
+
+Regular continued fractions provide, in some sense, a series of "best" estimates for an irrational number. Functions can also be written as (simple or generalized) continued fractions, providing a series of better and better rational approximations. Continued fractions have also proved useful in the proof of certain properties of numbers such as e and pi (pi).
+
+Starting the indexing of a regular continued fraction with b_0,
+
+ b_0=|_x_| 	
+(4)
+is the integer part of x, where |_x_| is the floor function,
+
+ b_1=|_1/(x-b_0)_| 	
+(5)
+is the integral part of the reciprocal of x-b_0,
+
+ b_2=|_1/(1/(x-b_0)-b_1)_| 	
+(6)
+is the integral part of the reciprocal of the remainder, etc. Writing the remainders according to the recurrence relation
+
+r_0	=	x	
+(7)
+r_n	=	1/(r_(n-1)-b_(n-1))	
+(8)
+gives the concise formula
+
+ b_n=|_r_n_|. 	
+(9)
+The quantities b_n are called partial quotients, and the quantity obtained by including n terms of the continued fraction
+
+c_n	=	(A_n)/(B_n)	
+(10)
+	=	[b_0;b_1,...,b_n]	
+(11)
+	=	b_0+1/(b_1+1/(b_2+1/(...+1/(b_n))))	
+(12)
+is called the nth convergent.
+
+For example, consider the computation of the continued fraction of pi, given by pi=[3;7,15,1,292,1,1,...].
+
+term	value	PQs	convergent	value
+b_0	|_pi_|=3	[3]	3	3.00000
+b_1	|_1/(pi-3)_|=7	[3;7]	(22)/7	3.14286
+b_2	|_1/(1/(pi-3)-7)_|=15	[3;7,15]	(333)/(106)	3.14151
+Let the simple continued fraction for x be written [b_0;b_1,...,b_n]. Then the limiting value is almost always Khinchin's constant
+
+ K=lim_(n->infty)(b_1b_2...b_n)^(1/n)=2.68545... 	
+(13)
+(OEIS A002210).
+
+Similarly, taking the nth root of the denominator B_n of the nth convergent as n->infty almost always gives the Lévy constant
+
+ lim_(n->infty)B_n^(1/n)=e^(pi^2/(12ln2))=3.275823... 	
+(14)
+(OEIS A086702).
+
+Logarithms log_(b_1)b_0 can be computed by defining b_2, ... and the positive integer n_1, ... such that
+
+ b_1^(n_1)<b_0<b_1^(n_1+1)    b_2=(b_0)/(b_1^(n_1)) 	
+(15)
+ b_2^(n_2)<b_1<b_2^(n_2+1)    b_3=(b_1)/(b_2^(n_2)) 	
+(16)
+and so on. Then
+
+ log_(b_1)b_0=[n_1,n_2,n_3,...]. 	
+(17)
+ContinuedFractionLattice
+A geometric interpretation for a reduced fraction y/x consists of a string through a lattice of points with ends at (1,0) and (x,y) (Klein 1896, 1932; Steinhaus 1999, p. 40; Gardner 1984, pp. 210-211, Ball and Coxeter 1987, pp. 86-87; Davenport 1992). This interpretation is closely related to a similar one for the greatest common divisor. The pegs it presses against (x_i,y_i) give alternate convergents y_i/x_i, while the other convergents are obtained from the pegs it presses against with the initial end at (0,1). The above plot is for e-2, which has convergents 0, 1, 2/3, 3/4, 5/7, ....
+
+Continued fractions can be used to express the positive roots of any polynomial equation. Continued fractions can also be used to solve linear Diophantine equations and the Pell equation.
+
+Gosper has invented an algorithm for performing analytic addition, subtraction, multiplication, and division using continued fractions. It requires keeping track of eight integers which are conceptually arranged at the polyhedron vertices of a cube. Although this algorithm has not appeared in print, similar algorithms have been constructed by Vuillemin (1987) and Liardet and Stambul (1998).
+
+Gosper's algorithm for computing the continued fraction for (ax+b)/(cx+d) from the continued fraction for x is described by Gosper (1972), Knuth (1998, Exercise 4.5.3.15, pp. 360 and 601), and Fowler (1999). (In line 9 of Knuth's solution, X_k<-|_A/C_| should be replaced by X_k<-min(|_A/C_|,|_(A+B)/(C+D)_|).) Gosper (1972) and Knuth (1981) also mention the bivariate case (axy+bx+cy+d)/(Axy+Bx+Cy+D).
+
+SEE ALSO
+Continued Fraction, Convergent, Generalized Continued Fraction, Khinchin's Constant, Lagrange's Continued Fraction Theorem, Lévy Constant, Lochs' Theorem, Partial Denominator, Periodic Continued Fraction, Simple Continued Fraction
+EXPLORE WITH WOLFRAM|ALPHA
+WolframAlpha
+theorems involving regular continued fractions
+
+More things to try:
+
+ theorems involving regular continued fractions
+a(q n)=n a(n)
+eccentricity of an ellipse with semiaxes 12,1
+REFERENCES
+Abramowitz, M. and Stegun, I. A. (Eds.). Handbook of Mathematical Functions with Formulas, Graphs, and Mathematical Tables, 9th printing. New York: Dover, p. 19, 1972.
+Acton, F. S. "Power Series, Continued Fractions, and Rational Approximations." Ch. 11 in Numerical Methods That Work, 2nd printing. Washington, DC: Math. Assoc. Amer., 1990.
+Adamchik, V. "Limits of Continued Fractions and Nested Radicals." Mathematica J. 2, 54-57, 1992.
+Bach, E. and Shallit, J. Algorithmic Number Theory, Vol. 1: Efficient Algorithms. Cambridge, MA: MIT Press, pp. 343-344, 1996.
+Ball, W. W. R. and Coxeter, H. S. M. Mathematical Recreations and Essays, 13th ed. New York: Dover, pp. 54-57 and 86-87, 1987.
+Berndt, B. C. and Gesztesy, F. (Eds.). Continued Fractions: From Analytic Number Theory to Constructive Approximation, A Volume in Honor of L. J. Lange. Providence, RI: Amer. Math. Soc., 1999.
+Beskin, N. M. Fascinating Fractions. Moscow: Mir Publishers, 1980.
+Brezinski, C. History of Continued Fractions and Padé Approximants. New York: Springer-Verlag, 1980.
+Conway, J. H. and Guy, R. K. "Continued Fractions." In The Book of Numbers. New York: Springer-Verlag, pp. 176-179, 1996.
+Courant, R. and Robbins, H. "Continued Fractions. Diophantine Equations." §2.4 in Supplement to Ch. 1 in What Is Mathematics?: An Elementary Approach to Ideas and Methods, 2nd ed. Oxford, England: Oxford University Press, pp. 49-51, 1996.
+Cuyt, A.; Petersen, A. B.; Verdonk, B.; Waadeland, H.; and Jones, W. B. Handbook of Continued Fractions for Special Functions. New York: Springer, 2008.
+Davenport, H. §IV.12 in The Higher Arithmetic: An Introduction to the Theory of Numbers, 6th ed. New York: Cambridge University Press, 1992.
+Dunne, E. and McConnell, M. "Pianos and Continued Fractions." Math. Mag. 72, 104-115, 1999.
+Euler, L. "On the Formulation of Continued Fractions." Delivered to the St. Petersburg Academy, Sept. 4, 1775. Published as Euler, L. "De formatione fractionum continuarum." Acta Academiae Scientarum Imperialis Petropolitinae 3, 3-29, 1782. Republished in Euler, L. Opera Omnia, Ser. 1: Opera mathematica, Vol. 15. Basel, Switzerland: Birkhäuser, 1992. http://arxiv.org/abs/math.HO/0508227.
+Euler, L. Introduction to Analysis of the Infinite, Book I. New York: Springer-Verlag, 1980.
+Fowler, D. H. The Mathematics of Plato's Academy: A New Reconstruction, 2nd ed. Oxford, England: Oxford University Press, 1999.
+Fowler, D. "Wallis and Number Columns by David Fowler." http://mathforum.org/epigone/math-history-list/sterbloirerm.
+Gardner, M. The Sixth Book of Mathematical Games from Scientific American. Chicago, IL: University of Chicago Press, pp. 210-211, 1984.
+Gosper, R. W. "Continued fractions query." math-fun@cs.arizona.edu posting, Dec. 27, 1996.
+Gosper, R. W. Item 101a in Beeler, M.; Gosper, R. W.; and Schroeppel, R. HAKMEM. Cambridge, MA: MIT Artificial Intelligence Laboratory, Memo AIM-239, pp. 37-39, Feb. 1972. http://www.inwap.com/pdp10/hbaker/hakmem/cf.html#item101a.
+Gosper, R. W. Item 101b in Beeler, M.; Gosper, R. W.; and Schroeppel, R. HAKMEM. Cambridge, MA: MIT Artificial Intelligence Laboratory, Memo AIM-239, pp. 39-44, Feb. 1972. http://www.inwap.com/pdp10/hbaker/hakmem/cf.html#item101b.
+Graham, R. L.; Knuth, D. E.; and Patashnik, O. "Continuants." §6.7 in Concrete Mathematics: A Foundation for Computer Science, 2nd ed. Reading, MA: Addison-Wesley, pp. 301-309, 1994.
+Guy, R. K. "Continued Fractions" §F20 in Unsolved Problems in Number Theory, 2nd ed. New York: Springer-Verlag, p. 259, 1994.
+Havil, J. Gamma: Exploring Euler's Constant. Princeton, NJ: Princeton University Press, 2003.
+Jacobson, M. J. Jr.; Lukes, R. F.; and Williams, H. C. "An Investigation of Bounds for the Regulator of Quadratic Fields." Experiment. Math. 4, 211-225, 1995.
+Khinchin, A. Ya. Continued Fractions. New York: Dover, 1997.
+Kimberling, C. "Continued Fractions." http://faculty.evansville.edu/ck6/integer/contfr.html.
+Klein, F. Ausgewählte Kapitel der Zahlentheorie I. Göttingen, Germany: n.p., 1896.
+Klein, F. Elementary Number Theory. New York, p. 44, 1932.
+Kline, M. Mathematical Thought from Ancient to Modern Times. Oxford, England: Oxford University Press, 1990.
+Knuth, D. E. The Art of Computer Programming, Vol. 2: Seminumerical Algorithms, 3rd ed. Reading, MA: Addison-Wesley, p. 316, 1998.
+Liardet, P. and Stambul, P. "Algebraic Computation with Continued Fractions." J. Number Th. 73, 92-121, 1998.
+Liberman, H. Simple Continued Fractions: An Elementary to Research Level Approach. SMD Stock Analysts, 2003.
+Lorentzen, L. and Waadeland, H. Continued Fractions with Applications. Amsterdam, Netherlands: North-Holland, 1992.
+Lorentzen, L. and Waadeland, H. Continued Fractions, 2nd ed., Vol. 1: Convergence Theory. Amsterdam, Netherlands/Paris: Atlantis Press/World Scientific, 2008.
+Moore, C. D. An Introduction to Continued Fractions. Washington, DC: National Council of Teachers of Mathematics, 1964.
+Olds, C. D. Continued Fractions. New York: Random House, 1963.
+Perron, O. Die Lehre von den Kettenbrüchen, 3. verb. und erweiterte Aufl. Stuttgart, Germany: Teubner, 1954-57.
+Pettofrezzo, A. J. and Bykrit, D. R. Elements of Number Theory. Englewood Cliffs, NJ: Prentice-Hall, 1970.
+Press, W. H.; Flannery, B. P.; Teukolsky, S. A.; and Vetterling, W. T. "Evaluation of Continued Fractions." §5.2 in Numerical Recipes in FORTRAN: The Art of Scientific Computing, 2nd ed. Cambridge, England: Cambridge University Press, pp. 163-167, 1992.
+Riesel, H. "Continued Fractions." Appendix 8 in Prime Numbers and Computer Methods for Factorization, 2nd ed. Boston, MA: Birkhäuser, pp. 327-342, 1994.
+Rockett, A. M. and Szüsz, P. Continued Fractions. New York: World Scientific, 1992.
+Rose, H. E. A Course in Number Theory, 2nd ed. Oxford, England: Oxford University Press, 1994.
+Rosen, K. H. Elementary Number Theory and Its Applications. New York: Addison-Wesley, 1980.
+Schur, I. "Ein Beitrag zur additiven Zahlentheorie und zur Theorie der Kettenbrüche." Sitzungsber. Preuss. Akad. Wiss. Phys.-Math. Klasse, pp. 302-321, 1917.
+Sloane, N. J. A. Sequences A000037/M0613, A013943, A052119, A111129, and A113011 in "The On-Line Encyclopedia of Integer Sequences."
+Steinhaus, H. Mathematical Snapshots, 3rd ed. New York: Dover, pp. 39-42, 1999.
+Van Tuyl, A. L. "Continued Fractions." http://archives.math.utk.edu/articles/atuyl/confrac/.
+Vuillemin, J. "Exact Real Computer Arithmetic with Continued Fractions." INRIA Report 760. Le Chesnay, France: INRIA, Nov. 1987. http://www.inria.fr/RRRT/RR-0760.html.
+Wagon, S. "Continued Fractions." §8.5 in Mathematica in Action. New York: W. H. Freeman, pp. 263-271, 1991.
+Wall, H. S. Analytic Theory of Continued Fractions. New York: Chelsea, 1948.
+Wallis, J. Arithmetica Infinitorum. Oxford, England, 1656.
+Weisstein, E. W. "Books about Continued Fractions." http://www.ericweisstein.com/encyclopedias/books/ContinuedFractions.html.
+Williams, H. C. "A Numerical Investigation into the Length of the Period of the Continued Fraction Expansion of sqrt(D)." Math. Comput. 36, 593-601, 1981.
+CITE THIS AS:
+Weisstein, Eric W. "Regular Continued Fraction." From MathWorld--A Wolfram Web Resource. https://mathworld.wolfram.com/RegularContinuedFraction.html
+
+SUBJECT CLASSIFICATIONS
+Number Theory  Continued Fractions 
+About MathWorld MathWorld Classroom Send a Message MathWorld Book wolfram.com
+13,928 Entries Last Updated: Sat Jul 29 2023 ©1999–2023 Wolfram Research, Inc. Terms of Use
+Created, developed and nurtured by Eric Weisstein at Wolfram Research
+]]]
+[[[
+https://mathworld.wolfram.com/EngelExpansion.html
+===
+Number Theory  Continued Fractions 
+Engel Expansion
+The Engel expansion, also called the Egyptian product, of a positive real number x is the unique increasing sequence {a_1,a_2,...} of positive integers a_i such that
+
+ x=1/(a_1)+1/(a_1a_2)+1/(a_1a_2a_3)+.... 
+The following table gives the Engel expansions of Catalan's constant, e, the Euler-Mascheroni constant gamma, pi, and the golden ratio phi.
+
+constant	OEIS	Engel expansion
+sqrt(2)	A028254	1, 3, 5, 5, 16, 18, 78, 102, 120, ...
+sqrt(3)	A028257	1, 2, 3, 3, 6, 17, 23, 25, 27, 73, ...
+cosh1	A118239	1, 2, 12, 30, 56, 90, 132, 182, ...
+e	A000027	1, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, ...
+e^(-1)	A059193	3, 10, 28, 54, 88, 130, 180, 238, 304, 378, ...
+gamma	A053977	2, 7, 13, 19, 85, 2601, 9602, 46268, 4812284, ...
+K	A054543	2, 2, 2, 4, 4, 5, 5, 12, 13, 41, 110, ...
+ln2	A059180	2, 3, 7, 9, 104, 510, 1413, 2386, ...
+phi	A028259	1, 2, 5, 6, 13, 16, 16, 38, 48, 58, 104, ...
+pi	A006784	1, 1, 1, 8, 8, 17, 19, 300, 1991, 2492, ...
+pi^(-1)	A014012	4, 4, 11, 45, 70, 1111, 4423, 5478, 49340, ...
+sinh1	A068377	1, 6, 20, 42, 72, 110, 156, 210, ...
+tanh1	A118326	2, 2, 22, 50, 70, 29091, 49606, 174594, ...
+e has a very regular Engel expansion, namely 1, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, ... (OEIS A000027). Interestingly, the expansion for the hyperbolic sine sinh1 has closed form a_n=2(n-1)(2n-1) for n>1, which means the expansion for the hyperbolic cosine cosh1 has the closed form a_n=2(n-1)(2n-3) for n>1. Similarly, the Engel expansion for 1/e is a_n=2(2n+1)(n-1) for n>1, which follows from
+
+ e^(-1)=sum_(n=1)^infty[1/((2n)!)-1/((2n+1)!)]. 
+SEE ALSO
+Continued Fraction, Egyptian Fraction, Pierce Expansion
+]]]
+[[[
+https://mathworld.wolfram.com/PierceExpansion.html
+===
+Pierce Expansion
+The Pierce expansion, or alternated Egyptian product, of a real number 0<x<1 is the unique increasing sequence {a_1,a_2,...} of positive integers a_i such that
+
+ x=1/(a_1)-1/(a_1a_2)+1/(a_1a_2a_3)-.... 	
+(1)
+A number 0<x<1 has a finite Pierce expansion iff x is rational.
+
+Special cases are summarized in the following table.
+
+x	OEIS	Pierce expansion
+2^(-1/2)	A091831	1, 3, 8, 33, 35, 39201, 39203, 60245508192801, ...
+Catalan's constant K	A132201	1, 11, 13, 59, 582, 12285, 127893, 654577, ...
+cos1	A118239	1, 2, 12, 30, 56, 90, 132, 182, 240, ...
+e^(-1)	A020725	2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, ...
+Euler-Mascheroni constant gamma	A006284	1, 2, 6, 13, 21, 24, 225, 615, 17450, ...
+natural logarithm of 2 ln2	A091846	1, 3, 12, 21, 51, 57, 73, 85, 96, ...
+phi^(-1)	A118242	1, 2, 4, 17, 19, 5777, 5779, 192900153617, ...
+pi^(-1)	A006283	3, 22, 118, 383, 571, 635, 70529, ...
+sech1		1, 2, 3, 8, 9, 24, 37, 85, ...
+sin1	A068377	1, 6, 20, 42, 72, 110, 156, 210, 272, ...
+If x is of the form
+
+ x=(c-sqrt(c^2-4))/2, 	
+(2)
+then there is a closed-form for the Pierce expansion given by
+
+ x={c_0-1,c_0+1,c_1-1,c_1+1,c_2-1,c_2+1,...}, 	
+(3)
+where
+
+c_0	=	c	
+(4)
+	=	(1+x^2)/x	
+(5)
+and c_(k+1)=c_k^3-3c_k (Shallit 1984). This recurrence has explicit solution
+
+ c_k^((c))=-2cos[3^kcos^(-1)(-1/2c)] 	
+(6)
+not noted by Shallit (1984).
+
+c=3, corresponding to x=(3-sqrt(5))/2, has the particularly beautiful form
+
+c_n^((3))	=	-2cos[3^ncos^(-1)(-3/2)]	
+(7)
+	=	2F_(2·3^n+1)-F_(2·3^n),	
+(8)
+where F_n is a Fibonacci number.
+
+The following table gives coefficients c_k and a_k for some small integer c.
+
+c	x	OEIS	{c_k}	OEIS	{a_k}
+3	1/2(3-sqrt(5))	A001999	3, 18, 5778, 192900153618, ...	A006276	2, 4, 17, 19, 5777, 5779, ...
+4	2-sqrt(3)		4, 52, 140452, 2770663499604052, ...		3, 5, 51, 53, 140451, 140453, ...
+5	1/2(5-sqrt(21))		5, 110, 1330670, 2356194280407770990, ...		4, 6, 109, 111, 1330669, 1330671, ...
+6	3-2sqrt(2)	A112845	6, 198, 7761798, 467613464999866416198, ...	A006275	5, 5, 7, 197, 199, 7761797, ...
+SEE ALSO
+Engel Expansion
+]]]
+[[[
+https://mathworld.wolfram.com/EgyptianFraction.html
+===
+Egyptian Fraction
+An Egyptian fraction is a sum of positive (usually) distinct unit fractions. The famous Rhind papyrus, dated to around 1650 BC contains a table of representations of 2/n as Egyptian fractions for odd n between 5 and 101. The reason the Egyptians chose this method for representing fractions is not clear, although André Weil characterized the decision as "a wrong turn" (Hoffman 1998, pp. 153-154). The unique fraction that the Egyptians did not represent using unit fractions was 2/3 (Wells 1986, p. 29).
+
+Egyptian fractions are almost always required to exclude repeated terms, since representations such as 1/5+1/5+1/5 are trivial. Any rational number has representations as an Egyptian fraction with arbitrarily many terms and with arbitrarily large denominators, although for a given fixed number of terms, there are only finitely many. Fibonacci proved that any fraction can be represented as a sum of distinct unit fractions (Hoffman 1998, p. 154). An infinite chain of unit fractions can be constructed using the identity
+
+ 1/a=1/(a+1)+1/(a(a+1)). 	
+(1)
+Martin (1999) showed that for every positive rational number, there exist Egyptian fractions whose largest denominator is at most N and whose denominators form a positive proportion of the integers up to N for sufficiently large N. Each fraction x/y with y odd has an Egyptian fraction in which each denominator is odd (Breusch 1954; Guy 1994, p. 160). Every x/y has a t-term representation where t=O(sqrt(logy)) (Vose 1985).
+
+No algorithm is known for producing unit fraction representations having either a minimum number of terms or smallest possible denominator (Hoffman 1998, p. 155). However, there are a number of algorithms (including the binary remainder method, continued fraction unit fraction algorithm, generalized remainder method, greedy algorithm, reverse greedy algorithm, small multiple method, and splitting algorithm) for decomposing an arbitrary fraction into unit fractions. In 1202, Fibonacci published an algorithm for constructing unit fraction representations, and this algorithm was subsequently rediscovered by Sylvester (Hoffman 1998, p. 154; Martin 1999).
+
+Taking the fractions 1/2, 1/3, 2/3, 1/4, 2/4, 3/4, ... (the numerators of which are OEIS A002260, and the denominators of which are n-1 copies of the integer n), the unit fraction representations using the greedy algorithm are
+
+1/2	=	1/2	
+(2)
+1/3	=	1/3	
+(3)
+2/3	=	1/2+1/6	
+(4)
+1/4	=	1/4	
+(5)
+2/4	=	1/2	
+(6)
+3/4	=	1/2+1/4	
+(7)
+1/5	=	1/5	
+(8)
+2/5	=	1/3+1/(15)	
+(9)
+3/5	=	1/2+1/(10)	
+(10)
+4/5	=	1/2+1/4+1/(20).	
+(11)
+The number of terms in these representations are 1, 1, 2, 1, 1, 2, 1, 2, 2, 3, 1, ... (OEIS A050205). The minimum denominators for each representation are given by 2, 3, 2, 4, 2, 2, 5, 3, 2, 2, 6, 3, 2, ... (OEIS A050206), and the maximum denominators are 2, 3, 6, 4, 2, 4, 5, 15, 10, 20, 6, 3, 2, ... (OEIS A050210).
+
+The Egyptian fractions for various constants using the greedy algorithm are summarized in the following table.
+
+constant x	OEIS	Egyptian fraction for frac(x)
+sqrt(2)	A006487	3, 13, 253, 218201, 61323543802, ...
+sqrt(3)	A118325	2, 5, 32, 1249, 5986000, 438522193400489, ...
+2^(-1/2)	A069139	2, 5, 141, 68575, 32089377154, ...
+e	A006525	2, 5, 55, 9999, 3620211523, 25838201785967533906, ...
+e^(-1)	A006526	3, 29, 15786, 513429610, 339840390654894740, ...
+gamma	A110820	2, 13, 3418, 52016149, 153922786652714666, ...
+K	A118323	2, 3, 13, 176, 36543, ...
+phi	A117116	2, 9, 145, 37986, 2345721887, ...
+ln2	A118324	2, 6, 38, 6071, 144715221, ...
+pi	A001466	8, 61, 5020, 128541455, 162924332716605980, ...
+pi^(-1)	A006524	4, 15, 609, 845029, 1010073215739, ...
+Any fraction with odd denominator can be represented as a finite sum of unit fractions, each having an odd denominator (Starke 1952, Breusch 1954). Graham proved that infinitely many fractions with a certain range can be represented as a sum of units fractions with square denominators (Hoffman 1998, p. 156).
+
+Paul Erdős and E. G. Straus have conjectured that the Diophantine equation
+
+ 4/n=1/a+1/b+1/c 	
+(12)
+always can be solved, an assertion sometimes known as the Erdős-Straus conjecture, and Sierpiński (1956) conjectured that
+
+ 5/n=1/a+1/b+1/c 	
+(13)
+can be solved (Guy 1994).
+
+The harmonic number H_n is never an integer except for H_1. This result was proved in 1915 by Taeisinger, and the more general results that any number of consecutive terms not necessarily starting with 1 never sum to an integer was proved by Kürschák in 1918 (Hoffman 1998, p. 157). In 1932, Erdős proved that the sum of the reciprocals of any number of equally spaced integers is never a reciprocal.
+
+Nontrivial sets of integers are known whose reciprocals sum to small integers. For example, there exists a set of 366 positive integers (with maximum 992) whose sum of reciprocals is exactly 2 (Mackenzie 1997; Martin). A similar set of 453 small positive integers is known that sums to 6 (Martin).
+
+SEE ALSO
+Akhmim Wooden Tablet, Egyptian Mathematical Leather Roll, Egyptian Number, Engel Expansion, Erdős-Straus Conjecture, Harmonic Number, Rhind Papyrus, Unit Fraction
+]]]
+[[[
+https://mathworld.wolfram.com/LochsTheorem.html
+===
+Lochs' Theorem
+For a real number x in (0,1), let m be the number of terms in the convergent to a regular continued fraction that are required to represent n decimal places of x. Then for almost all x,
+
+lim_(n->infty)m/n	=	(6ln2ln10)/(pi^2)	
+(1)
+	=	0.97027014...	
+(2)
+(OEIS A086819; Lochs 1964). This number is sometimes known as Lochs' constant.
+
+Therefore, the regular continued fraction is only slightly more efficient at representing real numbers than is the decimal expansion. The set of x for which this statement does not hold is of measure 0.
+
+SEE ALSO
+Khinchin's Constant, Lochs' Constant, Regular Continued Fraction
+]]]
+[[[
+https://mathworld.wolfram.com/KhinchinsConstant.html
+===
+Khinchin's Constant
+Let
+
+ x=[a_0;a_1,...]=a_0+1/(a_1+1/(a_2+1/(a_3+...))) 	
+(1)
+be the simple continued fraction of a "generic" real number x, where the numbers a_i are the partial denominator. Khinchin (1934) considered the limit of the geometric mean
+
+ G_n(x)=(a_1a_2...a_n)^(1/n) 	
+(2)
+as n->infty. Amazingly, except for a set of measure 0, this limit is a constant independent of x given by
+
+ K=2.685452001... 	
+(3)
+(OEIS A002210), as proved in Kac (1959).
+
+The constant is known as Khinchin's constant, and is commonly also spelled "Khintchine's constant" (Shanks and Wrench 1959, Bailey et al. 1997).
+
+It is implemented as Khinchin, where its value is cached to 1100-digit precision. However, the numerical value of K is notoriously difficult to calculate to high precision, so computation of more digits get increasingly slower.
+
+It is not known if K is irrational, let alone transcendental.
+
+While it is known that almost all numbers x have limits G_n(x) that approach K, this fact has not been proven for any explicit real number x, e.g., a real number cast in terms of fundamental constants (Bailey et al. 1997).
+
+KhinchinsConstant
+The values (a_1,a_2,...,a_n)^(1/n) are plotted above for n=1 to 500 and x=pi, sin1, the Euler-Mascheroni constant gamma, and the Copeland-Erdős constant C. Interestingly, the shape of the curves is almost identical to the corresponding curves for the Lévy constant.
+
+If p_n/q_n is the nth convergent of the continued fraction of x, then
+
+lim_(n->infty)q_n^(1/n)	=	lim_(n->infty)((p_n)/x)^(1/n)	
+(4)
+	=	e^(pi^2/(12ln2))	
+(5)
+	=	3.27582...	
+(6)
+(OEIS A086702) for almost all real x (Lévy 1936, Finch 2003), where ln2 is the natural logarithm of 2. This number is sometimes called the Lévy constant.
+
+Product expressions for K include
+
+ K=product_(n=1)^infty[1+1/(n(n+2))]^(lnn/ln2) 	
+(7)
+(Shanks and Wrench 1959; Khinchin 1997, p. 93; Borwein and Bailey 2003, p. 25; Havil 2003, p. 161), where lnn is the natural logarithm, and
+
+ product_(k=1)^inftyk!^(Delta_k^3)lnk=K^(ln2), 	
+(8)
+where Delta_k^3 is the third-order finite difference operator, the latter of which obtained from three applications of summation by parts to the (logarithm of the) usual product definition (W. Gosper, pers. comm. Nov. 14, 2017).
+
+Products such as these can be converted to sums by taking the logarithm of both sides and using lnproduct_(k)a_k^(p_k)=sum_(k)p_klna_k. Sums for K include
+
+ K=exp[1/(ln2)sum_(m=1)^infty(H_(2m-1)^'[zeta(2m)-1])/m], 	
+(9)
+where zeta(z) is the Riemann zeta function and H_n^' is an alternating harmonic number (Bailey et al. 1997),
+
+ K=exp[1/(ln2)sum_(k=2)^infty((-1)^k(2-2^k)zeta^'(k))/k], 	
+(10)
+where zeta^'(z) is the derivative of the Riemann zeta function (Gosper, pers. comm., Jun. 25, 1996) and the extremely rapidly converging sum originally due to Gosper (pers. comm., Jun. 25, 1996) and streamlined by O. Pavlyk (pers. comm., Apr. 24, 2006) is given by
+
+ K=exp{-zeta^'(2,2)+1/(ln2)[sum_(k=2)^infty2(-1)^kf(k)]}, 	
+(11)
+where
+
+ f(k)=(lnk)/((k+2)k^(k+2))[2^(k+1)_2F_1(1,k+2;k+3;-2/k)-_2F_1(1,k+2;k+3;-1/k)]+((2^k-1)zeta^'(k+1,k))/(k+1),  	
+(12)
+zeta(s,a) is a Hurwitz zeta function, zeta^'(s,a)=partialzeta/partials, and _2F_1(a,b;c;z) is a hypergeometric function.
+
+Khinchin's constant is also given by the integrals
+
+K	=	2exp{1/(ln2)int_0^11/(x(1+x))ln[(pix(1-x^2))/(sin(pix))]dx}	
+(13)
+	=	2exp[1/(ln2)int_0^11/(x(1+x))ln[Gamma(2-x)Gamma(2+x)]dx]	
+(14)
+(Shanks and Wrench 1959) and
+
+ K=exp[(pi^2)/(12ln2)+1/2ln2+1/(ln2)int_0^pi(ln(theta|cottheta|)dtheta)/theta]. 	
+(15)
+Corless (1992) showed that
+
+ lnK=int_0^1(ln|_x^(-1)_|)/((x+1)ln2)dx, 	
+(16)
+with an analogous formula for the Lévy constant.
+
+KhinchinsConstant2
+Real numbers x for which lim_(n->infty)G_n(x)!=K include x=e, sqrt(2), sqrt(3), and the golden ratio phi, plotted above.
+
+Amazingly, the constant K is simply the limiting case K=K_0 of a class of means defined by
+
+ K_p=lim_(n->infty)((a_1^p+a_2^p+...+a_n^p)/n)^(1/p) 	
+(17)
+for real p<1 whose values are given by
+
+ K_p={sum_(k=1)^infty-k^plg[1-1/((k+1)^2)]}^(1/p) 	
+(18)
+(Ryll-Nardzewski 1951; Bailey et al. 1997; Khinchin 1997). An integral representation for K_p is given by
+
+K_p	=	[1/(ln2)int_0^1(|_1/t_|^p)/(t+1)dt]^(1/p)	
+(19)
+	=	[1/(ln2)sum_(k=1)^(infty)k^pln(1+1/(k(k+2)))]^(1/p)	
+(20)
+for p=-1, -2, ... (Iosifescu and Kraaikamp 2002, p. 231).
+
+The constant
+
+ K_(-1)=lim_(n->infty)n/(a_1^(-1)+a_2^(-1)+...+a_n^(-1)) 	
+(21)
+is sometimes known as the Khinchin harmonic mean and is the p=-1 case of an infinite family of such constants of which K=K_0 and K_(-1) are the first two members.
+
+Define the following quantity in terms of the kth partial quotient q_k,
+
+ M(s,n,x)=(1/nsum_(k=1)^nq_k^s)^(1/s). 	
+(22)
+Then
+
+ lim_(n->infty)M(1,n,x)=infty 	
+(23)
+for almost all real x (Khintchine 1934, 1936, Knuth 1981, Finch 2003), and
+
+ M(1,n,x)∼O(lnn). 	
+(24)
+Furthermore, for s<1, the limiting value
+
+ lim_(n->infty)M(s,n,x)=K(s) 	
+(25)
+exists and is a constant K(s) with probability 1 (Rockett and Szüsz 1992, Khinchin 1997).
+
+SEE ALSO
+Continued Fraction, Convergent, Gauss-Kuzmin-Wirsing Constant, Khinchin's Constant Approximations, Khinchin's Constant Continued Fraction, Khinchin's Constant Digits, Khinchin Harmonic Mean, Lévy Constant, Lochs' Constant, Lochs' Theorem, Partial Denominator, Simple Continued Fraction
+]]]
+[[[
+https://mathworld.wolfram.com/PeriodicContinuedFraction.html
+===
+Periodic Continued Fraction
+A periodic continued fraction is a continued fraction (generally a regular continued fraction) whose terms eventually repeat from some point onwards. The minimal number of repeating terms is called the period of the continued fraction. All nontrivial periodic continued fractions represent irrational numbers. In general, an infinite simple fraction (periodic or otherwise) represents a unique irrational number, and each irrational number has a unique infinite continued fraction.
+
+The square root of a squarefree integer has a periodic continued fraction of the form
+
+ sqrt(n)=[a_0;a_1,a_2,a_3,...,a_2,a_1,2a_0^_] 	
+(1)
+(Rose 1994, p. 130), where the repeating portion (excluding the last term) is symmetric upon reversal, and the central term may appear either once or twice.
+
+If D is not a square number, then the terms of the continued fraction of sqrt(n) satisfy
+
+ 0<a_k<2sqrt(n). 	
+(2)
+An even stronger result is that a continued fraction is periodic iff it is a root of a quadratic polynomial. Calling the portion of a number x remaining after a given convergent the "tail," it must be true that the relationship between the number x and terms in its tail is of the form
+
+ x=(ax+b)/(cx+d), 	
+(3)
+which can only lead to a quadratic equation.
+
+PeriodicContinuedFractionPeriods
+The periods of the continued fractions of the square roots of the first few nonsquare integers 2, 3, 5, 6, 7, 8, 10, 11, 12, 13, ... (OEIS A000037) are 1, 2, 1, 2, 4, 2, 1, 2, 2, 5, ... (OEIS A013943; Williams 1981, Jacobson et al. 1995). These numbers and their continued fraction representations are summarized in the following table.
+
+N	alpha_(sqrt(N))	N	alpha_(sqrt(N))
+2	[1,2^_]	22	[4,1,2,4,2,1,8^_]
+3	[1,1,2^_]	23	[4,1,3,1,8^_]
+5	[2,4^_]	24	[4,1,8^_]
+6	[2,2,4^_]	26	[5,10^_]
+7	[2,1,1,1,4^_]	27	[5,5,10^_]
+8	[2,1,4^_]	28	[5,3,2,3,10^_]
+10	[3,6^_]	29	[5,2,1,1,2,10^_]
+11	[3,3,6^_]	30	[5,2,10^_]
+12	[3,2,6^_]	31	[5,1,1,3,5,3,1,1,10^_]
+13	[3,1,1,1,1,6^_]	32	[5,1,1,1,10^_]
+14	[3,1,2,1,6^_]	33	[5,1,2,1,10^_]
+15	[3,1,6^_]	34	[5,1,4,1,10^_]
+17	[4,8^_]	35	[5,1,10^_]
+18	[4,4,8^_]	37	[6,12^_]
+19	[4,2,1,3,1,2,8^_]	38	[6,6,12^_]
+20	[4,2,8^_]	39	[6,4,12^_]
+21	[4,1,1,2,1,1,8^_]	40	[6,3,12^_]
+An upper bound for the length of the period is roughly O(lnDsqrt(D)). The least positive ns such that the continued fraction of sqrt(n) has period p=1, 2, ... are 2, 3, 41, 7, 13, 19, 58, 31, 106, ... (OEIS A013646). The first few values of n such that the continued fraction of sqrt(n) has period p are summarized below for small p.
+
+p	OEIS	n
+1	A002522	2, 5, 10, 17, 26, 37, 50, 65, 82, 101, ...
+2	A013642	3, 6, 8, 11, 12, 15, 18, 20, 24, 27, ...
+3	A013643	41, 130, 269, 370, 458, ...
+4	A013644	7, 14, 23, 28, 32, 33, 34, 47, 55, 60, ...
+5	A010337	13, 29, 53, 74, 85, 89, 125, 173, 185, 218, ...
+6	A020347	19, 21, 22, 45, 52, 54, 57, 59, 70, 77, ...
+7	A010338	58, 73, 202, 250, 274, 314, 349, 425, ...
+8	A020348	31, 44, 69, 71, 91, 92, 108, 135, 153, 158, ...
+9	A010339	106, 113, 137, 149, 265, 389, 493, ...
+10	A020349	43, 67, 86, 93, 115, 116, 118, 129, 154, 159, ...
+The values of n at which the period of the continued fraction of sqrt(n) increases are 1, 2, 3, 7, 13, 19, 31, 43, 46, 94, 139, 151, 166, 211, 331, 421, 526, 571, ... (OEIS A013645).
+
+General identities for periodic continued fractions include
+
+[a^_]	=	(a+sqrt(a^2+4))/2	
+(4)
+[1,a^_]	=	(2-a+sqrt(a^2+4))/2	
+(5)
+[a,2a^_]	=	sqrt(a^2+1)	
+(6)
+[a,b^_]	=	(-ab+sqrt(ab(ab+4)))/(2a)	
+(7)
+[a_1,...,a_n^_]	=	(-(q_(n-1)-p_n)+sqrt((q_(n-1)-p_n)^2+4q_np_(n-1)))/(2q_n)	
+(8)
+[a_0,b_1,...,b_n^_]	=	a_0+1/([b_1,...,b_n^_])	
+(9)
+[b_1,...,b_n^_]	=	([b_1,...,b_n^_]p_n+p_(n-1))/([b_1,...,b_n^_]q_n+q_(n-1))	
+(10)
+(Wall 1948, pp. 39 and 83).
+
+The first follows from
+
+alpha	=	a+1/(a+1/(a+1/(a+...)))	
+(11)
+	=	a+1/(a+(1/(a+1/(a+...)))).	
+(12)
+Therefore,
+
+ alpha-a=1/(a+1/(a+1/(a+...))), 	
+(13)
+so plugging (13) into (12) gives
+
+ alpha=a+1/(a+(alpha-a))=a+1/alpha. 	
+(14)
+Expanding
+
+ alpha^2-aalpha-1=0, 	
+(15)
+and solving using the quadratic formula gives
+
+ alpha=(a+sqrt(a^2+4))/2. 	
+(16)
+The analog of this treatment in the general case gives
+
+ alpha=(alphap_n+p_(n-1))/(alphaq_n+q_(n-1)). 	
+(17)
+SEE ALSO
+Continued Fraction, Convergent, Near Noble Number, Noble Number, Quadratic Surd, Simple Continued Fraction
+EXPLORE WITH WOLFRAM|ALPHA
+WolframAlpha
+continued fractions
+
+More things to try:
+
+ continued fractions
+beta distribution
+generating function of A000108
+REFERENCES
+Liberman, H. Simple Continued Fractions: An Elementary to Research Level Approach. SMD Stock Analysts, 2003.
+Rose, H. E. A Course in Number Theory, 2nd ed. Oxford, England: Oxford University Press, 1994.
+Rosen, K. H. Elementary Number Theory and Its Applications. New York: Addison-Wesley, p. 426, 1980.
+Sloane, N. J. A. Sequences A010337, A010338, A010339, A013642, A013643, A013644, A013645, A013646, A020347, A020348, and A020349 in "The On-Line Encyclopedia of Integer Sequences."
+Wall, H. S. Analytic Theory of Continued Fractions. New York: Chelsea, 1948.
+REFERENCED ON WOLFRAM|ALPHA
+Periodic Continued Fraction
+CITE THIS AS:
+Weisstein, Eric W. "Periodic Continued Fraction." From MathWorld--A Wolfram Web Resource. https://mathworld.wolfram.com/PeriodicContinuedFraction.html
+
+SUBJECT CLASSIFICATIONS
+Number Theory  Continued Fractions 
+About MathWorld MathWorld Classroom Send a Message MathWorld Book wolfram.com
+13,928 Entries Last Updated: Sat Jul 29 2023 ©1999–2023 Wolfram Research, Inc. Terms of Use
+Created, developed and nurtured by Eric Weisstein at Wolfram Research
+]]]
+[[[
+https://mathworld.wolfram.com/QuadraticSurd.html
+===
+Quadratic Surd
+A number of the form +/-sqrt(a), where a is a positive rational number which is not the square of another rational number is called a pure quadratic surd. A number of the form a+/-sqrt(b), where a is rational and sqrt(b) is a pure quadratic surd is sometimes called a mixed quadratic surd (Hardy 1967, p. 20).
+
+Quadratic surds are sometimes also called quadratic irrationals.
+
+In 1770, Lagrange proved that any quadratic surd has a regular continued fraction which is periodic after some point. This result is known as Lagrange's continued fraction theorem.
+
+SEE ALSO
+Continued Fraction, Lagrange's Continued Fraction Theorem, Minkowski's Question Mark Function, nth Root, Quadratic, Square Root, Surd
+]]]
+[[[
+===
+]]]
+[[[
+https://math.stackexchange.com/questions/883348/series-for-logarithms
+===
+Series for logarithms
+Asked 9 years ago
+Modified 1 year, 6 months ago
+Viewed 1k times
+15
+
+This is more of a challenge than a question, but I thought I'd share anyway. Prove the following identities, and prove that the pattern continues. \begin{equation*} \sum_{n=0}^\infty\left(\frac{1}{2n+1}-\frac{1}{2n+2}\right)=\ln2 \end{equation*}\begin{equation*} \sum_{n=0}^\infty\left(\frac{1}{3n+1}+\frac{1}{3n+2}-\frac{2}{3n+3}\right)=\ln3 \end{equation*}\begin{equation*} \sum_{n=0}^\infty\left(\frac{1}{4n+1}+\frac{1}{4n+2}+\frac{1}{4n+3}-\frac{3}{4n+4}\right)=\ln4 \end{equation*}\begin{equation*} \mathrm{etc.} \end{equation*} By the way, a good notation for discussing this problem can be found here. The problem is to prove that:
+$[\overline{1,-1}]=\ln2,\;\;$ $[\overline{1,1,-2}]=\ln3,\;\;$ $[\overline{1,1,1,-3}]=\ln4,\;\;$ $[\overline{1,1,1,1,-4}]=\ln5,\;\;$ etc.
+
+sequences-and-serieslogarithms
+Share
+Cite
+Follow
+edited Apr 13, 2017 at 12:20
+Community's user avatar
+CommunityBot
+1
+asked Jul 31, 2014 at 5:48
+Akiva Weinberger's user avatar
+Akiva Weinberger
+21.5k11 gold badge3535 silver badges9393 bronze badges
+"challenge" meaning that you already know how to do it? – 
+Gerry Myerson
+ Jul 31, 2014 at 6:02
+Indeed. At the time of writing this comment, one solution has been posted - that way was the way I first did it, too. However, I have since come up with a "nicer" way (without using derivatives or integrals - though it does use the Taylor series for logarithms). – 
+Akiva Weinberger
+ Jul 31, 2014 at 6:44
+Apparently, this could also be made computing $$\sum_{n=0}^{\infty}(\frac{1}{mn+i}-\frac{1}{mn+m})=-\frac{\psi ^{(0)}\left(\frac{i}{m}\right)+\gamma }{m}$$ But I am stuck with the summation of the digamma functions. – 
+Claude Leibovici
+ Jul 31, 2014 at 7:06
+Hello! There is a way to do this using no calc; only the fact that $e^x\ge x+1$ and the "intuitively obvious" squeeze theorem. – 
+Akiva Weinberger
+ Mar 2, 2015 at 2:31
+math.stackexchange.com/questions/46378/… – 
+Mats Granvik
+ Apr 21, 2015 at 15:43
+Show 6 more comments
+5 Answers
+Sorted by:
+
+Highest score (default)
+9
+
+Let $m\geq 2$. Put:
+
+$$S_m=\sum_{n\geq 0}(\frac{1}{mn+1}+\cdots+\frac{1}{mn+m-1}-\frac{m-1}{mn+m}) $$
+
+As $\displaystyle \frac{1}{mn+r}=\int_0^1x^{mn+r-1}dx$, We have $$S_m=\int_0^{1}\frac{1+x+\cdots+x^{m-2}-(m-1)x^{m-1}}{1-x^m} dx$$ But $$1+x+\cdots+x^{m-2}-(m-1)x^{m-1}=(1-x^{m-1})+\cdots+(x^{m-2}-x^{m-1})$$
+
+Hence $$1+x+\cdots+x^{m-2}-(m-1)x^{m-1}=[(1-x)(1+x+\cdots x^{m-2})]+\cdots+[x^{m-2}(1-x)]$$
+
+and
+
+$$[(1+x+\cdots x^{m-2})]+\cdots+[x^{m-2}]=1+2x+\cdots+(m-1)x^{m-2}$$
+
+Thus $$S_m=\int_0^1\frac{\sum_{k=0}^{m-2}(k+1)x^{k}}{1+x+\cdots+x^{m-1}}dx=\int_0^1\frac{P^{\prime}(x)}{P(x)}dx=[\log(1+x+\cdots+x^{m-1})]_0^1=\log(m)$$
+
+Share
+Cite
+Follow
+answered Jul 31, 2014 at 6:21
+Kelenner's user avatar
+Kelenner
+18.6k2626 silver badges3636 bronze badges
+This is a really nice answer ! Thanks for providing this solution. Cheers :) – 
+Claude Leibovici
+ Jul 31, 2014 at 6:34
+This was my first solution, too! However, I have since come up with a "nicer" solution in the shower (it doesn't involve any integrals or derivatives, but it does require knowledge of the Taylor series for ln). – 
+Akiva Weinberger
+ Jul 31, 2014 at 6:42
+Could you show this solution ? – 
+Claude Leibovici
+ Jul 31, 2014 at 7:18
+Sure - as soon as I get on my computer (am currently on mobile). $\LaTeX$ and phones do not mix. – 
+Akiva Weinberger
+ Jul 31, 2014 at 19:27
+@ClaudeLeibovici Done. – 
+Akiva Weinberger
+ Jul 31, 2014 at 23:01
+Show 1 more comment
+9
+
+For any $m \in \mathbb{N},$
+
+$$\sum_{k=0}^{\infty} \Big(\frac{1}{mk+1} + \frac{1}{mk+2} + ... + \frac{1}{mk+m-1}- \frac{m-1}{mk+m}\Big)$$ $$= \lim_{n \rightarrow \infty} \Big(\sum_{k=0}^{mn} \frac{1}{mk+1} + ... + \frac{1}{mk+m-1} - \frac{m-1}{mk+m}\Big)$$$$= \lim_{n \rightarrow \infty} \Big( \sum_{k=1}^{mn} \frac{1}{k} - m \sum_{k=1}^n \frac{1}{mk} \Big)$$ $$= \lim_{n \rightarrow \infty} \Big(\sum_{k=1}^{mn} \frac{1}{k} - \sum_{k=1}^n \frac{1}{k}\Big)$$ $$= \lim_{n \rightarrow \infty} \Big( \sum_{k=1}^{mn} \frac{1}{k} - \ln(mn) + \ln(mn) - \sum_{k=1}^n \frac{1}{k} \Big)$$$$= \lim_{n \rightarrow \infty} \Big( \sum_{k=1}^{mn} \frac{1}{k} - \ln(mn) + \ln(n) - \sum_{k=1}^n \frac{1}{k} \Big) + \ln(m)$$ $$= \gamma - \gamma + \ln(m) = \ln(m),$$ where $\gamma$ is the Euler-Mascheroni constant.
+
+Share
+Cite
+Follow
+edited Aug 1, 2014 at 2:28
+answered Jul 31, 2014 at 8:02
+user165670's user avatar
+user165670
+87666 silver badges44 bronze badges
+Wow. That was an interesting approach. Good job! – 
+Akiva Weinberger
+ Jul 31, 2014 at 15:59
+Not exactly the same but the second last line in that proof above resembles the answer to this question here: math.stackexchange.com/questions/46713/… – 
+Mats Granvik
+ Apr 22, 2015 at 11:50 
+Add a comment
+4
+
+So far, there is a proof involving differentiation/integration, and a proof involving nothing more than the knowledge that $\gamma$amma exists. Here is my proof, requiring the Taylor series expansion of the logarithm.
+
+The well known Taylor series for $\ln(x)$ is as follows: $$-\ln(1-x)=\frac{x}{1}+\frac{x^2}{2}+\frac{x^3}{3}+\cdots+\frac{x^m}{m}+\cdots$$ which I love, because the exponents correspond to the denominators.
+
+Substituting in $x^m$, we get: $$-\ln(1-x^m)=\frac{x^m}{1}+\frac{x^{2m}}{2}+\frac{x^{3m}}{3}+\cdots=\frac{m\,x^m}{m}+\frac{m\,x^{2m}}{2m}+\frac{m\,x^{3m}}{3m}+\cdots$$ where I rewrote it slightly so that the exponents still correspond to the denominators.
+
+Subtracting the bottom from the top, we get: $$\ln\left(\frac{1-x^m}{1-x}\right)=\frac{x}{1}+\frac{x^2}{2}+\frac{x^3}{3}+\cdots+\frac{-(m-1)x^m}{m}+\\ \frac{x^{m+1}}{m+1}+\cdots+\frac{-(m-1)x^{2m}}{2m}+\cdots$$ (i.e. the coefficients are $-(m-1)$ where the denominator is a multiple of $m$, and $1$ otherwise.)
+
+The LHS can be rewritten as $\ln(1+x+x^2+\cdots+x^m)$. So, plugging in $x=1$: $$\ln(m)=\frac{1}{1}+\frac{1}{2}+\frac{1}{3}+\cdots-\frac{m-1}{m}+\frac{1}{m+1}+\cdots-\frac{-(m-1)}{2m}+\cdots$$ which is what was meant to be proved.
+
+Share
+Cite
+Follow
+answered Jul 31, 2014 at 23:00
+Akiva Weinberger's user avatar
+Akiva Weinberger
+21.5k11 gold badge3535 silver badges9393 bronze badges
+Add a comment
+1
+
+The partial sums of this series can be written in a simple form. The generic term is $$ \frac1{mk+1}+\cdots+\frac1{mk+(m-1)}-\frac{m-1}{mk+m}=\left(\sum_{j=1}^m\frac1{mk+j}\right)-\frac1{k+1},$$ so the sum of the first $n$ terms is $$\sum_{k=0}^{n-1}\left(\sum_{j=1}^m\frac1{mk+j}\right)-\sum_{k=0}^{n-1}\frac1{k+1}=\sum_{k=1}^{mn}\frac1k-\sum_{k=1}^n\frac1k=\sum_{k=n+1}^{mn}\frac1k.$$ Let $n\to\infty$. The limit of the RHS is $\log(m)$, by this result:
+
+Claim: Let $(a_n)$ and $(b_n)$ be sequences of positive integers with $b_n\ge a_n\to\infty$ and $\lim_{n\to\infty}\frac{b_n}{a_n}=c$. Then $$ \lim_{n\to\infty}\sum_{k=a_n}^{b_n}\frac1k=\log c.$$
+
+Share
+Cite
+Follow
+answered Jan 19, 2022 at 0:19
+grand_chat's user avatar
+grand_chat
+37.8k11 gold badge3535 silver badges6666 bronze badges
+Nice! How did you find a 7.5-year-old question? – 
+Akiva Weinberger
+ Jan 19, 2022 at 0:44
+1
+Haha, from this even older question math.stackexchange.com/q/46378/215011 which can be solved the same way. – 
+grand_chat
+ Jan 19, 2022 at 0:56
+@AkivaWeinberger The same device can be applied to your question math.stackexchange.com/q/883233/215011 , if you're interested in seeing an elementary solution – 
+grand_chat
+ Jan 20, 2022 at 6:34
+Add a comment
+0
+
+Having $\lim_{n\rightarrow\infty}$ for all expressions,
+
+(especially for $\left(H_{xn}-H_n\right)$ combinations to avoid $\infty-\infty$ complications)
+
+and
+
+having $H_n=\sum_{1}^n\frac 1i$;
+
+No 1 expression left side equals: $H_{2n}-H_n$
+
+No 2 expression left side equals: $H_{3n}−H_n$
+
+No 3 expression left side equals: $H_{4n}−H_n$
+
+Having 𝛾 as Euler–Mascheroni constant; $$𝛾=H_n-\ln n$$
+
+Generalizing: $$𝛾=H_{xn}-\ln xn$$ $$\Rightarrow H_{xn}-H_n=\ln xn -\ln n$$ $$\Rightarrow H_{xn}-H_n=\ln x $$ where $x\geq 1$.
+
+Accordingly;
+
+No 1 expression: $H_{2n}-H_n=\ln 2$
+
+No 2 expression: $H_{3n}−H_n=\ln 3$
+
+No 3 expression: $H_{4n}−H_n=\ln 4$
+
+Share
+Cite
+Follow
+answered Nov 15, 2016 at 18:33
+C. Kayrak's user avatar
+C. Kayrak
+1111 bronze badge
+This is essentially @user165670's answer above, but with fewer details and less rigour. – 
+Alex M.
+ Nov 15, 2016 at 18:44 
+@AkivaWeinberger, to my surprise our comments seem to have vanished! Have you flagged them to a moderator for deletion? I wouldn't mind that, since they were not valuable, but I'd like to know (for my curiosity) how they disappeared. – 
+Alex M.
+ Nov 15, 2016 at 19:47
+@AlexM. …No, I did not… I don't know who deleted them – 
+Akiva Weinberger
+ Nov 15, 2016 at 19:52 
+I read all comments... – 
+C. Kayrak
+ Nov 16, 2016 at 22:55
+I just wanted to emphasize the concept of $H_xn-H_n=\ln x$. I was excited with the idea of $H_{-n]-H_n=\ln {-1}$. – 
+C. Kayrak
+ Nov 16, 2016 at 22:59
+Show 3 more comments
+===
+???[ln(m) == sum~ (sum~ 1/(m*i+j) ~{j :<- [1..<m]} -(m-1)/(m*i+m)) ~{i :<- [0..]}]???
+  [[?proof:
+  [(sum~ 1/(m*i+j) ~{j :<- [1..<m]} -(m-1)/(m*i+m))
+  == (sum~ 1/(m*i+j) ~{j :<- [1..=m]} -1/(m*i+m) -(m-1)/(m*i+m))
+  == (sum~ 1/(m*i+j) ~{j :<- [1..=m]} -m/(m*i+m))
+  == (sum~ 1/(m*i+j) ~{j :<- [1..=m]} -1/(i+1))
+  ]
+  [rhs
+  == sum~ (sum~ 1/(m*i+j) ~{j :<- [1..<m]} -(m-1)/(m*i+m)) ~{i :<- [0..]}
+  == sum~ (sum~ 1/(m*i+j) ~{j :<- [1..=m]} -1/(i+1)) ~{i :<- [0..]}
+  == limit~ (sum~ (sum~ 1/(m*i+j) ~{j :<- [1..=m]} -1/(i+1)) ~{i :<- [0..=k]}) ~{k --> +oo}
+  == limit~ (sum~ (sum~ 1/(m*i+j) ~{j :<- [1..=m]}) ~{i :<- [0..=k]} -sum~ (1/(i+1)) ~{i :<- [0..=k]}) ~{k --> +oo}
+  == limit~ (sum~ 1/d ~{d :<- [1..=k*m+m]} -sum~ 1/d ~{d :<- [1..=k+1]}) ~{k --> +oo}
+  == limit~ (sum~ 1/d ~{d :<- [k+2..=k*m+m]}) ~{k --> +oo}
+  == limit~ (sum~ 1/d ~{d :<- [k+2..=(k+2)*m-m]}) ~{k --> +oo}
+  == limit~ (sum~ 1/d ~{d :<- [k..=k*m-m]}) ~{k --> +oo}
+  =?= ln(m)
+  ]
+  ]]
+]]]
+[[[
+https://mathworld.wolfram.com/Logarithm.html
+===
+Logarithm
+The logarithm log_bx for a base b and a number x is defined to be the inverse function of taking b to the power x, i.e., b^x. Therefore, for any x and b,
+
+ x=log_b(b^x), 	
+(1)
+or equivalently,
+
+ x=b^(log_bx). 	
+(2)
+Logarithm
+For any base, the logarithm function has a singularity at x=0. In the above plot, the blue curve is the logarithm to base 2 (log_2x=lgx), the black curve is the logarithm to base e (the natural logarithm log_ex=lnx), and the red curve is the logarithm to base 10 (the common logarithm, i.e., log_(10)x=logx).
+
+Note that while logarithm base 10 is denoted logx in this work, on calculators, and in elementary algebra and calculus textbooks, mathematicians and advanced mathematics texts uniformly use the notation logx to mean lnx, and therefore use log_(10)x to mean the common logarithm. Extreme care is therefore needed when consulting the literature.
+
+The situation is complicated even more by the fact that number theorists (e.g., Ivić 2003) commonly use the notation log_kx to denote the nested natural logarithm ln...ln_()_(k)x.
+
+In the Wolfram Language, the logarithm to the base b is implemented as Log[b, x], while Log[x] gives the natural logarithm, i.e., Log[E, x], where E is the Wolfram Language symbol for e.
+
+Whereas powers of trigonometric functions are denoted using notations like sin^kx, log^kx is less commonly used in favor of the notation (logx)^k.
+
+Logarithms are used in many areas of science and engineering in which quantities vary over a large range. For example, the decibel scale for the loudness of sound, the Richter scale of earthquake magnitudes, and the astronomical scale of stellar brightnesses are all logarithmic scales.
+
+The derivative and indefinite integral of log_bz are given by
+
+d/(dz)log_bz	=	1/(zlnb)	
+(3)
+intlog_bzdz	=	(z(lnz-1))/(lnb)+C.	
+(4)
+LogReImAbs
+
+
+
+		Min		Max			
+Re	
+-4
+4
+Im	
+-4
+4
+Powered by webMathematica	
+The logarithm can also be defined for complex arguments, as shown above. If the logarithm is taken as the forward function, the function taking the base to a given power is then called the antilogarithm.
+
+For x=logN, |_x_| is called the characteristic, and x-|_x_| is called the mantissa.
+
+Division and multiplication identities for the logarithm can be derived from the identity
+
+ xy=b^(log_bx)b^(log_by)=b^(log_bx+log_by), 	
+(5)
+including
+
+log_b(xy)	=	log_bx+log_by	
+(6)
+log_b(x/y)	=	log_bx-log_by	
+(7)
+log_bx^n	=	nlog_bx.	
+(8)
+There are a number of properties which can be used to change from one logarithm base to another, including
+
+a	=	a^(log_ab/log_ab)	
+(9)
+	=	(a^(log_ab))^(1/log_ab)	
+(10)
+	=	b^(1/log_ab)	
+(11)
+log_ba	=	1/(log_ab)	
+(12)
+log_bx	=	log_b(y^(log_yx))	
+(13)
+	=	log_yxlog_by	
+(14)
+log_bx	=	(log_nx)/(log_nb)	
+(15)
+a^x	=	b^(x/log_ab)	
+(16)
+	=	b^(xlog_ba).	
+(17)
+An interesting property of logarithms follows from looking for a number y such that
+
+ log_b(x+y)=-log_b(x-y) 	
+(18)
+ x+y=1/(x-y) 	
+(19)
+ x^2-y^2=1 	
+(20)
+ y=sqrt(x^2-1), 	
+(21)
+so
+
+ log_b(x+sqrt(x^2-1))=-log_b(x-sqrt(x^2-1)). 	
+(22)
+Another related identity that holds for arbitrary 0<c<a is given by
+
+ log((a+sqrt(a^2-c^2))/c)=1/2log((a+sqrt(a^2-c^2))/(a-sqrt(a^2-c^2))). 	
+(23)
+Numbers of the form log_ab are irrational if a and b are integers, one of which has a prime factor which the other lacks. A. Baker made a major step forward in transcendental number theory by proving the transcendence of sums of numbers of the form alphalnbeta for alpha and beta algebraic numbers.
+
+SEE ALSO
+Antilogarithm, Base, Common Logarithm, Cologarithm, e, Exponential Function, Harmonic Logarithm, Lg, Ln, Logarithmic Series, Logarithmic Number, Napierian Logarithm, Natural Logarithm, Nested Logarithm, Power
+]]]
+[[[
+https://mathworld.wolfram.com/Power.html
+===
+Power
+A power is an exponent to which a given quantity is raised. The expression x^a is therefore known as "x to the ath power." A number of powers of x are plotted above (cf. Derbyshire 2004, pp. 68 and 73).
+
+The power may be an integer, real number, or complex number. However, the power of a real number to a non-integer power is not necessarily itself a real number. For example, x^(1/2) is real only for x>=0.
+
+ZeroToTheZero
+A number other than 0 taken to the power 0 is defined to be 1, which follows from the limit
+
+ lim_(x->0)a^x=1. 	
+(1)
+This fact is illustrated by the convergence of curves at x=0 in the plot above, which shows a^x for a=0.2, 0.4, ..., 2.0. It can also be seen more intuitively by noting that repeatedly taking the square root of a number >1 gives smaller and smaller numbers that approach one from above, while doing the same with a number between 0 and 1 gives larger and larger numbers that approach one from below. For n square roots, the total power taken is 2^(-n), which approaches 0 as n is large, giving a^0=1 in the limit that n is large.
+
+0^0 (zero to the zeroth power) itself is undefined. The lack of a well-defined meaning for this quantity follows from the mutually contradictory facts that a^0 is always 1, so 0^0 should equal 1, but 0^a is always 0 (for a>0), so 0^0 should equal 0. The choice of definition for 0^0 is usually defined to be indeterminate, although defining 0^0=1 allows some formulas to be expressed simply (Knuth 1992; Knuth 1997, p. 57).
+
+A number to the first power is, by definition, equal to itself, i.e.,
+
+ z^1=z. 	
+(2)
+Similarly,
+
+ 1^z=1 	
+(3)
+for any complex number z. It is therefore impressive that Captain Kirk (William Shatner) is able to detect one more heartbeat aboard the starship Enterprise than can be accounted for by amplifying an auditory sensor intensified by a factor of "1 to the fourth power" in the Season 1 Star Trek episode "Court Martial" (1967).
+
+The rules for combining quantities containing powers are called the exponent laws, and the process of raising a base to a given power is known as exponentiation.
+
+The derivative of z^n is given by
+
+ d/(dz)z^n=nz^(n-1), 	
+(4)
+and the indefinite integral by
+
+ intz^ndz={(z^(n+1))/(n+1)+C   for n!=-1; lnz+C   for n=-1. 	
+(5)
+The definite integral for x real is known as Cavalieri's quadrature formula and is given by
+
+ int_a^bx^ndx={(b^(n+1)-a^(n+1))/(n+1)   for n!=-1; ln(b/a)   for n=-1. 	
+(6)
+While the simple equation
+
+ a^x=x 	
+(7)
+cannot be solved for x using traditional elementary functions, the solution can be given in terms of the Lambert W-function as
+
+ x=-(W(-lna))/(lna), 	
+(8)
+where lna is the natural logarithm of a.
+
+Similarly, the solution to
+
+ a^b=b^a 	
+(9)
+can be solved for a in terms of b using the Lambert W-function. In the special case b=2, in addition to the solutions a=2 and a=4, a third solution is
+
+a	=	-(2W(-(ln2)/2))/(ln2)	
+(10)
+	=	-0.766664696...	
+(11)
+(OEIS A073084).
+
+Special names given to various powers are listed in the following table.
+
+power	name
+-1	reciprocal
+1/2	square root
+1/3	cube root
+1	identity function
+2	squared
+3	cubed
+Expressions of the form x^(x^(·^(·^·))) are known as power towers.
+
+The largest powers p which numbers n=1, 2, 3, ... can be represented in the form n=a^p are 1, 1, 1, 2, 1, 1, 1, 3, 2, 1, ... (OEIS A052409), with corresponding values of a given by 1, 2, 3, 2, 5, 6, 7, 2, 3, 10, ... (OEIS A052410).
+
+A double binomial sum gives the power function as follows,
+
+ sum_(k=1)^nsum_(j=1)^k(-1)^(k-j)j^n(k; j)(x; k)=x^n 	
+(12)
+(K. MacMillan, pers. comm., Nov. 14, 2007).
+
+The power sum of the first n positive integers is given by Faulhaber's formula,
+
+ sum_(k=1)^nk^p=1/(p+1)sum_(k=1)^(p+1)(-1)^(delta_(kp))(p+1; k)B_(p+1-k)n^k, 	
+(13)
+where delta_(kp) is the Kronecker delta, (n; k) is a binomial coefficient, and B_k is a Bernoulli number.
+
+Let s_n be the largest integer that is not the sum of distinct nth powers of positive integers (Guy 1994). The first few values for n=2, 3, ... are 128, 12758, 5134240, 67898771, ... (OEIS A001661).
+
+Catalan's conjecture (now a theorem) states that 8 and 9 (2^3 and 3^2) are the only consecutive powers (excluding 0 and 1), i.e., the only solution to Catalan's Diophantine problem. In addition, Hyyrő and Makowski proved that there do not exist three consecutive powers (Ribenboim 1996).
+
+Very few numbers of the form n^p+/-1 are prime (where composite powers p=kb need not be considered, since n^(kb)+/-1=(n^k)^b+/-1). The only prime numbers of the form n^p-1 for n in N and prime p correspond to n=2 and the Mersenne primes, i.e., 2^2-1=3, 2^3-1=7, 2^5-1=31, .... Other numbers of the form n^p-1 equal (n-1)×sum_(k=0)^(p-1)(n)^k. The only prime numbers of the form n^p+1 for n in N and prime p correspond to p=2 with n=1, 2, 4, 6, 10, 14, 16, 20, 24, 26, ... (OEIS A005574). Other numbers of the form n^p+1 equal (n+1)×sum_(k=0)^(p-1)(-n)^k.
+
+There are no nontrivial solutions to the equation
+
+ 1^n+2^n+...+m^n=(m+1)^n 	
+(14)
+for m<=10^(2000000) (Guy 1994, p. 153).
+
+SEE ALSO
+Apocalyptic Number, Biquadratic Number, Catalan's Conjecture, Catalan's Diophantine Problem, Cavalieri's Quadrature Formula, Circle Power, Complex Exponentiation, Cube Root, Cubed, Cubic Number, Digit-Shifting Constants, Exponent, Exponent Laws, Exponential Function, Exponentiation, Faulhaber's Formula, Figurate Number, Moessner's Theorem, Narcissistic Number, Odd Power, Perfect Power, Power Rule, Power Tower, Square Number, Square Root, Squared, Sum, Truncated Power Function, Waring's Problem, Zero
+]]]
+[[[
+https://math.stackexchange.com/questions/585154/taylor-series-for-logx
+===
+[Re(z) > 0]:
+  [ln(z) == let [r := (z-1)/(z+1)] in 2*(r + r^3/3 + r^5/5 + ...)]
+
+#[abs(x) < 1]:
+[-1 <= x < 1]:
+  [-ln(1-x) == (x + x^2/2 + x^3/3 + ...)]
+      [[proof:
+      [D<x>(-ln(1-x))
+      == 1/(1-x)
+      == (1+x+x^2+...)
+      == D<x>(x + x^2/2 + x^3/3 + ...)
+      ]
+      ]]
+[-1 < x <= 1]:
+  [ln(1+x) == (x -x^2/2 +x^3/3 -x^4/4 + ...)]
+
+[0 < x <= 2]:
+  [ln(x) == let [r := 1-x] in -(r + r^2/2 + r^3/3 + ...)]
+
+[-x0 < d <= x0]:
+  [0 < x0][-1 < d/x0 <= 1]
+  [ln(x0+d) == ln(x0) - let [r := -d/x0] in (r + r^2/2 + r^3/3 + ...)]
+      [[proof:
+      [ln(x0+d)
+      == ln(x0) + ln(1+d/x0)
+      !! [ln(x) == let [r := 1-x] in -(r + r^2/2 + r^3/3 + ...)]
+      == ln(x0) + let [r := 1-(1+d/x0)] in -(r + r^2/2 + r^3/3 + ...)
+      == ln(x0) - let [r := -d/x0] in (r + r^2/2 + r^3/3 + ...)
+      ]
+      ]]
+===
+Abromowitz & Stegun gives a number of forms.
+
+Among these, the bilinear expansion is known for its used in digital filter theory:
+
+$$\log(z) = 2\left[\left({z-1\over z+1}\right)+ {1\over3} \left({z-1\over z+1}\right)^3 + {1\over5} \left({z-1\over z+1}\right)^5+ \cdots\right],$$
+
+for $\Re z > 0.$
+
+Series of log(x)
+===
+$$-\log(1-x) = x + \frac{x^2}{2} + \frac{x^3}{3} + \dots \qquad (|x|<1)$$
+
+There is no expansion around $x=1$ because the log is singular at $0$.
+===
+For $x \in \mathbb{R}$ satisfying $0 < x < 2$,
+
+$$f(x) = \ln(x) = \left(x-1\right)-\frac{1}{2}\left(x-1\right)^2 + \frac{1}{3} \left(x-1\right)^3-\frac{1}{4} \left(x-1\right)^4 + \cdots$$
+$$ f(x) = \displaystyle\sum\limits_{n=1}^{\infty} \left[\frac{\left(-1\right)^{n+1}}{n}\left(x-1\right) ^n\right] $$
+===
+The Taylor series for $\ln$ centered at $1$ can be easily derived with the geometric series
+
+$$\sum_{n=0}^\infty x^n=\frac{1}{1-x}$$
+
+We start with the derivative of $\ln$, which is given by $1/x$ for every $x>0$. This derivative is equivalent to
+
+$$\frac{1}{1-[-(x-1)]}$$
+
+so if $x$ satisfies $|-(x-1)|=|x-1|<1$, this can be expanded as a geometric series.
+
+\begin{align} \frac{1}{1-[-(x-1)]} &= \sum_{n=0}^\infty [-(x-1)]^n\\ &=\sum_{n=0}^\infty (-1)^n(x-1)^n \end{align}
+
+Thus, $(\ln)'(x)=\sum_{n=0}^\infty (-1)^n(x-1)^n$ holds for every $x$ with $|x-1|<1$. We can get a series expression for $\ln\left(x_0\right)$ by integrating this identity from $1$ to $x_0$.
+
+\begin{align} \ln\left(x_0\right)-\ln(1) &= \sum_{n=0}^\infty (-1)^n\frac{\left(x_0-1\right)^{n+1}}{n+1}-\sum_{n=0}^\infty (-1)^n\frac{(1-1)^{n+1}}{n+1}\\ &= \sum_{n=1}^\infty (-1)^{n-1}\frac{\left(x_0-1\right)^n}{n}-\sum_{n=1}^\infty (-1)^{n-1}\frac{0^{n}}{n}\\ &= \sum_{n=1}^\infty \frac{(-1)^{n-1}}{n}\left(x_0-1\right)^n\\ &= \left(x_0-1\right)-\frac{\left(x_0-1\right)^2}{2}+\frac{\left(x_0-1\right)^3}{3}-\frac{\left(x_0-1\right)^4}{4}+\cdots \end{align}
+
+What if we want to find a series expansion centered at a point other than $1$, say at $a>0$? You can always do this directly by computing the derivatives of $\ln$ at $a$, but an easier method is to leverage the series we just derived and the identity
+
+$$\ln\left(\frac{x}{y}\right)=\ln(x)-\ln(y)$$
+
+To see this, evaluate $\ln$ at $x/a$, where $x$ is any positive real number. If $|x-a|<a$, we will have that $|x/a-1|<1$, so the Taylor series of $\ln$ centered at $1$ will converge to $\ln(x/a)$. We can then write
+
+\begin{align} \ln\left(\frac{x}{a}\right) &= \sum_{n=1}^\infty \frac{(-1)^{n-1}}{n}\left(\frac{x}{a}-1\right)^n\\ &= \sum_{n=1}^\infty \frac{(-1)^{n-1}}{n}\left(\frac{x-a}{a}\right)^n\\ &= \sum_{n=1}^\infty \frac{(-1)^{n-1}}{n}\frac{(x-a)^n}{a^n}\\&= \sum_{n=1}^\infty \frac{(-1)^{n-1}}{na^n}(x-a)^n\\ \end{align}
+
+From $\ln(x/a)=\ln(x)-\ln(a)$, it immediately follows that
+
+\begin{align} \ln(x) &= \ln(a)+\sum_{n=1}^\infty \frac{(-1)^{n-1}}{na^n}(x-a)^n\\ &= \ln(a)+\frac{1}{a}(x-a)-\frac{1}{2a^2}(x-a)^2+\frac{1}{3a^3}(x-a)^3-\frac{1}{4a^4}(x-a)^4+\cdots \end{align}
+===
+===
+]]]
+[[[
+https://mathworld.wolfram.com/TaylorSeries.html
+===
+Taylor Series
+A Taylor series is a series expansion of a function about a point. A one-dimensional Taylor series is an expansion of a real function f(x) about a point x=a is given by
+
+ f(x)=f(a)+f^'(a)(x-a)+(f^('')(a))/(2!)(x-a)^2+(f^((3))(a))/(3!)(x-a)^3+...+(f^((n))(a))/(n!)(x-a)^n+....   	
+(1)
+If a=0, the expansion is known as a Maclaurin series.
+
+Taylor's theorem (actually discovered first by Gregory) states that any function satisfying certain conditions can be expressed as a Taylor series.
+
+The Taylor (or more general) series of a function f(x) about a point a up to order n may be found using Series[f, {x, a, n}]. The nth term of a Taylor series of a function f can be computed in the Wolfram Language using SeriesCoefficient[f, {x, a, n}] and is given by the inverse Z-transform
+
+ a_n=Z^(-1)[f(1/(z-a))](n). 	
+(2)
+Taylor series of some common functions include
+
+1/(1-x)	=	1/(1-a)+(x-a)/((1-a)^2)+((x-a)^2)/((1-a)^3)+...	
+(3)
+cosx	=	cosa-sina(x-a)-1/2cosa(x-a)^2+1/6sina(x-a)^3+...	
+(4)
+e^x	=	e^a[1+(x-a)+1/2(x-a)^2+1/6(x-a)^3+...]	
+(5)
+lnx	=	lna+(x-a)/a-((x-a)^2)/(2a^2)+((x-a)^3)/(3a^3)-...	
+(6)
+sinx	=	sina+cosa(x-a)-1/2sina(x-a)^2-1/6cosa(x-a)^3+...	
+(7)
+tanx	=	tana+sec^2a(x-a)+sec^2atana(x-a)^2+sec^2a(sec^2a-2/3)(x-a)^3+....	
+(8)
+To derive the Taylor series of a function f(x), note that the integral of the (n+1)st derivative f^((n+1)) of f(x) from the point x_0 to an arbitrary point x is given by
+
+ int_(x_0)^xf^((n+1))(x)dx=[f^((n))(x)]_(x_0)^x=f^((n))(x)-f^((n))(x_0), 	
+(9)
+where f^((n))(x_0) is the nth derivative of f(x) evaluated at x_0, and is therefore simply a constant. Now integrate a second time to obtain
+
+ int_(x_0)^x[int_(x_0)^xf^((n+1))(x)dx]dx 
+=int_(x_0)^x[f^((n))(x)-f^((n))(x_0)]dx 
+=[f^((n-1))(x)]_(x_0)^x-(x-x_0)f^((n))(x_0) 
+=f^((n-1))(x)-f^((n-1))(x_0)-(x-x_0)f^((n))(x_0),  	
+(10)
+where f^((k))(x_0) is again a constant. Integrating a third time,
+
+ int_(x_0)^xint_(x_0)^xint_(x_0)^xf^((n+1))(x)(dx)^3=f^((n-2))(x)-f^((n-2))(x_0)
+ -(x-x_0)f^((n-1))(x_0)-((x-x_0)^2)/(2!)f^((n))(x_0),   	
+(11)
+and continuing up to n+1 integrations then gives
+
+ int...int_(x_0)^x_()_(n+1)f^((n+1))(x)(dx)^(n+1)=f(x)-f(x_0)-(x-x_0)f^'(x_0) 
+ -((x-x_0)^2)/(2!)f^('')(x_0)-...-((x-x_0)^n)/(n!)f^((n))(x_0).  	
+(12)
+Rearranging then gives the one-dimensional Taylor series
+
+f(x)	=	f(x_0)+(x-x_0)f^'(x_0)+((x-x_0)^2)/(2!)f^('')(x_0)+...+((x-x_0)^n)/(n!)f^((n))(x_0)+R_n	
+(13)
+	=	sum_(k=0)^(n)((x-x_0)^kf^((k))(x_0))/(k!)+R_n.	
+(14)
+Here, R_n is a remainder term known as the Lagrange remainder, which is given by
+
+ R_n=int...int_(x_0)^x_()_(n+1)f^((n+1))(x)(dx)^(n+1). 	
+(15)
+Rewriting the repeated integral then gives
+
+ R_n=int_(x_0)^xf^((n+1))(t)((x-t)^n)/(n!)dt. 	
+(16)
+Now, from the mean-value theorem for a function g(x), it must be true that
+
+ int_(x_0)^xg(x)dx=(x-x_0)g(x^*) 	
+(17)
+for some x^* in [x_0,x]. Therefore, integrating n+1 times gives the result
+
+ R_n=((x-x_0)^(n+1))/((n+1)!)f^((n+1))(x^*) 	
+(18)
+(Abramowitz and Stegun 1972, p. 880), so the maximum error after n terms of the Taylor series is the maximum value of (18) running through all x^* in [x_0,x]. Note that the Lagrange remainder R_n is also sometimes taken to refer to the remainder when terms up to the (n-1)st power are taken in the Taylor series (Whittaker and Watson 1990, pp. 95-96).
+
+Taylor series can also be defined for functions of a complex variable. By the Cauchy integral formula,
+
+f(z)	=	1/(2pii)int_C(f(z^')dz^')/(z^'-z)	
+(19)
+	=	1/(2pii)int_C(f(z^')dz^')/((z^'-z_0)-(z-z_0))	
+(20)
+	=	1/(2pii)int_C(f(z^')dz^')/((z^'-z_0)(1-(z-z_0)/(z^'-z_0))).	
+(21)
+In the interior of C,
+
+ (|z-z_0|)/(|z^'-z_0|)<1 	
+(22)
+so, using
+
+ 1/(1-t)=sum_(n=0)^inftyt^n, 	
+(23)
+it follows that
+
+f(z)	=	1/(2pii)int_Csum_(n=0)^(infty)((z-z_0)^nf(z^')dz^')/((z^'-z_0)^(n+1))	
+(24)
+	=	1/(2pii)sum_(n=0)^(infty)(z-z_0)^nint_C(f(z^')dz^')/((z^'-z_0)^(n+1)).	
+(25)
+Using the Cauchy integral formula for derivatives,
+
+ f(z)=sum_(n=0)^infty(z-z_0)^n(f^((n))(z_0))/(n!). 	
+(26)
+An alternative form of the one-dimensional Taylor series may be obtained by letting
+
+ x-x_0=Deltax 	
+(27)
+so that
+
+ x=x_0+Deltax. 	
+(28)
+Substitute this result into (◇) to give
+
+ f(x_0+Deltax)=f(x_0)+Deltaxf^'(x_0)+1/(2!)(Deltax)^2f^('')(x_0)+.... 	
+(29)
+A Taylor series of a real function in two variables f(x,y) is given by
+
+ f(x+Deltax,y+Deltay)=f(x,y)+[f_x(x,y)Deltax+f_y(x,y)Deltay]+1/(2!)[(Deltax)^2f_(xx)(x,y)+2DeltaxDeltayf_(xy)(x,y)+(Deltay)^2f_(yy)(x,y)]+1/(3!)[(Deltax)^3f_(xxx)(x,y)+3(Deltax)^2Deltayf_(xxy)(x,y)+3Deltax(Deltay)^2f_(xyy)(x,y)+(Deltay)^3f_(yyy)(x,y)]+....  	
+(30)
+This can be further generalized for a real function in n variables,
+
+ f(x_1,...,x_n)=sum_(j=0)^infty{1/(j!)[sum_(k=1)^n(x_k-a_k)partial/(partialx_k^')]^jf(x_1^',...,x_n^')}_(x_1^'=a_1,...,x_n^'=a_n). 	
+(31)
+Rewriting,
+
+ f(x_1+a_1,...,x_n+a_n)=sum_(j=0)^infty{1/(j!)(sum_(k=1)^na_kpartial/(partialx_k^'))^jf(x_1^',...,x_n^')}_(x_1^'=x_1,...,x_n^'=x_n). 	
+(32)
+For example, taking n=2 in (31) gives
+
+f(x_1,x_2)=sum_(j=0)^(infty){1/(j!)[(x_1-a_1)partial/(partialx_1^')+(x_2-a_2)partial/(partialx_2^')]^jf(x_1^',x_2^')}_(x_1^'=a_1,x_2^'=a_2) 	
+(33)
+=f(a_1,a_2)+[(x_1-a_1)(partialf)/(partialx_1)+(x_2-a_2)(partialf)/(partialx_2)]+1/(2!)[(x_1-a_1)^2(partial^2f)/(partialx_1^2)+2(x_1-a_1)(x_2-a_2)(partial^2f)/(partialx_1partialx_2)+(x_2-a_2)^2(partial^2f)/(partialx_2^2)]+.... 	
+(34)
+Taking n=3 in (32) gives
+
+ f(x_1+a_1,x_2+a_2,x_3+a_3) 
+=sum_(j=0)^infty{1/(j!)(a_1partial/(partialx_1^')+a_2partial/(partialx_2^')+a_3partial/(partialx_3^'))^jf(x_1^',x_2^',x_3^')}_(x_1^'=x_1,x_2^'=x_2,x_3^'=x_3),  	
+(35)
+or, in vector form
+
+ f(r+a)=sum_(j=0)^infty[1/(j!)(a·del _(r^'))^jf(r^')]_(r^'=r). 	
+(36)
+The zeroth- and first-order terms are f(r) and (a·del _(r^'))f(r^')|_(r^'=r), respectively. The second-order term is
+
+1/2(a·del _(r^'))(a·del _(r^'))f(r^')|_(r^'=r)	=	1/2a·del _(r^')[a·(del f(r^'))]_(r^'=r)	
+(37)
+	=	1/2a·[a·del _(r^')(del _(r^')f(r^'))]|_(r^'=r),	
+(38)
+so the first few terms of the expansion are
+
+ f(r+a)=f(r)+(a·del _(r^'))f(r^')|_(r^'=r)+1/2a·[a·del _(r^')(del _(r^')f(r^'))]|_(r^'=r). 	
+(39)
+SEE ALSO
+Cauchy Remainder, Fourier Series, Generalized Fourier Series, Lagrange Inversion Theorem, Lagrange Remainder, Laurent Series, Maclaurin Series, Newton's Forward Difference Formula, Taylor's Inequality, Taylor's Theorem
+]]]
+[[[
+https://mathworld.wolfram.com/LagrangeRemainder.html
+===
+Lagrange Remainder
+Given a Taylor series
+
+ f(x)=f(x_0)+(x-x_0)f^'(x_0)+((x-x_0)^2)/(2!)f^('')(x_0)+... 
+ +((x-x_0)^n)/(n!)f^((n))(x_0)+R_n,   	
+(1)
+the error R_n after n terms is given by
+
+ R_n=int_(x_0)^xf^((n+1))(t)((x-t)^n)/(n!)dt. 	
+(2)
+Using the mean-value theorem, this can be rewritten as
+
+ R_n=(f^((n+1))(x^*))/((n+1)!)(x-x_0)^(n+1) 	
+(3)
+for some x^* in (x_0,x) (Abramowitz and Stegun 1972, p. 880).
+
+Note that the Lagrange remainder R_n is also sometimes taken to refer to the remainder when terms up to the (n-1)st power are taken in the Taylor series, and that a notation in which h->x-x_0, x^*->a+thetah, and x-x^*->1-theta is sometimes used (Blumenthal 1926; Whittaker and Watson 1990, pp. 95-96).
+
+SEE ALSO
+Cauchy Remainder, Schlömilch Remainder, Taylor's Inequality, Taylor Series
+]]]
+[[[
+https://mathworld.wolfram.com/CauchyRemainder.html
+===
+Cauchy Remainder
+The Cauchy remainder is a different form of the remainder term than the Lagrange remainder. The Cauchy remainder after n terms of the Taylor series for a function f(x) expanded about a point x_0 is given by
+
+ R_n=((x-x^*)^n)/(n!)(x-x_0)f^((n+1))(x^*), 
+where x^* in [x_0,x] (Hamilton 1952).
+
+Note that the Cauchy remainder R_n is also sometimes taken to refer to the remainder when terms up to the (n-1)st power are taken in the Taylor series, and that a notation in which h->x-x_0, x^*->a+thetah, and x-x^*->1-theta is sometimes used (Blumenthal 1926; Whittaker and Watson 1990, pp. 95-96).
+
+SEE ALSO
+Lagrange Remainder, Schlömilch Remainder, Taylor's Inequality, Taylor Series
+]]]
+[[[
+https://mathworld.wolfram.com/SchloemilchRemainder.html
+===
+Schlömilch Remainder
+A Taylor series remainder formula that gives after n terms of the series
+
+ R_n=(f^((n+1))(x^*))/(n!p)(x-x^*)^(n+1-p)(x-x_0)^p 
+for x^* in (x_0,x) and any p>0 (Blumenthal 1926, Beesack 1966), which Blumenthal (1926) ascribes to Roche (1858). The choices p=n+1 and p=1 give the Lagrange and Cauchy remainders, respectively (Beesack 1966).
+
+SEE ALSO
+Cauchy Remainder, Lagrange Remainder
+]]]
+[[[
+https://mathworld.wolfram.com/TaylorsInequality.html
+===
+Taylor's Inequality
+Taylor's inequality is an estimate result for the value of the remainder term R_n(x) in any n-term finite Taylor series approximation.
+
+Indeed, if f is any function which satisfies the hypotheses of Taylor's theorem and for which there exists a real number M satisfying |f^((n+1))(x)|<=M on some interval I=[a,b], the remainder R_n satisfies
+
+ |R_n(x)|<=(M|x-a|^(n+1))/((n+1)!) 
+on the same interval I.
+
+This result is an immediate consequence of the Lagrange remainder of R_n and can also be deduced from the Cauchy remainder as well.
+
+SEE ALSO
+Cauchy Remainder, Interval, Lagrange Remainder, Taylor Series, Taylor's Theorem
+]]]
+[[[
+https://mathworld.wolfram.com/TaylorsTheorem.html
+===
+Taylor's Theorem
+Contribute
+To this Entry »
+Taylor's theorem states that any function satisfying certain conditions may be represented by a Taylor series,
+
+ f(x)=f(0)+xf^'(0)+(x^2)/(2!)f^('')(0)+...+(x^(n-1))/((n-1)!)f^((n-1))(0) 
+ +int_0^x((x-u)^(n-1))/((n-1)!)f^((n))(u)du. 
+Taylor's theorem (without the remainder term) was devised by Taylor in 1712 and published in 1715, although Gregory had actually obtained this result nearly 40 years earlier. In fact, Gregory wrote to John Collins, secretary of the Royal Society, on February 15, 1671, to tell him of the result. The actual notes in which Gregory seems to have discovered the theorem exist on the back of a letter Gregory had received on 30 January, 1671, from an Edinburgh bookseller, which is preserved in the library of the University of St. Andrews (P. Clive, pers. comm., Sep. 8, 2005).
+
+However, it was not until almost a century after Taylor's publication that Lagrange and Cauchy derived approximations of the remainder term after a finite number of terms (Moritz 1937). These forms are now called the Lagrange remainder and Cauchy remainder.
+
+Most modern proofs are based on Cox (1851), which is more elementary than that of Cauchy and Lagrange (Moritz 1937), and which Pringsheim (1900) referred to as "leaving hardly anything to wish for in terms of simplicity and strength" (Moritz 1937).
+
+SEE ALSO
+Cauchy Remainder, Lagrange Remainder, Taylor Series
+]]]
+[[[
+https://mathworld.wolfram.com/LaurentSeries.html
+===
+Laurent Series
+If f(z) is analytic throughout the annular region between and on the concentric circles K_1 and K_2 centered at z=a and of radii r_1 and r_2<r_1 respectively, then there exists a unique series expansion in terms of positive and negative powers of (z-a),
+
+ f(z)=sum_(k=0)^inftya_k(z-a)^k+sum_(k=1)^inftyb_k(z-a)^(-k), 	
+(1)
+where
+
+a_k	=	1/(2pii)∮_(K_1)(f(zeta)dzeta)/((zeta-a)^(k+1))	
+(2)
+b_k	=	1/(2pii)∮_(K_2)(zeta-a)^(k-1)f(zeta)dzeta	
+(3)
+(Korn and Korn 1968, pp. 197-198).
+
+LaurentSeries
+Let there be two circular contours C_2 and C_1, with the radius of C_1 larger than that of C_2. Let z_0 be at the center of C_1 and C_2, and z be between C_1 and C_2. Now create a cut line C_c between C_1 and C_2, and integrate around the path C=C_1+C_c-C_2-C_c, so that the plus and minus contributions of C_c cancel one another, as illustrated above. From the Cauchy integral formula,
+
+f(z)	=	1/(2pii)int_C(f(z^'))/(z^'-z)dz^'	
+(4)
+	=	1/(2pii)int_(C_1)(f(z^'))/(z^'-z)dz^'+1/(2pii)int_(C_c)(f(z^'))/(z^'-z)dz^'-1/(2pii)int_(C_2)(f(z^'))/(z^'-z)dz^'-1/(2pii)int_(C_c)(f(z^'))/(z^'-z)dz^'	
+(5)
+	=	1/(2pii)int_(C_1)(f(z^'))/(z^'-z)dz^'-1/(2pii)int_(C_2)(f(z^'))/(z^'-z)dz^'.	
+(6)
+Now, since contributions from the cut line in opposite directions cancel out,
+
+f(z)	=	1/(2pii)int_(C_1)(f(z^'))/((z^'-z_0)-(z-z_0))dz^'-1/(2pii)int_(C_2)(f(z^'))/((z^'-z_0)-(z-z_0))dz^'	
+(7)
+	=	1/(2pii)int_(C_1)(f(z^'))/((z^'-z_0)(1-(z-z_0)/(z^'-z_0)))dz^'-1/(2pii)int_(C_2)(f(z^'))/((z-z_0)((z^'-z_0)/(z-z_0)-1))dz^'	
+(8)
+	=	1/(2pii)int_(C_1)(f(z^'))/((z^'-z_0)(1-(z-z_0)/(z^'-z_0)))dz^'+1/(2pii)int_(C_2)(f(z^'))/((z-z_0)(1-(z^'-z_0)/(z-z_0)))dz^'.	
+(9)
+For the first integral, |z^'-z_0|>|z-z_0|. For the second, |z^'-z_0|<|z-z_0|. Now use the Taylor series (valid for |t|<1)
+
+ 1/(1-t)=sum_(n=0)^inftyt^n 	
+(10)
+to obtain
+
+f(z)	=	1/(2pii)[int_(C_1)(f(z^'))/(z^'-z_0)sum_(n=0)^(infty)((z-z_0)/(z^'-z_0))^ndz^'+int_(C_2)(f(z^'))/(z-z_0)sum_(n=0)^(infty)((z^'-z_0)/(z-z_0))^ndz^']	
+(11)
+	=	1/(2pii)sum_(n=0)^(infty)(z-z_0)^nint_(C_1)(f(z^'))/((z^'-z_0)^(n+1))dz^'+1/(2pii)sum_(n=0)^(infty)(z-z_0)^(-n-1)int_(C_2)(z^'-z_0)^nf(z^')dz^'	
+(12)
+	=	1/(2pii)sum_(n=0)^(infty)(z-z_0)^nint_(C_1)(f(z^'))/((z^'-z_0)^(n+1))dz^'+1/(2pii)sum_(n=1)^(infty)(z-z_0)^(-n)int_(C_2)(z^'-z_0)^(n-1)f(z^')dz^',	
+(13)
+where the second term has been re-indexed. Re-indexing again,
+
+ f(z)=1/(2pii)sum_(n=0)^infty(z-z_0)^nint_(C_1)(f(z^'))/((z^'-z_0)^(n+1))dz^' 
+ +1/(2pii)sum_(n=-infty)^(-1)(z-z_0)^nint_(C_2)(f(z^'))/((z^'-z_0)^(n+1))dz^'.   	
+(14)
+Since the integrands, including the function f(z), are analytic in the annular region defined by C_1 and C_2, the integrals are independent of the path of integration in that region. If we replace paths of integration C_1 and C_2 by a circle C of radius r with r_1<=r<=r_2, then
+
+f(z)	=	1/(2pii)sum_(n=0)^(infty)(z-z_0)^nint_C(f(z^'))/((z^'-z_0)^(n+1))dz^'+1/(2pii)sum_(n=-infty)^(-1)(z-z_0)^nint_C(f(z^'))/((z^'-z_0)^(n+1))dz^'	
+(15)
+	=	1/(2pii)sum_(n=-infty)^(infty)(z-z_0)^nint_C(f(z^'))/((z^'-z_0)^(n+1))dz^'	
+(16)
+	=	sum_(n=-infty)^(infty)a_n(z-z_0)^n.	
+(17)
+Generally, the path of integration can be any path gamma that lies in the annular region and encircles z_0 once in the positive (counterclockwise) direction.
+
+The complex residues a_n are therefore defined by
+
+ a_n=1/(2pii)int_gamma(f(z^'))/((z^'-z_0)^(n+1))dz^'. 	
+(18)
+Note that the annular region itself can be expanded by increasing r_1 and decreasing r_2 until singularities of f(z) that lie just outside C_1 or just inside C_2 are reached. If f(z) has no singularities inside C_2, then all the b_k terms in (◇) equal zero and the Laurent series of (◇) reduces to a Taylor series with coefficients a_k.
+
+SEE ALSO
+Complex Residue, Maclaurin Series, Principal Part, Taylor Series
+]]]
+[[[
+https://mathworld.wolfram.com/PowerSeries.html
+===
+Power Series
+A power series in a variable z is an infinite sum of the form
+
+ sum_(i=0)^inftya_iz^i, 
+where a_i are integers, real numbers, complex numbers, or any other quantities of a given type.
+
+Pólya conjectured that if a function has a power series with integer coefficients and radius of convergence 1, then either the function is rational or the unit circle is a natural boundary (Pólya 1990, pp. 43 and 46). This conjecture was stated by G. Polya in 1916 and proved to be correct by Carlson (1921) in a result that is now regarded as a classic of early 20th century complex analysis.
+
+For any power series, one of the following is true:
+
+1. The series converges only for z=0.
+
+2. The series converges absolutely for all z.
+
+3. The series converges absolutely for all z in some finite open interval (-R,R) and diverges if z<-R or z>R. At the points z=R and z=-R, the series may converge absolutely, converge conditionally, or diverge.
+
+To determine the interval of convergence, apply the ratio test for absolute convergence and solve for z. A power series may be differentiated or integrated within the interval of convergence. Convergent power series may be multiplied and divided (if there is no division by zero).
+
+ sum_(k=1)^inftyk^(-p) 
+converges if p>1 and diverges if 0<p<=1.
+
+SEE ALSO
+Binomial Series, Convergence Tests, Formal Power Series, Generating Function, Laurent Series, Maclaurin Series, Multinomial Series, p-Series, Polynomial, Power Set, Quotient-Difference Algorithm, Radius of Convergence, Recursive Sequence, Series, Series Reversion, Taylor Series
+]]]
+[[[
+https://mathworld.wolfram.com/MaclaurinSeries.html
+===
+Maclaurin Series
+A Maclaurin series is a Taylor series expansion of a function about 0,
+
+ f(x)=f(0)+f^'(0)x+(f^('')(0))/(2!)x^2+(f^((3))(0))/(3!)x^3+...+(f^((n))(0))/(n!)x^n+.... 	
+(1)
+Maclaurin series are named after the Scottish mathematician Colin Maclaurin.
+
+The Maclaurin series of a function f(x) up to order n may be found using Series[f, {x, 0, n}]. The nth term of a Maclaurin series of a function f can be computed in the Wolfram Language using SeriesCoefficient[f, {x, 0, n}] and is given by the inverse Z-transform
+
+ a_n=Z^(-1)[f(1/x)](n). 	
+(2)
+Maclaurin series are a type of series expansion in which all terms are nonnegative integer powers of the variable. Other more general types of series include the Laurent series and the Puiseux series.
+
+Maclaurin series for common functions include
+
+1/(1-x)=1+x+x^2+x^3+x^4+x^5+... 	
+(3)
+  for -1<x<1  	
+(4)
+cn(x,k)=1-1/2x^2+1/(24)(1+4k^2)x^4+... 	
+(5)
+cosx=1-1/2x^2+1/(24)x^4-1/(720)x^6+... 	
+(6)
+  for -infty<x<infty  	
+(7)
+cos^(-1)x=1/2pi-x-1/6x^3-3/(40)x^5-5/(112)x^7-... 	
+(8)
+  for -1<x<1  	
+(9)
+coshx=1+1/2x^2+1/(24)x^4+1/(720)x^6+1/(40,320)x^8+... 	
+(10)
+cot^(-1)x=1/2pi-x+1/3x^3-1/5x^5+1/7x^7-1/9x^9+... 	
+(11)
+dn(x,k)=1-1/2k^2x^2+1/(24)k^2(4+k^2)x^4+... 	
+(12)
+erf(x)=1/(sqrt(pi))(2x-2/3x^3+1/5x^5-1/(21)x^7+...) 	
+(13)
+e^x=1+x+1/2x^2+1/6x^3+1/(24)x^4+... 	
+(14)
+  for -infty<x<infty  	
+(15)
+_2F_1(alpha,beta;gamma;x)=1+(alphabeta)/(1!gamma)x+(alpha(alpha+1)beta(beta+1))/(2!gamma(gamma+1))x^2+... 	
+(16)
+ln(1+x)=x-1/2x^2+1/3x^3-1/4x^4+... 	
+(17)
+  for -1<x<=1  	
+(18)
+ln((1+x)/(1-x))=2x+2/3x^3+2/5x^5+2/7x^7+... 	
+(19)
+  for -1<x<1  	
+(20)
+secx=1+1/2x^2+5/(24)x^4+(61)/(720)x^6+(277)/(8064)x^8+... 	
+(21)
+sechx=1-1/2x^2+5/(24)x^4-(61)/(720)x^6+(277)/(8064)x^8+... 	
+(22)
+sinx=x-1/6x^3+1/(120)x^5-1/(5040)x^7+... 	
+(23)
+  for -infty<x<infty  	
+(24)
+sin^(-1)x=x+1/6x^3+3/(40)x^5+5/(112)x^7+(35)/(1152)x^9+... 	
+(25)
+sinhx=x+1/6x^3+1/(120)x^5+1/(5040)x^7+1/(362880)x^9+... 	
+(26)
+sinh^(-1)x=x-1/6x^3+3/(40)x^5-5/(112)x^7+(35)/(1152)x^9-... 	
+(27)
+sn(x,k)=x-1/6(1+k^2)x^3+1/(120)(1+14k^2+k^4)x^5+... 	
+(28)
+tanx=x+1/3x^3+2/(15)x^5+(17)/(315)x^7+(62)/(2835)x^9+... 	
+(29)
+tan^(-1)x=x-1/3x^3+1/5x^5-1/7x^7+... 	
+(30)
+  for -1<x<1  	
+(31)
+tanhx=x-1/3x^3+2/(15)x^5-(17)/(315)x^7+(62)/(2835)x^9+... 	
+(32)
+tanh^(-1)x=x+1/3x^3+1/5x^5+1/7x^7+1/9x^9+.... 	
+(33)
+The explicit forms for some of these are
+
+1/(1-x)=sum_(n=0)^(infty)x^n 	
+(34)
+cosx=sum_(n=0)^(infty)((-1)^n)/((2n)!)x^(2n) 	
+(35)
+cos^(-1)x=pi/2-sum_(n=0)^(infty)(Gamma(n+1/2))/(sqrt(pi)(2n+1)n!)x^(2n+1) 	
+(36)
+coshx=sum_(n=0)^(infty)1/((2n)!)x^(2n) 	
+(37)
+cot^(-1)x=pi/2-sum_(n=0)^(infty)((-1)^n)/(2n+1)x^(2n+1) 	
+(38)
+e^x=sum_(n=0)^(infty)1/(n!)x^n 	
+(39)
+erf(x)=sum_(n=0)^(infty)(2(-1)^n)/(sqrt(pi)(2n+1)n!)x^(2n+1) 	
+(40)
+_2F_1(alpha,beta;gamma,x)=sum_(n=0)^(infty)((alpha)_n(beta)_n)/((gamma)_n)(x^n)/(n!) 	
+(41)
+ln(1+x)=sum_(n=1)^(infty)((-1)^(n+1))/nx^n 	
+(42)
+ln((1+x)/(1-x))=sum_(n=1)^(infty)2/((2n-1))x^(2n-1) 	
+(43)
+secx=sum_(n=0)^(infty)((-1)^nE_(2n))/((2n)!)x^(2n) 	
+(44)
+sechx=sum_(n=0)^(infty)(E_(2n))/((2n)!)x^(2n) 	
+(45)
+sinx=sum_(n=0)^(infty)((-1)^n)/((2n+1)!)x^(2n+1) 	
+(46)
+sin^(-1)x=sum_(n=0)^(infty)(Gamma(n+1/2))/(sqrt(pi)(2n+1)n!)x^(2n+1) 	
+(47)
+sinhx=sum_(n=0)^(infty)1/((2n+1)!)x^(2n+1) 	
+(48)
+sinh^(-1)x=sum_(n=0)^(infty)(P_(2n)(0))/(2n+1)x^(2n+1) 	
+(49)
+tanx=sum_(n=0)^(infty)((-1)^n2^(2n+2)(2^(2n+2)-1)B_(2n+2))/((2n+2)!)x^(2n+1) 	
+(50)
+tan^(-1)x=sum_(n=1)^(infty)((-1)^(n+1))/(2n-1)x^(2n-1) 	
+(51)
+tanhx=sum_(n=1)^(infty)(2^(2n)(2^(2n)-1)B_(2n))/((2n)!)x^(2n-1) 	
+(52)
+tanh^(-1)x=sum_(n=1)^(infty)1/(2n-1)x^(2n-1), 	
+(53)
+where Gamma(x) is a gamma function, B_n is a Bernoulli number, E_n is an Euler number and P_n(x) is a Legendre polynomial.
+
+SEE ALSO
+Alcuin's Sequence, Fourier Series, Generalized Fourier Series, Lagrange Inversion Theorem, Lagrange Remainder, Laurent Series, Power Series, Puiseux Series, Series Expansion, Taylor Series
+]]]
+[[[
+https://mathworld.wolfram.com/SeriesExpansion.html
+===
+Series Expansion
+A series expansion is a representation of a particular function as a sum of powers in one of its variables, or by a sum of powers of another (usually elementary) function f(x).
+
+Here are series expansions (some Maclaurin, some Laurent, and some Puiseux) for a number of common functions.
+
+1/(1-x)=1+x+x^2+x^3+x^4+x^5+... for -1<x<1 	
+(1)
+cn(x,k)=1-1/2x^2+1/(24)(1+4k^2)x^4+... 	
+(2)
+cosx=1-1/2x^2+1/(24)x^4-1/(720)x^6-... for -infty<x<infty 	
+(3)
+cos^(-1)x=1/2pi-x-1/6x^3-3/(40)x^5-5/(112)x^7-... for -1<x<1 	
+(4)
+coshx=1+1/2x^2+1/(24)x^4+1/(720)x^6+1/(40,320)x^8+... 	
+(5)
+cosh^(-1)(1+x)=sqrt(2x)(1-1/(12)x+3/(160)x^2-5/(896)x^3+...) 	
+(6)
+cotx=x^(-1)-1/3x-1/(45)x^3-2/(945)x^5-1/(4725)x^7-... 	
+(7)
+cot^(-1)x=1/2pi-x+1/3x^3-1/5x^5+1/7x^7-1/9x^9+... 	
+(8)
+cot^(-1)(1/x)=x-1/3x^3+1/5x^5-1/7x^7+1/9x^9+... 	
+(9)
+cothx=x^(-1)+1/3x-1/(45)x^3+2/(945)x^5-1/(4725)x^7+... 	
+(10)
+coth^(-1)(1+x)=1/2ln2-1/2lnx+1/4x-1/(16)x^2+... 	
+(11)
+cscx=x^(-1)+1/6x+7/(360)x^3+(31)/(15120)x^5+... 	
+(12)
+cschx=x^(-1)-1/6x+7/(360)x^3+(31)/(15120)x^5+... 	
+(13)
+csch^(-1)x=ln2-lnx+1/4x^2-3/(32)x^4+5/(96)x^6-... 	
+(14)
+dn(x,k)=1-1/2k^2x^2+1/(24)k^2(4+k^2)x^4+... 	
+(15)
+erfx=1/(sqrt(pi))(2x-2/3x^3+1/5x^5-1/(21)x^7+...) 	
+(16)
+e^x=1+x+1/2x^2+1/6x^3+1/(24)x^4+... for -infty<x<infty 	
+(17)
+_2F_1(alpha,beta,gamma;x)=1+(alphabeta)/(1!gamma)x+(alpha(alpha+1)beta(beta+1))/(2!gamma(gamma+1))x^2+... 	
+(18)
+ln(1+x)=x-1/2x^2+1/3x^3-1/4x^4+... for -1<x<1 	
+(19)
+ln((1+x)/(1-x))=2x+2/3x^3+2/5x^5+2/7x^7+... for -1<x<1 	
+(20)
+secx=1+1/2x^2+5/(24)x^4+(61)/(720)x^6+(277)/(8064)x^8+... 	
+(21)
+sechx=1-1/2x^2+5/(24)x^4-(61)/(720)x^6+(277)/(8064)x^8+... 	
+(22)
+sech^(-1)x=ln2-lnx-1/4x^2-3/(32)x^4-... 	
+(23)
+sinx=x-1/6x^3+1/(120)x^5-1/(5040)x^7+... for -infty<x<infty 	
+(24)
+sin^(-1)x=x+1/6x^3+3/(40)x^5+5/(112)x^7+(35)/(1152)x^9+... 	
+(25)
+sinhx=x+1/6x^3+1/(120)x^5+1/(5040)x^7+1/(362880)x^9+... 	
+(26)
+sinh^(-1)x=x-1/6x^3+3/(40)x^5-5/(112)x^7+(35)/(1152)x^9-... 	
+(27)
+sn(x,k)=x-1/6(1+k^2)x^3+1/(120)(1+14k^2+k^4)x^5+... 	
+(28)
+tanx=x+1/3x^3+2/(15)x^5+(17)/(315)x^7+(62)/(2835)x^9+... 	
+(29)
+tan^(-1)x=x-1/3x^3+1/5x^5-1/7x^7+... for -1<x<1 	
+(30)
+tan^(-1)(1+x)=1/4pi+1/2x-1/4x^2+1/(12)x^3+1/(40)x^5+... 	
+(31)
+tanhx=x-1/3x^3+2/(15)x^5-(17)/(315)x^7+(62)/(2835)x^9+... 	
+(32)
+tanh^(-1)x=x+1/3x^3+1/5x^5+1/7x^7+1/9x^9+.... 	
+(33)
+SEE ALSO
+Laurent Series, Maclaurin Series, Power Series, Puiseux Series, Series, Series Reversion, Taylor Series
+]]]
+[[[
+https://mathworld.wolfram.com/Z-Transform.html
+===
+Z-Transform
+The (unilateral) Z-transform of a sequence {a_k}_(k=0)^infty is defined as
+
+ Z[{a_k}_(k=0)^infty](z)=sum_(k=0)^infty(a_k)/(z^k). 	
+(1)
+This definition is implemented in the Wolfram Language as ZTransform[a, n, z]. Similarly, the inverse Z-transform is implemented as InverseZTransform[A, z, n].
+
+"The" Z-transform generally refers to the unilateral Z-transform. Unfortunately, there are a number of other conventions. Bracewell (1999) uses the term "z-transform" (with a lower case z) to refer to the unilateral Z-transform. Girling (1987, p. 425) defines the transform in terms of samples of a continuous function. Worse yet, some authors define the Z-transform as the bilateral Z-transform.
+
+In general, the inverse Z-transform of a sequence is not unique unless its region of convergence is specified (Zwillinger 1996, p. 545). If the Z-transform F(z) of a function is known analytically, the inverse Z-transform {a_n}_(n=0)^infty=Z^(-1)[F(z)](n) can be computed using the contour integral
+
+ a_n=1/(2pii)∮_gammaF(z)z^(n-1)dz, 	
+(2)
+where gamma is a closed contour surrounding the origin of the complex plane in the domain of analyticity of F(z) (Zwillinger 1996, p. 545)
+
+The unilateral transform is important in many applications because the generating function G(t) of a sequence of numbers {a_n}_(n=0)^infty is given precisely by Z[{a_n}_(n=0)^infty](z^(-1)), the Z-transform of {a_n} in the variable 1/z (Germundsson 2000). In other words, the inverse Z-transform of a function f(1/z) gives precisely the sequence of terms in the series expansion of f(z). So, for example, the terms of the series of z(z+1)/(z-1)^3 are given by
+
+ Z^(-1)[y^(-1)(y^(-1)+1)/(y^(-1)-1)^3](n) 
+ =Z^(-1)[-(y(y+1))/((y-1)^3)](n)=n^2.   	
+(3)
+Girling (1987) defines a variant of the unilateral Z-transform that operates on a continuous function F(t) sampled at regular intervals T,
+
+ Z_T[F(t)](z)=L_t[F^*(t)](z), 	
+(4)
+where L_t[f](z) is the Laplace transform,
+
+F^*(t)	=	F(t)delta_T(t)	
+(5)
+	=	sum_(n=0)^(infty)F(nT)delta_(t,nT),	
+(6)
+the one-sided shah function with period T is given by
+
+ delta_T(t)=sum_(n=0)^inftydelta_(t,nT), 	
+(7)
+and delta_(mn) is the Kronecker delta, giving
+
+ Z_T[F(t)](z)=sum_(n=0)^infty(F(nT))/(z^n). 	
+(8)
+An alternative equivalent definition is
+
+ Z_T[F(t)](z)=sum_(residues)(1/(1-e^(Tz)z^(-1)))f(z), 	
+(9)
+where
+
+ f(z)=sum_(n=0)^inftyF(nT)z^(-n). 	
+(10)
+This definition is essentially equivalent to the usual one by taking a_n=F(nT).
+
+The following table summarizes the Z-transforms for some common functions (Girling 1987, pp. 426-427; Bracewell 1999). Here, delta_(n0) is the Kronecker delta, H(t) is the Heaviside step function, and Li_k(z) is the polylogarithm.
+
+a_n	Z[{a_n}_(n=0)^infty](z)
+delta_(0n)	1
+delta_(mn)	(H(m))/(z^m)
+(-1)^n	z/(z+1)
+1	z/(z-1)
+H(n-m)	1/(z^(m-1)(z-1))
+n	z/((z-1)^2)
+n^2	(z(z+1))/((z-1)^3)
+n^3	(z(z^2+4z+1))/((z-1)^4)
+n^k	Li_(-k)(1/z)
+b^n	z/(z-b)
+b^nn	(bz)/((z-b)^2)
+b^nn^2	(bz(z+b))/((z-b)^3)
+b^nn^k	Li_(-k)(b/z)
+cos(alphan)	(z(z-cosalpha))/(1-2zcosalpha+z^2)
+sin(alphan)	(zsinalpha)/(1-2zcosalpha+z^2)
+The Z-transform of the general power function t^n can be computed analytically as
+
+Z[{n^k}_(n=0)^infty](z)	=	(-1)^klim_(x->0)(partial^k)/(partialx^k)(z/(z-e^(-x)))	
+(11)
+	=	1/((z-1)^(k+1))sum_(n=0)^(k)<k; n>z^(n+1)	
+(12)
+	=	Li_(-k)(1/z),	
+(13)
+where the <k; n> are Eulerian numbers and Li_n(z) is a polylogarithm. Amazingly, the Z-transforms of n^k are therefore generators for Euler's number triangle.
+
+The Z-transform Z[{a_n}](z)=F(z) satisfies a number of important properties, including linearity
+
+ Z[a{a_n}+b{b_n}](z)=aZ[{a_n}](z)+bZ[{b_n}](z), 	
+(14)
+translation
+
+Z[{a_(n-k)}](z)	=	z^(-k)Z[{a_n}](z)	
+(15)
+Z[{a_(n+1)}](z)	=	zZ[{a_n}](z)-za_0	
+(16)
+Z[{a_(n+2)}](z)	=	z^2Z[{a_n}](z)-z^2a_0-za_1	
+(17)
+Z[{a_(n+k)}](z)	=	z^mZ[{a_n}](z)-sum_(r=0)^(m-1)z^(k-r)a_(rt),	
+(18)
+scaling
+
+ Z[{b^na_n}](z)=F(z/b), 	
+(19)
+and multiplication by powers of n
+
+Z[{n^ka_n}](z)	=	(-1)^k(zd/(dz))^kF(z)	
+(20)
+Z[{n^(-1)a_n}](z)	=	-int_0^z(F(z))/zdz	
+(21)
+(Girling 1987, p. 425; Zwillinger 1996, p. 544).
+
+The discrete Fourier transform is a special case of the Z-transform with
+
+ z=e^(-2piik/N), 	
+(22)
+and a Z-transform with
+
+ z=e^(-2piikalpha/N) 	
+(23)
+for alpha!=+/-1 is called a fractional Fourier transform.
+
+SEE ALSO
+Bilateral Z-Transform, Discrete Fourier Transform, Euler's Number Triangle, Eulerian Number, Fractional Fourier Transform, Generating Function, Laplace Transform, Population Comparison, Unilateral Z-Transform
+]]]
+[[[
+===
+]]]

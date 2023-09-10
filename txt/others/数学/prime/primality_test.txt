@@ -1,0 +1,497 @@
+
+e others/数学/prime/primality_test.txt
+[[
+pseudoprime
+strong pseudoprime
+
+probable-prime (PRP)
+strong probable-prime (SPRP)
+  b-SPRP
+Extended Riemann Hypothesis (ERH)
+
+[n,b :: int][n =!= 0][b%n =!= 0]:
+    [is_strong_pseudoprime_(b;n) =[def]= [[n >= 3][n%2==1][(e,t) :=> [[e,t :: pint][t%2==1][t*2**e == n-1]]][[b**t %n == +1]or[?[s :<- [0..<e]] -> [(b**t)**(2**s) %n == -1]]]]]
+
+    [[is_strong_pseudoprime_(b;n)] -> [gcd(n,b) == 1]]
+[[Extended Riemann Hypothesis (ERH)] -> @[n :: int] -> [n > 0] -> [n%2==1] -> [[is_prime_(n)] <-> [@[b :<- [2..<min(n, 2*(log n)**2)]] -> [is_strong_pseudoprime_(b;n)]]]]
+  # what is the base of log?
+==>>:
+!! [2 < e ~= 2.718281828459045 < 10]
+[[Extended Riemann Hypothesis (ERH)] -> @[n :: int] -> [n > 0] -> [n%2==1] -> [[is_prime_(n)] <-> [@[b :<- [2..<min(n, 2*(ceil_log2 n)**2)]] -> [is_strong_pseudoprime_(b;n)]]]]
+==>>:
+!! [[is_strong_pseudoprime_(b;n)] -> [gcd(n,b) == 1]]
+[[Extended Riemann Hypothesis (ERH)] -> @[n :: int] -> [n > 0] -> [n%2==1] -> [[is_prime_(n)] <-> [@[b :<- [2..<min(1+floor_sqrt(n), 2*(ceil_log2 n)**2)]] -> [is_strong_pseudoprime_(b;n)]]]]
+  # switch to trial_division
+]]
+
+
+[[
+wget https://oeis.org/A001262/b001262.txt
+view /sdcard/Download/b001262.txt
+1 2047
+2 3277
+3 4033
+...
+9998 142873722181
+9999 142876490401
+10000 142899381901
+>>> (142899381901).bit_length()
+38
+>>> 2**37 < 142899381901 < 2**38
+True
+]]
+
+
+[[
+>>> (10**12).bit_length()
+40
+>>> 2**39 < 10**12 < 2**40
+True
+>>> len(str(2**64))
+20
+>>> 10**19 < 2**64 < 10**20
+True
+>>> len(str(2**32))
+10
+>>> 10**9 < 2**32 < 10**10
+True
+>>>
+]]
+
+[[[
+https://en.wikipedia.org/wiki/Strong_pseudoprime
+===
+A strong pseudoprime is a composite number that passes the Miller–Rabin primality test. All prime numbers pass this test, but a small fraction of composites also pass, making them "pseudoprimes".
+]]]
+
+[[[
+https://mathworld.wolfram.com/StrongPseudoprime.html
+===
+Strong Pseudoprime
+
+A strong pseudoprime to a base a is an odd composite number n with n-1=d·2^s (for d odd) for which either
+
+ a^d=1 (mod n) 	
+(1)
+or
+
+ a^(d·2^r)=-1 (mod n) 	
+(2)
+for some r=0, 1, ..., s-1 (Riesel 1994, p. 91). Note that Guy (1994, p. 27) restricts the definition of strong pseudoprimes to only those satisfying (1).
+
+The definition is motivated by the fact that a Fermat pseudoprime n to the base b satisfies
+
+ b^(n-1)-1=0 (mod n). 	
+(3)
+But since n is odd, it can be written n=2m+1, and
+
+ b^(2m)-1=(b^m-1)(b^m+1)=0 (mod n). 	
+(4)
+If n is prime, it must divide at least one of the factors, but can't divide both because it would then divide their difference
+
+ (b^m+1)-(b^m-1)=2. 	
+(5)
+Therefore,
+
+ b^m=+/-1 (mod n), 	
+(6)
+so write n=2^at+1 to obtain
+
+ b^(n-1)-1=(b^t-1)(b^t+1)(b^(2t)+1)...(b^(2^(a-1)t)+1). 	
+(7)
+If n divides exactly one of these factors but is composite, it is a strong pseudoprime. A composite number is a strong pseudoprime to at most 1/4 of all bases less than itself (Monier 1980, Rabin 1980). The strong pseudoprimes provide the basis for Miller's primality test and Rabin-Miller strong pseudoprime test.
+
+A strong pseudoprime to the base a is also an Euler pseudoprime to the base a (Pomerance et al. 1980). The strong pseudoprimes include some Euler pseudoprimes, Fermat pseudoprimes, and Carmichael numbers.
+
+The following table lists the first few pseudoprimes to a number of small bases.
+
+b	OEIS	b-strong pseudoprimes
+2	A001262	2047, 3277, 4033, 4681, 8321, ...
+3	A020229	121, 703, 1891, 3281, 8401, 8911, ...
+4	A020230	341, 1387, 2047, 3277, 4033, 4371, ...
+5	A020231	781, 1541, 5461, 5611, 7813, ...
+6	A020232	217, 481, 1111, 1261, 2701, ...
+7	A020233	25, 325, 703, 2101, 2353, 4525, ...
+8	A020234	9, 65, 481, 511, 1417, 2047, ...
+9	A020235	91, 121, 671, 703, 1541, 1729, ...
+The number of strong 2-pseudoprimes less than 10^3, 10^4, ... are 0, 5, 16, 46, 162, ... (OEIS A055552). Note that Guy's (1994, p. 27) definition gives only the subset 2047, 4681, 15841, 42799, 52633, 90751, ..., giving counts inconsistent with those in Guy's table.
+
+The strong k-pseudoprime test for k=2, 3, 5 correctly identifies all primes below 2.5×10^(10) with only 13 exceptions, and if 7 is added, then the only exception less than 2.5×10^(10) is 3215031751. Jaeschke (1993) showed that there are only 101 strong pseudoprimes for the bases 2, 3, and 5 less than 10^(12), nine if 7 is added, and none if 11 is added. Also, the bases 2, 13, 23, and 1662803 have no exceptions up to 10^(12).
+
+If n is composite, then there is a base for which n is not a strong pseudoprime. There are therefore no "strong Carmichael numbers." Let psi_k denote the smallest strong pseudoprime to all of the first k primes taken as bases (i.e., the smallest odd number for which the Rabin-Miller strong pseudoprime test on bases less than or equal to the kth prime p_k fails). Jaeschke (1993) computed psi_k from k=5 to 8 and gave upper bounds for k=9 to 11.
+
+psi_1	=	2047	
+(8)
+psi_2	=	1373653	
+(9)
+psi_3	=	25326001	
+(10)
+psi_4	=	3215031751	
+(11)
+psi_5	=	2152302898747	
+(12)
+psi_6	=	3474749660383	
+(13)
+psi_7	=	341550071728321	
+(14)
+psi_8	=	341550071728321	
+(15)
+psi_9	<=	3825123056546413051	
+(16)
+psi_(10)	<=	3825123056546413051	
+(17)
+psi_(11)	<=	3825123056546413051	
+(18)
+(OEIS A014233), where the bounds for psi_9, psi_(10), and psi_(11) were determined by Zhang and Tang (2003). A seven-step test utilizing older bounds on these results (Riesel 1994) allows all numbers less than 3.4×10^(14) to be tested.
+
+Zhang (2001, 2002, 2005, 2006, 2007) conjectured that
+
+psi_9	=	3825123056546413051	
+(19)
+psi_(10)	=	3825123056546413051	
+(20)
+psi_(11)	=	3825123056546413051	
+(21)
+psi_(12)	=	318665857834031151167461	
+(22)
+psi_(13)	=	3317044064679887385961981	
+(23)
+psi_(14)	=	6003094289670105800312596501	
+(24)
+psi_(15)	=	59276361075595573263446330101	
+(25)
+psi_(16)	=	564132928021909221014087501701	
+(26)
+psi_(17)	=	564132928021909221014087501701	
+(27)
+psi_(18)	=	1543267864443420616877677640751301	
+(28)
+psi_(19)	=	1543267864443420616877677640751301	
+(29)
+psi_(20)	>	10^(36).	
+(30)
+The Baillie-PSW primality test is a test based on a combination of strong pseudoprimes and Lucas pseudoprimes proposed by Pomerance et al. (Pomerance et al. 1980, Pomerance 1984).
+
+SEE ALSO
+Baillie-PSW Primality Test, Carmichael Number, Miller's Primality Test, Poulet Number, Pseudoprime, Rabin-Miller Strong Pseudoprime Test, Rotkiewicz Theorem, Strong Elliptic Pseudoprime, Strong Lucas Pseudoprime
+]]]
+[[[
+https://mathworld.wolfram.com/Rabin-MillerStrongPseudoprimeTest.html
+===
+Rabin-Miller Strong Pseudoprime Test
+A primality test that provides an efficient probabilistic algorithm for determining if a given number is prime. It is based on the properties of strong pseudoprimes.
+
+The algorithm proceeds as follows. Given an odd integer n, let n=2^rs+1 with s odd. Then choose a random integer a with 1<=a<=n-1. If a^s=1 (mod n) or a^(2^js)=-1 (mod n) for some 0<=j<=r-1, then n passes the test. A prime will pass the test for all a.
+
+The test is very fast and requires no more than (1+o(1))lgn multiplications (mod n), where lg is the logarithm base 2. Unfortunately, a number which passes the test is not necessarily prime. Monier (1980) and Rabin (1980) have shown that a composite number passes the test for at most 1/4 of the possible bases a. If N multiple independent tests are performed on a composite number, then the probability that it passes each test is 1/4^N or less.
+
+However, if the smallest composite number that passes a particular set of tests is known ahead of time, then that set of tests constitutes a primality proof for all smaller numbers. The sequence of smallest odd numbers passing a multiple Rabin-Miller test using the first k primes for k=1, 2, ... is given by 2047, 1373653, 25326001, 3215031751, 2152302898747, 3474749660383, 341550071728321, 341550071728321, ... (OEIS A014233; Jaeschke 1993). Therefore, multiple Rabin tests using the first 7 primes (using 8 gives no improvement) are valid for every number up to 3.4×10^(14).
+
+The Wolfram Language implements the multiple Rabin-Miller test in bases 2 and 3 combined with a Lucas pseudoprime test as the primality test used by the function PrimeQ[n]. As of 1997, this procedure is known to be correct only for all n<10^(16), but no counterexamples are known and if any exist, they are expected to occur with extremely small probability (i.e., much less than the probability of a hardware error on a computer performing the test).
+
+SEE ALSO
+Baillie-PSW Primality Test, Lucas-Lehmer Test, Miller's Primality Test, Primality Test, Pseudoprime, Strong Pseudoprime
+]]]
+[[[
+https://mathworld.wolfram.com/CarmichaelCondition.html
+===
+Carmichael Condition
+A number n satisfies the Carmichael condition iff (p-1)|(n/p-1) for all prime divisors p of n. This is equivalent to the condition (p-1)|(n-1) for all prime divisors p of n.
+
+SEE ALSO
+Carmichael Number
+]]]
+[[[
+https://mathworld.wolfram.com/CarmichaelNumber.html
+===
+Carmichael Number
+A Carmichael number is an odd composite number n which satisfies Fermat's little theorem
+
+ a^(n-1)-1=0 (mod n) 	
+(1)
+for every choice of a satisfying (a,n)=1 (i.e., a and n are relatively prime) with 1<a<n. A Carmichael number is therefore a pseudoprime to any base. Carmichael numbers therefore cannot be found to be composite using Fermat's little theorem. However, if (a,n)!=1, the congruence of Fermat's little theorem is nonzero, thus identifying a Carmichael number n as composite.
+
+Carmichael numbers are sometimes called "absolute pseudoprimes" and also satisfy Korselt's criterion. R. D. Carmichael first noted the existence of such numbers in 1910, computed 15 examples, and conjectured that there were infinitely many. In 1956, Erdős sketched a technique for constructing large Carmichael numbers (Hoffman 1998, p. 183), and a proof was given by Alford et al. (1994).
+
+Any solution to Lehmer's totient problem must be a Carmichael number.
+
+The first few Carmichael numbers are 561, 1105, 1729, 2465, 2821, 6601, 8911, 10585, 15841, 29341, ... (OEIS A002997). The number of Carmichael numbers less than 10^2, 10^3, ... are 0, 1, 7, 16, 43, 105, ... (OEIS A055553; Pinch 1993). The smallest Carmichael numbers having 3, 4, ... factors are 561=3×11×17, 41041=7×11×13×41, 825265, 321197185, ... (OEIS A006931).
+
+Carmichael numbers have at least three prime factors. For Carmichael numbers with exactly three prime factors, once one of the primes has been specified, there are only a finite number of Carmichael numbers which can be constructed. Indeed, for Carmichael numbers with k prime factors, there are only a finite number with the least k-2 specified.
+
+Numbers of the form (6k+1)(12k+1)(18k+1) are Carmichael numbers if each of the factors is prime (Korselt 1899, Ore 1988, Guy 1994). This can be seen since for
+
+ N=(6k+1)(12k+1)(18k+1)=1296k^3+396k^2+36k+1, 	
+(2)
+N-1 is a multiple of 36k and the least common multiple of 6k, 12k, and 18k is 36k, so a^(N-1)=1 modulo each of the primes 6k+1, 12k+1, and 18k+1, hence a^(N-1)=1 modulo their product. The first few such Carmichael numbers correspond to k=1, 6, 35, 45, 51, 55, 56, ... (OEIS A046025) and are 1729, 294409, 56052361, 118901521, ... (OEIS A033502).
+
+Let C(n) denote the number of Carmichael numbers less than n. Then, for all sufficiently large n,
+
+ C(n)>n^(2/7) 	
+(3)
+(Alford et al. 1994), which proves that there are infinitely many Carmichael numbers. The upper bound
+
+ C(n)<nexp(-(lnnlnlnlnn)/(lnlnn)) 	
+(4)
+has also been proved (R. G. E. Pinch).
+
+The Carmichael numbers have the following properties:
+
+1. If a prime p divides the Carmichael number n, then n=1 (mod p-1) implies that n=p (mod p(p-1)).
+
+2. Every Carmichael number is squarefree.
+
+3. An odd composite squarefree number n is a Carmichael number iff n divides the denominator of the Bernoulli number B_(n-1).
+
+The largest known Carmichael numbers having a given number of factors are summarized in the following table (updated from Dubner 1989, 1998).
+
+factors	digits	discoverer
+3	60351	Broadhurst (2002)
+4	29094	Broadhurst 2003 (Broadhurst 2015b)
+5	1015	Caldwell and Dubner
+6	19140	Broadhurst 2003 (Broadhurst 2015a)
+SEE ALSO
+Carmichael Condition, Lehmer's Totient Problem, Pseudoprime
+]]]
+
+
+
+https://oeis.org/wiki/Index_to_OEIS:_Section_Ps#pseudoprimes
+  Miller-Rabin primality test
+
+[[[
+https://oeis.org/A014233
+===
+(Greetings from The On-Line Encyclopedia of Integer Sequences!)
+A014233		Smallest odd number for which Miller-Rabin primality test on bases <= n-th prime does not reveal compositeness.		4
+2047, 1373653, 25326001, 3215031751, 2152302898747, 3474749660383, 341550071728321, 341550071728321, 3825123056546413051, 3825123056546413051, 3825123056546413051, 318665857834031151167461, 3317044064679887385961981 (list; graph; refs; listen; history; text; internal format)
+OFFSET	
+1,1
+COMMENTS	
+Note that some terms are repeated.
+Same as A006945 except for first term.
+a(12) > 2^64.  Hence the primality of numbers < 2^64 can be determined by asserting strong pseudoprimality to all prime bases <= 37 (=prime(12)). Testing to prime bases <=31 does not suffice, as a(11) < 2^64 and a(11) is a strong pseudoprime to all prime bases <= 31 (=prime(11)). - Joerg Arndt, Jul 04 2012
+REFERENCES	
+R. Crandall and C. Pomerance, Prime Numbers: A Computational Perspective, Springer, NY, 2001; see p. 157.
+LINKS	
+Table of n, a(n) for n=1..13.
+Martin R. Albrecht, Jake Massimo, Kenneth G. Paterson, Juraj Somorovsky, Prime and Prejudice: Primality Testing Under Adversarial Conditions, Proceedings of the 2018 ACM SIGSAC Conference on Computer and Communications Security, 281-298.
+Joerg Arndt, Matters Computational (The Fxtbook), section 39.10, pp. 786-792.
+Paul D. Beale, A new class of scalable parallel pseudorandom number generators based on Pohlig-Hellman exponentiation ciphers, arXiv:1411.2484 [physics.comp-ph], 2014-2015.
+Paul D. Beale, Jetanat Datephanyawat, Class of scalable parallel and vectorizable pseudorandom number generators based on non-cryptographic RSA exponentiation ciphers, arXiv:1811.11629 [cs.CR], 2018.
+C. Caldwell, Strong probable-primality and a practical test.
+G. Jaeschke, On strong pseudoprimes to several bases, Mathematics of Computation, 61 (1993), 915-926.
+Yupeng Jiang, Yingpu Deng, Strong pseudoprimes to the first 9 prime bases, arXiv:1207.0063v1 [math.NT], June 30, 2012.
+A. J. Menezes, P. C. van Oorschot and S. A. Vanstone, Handbook of Applied Cryptography, CRC Press, 1996; see section 4.2.3, Miller-Rabin test.
+C. Pomerance, J. L. Selfridge and S. S. Wagstaff, Jr., The pseudoprimes to 25.10^9, Mathematics of Computation 35 (1980), pp. 1003-1026.
+Eric Bach, Explicit bounds for primality testing and related problems, Mathematics of Computation 55 (1990), pp. 355-380.
+F. Raynal, Miller-Rabin's Primality Test
+K. Reinhardt, Miller-Rabin Primality Test for odd n
+Jonathan P. Sorenson, Jonathan Webster, Strong Pseudoprimes to Twelve Prime Bases, arXiv:1509.00864 [math.NT], 2015.
+S. Wagon, Primality testing, Math. Intellig., 8 (No. 3, 1986), 58-61.
+Eric Weisstein's World of Mathematics, Strong Pseudoprime
+Eric Weisstein's World of Mathematics, Rabin-Miller Strong Pseudoprime Test
+Wikipedia, Miller-Rabin primality test
+Zhenxiang Zhang and Min Tang, Finding strong pseudoprimes to several bases. II, Mathematics of Computation 72 (2003), pp. 2085-2097.
+Index entries for sequences related to pseudoprimes
+FORMULA	
+Bach shows that, on the ERH, a(n) >> exp(sqrt(1/2 * x log x)). - Charles R Greathouse IV, May 17 2011
+CROSSREFS	
+Sequence in context: A258812 A321556 A321550 * A160964 A022193 A069386
+Adjacent sequences:  A014230 A014231 A014232 * A014234 A014235 A014236
+KEYWORD	
+nonn,hard,more
+AUTHOR	
+Jud McCranie, Feb 15 1997
+EXTENSIONS	
+Minor edits from N. J. A. Sloane, Jun 20 2009
+a(9)-a(11) from Charles R Greathouse IV, Aug 14 2010
+a(12)-a(13) from the Sorenson/Webster reference, Joerg Arndt, Sep 04 2015
+STATUS	
+approved
+Last modified August 15 08:15 EDT 2023. Contains 364633 sequences. (Running on oeis4.)
+]]]
+[[[
+https://oeis.org/A006945
+===
+(Greetings from The On-Line Encyclopedia of Integer Sequences!)
+A006945		Smallest odd number that requires n Miller-Rabin primality tests.
+(Formerly M4673)		3
+9, 2047, 1373653, 25326001, 3215031751, 2152302898747, 3474749660383, 341550071728321, 341550071728321, 3825123056546413051, 3825123056546413051, 3825123056546413051, 318665857834031151167461, 3317044064679887385961981 (list; graph; refs; listen; history; text; internal format)
+OFFSET	
+1,1
+COMMENTS	
+The tests are performed on sequential prime numbers starting with 2.  Note that some terms are repeated.
+Same as A014233 except for the first term.
+REFERENCES	
+R. Crandall and C. Pomerance, Prime Numbers: A Computational Perspective, Springer, NY, 2001; see p. 157.
+N. J. A. Sloane and Simon Plouffe, The Encyclopedia of Integer Sequences, Academic Press, 1995 (includes this sequence).
+LINKS	
+Table of n, a(n) for n=1..14.
+Joerg Arndt, Matters Computational (The Fxtbook)
+Eric Bach, Explicit bounds for primality testing and related problems, Mathematics of Computation 55 (1990), pp. 355-380.
+G. Jaeschke, On strong pseudoprimes to several bases, Math. Comp., 61 (1993), 915-926.
+Yupeng Jiang, Yingpu Deng, Strong pseudoprimes to the first 9 prime bases, arXiv:1207.0063v1 [math.NT], June 30, 2012.
+C. Pomerance, J. L. Selfridge and S. S. Wagstaff, Jr., The pseudoprimes to 25.10^9, Mathematics of Computation 35 (1980), pp. 1003-1026.
+S. Wagon, Primality testing, Math. Intellig., 8 (No. 3, 1986), 58-61.
+Zhenxiang Zhang and Min Tang, Finding strong pseudoprimes to several bases. II, Mathematics of Computation 72 (2003), pp. 2085-2097.
+Index entries for sequences related to pseudoprimes
+FORMULA	
+Bach shows that, on the ERH, a(n) >> exp(sqrt(1/2 * x log x)). [Charles R Greathouse IV, May 17 2011]
+CROSSREFS	
+Cf. A089105, A089825.
+Sequence in context: A232684 A039917 A162140 * A089825 A173281 A004820
+Adjacent sequences:  A006942 A006943 A006944 * A006946 A006947 A006948
+KEYWORD	
+nonn,hard,more
+AUTHOR	
+N. J. A. Sloane.
+EXTENSIONS	
+Extended and description corrected by Jud McCranie Feb 15 1997.
+a(10)-a(12) from Charles R Greathouse IV, Aug 14 2010
+a(13)-a(14) copied from A014233 by Max Alekseyev, Feb 15 2017
+STATUS	
+approved
+Last modified August 15 10:08 EDT 2023. Contains 364633 sequences. (Running on oeis4.)
+]]]
+[[[
+https://oeis.org/A001262
+===
+(Greetings from The On-Line Encyclopedia of Integer Sequences!)
+A001262		Strong pseudoprimes to base 2.		74
+2047, 3277, 4033, 4681, 8321, 15841, 29341, 42799, 49141, 52633, 65281, 74665, 80581, 85489, 88357, 90751, 104653, 130561, 196093, 220729, 233017, 252601, 253241, 256999, 271951, 280601, 314821, 357761, 390937, 458989, 476971, 486737 (list; graph; refs; listen; history; text; internal format)
+OFFSET	
+1,1
+COMMENTS	
+The number 2^k-1 is in the sequence iff k is in A054723 or in A001567. - Thomas Ordowski, Sep 02 2016
+The number (2^k+1)/3 is in the sequence iff k is in A127956. - Davide Rotondo, Aug 13 2021
+REFERENCES	
+R. K. Guy, Unsolved Problems Theory Numbers, A12.
+P. Ribenboim, The Book of Prime Number Records. Springer-Verlag, NY, 2nd ed., 1989, p. 95.
+LINKS	
+T. D. Noe, Table of n, a(n) for n = 1..10000 (using data from A001567)
+  https://oeis.org/A001262/b001262.txt
+Joerg Arndt, Matters Computational (The Fxtbook), section 39.10, pp. 786-792.
+Chris Caldwell, Strong probable prime.
+Eric Weisstein's World of Mathematics, Strong Pseudoprime.
+OEIS Wiki, Strong Pseudoprime.
+Wikipedia, Strong pseudoprime.
+Index entries for sequences related to pseudoprimes
+EXAMPLE	
+From Michael B. Porter, Sep 04 2016: (Start)
+For k = 577, k-1 = 576 = 9*2^6. Since 2^(9*2^3) = 2^72 == -1 (mod 577), 577 passes the primality test, but since it is actually prime, it is not in the sequence.
+For k = 3277, k-1 = 3276 = 819*2^2, and 2^(819*2) == -1 (mod 3277), so k passes the primality test, and k = 3277 = 29*113 is composite, so 3277 is in the sequence. (End)
+MAPLE	
+A007814 := proc(n) padic[ordp](n, 2) ; end proc:
+isStrongPsp := proc(n, b) local d, s, r; if type(n, 'even') or n<=1 then return false; elif isprime(n) then return false; else s := A007814(n-1) ; d := (n-1)/2^s ; if modp(b &^ d, n) = 1 then return true; else for r from 0 to s-1 do if modp(b &^ d, n) = n-1 then return true; end if; d := 2*d ; end do: return false; end if; end if; end proc:
+isA001262 := proc(n) isStrongPsp(n, 2) ; end proc:
+for n from 1 by 2 do if isA001262(n) then print(n); end if; end do:
+# R. J. Mathar, Apr 05 2011
+MATHEMATICA	
+sppQ[n_?EvenQ, _] := False; sppQ[n_?PrimeQ, _] := False; sppQ[n_, b_] := (s = IntegerExponent[n-1, 2]; d = (n-1)/2^s; If[PowerMod[b, d, n] == 1, Return[True], Do[If[PowerMod[b, d, n] == n-1, Return[True]]; d = 2*d, {s}]]); lst = {}; k = 3; While[k < 500000, If[sppQ[k, 2], Print[k]; AppendTo[lst, k]]; k += 2]; lst (* Jean-François Alcover, Oct 20 2011, after R. J. Mathar *)
+PROG	
+(PARI)
+isStrongPsp(n, b)={
+        my(s, d, r, bm) ;
+        if( (n% 2) ==0 || n <=1, return(0) ; ) ;
+        if(isprime(n), return(0) ; ) ;
+        s = valuation(n-1, 2) ;
+        d = (n-1)/2^s ;
+        bm = Mod(b, n)^d ;
+        if ( bm == Mod(1, n), return(1) ; ) ;
+        for(r=0, s-1,
+                bm = Mod(b, n)^d ;
+                if ( bm == Mod(-1, n),
+                        return(1) ;
+                ) ;
+                d *= 2;
+        ) ;
+        return(0);
+}
+isA001262(n)={
+        isStrongPsp(n, 2)
+}
+{
+for(n=1, 10000000000,
+    if(isA001262(n),
+        print(n)
+    ) ;
+) ;
+} \\ R. J. Mathar, Mar 07 2012
+(PARI) is_A001262(n, a=2)={ (bittest(n, 0) && !isprime(n) && n>8) || return; my(s=valuation(n-1, 2)); if(1==a=Mod(a, n)^(n>>s), return(1)); while(a!=-1 && s--, a=a^2); a==-1} \\ M. F. Hasler, Aug 16 2012
+CROSSREFS	
+Cf. A001567 (pseudoprimes to base 2), A020229 (strong pseudoprimes to base 3), A020231 (base 5), A020233 (base 7).
+Cf. A072276 (SPP to base 2 and 3), A215568 (SPP to base 2 and 5), A056915 (SPP to base 2,3 and 5), A074773 (SPP to base 2,3,5 and 7).
+Sequence in context: A241039 A278353 A038462 * A141232 A361256 A360184
+Adjacent sequences:  A001259 A001260 A001261 * A001263 A001264 A001265
+KEYWORD	
+nonn,nice
+AUTHOR	
+N. J. A. Sloane
+EXTENSIONS	
+More terms from David W. Wilson, Aug 15 1996
+STATUS	
+approved
+Last modified August 15 10:13 EDT 2023. Contains 364633 sequences. (Running on oeis4.)
+]]]
+[[[
+===
+]]]
+[[[
+===
+]]]
+[[[
+===
+]]]
+[[[
+===
+]]]
+[[[
+===
+]]]
+[[[
+===
+]]]
+[[[
+===
+]]]
+[[[
+===
+]]]
+[[[
+===
+]]]
+[[[
+===
+]]]
+[[[
+===
+]]]
+[[[
+===
+]]]
+[[[
+===
+]]]
+[[[
+===
+]]]
+[[[
+===
+]]]
+[[[
+===
+]]]
+[[[
+===
+]]]
+[[[
+===
+]]]
+[[[
+===
+]]]
+[[[
+===
+]]]
+

@@ -1,0 +1,455 @@
+
+e others/数学/编程/python/py-font-info-extract.txt
+[[[
+https://www.blog.pythonlibrary.org/2021/02/02/drawing-text-on-images-with-pillow-and-python/
+===
+Drawing Text on Images with Pillow and Python
+  Drawing Text
+  Loading TrueType Fonts
+  Changing Text Color
+  Drawing Multiple Lines of Text
+  Aligning Text
+  Changing Text Opacity
+  Learning About Text Anchors
+  Creating a Text Drawing GUI
+===
+Drawing Text on Images with Pillow and Python
+4 Comments / Python / By Mike / February 2, 2021
+Pillow supports drawing text on your images in addition to shapes. Pillow uses its own font file format to store bitmap fonts, limited to 256 characters. Pillow also supports TrueType and OpenType fonts as well as other font formats supported by the FreeType library.
+
+In this chapter, you will learn about the following:
+
+Drawing Text
+Loading TrueType Fonts
+Changing Text Color
+Drawing Multiple Lines of Text
+Aligning Text
+Changing Text Opacity
+Learning About Text Anchors
+While this article is not completely exhaustive in its coverage of drawing text with Pillow, when you have finished reading it, you will have a good understanding of how text drawing works and be able to draw text on your own.
+
+Let’s get started by learning how to draw text.
+
+Drawing Text
+Drawing text with Pillow is similar to drawing shapes. However, drawing text has the added complexity of needing to be able to handle fonts, spacing, alignment, and more. You can get an idea of the complexity of drawing text by taking a look at the text() function’s signature:
+
+    def text(xy, text, fill=None, font=None, anchor=None, spacing=4, align='left', direction=None, features=None, language=None, stroke_width=0, stroke_fill=None, embedded_color=False)
+
+This function takes in a lot more parameters than any of the shapes you can draw with Pillow! Let’s go over each of these parameters in turn:
+
+    xy – The anchor coordinates for the text (i.e. where to start drawing the text).
+    text – The string of text that you wish to draw.
+    fill – The color of the text (can a tuple, an integer (0-255) or one of the supported color names).
+    font – An ImageFont instance.
+    anchor – The text anchor alignment. Determines the relative location of the anchor to the text. The default alignment is top left.
+    spacing – If the text is passed on to multiline_text(), this controls the number of pixels between lines.
+    align – If the text is passed on to multiline_text(), "left", "center" or "right". Determines the relative alignment of lines. Use the anchor parameter to specify the alignment to xy.
+    direction – Direction of the text. It can be "rtl" (right to left), "ltr" (left to right) or "ttb" (top to bottom). Requires libraqm.
+    features – A list of OpenType font features to be used during text layout. Requires libraqm.
+    language – The language of the text. Different languages may use different glyph shapes or ligatures. This parameter tells the font which language the text is in, and to apply the correct substitutions as appropriate, if available. It should be a BCP 47 language code. Requires libraqm.
+    stroke_width – The width of the text stroke
+    stroke_fill – The color of the text stroke. If you don’t set this, it defaults to the fill parameter’s value.
+    embedded_color – Whether to use font embedded color glyphs (COLR or CBDT).
+You probably won’t use most of these parameters are on a regular basis unless your job requires you to work with foreign languages or arcane font features.
+
+When it comes to learning something new, it’s always good to start with a nice example. Open up your Python editor and create a new file named draw_text.py. Then add this code to it:
+
+# draw_text.py
+from PIL import Image, ImageDraw, ImageFont
+def text(output_path):
+    image = Image.new("RGB", (200, 200), "green")
+    draw = ImageDraw.Draw(image)
+    draw.text((10, 10), "Hello from")
+    draw.text((10, 25), "Pillow",)
+    image.save(output_path)
+if __name__ == "__main__":
+    text("text.jpg")
+
+Here you create a small image using Pillow’s Image.new() method. It has a nice green background. Then you create a drawing object. Next, you tell Pillow where to draw the text. In this case, you draw two lines of text.
+
+When you run this code, you will get the following image:
+
+Pillow's default text
+
+That looks pretty good. Normally, when you are drawing text on an image, you would specify a font. If you don’t have a font handy, you can use the method above or you can use Pillow’s default font.
+
+Here is an example that updates the previous example to use Pillow’s default font:
+
+# draw_text_default_font.py
+from PIL import Image, ImageDraw, ImageFont
+def text(output_path):
+    image = Image.new("RGB", (200, 200), "green")
+    draw = ImageDraw.Draw(image)
+    font = ImageFont.load_default()
+    draw.text((10, 10), "Hello from", font=font)
+    draw.text((10, 25), "Pillow", font=font)
+    image.save(output_path)
+if __name__ == "__main__":
+    text("text.jpg")
+
+n this version of the code, you use ImageFont.load_default() to load up Pillow’s default font. Then you apply the font to the text, you pass it in with the font parameter.
+
+The output of this code will be the same as the first example.
+
+Now let’s discover how to use a TrueType font with Pillow!
+
+Loading TrueType Fonts
+Pillow supports loading TrueType and OpenType fonts. So if you have a favorite font or a company mandated one, Pillow can probably load it. There are many open source TrueType fonts that you can download. One popular option is Gidole, which you can get here:
+
+https://github.com/larsenwork/Gidole
+The Pillow package also comes with several fonts in its test folder. You can download Pillow’s source here:
+
+https://github.com/python-pillow/Pillow
+This book’s code repository on Github includes the Gidole font as well as a handful of the fonts from the Pillow tests folder that you can use for the examples in this chapter:
+
+https://github.com/driscollis/image_processing_with_python
+To see how you can load up a TrueType font, create a new file and name it draw_truetype.py. Then enter the following:
+
+# draw_truetype.py
+from PIL import Image, ImageDraw, ImageFont
+def text(input_image_path, output_path):
+    image = Image.open(input_image_path)
+    draw = ImageDraw.Draw(image)
+    y = 10
+    for font_size in range(12, 75, 10):
+        font = ImageFont.truetype("Gidole-Regular.ttf", size=font_size)
+        draw.text((10, y), f"Chihuly Exhibit ({font_size=}", font=font)
+        y += 35
+    image.save(output_path)
+if __name__ == "__main__":
+    text("chihuly_exhibit.jpg", "truetype.jpg")
+
+For this example, you use the Gidole font and load an image taken at the Dallas Arboretum in Texas:
+
+Chihuly Exhibit
+
+Then you loop over several different font sizes and write out a string at different positions on the image. When you run this code, you will create an image that looks like this:
+Pillow TrueType font sizes
+
+That code demonstrated how to change font sizes using a TrueType font. Now you’re ready to learn how to switch between different TrueType fonts.
+
+Create another new file and name this one draw_multiple_truetype.py. Then put this code into it:
+
+# draw_multiple_truetype.py
+import glob
+from PIL import Image, ImageDraw, ImageFont
+def truetype(input_image_path, output_path):
+    image = Image.open(input_image_path)
+    draw = ImageDraw.Draw(image)
+    y = 10
+    ttf_files = glob.glob("*.ttf")
+    for ttf_file in ttf_files:
+        font = ImageFont.truetype(ttf_file, size=44)
+        draw.text((10, y), f"{ttf_file} (font_size=44)", font=font)
+        y += 55
+    image.save(output_path)
+if __name__ == "__main__":
+    truetype("chihuly_exhibit.jpg", "truetype_fonts.jpg")
+
+Here you use Python’s glob module to search for files with the extension .ttf. Then you loop over those files and write out the font name on the image using each of the fonts that glob found.
+
+When you run this code, your new image will look like this:
+
+Pillow TrueType fonts
+
+This demonstrates writing text with multiple formats in a single code example. You always need to provide a relative or absolute path to the TrueType or OpenType font file that you want to load. If you don’t provide a valid path, a FileNotFoundError exception will be raised.
+
+Now let’s move on and learn how to change the color of your text!
+
+Changing Text Color
+Pillow allows you to change the color of your text by using the fill parameter. You can set this color using an RGB tuple, an integer or a supported color name.
+
+Go ahead and create a new file and name it text_colors.py. Then enter the following code into it:
+
+# text_colors.py
+from PIL import Image, ImageDraw, ImageFont
+def text_color(output_path):
+    image = Image.new("RGB", (200, 200), "white")
+    draw = ImageDraw.Draw(image)
+    colors = ["green", "blue", "red", "yellow", "purple"]
+    font = ImageFont.truetype("Gidole-Regular.ttf", size=12)
+    y = 10
+    for color in colors:
+        draw.text((10, y), f"Hello from Pillow", font=font, fill=color)
+        y += 35
+    image.save(output_path)
+if __name__ == "__main__":
+    text_color("colored_text.jpg")
+
+In this example, you create a new white image. Then you create a list of colors. Next, you loop over each color in the list and apply the color using the fill parameter.
+
+When you run this code, you will end up with this nice output:
+
+Different Colored Text
+
+This output demonstrates how you can change the color of your text.
+
+Now let’s learn how to draw multiple lines of text at once!
+
+Drawing Multiple Lines of Text
+Pillow also supports drawing multiple lines of text at once. In this section, you will learn two different methods of drawing multiple lines. The first is by using Python’s newline character: \n.
+
+To see how that works, create a file and name it draw_multiline_text.py. Then add the following code:
+
+# draw_multiline_text.py
+from PIL import Image, ImageDraw, ImageFont
+def text(input_image_path, output_path):
+    image = Image.open(input_image_path)
+    draw = ImageDraw.Draw(image)
+    font = ImageFont.truetype("Gidole-Regular.ttf", size=42)
+    text = "Chihuly Exhibit\nDallas, Texas"
+    draw.text((10, 25), text, font=font)
+    image.save(output_path)
+if __name__ == "__main__":
+    text("chihuly_exhibit.jpg", "multiline_text.jpg")
+
+For this example, you create a string with the newline character inserted in the middle. When you run this example, your result should look like this:
+
+Multiline text with Pillow
+
+Pillow has a built-in method for drawing multiple lines of text too. Take the code you wrote in the example above and copy and paste it into a new file. Save your new file and name itdraw_multiline_text_2.py.
+
+Now modify the code so that it uses the multiline_text() function:
+
+# draw_multiline_text_2.py
+from PIL import Image, ImageDraw, ImageFont
+def text(input_image_path, output_path):
+    image = Image.open(input_image_path)
+    draw = ImageDraw.Draw(image)
+    font = ImageFont.truetype("Gidole-Regular.ttf", size=42)
+    text = """
+    Chihuly Exhibit
+    Dallas, Texas"""
+    draw.multiline_text((10, 25), text, font=font)
+    image.save(output_path)
+if __name__ == "__main__":
+    text("chihuly_exhibit.jpg", "multiline_text_2.jpg")
+
+In this example, you create a multiline string using Python’s triple quotes. Then you draw that string onto your image by calling multiline_text().
+
+When you run this code, your image will be slightly different:
+
+More multiline text with Pillow
+
+The text is positioned down and to the right of the previous example. The reason is that you used Python’s triple quotes to create the string. It retains the newline and indentation that you gave it. If you put this string into the previous example, it should look the same.
+
+The multiline_text() doesn’t affect the end result.
+
+Now let’s learn how you can align text when you draw it.
+
+Aligning Text
+Pillow lets you align text. However, the alignment is relative to the anchor and applies to multiline text only. You will look at an alternative method for aligning text without using the align parameter in this section as well.
+
+To get started with align, create a new file and name it text_alignment.py. Then add the following code:
+
+# text_alignment.py
+from PIL import Image, ImageDraw, ImageFont
+def alignment(output_path):
+    image = Image.new("RGB", (200, 200), "white")
+    draw = ImageDraw.Draw(image)
+    alignments = ["left", "center", "right"]
+    y = 10
+    font = ImageFont.truetype("Gidole-Regular.ttf", size=12)
+    for alignment in alignments:
+        draw.text((10, y), f"Hello from\n Pillow", font=font,
+                align=alignment, fill="black")
+        y += 35
+    image.save(output_path)
+if __name__ == "__main__":
+    alignment("aligned_text.jpg")
+
+Here you create a small, white image. Then you create a list of all of the valid alignment options: “left”, “center”, and “right”. Next, you loop over these alignment values and apply them to the same multiline string.
+
+After running this code, you will have the following result:
+
+Aligning Text with Pillow
+
+Looking at the output, you can kind of get a feel for how alignment works in Pillow. Whether or not that works for your use-case is up for you to decide. You will probably need to adjust the location of where you start drawing in addition to setting the align parameter to get what you really want.
+
+You can use Pillow to get the size of your string and do some simple math to try to center it though. You can use either the Drawing object’s textsize() method or the font object’s getsize() method for that.
+
+To see how that works, you can create a new file named center_text.py and put this code into it:
+
+# center_text.py
+from PIL import Image, ImageDraw, ImageFont
+def center(output_path):
+    width, height = (400, 400)
+    image = Image.new("RGB", (width, height), "grey")
+    draw = ImageDraw.Draw(image)
+    font = ImageFont.truetype("Gidole-Regular.ttf", size=12)
+    text = "Pillow Rocks!"
+    font_width, font_height = font.getsize(text)
+    new_width = (width - font_width) / 2
+    new_height = (height - font_height) / 2
+    draw.text((new_width, new_height), text, fill="black")
+    image.save(output_path)
+if __name__ == "__main__":
+    center("centered_text.jpg")
+
+In this case, you keep track of the image’s size as well as the string’s size. For this example, you used getsize() to get the string’s width and height based on the the font and the size of the font.
+
+Then you took the image width and height and subtracted the width and height of the string and divided by two. This should get you the coordinates you need to write the text in the center of the image.
+
+When you run this code, you can see that the text is centered pretty well:
+
+Centering Text with Pillow
+
+However, this starts to fall about as you increase the size of the font. The more you increase it, the further off-center it is. There are several alternative solutions on StackOverflow here:
+
+https://stackoverflow.com/questions/1970807/center-middle-align-text-with-pil
+The main takeaway though is that you will probably end up needing to calculate your own offset for the font that you are using. Typesetting is a complicated business, after all.
+
+Now let’s find out how to change your text’s opacity!
+
+Changing Text Opacity
+Pillow supports changing the text’s opacity as well. What that means is that you can make the text transparent, opaque or somewhere in between. This only works with images that have an alpha channel.
+
+For this example, you will use this flower image:
+
+Flowers
+
+Now create a new file and name it text_opacity.py. Then add the following code to your new file:
+
+# text_opacity.py
+from PIL import Image, ImageDraw, ImageFont
+def change_opacity(input_path, output_path):
+    base_image = Image.open(input_path).convert("RGBA")
+    txt_img = Image.new("RGBA", base_image.size, (255,255,255,0))
+    font = ImageFont.truetype("Gidole-Regular.ttf", 40)
+    draw = ImageDraw.Draw(txt_img)
+    # draw text at half opacity
+    draw.text((10,10), "Pillow", font=font, fill=(255,255,255,128))
+    # draw text at full opacity
+    draw.text((10,60), "Rocks!", font=font, fill=(255,255,255,255))
+    composite = Image.alpha_composite(base_image, txt_img)
+    composite.save(output_path)
+if __name__ == "__main__":
+    change_opacity("flowers_dallas.png", "flowers_opacity.png")
+
+In this example, you open the flower image and convert it to RGBA. Then you create a new image that is the same size as the flower image. Next, you load the Gidole font and create a drawing context object using the custom image you just created.
+
+Now comes the fun part! You draw one string and set the alpha value to 128, which equates to about half opacity. Then you draw a second string on the following line and tell Pillow to use full opacity. Note that in both of these instances, you are using RGBA values rather than color names, like you did in your previous code examples. This gives you more versatility in setting the alpha amount.
+
+The last step is to call alpha_composite() and composite the txt_img onto the base_image.
+
+When you run this code, your output will look like this:
+
+Changing Text Opacity
+
+This demonstrates how you can change the opacity of your text with Pillow. You should try a few different values for your txt_img to see how it changes the text’s opacity.
+
+Now let’s learn what text anchors are and how they affect text placement.
+
+Learning About Text Anchors
+You can use the anchor parameter to determine the alignment of your text relative to the xy coordinates you give. The default is top-left, which is the la (left-ascender) anchor. According to the documentation, la means left-ascender aligned text.
+
+The first letter in an anchor specifies it’s horizontal alignment while the second letter specifies its vertical alignment. In the next two sub-sections, you will learn what each of the anchor names mean.
+
+Horizontal Anchor Alignment
+There are four horizontal anchors. The following is an adaptation from the documentation on horizontal anchors:
+
+    l (left) – Anchor is to the left of the text. When it comes to horizontal text, this is the origin of the first glyph.
+    m (middle) – Anchor is horizontally centered with the text. In the case of vertical text you should use s (baseline) alignment instead, as it doesn’t change based on the specific glyphs used in the text.
+    r (right) – Anchor is to the right of the text. For horizontal text this is the advanced origin of the last glyph.
+    s – baseline (vertical text only). For vertical text this is the recommended alignment, because it doesn’t change based on the specific glyphs of the given text
+
+Vertical Anchor Alignment
+There are six vertical anchors. The following is an adaptation from the documentation on vertical anchors:
+
+    a (ascender / top) – (horizontal text only). Anchor is at the ascender line (top) of the first line of text, as defined by the font.
+    t (top) — (single-line text only). Anchor is at the top of the text. For vertical text this is the origin of the first glyph. For horizontal text it is recommended to use a (ascender) alignment instead, because it won’t change based on the specific glyphs of the given text.
+    m (middle) – Anchor is vertically centered with the text. For horizontal text this is the midpoint of the first ascender line and the last descender line.
+    s — baseline (horizontal text only). Anchor is at the baseline (bottom) of the first line of text, only descenders extend below the anchor.
+    b (bottom) – (single-line text only). Anchor is at the bottom of the text. For vertical text this is the advanced origin of the last glyph. For horizontal text it is recommended to use d (descender) alignment instead, because it won’t change based on the specific glyphs of the given text.
+    d (descender / bottom) – (horizontal text only). Anchor is at the descender line (bottom) of the last line of text, as defined by the font.
+Anchor Examples
+Anchors are hard to visualize if all you do is talk about them. It helps a lot if you create some examples to see what really happens. Pillow provides an example in their documentation on anchors along with some very helpful images:
+
+https://pillow.readthedocs.io/en/stable/handbook/text-anchors.html
+You can take their example and adapt it a bit to make it more useful. To see how, create a new file and name it create_anchor.py. Then add this code to it:
+
+# create_anchor.py
+from PIL import Image, ImageDraw, ImageFont
+def anchor(xy=(100, 100), anchor="la"):
+    font = ImageFont.truetype("Gidole-Regular.ttf", 32)
+    image = Image.new("RGB", (200, 200), "white")
+    draw = ImageDraw.Draw(image)
+    draw.line(((0, 100), (200, 100)), "gray")
+    draw.line(((100, 0), (100, 200)), "gray")
+    draw.text((100, 100), "Python", fill="black", anchor=anchor, font=font)
+    image.save(f"anchor_{anchor}.jpg")
+if __name__ == "__main__":
+    anchor(anchor)
+
+You can run this code as-is. The default anchor is “la”, but you explicitly call that out here. You also draw a cross-hair to mark where the xy position is. If you run this with other settings, you can see how the anchor affects it.
+
+Here is a screenshot from six different runs using six different anchors:Pillow text anchors examples
+
+You can try running this code with some of the other anchors that aren’t shown here. You can also adjust the position tuple and re-run it again with different anchors. You could even create a loop to loop over the anchors and create a set of examples if you wanted to.
+
+Wrapping Up
+At this point you have a good understanding of how to draw text using Pillow. In fact, you learned how to do all of the following:
+
+  Drawing Text
+  Loading TrueType Fonts
+  Changing Text Color
+  Drawing Multiple Lines of Text
+  Aligning Text
+  Changing Text Opacity
+  Learning About Text Anchors
+  Creating a Text Drawing GUI
+
+You can now take what you have learned and practice it. There are lots of examples in this article that you can use as jumping off points to create new applications!
+
+Post navigation
+Previous PostNext Post
+4 thoughts on “Drawing Text on Images with Pillow and Python”
+Pingback: PySimpleGUI: Drawing Text on Images with a Python GUI - Mouse Vs Python
+
+Pingback: PySimpleGUI: Drawing Text on Images with a Python GUI - Fancy Hints
+
+Pingback: Drawing Shapes on Images with Python and Pillow - Mouse Vs Python
+
+Pingback: Drawing Shapes on Images with Python and Pillow - Fancy Hints
+
+Comments are closed.
+
+Search for:
+Search …
+The Python Show Podcast
+The Python Show Podcast
+
+Listen at The Python Show or YouTube or Apple Podcasts
+The Python Quiz Book
+The Python Quiz Book
+
+Purchase at Gumroad or Leanpub or Amazon
+Automating Excel with Python
+Automating Excel with Python
+
+Purchase at Gumroad or Leanpub or Amazon
+Python 101
+Python 101: 2nd Edition
+
+Purchase at Gumroad or Leanpub or Amazon
+Pillow: Image Processing with Python
+Pillow: Image Processing with Python
+
+Purchase at Gumroad or Leanpub or Amazon
+Pick a Category
+Pick a Category
+Select Category
+Archives
+Archives
+Select Month
+Links
+@driscollis
+Buy me a Coffee
+MouseVsPython on Twitter
+MouseVsPython Youtube Channel
+Teach Me Python
+Buy Me A Coffee
+Copyright © 2023 Mouse Vs Python | Powered by Pythonlibrary
+===
+]]]
+

@@ -1,0 +1,420 @@
+
+e others/数学/整数分解/sqrts_mod_.txt
+
+view others/数学/整数分解/Quadratic-Sieve-Method.txt
+view others/book/factorint-paper-202308.txt
+view ../../python3_src/seed/math/sqrts_mod_.py
+view ../../python3_src/seed/math/discrete_logarithm.py
+
+[[[
+我的开平方算法
+===
+
+中国剩余定理，分解 xx 关于base的离散对数
+xx =[%p]= base**(inv_mod_(2**e;odd)*odd * e4two_power + inv_mod_(odd;2**e)*2**e * e4odd)
+
+y := xx**(inv_mod_(2**e;odd)*odd) %p
+    # e4odd vanish
+
+h := xx**(inv_mod_(odd;2**e)*2**e) %p
+    # e4two_power vanish
+
+e4y := discrete_logarithm__coprime_(p, base, order_of_base, factorization_of_order_of_base, y)
+    # e4y == e4two_power
+
+xx**(inv_mod_(2**e;odd)*odd) =[%p]= y =[%p]= base**e4y
+
+h**((odd+1)///2)**2 =[%p]= h
+h**((odd+1)///2) <- sqrts_(h)
+    # !! [[(p-1)%q == 0] -> [p == q**s *t +1] -> [t%q =!= 0] -> [xq**t %p == 1] -> [a_kth_root_mod_(p;q;xq) ==  xq**(inv_mod_(t;q))]]
+    # [[p == 2**s *t +1] -> [t%2 =!= 0] -> [xx**t %p == 1] -> [a_sqrt_mod_(p;xx) ==  xx**(inv_mod_(t;2)) == xx**((t+1)///2)]]
+
+
+xx =[%p]= y * h =[%p]= base**e4y * h
+sqrt(xx) =[%p]= sqrt(base**(e4y) * sqrt(h)
+sqrt(xx) =[%p]= base**(e4y///2) * h**((odd+1)///2)
+sqrt(xx) =[%p]= base**(e4y///2) * xx**(inv_mod_(odd;2**e)*2**e*(odd+1)///2)
+
+
+]]]
+
+
+[p :: prime][p%2==1][is_primitive_root_mod_(p;g)][Jacobi_symbol(p;xx) == 1]:
+  [hmm := ((p-1)///2)]
+  [hpp := ((p+1)///2)]
+  [hpp == hmm+1]
+
+  let k :=> [xx %p == g**(2*k) %p]
+  [xx %p == g**(2*k) %p]
+  [g**t <- sqrts_mod_(p; xx)]:
+      [(g**t)**2 %p == xx %p == g**(2*k) %p]
+      [2*t %(p-1) == 2*k %(p-1)]
+      [2*(t-k) %(p-1) == 0]
+      [(t-k) %((p-1)///2) == 0]
+      [(t-k) %hmm == 0]
+      [t <- {k,k+hmm} %(p-1)]
+  [[g**t <- sqrts_mod_(p; xx)] -> [t <- {k,k+hmm} %(p-1)]]
+
+  [(g**(2*k))**hmm =[%p]= g**(k*(p-1)) =[%p]= 1]
+  [(g**(2*k))**hpp =[%p]= (g**(2*k))**(hmm+1) =[%p]= g**(2*k)]
+  [(g**(2*k))**hpp =[%p]= g**(2*k)]
+  [p%4==3]:
+    [(p+1)%4 == 0]
+    [hpp%2 == 0]
+    !! [(g**(2*k))**hpp =[%p]= g**(2*k)]
+    [((g**(2*k))**((p+1)///4))**2 =[%p]= (g**k)**2]
+    [((g**(2*k))**((p+1)///4)) <- sqrts_mod_(p;g**(2*k))]
+    !! [(g**k) <- sqrts_mod_(p;g**(2*k))]
+    [g**k ~?~ ((g**(2*k))**((p+1)///4))]
+    [g**k ~?~ g**(k*(p+1)///2)]
+    [g**k ~?~ g**(k*hpp)]
+    [k*hpp
+    == k*(1 +hmm)
+    == k +k*hmm
+    =[%hmm]= k
+    ]
+
+  [p%4==1]:
+      [M := p]
+      [eg := p-1]
+      [g := ???]
+      [mul_pow_(M,g;a,b;u) := u**a *g**b %M]
+      [gcd_exp_(M,g,p2e4eg;u) := gcd(eg,discrete_logarithm__(M;g;u))]
+      [add_pow_(M,g;c,u) := u + g**c]
+
+      !! [xx %p == g**(2*k) %p]
+      [mul_pow_(M,g;a,b;xx) == g**(2*a*k+b) %M]
+      [gcd_exp_(M,g,p2e4eg;xx) == gcd(eg,2*k)]
+      [add_pow_(M,g;c,xx) == g**(2*k) + g**c]
+
+      let e,odd :=> [2**e*odd == eg]
+      let low := (2*k%2**e) via gcd_exp_ <<==:
+        xx_ := xx
+        es_ = []
+        loop:
+          let e_,odd_ :=> [2**e_*odd_ == gcd_exp_(M,g,p2e4eg;xx_) == gcd(eg,2*k_)][odd_%2==1]
+          if e_ == e:
+            break
+          xx_ := mul_pow_(M,g;1,-e_;xx_)
+          es_.append(e_)
+        [2*k%2** e == sum 2**e_ {e_ <- es_}]
+
+      !! [[g**t <- sqrts_mod_(p; xx)] -> [t <- {k,k+hmm} %(p-1)]]
+discrete logarithm == generalized multiplicative order == index
+MultiplicativeOrder
+discrete logarithm problem (DLP)
+[discrete_logarithm__(M;g;u) =[def]= min {k :<- [1..] | [g**k =[%M]= u]}]
+[[eg == order_mod_(M;g) == discrete_logarithm__(M;g;1)][u == g**k %M][k == discrete_logarithm__(M;g;u)][p2e4eg == factorization(eg)][M,g,eg,p2e4eg,u known][k unknown]]:
+      #neednot:[is_primitive_root_mod_(M;g)]
+      #有以下操作:
+      [mul_pow_(M,g;a,b;u) := u**a *g**b %M]
+      [gcd_exp_(M,g,p2e4eg;u) := gcd(eg,discrete_logarithm__(M;g;u))]
+      [add_pow_(M,g;c,u) := u + g**c]
+
+
+
+
+
+
+# -1 is a quadratic residue modulo prime (4k+1)
+[[p :: prime] -> [p%2==1] -> [[p%4 == 3] <-> [-1 =[%p]= (-1)**((p-1)///2)]]]
+# 2 is a quadratic residue modulo prime (8k+/-1)
+[[p :: prime] -> [p%2==1] -> [[p%8 <- {3,5}] <-> [-1 =[%p]= 2**((p-1)///2)]]]
+a_quadratic_nonresidue_mod_
+by assuming the Extended Riemann Hypothesis (ERH), the least quadratic non-residue modulo p is in O(log2(p)**2).  As a consequence, in this case, the presented probabilistic algorithm for finding a quadratic non-residue can be transformed into a deterministic polynomial time algorithm of complexity O(log2(p)**4).
+
+[[[
+A complete generalization of Atkin’s square root algorithm(2013)(Armand).pdf
+===
+
+[p :: prime][p%4==3][p%2**(s+1) == 2**s+1][s == 1][xx**((p-1)///2) %p == 1]:
+  [(xx**((p+1)///4))**2 %p
+  == (xx**((p+1)///2)) %p
+  == xx*(xx**((p-1)///2)) %p
+  == xx %p
+  ]
+  [xx**((p+1)///4) %p <- sqrts_mod_(p;xx)]
+[p :: prime][p%4==1][p%2**(s+1) == 2**s+1][s >= 2][p == t*2**s+1][t > 0][t%2==1][xx**((p-1)///2) %p == 1]:
+  [p%8==5][s==2]:
+    # Atkin’s Algorithm
+    # let [x := xx*c*(a_sqrt_mod_(p;-1) -1) %p]
+    # let [x**2 %p == xx**2 *c**2 *(-2*a_sqrt_mod_(p;-1)) %p == xx * (xx *c**2 *(-2)*a_sqrt_mod_(p;-1)) %p]
+    # let [b == a_sqrt_mod_(p;-1) == (2*xx *c**2) == (2*xx)**(2*e+1)] to determine c
+    # -> [c == (2*xx)**e %p]
+    # ...
+    [c := (2*xx)**((p-5)///8) %p]
+    [b := 2*xx*c**2 %p]
+    [x := xx*c*(b-1) %p]
+    [x %p <- sqrts_mod_(p;xx)]
+      [[proof:
+      [b
+      =[%p]= (2*xx*c**2)
+      =[%p]= (2*xx*((2*xx)**((p-5)///8))**2)
+      =[%p]= (2*xx*((2*xx)**((p-5)///4)))
+      =[%p]= ((2*xx)**((p-1)///4))
+      ]
+      [b =[%p]= ((2*xx)**((p-1)///4))]
+
+      [b**2
+      =[%p]= ((2*xx)**((p-1)///4))**2
+      =[%p]= ((2*xx)**((p-1)///2))
+      !! [xx**((p-1)///2) %p == 1]
+      =[%p]= 2**((p-1)///2)
+      !! [[p :: prime] -> [p%2==1] -> [[p%8 <- {3,5}] <-> [-1 =[%p]= 2**((p-1)///2)]]]
+      !! [p%8==5]
+      -> [-1 =[%p]= 2**((p-1)///2)]
+      =[%p]= -1
+      ]
+      [b**2 =[%p]= -1]
+
+      [x**2
+      =[%p]= (xx*c*(b-1))**2
+      =[%p]= (xx*c)**2 * (b-1)**2
+      =[%p]= (xx*c)**2 * (b**2-2*b+1)
+      !! [b**2 =[%p]= -1]
+      =[%p]= (xx*c)**2 * (-2*b)
+      =[%p]= xx * (xx*c**2) * (-2*b)
+      =[%p]= xx * (2*xx*c**2) * (-b)
+      !! [b := 2*xx*c**2 %p]
+      =[%p]= xx * b * (-b)
+      !! [b**2 =[%p]= -1]
+      =[%p]= xx
+      ]
+      [x**2 =[%p]= xx]
+      DONE
+      ]]
+  [p%16==9][s==3]:
+    # Muller’s Algorithm
+    # let [x := xx*d*c*(a_sqrt_mod_(p;-1) -1) %p]
+    # let [x**2 %p == xx**2 *d**2 *c**2 *(-2*a_sqrt_mod_(p;-1)) %p == xx * (xx *d**2 *c**2 *(-2)*a_sqrt_mod_(p;-1)) %p]
+    # let [b == a_sqrt_mod_(p;-1) == (2*xx *d**2 *c**2) %p == (2*xx *d**2)**(2*e+1) %p] to determine c
+    # -> [c == (2*xx *d**2)**e %p]
+    # ...
+    !! [p%16==9]
+    [p%8==1]
+    !! [[p :: prime] -> [p%2==1] -> [[p%8 <- {3,5}] <-> [-1 =[%p]= 2**((p-1)///2)]]]
+    [1 =[%p]= 2**((p-1)///2)]
+    !! [xx**((p-1)///2) %p == 1]
+    [(2*xx)**((p-1)///2) %p == 1]
+
+    * [(2*xx)**((p-1)///4) %p == -1]:
+      !! [b == a_sqrt_mod_(p;-1)]
+      [b := (2*xx)**((p-1)///8) %p]
+      !! [b == a_sqrt_mod_(p;-1) == (2*xx *d**2 *c**2) %p == (2*xx *d**2)**(2*e+1) %p]
+      [d := 1]
+      [e := ((p-9)///16)]
+      !! [c == (2*xx *d**2)**e %p]
+      [c := (2*xx)**((p-9)///16) %p]
+    * [(2*xx)**(((p-1)///4)) %p == +1]:
+      [d := a_quadratic_nonresidue_mod_(p)]
+      [d**((p-1)///2) %p == -1]
+      !! [(2*xx)**(((p-1)///4)) %p == +1]
+      [(2*xx *d**2)**((p-1)///4) %p == -1]
+      !! [b == a_sqrt_mod_(p;-1)]
+      [b := (2*xx *d**2)**((p-1)///8) %p]
+      !! [b == a_sqrt_mod_(p;-1) == (2*xx *d**2 *c**2) %p == (2*xx *d**2)**(2*e+1) %p]
+      [e := ((p-9)///16)]
+      !! [c == (2*xx *d**2)**e %p]
+      [c := (2*xx *d**2)**((p-9)///16) %p]
+
+    ==>>:
+    [d := if [(2*xx)**((p-1)///4) %p == -1] then 1 else a_quadratic_nonresidue_mod_(p)]
+    [c := (2*xx *d**2)**((p-9)///16) %p]
+    [b := (2*xx *d**2)**((p-1)///8) %p]
+      # [b := c**2 *(2*xx *d**2) %p]
+    [x := xx*d*c*(b-1) %p]
+    [x %p <- sqrts_mod_(p;xx)]
+      [[proof:
+      !! [(2*xx)**((p-1)///2) %p == 1]
+      !! [d := if [(2*xx)**((p-1)///4) %p == -1] then 1 else a_quadratic_nonresidue_mod_(p)]
+      [(2*xx *d**2)**((p-1)///4) %p == -1]
+      !! [b := (2*xx *d**2)**((p-1)///8) %p]
+      [b**2 =[%p]= -1]
+      !! [c := (2*xx *d**2)**((p-9)///16) %p]
+      !! [b := (2*xx *d**2)**((p-1)///8) %p]
+      [b == (2*xx *d**2 *c**2) %p]
+      !! [x := xx*d*c*(b-1) %p]
+      [x**2
+      =[%p]= (xx*d*c*(b-1))**2
+      =[%p]= (xx*d*c)**2 *(b-1)**2
+      !! [b**2 =[%p]= -1]
+      =[%p]= (xx*d*c)**2 *(-2*b)
+      =[%p]= xx *(2*xx *d**2 *c**2) *(-b)
+      !! [b == (2*xx *d**2 *c**2) %p]
+      =[%p]= xx *b *(-b)
+      !! [b**2 =[%p]= -1]
+      =[%p]= xx
+      ]
+      [x**2 =[%p]= xx]
+      DONE
+      ]]
+[p :: prime][p%4==1][p%2**(s+1) == 2**s+1][s >= 2][p == t*2**s+1][t > 0][t%2==1][xx**((p-1)///2) %p == 1]:
+  # A Complete Generalization of Atkin’s Square Root Algorithm
+  # Atkin-Muller-Armand Square Root Algorithm
+  # let [x := xx *d**h *c*(a_sqrt_mod_(p;-1) -1) %p]
+  # let [x**2 %p == xx**2 *d**(2*h) *c**2 *(-2*a_sqrt_mod_(p;-1)) %p == xx * (xx *d**(2*h) *c**2 *(-2)*a_sqrt_mod_(p;-1)) %p]
+  # let [b == a_sqrt_mod_(p;-1) == (2*xx *d**(2*h) *c**2) %p == (2*xx *d**(2*h))**(2*e+1) %p] to determine c
+  # -> [c == (2*xx *d**(2*h))**e %p]
+  # let [(2*xx *d**(2*h))**(2*(p-1)///2**s) %p == -1] to determine h
+  # -> [(2*xx *d**(2*h))**(2*t) %p == -1]
+  # -> [(2*xx *d**(2*h))**t %p == a_sqrt_mod_(p;-1)]
+  # -> [e := (t-1)///2]
+  # -> [((2*xx)**t) *(d**t)**(2*h) %p == a_sqrt_mod_(p;-1)]
+  # 注意: [d**t is a primitive highest 2power roots of -1 %p][(d**t)**(2**(s-1)) == d**((p-1)///2) =[%p]= -1]
+  # 注意: [任何 (y**t) %p 的 离散对数 可以 被容易求出: 基数 可以是 本原根g，也可以是(g**t)，(g**t)等价于(d**t)]
+  # 注意: [((2*xx)**t)**(2**(s-1)) == (2*xx)**((p-1)///2) =[%p]= +/-1 == if [s==2] then -1 else +1][discrete_logarithm__(p;(d**t);((2*xx)**t)) 可以被容易求出，并且是偶数]
+  # let [m := discrete_logarithm__(p;(d**t);((2*xx)**t))]
+  # -> [s==2]or[m%2 == 0]
+  # -> [m%2 == [s==2]]
+  # !! [((2*xx)**t) *(d**t)**(2*h) %p == a_sqrt_mod_(p;-1)]
+  # !! [2**(s-1) == discrete_logarithm__(p;(d**t);-1)]
+  # -> [(d**t)**m *(d**t)**(2*h) =[%p]= a_sqrt_mod_(p;-1) <- {(d**t)**(2**(s-2)), (d**t)**(3*2**(s-2))}]
+  # -> [(m + 2*h) %2**(s-1) == 2**(s-2)]
+  # !! [m%2 == [s==2]]
+  # !! [2**(s-2)%2 == [s==2]]
+  # -> [(2**(s-2) -m)%2 == 0]
+  # -> [h == (2**(s-2) -m)///2 %2**(s-2)]
+  # ...
+  # 注意:其实，d没必要是a_quadratic_nonresidue_mod_(p)，只要比(2*xx)更低级就行。因为同样能检测出 (2*xx)的低位比特
+  ######################
+  [d := a_quadratic_nonresidue_mod_(p)]
+    # 可以更进一步:[d := d**t]
+    # 可以缓存d,(d**t)
+  [m := discrete_logarithm__(p;(d**t);((2*xx)**t))]
+  [h := (2**(s-2) -m)///2 %2**(s-2)]
+    # [s==2] => [m <- {1,3}][h <- {0,-1}%2**(2-2) == {0}][h==0]
+    # [donot use d] <==> [h==0] <==> [m%2**(s-1) == 2**(s-2)] <==> [((2*xx)**t) **2 %p == -1]
+  [e := (t-1)///2]
+  [b := (2*xx *d**(2*h))**(2*e+1) %p]
+    # [b := (2*xx *d**(2*h))**t %p]
+  [c := (2*xx *d**(2*h))**e %p]
+  [x := xx *d**h *c*(b-1) %p]
+    # [s==2] ==>> [donot use d]
+    # [((2*xx)**t) **2 %p == -1] <==> [h==0] <==> [donot use d] ==>> [b == (2*xx)**t %p][c == (2*xx)**e %p][x := xx *c*(b-1) %p]
+    # 这类简单的开r次方类型，可由r==2推广到其他r=q。[q :: prime]
+    #   [[(p-1)%q =!= 0] -> [a_kth_root_mod_(p;q;xq) == xq**(inv_mod_(p-1;q))]]
+    #   [[(p-1)%q == 0] -> [p == q**s *t +1] -> [t%q =!= 0] -> [xq**t %p == 1] -> [a_kth_root_mod_(p;q;xq) ==  xq**(inv_mod_(t;q))]]
+
+      [[proof:
+      !! [[p :: prime] -> [p%2==1] -> [[p%8 <- {3,5}] <-> [-1 =[%p]= 2**((p-1)///2)]]]
+      !! [p%2**(s+1) == 2**s+1][s >= 2]
+      [2**((p-1)///2) =[%p]= if [s==2] then -1 else +1]
+      !! [xx**((p-1)///2) %p == 1]
+      [(2*xx)**((p-1)///2) %p == if [s==2] then -1 else +1]
+      !! [d := a_quadratic_nonresidue_mod_(p)]
+      [(d**t)**(2**(s-1)) == d**((p-1)///2) =[%p]= -1]
+      [exists:discrete_logarithm__(p;(d**t);((2*xx)**t))]
+      !! [m := discrete_logarithm__(p;(d**t);((2*xx)**t))]
+      [((2*xx)**t) =[%p]= (d**t)**m]
+
+
+      [b
+      !! [b := (2*xx *d**(2*h))**(2*e+1) %p]
+      =[%p]= (2*xx *d**(2*h))**(2*e+1)
+      !! [e := (t-1)///2]
+      =[%p]= (2*xx *d**(2*h))**t
+      =[%p]= (2*xx)**t *(d**t)**(2*h)
+      !! [((2*xx)**t) =[%p]= (d**t)**m]
+      =[%p]= (d**t)**m *(d**t)**(2*h)
+      =[%p]= (d**t)**(2*h+m)
+      !! [h := (2**(s-2) -m)///2 %2**(s-2)]
+      -> [2*h+m =[%2**(s-1)]= 2**(s-2)]
+      !! [(d**t)**(2**(s-1)) == d**((p-1)///2) =[%p]= -1]
+      =[%p]= ((d**t)**(2**(s-2)))**(1 or 3)
+      ]
+      [b**2
+      =[%p]= (((d**t)**(2**(s-2)))**(1 or 3))**2
+      =[%p]= (((d**t)**(2**(s-1)))**(1 or 3))
+      !! [(d**t)**(2**(s-1)) == d**((p-1)///2) =[%p]= -1]
+      =[%p]= (-1)**(1 or 3)
+      =[%p]= -1
+      ]
+      [b**2 =[%p]= -1]
+
+
+      !! [b := (2*xx *d**(2*h))**(2*e+1) %p]
+      !! [c := (2*xx *d**(2*h))**e %p]
+      [b == (2*xx *d**(2*h) *c**2) %p]
+      !! [x := xx *d**h *c*(b-1) %p]
+      [x**2
+      =[%p]= (xx *d**h *c*(b-1))**2
+      =[%p]= (xx *d**h *c)**2 *(b-1)**2
+      !! [b**2 =[%p]= -1]
+      =[%p]= (xx *d**h *c)**2 *(-2*b)
+      =[%p]= xx *(2*xx *d**(2*h) *c**2) *(-b)
+      !! [b == (2*xx *d**(2*h) *c**2) %p]
+      =[%p]= xx *b *(-b)
+      !! [b**2 =[%p]= -1]
+      =[%p]= xx
+      ]
+      [x**2 =[%p]= xx]
+      DONE
+      ]]
+
+
+
+]]]
+
+
+
+2008.11814-A simple algorithm for finding square root modulo p(2008)(Rajeev Kumar).pdf
+[15] Tsz-Wo Sze, 2011, “On Taking Square Roots without Quadratic non-residues over finite fields,” Mathematics of Computation, 80, no.  275, pp. 1797–1811.
+https://arxiv.org/abs/0812.2591
+  ??? wget_U 'https://arxiv.org/pdf/0812.2591.pdf' -O '0812.2591-On Taking Square Roots without Quadratic non-residues over finite fields(2010)(Tsz-Wo Sze).pdf'
+  换下面
+  浏览器下载成功，现在有两份...
+    researchgate打水印，不要
+https://www.researchgate.net/publication/220576562_On_Taking_Square_Roots_without_Quadratic_Nonresidues_over_Finite_Fields
+  xxx wget_U 'https://www.researchgate.net/profile/Lawrence-Washington/publication/220576562_On_Taking_Square_Roots_without_Quadratic_Nonresidues_over_Finite_Fields/links/0deec5192987ac5b9a000000/On-Taking-Square-Roots-without-Quadratic-Nonresidues-over-Finite-Fields.pdf?_tp=eyJjb250ZXh0Ijp7ImZpcnN0UGFnZSI6InB1YmxpY2F0aW9uIiwicGFnZSI6InB1YmxpY2F0aW9uIn19' -O 'On Taking Square Roots without Quadratic non-residues over finite fields(2010)(Tsz-Wo Sze).pdf'
+  浏览器下载成功
+
+
+0812.2591-On Taking Square Roots without Quadratic non-residues over finite fields(2010)(Tsz-Wo Sze).pdf
+23.  Ren´ e Schoof, Elliptic curves over finite fields and the computation of square roots mod p, Math.  Comp.  44 (1985), no.  170, 483–494.
+wget_U 'https://www.ams.org/mcom/1985-44-170/S0025-5718-1985-0777280-6/S0025-5718-1985-0777280-6.pdf' -O 'Elliptic curves over finite fields and the computation of square roots mod p(1985)(Schoof).pdf'
+
+
+[[[
+Computing Square Roots Faster than the Tonelli-Shanks+Bernstein Algorithm(2021)(Sarkar).pdf
+  O(n**(3/2))
+  unclear
+On Shanks Algorithm for Modular Square Roots(2011)(Puchta).pdf
+  Jan-Christoph Puchta
+  good! clear!
+  [p == 1 + t*2**e][t%2 == 1]
+  O(t+e**(3/2)) better than Tonelli-Shanks O(t+e**2)
+
+===
+[d := a_quadratic_nonresidue_mod_(p)]
+detect m:
+  (xx *d**(b0+b1*2+b2*2**2...+b[i]*2**i))**(2**m)
+  old via: == ((xx_000 **2) **2 ...)**2
+        require at worst per round: (e-1-i)
+        require at worst at total: O(e**2)
+        update xx_000(as xx):
+          xx_000 =[def]= (xx *d**(b0+b1*2+b2*2**2...+b[i]*2**i))
+          new-xx_000 := old-xx_000 *d**(b[i+1]*2**(i+1))
+  new via: == xx__2pows[m] * d__2pows[m]**b0 * d__2pows[1+m]**b1 * ... * d__2pows[i+m]**b[i]
+        require at worst per round: (new-m - old-m)*(i+1) <= (new-m - old-m)*(floor_sqrt(e)+1)
+        require at worst at total: O(e**1.5)
+        limit: i <= floor_sqrt(e)
+        when exceed, update d,d__2pows:
+          new-d := old-d__2pows[0]**b0 * old-d__2pows[1]**b1 * ... * old-d__2pows[i]**b[i]
+          new-d__2pows := [new-d**(2**i) for i in ...]
+===
+view ../../python3_src/seed/math/discrete_logarithm.py
+  实现
+    SPACE = O(max((p + ep + ep**(1/2) *log2(p)) for p,ep in factorization_of_order_of_base.items())) *space_per_word<modulus>
+
+    TIME = O(sum((p + ep**(3/2) *log2(p)) for p,ep in factorization_of_order_of_base.items())) *time_per_mul_mod<modulus>
+
+]]]
+
+
+
+
+
+
+
+
+

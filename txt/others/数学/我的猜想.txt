@@ -64,3 +64,81 @@ view script/整数分解囗平方差囗中国剩余定理.py
 
 
 
+
+[[
+数量估计: 小于某上限 由两两互素的生成子生成的正整数的数量
+  比如:smooth number的数量
+转化为 数格子
+由真实数据确认，必须包含所有降维平面的格子
+===
+view ../../python3_src/seed/math/iter_sorted_products_of_uints.py
+>>> f = lambda gs, N, /: (ls := [*iter_unsorted_products_of_strict_sorted_pairwise_coprime_uints_lt_(N, gs)], *map(ls.index, gs), len(ls))[1:]
+>>> f([2,3,5,7], 2**80) #doctest: +SKIP
+(1, 80, 2084, 25378, 199186)
+>>> [*iter_approximate_num_pints_lt__generated_by_([2,3,5,7], 2**80)]
+[1.0, 81.0, 2150.4495917143804, 27619.935194251317, 235716.78323007358]
+===
+view others/数学/整数分解/ECC-椭圆曲线整数分解.txt
+view ../../python3_src/seed/math/iter_sorted_products_of_uints.py
+===
+  approximate_num_pints_lt__generated_by_(prime_bases; N)
+    近似估计 由prime_bases生成的小于N的正整数数量
+    等价于 数格子:
+      平面: [sum log2(p)*x {(p,x) :<- zip(prime_bases,vars)} == log2(N)]与 所有 坐标平面 所围锥体。
+      [@[x :<- vars] -> [x >= 0]][sum log2(p)*x {(p,x) :<- zip(prime_bases,vars)} <= log2(N)]
+
+    volumn(lens) = II sz {sz :<- lens} / factorial(len(lens))
+    volumn(prime_bases; N) = II (log2(N)/log2(p)) {p :<- prime_bases} / factorial(L)
+      会减少，显然不行
+    [L := len(prime_bases)]
+    [approximate_num_pints_lt__generated_by_(prime_bases; N) =[def]= sum (sum volumn({prime_bases[j] | [j :<- js]}; N) {js :<- iter_combinations_(k; L)}) /factorial(k) {k :<- [0..=L]}]
+    [approximate_num_pints_lt__generated_by_(prime_bases; N) == sum (sum II (log2(N)/log2(prime_bases[j])) {j :<- js} {js :<- iter_combinations_(k; L)}) /factorial(k) {k :<- [0..=L]}]
+    表达为 L+1 的 数组，可用于 递推 计算
+    [array4approximate_num_pints_lt__generated_by_(prime_bases; N) =[def]= [((sum II (log2(N)/log2(prime_bases[j])) {j :<- js} {js :<- iter_combinations_(k; L)}) /factorial(k)) | [k :<- [0..=L]]]]
+    [array4approximate_num_pints_lt__generated_by_(prime_bases++[pL]; N) == let [ls := array4approximate_num_pints_lt__generated_by_(prime_bases; N)] in ([0+ls[0]]++[(ls[k-1]*(log2(N)/log2(pL))/k + ls[k]) | [k :<- [1..=L]]]++[(ls[(L+1)-1]*(log2(N)/log2(pL))/(L+1) + 0)])]
+===
+
+
+]]
+
+
+
+[[
+将 不完全离散对数+中国剩余定理 应用于 模运算开平方
+view others/数学/整数分解/sqrts_mod_.txt
+view ../../python3_src/seed/math/sqrts_mod_.py
+view ../../python3_src/seed/math/discrete_logarithm.py
+[[[
+我的开平方算法
+===
+
+中国剩余定理，分解 xx 关于base的离散对数
+xx =[%p]= base**(inv_mod_(2**e;odd)*odd * e4two_power + inv_mod_(odd;2**e)*2**e * e4odd)
+
+y := xx**(inv_mod_(2**e;odd)*odd) %p
+    # e4odd vanish
+
+h := xx**(inv_mod_(odd;2**e)*2**e) %p
+    # e4two_power vanish
+
+e4y := discrete_logarithm__coprime_(p, base, order_of_base, factorization_of_order_of_base, y)
+    # e4y == e4two_power
+
+xx**(inv_mod_(2**e;odd)*odd) =[%p]= y =[%p]= base**e4y
+
+h**((odd+1)///2)**2 =[%p]= h
+h**((odd+1)///2) <- sqrts_(h)
+    # !! [[(p-1)%q == 0] -> [p == q**s *t +1] -> [t%q =!= 0] -> [xq**t %p == 1] -> [a_kth_root_mod_(p;q;xq) ==  xq**(inv_mod_(t;q))]]
+    # [[p == 2**s *t +1] -> [t%2 =!= 0] -> [xx**t %p == 1] -> [a_sqrt_mod_(p;xx) ==  xx**(inv_mod_(t;2)) == xx**((t+1)///2)]]
+
+
+xx =[%p]= y * h =[%p]= base**e4y * h
+sqrt(xx) =[%p]= sqrt(base**(e4y) * sqrt(h)
+sqrt(xx) =[%p]= base**(e4y///2) * h**((odd+1)///2)
+sqrt(xx) =[%p]= base**(e4y///2) * xx**(inv_mod_(odd;2**e)*2**e*(odd+1)///2)
+
+
+]]]
+
+]]
+

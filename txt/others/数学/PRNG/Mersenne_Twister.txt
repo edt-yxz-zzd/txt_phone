@@ -1,0 +1,1382 @@
+
+e others/数学/PRNG/Mersenne_Twister.txt
+[[[
+http://www.math.sci.hiroshima-u.ac.jp/m-mat/MT/ewhat-is-mt.html
+===
+What is Mersenne Twister (MT)?
+Mersenne Twister(MT) is a pseudorandom number generating algorithm developped by Makoto Matsumoto and Takuji Nishimura (alphabetical order) in 1996/1997. An improvement on initialization was given on 2002 Jan.
+MT has the following merits:
+    It is designed with consideration on the flaws of various existing generators.
+    The algorithm is coded into a C-source downloadable below.
+    Far longer period and far higher order of equidistribution than any other implemented generators. (It is proved that the period is 2^19937-1, and 623-dimensional equidistribution property is assured.)
+    Fast generation. (Although it depends on the system, it is reported that MT is sometimes faster than the standard ANSI-C library in a system with pipeline and cache memory.) (Note added in 2004/3: on 1998, usually MT was much faster than rand(), but the algorithm for rand() has been substituted, and now there are no much difference in speed.)
+    Efficient use of the memory. (The implemented C-code mt19937.c consumes only 624 words of working area.)
+Asks and acknowledgements
+http://tutte.comb.math.keio.ac.jp/~nisimura/random/mt.ps
+wget 'http://tutte.comb.math.keio.ac.jp/~nisimura/random/mt.ps' -O '/sdcard/Download/wget_/Mersenne_Twister.ps'
+]]]
+
+[[[
+https://cs.stackexchange.com/questions/50059/why-is-the-mersenne-twister-regarded-as-good
+===
+Best and fastest are: wyrand, xoshiro128+, xoroshiro64**, xoshiro128++, xoroshiro64*, lxm, efiix64 plus the slow threefry2x64.
+===
+
+Computer Science
+Why is the Mersenne Twister regarded as good?
+Asked 7 years, 7 months ago
+Modified 10 months ago
+Viewed 20k times
+54
+
+The Mersenne Twister is widely regarded as good. Heck, the CPython source says that it "is one of the most extensively tested generators in existence." But what does this mean? When asked to list properties of this generator, most of what I can offer is bad:
+
+It's massive and inflexible (eg. no seeking or multiple streams),
+It fails standard statistical tests despite its massive state size,
+It has serious problems around 0, suggesting that it randomizes itself pretty poorly,
+It's hardly fast
+and so on. Compared to simple RNGs like XorShift*, it's also hopelessly complicated.
+
+So I looked for some information about why this was ever thought to be good. The original paper makes lots of comments on the "super astronomical" period and 623-dimensional equidistribution, saying
+
+Among many known measures, the tests based on the higher dimensional uniformity, such as the spectral test (c.f., Knuth [1981]) and the k-distribution test, described below, are considered to be strongest.
+
+But, for this property, the generator is beaten by a counter of sufficient length! This makes no commentary of local distributions, which is what you actually care about in a generator (although "local" can mean various things). And even CSPRNGs don't care for such large periods, since it's just not remotely important.
+
+There's a lot of maths in the paper, but as far as I can tell little of this is actually about randomness quality. Pretty much every mention of that quickly jumps back to these original, largely useless claims.
+
+It seems like people jumped onto this bandwagon at the expense of older, more reliable technologies. For example, if you just up the number of words in an LCG to 3 (much less than the "only 624" of a Mersenne Twister) and output the top word each pass, it passes BigCrush (the harder part of the TestU01 test suite), despite the Twister failing it (PCG paper, fig. 2). Given this, and the weak evidence I was able to find in support of the Mersenne Twister, what did cause attention to favour it over the other choices?
+
+This isn't purely historical either. I've been told in passing that the Mersenne Twister is at least more proven in practice than, say, PCG random. But are use-cases so discerning that they can do better than our batteries of tests? Some Googling suggests they're probably not.
+
+In short, I'm wondering how the Mersenne Twister got its widespread positive reputation, both in its historical context and otherwise. On one hand I'm obviously skeptical of its qualities, but on the other it's hard to imagine that it was an entirely randomly occurrence.
+
+algorithmsrandomnesssamplingpseudo-random-generators
+Share
+Cite
+Improve this question
+Follow
+edited Nov 30, 2015 at 6:35
+asked Nov 28, 2015 at 7:40
+Veedrac's user avatar
+Veedrac
+94211 gold badge77 silver badges1616 bronze badges
+2
+I think you're right. Mersenne Twister is nothing particularly special. It's just well-known (and many of the other well-known PRNGs happen to be worse). There are other PRNGs that are also quite good. For an even better PRNG, one can use a cryptographic PRNG. I'm not sure what kind of answer one can give, though, beyond "there's nothing wrong with your reasoning". – 
+D.W.
+♦
+ Nov 29, 2015 at 0:20
+1
+can you cite a ref that a counter beats it on the test? (its not clear which test you are referring to. the quoted section mentions 3)... long periods are a long accepted aspect of PRNGs, but its widely understood a PRNG that passes any number of properties does not guarantee randomness. have you read the paper? another consideration is generation time; PRNGs "quality" comes at the expense of run time. there is no "preferred" or "ideal" PRNG and its presumably "working as advertised..." "snake oil" sounds like an unfair/ overblown accusation not very professional in a scientific context... – 
+vzn
+ Nov 29, 2015 at 0:53 
+2
+I think the question that you should be asking isn't whether or not MT is good (since it is, by many metrics), but why it's more commonly used than the alternatives like PCG or XorShift. The answer is probably that it's just been around for longer, and was the best reasonable default for a long time (in Internet years). – 
+Pseudonym
+♦
+ Nov 29, 2015 at 3:18
+1
+@vzn "another consideration is generation time; PRNGs "quality" comes at the expense of run time" → Except that the Mersenne Twister is slower and worse than a resonably large LCG. See Fig. 16 in the PCG paper. (About whether I've read the paper: I've read most of the non-maths parts of the Mersenne Twister paper in detail and all of the PCG random paper. I mostly skimmed the third, though.) – 
+Veedrac
+ Nov 29, 2015 at 3:25 
+1
+Are you talking about XorShift or the KISS algorithms? – 
+gnasher729
+ Nov 29, 2015 at 22:36
+Show 6 more comments
+5 Answers
+Sorted by:
+
+Highest score (default)
+11
+
+A recent paper by Vigna starts with an explanation of the history of Mersenne-Twister (MT), and why it has prevailed so far.
+
+The original paper about the Mersenne Twister was published by Makoto Matsumoto and Takuji Nishimura in 1997 [22]. At that time, the PRNG had several interesting properties. In particular, it was easy to build generators with a very large state space, and the largest version with 19937 bits of state became very popular. More importantly, many techniques used in the Mersenne Twister influenced later development, and helped F2-linear techniques to recover from the bad fame that followed the “Ferrenberg affaire”. [9]
+
+It is difficult for non-specialists to understand the intricacies of PRNGs, but period is easy to understand: the fact that the sequence generated would not repeat before 2^19937 − 1 32-bit integers had been emitted was met with enthusiasm, and quickly the Mersenne Twister was adopted as the standard generator in many environments. For example, the stock PRNG of the gcc compiler and of Python, as well of the Maple mathematical computing framework, is some version of the Mersenne Twister
+
+The authors of MT also present the challenges of defining what is a good random number generator in their 2006 paper, Pseudorandom Number Generation: Impossibility and Compromise, which also argues in favour of using Mersenne Twister.
+
+The original MT was not without issues. Perhaps the most troubling is that MT can go into a bad state for 100000s of numbers. This is more or less equivalent to the issue of correlated samples with close seedings. There is not a single MT, and more modern versions, such as Well19937a or Melg19997 have solved this issue.
+
+Regarding state size or equivalently, memory consumption, this is partly an issue (does it make sense to worry about this for modern processors?). One can always use an MT with a smaller period such as Well512a or Well1024a. This period is still very large for practical applications.
+
+Recently, Harase has shown some obvious linear relations present in the original Mersenne-Twister. This is in general less of a practical issue, and has again been addressed by the more recent Well or Melg algorithms.
+
+Finally, while equidistribution looks like a nice property to have, with its connection to quasi Monte-Carlo simulations. It has obvious strong defects, stated in Vigna's paper above, and is not clear if it is desirable at all (see R.P Brent paper).
+
+Good alternatives, although a little bit slower in general (but orders of magnitude faster to skip-ahead), are L'Ecuyer MRG32k3a (or the 53 bits version), or counter-based cryptographic generators such as AES (Intel and AMD processors have specific routine to generate those fast), or Salsa/Chacha possibly with fewer rounds. Some newer generators like Savvidy Mixmax-17, used for particle physics simulations in ROOT, look promising as well.
+
+Share
+Cite
+Improve this answer
+Follow
+edited Nov 5, 2020 at 14:07
+answered Sep 12, 2020 at 10:34
+jherek's user avatar
+jherek
+22833 silver badges88 bronze badges
+Add a comment
+23
+
++100
+The initial Mersenne-Twister (MT) was regarded as good for some years, until it was found out to be pretty bad with the more advanced TestU01 BigCrush tests and better PRNGs.
+
+This page lists the Mersenne-Twister features in detail:
+
+Positive Qualities
+Produces 32-bit or 64-bit numbers (thus usable as source of random bits)
+Passes most statistical tests
+Neutral Qualities
+Inordinately huge period of 2^19937−1
+623-dimensionally equidistributed
+Period can be partitioned to emulate multiple streams
+Negative Qualities
+Fails some statistical tests, with as few as 45,000 numbers. Fails LinearComp Test of the TestU01 Crush and BigCrush batteries.
+Predictable — after 624 outputs, we can completely predict its output.
+Generator state occupies 2504 bytes of RAM — in contrast, an extremely usable generator with a huger-than-anyone-can-ever-use period can fit in 8 bytes of RAM.
+Not particularly fast.
+Not particularly space efficient. The generator uses 20000 bits to store its internal state (20032 bits on 64-bit machines), but has a period of only 2^19937, a factor of 2^63 (or 2^95) fewer than an ideal generator of the same size.
+Uneven in its output; the generator can get into “bad states” that are slow to recover from.
+Seedings that only differ slightly take a long time to diverge from each other; seeding must be done carefully to avoid bad states.
+While jump-ahead is possible, algorithms to do so are slow to compute (i.e., require several seconds) and rarely provided by implementations.
+Summary: Mersenne Twister is not good enough anymore, but most applications and libraries are not there yet.
+
+Share
+Cite
+Improve this answer
+Follow
+edited Sep 5, 2022 at 13:32
+Community's user avatar
+CommunityBot
+1
+answered Feb 22, 2016 at 10:48
+rurban's user avatar
+rurban
+45711 gold badge44 silver badges1010 bronze badges
+9
+Thanks for the nice summary! However, I am concerned that the only apparent source for your post is a website that is effectively an advertisement for another family of random number generators which has not yet been peer-reviewed. The website itself does not offer any references for the entries but the proposed article seems to contain many. Hence, I think you can improve your answer for the context here (criticism of MT) by giving references for the individual points. – 
+Raphael
+♦
+ Feb 22, 2016 at 13:34
+14
+Are they seriously quibbling that the period is only 2^219937 rather than 295×2^219937≈2^219945, and that after saying that a long period is a "neutral" property of a prng? – 
+David Richerby
+ Feb 22, 2016 at 15:51
+3
+"Predictable" -- MT isn't intended as a cryptographic PRNG so please edit your answer. – 
+Jason S
+ May 29, 2017 at 16:55
+2
+"Mersenne Twister is not good enough anymore" : what is recommended if security is no concern, setting a seed is important and speed is important as well? (mersenne was fast enough) – 
+Martin Thoma
+ Nov 28, 2019 at 14:31
+1
+Thanks @jherek. I'll take a look at the thesis. I'm not an expert on these matters, but as I understand it, it has to be the case that eventually, you'll get to a high-zero state simply because the numbers will repeat. Suppose you start with a seed with mostly zeros, and run for several ten-thousands of iterations, until you get to a balanced state. Now start over, but use that balanced state as your seed. Then within fewer than 2^19937−1 iterations, you will come back to your original mostly-zeros seed. Of course, in practice, you are not going to generate that many numbers. – 
+Mars
+ Oct 9, 2020 at 6:51 
+Show 14 more comments
+19
+
+I am the Editor who accepted the MT paper in ACM TOMS back in 1998 and I am also the designer of TestU01. I do not use MT, but mostly MRG32k3a, MRG31k3p, and LRSR113. To know more about these, about MT, and about what else there is, you can look at the following papers:
+
+F. Panneton, P. L'Ecuyer, and M. Matsumoto, ``Improved Long-Period Generators Based on Linear Recurrences Modulo 2'', ACM Transactions on Mathematical Software, 32, 1 (2006), 1-16.
+
+P. L'Ecuyer, ``Random Number Generation'', chapter 3 of the Handbook of Computational Statistics, J. E. Gentle, W. Haerdle, and Y. Mori, eds., Second Edition, Springer-Verlag, 2012, 35-71. https://link.springer.com/chapter/10.1007/978-3-642-21551-3_3
+
+P. L'Ecuyer, D. Munger, B. Oreshkin, and R. Simard, ``Random Numbers for Parallel Computers: Requirements and Methods,'' Mathematics and Computers in Simulation, 135, (2017), 3-17. http://www.sciencedirect.com/science/article/pii/S0378475416300829?via%3Dihub
+
+P. L'Ecuyer, ``Random Number Generation with Multiple Streams for Sequential and Parallel Computers,'' invited advanced tutorial, Proceedings of the 2015 Winter Simulation Conference, IEEE Press, 2015, 31-44.
+
+Share
+Cite
+Improve this answer
+Follow
+answered Oct 15, 2017 at 2:40
+Pierre L'Ecuyer's user avatar
+Pierre L'Ecuyer
+19111 silver badge22 bronze badges
+8
+Thanks for your answer! Would you mind adding something towards the question? 1) Why did you think MT was good (or at least worth publishing) then? 2) Why do you not think it's good enough for use? – 
+Raphael
+♦
+ Oct 15, 2017 at 4:30
+1
+Thanks for adding that valuable historical context. I'm also curious about Raphael's questions and your personal thoughts when you accepted the paper. – 
+Veedrac
+ Oct 15, 2017 at 6:31
+Also interesting would be to know your view on why MT prevailed over MRG32k3a given than one came out in 1998 and the other in 1999. Does it have some better equidistribution properties (esp. the Well variants)? Is it purely speed (MRG32k3a may be slightly slower)? On my MC simulations, it "looks" like the newer MTs give a result closer to the true result. A cryptographic RNG such as AES "seems" leads to results more often at the boundary of 3 std errors of the true result. Unfortunately I did not attempt to measure carefully this. – 
+jherek
+ Sep 12, 2020 at 10:08 
+1
+While possibly interesting, this doesn't answer the question at all. It's a list of articles that may contain an answer. – 
+relatively_random
+ Aug 24, 2021 at 11:52
+L'Ecuyer's reference to "LRSR113" appears to be a typo for "LFSR113". Since I'm not certain of this, I don't want to edit the answer, but "LFSR113" appears in the second, third, and fourth papers, while "LRSR" doesn't appear in any of them. – 
+Mars
+ May 7 at 17:18
+Add a comment
+8
+
+Somewhat like sorting algorithms in this regard, there is no "one size fits all" PRNG. Different ones are used for different purposes and there is a wide variety of design criteria and uses. It is possible to misapply PRNGs, such as using one for cryptography that it is not designed for. Wikipedia's entry on Mersenne Twister also mentions that it was not designed for "Monte-Carlo simulations that require independent random number generators".
+
+As noted on Wikipedia, this PRNG is indeed used in a large number of programming languages and applications even as a default PRNG. It would take a near-sociological analysis to explain why one PRNG is favored. Some possible factors that may be contributing to this PRNG:
+
+The Author has good/ strong scientific credentials in area and has been working in PRNGs for decades.
+
+It was specifically designed to be superior to other methods at the time.
+
+The author is engaged in implementations and tracking them, also contributing to them. Some PRNGs are more theoretical and the authors do not always concern themselves with actual implementations.
+
+The system is well supported/updated on a web page.
+
+New versions of the PRNG have been developed to deal with weaknesses. There is not one single Mersenne Twister algorithm, its more like different versions and a family of variants which can handle different needs.
+
+It has been extensively analyzed/tested by standard randomness analysis software and passed, by independent authorities.
+
+There is a known effect measured with for web sites and many other contexts like scientific citations called "preferential attachment" which can be measured. It's basically where long established historical sources accrue further usage. Such an effect could explain PRNG choices over time.
+
+In other words, you are asking about a phenomenon of "popularity" which is associated and interrelated with human choices and is not strictly tied to particular qualities, but is a sort of complex/emergent property and interplay between different algorithms, users, and environment/usage contexts.
+
+Here is one such independent analysis of the algorithm Mersenne Twister – A Pseudo Random Number Generator and its Variants by Jagannatam (15p). The concluding paragraph is essentially an answer to your question. quoting only the 1st few sentences:
+
+Mersenne Twister is theoretically proven to be a good PRNG, with a long period and high equidistribution. It is extensively used in the fields of simulation and modulation. The defects found by the users have been corrected by the inventors. MT has been upgraded, to use and to be compatible with the newly emerging technologies of CPU’s such as SIMD and parallel pipelines in its version of SFMT.
+
+Share
+Cite
+Improve this answer
+Follow
+edited Nov 30, 2015 at 9:39
+Veedrac's user avatar
+Veedrac
+94211 gold badge77 silver badges1616 bronze badges
+answered Nov 29, 2015 at 16:37
+vzn's user avatar
+vzn
+11k11 gold badge2525 silver badges5050 bronze badges
+2
+Thanks. Some of what you're saying sounds quite vague, though, like "It was specifically designed to be superior to other methods at the time." and "It has been extensively analyzed/tested by standard randomness analysis software and passed, by independent authorities.", which are exactly the claims I'm suspicious about. I'll dive into the paper a bit, though, to see if that clears things up. – 
+Veedrac
+ Nov 30, 2015 at 6:44 
+One other thing to take into account is scientific reproducibility. Many scientists who work in the Monte Carlo simulation area go to a lot of trouble to make sure that the program as a whole produces the same output given the same seed, regardless of the number of threads. Many of them require bug-for-bug compatibility with the reference implementation of the PRNG. – 
+Pseudonym
+♦
+ Nov 30, 2015 at 6:45
+2
+You also say, "New versions of the PRNG have been developed to deal with weaknesses.", but given most implementations are the bog-standard first version this sounds more like a criticism to me. I'm also a little surprised to see "The system is well supported/updated on a web page." -- how much support does a LCG need really!? – 
+Veedrac
+ Nov 30, 2015 at 6:45 
+@Pseudonym I don't really follow. Why would that preclude using a different generator? Obviously you have to use the same generator when re-running tests, but why for new tests? – 
+Veedrac
+ Nov 30, 2015 at 6:48
+1
+@vonbrand No, I know what these mean, it's just silly. 2^19937 is not a better number than 2256. – 
+Veedrac
+ Mar 5, 2020 at 1:17 
+Show 4 more comments
+2
+
+I produced now a simple overview of most of the known RNG's, with its speed and quality, based on improved dieharder tests.
+
+https://rurban.github.io/dieharder/QUALITY.html
+
+For TestU01 and PractRand results see the linked https://github.com/lemire/testingRNG overview, but yields the same results. You just need to wait days for the same results.
+
+Best and fastest are: wyrand, xoshiro128+, xoroshiro64**, xoshiro128++, xoroshiro64*, lxm, efiix64 plus the slow threefry2x64.
+
+MT comes out as good (1 major weakness), ranked as 10th of the good rng's. Note that the SIMD optimized sfmt comes out as bad, which could point to an implementation error.
+
+Share
+Cite
+Improve this answer
+Follow
+answered Nov 6, 2020 at 19:08
+rurban's user avatar
+rurban
+45711 gold badge44 silver badges1010 bronze badges
+“TestU01 and PractRand results [...] but yields the same results”. Do they? The Mersenne Twister and several others you list fail PractRand. – 
+Veedrac
+ Nov 6, 2020 at 23:06
+Yes. PractRand is a bit stricter. I meant more of less the same. dieharder has a WEAK category. – 
+rurban
+ Nov 8, 2020 at 20:39
+1
+@rurban - Dieharder classifies AES and ChaCha as weak while they're crypto strength! Seems highly suspect. – 
+Thorham
+ May 28, 2022 at 15:30
+Add a comment
+Your Answer
+Sign up or log in
+Post as a guest
+Name
+Email
+Required, but never shown
+
+]]]
+
+[[[
+https://www.learncpp.com/cpp-tutorial/generating-random-numbers-using-mersenne-twister/
+===
+
+Learn C++
+LEARN C++
+Skill up with our free tutorials
+7.20 — Generating random numbers using Mersenne Twister
+7.20 — Generating random numbers using Mersenne Twister
+ALEX  JULY 5, 2023
+In the previous lesson 7.19 -- Introduction to random number generation, we introduced the concept of random number generation, and discussed how PRNG algorithms are typically used to simulate randomness in programs.
+
+
+
+In this lesson, we’ll take a look at how to generate random numbers in your programs. To access any of the randomization capabilities in C++, we include the <random> header of the standard library.
+
+Generating random numbers in C++ using Mersenne Twister
+
+
+The Mersenne Twister PRNG, besides having a great name, is probably the most popular PRNG across all programming languages. Although it is a bit old by today’s standards, it generally produces quality results and has decent performance. The random library has support for two Mersenne Twister types:
+
+mt19937 is a Mersenne Twister that generates 32-bit unsigned integers
+mt19937_64 is a Mersenne Twister that generates 64-bit unsigned integers
+Using Mersenne Twister is straightforward:
+
+
+#include <iostream>
+#include <random> // for std::mt19937
+
+int main()
+{
+	std::mt19937 mt{}; // Instantiate a 32-bit Mersenne Twister
+
+	// Print a bunch of random numbers
+	for (int count{ 1 }; count <= 40; ++count)
+	{
+		std::cout << mt() << '\t'; // generate a random number
+
+		// If we've printed 5 numbers, start a new row
+		if (count % 5 == 0)
+			std::cout << '\n';
+	}
+
+	return 0;
+}
+This produces the result:
+
+3499211612      581869302       3890346734      3586334585      545404204
+4161255391      3922919429      949333985       2715962298      1323567403
+418932835       2350294565      1196140740      809094426       2348838239
+4264392720      4112460519      4279768804      4144164697      4156218106
+676943009       3117454609      4168664243      4213834039      4111000746
+471852626       2084672536      3427838553      3437178460      1275731771
+609397212       20544909        1811450929      483031418       3933054126
+2747762695      3402504553      3772830893      4120988587      2163214728
+First, we include the <random> header, since that’s where all the random number capabilities live. Next, we instantiate a 32-bit Mersenne Twister engine via the statement std::mt19937 mt. Then, each time we want to generate a random 32-bit unsigned integer, we call mt().
+
+Tip
+
+Since mt is a variable, you may be wondering what mt() means.
+
+In lesson 4.17 -- Introduction to std::string, we showed an example where we called the function name.length(), which invoked the length() function on std::string variable name.
+
+mt() is a concise syntax for calling the function mt.operator(), which for these PRNG types has been defined to return the next random result in the sequence. The advantage of using operator() instead of a named function is that we don’t need to remember the function’s name, and the concise syntax is less typing.
+
+Rolling a dice using Mersenne Twister
+
+A 32-bit PRNG will generate random numbers between 0 and 4,294,967,295, but we do not always want numbers in that range. If our program was simulating a board game or a dice game, we’d probably want to simulate the roll of a 6-sided dice by generating random numbers between 1 and 6. If our program was a dungeon adventure, and the player had a sword that did between 7 and 11 damage to monsters, then we’d want to generate random numbers between 7 and 11 whenever the player hit a monster.
+
+Unfortunately, PRNGs can’t do this. They can only generate numbers that use the full range. What we need is some way to convert a number that is output from our PRNG into a value in the smaller range we want (with an even probability of each value occurring). While we could write a function to do this ourselves, doing so in a way that produces non-biased results is non-trivial.
+
+Fortunately, the random library can help us here, in the form of random number distributions. A random number distribution converts the output of a PRNG into some other distribution of numbers.
+
+
+As an aside…
+
+
+For the stats geeks: a random number distribution is just a probability distribution designed to take PRNG values as input.
+
+The random library has many random numbers distributions, most of which you will never use unless you’re doing some kind of statistical analysis. But there’s one random number distribution that’s extremely useful: a uniform distribution is a random number distribution that produces outputs between two numbers X and Y (inclusive) with equal probability.
+
+Here’s a similar program to the one above, using a uniform distribution to simulate the roll of a 6-sided dice:
+
+#include <iostream>
+#include <random> // for std::mt19937 and std::uniform_int_distribution
+
+int main()
+{
+	std::mt19937 mt{};
+
+	// Create a reusable random number generator that generates uniform numbers between 1 and 6
+	std::uniform_int_distribution die6{ 1, 6 }; // for C++14, use std::uniform_int_distribution<> die6{ 1, 6 };
+
+	// Print a bunch of random numbers
+	for (int count{ 1 }; count <= 40; ++count)
+	{
+		std::cout << die6(mt) << '\t'; // generate a roll of the die here
+
+		// If we've printed 10 numbers, start a new row
+		if (count % 10 == 0)
+			std::cout << '\n';
+	}
+
+	return 0;
+}
+This produces the result:
+
+3       1       3       6       5       2       6       6       1       2
+2       6       1       1       6       1       4       5       2       5
+6       2       6       2       1       3       5       4       5       6
+1       4       2       3       1       2       2       6       2       1
+There are only two noteworthy differences in this example compared to the previous one. First, we’ve created a uniform distribution variable (named die6) to generate numbers between 1 and 6. Second, instead of calling mt() to generate 32-bit unsigned integer random numbers, we’re now calling die6(mt) to generate a value between 1 and 6.
+
+The above program isn’t as random as it seems
+
+Although the results of our dice rolling example above are pretty random, there’s a major flaw with the program. Run the program 3 times and see if you can figure out what it is. Go ahead, we’ll wait.
+
+Jeopardy music
+
+If you run the program multiple times, you will note that it prints the same numbers every time! While each number in the sequence is random with regards to the previous one, the entire sequence is not random at all! Each run of our program produces the exact same result.
+
+Imagine that you’re writing a game of hi-lo, where the user has 10 tries to guess a number that has been picked randomly, and the computer tells the user whether their guess is too high or too low. If the computer picks the same random number every time, the game won’t be interesting past the first time it is played. So let’s take a deeper look at why this is happening, and how we can fix it.
+
+In the prior lesson (7.19 -- Introduction to random number generation), we covered that each number in a PRNG sequence is in a deterministic way. And that the state of the PRNG is initialized from the seed value. Thus, given any starting seed number, PRNGs will always generate the same sequence of numbers from that seed as a result.
+
+Because we are value initializing our Mersenne Twister, it is being initialized with the same seed every time the program is run. And because the seed is the same, the random numbers being generated are also the same.
+
+
+
+
+In order to make our entire sequence randomized differently each time the program is run, we need to pick a seed that’s not a fixed number. The first answer that probably comes to mind is that we need a random number for our seed! That’s a good thought, but if we need a random number to generate random numbers, then we’re in a catch-22. It turns out, we really don’t need our seed to be a random number -- we just need to pick something that changes each time the program is run. Then we can use our PRNG to generate a unique sequence of pseudo-random numbers from that seed.
+
+There are two methods that are commonly used to do this:
+
+Use the system clock
+Use the system’s random device
+Seeding with the system clock
+
+What’s one thing that’s different every time you run your program? Unless you manage to run your program twice at exactly the same moment in time, the answer is that the current time is different. Therefore, if we use the current time as our seed value, then our program will produce a different set of random numbers each time it is run. C and C++ have a long history of PRNGs being seeded using the current time (using the std::time() function), so you will probably see this in a lot of existing code.
+
+Fortunately, C++ has a chrono library containing various clocks that we can use to generate a seed value. To minimize the chance of two time values being identical if the program is run quickly in succession, we want to use some time measure that changes as quickly as possible. For this, we’ll ask the clock how much time has passed since the earliest time it can measure. This time is measured in “ticks”, which is a very small unit of time (usually nanoseconds, but could be milliseconds).
+
+#include <iostream>
+#include <random> // for std::mt19937
+#include <chrono> // for std::chrono
+
+int main()
+{
+	// Seed our Mersenne Twister using steady_clock
+	std::mt19937 mt{ static_cast<std::mt19937::result_type>(
+		std::chrono::steady_clock::now().time_since_epoch().count()
+		) };
+
+	// Create a reusable random number generator that generates uniform numbers between 1 and 6
+	std::uniform_int_distribution die6{ 1, 6 }; // for C++14, use std::uniform_int_distribution<> die6{ 1, 6 };
+
+	// Print a bunch of random numbers
+	for (int count{ 1 }; count <= 40; ++count)
+	{
+		std::cout << die6(mt) << '\t'; // generate a roll of the die here
+
+		// If we've printed 10 numbers, start a new row
+		if (count % 10 == 0)
+			std::cout << '\n';
+	}
+
+	return 0;
+}
+The above program has only two changes from the prior. First, we’re including <chrono>, which gives us access to the clock. Second, we’re using the current time from the clock as a seed value for our Mersenne Twister.
+
+The results generated by this program should now be different each time it is run, which you can verify experimentally by running it several times.
+
+The downside of this approach is that if the program is run several times in quick succession, the seeds generated for each run won’t be that different, which can impact the quality of the random results from a statistical standpoint. For normal programs, this doesn’t matter, but for programs that require high quality, independent results, this method of seeding may be insufficient.
+
+Tip
+
+std::chrono::high_resolution_clock is a popular choice instead of std::chrono::steady_clock. std::chrono::high_resolution_clock is the clock that uses the most granular unit of time, but it may use the system clock for the current time, which can be changed or rolled back by users. std::chrono::steady_clock may have a less granular tick time, but is the only clock with a guarantee that users cannot adjust it.
+
+Seeding with the random device
+
+The random library contains a type called std::random_device that is an implementation-defined PRNG. Normally we avoid implementation-defined capabilities because they have no guarantees about quality or portability, but this is one of the exception cases. Typically std::random_device will ask the OS for a random number (how it does this depends on the OS).
+
+#include <iostream>
+#include <random> // for std::mt19937 and std::random_device
+
+int main()
+{
+	std::mt19937 mt{ std::random_device{}() };
+
+	// Create a reusable random number generator that generates uniform numbers between 1 and 6
+	std::uniform_int_distribution die6{ 1, 6 }; // for C++14, use std::uniform_int_distribution<> die6{ 1, 6 };
+
+	// Print a bunch of random numbers
+	for (int count{ 1 }; count <= 40; ++count)
+	{
+		std::cout << die6(mt) << '\t'; // generate a roll of the die here
+
+		// If we've printed 10 numbers, start a new row
+		if (count % 10 == 0)
+			std::cout << '\n';
+	}
+
+	return 0;
+}
+In the above program, we’re seeding our Mersenne Twister with one random number generated from a temporary instance of std::random_device. If you run this program multiple times, it should also produce different results each time.
+
+
+One potential problem with std::random_device: it isn’t required to be non-deterministic, meaning it could, on some systems, produce the same sequence every time the program is run, which is exactly what we’re trying to avoid. There was a bug in MinGW (fixed in GCC 9.2) that would do exactly this, making std::random_device useless.
+
+However, the latest versions of the most popular compilers (GCC/MinGW, Clang, Visual Studio) support proper implementations of std::random_device.
+
+Best practice
+
+Use std::random_device to seed your PRNGs (unless it’s not implemented properly for your target compiler/architecture).
+
+Q: What does std::random_device{}() mean?
+
+std::random_device{} creates a value-initialized temporary object of type std::random_device. The () then calls operator() on that temporary object, which returns a randomized value (which we use as an initializer for our Mersenne Twister)
+
+
+It’s the equivalent of the calling the following function, which uses a syntax you should be more familiar with:
+
+unsigned int getRandomDeviceValue()
+{
+   std::random_device rd{}; // create a value initialized std::random_device object
+   return rd(); // return the result of operator() to the caller
+}
+Using std::random_device{}() allows us to get the same result without creating a named function or named variable, so it’s much more concise.
+
+Q: If std::random_device is random itself, why don’t we just use that instead of Mersenne Twister?
+
+Because std::random_device is implementation defined, we can’t assume much about it. It may be expensive to access or it may cause our program to pause while waiting for more random numbers to become available. The pool of numbers that it draws from may also be depleted quickly, which would impact the random results for other applications requesting random numbers via the same method. For this reason, std::random_device is better used to seed other PRNGs rather than as a PRNG itself.
+
+Only seed a PRNG once
+
+Many PRNGs can be reseeded after the initial seeding. This essentially re-initializes the state of the random number generator, causing it to generate results starting from the new seed state. Reseeding should generally be avoided unless you have a specific reason to do so, as it can cause the results to be less random, or not random at all.
+
+
+Best practice
+
+Only seed a given pseudo-random number generator once, and do not reseed it.
+
+Here’s an example of a common mistake that new programmers make:
+
+#include <iostream>
+#include <random>
+
+int getCard()
+{
+    std::mt19937 mt{ std::random_device{}() }; // this gets created and seeded every time the function is called
+    std::uniform_int_distribution card{ 1, 52 };
+    return card(mt);
+}
+
+int main()
+{
+    std::cout << getCard() << '\n';
+
+    return 0;
+}
+In the getCard() function, the random number generator is being created and seeded every time the function is called. This is inefficient at best, and will likely cause poor random results.
+
+Mersenne Twister and underseeding issues
+
+The internal state of a Mersenne Twister is 624 bytes in size. In the examples above, where we seed from the clock or std::random_device, our seed is only a single 32-bit integer. This means we’re essentially initializing a 624-byte object with a 4-byte value, which is significantly underseeding the Mersenne Twister PRNG. The random library does the best it can to fill in the remaining 620 bytes with “random” data… but it can’t work magic. Underseeded PRNG can generate results that are suboptimal for applications that need the highest quality results. For example, seeding std::mt19937 with a single 32-bit value will never generate the number 42 as its first output.
+
+
+So how do we fix this? As of C++20, there’s no easy way. But we do have some suggestions.
+
+First, let’s talk about std::seed_seq (which stands for “seed sequence”). In the prior lesson, we mentioned that ideally we want our seed data to be as many bits as the state of our PRNG, or our PRNG will be underseeded. But in many cases (especially when our PRNG has a large state), we won’t have that many bits of randomized seed data.
+
+std::seed_seq is a type that was designed to help with this. We can pass it as many randomized values as we have, and then it will generate as many additional unbiased seed values as needed to initialize a PRNG’s state. So if you initialize std::seed_seq with a single 32-bit integer (e.g. from std::random_device) and then initialize a Mersenne Twister with the std::seed_seq object, std::seed_seq will generate 620 bytes of additional seed data. The results won’t be amazingly high quality, but it’s better than nothing.
+
+
+
+Now on to the ideas.
+
+First, the more pieces of random data we can give std::seed_seq to work with, the better. So the easiest idea is to simply use std::random_device to give std::seed_seq more data to work with. If we initialize std::seed_seq with 8 numbers from std::random_device instead of 1, then the remaining numbers generated by std::seed_seq should be that much better:
+
+#include <iostream>
+#include <random>
+
+int main()
+{
+	std::random_device rd{};
+	std::seed_seq ss{ rd(), rd(), rd(), rd(), rd(), rd(), rd(), rd() }; // get 8 integers of random numbers from std::random_device for our seed
+	std::mt19937 mt{ ss }; // initialize our Mersenne Twister with the std::seed_seq
+
+	// Create a reusable random number generator that generates uniform numbers between 1 and 6
+	std::uniform_int_distribution die6{ 1, 6 }; // for C++14, use std::uniform_int_distribution<> die6{ 1, 6 };
+
+	// Print a bunch of random numbers
+	for (int count{ 1 }; count <= 40; ++count)
+	{
+		std::cout << die6(mt) << '\t'; // generate a roll of the die here
+
+		// If we've printed 10 numbers, start a new row
+		if (count % 10 == 0)
+			std::cout << '\n';
+	}
+
+	return 0;
+}
+This is pretty straightforward so there isn’t much reason not to do this at a minimum.
+
+
+
+Q: Why not give std::seed_seq 156 integers (624 bytes) from std::random_device?
+
+You can! However, this may be slow, and risks depleting the pool of random numbers that std::random_device uses.
+
+Second, you can use other “random” inputs to std::seed_seq. We’ve already shown you how to get a value from the clock, so you can throw that in easily. Other things that are sometimes used include the current thread id,the address of particular functions, the user’s id, the process id, etc… Doing that is beyond the scope of this article, but this article has some context and a link to randutils.hpp that implements this.
+
+
+
+An alternate path is to use a different PRNG with a smaller state. Many good PRNGs use 64 or 128 bits of state, which can easily be initialized using std::seed_seq filled with 8 calls to std::random_device.
+
+Warming up a PRNG
+
+When a PRNG is given a poor quality seed (or underseeded), the initial results of the PRNG may not be high quality. For this reason, some PRNGs benefit from being “warmed up”, which is a technique where the first N results generated from the PRNG are discarded. This allows the internal state of the PRNG to be mixed up such that the subsequent results should be of higher quality. Typically a few hundred to a few thousand initial results are discarded. The longer the period of the PRNG, the more initial results should be discarded.
+
+
+As an aside…
+
+Visual Studio’s implementation of rand() had (or still has?) a bug where the first generated result would not be sufficiently randomized. You may see older programs that use rand() discard a single result as a way to avoid this issue.
+
+The seed_seq initialization used by std::mt19937 performs a warm up, so we don’t need to explicitly warm up std::mt19937 objects.
+
+
+
+Random numbers across multiple functions or files (Random.h) 
+
+What happens if we want to use a random number generator in multiple functions or files? One way is to create (and seed) our PRNG in our main() function, and then pass it everywhere we need it. But that’s a lot of passing for something we may only use sporadically, and in different places. It would add a lot of clutter to our code to pass such an object around.
+
+Alternately, you could create a static local std::mt19937 variable in each function that needs it (static so that it only gets seeded once). However, it’s overkill to have every function that uses a random number generator define and seed its own local generator, and the low volume of calls to each generator may lead to lower quality results.
+
+
+What we really want is a single PRNG object that we can share and access anywhere, across all of our functions and files. The best option here is to create a global random number generator object (inside a namespace!). Remember how we told you to avoid non-const global variables? This is an exception.
+
+Here’s a simple, header-only solution that you can #include in any code file that needs access to a randomized, self-seeded std::mt19937:
+
+Random.h:
+
+
+#ifndef RANDOM_MT_H
+#define RANDOM_MT_H
+
+#include <chrono>
+#include <random>
+
+// This header-only Random namespace implements a self-seeding Mersenne Twister
+// It can be included into as many code files as needed (The inline keyword avoids ODR violations)
+// Freely redistributable, courtesy of learncpp.com
+namespace Random
+{
+	// Returns a seeded Mersenne Twister
+	// Note: we'd prefer to return a std::seed_seq (to initialize a std::mt19937), but std::seed can't be copied, so it can't be returned by value.
+	// Instead, we'll create a std::mt19937, seed it, and then return the std::mt19937 (which can be copied).
+	inline std::mt19937 generate()
+	{
+		std::random_device rd{};
+
+		// Create seed_seq with high-res clock and 7 random numbers from std::random_device
+		std::seed_seq ss{
+			static_cast<std::seed_seq::result_type>(std::chrono::steady_clock::now().time_since_epoch().count()),
+				rd(), rd(), rd(), rd(), rd(), rd(), rd() };
+
+		return std::mt19937{ ss };
+	}
+
+	// Here's our global std::mt19937 object.
+	// The inline keyword means we only have one global instance for our whole program.
+	inline std::mt19937 mt{ generate() }; // generates a seeded std::mt19937 and copies it into our global object
+
+	// Generate a random int between [min, max] (inclusive)
+	inline int get(int min, int max)
+	{
+		return std::uniform_int_distribution{min, max}(mt);
+	}
+
+	// The following function templates can be used to generate random numbers
+	// when min and/or max are not type int
+	// See https://www.learncpp.com/cpp-tutorial/function-template-instantiation/
+	// You can ignore these if you don't understand them
+
+	// Generate a random value between [min, max] (inclusive)
+	// * min and max have same type
+	// * Return value has same type as min and max
+	// * Supported types:
+	// *    short, int, long, long long
+	// *    unsigned short, unsigned int, unsigned long, or unsigned long long
+	// Sample call: Random::get(1L, 6L);             // returns long
+	// Sample call: Random::get(1u, 6u);             // returns unsigned int
+	template <typename T>
+	inline T get(T min, T max)
+	{
+		return std::uniform_int_distribution<T>{min, max}(mt);
+	}
+
+	// Generate a random value between [min, max] (inclusive)
+	// * min and max can have different types
+	// * Must explicitly specify return type as template type argument
+	// * min and max will be converted to the return type
+	// Sample call: Random::get<std::size_t>(0, 6);  // returns std::size_t
+	// Sample call: Random::get<std::size_t>(0, 6u); // returns std::size_t
+	// Sample call: Random::get<std::int>(0, 6u);    // returns int
+	template <typename R, typename S, typename T>
+	inline R get(S min, T max)
+	{
+		return get<R>(static_cast<R>(min), static_cast<R>(max));
+	}
+}
+
+#endif
+And a sample program showing how it is used:
+
+main.cpp:
+
+#include "Random.h" // defines Random::mt, Random::get(), and and Random::generate()
+#include <iostream>
+
+int main()
+{
+	// We can use Random::get() to generate random numbers
+
+	std::cout << Random::get(1, 6) << '\n';   // returns int between 1 and 6
+	std::cout << Random::get(1u, 6u) << '\n'; // returns unsigned int between 1 and 6
+
+	// The following uses a template type argument
+	// See https://www.learncpp.com/cpp-tutorial/function-template-instantiation/
+	std::cout << Random::get<std::size_t>(1, 6u) << '\n'; // returns std::size_t between 1 and 6
+
+	// We can access Random::mt directly if we have our own distribution
+
+	// Create a reusable random number generator that generates uniform numbers between 1 and 6
+	std::uniform_int_distribution die6{ 1, 6 }; // for C++14, use std::uniform_int_distribution<> die6{ 1, 6 };
+
+	// Print a bunch of random numbers
+	for (int count{ 1 }; count <= 10; ++count)
+	{
+		// We can also directly access Random::mt
+		std::cout << die6(Random::mt) << '\t'; // generate a roll of the die here
+	}
+
+	std::cout << '\n';
+
+	return 0;
+}
+Normally, defining variables and functions in a header file would cause violations of the one-definition rule (ODR) when that header file was included into more than one source file. However, we’ve made our mt variable and supporting functions inline, which allows us to have duplicate definitions without violating the ODR so long as those definitions are all identical. Because we’re #including those definitions from a header file (rather than typing them manually, or copy/pasting them), we can ensure they are identical. Inline functions and variables were added to the language largely to make doing this kind of header-only functionality possible.
+
+
+The other challenge that we have to overcome is in how we initialize our global Random::mt object, as we want it to be self-seeding so that we don’t have to remember to explicitly call an initialization function for it to work correctly. Our initializer must be an expression. But in order to initialize a std::mt19937, we need several helper objects (a std::random_device and a std::seed_seq) which must be defined as statements. This is where a helper function comes in handy. A function call is an expression, so we can use the return value of a function as an initializer. And inside the function itself, we can have any combination of statements that we need. Thus, our generate() function creates and returns a fully-seeded std::mt19937 object (seeded using both the system clock and std::random_device) that we use as the initializer to our global Random::mt object.
+
+Once “Random.h” has been included, we can use it in one of two ways:
+
+We can call Random::get() to generate a random number between two values (inclusive).
+
+We can access the std::mt19937 object directly via Random::mt and do whatever we want with it.
+Debugging programs that use random numbers
+
+Programs that use random numbers can be difficult to debug because the program may exhibit different behaviors each time it is run. Sometimes it may work, and sometimes it may not. When debugging, it’s helpful to ensure your program executes the same (incorrect) way each time. That way, you can run the program as many times as needed to isolate where the error is.
+
+
+For this reason, when debugging, it’s a useful technique to seed your PRNG with a specific value (e.g. 5) that causes the erroneous behavior to occur. This will ensure your program generates the same results each time, making debugging easier. Once you’ve found the error, you can use your normal seeding method to start generating randomized results again.
+
+Random FAQ
+
+Q: Help! My random number generator is generating the same sequence of random numbers.
+
+
+If your random number generator is generating the same sequence of random numbers every time your program is run, you probably didn’t seed it properly (or at all). Make sure you’re seeding it with a value that changes each time the program is run.
+
+Q: Help! My random number generator keeps generating the same number over and over.
+
+If your random number generator is generating the same number every time you ask it for a random number, then you are probably either reseeding the random number generator before generating a random number, or you’re creating a new random generator for each random number.
+
+
+
+Next lesson
+7.xChapter 7 summary and quiz
+Back to table of contents
+Previous lesson
+7.19Introduction to random number generation
+Leave a comment...
+Name*
+Name*
+Email*
+Email*
+Find a mistake?  Leave a comment!
+Find a mistake? Leave a comment!
+Avatars from https://gravatar.com/ are connected to your provided email address.
+Notify me about replies:  
+737 COMMENTS
+Newest 
+Tyler
+Tyler
+ July 19, 2023 9:58 am
+Phew, that was a lot to go through and try to understand. I wanted to see how accurate the PRNG was, so I ramped up the for loop to 1 billion and ran it twice (once with the Random::mt object directly, and another with Random::get function). Here's the results for 1,000,000,000 numbers, from 1-6:
+
+First Run (Random::get()):
+Count 1: 166662432
+Count 2: 166668241
+Count 3: 166694041
+Count 4: 166677550
+Count 5: 166645508
+Count 6: 166652228
+
+Second Run (Random::mt object):
+Count 1: 166668626
+Count 2: 166658461
+Count 3: 166655853
+Count 4: 166674562
+Count 5: 166658014
+Count 6: 166684484
+
+Seems pretty good!
+
+0
+ Reply
+Copernicus
+Copernicus
+ July 17, 2023 7:10 am
+
+Only seed a PRNG once
+
+Many PRNGs can be reseeded after the initial seeding. This essentially re-initializes the state of the random number generator, causing it to generate results starting from the new seed state. Reseeding should generally be avoided unless you have a specific reason to do so, as it can cause the results to be less random, or not random at all.
+
+
+does making static std::mt19937 mt{ std::random_device{}() }; fix this issue?
+
+0
+ Reply
+Alex
+Alex
+Author
+ Reply to  Copernicus
+ July 18, 2023 5:02 pm
+There are two separate things to avoid:
+
+Destroyed/recreating a PRNG each time it is needed
+Reseeding an existing PRNG
+Making mt static avoids the former, but not the latter.
+
+0
+ Reply
+bettoraite
+bettoraite
+ July 17, 2023 2:44 am
+How can I generate float pointing numbers based on some range:?
+
+0
+ Reply
+Alex
+Alex
+Author
+ Reply to  bettoraite
+ July 18, 2023 4:48 pm
+https://en.cppreference.com/w/cpp/numeric/random/uniform_real_distribution
+
+0
+ Reply
+Alok Ahn
+Alok Ahn
+ July 11, 2023 3:14 pm
+Also, why use a header file over anyother file?
+
+0
+ Reply
+Alex
+Alex
+Author
+ Reply to  Alok Ahn
+ July 13, 2023 12:39 pm
+What do you mean? Header-only libraries are nice because they are easier to use, as you don't need to explicitly add them to your project configuration.
+
+0
+ Reply
+Anderson
+Anderson
+ July 10, 2023 9:11 pm
+std::mt19937_64 mt{static_cast<std::mt19937_64::result_type>(std::chrono::steady_clock::now().time_since_epoch().count())};
+This line was rather confusing to decipher. I think it's because Chapter 6.2 only talks about the scope resolution operator being used with namespace scope, and I naively assumed that e.g. mt19937 and steady_clock must be namespaces.
+
+edit: semi-related, it sucks that the STL (and I assume most/all other implementations) don't have documentation for headers. Coming from Java I really miss the IDE being able to display inline docs describing how classes and functions are meant to be used and what they do.
+
+Last edited 10 days ago by Anderson
+0
+ Reply
+Alok Ahn
+Alok Ahn
+ July 10, 2023 7:48 pm
+why would underseeding not return a value of 42 on the first run?
+a) when you say "random data" that fills in for the remaining bits, what do you mean? As, if we wanted to write 3 in binary, we could write 11 (2 bits) 000011 (6 bits). Correct?
+
+do we always need this after: std::chrono::steady_clock: now().time_since_epoch().count()
+why do you include in the function definition
+inline std::mt19937 generate(), the object std::mt19937, I'm just not seeing what that does there.
+\\
+
+0
+ Reply
+Alex
+Alex
+Author
+ Reply to  Alok Ahn
+ July 13, 2023 9:39 am
+If you seed a MT with every possible 32-bit value and then generate a random number, none of those numbers will be 42. This is just an artifact of the mathematics used to permute the state.
+a) I didn't say this. I said the more bits of "random" data we can give std::seed_seq, the better result we'll get.
+
+Only if you want to use the clock as a seed value.
+This is our MT object, initialized using the generate() function.
+0
+ Reply
+Alok Ahn
+Alok Ahn
+ Reply to  Alex
+ July 17, 2023 9:15 pm
+Sorry, this question was a bit unclear.
+
+If we seed with every possible value, and a 32 bit integer can give a value between 0 and 2^32 - 1, how would that not return 42, but seeding with the full 642 bytes will?
+a) You said up above that when you underseed, the compiler will fill in the remaining bytes with random data. But why can't the compiler just slap a bunch of 0s in front of the binary number, using up bits and filling the remaining bytes (yeah its a lot of zeros).
+
+I kind of meant do we always need all those now(). time_sice .... stuff afterwards
+0
+ Reply
+Alex
+Alex
+Author
+ Reply to  Alok Ahn
+ July 18, 2023 6:43 pm
+LasevIX answered this. There is no initial seed value between 0 and 2^32-1 that results in the first number being 42 (or 0 or 1). There are seed values outside this range that do result in the first number being 42 (or 0 or 1).
+a) I answered this previously.
+
+The more randomized values we can seed a PRNG with, the better the result will be. Do you need to seed with the clock? No. But it's a good piece of accessible, semi-randomized data that can be used.
+0
+ Reply
+LasevIX_
+LasevIX_
+ Reply to  Alok Ahn
+ July 18, 2023 3:04 am
+mt19937(x)!=42 will be true for any x in interval [2,147,483,648 ; 2,147,483,648[ mathematically speaking, just like 2x >= 20 for any x in interval [10; inf[
+0
+ Reply
+Gabe
+Gabe
+ July 9, 2023 12:54 am
+Wait, so doing
+
+(mt() % 6) + 1
+instead of using the normal distribution function is a bad idea? Really?!
+
+Last edited 12 days ago by Gabe
+0
+ Reply
+Alex
+Alex
+Author
+ Reply to  Gabe
+ July 9, 2023 7:43 pm
+This will produce a slightly biased distribution in cases where the divisor doesn't evenly divide into the max value of mt(). The amount of bias will be proportional to the remainder leftover after the division.
+
+As to whether it's a bad idea, that depends on what your application's tolerance for bias is. But why do this when an easily accessible uniform distribution is available?
+
+0
+ Reply
+SLasH
+SLasH
+ July 2, 2023 4:35 am
+#include <iostream>
+#include <random>
+
+int getCard()
+{
+static std::mt19937 mt{ std::random_device{}() }; // this gets created and seeded every time the function is called
+std::uniform_int_distribution card{ 1, 52 };
+return card(mt);
+}
+
+int main()
+{
+std::cout << getCard() << '\n';
+
+return 0;
+}
+
+//Would making the mt variable static fix the issue with it.
+
+0
+ Reply
+Alex
+Alex
+Author
+ Reply to  SLasH
+ July 4, 2023 1:30 am
+Yes, but you'll still burn through your std::random_device values. Why not just use the one that's provided?
+
+0
+ Reply
+SLasH
+SLasH
+ Reply to  Alex
+ July 4, 2023 2:03 am
+Ohh i didn't know that. My bad i was just messing around with the code! I will use the provided one. Thanks!
+
+0
+ Reply
+Timo
+Timo
+ July 1, 2023 2:22 pm
+"In the prior lesson, we mentioned that a seed can be either a single value, or a set of values."
+
+Where was this mentioned?
+
+0
+ Reply
+Alex
+Alex
+Author
+ Reply to  Timo
+ July 3, 2023 6:12 pm
+I think it got reworded in a prior edit. I've updated the paragraph on seed_seq (in this lesson) a bit to make it read smoother.
+
+0
+ Reply
+Timo
+Timo
+ July 1, 2023 10:58 am
+I don't get how using a reference point in time is a fix for preventing that a sequence is used again if you rapidly start the program again vs using just the current time as seed. Is this because the meassurement is more "accurate" (i dont know if this is the word) compared to using just the current time in h:m:s ?
+
+Last edited 20 days ago by Timo
+0
+ Reply
+Alex
+Alex
+Author
+ Reply to  Timo
+ July 3, 2023 5:40 pm
+We're not using a reference point in time. We're using the number of ticks that have passed since a reference point in time, where a tick is typically a millisecond or finer resolution. So unless you start the app multiple times within a millisecond, you'll get a different seed value. h:m:s only has a resolution of a second, and it's not that hard to launch an app within a specific second.
+
+0
+ Reply
+Timo
+Timo
+ Reply to  Alex
+ July 4, 2023 4:37 am
+Ok thanks for the reply!
+
+0
+ Reply
+©2022 Learn C++
+
+]]]
+[[[
+https://create.stephan-brumme.com/mersenne-twister/
+===
+The Mersenne Twister Pseudo Random Number Generator
+posted August 19, 2014 by Stephan Brumme
+Introduction
+The Mersenne Twister is often regarded as the fastest pseudo-random number generator which passes almost all statistical tests.
+
+The original C code isn't exactly beautiful, therefore I decided to write my own C++ class.
+And for the fun of it, I converted the code to Javascript and added two live demos, too (scroll down).
+Live Demo
+This demo will give you the first 10 random numbers generated by the Mersenne Twister.
+My C++ implementation returns exactly the same values as the original code written by Makoto Matsumoto and Takuji Nishimura.
+
+These numbers will be computed on the webserver whereas the Javascript code - which generates exactly the same numbers, too - obviously runs in your browser.
+Modifying the seed value will change the sequence of random numbers. seed must be a 32 bit integer. If you leave it empty, 5489 will be used instead.
+
+Seed: 
+5489
+ 
+Seed:	5489
+C++:	-795755684 581869302 -404620562 -708632711 545404204 -133711905 -372047867 949333985 -1579004998 1323567403
+Original:	-795755684 581869302 -404620562 -708632711 545404204 -133711905 -372047867 949333985 -1579004998 1323567403
+Javascript:	-795755684 581869302 -404620562 -708632711 545404204 -133711905 -372047867 949333985 -1579004998 1323567403
+(in hexadecimal)	D091BB5C 22AE9EF6 E7E1FAEE D5C31F79 2082352C F807B7DF E9D30005 3895AFE1 A1E24BBA 4EE4092B
+I have written a live performance test of the Javascript Mersenne Twister: please scroll down on this page.
+C++ code
+The constructor accepts an optional seed value. The actual number generation is implemented as a functor.
+Your program will look like this:
+#include "mersenne.h"
+// create new Mersenne Twister
+MersenneTwister prng(123456);
+// generate two random 32-bit numbers
+int x = prng();
+int y = prng();
+My implementation generates the same output as the original code when supplied with the same seed value.
+I got rid of all the statics found in the original code which gives you the opportunity to have several independent Mersenne Twisters in your program at the same time.
+Moreover, it reduced the risks of nasty concurrency effects in multi-threaded programs.
+// //////////////////////////////////////////////////////////
+// mersenne.h
+// Copyright (c) 2014 Stephan Brumme. All rights reserved.
+// see http://create.stephan-brumme.com/disclaimer.html
+//
+#pragma once
+#include <stdint.h>
+/// Mersenne twister pseudo-random number generator
+/** algorithm invented by Makoto Matsumoto and Takuji Nishimura **/
+class MersenneTwister
+{
+  /// state size
+  enum   { SizeState = 624 };
+  /// internal state
+  uint32_t state[SizeState];
+  /// offset of next state's word
+  int      next;
+public:
+  /// generate initial internal state
+  MersenneTwister(uint32_t seed = 5489);
+  /// return a random 32 bit number
+  uint32_t operator()();
+private:
+  /// create new state (based on old one)
+  void twist();
+};
+// //////////////////////////////////////////////////////////
+// mersenne.cpp
+// Copyright (c) 2014 Stephan Brumme. All rights reserved.
+// see http://create.stephan-brumme.com/disclaimer.html
+//
+#include "mersenne.h"
+/// generate initial internal state
+MersenneTwister::MersenneTwister(uint32_t seed)
+: next(0)
+{
+  state[0] = seed;
+  for (int i = 1; i < SizeState; i++)
+    state[i] = 1812433253UL * (state[i-1] ^ (state[i-1] >> 30)) + i;
+  // let's twist'n'shout ...
+  twist();
+}
+/// return a random 32 bit number
+uint32_t MersenneTwister::operator()()
+{
+  // compute new state ?
+  if (next >= SizeState)
+    twist();
+  // shuffle bits around
+  uint32_t x = state[next++];
+  x ^=  x >> 11;
+  x ^= (x <<  7) & 0x9d2c5680;
+  x ^= (x << 15) & 0xefc60000;
+  x ^=  x >> 18;
+  return x;
+}
+/// create new state (based on old one)
+void MersenneTwister::twist()
+{
+  const int M = 397;
+  const int FirstHalf = SizeState - M;
+  // first 624-397=227 words
+  int i;
+  for (i = 0; i < FirstHalf; i++)
+  {
+    uint32_t bits = (state[i] & 0x80000000) | (state[i + 1] & 0x7fffffff);
+    state[i] = state[i + M]         ^ (bits >> 1) ^ ((bits & 1) * 0x9908b0df);
+  }
+  // remaining words (except the very last one)
+  for ( ; i < SizeState - 1; i++)
+  {
+    uint32_t bits = (state[i] & 0x80000000) | (state[i + 1] & 0x7fffffff);
+    state[i] = state[i - FirstHalf] ^ (bits >> 1) ^ ((bits & 1) * 0x9908b0df);
+  }
+  // last word is computed pretty much the same way, but i + 1 must wrap around to 0
+  uint32_t bits = (state[i] & 0x80000000) | (state[0] & 0x7fffffff);
+  state[i] = state[M - 1] ^ (bits >> 1) ^ ((bits & 1) * 0x9908b0df);
+  // word used for next random number
+  next = 0;
+}
+Git users: scroll down to the repository link
+Download  mersenne.h
+Latest release: August 18, 2014, size: 743 bytes, 32 lines
+
+CRC32:a028bca2
+MD5:a0d1de2c02eaa91722b7591c4ca8eb9b
+SHA1:9e00279dc85bad24eb63379f87cfe20211e9e3ea
+SHA256:79f195d0f0a1d154995a9fc0c94f8e3ebf17f37169127e28822facbaa17c82db
+
+Download  mersenne.cpp
+Latest release: August 18, 2014, size: 1682 bytes, 66 lines
+
+CRC32:2f6d248c
+MD5:0e6b3353d5bae5e7b80f6534d880ec26
+SHA1:89c1fd6081d6cdc53854a76a8adb7e778374ffea
+SHA256:8150b7eb8cfe24ed87926fbfa5a0ddc8ee1540cb4a44596a93e8b77206ba3507
+
+Stay up-to-date:git clone https://create.stephan-brumme.com/mersenne-twister/git
+
+GitHub mirror:https://github.com/stbrumme/mersenne-twister
+
+If you encounter any bugs/problems or have ideas for improving future versions, please write me an email: create@stephan-brumme.com
+
+There are a few C/C++ implementations available on the internet which might be slightly faster on certain SIMD architectures.
+I am not aware of any library written in plain C/C++ that is significantly faster than the code shown above.
+License
+This code is licensed under the zlib License:
+This software is provided 'as-is', without any express or implied
+warranty. In no event will the authors be held liable for any damages
+arising from the use of this software.
+
+Permission is granted to anyone to use this software for any purpose,
+including commercial applications, and to alter it and redistribute it
+freely, subject to the following restrictions:
+
+1. The origin of this software must not be misrepresented; you must not
+   claim that you wrote the original software. If you use this software
+   in a product, an acknowledgment in the product documentation would be
+   appreciated but is not required.
+2. Altered source versions must be plainly marked as such, and must not be
+   misrepresented as being the original software.
+3. This notice may not be removed or altered from any source distribution.zlib License
+Javascript
+The WebKit browser engine used the Mersenne Twister for Math.random() (but switched to the faster XorShift algorithm recently). However, inside Javascript code there is no way to control the generation of random numbers, for example by defining a seed value - which can be incredibly helpful during testing/debugging because then you can reproduce the same random numbers.
+
+There are only a handful Javascript versions of the Mersenne Twister algorithms and most of them are pretty slow.
+My Javascript port computes exactly the same numbers as the C++ version (when using the same seed value).
+Firefox 31 (Windows) can spit out about 44 million random numbers per second on a three-year-old Intel Core i7 @ 3.4 GHz.
+Internet Explorer 11 achieves about 23 million numbers per second on the same computer.
+Obviously my Samsung S2 phone (three years old as well) is even slower and can generate only 3.8 million numbers per second (Firefox 31, too).
+
+Live test:
+Generate 
+1000000
+ random numbers   Go ! alternatively: build-in Math.random() function:
+
+
+Please note that my Mersenne Twister generates 32 bit signed integers whereas the output of Math.random() are floating-point numbers between 0 and 1.
+
+And a simple bit distribution heatmap (move your mouse, double-click the heatmap to reset):
+
+bits 0 - 7	80.0%	60.0%	20.0%	20.0%	40.0%	20.0%	20.0%	60.0%
+bits 8 - 15	40.0%	20.0%	40.0%	20.0%	0.0%	40.0%	80.0%	40.0%
+bits 16 - 23	40.0%	40.0%	80.0%	80.0%	80.0%	60.0%	60.0%	0.0%
+bits 24 - 31	60.0%	60.0%	60.0%	100.0%	60.0%	40.0%	40.0%	40.0%
+Current random number (hexadecimal): 2082352c
+Total of 5 events → 160 bits
+
+
+Usage is pretty straightforward:
+// load class
+<script src="http://create.stephan-brumme.com/mersenne-twister/mersenne.js">
+</script>
+<script>
+  // create new Mersenne Twister
+  var prng = new MersenneTwister((new Date).getTime());
+  // generate two random 32-bit numbers
+  var x = prng.random();
+  var y = prng.random();
+</script>
+I converted the code from C++ to Javascript by hand instead of using tools like Emscripten.
+The most tricky part was coping with bit shifts and the limitation of Javascript's integer system.
+Therefore you will find strangely looking symbols like the triple-right-shift >>> and explicit integer conversion using the And-Zero idiom (e.g. state[i] |= 0;). Git users: scroll down to the repository link
+Download  mersenne.js
+Latest release: August 19, 2014, size: 2102 bytes, 75 lines
+
+CRC32:9c22dfda
+MD5:641108e6441ec79179742d916f38ad7f
+SHA1:4f1ad50a16675b5092899774ce0dbc25df9ae98e
+SHA256:44bc7c23ad2115de39a3fb62e60b25c40c92beb7497c9b0cc91872616ea9a372
+
+Stay up-to-date:git clone https://create.stephan-brumme.com/mersenne-twister/git
+
+GitHub mirror:https://github.com/stbrumme/mersenne-twister
+
+If you encounter any bugs/problems or have ideas for improving future versions, please write me an email: create@stephan-brumme.com
+// //////////////////////////////////////////////////////////
+// mersenne.js
+// Copyright (c) 2014 Stephan Brumme. All rights reserved.
+// see http://create.stephan-brumme.com/disclaimer.html
+//
+var MersenneTwister = function(seed)
+{
+  "use strict";
+  var state = new Array(624);
+  var next;
+  // if no seed is given, use default value 5489
+  if (seed == undefined)
+    seed = 5489;
+  // private function: create new state (based on old one)
+  var twist = function()
+  {
+    // first 624-397=227 words
+    for (var i = 0; i < 227; i++)
+    {
+      var bits = (state[i] & 0x80000000) | (state[i + 1] & 0x7fffffff);
+      state[i] = state[i + 397] ^ (bits >>> 1) ^ ((bits & 1) * 0x9908b0df);
+    }
+    // remaining words (except the very last one)
+    for (var i = 227 ; i < 623; i++)
+    {
+      var bits = (state[i] & 0x80000000) | (state[i + 1] & 0x7fffffff);
+      state[i] = state[i - 227] ^ (bits >>> 1) ^ ((bits & 1) * 0x9908b0df);
+    }
+    // last word is computed pretty much the same way, but i + 1 must wrap around to 0
+    var bits = (state[623] & 0x80000000) | (state[0] & 0x7fffffff);
+    state[623] = state[396] ^ (bits >>> 1) ^ ((bits & 1) * 0x9908b0df);
+    // word used for next random number
+    next = 0;
+  }
+  // fill initial state
+  state[0] = seed;
+  for (var i = 1; i < 624; i++)
+  {
+    var s = state[i - 1] ^ (state[i - 1] >>> 30);
+    // avoid multiplication overflow: split 32 bits into 2x 16 bits and process them individually
+    state[i]  = (((((s & 0xffff0000) >>> 16) * 1812433253) << 16) +
+                    (s & 0x0000ffff)         * 1812433253)        + i;
+    // convert to 32 bit unsigned int
+    state[i] |= 0;
+  }
+  // twist'n'shout
+  twist();
+  // public function: return a random 32 bit number
+  this.random = function()
+  {
+    // compute new state ?
+    if (next >= 624)
+      twist();
+    // shuffle bits around
+    var x = state[next++];
+    x ^=  x >>> 11;
+    x ^= (x  <<  7) & 0x9d2c5680;
+    x ^= (x  << 15) & 0xefc60000;
+    x ^=  x >>> 18;
+    return x;
+  }
+};
+The live demo shows the random numbers as hexadecimal values:
+// load class
+<script src="http://create.stephan-brumme.com/mersenne-twister/mersenne.js">
+</script>
+<script>
+  // create new Mersenne Twister
+  var prng = new MersenneTwister((new Date).getTime());
+  // generate two random 32-bit numbers
+  var x = prng.random();
+  var y = prng.random();
+</script>
+Live demo's inner loop must take care of proper Javascript type conversion otherwise full optimization doesn't kick in.
+A simple for-loop can be two times slower:
+// prevents Javascript engine from eliminating the whole loop
+var dummy = 0;
+// make sure it's an integer
+var i = numValues | 0;
+// and go !
+while (i-- > 0)
+  dummy ^= prng.random();
+// much slower: for (var i = 0; i < numValues; i++)
+homepage
+
+June 30, 2021: Length-Limited Prefix Codes
+April 13, 2020: smalLZ4 - optimal LZ4 compression
+June 17, 2019: toojpeg - a JPEG encoder in a single C++ file
+... and 30 more !
+ 
+ RSS	
+www.stephan-brumme.com
+bits.stephan-brumme.com
+photos.stephan-brumme.com
+minime.stephan-brumme.com
+© 2011-2023  Stephan Brumme
+]]]
+
+

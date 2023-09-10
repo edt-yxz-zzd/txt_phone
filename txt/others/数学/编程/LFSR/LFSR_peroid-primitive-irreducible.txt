@@ -1,0 +1,464 @@
+
+e others/数学/编程/LFSR/LFSR_peroid-primitive-irreducible.txt
+
+view others/数学/编程/LFSR/LFSR primitive.txt
+view others/数学/本原根.txt
+view others/数学/不可约多项式/irreducible_polynomial.txt
+
+
+[[
+main outline:
+[primitive polynomial <: irreducible polynomial]
+[root of primitive polynomial is generator]
+[???why peroid of LFSR is 2**n-1???]
+[???howto findout the irreducible polynomial and its roots if given one root???]
+        # formula_1____root__to__irreducible_polynomial
+[???howto findout all primitive polynomials if given one???]
+        # formula_2____primitive_polynomial__to__all_monic_irreducible_polynomials
+        # formula_3____primitive_polynomial__to__all_monic_primitive_polynomials
+===
+/sdcard/0my_files/book/math/fxtbook[Matters Computational][Algorithms for Programmers].pdf
+40.5 Primitive polynomials
+Primitivity implies irreducibility
+[primitive polynomial <: irreducible polynomial]
+
+view others/数学/编程/LFSR/LFSR primitive.txt
+
+[is_polynomial_(f(x))][f(0) =!= 0]:
+  [reciprocal_polynomial_of_(f(x)) =[def]= x**(deg f) * f(1/x)]
+
+[[p :<- PRIMES][m :<- [1..]][q := p**m]]:
+  [GF(q) =[def]= finite_field of order q] #有限域
+  [[a :<- GF(q)] -> [a**q == a]]
+  [[a :<- GF(q)] -> [a =!= 0] -> [a**(q-1) == 1]]
+  [a :<- GF(q)][a =!= 0]:
+    [order_(GF(q); a) =[def]= min{e :<- [1..<q] | [a**e == 1]}]
+    [q % order_(GF(q); a) == 1]
+    [(q-1) % order_(GF(q); a) == 0]
+    [[is_prime_(q-1)] -> [a =!= 1] -> [order_(GF(q); a) == q-1]]
+
+    [order_(GF(q); a) < q]
+    [is_generator_(GF(q); a) =[def]= [order_(GF(q); a) == q-1]]
+    #generator <==> primitive root
+    [is_primitive_root_(GF(q); a) =[def]= is_generator_(GF(q); a)]
+
+    [is_generator_(GF(q); a)]
+      <==> [order_(GF(q); a) == q-1]
+      <==> [[d :<- all_prime_factors_of_(q-1)] -> [d =!= q-1] -> [a**d =!= 1]]
+        # to calc
+
+    [[q == 2] <-> [is_generator_(GF(q); 1)]]
+    !! [[is_prime_(q-1)] -> [a =!= 1] -> [order_(GF(q); a) == q-1]]
+    [[is_prime_(q-1)] -> [[a =!= 1] <-> [is_generator_(GF(q); a)]]]
+      # [q =!= 2]
+      # [not [is_generator_(GF(q); 1)]]
+
+  [[a :<- GF(q)] -> [a =!= 0] -> [order_(GF(q); a) < q]]
+  [all_generators_of_(GF(q)) =[def]= {a :<- GF(q) | [a =!= 0][order_(GF(q); a) == q-1]}]
+  [total_generators_of_(GF(q)) =[def]= len(all_generators_of_(GF(q)))]
+  [total_generators_of_(GF(q)) == phi(q-1)]
+    # [phi =[def]= Euler_totient_function] # Ø()
+    # [len(cyclic_group <g>) == q-1]
+    # [(cyclic_group <g>) =[def]= {g**i | [i <- int]}]
+  [[is_prime_(q-1)] -> [a :<- GF(q)] -> [a =!= 0] -> [[a =!= 1] <-> [is_generator_(GF(q); a)]]]
+  [[is_prime_(q-1)] -> [all_generators_of_(GF(q)) == GF(q)\-\{0,1}]]
+
+
+  [deg 0 === -oo]
+  [deg 1 === 0]
+  [deg<x> x === 1]
+  [f(x) :<- GF(q)[x]][f(x) =!= polynomial(0)][n := deg f]:
+    [n >= 0]
+    [is_irreducible_polynomial_(GF(q); f(x)) =[def]= [[g(x) :<- GF(q)[x]] -> [g(x) =!= polynomial(0)] -> [f(x) %g(x) == 0] -> [deg g < deg f] -> [deg g == 0]]]
+    [is_irreducible_polynomial_(GF(q); f(x))]:
+      [GF(q)[x]%f(x) ~=~ GF(q**n)]
+        # 也是 有限域 # 其中 多项式deg==n-1
+        # f neednot be monic
+      !! [x <- GF(q)[x]%f(x)]
+      !! [[a :<- GF(q)] -> [a**q == a]]
+      [x**(q**n) =[%f(x)]= x]
+      [(x**(q**n -1) -1) %f(x) == 0]
+      [order_(%f(x); x) =[def]= order_(GF(q)[x]%f(x); x)]
+      [order_of_polynomial_(GF(q);f) =[def]= order_(%f(x); x)]
+      #order <==> period
+      [period_of_polynomial_(GF(q);f) =[def]= order_of_polynomial_(GF(q);f)]
+
+      !! [[a :<- GF(q)] -> [a =!= 0] -> [order_(GF(q); a) < q]]
+      [order_(%f(x); x) < q**n]
+        # === [order_(GF(q)[x]%f(x); x) < q**n]
+      [period_of_polynomial_(GF(q);f) < q**n]
+
+      [is_primitive_polynomial_(GF(q);f(x)) =[def]= [period_of_polynomial_(GF(q);f) == q**n-1]]
+      [is_primitive_polynomial_(GF(q);f(x))]
+        <==> [period_of_polynomial_(GF(q);f) == q**n-1]
+        <==> [is_generator_(GF(q)[x]%f(x); x)]
+      # [x is arbitrary root of f]
+
+
+      !! [order_(%f(x); x) == order_(%f(x); 1/x)]
+      [order_(%f(1/x); x) == order_(%f(1/x); 1/x)]
+
+      [y := 1/x]:
+        [order_(%f(y); y) == order_(%f(1/x); 1/x)]
+      [order_(%f(x); x) == order_(%f(1/x); 1/x) == order_(%f(1/x); x)]
+      [is_primitive_polynomial_(GF(q);f(x))]
+        <==> [is_primitive_polynomial_(GF(q);f(1/x))]
+        <==> [is_primitive_polynomial_(GF(q);reciprocal_polynomial_of_(f(x)))]
+        [[#symmetry (reversed primitive polynomials are also primitive)
+        all primitive trinomials (x**n+x**k+1) whose degree is the Mersenne exponent n = 607. n <- [89,127,521,607].
+        89:38 51
+        127:1 7 15 30 63 64 97 112 120 126
+        521:32 48 158 168 353 363 473 489
+        607:105 147 273 334 460 502
+        # eg. [is_primitive_polynomial_(GF(2);x**127+x**1+1)]
+        # eg. [is_primitive_polynomial_(GF(2);x**127+x**126+1)] #reversed
+        ===
+        Here is a surprising theorem:
+        #irreducible binary polynomial
+        # [p := 2][m := 1][q == 2]:
+        [[f(x) :<- GF(2)[x]][is_irreducible_polynomial_(GF(2); f(x))][f(x) == sum~ c[k]*x**k ~{k :<- [0..=n]}][L<f>(x) := sum~ c[k]*x**(2**k) ~{k :<- [0..=n]}]]:
+          [deg f == n]
+          [deg<x>(L<f>(x)/x) == 2**n-1]
+
+          [g(x) :<- all_irreducible_factors_of_(L<f>(x)/x)]:
+            [deg g == period_of_polynomial_(GF(2);f)]
+            [is_primitive_polynomial_(GF(2);f(x))]:
+              [deg g == period_of_polynomial_(GF(2);f) == 2**n-1 == deg<x>(L<f>(x)/x)]
+              [monic_of_(g(x)) == monic_of_(L<f>(x)/x)]
+              [is_irreducible_polynomial_(GF(2);L<f>(x)/x)]
+
+          [is_primitive_polynomial_(GF(2);f(x))]:
+            [is_irreducible_polynomial_(GF(2);L<f>(x)/x)]
+
+        example:
+        !! [is_primitive_polynomial_(GF(2);x**7 + x + 1)]
+        !! [127 == 2**7 -1]
+        [is_irreducible_polynomial_(GF(2);x**127 + x + 1)]
+
+        !! [GF(q)[x]%f(x) ~=~ GF(q**n)]
+        [GF(2)[x]%(x**127 + x + 1) ~=~ GF(2**127)]
+        !! [is_prime_(2**127 −1)]
+        !! [[is_prime_(q-1)] -> [all_generators_of_(GF(q)) == GF(q)\-\{0,1}]]
+        !! [not [x <- {0,1}]]
+        [x <- all_generators_of_(GF(2)[x]%(x**127 + x + 1))]
+        [is_primitive_polynomial_(GF(2);x**127 + x + 1)]
+        [is_irreducible_polynomial_(GF(2);x**(2**127-1) + x + 1)]
+        ]]
+
+  [[f(x) :<- GF(q)[x]] -> [f(x) =!= polynomial(0)] -> [[is_primitive_polynomial_(GF(q);f(x))] <-> [[is_irreducible_polynomial_(GF(q);f(x))][is_generator_(GF(q)[x]%f(x); x)]]]]
+      # [x is arbitrary root of f]
+
+
+
+  [all_monic_irreducible_polynomials_of_(GF(q); n) =[def]= {f(x) :<- GF(q)[x] | [deg f == n][is_monic_polynomial_(GF(q);f(x))][is_irreducible_polynomial_(GF(q);f(x))]}]
+  [all_monic_primitive_polynomials_of_(GF(q); n) =[def]= {f(x) :<- GF(q)[x] | [deg f == n][is_monic_polynomial_(GF(q);f(x))][is_primitive_polynomial_(GF(q);f(x))]}]
+
+  [total_monic_irreducible_polynomials_of_(GF(q); n) =[def]= len(all_monic_irreducible_polynomials_of_(GF(q); n))]
+  [total_monic_primitive_polynomials_of_(GF(q); n) =[def]= len(all_monic_primitive_polynomials_of_(GF(q); n))]
+
+  [roots_of_all_irreducible_polynomials_of_(GF(q); n) =[def]= roots_of_(II(all_monic_irreducible_polynomials_of_(GF(q); n)))]
+  [roots_of_all_primitive_polynomials_of_(GF(q); n) =[def]= roots_of_(II(all_monic_primitive_polynomials_of_(GF(q); n)))]
+      #NOTE: lhs without "monic"
+
+  [total_roots_of_all_irreducible_polynomials_of_(GF(q); n) =[def]= len(roots_of_all_irreducible_polynomials_of_(GF(q); n))]
+  [total_roots_of_all_primitive_polynomials_of_(GF(q); n) =[def]= len(roots_of_all_primitive_polynomials_of_(GF(q); n))]
+
+
+  [n*total_monic_irreducible_polynomials_of_(GF(q); n) == total_roots_of_all_irreducible_polynomials_of_(GF(q); n)]
+  [n*total_monic_primitive_polynomials_of_(GF(q); n) == total_roots_of_all_primitive_polynomials_of_(GF(q); n)]
+
+  [f(x) :<- GF(q)[x]][f(x) =!= polynomial(0)][n := deg f][is_irreducible_polynomial_(GF(q);f(x))]:
+    [roots_of_all_primitive_polynomials_of_(GF(q); n) == all_generators_of_(GF(q)[x]%f(x))]
+    [total_roots_of_all_primitive_polynomials_of_(GF(q); n) == total_generators_of_(GF(q)[x]%f(x))]
+
+    !! [total_generators_of_(GF(q)) == phi(q-1)]
+    [total_roots_of_all_primitive_polynomials_of_(GF(q); n) == total_generators_of_(GF(q)[x]%f(x)) == phi(q**n-1)]
+
+    !! [n*total_monic_primitive_polynomials_of_(GF(q); n) == total_roots_of_all_primitive_polynomials_of_(GF(q); n)]
+    [total_monic_primitive_polynomials_of_(GF(q); n) == total_roots_of_all_primitive_polynomials_of_(GF(q); n)/n == phi(q**n-1)/n]
+        #to export_1
+
+    [(GF(q)[x]%f(x)) == \-/~ roots_of_all_irreducible_polynomials_of_(GF(q); i) ~{i :<- [1..=n]}]
+    [len(GF(q)[x]%f(x)) == sum~ total_roots_of_all_irreducible_polynomials_of_(GF(q); i) ~{i :<- [1..=n]}]
+    [q**n == sum~ total_roots_of_all_irreducible_polynomials_of_(GF(q); i) ~{i :<- [1..=n]}]
+    [total_roots_of_all_irreducible_polynomials_of_(GF(q); n) == q**n -sum~ total_roots_of_all_irreducible_polynomials_of_(GF(q); i) ~{i :<- [1..<n]}]
+    [total_roots_of_all_irreducible_polynomials_of_(GF(q); n) == sum~ mu(n/d)*q**d ~{d :<- all_factors_of_(n)}]
+
+    !! [n*total_monic_irreducible_polynomials_of_(GF(q); n) == total_roots_of_all_irreducible_polynomials_of_(GF(q); n)]
+    [total_monic_irreducible_polynomials_of_(GF(q); n) == total_roots_of_all_irreducible_polynomials_of_(GF(q); n) /n == sum~ mu(n/d)*q**d ~{d :<- all_factors_of_(n)} /n]
+        #to export_2
+
+
+  [total_monic_primitive_polynomials_of_(GF(q); n) == phi(q**n-1)/n]
+        #from export_1
+  [total_monic_irreducible_polynomials_of_(GF(q); n) == sum~ mu(n/d)*q**d ~{d :<- all_factors_of_(n)} /n]
+        #from export_2
+        [q := 2][n := 1]:
+          2(vs 1): (x+1), [non-primitive]:(x+0)
+        [q := 2][n := 2]:
+          1: (x**2+x+1)
+        [q := 2][n := 3]:
+          2: (x**3+x+1), (x**3+x**2+1)
+        [q := 2][n := 4]:
+          3(vs 2): (x**4+x+1), (x**4+x**3+1), [non-primitive]:(x**4+x**3+x**2+x+1)
+          3 irreducible, 2 primitive
+
+  [total_monic_irreducible_polynomials_of_(GF(q); n) == sum~ mu(d)*q**(n/d) ~{d :<- all_factors_of_(n)} /n]
+  # all_factors_of_ vs all_prime_factors_of_:
+  [total_monic_irreducible_polynomials_of_(GF(q); n) == sum~ mu(d)*q**(n/d) ~{d :<- all_factors_of_(II(all_prime_factors_of_(n)))} /n]
+    # [mu =[def]= Mobius_function] #µ()
+  [n :<- [1..]]:
+    [mu(n) =[def]= if [n =!= II(all_prime_factors_of_(n))] then 0 else (-1)**(len(all_prime_factors_of_(n)))]
+
+  # LFSR => SRS
+  [???why peroid of LFSR is 2**n-1???]
+    [[
+    假设 寄存器状态 为 g(x)
+    进移位 相当于 (*x)
+      即 g(x) --> g(x)*x
+    反馈 相等于 (%f(x))
+      即 x**n --> x**n -f(x)
+    每次更新:
+      g(x) := (g(x)*x)%f(x)
+    所以 g(x) <- cyclic_group <x> %f(x)
+    因为 f(x) is_primitive_polynomial_
+    所以 g(x) 的 周期是 2**n-1
+    ]]
+
+
+  [???howto findout the irreducible polynomial and its roots if given one root???]
+        # formula_1____root__to__irreducible_polynomial
+  [???howto findout all primitive polynomials if given one???]
+        # formula_2____primitive_polynomial__to__all_monic_irreducible_polynomials
+        # formula_3____primitive_polynomial__to__all_monic_primitive_polynomials
+    [[
+    [f(x) :<- GF(q)[x]][n := deg f][n >= 1]:
+      [f(x)**q == f(x**q)]
+      [(**q) is a permutation of roots of f(x)]
+        #no matter whether f(x) irreducible
+        # but ???even when f(x) irreducible, this permutation neednot be a singleton cycle??? below disprove this claim
+      [r :<- roots_of_(GF(q); f(x))]:
+        [f(r) == 0]
+        [[bug: below require f(x) irreducible:
+          !! [(q**n-1)%order_(GF(q)[x]%f(x); x) == 0]
+          [r**(q**n -1) == 1]
+          [r**(q**n) == r]
+
+          [rs =[def]= {r**(q**i) | [i :<- [0..]]}]
+          !! [r**(q**n) == r]
+          [rs == {r**(q**i) | [i :<- [0..<n]]}]
+          [len rs <= n]
+          [len rs == n]:
+            [r <-/- proper subfield of GF(q)[x]%f(x)]
+            [f(x) is irreducible]
+        ]]#end-bug
+        # if r is a root of a irreducible factor g(x) of f(x)
+        #   then property about r will be determined by g(x)
+        #   since g(x) is unknown, [P(f, r)] will become [@g. Q(g, r)], meaningless
+        #   so below assume f(x) irreducible
+        [is_irreducible_polynomial_(GF(q); f(x))]:
+          !! [(q**n-1)%order_(GF(q)[x]%f(x); x) == 0]
+          [r**(q**n -1) == 1]
+          [r**(q**n) == r]
+
+          [rs =[def]= {r**(q**i) | [i :<- [0..]]}]
+          !! [r**(q**n) == r]
+          [rs == {r**(q**i) | [i :<- [0..<n]]}]
+          [1 <= len rs <= n]
+
+          [len rs < n]:
+            [k := len rs]
+            [1 <= k < n]
+            [r**(q**k) == r]
+            [r**(q**k-1) == 1]
+            [deg (min poly with zero r) == k < n]
+            !! [is_irreducible_polynomial_(GF(q); f(x))]
+            _L
+          [len rs == n]
+          [(**q) is a singleton cycle permutation of roots of f(x)]
+            #disprove above claim
+          [deg f == n == min{e :<- [1..] | [r**(q**e) == r]}][f(x) == (II~ (x-r**(q**i)) ~{i :<- [0..<n]})]
+          [root__to__irreducible_polynomial_(GF(q); r) =[def]= let [n := min{e :<- [1..] | [r**(q**e) == r]}] in (II~ (x-r**(q**i)) ~{i :<- [0..<n]})]
+            # formula_1____root__to__irreducible_polynomial
+
+
+          [is_primitive_polynomial_(GF(q);f(x))]:
+            [g := r] #generator
+            [roots_of_all_irreducible_polynomials_of_(GF(q); n) == {g**i | [i :<- [0..<q**n-1]][@[d :<- all_prime_factors_of_(n)] -> [1=!=(g**i)**(q**(n/d)-1)]]}]
+            [roots_of_all_primitive_polynomials_of_(GF(q); n) == {g**i | [i :<- [0..<q**n-1]][1==gcd(i, q**n-1)]}]
+              # [i==0] for [q**n-1==1]
+            [all_monic_primitive_polynomials_of_(GF(q); n) == {root__to__irreducible_polynomial_(GF(q); gg) | [gg :<- roots_of_all_primitive_polynomials_of_(GF(q); n)]}]
+            [all_monic_irreducible_polynomials_of_(GF(q); n) == {root__to__irreducible_polynomial_(GF(q); rr) | [rr :<- roots_of_all_irreducible_polynomials_of_(GF(q); n)]}]
+
+            [roots_of_all_irreducible_polynomials_of_(GF(q); n)
+            == {g**i | [i :<- [0..<q**n-1]][@[d :<- all_prime_factors_of_(n)] -> [1=!=(g**i)**(q**(n/d)-1)]]}
+            == {g**i | [i :<- [0..<q**n-1]][@[d :<- all_prime_factors_of_(n)] -> [0 =!= i%((q**n-1)/(q**(n/d)-1))]]}
+            # [((q**n-1)/(q**(n/d)-1)) == sum~ (q**(n/d)) **k ~{k :<- [0..<d]}]
+            ]
+
+            [all_monic_irreducible_polynomials_of_(GF(q); n) == {root__to__irreducible_polynomial_(GF(q); rr) | [rr :<- {g**i | [i :<- [0..<q**n-1]][@[d :<- all_prime_factors_of_(n)] -> [0 =!= i%((q**n-1)/(q**(n/d)-1))]]}]}]
+              # formula_2____primitive_polynomial__to__all_monic_irreducible_polynomials
+            [all_monic_primitive_polynomials_of_(GF(q); n) == {root__to__irreducible_polynomial_(GF(q); gg) | [gg :<- {g**i | [i :<- [0..<q**n-1]][1==gcd(i, q**n-1)]}]}]
+              # formula_3____primitive_polynomial__to__all_monic_primitive_polynomials
+
+    ====================
+    ===example: given primitive polynomial (x**4+x+1) under [q := 2][n := 4] to findout other primitive and non-primitive irreducible
+    ====================
+    [q := 2][n := 4]:
+      3(vs 2): (x**4+x+1), (x**4+x**3+1), [non-primitive]:(x**4+x**3+x**2+x+1)
+      3 irreducible, 2 primitive
+      ...
+      [f(x) := (x**4+x+1)]
+      g**i:
+        01: g
+        02: g**2
+        03: g**3
+        04: g+1
+        05: g**2+g
+        06: g**3+g**2
+        07: g**3+g+1
+        08: g**2+1
+        09: g**3+g
+        10: g**2+g+1
+        11: g**3+g**2+g
+        12: g**3+g**2+g+1
+        13: g**3+g**2+1
+        14: g**3+1
+        15: 1
+      ==>>:
+      primitive:
+      coprime<15> = 1,2,4,7,8,11,13,14
+      (x-g)*(x-g**2)*(x-g**4)*(x-g**8)
+      (x-g**7)*(x-g**14)*(x-g**28)*(x-g**56)
+        = (x-g**7)*(x-g**14)*(x-g**13)*(x-g**11)
+      non-primitive:
+      [15/(2**2-1) == 5]
+      [i%5 =!= 0]\-\coprime<15> = 3,6,9,12
+      (x-g**3)*(x-g**6)*(x-g**12)*(x-g**24)
+        = (x-g**3)*(x-g**6)*(x-g**12)*(x-g**9)
+
+
+      [(x-g)*(x-g**2)*(x-g**4)*(x-g**8)
+        = (x-g)*(x-g**2)*(x-(g+1))*(x-(g**2+1))
+        = (x-g)*(x-(g+1)) * (x-g**2)*(x-(g**2+1))
+        = (x**2+x+g**2+g) * (x**2+x+g**4+g**2)
+        = (x**2+x+g**2+g) * (x**2+x+g**2+g+1)
+        = (x**2+x+g**2+g)**2 + (x**2+x+g**2+g)
+        = (x**4+x**2+g**4+g**2) + (x**2+x+g**2+g)
+        = (x**4+g**4) + (x+g)
+        = (x**4+g+1) + (x+g)
+        = (x**4+x+1)
+        = f(x)
+      ]
+      [(x-g**7)*(x-g**14)*(x-g**28)*(x-g**56)
+        = (x-g**7)*(x-g**14)*(x-g**13)*(x-g**11)
+        = (x**2+(g7+g14)*x+g21)*(x**2+(g11+g13)*x+g24)
+        = (x**2+g*x+g6)*(x**2+(g+1)*x+g9)
+        = (x**2+g*x)**2 +(x+g9+g6)*(x**2+g*x) +(x+g9)*g6
+        = (x**4+g2*x**2) +(x+g2+g)*(x+g)*x +(x*g6+1)
+        = (x**4+g2*x**2) +(x**2+g2*x+g2+g3)*x +(x*g6+1)
+        = x**4+g2*x**2 +x**3+g2*x**2+(g2+g3)*x +x*g6+1
+        = x**4 +x**3 +1
+        = x**4 * f(1/x)
+      ]
+
+      [(x-g**3)*(x-g**6)*(x-g**12)*(x-g**24)
+        = (x-g**3)*(x-g**6)*(x-g**12)*(x-g**9)
+        = (x-g3)*(x-g9) * (x-g6)*(x-g12)
+        = (x2+(g3+g9)*x +g12) * (x2+(g6+g12)*x +g18)
+        = (x2+g*x +g12) * (x2+(g+1)*x +g3)
+        = (x2+g*x)**2 +(g12+g3+x)*(x2+g*x) +g12*(x+g3)
+        = (x4+g2*x2) +(g12+g3)*x2+x3 +(g12+g3+x)*(g*x) +g12*x+g15
+        = x4+g2*x2 +(g12+g3)*x2 +x3 +(g13+g4)*x +g*x2 +g12*x+1
+        = x4 +x3 +(g12+g3+g2+g)*x2 +(g13+g12+g4)*x +1
+        = x4 +x3 +x2 +x +1
+        = the only non-primitive irreducible polynomials when [q := 2][n := 4]
+      ]
+    ]]
+
+
+view /sdcard/0my_files/git_repos/fxt/_ignore__unzip/fxt/data/all-irredpoly.txt
+  degree [2..=11]
+    distinguish non-primitive irreducible
+view /sdcard/0my_files/git_repos/fxt/_ignore__unzip/fxt/data/all-trinomial-irredpoly-short.txt
+  degree [2..=400]
+    => degree [2..=399]
+    some degrees dont have trinomial-irreducible-polynomials: 1,8,13,16,19,24,26,27,32,...
+  [trinomial =[def]= 1 + x**k+ x**d]
+view /sdcard/0my_files/git_repos/fxt/_ignore__unzip/fxt/data/all-trinomial-primpoly-short.txt
+  degree [2..=400]
+    => degree [2..=396]
+    some degrees dont have trinomial-primitive-polynomials
+view /sdcard/0my_files/git_repos/fxt/_ignore__unzip/fxt/data/all-t1-primpoly.txt
+  # Primitive polynomials 1 + (1+x)^k + (1+x)^n over GF(2) for n<=400
+  degree [2..=400]
+    => degree [2..=399]
+view /sdcard/0my_files/git_repos/fxt/_ignore__unzip/fxt/data/lowbit-primpoly.txt
+  # Binary primitive polynomials with lowest-most possible set bits.
+  degree [2..=400]
+view /sdcard/0my_files/git_repos/fxt/_ignore__unzip/fxt/data/rand-primpoly.txt
+  # 'random' binary primitive polynomials
+  degree [2..=213]
+
+
+
+
+
+40.9.3 Irreducible trinomials of the form 1 + x**k+ x**d
+k=1:
+The trinomial p = 1 + x + x**d is irreducible for the following 2 ≤ d ≤ 34353 (sequence A002475):
+2, 3, 4, 6, 7, 9, 15, 22, 28, 30, 46, 60, 63, 127, 153, 172, 303, 471, 532, 865, 900, 1366, 2380, 3310, 4495, 6321, 7447, 10198, 11425, 21846, 24369, 27286, 28713, 32767, 34353
+
+The trinomials are primitive for the following d ≤ 4400 (sequence A073639):
+2, 3, 4, 6, 7, 15, 22, 60, 63, 127, 153, 471, 532, 865, 900, 1366
+
+
+k=2: p = 1 + x**2+ x**d is irreducible for the following 3 ≤ d ≤ 57341 (sequence A057460):
+3, 5, 11, 21, 29, 35, 93, 123, 333, 845, 4125, 10437, 10469, 14211, 20307, 34115, 47283, 50621, 57341
+
+The trinomials are primitive for all n ≤ 845 (sequence A074710).
+  ???
+
+k=3: p = 1 + x**3+ x**d is irreducible for the following 4 ≤ d ≤ 1000 (sequence A057461):
+4, 5, 6, 7, 10, 12, 17, 18, 20, 25, 28, 31, 41, 52, 66, 130, 151, 180, 196, 503, 650, 761, 986
+
+The trinomials are primitive for the following n ≤ 400:
+4, 5, 7, 10, 17, 20, 25, 28, 31, 41, 52, 130, 151,
+
+k=4: p = 1 + x**4+ x**d is irreducible for the following 5 ≤ d ≤ 1000 (sequence A057463):
+7, 9, 15, 39, 57, 81, 105
+
+The trinomials are primitive for the following n ≤ 400:
+7, 9, 15, 39, 81.
+
+k=5: p = 1 + x**5+ x**d is irreducible for the following 6 ≤ d ≤ 1000 (sequence A057474):
+6, 9, 12, 14, 17, 20, 23, 44, 47, 63, 84, 129, 236, 278, 279, 297, 300, 647, 726, 737,
+
+
+The trinomials are primitive for the following n ≤ 400:
+6, 9, 17, 23, 47, 63, 129, 236, 278, 279, 297
+
+
+
+
+]]
+[[cyclotomic polynomial:分圆多项式
+cyclotomic 割圆的/分圆的
+
+[n <- pint]:
+  [primitive n-th roots of unity =[def]= {r | [r**n == 1][@[u <- [1..<n]] -> [r**u =!= 1]]]
+  [cyclotomic_polynomial<n>(x) =[def]= II (x-r) {r <- primitive n-th roots of unity}]
+
+  [degree_(cyclotomic_polynomial<n>) == phi(n)]
+    # [phi =[def]= Euler_totient_function] # Ø()
+  [cyclotomic_polynomial is monic]
+
+  [(x**n-1) == II cyclotomic_polynomial<d>(x) {d <- [1..=n] | [n%d==0]}]
+  [cyclotomic_polynomial<n>(x) == (x**n-1) / II cyclotomic_polynomial<d>(x) {d <- [1..<n] | [n%d==0]}]
+  [cyclotomic_polynomial<1>(x) == (x**1-1) / 1 == x-1]
+  [cyclotomic_polynomial<2>(x) == (x**2-1) / (x-1) == x+1]
+  [cyclotomic_polynomial<3>(x) == (x**3-1) / (x-1) == x**2+x+1]
+  [cyclotomic_polynomial<4>(x) == (x**4-1) / ((x-1)*(x+1)) == x**2+1]
+  #cyclotomic_polynomial在有限域上的分解...
+]]
+

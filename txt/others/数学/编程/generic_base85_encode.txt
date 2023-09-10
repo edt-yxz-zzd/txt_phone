@@ -1,0 +1,571 @@
+
+e others/数学/编程/generic_base85_encode.txt
+    view ../../python3_src/py_stdlib_api.txt
+      base64.a85encode
+
+view ../../python3_src/seed/for_libs/for_base64.py
+view ../../python3_src/seed/int_tools/digits/generic_base85.py
+  base85_padding_style:goto
+proof____base85_padding_style:goto
+
+
+chuck? no
+cell? no
+word? yes! == [digit]{fixed-len}
+
+并非 全文当作 整数 进行 radix 不同长度 累积变换
+  view others/数学/编程/radix_encode.txt
+  而是 局部化，每N个一组 进行 变换，减少运算量
+
+[radix :: uint{>=2}][digit<radix> := uint%radix][num_digits4word :: uint{>=1}][word<radix,num_digits4word> := [digit<radix>]{len=num_digits4word}]
+  # [plain_text=clear_text :: [digit]]
+  # [encoded_text,cipher_text :: [digit]]
+  [input_text :: [idigit<iradix>]]
+  [output_text :: [odigit<oradix>]]
+
+
+datatype digit_order = little_endian | big_endian
+  vivi byte_order
+
+
+
+[iradix :: uint{>=2}][idigit := uint%iradix][num_digits4iword :: uint{>=1}][iword := [idigit]{len=num_digits4iword}]
+[oradix :: uint{>=2}][odigit := uint%oradix][num_digits4oword :: uint{>=1}][oword := [odigit]{len=num_digits4oword}]
+[input_text :: [idigit]]
+[output_text :: [odigit]]
+
+
+[idigit_order<iword> :: digit_order]
+[odigit_order<oword> :: digit_order]
+
+
+
+
+constraints:
+[iradix**num_digits4iword <= oradix**num_digits4oword] # :[oword_space_large_enough_to_hold_iword]
+  !![radix<iword> <= radix<oword>]
+
+
+# [[num_digits4iword==1] or [num_digits4oword%num_digits4iword =!= 0]]
+[1 == gcd(num_digits4iword, num_digits4oword)]
+  !! otherwise reduce them(num_*) to min locality
+[not [?[i <- [1..<num_digits4iword]] -> ?[j <- [1..<num_digits4oword]] -> [[iradix**i <= oradix**j][iradix**(num_digits4iword-i) <= oradix**(num_digits4oword-j)]]]]
+  !! otherwise reduce them(num_*) be (i,j)or(num_digits4iword-i,num_digits4oword-j) to min locality
+  ==>> above [1 == gcd...]
+  :<=[def]=< [=no_better_and_smaller_setting=]
+
+[iradix**num_digits4iword > (oradix-1)**num_digits4oword]
+  !! otherwise reduce oradix to min output alphabet
+[iradix**num_digits4iword > oradix**(num_digits4oword-1)]
+  !! otherwise reduce num_digits4oword to min locality
+[iradix**(num_digits4iword+1) > oradix**num_digits4oword]
+  !! otherwise increase num_digits4iword to min locality
+
+[num_digits4iword == floor_log_(iradix; oradix**num_digits4oword)]
+  #保持 [oword_space_large_enough_to_hold_iword] 下，最大化num_digits4iword
+[num_digits4oword == ceil_log_(oradix; iradix**num_digits4iword)]
+  #保持 [oword_space_large_enough_to_hold_iword] 下，最小化num_digits4oword
+[oradix == ceil_kth_root_(num_digits4oword; iradix**num_digits4iword)]
+  #保持 [oword_space_large_enough_to_hold_iword] 下，最小化oradix
+
+using? continued_fraction
+  view ../../python3_src/seed/math/continued_fraction/continued_fraction_of_log_.py
+  view ../../python3_src/seed/math/continued_fraction/continued_fraction_fold.py
+  view ../../python3_src/nn_ns/math_nn/continued_fraction/continued_fraction.py
+from seed.math.continued_fraction.continued_fraction_of_log_ import continued_fraction_of_log_
+from seed.math.continued_fraction.continued_fraction_of_log_ import floor_log__Fraction_
+e ../../python3_src/seed/math/continued_fraction/continued_fraction_ops.py
+
+www:cf log  continued_fraction logarithm
+  TODO:floor_log__cf_
+update:search best args using cf
+
+
+[iradix**num_digits4iword <= oradix**num_digits4oword]=>:
+[ib**iw <= ob**ow]:
+  [ib == ob**e]:
+    [e := log_(ob; ib)]
+    [e == ln(ib)/ln(ob)]
+    [cf := continued_fraction(e)]
+    [cf == continued_fraction_of_log_(ob; ib)]
+    [cf[0] == floor(e) == floor_log_(ob; ib)]
+    [cf[1:] == continued_fraction(1/(e - cf[0]))]
+    [cf0 := cf[0]]
+    [1/(e - cf[0])
+      == 1/(log_(ob; ib) -cf0)
+      == 1/log_(ob; ib/ob**cf0)
+      == log_(ib/ob**cf0, ob)
+    ]
+  view ../../python3_src/seed/math/continued_fraction/continued_fraction_of_log_.py
+
+
+# max1__iword == 1+max<iword>
+# max1__oword == 1+max<oword>
+[max1__iword := iradix**num_digits4iword]
+[max1__oword := oradix**num_digits4oword]
+
+efficient requirement:
+  space_efficient_bg_threshold=0.9, e.g:
+    #越大越好
+    [log2(iradix**num_digits4iword)/log2(oradix**num_digits4oword) > 0.9]
+    [log2(iradix**num_digits4iword)/log2(oradix**num_digits4oword) > space_efficient_bg_threshold]
+    [log_(oradix**num_digits4oword; iradix**num_digits4iword) > MMM/BBB]
+    [BBB*log2(iradix**num_digits4iword) > MMM*log2(oradix**num_digits4oword)]
+    [MMM/BBB:=space_efficient_bg_threshold][iradix**(num_digits4iword*BBB) > oradix**(num_digits4oword*MMM)]
+  space_efficient_sm_threshold=0.1, e.g:
+    #越小越好
+    [log_(oradix; oradix**num_digits4oword/iradix**num_digits4iword) < 0.1]
+    [num_digits4oword - log_(oradix; iradix**num_digits4iword) < space_efficient_sm_threshold]
+    [num_digits4oword - space_efficient_sm_threshold < log_(oradix; iradix**num_digits4iword)]
+    [oradix**(num_digits4oword - space_efficient_sm_threshold) < iradix**num_digits4iword]
+    let [NNN/DDD:=space_efficient_sm_threshold]
+    [oradix**((num_digits4oword - space_efficient_sm_threshold)*DDD) < iradix**(num_digits4iword*DDD)]
+    [oradix**(num_digits4oword*DDD - space_efficient_sm_threshold*DDD) < iradix**(num_digits4iword*DDD)]
+    [NNN/DDD:=space_efficient_sm_threshold][oradix**(num_digits4oword*DDD - NNN) < iradix**(num_digits4iword*DDD)]
+
+select best args:
+  input:
+    iradix
+    space_efficient_bg_threshold
+    space_efficient_sm_threshold
+    max__oradix
+        #可用字母表大小，但同等 空间效率 情形下，有可能 减小oradix 以保留更多字母用作其他用途
+        space_efficient
+    max__max1__oword
+        控制 单元长度，单元长度 越小，局域性越强，运算量 越少
+        time_efficient
+        [oradix**num_digits4oword <= max__max1__oword]
+  routine:
+    !! [iradix**num_digits4iword <= oradix**num_digits4oword <= max__max1__oword]
+    !! [log2(iradix**num_digits4iword)/log2(oradix**num_digits4oword) > space_efficient_bg_threshold]
+    !! [num_digits4oword - log_(oradix; iradix**num_digits4iword) < space_efficient_sm_threshold]
+    !! [oradix == ceil_kth_root_(num_digits4oword; iradix**num_digits4iword)]
+    !! [num_digits4oword == ceil_log_(oradix; iradix**num_digits4iword)]
+    !! [num_digits4iword == floor_log_(iradix; oradix**num_digits4oword)]
+    ==>>:
+    max__num_digits4iword := floor_log_(iradix; max__max1__oword)
+
+    tmp__max__num_digits4iword := max__num_digits4iword
+    tmp__max__oradix := max__oradix
+    loop:
+      tmp__max1__iword := iradix**tmp__max__num_digits4iword
+      loop:
+        tmp__min__num_digits4oword := ceil_log_(tmp__max__oradix; tmp__max1__iword)
+        tmp__max__oradix := ceil_kth_root_(tmp__min__num_digits4oword; tmp__max1__iword)
+        tmp__max1__oword := tmp__max__oradix**tmp__min__num_digits4oword
+        if tmp__max1__oword > max__max1__oword:
+          ???
+        ??? tmp__max__num_digits4iword := floor_log_(iradix; tmp__max1__oword)]
+      until stable
+      if [tmp__min__num_digits4oword - log_(tmp__max__oradix; tmp__max1__iword) < space_efficient_sm_threshold]:
+        return
+      ??? tmp__max__num_digits4iword -= 1
+  output:
+    oradix, num_digits4oword
+    num_digits4iword
+
+
+
+
+[itail_len := len(input_text)%num_digits4iword]
+[itail_len <- [0..<num_digits4iword]]
+* [itail_len==0]:
+  [no pad required]
+* [itail_len=!=0]:
+  #howto pad?
+[num_digits4iword == 1]:
+  [itail_len==0]:
+  [no pad required]
+[num_digits4oword == 1]:
+  [otail_len__mod == 0]
+  [otail_len__ext == if 0==len(input_text) then 0 else 1]
+      #see:[append_indicator_when_num_digits4oword_eq1__itail_empty__input_nonempty]
+
+[itail := if itail_len then input_text[-itail_len:] else []]
+[iprefix := if itail_len then input_text[:-itail_len] else input_text]
+
+[otail_len__mod := len(output_text)%num_digits4oword]
+[otail_len__ext := len(otail__ext)]
+[otail__ext := (encode_tail itail)]
+[output_text := word_by_word_convert iprefix ++ otail__ext]
+[otail_len__ext%num_digits4oword == len(output_text)%num_digits4oword == otail_len__mod]
+
+
+
+[total4nonempty_otail__mod := sum oradix**L {L<-[1..<num_digits4oword]}]
+[total4nonempty_otail__mod == (oradix**num_digits4oword-1)/(oradix-1) -1]
+[[num_digits4oword==1] -> [total4nonempty_otail__mod==0]]
+
+[total4nonempty_itail := sum iradix**L {L<-[1..<num_digits4iword]}]
+[total4nonempty_itail
+  == (iradix**num_digits4iword-iradix)/(iradix-1)
+  == (iradix**num_digits4iword-1)/(iradix-1) -1
+  < iradix**num_digits4iword -1
+  <= oradix**num_digits4oword -1
+  < oradix**num_digits4oword
+]
+[total4nonempty_itail <= oradix**num_digits4oword -2]
+
+
+
+[otail_len__ext < 2*num_digits4oword]
+[otail_len__ext <- {otail_len__mod, otail_len__mod+num_digits4oword}]
+  [[proof:
+  !! [total4nonempty_itail < oradix**num_digits4oword]
+  [otail_len__ext < 2*num_digits4oword]
+  [otail_len__ext / num_digits4oword < 2]
+  [otail_len__ext // num_digits4oword <- {0,1}]
+
+  !! [otail_len__ext%num_digits4oword == otail_len__mod]
+  [otail_len__ext <- {otail_len__mod, otail_len__mod+num_digits4oword}]
+  DONE
+  ]]
+
+[[total4nonempty_itail <= total4nonempty_otail__mod] -> [otail_len__ext == otail_len__mod]]
+  !! enough output state
+  !! min locality
+  :<=[def]=< [:otail__ext_is_mod:]
+
+
+[iradix**num_digits4iword == oradix**num_digits4oword]:
+  # <<== vivi base64
+
+  * [num_digits4iword==1]:
+    # <<== vivi base16/hex
+    [no pad required]
+
+  * [num_digits4iword=!=1]:
+    #howto pad?
+    * [oradix == iradix]:
+      !! [iradix**num_digits4iword <= oradix**num_digits4oword]
+      !! [iradix**num_digits4iword > oradix**(num_digits4oword-1)]
+      [num_digits4iword == num_digits4oword]
+
+      !! [1 == gcd(num_digits4iword, num_digits4oword)]
+      [num_digits4iword == 1]
+      _L
+
+    * [oradix < iradix]:
+      see below 缩减字母表囗填充方案
+    * [oradix > iradix]:
+      ???
+
+[oradix < iradix]:
+  # <<== if use small subset of original alphabet
+  #缩减字母表
+  #     vs 扩展字母表
+
+  !! [iradix**num_digits4iword <= oradix**num_digits4oword]
+  [num_digits4oword > num_digits4iword >= 1]
+  [num_digits4oword >= 2]
+
+  #pad:
+  [@[itail_len <- [1..<num_digits4iword]] -> [iradix**itail_len < oradix**(num_digits4oword -(num_digits4iword-itail_len))]]
+    [[proof:
+    !! [iradix**num_digits4iword <= oradix**num_digits4oword]
+    !! [oradix < iradix]
+    [iradix**num_digits4iword / iradix <= oradix**num_digits4oword / oradix]
+    [0 < i < num_digits4iword < num_digits4oword]:
+      [iradix**num_digits4iword / iradix**i <= oradix**num_digits4oword / oradix**i]
+    [i == (num_digits4iword-itail_len)]:
+      !! [iradix**num_digits4iword / iradix**i <= oradix**num_digits4oword / oradix**i]
+      [iradix**itail_len < oradix**(num_digits4oword -(num_digits4iword-itail_len))]
+    [iradix**itail_len < oradix**(num_digits4oword -(num_digits4iword-itail_len))]
+    DONE
+    ]]
+
+  !! [total4nonempty_otail__mod == (oradix**num_digits4oword-1)/(oradix-1) -1]
+  !! [total4nonempty_itail == (iradix**num_digits4iword-1)/(iradix-1) -1]
+  [total4nonempty_itail
+  == (iradix**num_digits4iword-1)/(iradix-1) -1
+  !! [oradix < iradix]
+  < (iradix**num_digits4iword-1)/(oradix-1) -1
+  !! [iradix**num_digits4iword <= oradix**num_digits4oword]
+  <= (oradix**num_digits4oword-1)/(oradix-1) -1
+  == total4nonempty_otail__mod
+  ]
+
+  [otail_len__ext == otail_len__mod]
+    !!  [total4nonempty_itail <= total4nonempty_otail__mod]
+    !! [:otail__ext_is_mod:]
+
+  [itail_len=!=0]:
+    [itail_len <- [1..<num_digits4iword]]
+
+    缩减字母表囗填充方案:
+    * 缩减字母表囗填充方案一:无脑任意参数:等缺失长度:
+      [num_digits4oword - otail_len__ext == num_digits4iword - itail_len]
+      [otail_len__ext == itail_len + (num_digits4oword - num_digits4iword)]
+        #override "encode_tail"
+    * 缩减字母表囗填充方案二:内容无关:输出长度由输入长度决定并且输入长度可由输出长度确定的前提下最小化输出长度:
+      [otail_len__ext == ceil_log_(oradix;iradix**itail_len)]
+        #override "encode_tail"
+      [[proof:
+      !! [oradix < iradix]
+      [log_(oradix; iradix) > 1]
+      [L::uint]:
+        [log_(oradix; iradix**(L+1)) - log_(oradix; iradix**L) == log_(oradix; iradix) > 1]
+        !! [[[x,y :: Real][i :: int][x - y >= i]] -> [ceil(x) - ceil(y) >= i]] # :ceil_keeps_int_gaps
+        [ceil_log_(oradix; iradix**(L+1)) - ceil_log_(oradix; iradix**L) >= 1]
+        [otail_len__ext<itail_len> is injection]
+      [otail_len__ext<itail_len> is injection]
+      [输出长度由输入长度决定]
+      [otail_len__mod<itail_len> is injection]
+      [输入长度可由输出长度确定]
+      [最小化输出长度]
+        !! using ceil_log_
+      DONE
+      ]]
+    * 缩减字母表囗填充方案三:内容相关:最小化输出长度:
+      #override "encode_tail"
+      ???accumulate mapping
+
+
+[x,y :: Real][i :: int][x - y >= i]:
+  [x - i >= y]
+  [ceil(x - i) >= ceil(y)]
+  [ceil(x) == ceil(x-i) + i >= ceil(y) + i]
+  [ceil(x) >= ceil(y) + i]
+  [ceil(x) - ceil(y) >= i]
+[[[x,y :: Real][i :: int][x - y >= i]] -> [ceil(x) - ceil(y) >= i]] # :ceil_keeps_int_gaps
+
+[oradix > iradix]:
+  #扩展字母表
+  #     vs 缩减字母表
+  !! [num_digits4iword == floor_log_(iradix; oradix**num_digits4oword)]
+  [num_digits4iword
+  == floor_log_(iradix; oradix**num_digits4oword)
+  > log_(iradix; oradix**num_digits4oword) -1
+  == log_(iradix; oradix)*num_digits4oword -1
+  !![oradix > iradix]
+  !![num_digits4oword :: uint{>=1}]
+  > 1.0 * num_digits4oword -1
+  ]
+  [num_digits4iword > num_digits4oword -1]
+  [num_digits4iword >= num_digits4oword]
+
+  [num_digits4iword == num_digits4oword]
+      !! [1 == gcd(num_digits4iword, num_digits4oword)]
+      [num_digits4iword == num_digits4oword == 1]
+      !![oradix == ceil_kth_root_(num_digits4oword; iradix**num_digits4iword)]
+      [oradix == iradix]
+      !![oradix > iradix]
+      _L
+  [num_digits4iword > num_digits4oword]
+  !! [num_digits4oword >= 1]
+  [num_digits4iword >= 2]
+
+
+  [NOT_ALWAYS [otail_len__ext == otail_len__mod]]
+  ##[[输出长度由输入长度决定] 是 可能的]
+  [[输入长度可由输出长度确定] 是 不可能的]
+      [total<itail_len if not 0> == num_digits4iword-1]
+      [total<otail_len__mod if not 0> == num_digits4oword-1]
+      [total<itail_len if not 0>  >  total<otail_len__mod if not 0>]
+      [otail_len__mod<itail_len> is not injection]
+
+  * [num_digits4oword == 1]:
+    [otail_len__mod == 0]
+    [otail_len__ext == if 0==len(input_text) then 0 else 1]
+    [otail_len__ext == if 0==len(output_text) then 0 else 1]
+    # append [oradix-1] to indicate [len(input_text) =!= 0][itail_len==0]
+    #   :[append_indicator_when_num_digits4oword_eq1__itail_empty__input_nonempty]
+    #   required [total4nonempty_itail  <= oradix-1]
+    !! [total4nonempty_itail <= oradix**num_digits4oword -2]
+    [total4nonempty_itail <= oradix**num_digits4oword -2 == oradix**1 -2 == oradix-2]
+    [total4nonempty_itail <= oradix-2]
+          #override "encode_tail"
+
+  * [num_digits4oword >= 2]:
+    #??? [iradix**(num_digits4iword-1) <?> oradix**(num_digits4oword-1)]
+    !! [num_digits4iword > num_digits4oword]
+    [num_digits4iword >= 3]
+
+    !! [iradix**(num_digits4iword+1) > oradix**num_digits4oword]
+    !! [iradix**num_digits4iword > oradix**(num_digits4oword-1)]
+    [iradix**num_digits4iword
+    > max(oradix**(num_digits4oword-1), oradix**num_digits4oword/iradix)
+    == oradix**(num_digits4oword-1)*max(1,oradix/iradix)
+    !![oradix > iradix]
+    == oradix**(num_digits4oword-1)*oradix/iradix
+    ]
+    [iradix**(num_digits4iword-1)
+    > oradix**(num_digits4oword-1)*(oradix/iradix**2)
+    ]
+    [oradix >= iradix**2]:
+      [iradix**(num_digits4iword-1) > oradix**(num_digits4oword-1)]
+
+    [iradix**(num_digits4iword-1) <= oradix**(num_digits4oword-1)]:
+      [oradix < iradix**2]
+
+    !! [total4nonempty_otail__mod == (oradix**num_digits4oword-1)/(oradix-1) -1]
+    !! [total4nonempty_itail == (iradix**num_digits4iword-1)/(iradix-1) -1]
+    [total4nonempty_itail <= total4nonempty_otail__mod]
+      <==> [(iradix**num_digits4iword-1)/(iradix-1) -1 <= (oradix**num_digits4oword-1)/(oradix-1) -1]
+      <==> [(iradix**num_digits4iword-1)*(oradix-1) <= (oradix**num_digits4oword-1)*(iradix-1)]
+      let [IW := iradix**num_digits4iword]
+      let [OW := oradix**num_digits4oword]
+      <==> [(IW-1)*(oradix-1) <= (OW-1)*(iradix-1)]
+      <==> [IW*oradix-oradix-IW <= OW*iradix-iradix-OW]
+      <==> [0 <= OW*iradix-IW*oradix-OW+IW+oradix-iradix]
+      <==> [0 <= OW*iradix-IW*oradix-(OW-IW)+(oradix-iradix)]
+
+    * [total4nonempty_itail <= total4nonempty_otail__mod]:
+      [otail_len__ext===otail_len__mod]
+          #override "encode_tail"
+
+    * [total4nonempty_itail > total4nonempty_otail__mod]:
+      [NOT_ALWAYS [otail_len__ext==otail_len__mod]]
+
+      !! [total4nonempty_itail <= oradix**num_digits4oword -2]
+      [total4nonempty_itail < oradix**(1+num_digits4oword) + sum oradix**otail_len__mod {otail_len__mod <- [2..<num_digits4oword]}]
+          #override "encode_tail"
+      [otail_len__ext == if otail_len__mod==1 then 1+num_digits4oword else otail_len__mod]
+
+
+
+
+综上:[about____otail_len__ext]:
+  [oradix == iradix]:
+    [otail_len__ext == otail_len__mod == 0]
+  [oradix < iradix]:
+    #缩减字母表
+    [num_digits4oword > num_digits4iword >= 1]
+    [otail_len__ext == otail_len__mod]
+  [oradix > iradix]:
+    #扩展字母表
+    [num_digits4iword > num_digits4oword >= 1]
+    * [num_digits4oword == 1]:
+      [otail_len__mod == 0]
+      [otail_len__ext == if 0==len(input_text) then 0 else 1]
+      [otail_len__ext == if 0==len(output_text) then 0 else 1]
+          #非平凡
+    * [num_digits4oword >= 2]:
+      * [total4nonempty_itail <= total4nonempty_otail__mod]:
+        [otail_len__ext===otail_len__mod]
+      * [total4nonempty_itail > total4nonempty_otail__mod]:
+        [otail_len__ext == if otail_len__mod==1 then 1+num_digits4oword else otail_len__mod]
+          #非平凡
+  ==>>:
+  [otail_len__ext <- {otail_len__mod, 1+num_digits4oword, 1}]
+
+  !! [otail_len__ext <- {otail_len__mod, otail_len__mod+num_digits4oword}]
+  !! [otail_len__ext < 2*num_digits4oword]
+  [otail_len__ext <- ({otail_len__mod, 1+num_digits4oword, 1} /-\ {otail_len__mod, otail_len__mod+num_digits4oword})]
+
+
+
+
+encode
+word_based_radix_encode :: (iradix,oradix,num_digits4iword,num_digits4oword,idigit_order,odigit_order) => [idigit] -> [odigit]
+word_based_radix_encode input_text = output_text where
+  itail_len = len(input_text)%num_digits4iword
+  iprefix_len = len(input_text)-itail_len]
+  iprefix = input_text[:iprefix_len]
+  itail = input_text[iprefix_len:]
+  oprefix = word_by_word_convert (idigit_order,odigit_order) (num_digits4iword,num_digits4oword) iprefix
+  otail__ext = if itail then encode_tail itail else if num_digits4oword==1 and iprefix then [oradix-1] else []
+      #see:[append_indicator_when_num_digits4oword_eq1__itail_empty__input_nonempty]
+  output_text = oprefix ++ otail__ext
+
+
+@abstractmethod #many pad protocol
+encode_tail itail
+  assert 0 < len(itail) < num_digits4iword
+
+
+decode
+word_based_radix_decode :: (iradix,oradix,num_digits4iword,num_digits4oword,idigit_order,odigit_order) => [idigit] -> [odigit]
+word_based_radix_decode output_text = input_text where
+  otail_len__mod = len(output_text)%num_digits4oword
+  otail_len__ext = calc_otail_len__ext ... otail_len__mod
+  oprefix_len = len(output_text) - otail_len__ext
+  oprefix = output_text[:oprefix_len]
+  otail__ext = output_text[oprefix_len:]
+  iprefix = word_by_word_convert (odigit_order,idigit_order) (num_digits4oword,num_digits4iword) oprefix
+  itail = if otail__ext then (if num_digits4oword==1 and otail__ext==[oradix-1] then [] else decode_tail otail__ext) else []
+      #see:[append_indicator_when_num_digits4oword_eq1__itail_empty__input_nonempty]
+  input_text = iprefix ++ itail
+
+calc_otail_len__ext ... otail_len__mod = if (otail_len__mod==1 and total4nonempty_itail > total4nonempty_otail__mod) or (num_digits4oword==1 and not len(output_text)==0) then otail_len__mod+num_digits4oword else otail_len__mod
+      #see:[about____otail_len__ext]
+
+@abstractmethod #many pad protocol
+decode_tail otail__ext
+  assert len(otail__ext) == calc_otail_len__ext ... len(otail__ext)%num_digits4oword
+  assert len(otail__ext)
+  assert not (num_digits4oword==1 and otail__ext==[oradix-1])
+
+
+
+
+
+
+[[
+[[[
+[@[i,N,D :: int] -> [N >= D > 0] -> [i == (i*N //D *D +(D -1)) //N]]
+  [[proof:
+  [i*N //D *D == i*N - i*N %D]
+  !! [D > 0]
+  [0 <= i*N %D < D]
+  [-(i*N %D) <- [1-D..=0]]
+  [i*N //D *D == i*N - i*N %D <- [i*N+1-D..=i*N]]
+  [i*N //D *D +(D -1) <- [i*N..<i*N+D]]
+  !! [N > 0]
+  [(i*N //D *D +(D -1)) //N <- [i..<i+D//N]]
+  !! [N >= D > 0]
+  [D//N <- {0,1}]
+  [(i*N //D *D +(D -1)) //N <- [i..<i+D//N] |<=| [i..<i+1] == [i]]
+  [(i*N //D *D +(D -1)) //N == i]
+  DONE
+  ]]
+]]]
+[[[
+view ../../python3_src/seed/int_tools/digits/generic_base85.py
+===
+base85_padding_style:here
+base85_padding_style in generic_base85.py defined as:
+    && [idigit_order is big_endian][odigit_order is big_endian]
+
+    && [num_digits4oword == num_digits4iword+1]
+        # hence:[missing_lens_are_eq][min_output__under_len_transform_be_injection][otail_len__ext == itail_len + not (itail_len==0)]
+
+
+
+===
+proof____base85_padding_style:here
+[oradix < iradix][num_digits4oword == num_digits4iword+1][L := missing_len][i := tail-iword-in-big_endian][0 < L < num_digits4iword][0 <= i < iradix**(num_digits4iword-L)]:
+  #base85_padding_style decode:
+  # encode:pad: i*iradix**L #big_endian
+  # encode:pad+cutoff: i*iradix**L //oradix**L
+  # decode:pad: i*iradix**L //oradix**L *oradix**L +(oradix**L -1)  #big_endian
+  # decode:pad+cutoff: (i*iradix**L //oradix**L *oradix**L +(oradix**L -1)) //iradix**L
+  ??? [i =?= (i*iradix**L //oradix**L *oradix**L +(oradix**L -1)) //iradix**L] ???
+  [[proof:
+  [N := iradix**L]
+  [D := oradix**L]
+  !! [oradix < iradix][L > 0]
+  [N > D > 0]
+  !! [@[i,N,D :: int] -> [N >= D > 0] -> [i == (i*N //D *D +(D -1)) //N]]
+  [i == (i*N //D *D +(D -1)) //N]
+  [i == (i*iradix**L //oradix**L *oradix**L +(oradix**L -1)) //iradix**L]
+  DONE
+  ]]
+===
+[2 <= oradix < iradix][using style:min_output__under_len_transform_be_injection or missing_lens_are_eq]:
+  !! [oradix < iradix]
+  [otail_len__ext == otail_len__mod]
+  #     otail__ext_is_mod
+
+  [base85_padding_style-encode/decode ok]
+    <==> [@[itail_len <- [1..<num_digits4iword]] -> [otail_len__ext := len_transform(itail_len)] -> [imiss_len := num_digits4iword-itail_len] -> [omiss_len := num_digits4oword-otail_len__ext] -> [oradix**omiss_len < iradix**imiss_len]]
+        # see:proof____base85_padding_style::N,D
+    <<== [not [?[i <- [1..<num_digits4iword]] -> ?[j <- [1..<num_digits4oword]] -> [[iradix**i <= oradix**j][iradix**(num_digits4iword-i) <= oradix**(num_digits4oword-j)]]]]
+        # [=no_better_and_smaller_setting=]
+        # hence: [1 == gcd(num_digits4iword, num_digits4oword)]
+        <==> [@[i <- [1..<num_digits4iword]] -> @[j <- [1..<num_digits4oword]] -> [iradix**i <= oradix**j] -> [iradix**(num_digits4iword-i) > oradix**(num_digits4oword-j)]]
+          # [iradix**i <= oradix**j] ==>> [can be stored]
+          # [iradix**(num_digits4iword-i) > oradix**(num_digits4oword-j)] ==>> [cannot split into better&&smaller setting]
+===
+]]]
+]]

@@ -1,0 +1,159 @@
+
+e ../lots/NOTE/Haskell/lazy-vs-nonstrict.txt
+lazy evaluation vs eager evaluation(strict evaluation)
+lazy vs non-strict
+
+[[
+https://en.wikipedia.org/wiki/Lazy_evaluation
+The opposite of lazy evaluation is eager evaluation, sometimes known as strict evaluation.
+]]
+
+[[[
+https://wiki.haskell.org/Weak_head_normal_form
+===
+Weak head normal form
+Jump to navigationJump to search
+An expression is in weak head normal form (WHNF), if it is either:
+
+a constructor (eventually applied to arguments) like True, Just (square 42) or (:) 1.
+a built-in function applied to too few arguments (perhaps none) like (+) 2 or sqrt.
+or a lambda abstraction \x -> expression.
+Note that the arguments do not themselves have to be fully evaluated for an expression to be in weak head normal form; thus, while square 42 can be reduced to 42 * 42 (which can itself be reduced to a normal form of 1764), Just (square 42) is in WHNF without further evaluation. Similarly, (+) (2 * 3 * 4) is in WHNF, even though 2 * 3 * 4 could be reduced to the normal form 24.
+
+An exception is the case of a fully applied constructor for a data type with some fields declared as strict; the arguments for these fields then also need to be in WHNF.
+
+The above definition might seem to treat built-in functions differently from functions defined via lambda abstraction. However, the distinction does not matter to semantics. If a lambda abstraction is applied to "too few arguments", then evaluating the application just means substituting arguments for some of the lambda abstraction's variables, which always halts with the result a now-unapplied lambda abstraction.
+]]]
+
+[[[
+https://www.haskell.org/haskellwiki/Lazy_vs._non-strict
+===
+Lazy vs. non-strict
+
+Haskell is often described as a lazy language. However, the language specification simply states that Haskell is non-strict, which is not quite the same thing as lazy.
+
+
+Direction of evaluation
+Non-strictness means that reduction (the mathematical term for evaluation) proceeds from the outside in, so if you have (a+(b*c)) then first you reduce the +, then you reduce the inner (b*c). Strict languages work the other way around, starting with the innermost brackets and working outwards.
+
+This matters to the semantics because if you have an expression that evaluates to bottom (i.e. an error or endless loop) then any language that starts at the inside and works outwards will always find that bottom value, and hence the bottom will propagate outwards. However if you start from the outside and work in then some of the sub-expressions are eliminated by the outer reductions, so they don't get evaluated and you don't get "bottom".
+
+Lazy evaluation, on the other hand, means only evaluating an expression when its results are needed (note the shift from "reduction" to "evaluation"). So when the evaluation engine sees an expression it builds a thunk data structure containing whatever values are needed to evaluate the expression, plus a pointer to the expression itself. When the result is actually needed the evaluation engine calls the expression and then replaces the thunk with the result for future reference.
+
+Obviously there is a strong correspondence between a thunk and a partly-evaluated expression. Hence in most cases the terms "lazy" and "non-strict" are synonyms. But not quite. For instance you could imagine an evaluation engine on highly parallel hardware that fires off sub-expression evaluation eagerly, but then throws away results that are not needed.
+
+In practice Haskell is not a purely lazy language: for instance pattern matching is usually strict (So trying a pattern match forces evaluation to happen at least far enough to accept or reject the match. You can prepend a ~ in order to make pattern matches lazy). The strictness analyzer also looks for cases where sub-expressions are always required by the outer expression, and converts those into eager evaluation. It can do this because the semantics (in terms of "bottom") don't change. Programmers can also use the seq primitive to force an expression to evaluate regardless of whether the result will ever be used. $! is defined in terms of seq.
+
+
+Source:
+
+Paul Johnson in Haskell Cafe What is the role of $! ?
+WHNF
+WHNF is an abbreviation for weak head normal form.
+
+
+Further references
+Haskell’s Non-Strict Semantics – What Exactly does Lazy Evaluation Calculate? – An introductory tutorial on the difference between lazy evaluation and non-strict semantics.
+Laziness is simply a common implementation technique for non-strict languages, but it is not the only possible technique. One major drawback with lazy implementations is that they are not generally amenable to parallelisation. This paper states that experiments indicate that little parallelism can be extracted from lazy programs:
+"The Impact of Laziness on Parallelism and the Limits of Strictness Analysis" (G. Tremblay G. R. Gao) http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.36.3806
+Lenient, or optimistic, evaluation is an implementation approach that lies somewhere between lazy and strict, and combines eager evaluation with non-strict semantics. This seems to be considered more promising for parallelisation.
+This paper implies (section 2.2.1) that lenient evaluation can handle circular data structures and recursive definitions, but cannot express infinite structures without explicit use of delays:
+"How Much Non-­strictness do Lenient Programs Require?" (Klaus E. Schauser, Seth C. Goldstein) http://www.cs.cmu.edu/~seth/papers/schauser-fplca95.pdf
+Some experiments with non-lazy Haskell compilers have been attempted: Research_papers/Runtime_systems#Optimistic_Evaluation
+Category: Theoretical foundations
+]]]
+
+
+[[
+https://www.haskell.org/haskellwiki/Lazy_vs._non-strict
+
+Haskell is often described as a lazy language. However, the language specification simply states that Haskell is non-strict, which is not quite the same thing as lazy.
+===
+view ../lots/NOTE/Haskell/lazy-vs-nonstrict.txt
+===
+strict vs lazy, non_strict
+diligent 勤 vs lazy 惰
+hardworking adj. 苦干的,不辞辛劳的
+===
+lazy
+la.zy
+(`lezI; 5leizi)
+<<形容词>>
+(la.zi.er; -zi.est)
+1 怠惰的,懒惰的
+(
+←→ diligent)
+a ~ fellow
+懒家伙
+a ~ correspondent
+懒于写信的人
+4【同义字】
+lazy 带有谴责的口气,指厌恶工作
+idle 因怠慢或其他原因而没有工作
+2 令人发困的,令人倦怠 [懒洋洋] 的
+a ~ afternoon
+令人倦怠的下午
+3 行动 [流动] 缓慢的
+a ~ river
+水流缓慢的河川
+<<副词>>
+la.zi.ly[-zl; -zili]
+<<名词>>
+-zi.ness
+===
+diligent
+dil.i.gent
+(`dIlEdVEnt; 5dilidVEnt)`14`《源自拉丁文“高估”的意思》
+<<形容词>>
+(more ~; most ~)
+1 a. <人>勤勉的,用功的
+(
+←→ lazy)
+a ~ worker
+勤勉的工作者,用功者
+b. [对…]勤奋的
+[in]
+He is ~ in his studies.
+他学习勤奋
+2 <工作等>费心的,用心的
+在线英汉－汉英词典
+adj. 勤勉的；用功的，费尽心血的
+]]
+[[[
+https://learn.microsoft.com/en-us/dotnet/standard/linq/deferred-execution-lazy-evaluation
+===
+Learn  .NET  Data access  LINQ 
+Deferred execution and lazy evaluation (LINQ to XML)
+Article
+09/29/2022
+3 contributors
+In this article
+Deferred execution
+Eager vs. lazy evaluation
+See also
+Query and axis operations are often implemented to use deferred execution. This article explains the requirements and advantages of deferred execution, and some implementation considerations.
+
+Deferred execution
+Deferred execution means that the evaluation of an expression is delayed until its realized value is actually required. Deferred execution can greatly improve performance when you have to manipulate large data collections, especially in programs that contain a series of chained queries or manipulations. In the best case, deferred execution enables only a single iteration through the source collection.
+
+The LINQ technologies make extensive use of deferred execution in both the members of core System.Linq classes and in the extension methods in the various LINQ namespaces, such as System.Xml.Linq.Extensions.
+
+Deferred execution is supported directly in the C# language by the yield (C# Reference) keyword (in the form of the yield-return statement) when used within an iterator block. Such an iterator must return a collection of type IEnumerator or IEnumerator<T> (or a derived type).
+
+Eager vs. lazy evaluation
+When you write a method that implements deferred execution, you also have to decide whether to implement the method using lazy evaluation or eager evaluation.
+
+In lazy evaluation, a single element of the source collection is processed during each call to the iterator. This is the typical way in which iterators are implemented.
+In eager evaluation, the first call to the iterator will result in the entire collection being processed. A temporary copy of the source collection might also be required. For example, the OrderBy method has to sort the entire collection before it returns the first element.
+Lazy evaluation usually yields better performance because it distributes overhead processing evenly throughout the evaluation of the collection and minimizes the use of temporary data. Of course, for some operations, there is no other option than to materialize intermediate results.
+
+See Deferred execution example for an example of programming deferred execution in C# and Visual Basic.
+
+See also
+Tutorial: Chain Queries Together in C#
+Concepts and terminology (functional transformation)
+Aggregation Operations (C#)
+Aggregation Operations (Visual Basic)
+yield (C# Reference)
+]]]
+

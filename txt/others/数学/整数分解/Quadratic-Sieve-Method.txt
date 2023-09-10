@@ -1,0 +1,373 @@
+
+e others/数学/整数分解/Quadratic-Sieve-Method.txt
+
+Quadratic Sieve Method
+wget 'https://www.cs.virginia.edu/crab/QFS_Simple.pdf' -O 'The Quadratic Sieve Factoring Algorithm.pdf'
+  good
+  /sdcard/0my_files/book/math/factorint/202308/The Quadratic Sieve Factoring Algorithm.pdf
+  [Q(x) =[def]= x**2-N]
+  [x <- [floor_sqrtN-M..=floor_sqrtN+M]]
+  [MM := [floor_sqrtN-M..=floor_sqrtN+M]]
+  [Q(x)%p == 0]:
+    [N =[%p]= x**2]
+    [Legendre_symbol(N/p) == +1 == N**((p-1)///2) %p]
+    [sqrts<%p>(N) =[def]= {x%p, p-x%p}]
+  [Q(x) =[%p]= Q(y)]:
+    [(x**2-y**2)%p == 0]
+    [[x =[%p]= y]or[x =[%p]= -y]]
+  [Q(x)%p == 0]:
+    [x%p <- sqrts<%p>(N)]
+  [prime include -1]
+  generate primes, eval sqrts<%p>(N) (if not exist, discard the prime)
+    [x__p_1 == {x | [x :<- MM][Q(x)%p == 0]} == MM /-\ [(rNp+i*p) | [rNp :<- sqrts<%p>(N)][i :: int]]]
+    [x__p_k == {x | [x :<- MM][Q(x)%p**k == 0]} == MM /-\ [(rNp_k+i*p**k) | [rNp_k :<- sqrts<%p**k>(N)][i :: int]]]
+        sqrts<%p**k>(N) <<== Shanks-Tonelli Algorithm
+        e ../../python3_src/seed/math/sqrts_mod_.py
+          from seed.math.sqrts_mod_ import iter_sqrts_mod_prime_power_
+          from seed.math.sqrts_mod_ import iter_sqrts_mod_prime_
+    这是筛%p
+    还可提升，是筛%p**k
+    这样就知道，所有数的 p幂因子
+    再对比 比特数，就知道 有没有 额外因子，有则排除x
+  不断 扩张 MM 直到 找到足够数量的x
+  optimum value for:
+    number of primes/the size of the factor base: [B := (e**sqrt(lnN*lnlnN))**(sqrt(2)/4)]
+    sieving interval [M := B**3]
+  an asymptotic running time for the QS of e √ 1.125ln(n)ln(ln(n)) #==(e**sqrt(1.125*lnN*lnlnN))
+e ../../python3_src/seed/math/factor_pint_into_strong_pseudoprimes_by_quadratic_sieve_.py
+
+e /sdcard/0my_files/book/math/factorint/202308/www.txt
+e /sdcard/0my_files/book/math/factorint/202308/Detecting perfect powers in essentially linear time(1998)(Berstein).pdf.txt
+/sdcard/0my_files/book/math/factorint/snd/Detecting perfect powers in essentially linear time(1998)(Berstein).pdf
+  /sdcard/0my_files/book/math/factorint/202308/Fast multiple-precision evaluation of elementary functions(1976)(Brent).pdf
+
+
+e ../../python3_src/seed/math/sqrts_mod_.py
+e others/数学/整数分解/sqrts_mod_.txt
+  [[
+https://www.geeksforgeeks.org/find-square-root-modulo-p-set-2-shanks-tonelli-algorithm/
+  wget http://cs.indstate.edu/~sgali1/Shanks_Tonelli.pdf
+    [N**((p-1)///2)%p == 1]
+    Half of the elements in the set will be quadratic non-residues
+      find one: [z**((p-1)///2)%p == -1]
+    let [p-1 == odd*2**e]
+    [z**(odd*2**(e-1))%p == -1]
+    [a := N**((odd+1)///2) %p]
+      # (first guess of square root)
+    [b := N**odd %p]
+    [g := z**odd %p]
+    !! [z**(odd*2**(e-1))%p == -1]
+    [g**(2**(e-1))%p == -1]
+    [r := e]
+      # (exponent e will decrease after each updation)
+    [g**(2**(r-1))%p == -1]
+    while 1:
+      [a**2 =[%p]= N*b]
+      [b**(2**(r-1)) %p == 1]
+      [g**(2**(r-1)) %p == -1]
+      ######################
+      let m :=> [m <- [0..<r]][b**(2**m) %p == 1]
+      [0 <= m < r]
+      [b**(2**m) %p == 1]
+      if m==0:
+        [b**(2**0) %p == 1]
+        [b %p == 1]
+        [a**2 =[%p]= N*b =[%p]= 1]
+        [(a**2-N)%p == 0]
+        return a
+      [0 < m < r]
+      [b**(2**m) %p == 1]
+      [b**(2**(m-1)) %p == -1]
+
+      ######################
+      #to update a,b, but keep:
+      [a**2 =[%p]= N*b]
+      [b**(2**(r-1)) %p == 1]
+      [g**(2**(r-1)) %p == -1]
+      ######################
+      [rr := m]:
+        [0 < rr < r]
+        !! [g**(2**(r-1)) %p == -1]
+        [(g**(2**(r-rr)))**(2**(rr-1)) %p == -1]
+        [(g**(2**(r-m)))**(2**(rr-1)) %p == -1]
+        [gg := (g**(2**(r-m))) %p]
+      [aa := a*K %p]:
+        [bb := b*K**2]
+        [bb**(2**(r-2-dd)) %p == 1]
+          <==> [(b*K**2)**(2**(r-2-dd)) %p == 1]
+          !! [b**(2**(m-1)) %p == -1]
+          [(r-2-dd) == (m-1)]
+          [dd := r-1-m]
+          <<== [K**(2**m) %p == -1 %p]
+          <<== [K == g**(2**(r-1-m)) %p]
+      [K := g**(2**(r-1-m)) %p]
+      [r := m]
+      [g := K**2 %p]
+      [a := a*K %p]
+      # [b := b*K**2 %p]
+      [b := b*g %p]
+    Shanks-Tonelli Algorithm.
+    https://arxiv.org/pdf/2008.11814
+    https://eprint.iacr.org/2020/1407.pdf
+      wget -U 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:12.0) Gecko/20100101 Firefox/12.0' https://arxiv.org/pdf/2008.11814.pdf
+          2008.11814-A simple algorithm for finding square root modulo p(2008)(Rajeev Kumar).pdf
+      wget -U 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:12.0) Gecko/20100101 Firefox/12.0' https://eprint.iacr.org/2020/1407.pdf
+          Computing Square Roots Faster than the Tonelli-Shanks+Bernstein Algorithm(2021)(Sarkar).pdf
+
+===
+Computing Square Roots Faster than the Tonelli-Shanks+Bernstein Algorithm(2021)(Sarkar).pdf
+[13] Armand Stefan Rotaru and Sorin Iftene.  A complete generalization of Atkin’s square root algorithm.  Fundam.  Informaticae, 125(1):71–94, 2013.
+[12] Siguna Muller.  On the computation of square roots in finite fields.  Des.  Codes Cryptogr., 31(3):301– 312, 2004.
+[10] Derrick H.  Lehmer.  Computer technology applied to the theory of numbers.  In W.  Leveque, editor, MAA Studies in number theory, 6, pages 117–151.  Prentice-Hall, Englewood Clif f s, New Jersey, 1969.
+[6] Zhengjun Cao, Qian Sha, and Xiao Fan.  Adleman-Manders-Miller root extraction method revisited.  In Chuankun Wu, Moti Yung, and Dongdai Lin, editors, Information Security and Cryptology- 7th International Conference, Inscrypt 2011, Beijing, China, November 30 - December 3, 2011.  Revised Selected Papers, volume 7537 of Lecture Notes in Computer Science, pages 77–85.  Springer, 2011.
+
+https://arxiv.org/abs/1111.4877
+wget_U 'https://arxiv.org/pdf/1111.4877.pdf' -O '1111.4877-Adleman-Manders-Miller root extraction method revisited(2011)(Zhengjun).pdf'
+
+wget_U 'https://profs.info.uaic.ro/~siftene/fi125(1)04.pdf' -O 'A complete generalization of Atkin’s square root algorithm(2013)(Armand).pdf'
+https://www.researchgate.net/publication/220638928_On_the_Computation_of_Square_Roots_in_Finite_Fields
+  xxx wget_U 'https://www.researchgate.net/profile/Siguna-Mueller/publication/220638928_On_the_Computation_of_Square_Roots_in_Finite_Fields/links/5928042f458515e3d464ccff/On-the-Computation-of-Square-Roots-in-Finite-Fields.pdf' -O 'On the computation of square roots in finite fields(2004)(Muller).pdf'
+  靠浏览器下载
+
+https://arxiv.org/abs/2206.07145
+wget_U 'https://arxiv.org/pdf/2206.07145.pdf' -O 'Square Root Computation In Finite Fields(2022)(Ebru).pdf'
+
+
+
+[[[
+https://handwiki.org/wiki/Tonelli%E2%80%93Shanks_algorithm
+wget https://handwiki.org/wiki/Tonelli%E2%80%93Shanks_algorithm -O Shanks-Tonelli-Algorithm--handwiki.html
+===
+
+The Tonelli–Shanks algorithm (referred to by Shanks as the RESSOL algorithm) is used in modular arithmetic to solve for r in a congruence of the form r2 ≡ n (mod p), where p is a prime: that is, to find a square root of n modulo p. Tonelli–Shanks cannot be used for composite moduli: finding square roots modulo composite numbers is a computational problem equivalent to integer factorization.[1]
+
+An equivalent, but slightly more redundant version of this algorithm was developed by Alberto Tonelli[2][3] in 1891. The version discussed here was developed independently by Daniel Shanks in 1973, who explained:
+
+My tardiness in learning of these historical references was because I had lent Volume 1 of Dickson's History to a friend and it was never returned.[4]
+
+According to Dickson,[3] Tonelli's algorithm can take square roots of x modulo prime powers pλ apart from primes.
+
+
+Contents
+1	Core ideas
+2	The algorithm
+3	Proof
+3.1	Order of t
+4	Example
+5	Speed of the algorithm
+6	Uses
+7	Generalizations
+7.1	Tonelli's algorithm will work on mod p^k
+8	Notes
+9	References
+Core ideas
+Given a non-zero [math]\displaystyle{ n }[/math] and an odd prime [math]\displaystyle{ p }[/math], Euler's criterion tells us that [math]\displaystyle{ n }[/math] has a square root (i.e., [math]\displaystyle{ n }[/math] is a quadratic residue) if and only if:
+
+[math]\displaystyle{ n^{\frac{p-1}{2}} \equiv 1 \pmod p }[/math].
+In contrast, if a number [math]\displaystyle{ z }[/math] has no square root (is a non-residue), Euler's criterion tells us that:
+
+[math]\displaystyle{ z^{\frac{p-1}{2}} \equiv -1 \pmod p }[/math].
+It is not hard to find such [math]\displaystyle{ z }[/math], because half of the integers between 1 and [math]\displaystyle{ p-1 }[/math] have this property. So we assume that we have access to such a non-residue.
+
+By (normally) dividing by 2 repeatedly, we can write [math]\displaystyle{ p-1 }[/math] as [math]\displaystyle{ Q 2^S }[/math], where [math]\displaystyle{ Q }[/math] is odd. Note that if we try
+
+[math]\displaystyle{ R \equiv n^{\frac{Q+1}{2}} \pmod p }[/math],
+then [math]\displaystyle{ R^2 \equiv n^{Q+1} = (n)(n^Q) \pmod p }[/math]. If [math]\displaystyle{ t \equiv n^Q \equiv 1 \pmod p }[/math], then [math]\displaystyle{ R }[/math] is a square root of [math]\displaystyle{ n }[/math]. Otherwise, for [math]\displaystyle{ M = S }[/math], we have [math]\displaystyle{ R }[/math] and [math]\displaystyle{ t }[/math] satisfying:
+
+[math]\displaystyle{ R^2 \equiv nt \pmod p }[/math]; and
+[math]\displaystyle{ t }[/math] is a [math]\displaystyle{ 2^{M-1} }[/math]-th root of 1 (because [math]\displaystyle{ t^{2^{M-1}} = t^{2^{S-1}} \equiv n^{Q 2^{S-1}} = n^{\frac{p-1}{2}} }[/math]).
+If, given a choice of [math]\displaystyle{ R }[/math] and [math]\displaystyle{ t }[/math] for a particular [math]\displaystyle{ M }[/math] satisfying the above (where [math]\displaystyle{ R }[/math] is not a square root of [math]\displaystyle{ n }[/math]), we can easily calculate another [math]\displaystyle{ R }[/math] and [math]\displaystyle{ t }[/math] for [math]\displaystyle{ M - 1 }[/math] such that the above relations hold, then we can repeat this until [math]\displaystyle{ t }[/math] becomes a [math]\displaystyle{ 2^0 }[/math]-th root of 1, i.e., [math]\displaystyle{ t = 1 }[/math]. At that point [math]\displaystyle{ R }[/math] is a square root of [math]\displaystyle{ n }[/math].
+
+We can check whether [math]\displaystyle{ t }[/math] is a [math]\displaystyle{ 2^{M-2} }[/math]-th root of 1 by squaring it [math]\displaystyle{ M-2 }[/math] times and check whether it is 1. If it is, then we do not need to do anything, the same choice of [math]\displaystyle{ R }[/math] and [math]\displaystyle{ t }[/math] works. But if it is not, [math]\displaystyle{ t^{2^{M-2}} }[/math] must be -1 (because squaring it gives 1, and there can only be two square roots 1 and -1 of 1 modulo [math]\displaystyle{ p }[/math]).
+
+To find a new pair of [math]\displaystyle{ R }[/math] and [math]\displaystyle{ t }[/math], we can multiply [math]\displaystyle{ R }[/math] by a factor [math]\displaystyle{ b }[/math], to be determined. Then [math]\displaystyle{ t }[/math] must be multiplied by a factor [math]\displaystyle{ b^2 }[/math] to keep [math]\displaystyle{ R^2 \equiv nt \pmod p }[/math]. So we need to find a factor [math]\displaystyle{ b^2 }[/math] so that [math]\displaystyle{ tb^2 }[/math] is a [math]\displaystyle{ 2^{M-2} }[/math]-th root of 1, or equivalently [math]\displaystyle{ b^2 }[/math] is a [math]\displaystyle{ 2^{M-2} }[/math]-th root of -1.
+
+The trick here is to make use of [math]\displaystyle{ z }[/math], the known non-residue. The Euler's criterion applied to [math]\displaystyle{ z }[/math] shown above says that [math]\displaystyle{ z^Q }[/math] is a [math]\displaystyle{ 2^{S-1} }[/math]-th root of -1. So by squaring [math]\displaystyle{ z^Q }[/math] repeatedly, we have access to a sequence of [math]\displaystyle{ 2^i }[/math]-th root of -1. We can select the right one to serve as [math]\displaystyle{ b }[/math]. With a little bit of variable maintenance and trivial case compression, the algorithm below emerges naturally.
+
+The algorithm
+Operations and comparisons on elements of the multiplicative group of integers modulo p [math]\displaystyle{ \mathbb{Z}/p\mathbb{Z} }[/math] are implicitly mod p.
+
+Inputs:
+
+p, a prime
+n, an element of [math]\displaystyle{ \mathbb{Z}/p\mathbb{Z} }[/math] such that solutions to the congruence r2 = n exist; when this is so we say that n is a quadratic residue mod p.
+Outputs:
+
+r in [math]\displaystyle{ \mathbb{Z}/p\mathbb{Z} }[/math] such that r2 = n
+Algorithm:
+
+By factoring out powers of 2, find Q and S such that [math]\displaystyle{ p-1=Q 2^S }[/math] with Q odd
+Search for a z in [math]\displaystyle{ \mathbb{Z}/p\mathbb{Z} }[/math] which is a quadratic non-residue
+Half of the elements in the set will be quadratic non-residues
+Candidates can be tested with Euler's criterion or by finding the Jacobi symbol
+Let
+[math]\displaystyle{ \begin{align} M &\leftarrow S \\ c &\leftarrow z^Q \\ t &\leftarrow n^Q \\ R &\leftarrow n^\frac{Q+1}{2} \end{align} }[/math]
+Loop:
+If t = 0, return r = 0
+If t = 1, return r = R
+Otherwise, use repeated squaring to find the least i, 0 < i < M, such that [math]\displaystyle{ t^{2^i} = 1 }[/math]
+Let [math]\displaystyle{ b \leftarrow c^{2^{M-i-1}} }[/math], and set
+[math]\displaystyle{ \begin{align} M &\leftarrow i \\ c &\leftarrow b^2 \\ t &\leftarrow tb^2 \\ R &\leftarrow Rb \end{align} }[/math]
+Once you have solved the congruence with r the second solution is [math]\displaystyle{ -r \pmod p }[/math]. If the least i such that [math]\displaystyle{ t^{2^i} = 1 }[/math] is M, then no solution to the congruence exists, i.e. n is not a quadratic residue.
+
+This is most useful when p ≡ 1 (mod 4).
+
+For primes such that p ≡ 3 (mod 4), this problem has possible solutions [math]\displaystyle{ r = \pm n^{\frac{p+1}{4}}\pmod p }[/math]. If these satisfy [math]\displaystyle{ r^2 \equiv n \pmod p }[/math], they are the only solutions. If not, [math]\displaystyle{ r^2 \equiv -n \pmod p }[/math], n is a quadratic non-residue, and there are no solutions.
+
+Proof
+We can show that at the start of each iteration of the loop the following loop invariants hold:
+
+[math]\displaystyle{ c^{2^{M-1}} = -1 }[/math]
+[math]\displaystyle{ t^{2^{M-1}} = 1 }[/math]
+[math]\displaystyle{ R^2 = tn }[/math]
+Initially:
+
+[math]\displaystyle{ c^{2^{M-1}} = z^{Q2^{S-1}} = z^\frac{p-1}{2} = -1 }[/math] (since z is a quadratic nonresidue, per Euler's criterion)
+[math]\displaystyle{ t^{2^{M-1}} = n^{Q2^{S-1}} = n^\frac{p-1}{2} = 1 }[/math] (since n is a quadratic residue)
+[math]\displaystyle{ R^2 = n^{Q+1} = tn }[/math]
+At each iteration, with M' , c' , t' , R' the new values replacing M, c, t, R:
+
+[math]\displaystyle{ c'^{2^{M'-1}} = (b^2)^{2^{i-1}} = c^{2^{M-i}2^{i-1}} = c^{2^{M-1}} = -1 }[/math]
+[math]\displaystyle{ t'^{2^{M'-1}} = (tb^2)^{2^{i-1}} = t^{2^{i-1}}b^{2^i} = -1 \cdot -1 = 1 }[/math]
+[math]\displaystyle{ t^{2^{i-1}} = -1 }[/math] since we have that [math]\displaystyle{ t^{2^i} = 1 }[/math] but [math]\displaystyle{ t^{2^{i-1}} \neq 1 }[/math] (i is the least value such that [math]\displaystyle{ t^{2^i} = 1 }[/math])
+[math]\displaystyle{ b^{2^i} = c^{2^{M-i-1}2^i}= c^{2^{M-1}} = -1 }[/math]
+[math]\displaystyle{ R'^2 = R^2b^2 = tnb^2 = t'n }[/math]
+From [math]\displaystyle{ t^{2^{M-1}} = 1 }[/math] and the test against t = 1 at the start of the loop, we see that we will always find an i in 0 < i < M such that [math]\displaystyle{ t^{2^i} = 1 }[/math]. M is strictly smaller on each iteration, and thus the algorithm is guaranteed to halt. When we hit the condition t = 1 and halt, the last loop invariant implies that R2 = n.
+
+Order of t
+We can alternately express the loop invariants using the order of the elements:
+
+[math]\displaystyle{ \operatorname{ord}(c) = 2^M }[/math]
+[math]\displaystyle{ \operatorname{ord}(t) | 2^{M-1} }[/math]
+[math]\displaystyle{ R^2 = tn }[/math] as before
+Each step of the algorithm moves t into a smaller subgroup by measuring the exact order of t and multiplying it by an element of the same order.
+
+Example
+Solving the congruence r2 ≡ 5 (mod 41). 41 is prime as required and 41 ≡ 1 (mod 4). 5 is a quadratic residue by Euler's criterion: [math]\displaystyle{ 5^{\frac{41-1}{2}} = 5^{20} = 1 }[/math] (as before, operations in [math]\displaystyle{ (\mathbb{Z}/41\mathbb{Z})^\times }[/math] are implicitly mod 41).
+
+[math]\displaystyle{ p-1 = 40 = 5 \cdot 2^3 }[/math] so [math]\displaystyle{ Q \leftarrow 5 }[/math], [math]\displaystyle{ S \leftarrow 3 }[/math]
+Find a value for z:
+[math]\displaystyle{ 2^{\frac{41-1}{2}} = 1 }[/math], so 2 is a quadratic residue by Euler's criterion.
+[math]\displaystyle{ 3^{\frac{41-1}{2}} = 40 = -1 }[/math], so 3 is a quadratic nonresidue: set [math]\displaystyle{ z \leftarrow 3 }[/math]
+Set
+[math]\displaystyle{ M \leftarrow S = 3 }[/math]
+[math]\displaystyle{ c \leftarrow z^Q = 3^5 = 38 }[/math]
+[math]\displaystyle{ t \leftarrow n^Q = 5^5 = 9 }[/math]
+[math]\displaystyle{ R \leftarrow n^{\frac{Q+1}{2}} = 5^{\frac{5+1}{2}} = 2 }[/math]
+Loop:
+First iteration:
+[math]\displaystyle{ t \neq 1 }[/math], so we're not finished
+[math]\displaystyle{ t^{2^1} = 40 }[/math], [math]\displaystyle{ t^{2^2} = 1 }[/math] so [math]\displaystyle{ i \leftarrow 2 }[/math]
+[math]\displaystyle{ b \leftarrow c^{2^{M-i-1}} = 38^{2^{3-2-1}} = 38 }[/math]
+[math]\displaystyle{ M \leftarrow i = 2 }[/math]
+[math]\displaystyle{ c \leftarrow b^2 = 38^2 = 9 }[/math]
+[math]\displaystyle{ t \leftarrow tb^2 = 9 \cdot 9 = 40 }[/math]
+[math]\displaystyle{ R \leftarrow Rb = 2 \cdot 38 = 35 }[/math]
+Second iteration:
+[math]\displaystyle{ t \neq 1 }[/math], so we're still not finished
+[math]\displaystyle{ t^{2^1} = 1 }[/math] so [math]\displaystyle{ i \leftarrow 1 }[/math]
+[math]\displaystyle{ b \leftarrow c^{2^{M-i-1}} = 9^{2^{2-1-1}} = 9 }[/math]
+[math]\displaystyle{ M \leftarrow i = 1 }[/math]
+[math]\displaystyle{ c \leftarrow b^2 = 9^2 = 40 }[/math]
+[math]\displaystyle{ t \leftarrow tb^2 = 40 \cdot 40 = 1 }[/math]
+[math]\displaystyle{ R \leftarrow Rb = 35 \cdot 9 = 28 }[/math]
+Third iteration:
+[math]\displaystyle{ t = 1 }[/math], and we are finished; return [math]\displaystyle{ r = R = 28 }[/math]
+Indeed, 282 ≡ 5 (mod 41) and (−28)2 ≡ 132 ≡ 5 (mod 41). So the algorithm yields the two solutions to our congruence.
+
+Speed of the algorithm
+The Tonelli–Shanks algorithm requires (on average over all possible input (quadratic residues and quadratic nonresidues))
+
+[math]\displaystyle{ 2m+2k+\frac{S(S-1)}{4} +\frac{1}{2^{S-1}} - 9 }[/math]
+modular multiplications, where [math]\displaystyle{ m }[/math] is the number of digits in the binary representation of [math]\displaystyle{ p }[/math] and [math]\displaystyle{ k }[/math] is the number of ones in the binary representation of [math]\displaystyle{ p }[/math]. If the required quadratic nonresidue [math]\displaystyle{ z }[/math] is to be found by checking if a randomly taken number [math]\displaystyle{ y }[/math] is a quadratic nonresidue, it requires (on average) [math]\displaystyle{ 2 }[/math] computations of the Legendre symbol.[5] The average of two computations of the Legendre symbol are explained as follows: [math]\displaystyle{ y }[/math] is a quadratic residue with chance [math]\displaystyle{ \tfrac{\tfrac{p+1}{2}}{p} = \tfrac{1 + \tfrac{1}{p}}{2} }[/math], which is smaller than [math]\displaystyle{ 1 }[/math] but [math]\displaystyle{ \geq \tfrac{1}{2} }[/math], so we will on average need to check if a [math]\displaystyle{ y }[/math] is a quadratic residue two times.
+
+This shows essentially that the Tonelli–Shanks algorithm works very well if the modulus [math]\displaystyle{ p }[/math] is random, that is, if [math]\displaystyle{ S }[/math] is not particularly large with respect to the number of digits in the binary representation of [math]\displaystyle{ p }[/math]. As written above, Cipolla's algorithm works better than Tonelli–Shanks if (and only if) [math]\displaystyle{ S(S-1) \gt 8m + 20 }[/math]. However, if one instead uses Sutherland's algorithm to perform the discrete logarithm computation in the 2-Sylow subgroup of [math]\displaystyle{ \mathbb{F}_p }[/math], one may replace [math]\displaystyle{ S(S-1) }[/math] with an expression that is asymptotically bounded by [math]\displaystyle{ O(S\log S/\log\log S) }[/math].[6] Explicitly, one computes [math]\displaystyle{ e }[/math] such that [math]\displaystyle{ c^e\equiv n^Q }[/math] and then [math]\displaystyle{ R\equiv c^{-e/2} n^{(Q+1)/2} }[/math] satisfies [math]\displaystyle{ R^2\equiv n }[/math] (note that [math]\displaystyle{ e }[/math] is a multiple of 2 because [math]\displaystyle{ n }[/math] is a quadratic residue).
+
+The algorithm requires us to find a quadratic nonresidue [math]\displaystyle{ z }[/math]. There is no known deterministic algorithm that runs in polynomial time for finding such a [math]\displaystyle{ z }[/math]. However, if the generalized Riemann hypothesis is true, there exists a quadratic nonresidue [math]\displaystyle{ z \lt 2\ln^2{p} }[/math],[7] making it possible to check every [math]\displaystyle{ z }[/math] up to that limit and find a suitable [math]\displaystyle{ z }[/math] within polynomial time. Keep in mind, however, that this is a worst-case scenario; in general, [math]\displaystyle{ z }[/math] is found in on average 2 trials as stated above.
+
+Uses
+The Tonelli–Shanks algorithm can (naturally) be used for any process in which square roots modulo a prime are necessary. For example, it can be used for finding points on elliptic curves. It is also useful for the computations in the Rabin cryptosystem and in the sieving step of the quadratic sieve.
+
+Generalizations
+Tonelli–Shanks can be generalized to any cyclic group (instead of [math]\displaystyle{ (\mathbb{Z}/p\mathbb{Z})^\times }[/math]) and to kth roots for arbitrary integer k, in particular to taking the kth root of an element of a finite field.[8]
+
+If many square-roots must be done in the same cyclic group and S is not too large, a table of square-roots of the elements of 2-power order can be prepared in advance and the algorithm simplified and sped up as follows.
+
+Factor out powers of 2 from p − 1, defining Q and S as: [math]\displaystyle{ p-1 = Q2^S }[/math] with Q odd.
+Let [math]\displaystyle{ R \leftarrow n^{\frac{Q+1}{2}}, t\leftarrow n^Q \equiv R^2/n }[/math]
+Find [math]\displaystyle{ b }[/math] from the table such that [math]\displaystyle{ b^2 \equiv t }[/math] and set [math]\displaystyle{ R \equiv R/b }[/math]
+return R.
+Tonelli's algorithm will work on mod p^k
+According to Dickson's "Theory of Numbers"[3]
+
+A. Tonelli[9] gave an explicit formula for the roots of [math]\displaystyle{ x^{2}=c \pmod{ p^{\lambda}} }[/math][3]
+
+The Dickson reference shows the following formula for the square root of [math]\displaystyle{ x^{2}\bmod{p^{\lambda}} }[/math].
+
+when [math]\displaystyle{ p=4\cdot7+1 }[/math], or [math]\displaystyle{ s=2 }[/math] (s must be 2 for this equation) and [math]\displaystyle{ A=7 }[/math] such that [math]\displaystyle{ 29=2^{2}\cdot7+1 }[/math]
+for [math]\displaystyle{ x^{2}\bmod{p^{\lambda}}\equiv c }[/math] then
+[math]\displaystyle{ x \bmod{p^{\lambda}}\equiv \pm (c^{A}+3)^{\beta}\cdot c^{(\beta+1)/2} }[/math] where [math]\displaystyle{ \beta \equiv a\cdot p^{\lambda-1} }[/math]
+Noting that [math]\displaystyle{ 23^{2} \bmod{ 29^{3}}\equiv 529 }[/math] and noting that [math]\displaystyle{ \beta = 7\cdot29^{2} }[/math] then
+
+[math]\displaystyle{ (529^{7} + 3)^{7\cdot 29^{2}}\cdot 529^{(7\cdot29^{2} + 1)/2}\bmod{ 29^{3}}\equiv 24366 \equiv -23 }[/math]
+To take another example: [math]\displaystyle{ 2333^{2} \bmod{ 29^{3}}\equiv 4142 }[/math] and
+
+[math]\displaystyle{ (4142^{7} + 3)^{7 \cdot29^{2}}\cdot 4142^{(7\cdot29^{2} + 1)/2}\bmod{ 29^{3}}\equiv 2333 }[/math]
+Dickson also attributes the following equation to Tonelli:
+
+[math]\displaystyle{ X\bmod{p^{\lambda}}\equiv x^{p^{\lambda-1}}\cdot c^{(p^{\lambda}-2p^{\lambda-1}+1)/2} }[/math] where [math]\displaystyle{ X^{2}\bmod{p^{\lambda}}\equiv c }[/math] and [math]\displaystyle{ x^{2}\bmod{p}\equiv c }[/math];
+Using [math]\displaystyle{ p=23 }[/math] and using the modulus of [math]\displaystyle{ p^{3} }[/math] the math follows:
+
+[math]\displaystyle{ 1115^{2}\bmod{ 23^{3}}=2191 }[/math]
+First, find the modular square root mod [math]\displaystyle{ p }[/math] which can be done by the regular Tonelli algorithm:
+
+[math]\displaystyle{ 1115^{2}\bmod{ 23}\equiv 6 }[/math] and thus [math]\displaystyle{ \sqrt{6}\bmod{23}\equiv 11 }[/math]
+And applying Tonelli's equation (see above):
+
+[math]\displaystyle{ 11^{23^{2}}\cdot 2191^{(23^{3} - 2 \cdot23^{2} + 1)/2}\bmod {23^{3}} \equiv 1115 }[/math]
+Dickson's reference[3] clearly shows that Tonelli's algorithm works on moduli of [math]\displaystyle{ p^{\lambda} }[/math].
+
+Notes
+ Oded Goldreich, Computational complexity: a conceptual perspective, Cambridge University Press, 2008, p. 588.
+ Volker Diekert; Manfred Kufleitner; Gerhard Rosenberger; Ulrich Hertrampf (24 May 2016). Discrete Algebraic Methods: Arithmetic, Cryptography, Automata and Groups. De Gruyter. pp. 163–165. ISBN 978-3-11-041632-9.
+ Leonard Eugene Dickson (1919). History of the Theory of Numbers. 1. Washington, Carnegie Institution of Washington. pp. 215–216.
+ Daniel Shanks. Five Number-theoretic Algorithms. Proceedings of the Second Manitoba Conference on Numerical Mathematics. Pp. 51–70. 1973.
+ Gonzalo Tornaria - Square roots modulo p, page 2 https://doi.org/10.1007%2F3-540-45995-2_38
+ Sutherland, Andrew V. (2011), "Structure computation and discrete logarithms in finite abelian p-groups", Mathematics of Computation 80 (273): 477–500, doi:10.1090/s0025-5718-10-02356-2
+ Bach, Eric (1990), "Explicit bounds for primality testing and related problems", Mathematics of Computation 55 (191): 355–380, doi:10.2307/2008811
+ Adleman, L. M., K. Manders, and G. Miller: 1977, `On taking roots in finite fields'. In: 18th IEEE Symposium on Foundations of Computer Science. pp. 175-177
+ "Accademia nazionale dei Lincei, Rome. Rendiconti, (5), 1, 1892, 116-120."
+References
+Ivan Niven; Herbert S. Zuckerman; Hugh L. Montgomery (1991). An Introduction to the Theory of Numbers (5th ed.). Wiley. pp. 110–115. ISBN 0-471-62546-9.
+Daniel Shanks. Five Number Theoretic Algorithms. Proceedings of the Second Manitoba Conference on Numerical Mathematics. Pp. 51–70. 1973.
+Alberto Tonelli, Bemerkung über die Auflösung quadratischer Congruenzen. Nachrichten von der Königlichen Gesellschaft der Wissenschaften und der Georg-Augusts-Universität zu Göttingen. Pp. 344–346. 1891. [1]
+Gagan Tara Nanda - Mathematics 115: The RESSOL Algorithm [2]
+Gonzalo Tornaria [3]
+vte
+Number-theoretic algorithms
+Primality tests	
+AKSAPRBaillie–PSWElliptic curvePocklingtonFermatLucasLucas–LehmerLucas–Lehmer–RieselProth's theoremPépin'sQuadratic FrobeniusSolovay–StrassenMiller–Rabin
+Prime-generating	
+Sieve of AtkinSieve of EratosthenesSieve of SundaramWheel factorization
+Integer factorization	
+Continued fraction (CFRAC)Dixon'sLenstra elliptic curve (ECM)Euler'sPollard's rhop − 1p + 1Quadratic sieve (QS)General number field sieve (GNFS)Special number field sieve (SNFS)Rational sieveFermat'sShanks's square formsTrial divisionShor's
+Multiplication	
+Ancient EgyptianLongKaratsubaToom–CookSchönhage–StrassenFürer's
+Euclidean division	
+BinaryChunkingFourierGoldschmidtNewton-RaphsonLongShortSRT
+Discrete logarithm	
+Baby-step giant-stepPollard rhoPollard kangarooPohlig–HellmanIndex calculusFunction field sieve
+Greatest common divisor	
+BinaryEuclideanExtended EuclideanLehmer's
+Modular square root	
+CipollaPocklington'sTonelli–ShanksBerlekamp
+Other algorithms	
+ChakravalaCornacchiaExponentiation by squaringInteger square rootLLLModular exponentiationMontgomery reductionSchoof's
+Italics indicate that algorithm is for numbers of special forms
+
+Public domain	
+0.00
+ (0 votes)
+Original source: https://en.wikipedia.org/wiki/Tonelli–Shanks algorithm. Read more
+]]]
+  ]]

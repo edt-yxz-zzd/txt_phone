@@ -1,0 +1,1161 @@
+
+e others/数学/整数分解/trial_division.txt
+
+
+view others/数学/divmod加速.txt
+
+
+
+
+
+[n%d == 0][q := n///d]:
+  [n == q*d]
+  [n == q*(d-t) +q*t]
+  [-(d-t) < q*t < d-t]:
+    <==> [-d/(q-1) < t < d/(q+1)]
+    [@[k :<- [d-t..=d-1]] -> [n%k =!= 0]]
+    [@[k :<- [d+1..=d-t]] -> [n%k =!= 0]]
+    [@[k :<- [d-d/(q+1)<..<d+d/(q-1)]] -> [[n%k == 0] <-> [k == d]]]
+    [@[k :<- [d-ceil(d/(q+1))+1..=d+ceil(d/(q-1))-1]] -> [[n%k == 0] <-> [k == d]]]
+    [@[k :<- [d-(d-1)//(q+1)..=d+(d-1)//(q-1)]] -> [[n%k == 0] <-> [k == d]]]
+  [@[k :<- [d-(d-1)//(q+1)..=d+(d-1)//(q-1)]] -> [[n%k == 0] <-> [k == d]]]
+    可以看作d局部约数一阶约束
+
+
+
+
+
+[1/(x+h) == 1/x -h/x**2  + h**2/x**2/(x+h)]
+  这个展开式有点意思
+  嵌套展开:
+[1/(x+h)
+== 1/x -h/x**2  + h**2/x**2/(x+h)
+== 1/x -h/x**2  + h**2/x**2 *(1/x -h/x**2  + h**2/x**2/(x+h))
+== 1/x -h/x**2  + h**2/x**3 -h**3/x**4  + h**4/x**4/(x+h)
+== 1/x * sum (-h/x)**k {k :<- [0..]}
+== 1/x * 1/(1+h/x)
+
+
+== 1/x * sum (-h/x)**k {k :<- [0..<t]} + (-h/x)**t /(x+h)
+== 1/x * (1-(-h/x)**t)/(1+h/x) + (-h/x)**t /(x+h)
+== (1-(-h/x)**t)/(x+h) + (-h/x)**t /(x+h)
+== 1/(x+h)
+]
+
+[[
+假设 整除:
+[n%(x+h) == 0:
+    <==> [n/(x+h) %1 == 0]
+    #展开 n/(x+h)
+    [n/(x+h) == n/x * sum (-h/x)**k {k :<- [0..<t]} + n*(-h/x)**t /(x+h)]
+    #直接切去 关于h的多项式的系数中的部分整数，剩下的依然是整数
+    #   但精度不足
+    #就像(1/(x+h))乘上n之后才展开
+    #   可以再考虑乘上D，以提高精度
+    #不仅是(D*n/(x+h))，还可以是((D*n)**ee/(x+h))，甚至是((D*2**tt*n)**ee/(x+h))，2**tt用于拉开因子的距离 从区间[2..=floor_sqrtN]转换到[2*2**tt..=floor_sqrtN*2**tt]
+    #   ???好像无用
+    # D*n/(x+2*h)
+    # D*n/(x+6*h+1or5)
+    # D*n*(x-h)/(x**2-h**2) == D*n*(x-h)/x**2 /(1-(h/x)**2)
+    # D*n*(x-h)*(x**2+h**2)/(x**4-h**4) == D*n*(x-h)*(x**2+h**2)/x**4 /(1-(h/x)**4)
+    #           try_00001:goto
+    #
+    [D*n/(x+h)
+    == D*n/x * sum (-h/x)**k {k :<- [0..<t]} + D*n*(-h/x)**t /(x+h)
+    == sum D*n/x**(k+1) * (-h)**k {k :<- [0..<t]} + D*n/x**t * (-h)**t /(x+h)
+    == sum D*n/x**(k+1) * (-h)**k {k :<- [0..<t]} + D*n/x**(t+1) * (-h)**t /(1+h/x)
+    # bug:xxx 假设 [s>=0][n/x**(s+1) == N/D + ev][abs(ev) < 1/D**2][D < x**((s+1)/2)]
+    #   # bug!:[[D >= x**((s+1)/2)] -> [[abs(ev) < 1/D**2 <= 1/x**(s+1) == 1/last_D][ev == 0][D==last_D==x**(s+1)]]]
+    #   # 1/2, 2/3, 3/5, 5/8
+    #   # 5/8 == 3/5 + 1/40
+    #   # [40 > D**2==5**2 > 8==last_D][ev == 1 =!= 0]
+    #
+    # 假设 [s>=0][n/x**(s+1) == N/D + ev][abs(ev) < 1/D**2][D >= 1]
+    #       #D的约束:见下面『D,h不能太大』
+    # ???xxx 假设 [[x>1] -> [1 <= D < x**(s+1)]]
+    # 假设 [[x>1] -> [1 <= D <= x**(s+1)]]
+    #       #   is_the_upperbound4D_vorrect?:goto
+    # 假设 [gcd(n,x) == 1]
+    # 假设 [h**t < ku * x**(t+1)/(D*n)]
+    #       to estimate last item:D*n/x**(t+1) * (-h)**t /(1+h/x)
+    # 假设 [h >= 0]
+    # [D*h**t < ku * x**(t+1)/n] #『D,h不能太大』
+    #       [[h==x] -> [ku > D*n/x]]
+    #       since ku control number of equations to be solved, it cannot be too large
+    # 假设 [h < x]
+    # !! 假设 [h >= 0]
+    # [0 <= D*n/x**(t+1) * h**t /(1+h/x) < ku * 1 /(1+h/x) <= ku]
+    # let [eu := ku -D*n/x**(t+1) * h**t /(1+h/x)]
+    # [0 < eu <= ku]
+    #
+    == sum D*n/x**(k+1) * (-h)**k {k :<- [0..<t]} + (ku -eu)*(-1)**t
+    #直接切去 关于h的多项式的系数中的部分整数，剩下的依然是整数
+    # let [di[k] := round(D*n/x**(k+1))]
+    # let [df[k] := (D*n/x**(k+1) -di[k])]
+    # [abs(df[k]) <= 1/2]
+    # [D*n/x**(k+1) == (di[k] +df[k])]
+    #
+    == sum (di[k] +df[k]) * (-h)**k {k :<- [0..<t]} + (ku -eu)*(-1)**t
+    == sum di[k] * (-h)**k {k :<- [0..<t]} + sum df[k] * (-h)**k {k :<- [0..<t]} + (ku -eu)*(-1)**t
+    # 尾数
+    # let [tail := (D*n/(x+h) - sum di[k] * (-h)**k {k :<- [0..<t]})]
+    # [tail %1 == 0]
+    # [tail == sum df[k] * (-h)**k {k :<- [0..<t]} + (ku -eu)*(-1)**t]
+    == sum di[k] * (-h)**k {k :<- [0..<t]} + tail
+    ]
+    # 尾数上限
+    [abs(tail)
+    == abs(D*n/(x+h) - sum di[k] * (-h)**k {k :<- [0..<t]})
+    == abs(sum df[k] * (-h)**k {k :<- [0..<t]} + (ku -eu)*(-1)**t)
+    # !! [0 < eu <= ku]
+    <= sum abs(df[k]) * (+h)**k {k :<- [0..<t]} + (ku -eu)
+    #
+    # 控制尾数上限，限定在极小范围，这样要解的方程数量才不会太多
+    # !!假设 [s>=0][n/x**(s+1) == N/D + ev][abs(ev) < 1/D**2][D >= 1]
+    # [D*n/x**(k+1) == (N + D*ev)*x**(s-k) == N*x**(s-k) + (ev*D**2)*x**(s-k)/D]
+    # 假设 [[t>=2] -> [D >= 2*x**(s-1)]]
+    #       for df[k] where [k=!=0]
+    #       when [k==0]: h**k vanish, neednot D to restrict h**k
+    # !! [k :<- [0..<t]]
+    # [[k=!=0] -> [D >= 2*x**(s-k)]]
+    # [[k=!=0] -> [abs((ev*D**2)*x**(s-k)/D) < 1/2]]
+    # 假设 [[t>=2] -> [s >= (t-1)]]
+    # [[k=!=0] -> [x**(s-k) %1 == 0]]
+    # !! [D*n/x**(k+1) == (di[k] +df[k])]
+    # !! [D*n/x**(k+1) == N*x**(s-k) + (ev*D**2)*x**(s-k)/D]
+    # [[k=!=0] -> [df[k] == ((ev*D**2)*x**(s-k)/D)]]
+    # [[k=!=0] -> [di[k] == N*x**(s-k)]]
+    # !! [tail := (D*n/(x+h) - sum di[k] * (-h)**k {k :<- [0..<t]})]
+    # [[t>=2] -> [tail == (D*n/(x+h) -di[0] -sum N*x**(s-k) * (-h)**k {k :<- [1..<t]})]]
+    # [[t==1] -> [tail == (D*n/(x+h) -di[0])]]
+    #
+    # 假设 [t >= 1]
+    # [exists [k==0]]
+    # [exists df[0]]
+    # [[t==1] -> [the sum vanish]]
+    # !! 假设 [[t>=2] -> [D >= 2*x**(s-1)]]
+    <= df[0] +sum (abs(ev*D**2)*x**(s-k)/D) * h**k {k :<- [1..<t]} + (ku -eu)
+    # !! [abs(df[k]) <= 1/2]
+    <= 1/2 +sum abs(ev*D**2)*(h**k *x**(s-k)/D) {k :<- [1..<t]} + (ku -eu)
+    # !! [abs(ev) < 1/D**2]
+    <= 1/2 +sum (h**k *x**(s-k)/D) {k :<- [1..<t]} + (ku -eu)
+    #       上式取等号 iff [t==1]or[h==0]
+    == (x**s/D) *sum (h/x)**k {k :<- [1..<t]} + 1/2 + (ku -eu)
+    == (x**s/D) *((h/x) -(h/x)**t)/(1 -(h/x)) + 1/2 + (ku -eu)
+    * [t==1]:
+        ... <= ... == 1/2 + (ku -eu)
+        # 假设[[t==1] -> [kv >= 0]]
+        <= kv + 1/2 + (ku -eu)
+    * [t>=2]:
+        ... <= ... == (x**s/D) *((h/x) -(h/x)**t)/(1 -(h/x)) + 1/2 + (ku -eu)
+        # !! 假设 [h < x]
+        == (x**s/D) *h*(1 -(h/x)**(t-1))/(x -h) + 1/2 + (ku -eu)
+        < (x**s/D) *h/(x -h) + 1/2 + (ku -eu)
+        # 假设[[t>=2] -> [kv*D >= x**s *h/(x -h)]]
+        #       def___kv:here
+        <= kv + 1/2 + (ku -eu)
+
+    <= kv + 1/2 + (ku -eu)
+    # !! [0 < eu <= ku]
+    < kv + 1/2 + ku
+    ]
+    [abs(tail) < kv + 1/2 + ku]
+    ######################
+    !! [[t>=2] -> [tail == (D*n/(x+h) -di[0] -sum N*x**(s-k) * (-h)**k {k :<- [1..<t]})]]
+    [[t>=2] ->
+        [(x+h)*tail
+        == (D*n -di[0]*(x+h) -(x+h)*sum N*x**(s-k) * (-h)**k {k :<- [1..<t]})
+        == (D*n -di[0]*(x+h)
+        -sum N*x**(s-k+1) * (-h)**k {k :<- [1..<t]}
+        +sum N*x**(s-k) * (-h)**(k+1) {k :<- [1..<t]})
+            #NOTE: sign of the sum be '+'
+        == (D*n -di[0]*(x+h)
+        -sum N*x**(s-k+1) * (-h)**k {k :<- [1..<t]}
+        +sum N*x**(s-k+1) * (-h)**k {k :<- [2..=t]})
+        == (D*n -di[0]*(x+h)
+        -sum N*x**(s-k+1) * (-h)**k {k :<- [1..=1]}
+        +sum N*x**(s-k+1) * (-h)**k {k :<- [t..=t]})
+        == (D*n -di[0]*(x+h)
+        -N*x**s * (-h)
+        +N*x**(s-t+1) * (-h)**t)
+        # !! [di[k] := round(D*n/x**(k+1))]
+        # [di[0] := round(D*n/x)]
+        == ((D*n -di[0]*x) +(N*x**s -di[0])*h +N*x**(s-t+1) * (-h)**t)
+        ]
+    ]
+    [[t>=2] -> [(x+h)*tail == ((D*n -di[0]*x) +(N*x**s -di[0])*h +N*x**(s-t+1) * (-h)**t)]]
+    ######################
+    !! [[t==1] -> [tail == (D*n/(x+h) -di[0])]]
+    [[t==1] -> [(x+h)*tail == ((D*n -di[0]*x) -di[0]*h)]]
+    ######################
+    let [xh_tail_(h) := ((D*n -di[0]*x) +(N*x**s -di[0])*h +N*x**(s-t+1) * (-h)**t)]
+    [[t==1] -> [(x+h)*tail == ((D*n -di[0]*x) -di[0]*h) == xh_tail_(h)]]
+    [[t>=2] -> [(x+h)*tail == ((D*n -di[0]*x) +(N*x**s -di[0])*h +N*x**(s-t+1) * (-h)**t) == xh_tail_(h)]]
+    [[t>=1] -> [(x+h)*tail == xh_tail_(h)]]
+
+    !! [xh_tail_(h) := ((D*n -di[0]*x) +(N*x**s -di[0])*h +N*x**(s-t+1) * (-h)**t)]
+    [xh_tail_(h) has at most 3 nonzero coeffs]
+    [xh_tail_(h) has at most 2 sign changes]
+    !! Descartes' Rule of Signs
+    [[xh_tail_(h)==0][h>0] has at most 2 positive real roots]
+    ######################
+    ######################
+    # 尾数上限 结论:
+    [abs(tail) < kv + 1/2 + ku]
+    [tail %1 == 0]
+    [[xh_tail_(h)==0][h>0] has at most 2 positive real roots]
+    [[t>=1] -> [(x+h)*tail == xh_tail_(h)]]
+    <==>:
+        [[t==1] -> [(x+h)*tail == ((D*n -di[0]*x) -di[0]*h)]]
+        [[t>=2] -> [(x+h)*tail == ((D*n -di[0]*x) +(N*x**s -di[0])*h +N*x**(s-t+1) * (-h)**t)]]
+            # vs 原论文[[s:=1][t:=2]]
+            # [di[0] := round(D*n/x)]
+    ######################
+    ######################
+    # 上面所有假设:
+    # 假设 [s>=0][n/x**(s+1) == N/D + ev][abs(ev) < 1/D**2][D >= 1]
+    # 假设 [[x>1] -> [1 <= D <= x**(s+1)]]
+    # 假设 [gcd(n,x) == 1]
+    # 假设 [h**t < ku * x**(t+1)/(D*n)]
+    # 假设 [h >= 0]
+    # 假设 [h < x]
+    # 假设 [[t>=2] -> [D >= 2*x**(s-1)]]
+    # 假设 [[t>=2] -> [s >= (t-1)]]
+    # 假设 [t >= 1]
+        # 假设[[t==1] -> [kv >= 0]]
+        # 假设[[t>=2] -> [kv*D >= x**s *h/(x -h)]]
+    ######################
+    ######################
+    let [B := floor(kv + 1/2 + ku)]
+    !! [abs(tail) < kv + 1/2 + ku]
+    !! [tail %1 == 0]
+    [tail <- [-B..=+B]]
+    !! [[t>=1] -> [(x+h)*tail == xh_tail_(h)]]
+    [[t>=1] -> [candidate_tail :<- [-B..=+B]] -> [solve equation for integer h: [(x+h)*candidate_tail == xh_tail_(h)]]]
+        # B 似乎可以用来估计smooth_number的 稠密度
+        #   选出 [>x,y>]范围内的所有合适的smooth_number，求出它们的lcm，以之为n，那么该范围内，n的因子包含这些smooth_number
+    ######################
+    # !! 假设 [h >= 0]
+    # !! 假设 [h < x]
+    [0 <= h < x]
+    # !! 假设 [gcd(n,x) == 1]
+    [h =!= 0]
+    [1 <= h < x]
+    ######################
+    # xxx:useless: let [p :: prime][p > max{B,max_h}] xxx
+    # 中国剩余定理:
+    # 假设 [ps :: [prime]][II(ps) > max{B,max_h}]
+        #neednot 『> N*x**(s-t+1) * (-h)**t)』, since we are only to find one solution per candidate_tail, then test whether [n%(x+h)==0]
+    [p :<- ps]:
+        !! [[t>=1] -> [candidate_tail :<- [-B..=+B]] -> [solve equation for integer h: [(x+h)*candidate_tail == xh_tail_(h)]]]
+        [[t>=1] -> [candidate_tail :<- [-B..=+B]] -> [solve equation for integer h%p: [(x+h)*candidate_tail =[%p]= xh_tail_(h)]]]
+        !! [xh_tail_(h) := ((D*n -di[0]*x) +(N*x**s -di[0])*h +N*x**(s-t+1) * (-h)**t)]
+        !! [1 <= h < x]
+        [xh_tail_(h)%p := (((D*n -di[0]*x)%p) +((N*x**s -di[0])%p) *(h%p) +(N*x**(s-t+1)%p) * (-(h%p))**(t%(p-1)))]
+            # NOTE: (t%(p-1)) reduce polynomial degree
+        [[t>=1] -> [candidate_tail :<- [-B..=+B]] -> [solve equation for integer h%p by enumerate: [(x%p +(h%p))*(candidate_tail%p) =[%p]= (((D*n -di[0]*x)%p) +((N*x**s -di[0])%p) *(h%p) +(N*x**(s-t+1)%p) * (-(h%p))**(t%(p-1)))]]]
+            # useless unless there is at most one solution per equation
+        # 假设 [[p :<- ps] -> [t%(p-1) == 1]]
+        #     <<== let [t := 1 +kt*lcm{p-1 | [p :<- ps]}] or [t := 1+smooth_number(e.g. 2**e2 * 3**e3 * 5**e5)]
+        [[t>=1] -> [candidate_tail :<- [-B..=+B]] -> [solve equation for integer h%p:
+            [(x%p +(h%p))*(candidate_tail%p)
+            !! [t%(p-1) == 1]
+            =[%p]= (((D*n -di[0]*x)%p) +((N*x**s -di[0])%p) *(h%p) +(N*x**(s-t+1)%p) * (-(h%p)))
+            =[%p]= (((D*n -di[0]*x)%p) +((N*x**s -N*x**(s-t+1) -di[0])%p) *(h%p))
+            ]
+            [(x*(di[0] +candidate_tail) -D*n)%p
+            =[%p]= (((N*x**s -N*x**(s-t+1) -di[0] -candidate_tail)%p) *(h%p))
+            !! [t%(p-1) == 1]
+            =[%p]= (((N*x**s -N*x**(s-1+1) -di[0] -candidate_tail)%p) *(h%p))
+            =[%p]= (((-di[0] -candidate_tail)%p) *(h%p))
+            ]
+            ]]
+        # 假设 [[p :<- ps] -> [((di[0] +candidate_tail)%p) =!= 0]]
+        [[t>=1] -> [candidate_tail :<- [-B..=+B]] -> [(h%p) == (-x +D*n*inv_mod_(p;(di[0] +candidate_tail))) %p]]
+            # [di[0] := round(D*n/x)]
+            # [[D==x**(s+1)] -> [di[0] == D*n///x == n*x**s]]
+            #   is_the_upperbound4D_vorrect?:here
+        [[D==x**(s+1)] -> [[t>=1] -> [candidate_tail :<- [-B..=+B]] ->
+              [(h%p)
+              == (-x +D*n*inv_mod_(p;(di[0] +candidate_tail))) %p
+              == -x*(1 -(D*n///x)*inv_mod_(p;(di[0] +candidate_tail))) %p
+              == -x*(1 -di[0]*inv_mod_(p;(di[0] +candidate_tail))) %p
+              == -x*((di[0] +candidate_tail) -di[0])*inv_mod_(p;(di[0] +candidate_tail)) %p
+              == -x*candidate_tail*inv_mod_(p;(di[0] +candidate_tail)) %p
+              == -x*candidate_tail*inv_mod_(p;(n*x**s +candidate_tail)) %p
+              ]]]
+        [[D==x**(s+1)] -> [[t>=1] -> [candidate_tail :<- [-B..=+B]] -> [(h%p) == -x*candidate_tail*inv_mod_(p;(n*x**s +candidate_tail)) %p]]]
+
+        [[B==0] -> [candidate_tail :<- [-B..=+B]] -> [candidate_tail == 0]]
+        !! [[D==x**(s+1)] -> [[t>=1] -> [candidate_tail :<- [-B..=+B]] -> [(h%p) == -x*candidate_tail*inv_mod_(p;(n*x**s +candidate_tail)) %p]]]
+        [[B==0] -> [D==x**(s+1)] -> [[t>=1] -> [(h%p) == 0]]]
+            #肯定有毛病！！
+
+    ######################
+    # 综上:
+    # 假设 [ps :: [prime]][II(ps) > max{B,max_h}]
+        # 假设 [[p :<- ps] -> [t%(p-1) == 1]]
+        # 假设 [[p :<- ps] -> [((di[0] +candidate_tail)%p) =!= 0]]
+
+    [ps :: [prime]][II(ps) > max{B,max_h}][[p :<- ps] -> [t%(p-1) == 1]][[p :<- ps] -> [((di[0] +candidate_tail)%p) =!= 0]][p :<- ps]:
+        [[t>=1] -> [candidate_tail :<- [-B..=+B]] -> [(h%p) == (-x +D*n*inv_mod_(p;(di[0] +candidate_tail))) %p]]
+        [[D==x**(s+1)] -> [[t>=1] -> [candidate_tail :<- [-B..=+B]] -> [(h%p) == -x*candidate_tail*inv_mod_(p;(n*x**s +candidate_tail)) %p]]]
+
+
+    ######################
+    [t==1]:
+        # !! 假设[[t==1] -> [kv >= 0]]
+        [kv := 0]
+        [B == ku]
+        !! [[t>=1] -> [candidate_tail :<- [-B..=+B]] -> [solve equation for integer h: [(x+h)*candidate_tail == xh_tail_(h)]]]
+            # !! [[t==1] -> [(x+h)*tail == ((D*n -di[0]*x) -di[0]*h)]]
+            #此时，有(2*ku+1)个 一元一次方程 待确认 是否有 整数根
+            #或者说 不等式 [-ku <= ((D*n -di[0]*x) -di[0]*h)/(x+h) <= +ku] 是否有 整数解 并且 中间比值 也需是 整数
+            #   这到底好不好求？ku很大
+
+        # !! 假设 [s>=0][n/x**(s+1) == N/D + ev][abs(ev) < 1/D**2][D >= 1]
+        [D >= 1]
+          # D has no other constraints
+        # !! 假设 [h**t < ku * x**(t+1)/(D*n)]
+        [h < ku * x**2/(D*n)]
+        [ku > D*n*h /x**2 >= n*h /x**2]
+        [ku > n*max_h /x**2]
+        [x**2 > n*(max_h/ku)]
+        [ku == max_h]:
+            [x**2 > n]
+    ######################
+    [t>=2]:
+        # !! 假设 [[t>=2] -> [s >= (t-1)]]
+        [s >= (t-1)]
+        # !! 假设 [[t>=2] -> [D >= 2*x**(s-1)]]
+        [D >= 2*x**(s-1)]
+        # !! 假设[[t>=2] -> [kv*D >= x**s *h/(x -h)]]
+        [kv*D >= x**s *h/(x -h)]
+        [D >= x**s *h/(x -h) /kv]
+        !! [0 <= h < x]
+        [0 <= max_h < x]
+        [x -max_h > 0]
+        [D >= x**s *max_h/(x -max_h) /kv]
+        # !! 假设 [h**t < ku * x**(t+1)/(D*n)]
+        !! [0 <= h < x]
+        [D < ku *x**(t+1)/n /h**t]
+        [D < ku *x**(t+1)/n /max_h**t]
+        [x**s *max_h/(x -max_h) /kv <= D < ku *x**(t+1)/n /max_h**t]
+        [x**s *max_h/(x -max_h) /kv < ku *x**(t+1)/n /max_h**t]
+        [n *x**s *max_h**(t+1)/(x -max_h) < kv*ku *x**(t+1)]
+        [n *x**(s-1) *(max_h/x)**(t+1)/(1 -(max_h/x)) < kv*ku]
+        [(max_h/x)**(t+1)/(1 -(max_h/x)) < kv*ku /n /x**(s-1)]
+
+        let [smt := s-t]
+        [s == t +smt]
+        !! [s >= (t-1)]
+        [s -t >= -1]
+        [smt >= -1]
+
+
+
+
+        ######################
+        #######fail try:
+        ######################
+        [(max_h/x) == 1/2]:
+            [(1/2)**t < kv*ku /n /x**(s-1)]
+            [-t < log2(kv) +log2(ku) -log2(n) -(s-1)*log2(x)]
+            [t > log2(1/kv) +log2(1/ku) +log2(n) +(s-1)*log2(x)]
+
+
+            !! [t > log2(1/kv) +log2(1/ku) +log2(n) +(s-1)*log2(x)]
+            [t > log2(1/kv) +log2(1/ku) +log2(n) +(t+smt-1)*log2(x)]
+            [0 > log2(1/kv) +log2(1/ku) +log2(n) +(smt-1)*log2(x) +(log2(x) -1)*t]
+            [(log2(x) -1)*t < log2(kv) +log2(ku) -log2(n) -(smt-1)*log2(x)]
+            [x >= 3]:
+                [(log2(x) -1) > 0]
+                !! [t>=2]
+                [0 < (log2(x) -1)*t < log2(kv) +log2(ku) -log2(n) -(smt-1)*log2(x)]
+                [2 <= t < (log2(kv) +log2(ku) -log2(n) -(smt-1)*log2(x))/(log2(x) -1)]
+                [0 < log2(kv) +log2(ku) -log2(n) -(smt-1)*log2(x)]
+                [log2(kv) +log2(ku) > log2(n) +(smt-1)*log2(x)]
+                [x < n]:
+                  [log2(x) < log2(n)]
+                  !! [smt >= -1]
+                  * [smt >= 1]:
+                      [log2(kv) +log2(ku) > log2(n)]
+                      [kv*ku > n]
+                      [B is too big]
+                  * [smt == 0]:
+                      [log2(kv) +log2(ku) > log2(n) -log2(x)]
+                      [kv*ku*x > n]
+                      [B is too big]
+                  * [smt == -1]:
+                      [log2(kv) +log2(ku) > log2(n) -2*log2(x)]
+                      [kv*ku*x**2 > n]
+                      [[kv*ku <= 1] -> [x**2 > n]]
+        [(max_h/x) == 1/2][3 <= x < n][x**2 > n][smt == -1][n/x**2 < kv*ku]:
+            !! [smt == -1]
+            !! [s == t +smt]
+            [s == t-1]
+            !! [2 <= t < (log2(kv) +log2(ku) -log2(n) -(smt-1)*log2(x))/(log2(x) -1)]
+            !! [smt == -1]
+            [2 <= t < (log2(kv) +log2(ku) -log2(n) +2*log2(x))/(log2(x) -1)]
+            [2 < (log2(kv) +log2(ku) -log2(n) +2*log2(x))/(log2(x) -1)]
+            [2*(log2(x) -1) < (log2(kv) +log2(ku) -log2(n) +2*log2(x))]
+            [-2 < (log2(kv) +log2(ku) -log2(n))]
+            [log2(n) < (log2(kv) +log2(ku) +2)]
+            [n < 4*kv*ku]
+            [B is too big]
+        [[(max_h/x) == 1/2] is bad setting]
+        ######################
+        ######################
+
+
+        ######################
+        ########restart:
+        ######################
+        let [hx := (max_h/x)]
+        !! [(max_h/x)**(t+1)/(1 -(max_h/x)) < kv*ku /n /x**(s-1)]
+        [hx**(t+1)/(1 -hx) < kv*ku /n /x**(s-1)]
+
+
+        !! [(max_h/x)**(t+1)/(1 -(max_h/x)) < kv*ku /n /x**(s-1)]
+        !! [s == t +smt]
+        [(max_h/x)**(t+1)/(1 -(max_h/x)) < kv*ku /n /x**(t+smt-1)]
+        [(max_h)**(t+1)/(1 -(max_h/x)) < kv*ku *x**(2-smt) /n]
+        !! [smt >= -1]
+        [-smt <= 1]
+        # 假设 [smt == -1]
+        [(max_h)**(t+1)/(1 -(max_h/x)) < kv*ku *x**3 /n]
+        !! [t>=2]
+        # 假设 [t == 2]
+        [(max_h)**3/(1 -(max_h/x)) < kv*ku *x**3 /n]
+        [(max_h/x)**3/(1 -(max_h/x)) < kv*ku /n]
+        [hx**3/(1 -hx) < kv*ku /n]
+        #       def___kv:goto
+
+        [max_h == 1]:
+            [x == max_h/hx == 1/hx]
+        let [x0 := ceil(1/hx)]
+        let [num_super_blocks := ceil(sqrt(n)/x0)]
+        [num_super_blocks <= x0]
+            <==> [ceil(sqrt(n)/x0) <= x0]
+            <==> [x0 >= ceil(n**/4)]
+            <==> [ceil(1/hx) >= ceil(n**/4)]
+        [TIME
+        == O(x0)
+            # [2 <= x < x0] where [max_h==0][using trial_division]
+        +  O(x0)/1 *time_per_inner_block
+            # [x0 <= x < 2*x0] where [max_h==1]
+        +  O(x0)/2 *time_per_inner_block
+            # [2*x0 <= x < 3*x0] where [max_h==2]
+        +  ... ...
+        if [num_super_blocks <= x0] then:
+            +  O(x0)/num_super_blocks *time_per_inner_block
+              # [num_super_blocks*x0 <= x < (num_super_blocks+1)*x0] where [max_h==num_super_blocks]
+        else:
+            +  O(x0)/x0 *time_per_inner_block
+                # [x0*x0 <= x < (x0+1)*x0] where [max_h==x0 ~= 1/hx==x/max_h]
+            +  O(1) *time_per_inner_block
+                # [a <= x < a*(1+hx)] where [max_h==a*hx][a == (x0**2)]
+            +  O(1) *time_per_inner_block
+                # [a*(1+hx) <= x < a*(1+hx)**2] where [max_h==a*(1+hx)*hx]
+            +  O(1) *time_per_inner_block
+                # [a*(1+hx)**2 <= x < a*(1+hx)**3] where [max_h==a*(1+hx)**2*hx]
+            +  ... ...
+        #
+        * [num_super_blocks <= x0]:
+            == O(x0) + O(x0) *sum 1/k {k :<- [1..=num_super_blocks]} *time_per_inner_block
+            == O(x0) + O(x0) *ln(num_super_blocks) *time_per_inner_block
+            == O(x0) *ln(sqrt(n)/x0) *time_per_inner_block
+            == O(x0 *ln(n)) *time_per_inner_block
+        * [num_super_blocks > x0]:
+            == O(x0)
+            +  O(x0) *sum 1/k {k :<- [1..=x0]} *time_per_inner_block
+            + O(1)* ln(sqrt(n)/x0**2)/ln(1+hx) *time_per_inner_block
+            == O(x0)
+            +  O(x0) *ln(x0) *time_per_inner_block
+            + O(1)* ln(sqrt(n)/x0**2)/ln(1+hx) *time_per_inner_block
+
+            == O((x0 *ln(x0)) +(ln(sqrt(n)/x0**2)/ln(1+hx))) *time_per_inner_block
+        ]
+        [time_per_inner_block
+        == time4continued_fraction
+        +  time4solve_equations
+        == O(ln(n)) * time4op4uint<%n>
+        # !! 假设 [t == 2]
+        +  O(2*B+1) * time4op4uint<%n>
+        == O(ln(n) +B) * time4op4uint<%n>
+        !! [B := floor(kv + 1/2 + ku)]
+        == O(ln(n) +kv +ku) * time4op4uint<%n>
+        ]
+        [TIME ==:
+        * [num_super_blocks <= x0]:
+            == O(x0 *ln(n)) *time_per_inner_block
+            == O(x0 *ln(n) *(ln(n) +kv +ku)) * time4op4uint<%n>
+        * [num_super_blocks > x0]:
+            == O((x0 *ln(x0)) +(ln(sqrt(n)/x0**2)/ln(1+hx))) *time_per_inner_block
+            == O((x0 *ln(x0)) +(ln(sqrt(n)/x0**2)/ln(1+hx)))*(ln(n) +kv +ku) *time4op4uint<%n>
+        ###
+        == O(x0 *ln(n) *(ln(n) +kv +ku)) * time4op4uint<%n>
+        # !! [x0 := ceil(1/hx)]
+        == O(1/hx *ln(n) *(ln(n) +kv +ku)) * time4op4uint<%n>
+        ]
+        let [kv := ku]
+        !! [hx**3/(1 -hx) < kv*ku /n]
+        [hx**3/(1 -hx) < ku**2 /n]
+
+        bug:[solve:[hx**3/(1 -hx) == ku**2 /n] to min (ku/hx)]:
+            let [zz := ku/hx]
+            [ku == zz*hx]
+            !! [hx**3/(1 -hx) == ku**2 /n]
+            [hx**3/(1 -hx) == (zz*hx)**2 /n]
+            [hx/(1 -hx) == zz**2 /n]
+            [1/(1 -hx) == 1 +zz**2 /n]
+            when [hx==0]: min [ku/hx]
+            bug!
+
+        [solve:[hx**3/(1 -hx) == ku**2 /n] to min ((ln(n)+ku)/hx)]:
+            let [zzz := ((ln(n)+ku)/hx)]
+            [ku == zzz*hx -ln(n)]
+            !! [hx**3/(1 -hx) == ku**2 /n]
+            [hx**3/(1 -hx) == (zzz*hx -ln(n))**2 /n]
+            [sqrt(n*hx**3/(1 -hx)) == (zzz*hx -ln(n))]
+            [zzz == sqrt(n*hx/(1 -hx)) +ln(n)/hx]
+            [zzz == sqrt(n)*sqrt(-1+1/(1 -hx)) +ln(n)/hx]
+            [DDD(hx;zzz) == sqrt(n) *1/2/sqrt(-1+1/(1 -hx)) /(1 -hx)**2 -ln(n)/hx**2]
+            [limit DDD(hx;zzz) {hx: 0.5 --> 1} == +oo]
+            [limit DDD(hx;zzz) {hx: 0.5 --> 0} == -oo]
+            # zero is min
+            [0 == DDD(hx;zzz)]:
+                [0 == sqrt(n) *1/2/sqrt(-1+1/(1 -hx)) /(1 -hx)**2 -ln(n)/hx**2]
+                [0 == sqrt(n) /sqrt(-1+1/(1 -hx)) *(hx/(1 -hx))**2 -2*ln(n)]
+                [2*ln(n) == sqrt(n) *(hx/(1 -hx))**(3/2)]
+                [(2*ln(n)/sqrt(n))**(2/3) == (hx/(1 -hx)) == -1 +1/(1 -hx)]
+                [hx == (1 - 1/(1 +(2*ln(n)/sqrt(n))**(2/3)))]
+                let [yyy := (2*ln(n)/sqrt(n))**(2/3)]
+                [yyy
+                == (2*ln(n)/sqrt(n))**(2/3)
+                == (2*ln(n)*n/sqrt(n)**3)**(2/3)
+                == (2*ln(n)*n)**(2/3) /n
+                ]
+                [yyy == ((2*ln(n)*n)**(2/3) /n)]
+                [1/yyy == (n /(2*ln(n)*n)**(2/3))]
+                [hx == (1 - 1/(1 +yyy))]
+                [hx == (yyy/(1 +yyy))]
+                [hx == (1/(1 +1/yyy))]
+                [1/hx == (1 +1/yyy)]
+                [1/hx == (1 +(n /(2*ln(n)*n)**(2/3)))]
+                [hx == (1/(1 +(n /(2*ln(n)*n)**(2/3))))]
+
+                !! [hx <- [>0,1>]]
+                ok!
+            when [hx == (1/(1 +(n /(2*ln(n)*n)**(2/3))))]: [min ((ln(n)+ku)/hx)]
+        [hx == (1/(1 +(n /(2*ln(n)*n)**(2/3))))]:
+            [ln(n)/hx
+            # !! [1/hx == (1 +1/yyy)]
+            == ln(n)*(1 +1/yyy)
+            == ln(n) +ln(n)/yyy
+            == ln(n) +ln(n)/(2*ln(n)/sqrt(n))**(2/3)
+            == ln(n) +ln(n)/(2*ln(n))**(2/3) *sqrt(n)**(2/3)
+            == ln(n) +ln(n)**/3 /2**(2/3) *n**/3
+            == ln(n) +(ln(n)*n/4)**/3
+            == ln(n) +(2*ln(n)*n)**/3 /2
+            ]
+            !! [2*ln(n) == sqrt(n) *(hx/(1 -hx))**(3/2)]
+            [sqrt(n*hx/(1 -hx)) == (2*ln(n)*n)**/3]
+            !! [zzz == sqrt(n*hx/(1 -hx)) +ln(n)/hx]
+            [zzz == (2*ln(n)*n)**/3 + ln(n) +(2*ln(n)*n)**/3 /2]
+            [zzz == 3/2 *(2*ln(n)*n)**/3 + ln(n)]
+            let [rrr := (2*ln(n)*n)**/3]
+            !! [zzz == 3/2 *(2*ln(n)*n)**/3 + ln(n)]
+            [zzz == 3/2 *rrr + ln(n)]
+            !! [hx == (1/(1 +(n /(2*ln(n)*n)**(2/3))))]
+            [hx == (1/(1 +(n /rrr**2)))]
+            [hx
+            == (1/(1 +n*rrr /rrr**3))
+            == (1/(1 +n*rrr /(2*ln(n)*n)))
+            == (2*ln(n)/(2*ln(n) +rrr))
+            ]
+            [hx == (2*ln(n)/(2*ln(n) +rrr))]
+            [hx == (2*ln(n)/(2*ln(n) +(2*ln(n)*n)**/3))]
+            !! [ku == zzz*hx -ln(n)]
+            [ku
+            == zzz*hx -ln(n)
+            == (3/2 *rrr + ln(n))*(2*ln(n)/(2*ln(n) +rrr)) -ln(n)
+            == (3 *rrr + 2*ln(n))*ln(n)/(2*ln(n) +rrr) -ln(n)
+            == ((3 *rrr + 2*ln(n))/(2*ln(n) +rrr) -1) *ln(n)
+            == (2 *rrr/(2*ln(n) +rrr)) *ln(n)
+            == (2*ln(n) *rrr/(2*ln(n) +rrr))
+            == (1/(1/(2*ln(n)) +1/rrr))
+            ]
+        [min zzz == 3/2 *(2*ln(n)*n)**/3 + ln(n)]
+            when:[hx == (2*ln(n)/(2*ln(n) +(2*ln(n)*n)**/3))]
+            TIME依然是O(n**/3 *...)
+            并没有什么显著改进(在增加B优化的情况下)
+
+
+    ######################
+
+]]
+[[
+[n/(x+h) == n/x * sum (-h/x)**k {k :<- [0..<t]} + n*(-h/x)**t /(x+h)]
+[n/(x-h) == n/x * sum (h/x)**k {k :<- [0..<t]} + n*(h/x)**t /(x-h)]
+# D*n*(x-h)/(x**2-h**2) == D*n*(x-h)/x**2 /(1-(h/x)**2)
+# D*n*(x-h)*(x**2+h**2)/(x**4-h**4) == D*n*(x-h)*(x**2+h**2)/x**4 /(1-(h/x)**4)
+#           try_00001:here
+#
+[D*n/(x+h)
+# let [fff := (x**zp -(-h)**zp)/(x-(-h))]
+# [[zp%2 == 0] -> [fff == (x**zp -h**zp)/(x+h)]]
+# [[zp%2 == 1] -> [fff == (x**zp +h**zp)/(x+h)]]
+== D*n*fff/(x**zp -(-h)**zp)
+== D*n*fff/x**zp * sum (-h/x)**(zp*k) {k :<- [0..<t]} + D*n*fff* (-h/x)**(zp*t) /(x**zp -(-h)**zp)
+# 假设 [gcd(n,x) == 1]
+# 假设 [D > 0]
+# 假设 [zp >= 1]
+# 假设 [0 <  min_h <= h <= max_h < x]
+# [0 <= h**zp < x**zp]
+# [abs(fff) == fff > 0]
+# [x**(zp-1) *(x+h) -(x**zp +h**zp) == h*(x**(zp-1) -h**(zp-1)) >= 0]
+# [[zp%2 == 1] -> [abs(fff) == (x**zp +h**zp)/(x+h) <= x**(zp-1)]]
+# [[zp%2 == 0] -> [abs(fff) == (x**zp -h**zp)/(x+h) <= x**(zp-1)]]
+# [abs(fff) <= x**(zp-1)]
+
+
+
+# let [hax := max_h/x] #假设为固定值
+# let [hix := min_h/x] #假设为固定值
+# !! 假设 [0 <  min_h <= h <= max_h < x]
+# [x >= 2]
+# [0 < hix <= hax < 1]
+# let [rr := h/x]
+# [0 < hix <= rr <= hax < 1]
+# [h == (rr*x)]
+# [fff == (x**zp -(-h)**zp)/(x-(-h)) == x**(zp-1) *((1 -(-rr)**zp)/(1+rr))]
+
+# let [g_(r) := ((1-(-r)**zp)/(1+r))]
+# [g_(0) == 1]
+# [g_(1) == ((1-(-1)**zp)/2) == zp%2]
+# [DDD(r; (1-(-r)**zp)/(1+r)) == ((1+r)*(-r)**(zp-1) *zp -(1-(-r)**zp))/(1+r)**2 == ((-r)**(zp-1) *zp -(-r)**zp *zp -1 +(-r)**zp)/(1+r)**2 == (-1 +zp*(-r)**(zp-1) -(zp-1)*(-r)**zp)/(1+r)**2]
+# [DDD(r; (1-(-r)**zp)/(1+r)) == (-1 +zp*(-r)**(zp-1) -(zp-1)*(-r)**zp)/(1+r)**2]
+# [[zp >= 1] -> [zp%2 == 1] -> [Dg_(r) 系数变号一次,[0<=r<+oo]一个实数根][Dg_(0) == -1][Dg_(1) == 2*zp-2 >= 0][g_(r) 在[0<=r<=1]上先减再增，最大值出现在两侧，最小值出现在中间]]
+# [[zp >= 1] -> [zp%2 == 0] -> [Dg_(r) 系数不变号,[0<=r<+oo]无实数根][Dg_(0) == -1][Dg_(1) == -2*zp-2 < 0][g_(r) 在[0<=r<=1]上递减，最大值出现在[r==0]，最小值出现在[r==1]]]
+# !! 假设 [zp >= 1]
+# [[zp >= 1] -> [0 <= r <= 1] -> [((1-(-r)**zp)/(1+r)): [0<=r<=1]最大值在两侧]]
+#
+# let [kif := ((1 -(-hix)**zp)/(1+hix))]
+# let [kaf := ((1 -(-hax)**zp)/(1+hax))]
+# [0 < kif < 1]
+# [0 < kaf < 1]
+# !! [[zp >= 1] -> [0 <= r <= 1] -> [((1-(-r)**zp)/(1+r)): [0<=r<=1]最大值在两侧]]
+# !! [fff == x**(zp-1) *((1 -(-rr)**zp)/(1+rr))]
+# [abs(fff) <= max{fff{rr:=hix},fff{rr:=hax}} == x**(zp-1) *max{kif,kaf} < x**(zp-1)]
+# [abs(fff) < x**(zp-1)]
+# let [kff := max{kif,kaf}]
+# [abs(fff) <= x**(zp-1) *kff]
+
+
+# 假设 [t == 2]
+== D*n*fff/x**zp + D*n*fff/x**zp * (-h/x)**zp + D*n*fff* (-h/x)**(zp*2) /(x**zp -(-h)**zp)
+== D*n*fff/x**zp + D*n*fff/x**zp**2 * (-h)**zp + D*n*fff* (-h/x)**(zp*2) /(x**zp -(-h)**zp)
+]
+# 假设 [s==1]|[n/(x**zp)**2 = (N/D +ev/D**2)][abs(ev) < 1]
+# 第一项 切去恰当的整数
+# [D*n*fff/x**zp == D*n/(x**zp)**2 *(fff*x**zp) == (N +ev/D) *(fff*x**zp) == (N*(fff*x**zp) +ev*(fff*x**zp/D))]
+# !! [abs(fff) <= x**(zp-1) *kff]
+# [abs(D*n*fff/x**zp -N*(fff*x**zp)) == abs(ev*(fff*x**zp/D)) <= abs(ev)*(x**(2*zp-1) *kff/D)]
+# !! [abs(ev) < 1]
+# [abs(D*n*fff/x**zp -N*(fff*x**zp)) < (x**(2*zp-1) *kff/D)]
+# let [i0 := N*(fff*x**zp)]
+# let [t0 := (x**(2*zp-1) *kff/D)]
+
+# 第二项 切去恰当的整数
+# [D*n*fff/x**zp**2 * (-h)**zp == (N +ev/D) *fff*(-h)**zp == (N*fff*(-h)**zp +ev*(fff*(-h)**zp/D))]
+# [abs(D*n*fff/x**zp**2 * (-h)**zp -N*fff*(-h)**zp) == abs(ev)*(fff*h**zp/D)]
+# [fff*h**zp == h**zp *(x**zp -(-h)**zp)/(x+h) == (rr*x)**zp *(x**zp -(-(rr*x))**zp)/(x+(rr*x)) == xp**(2*zp-1) *(rr**zp *(1 -(-rr)**zp)/(1+rr))]
+# !! [DDD(r; (1-(-r)**zp)/(1+r)) == (-1 +zp*(-r)**(zp-1) -(zp-1)*(-r)**zp)/(1+r)**2]
+# [DDD(r; (r**zp *(1-(-r)**zp)/(1+r)))
+#   == (zp*r**(zp-1) *(1-(-r)**zp)/(1+r)) +(r**zp *(-1 +zp*(-r)**(zp-1) -(zp-1)*(-r)**zp)/(1+r)**2)
+#   == ((zp*(1-(-r)**zp)*(1+r) +r*(-1 +zp*(-r)**(zp-1) -(zp-1)*(-r)**zp)) *r**(zp-1)/(1+r)**2)
+#   == ((zp +(zp-1)*r -2*zp*(-r)**zp +(2*zp-1)*(-r)**(zp+1)) *r**(zp-1)/(1+r)**2)
+#   == ((1 -2*zp*(-r)**zp +(2*zp-1)*(-r)**(zp+1))/(1+r)  +(zp-1)) *r**(zp-1)/(1+r)
+#   == ((1 -(-r)**zp)/(1+r) -(2*zp-1)*(-r)**zp  +(zp-1)) *r**(zp-1)/(1+r)
+#   ]
+# [DDD(r; (r**zp *(1-(-r)**zp)/(1+r))) == ((zp +(zp-1)*r -2*zp*(-r)**zp +(2*zp-1)*(-r)**(zp+1)) *r**(zp-1)/(1+r)**2)]
+# [(zp +(zp-1)*r -2*zp*(-r)**zp +(2*zp-1)*(-r)**(zp+1)): [zp%2==1]系数不变号[0<=r<+oo]上无实数根；[zp%2==0]系数变号一次[0<=r<+oo]上单实数根,[r==0][.==zp>0],[r==1][.==-2*zp<0]]
+# [(r**zp *(1-(-r)**zp)/(1+r)): [zp%2==1][0<=r<=1]递增，最大值在[r==1]；[zp%2==0][0<=r<=1]先增后减，最大值在[0<r<1]]
+# 假设 [zp%2==1]
+# [fff*h**zp == xp**(2*zp-1) *(rr**zp *(1 -(-rr)**zp)/(1+rr)) <= xp**(2*zp-1) *(hax**zp *(1 -(-hax)**zp)/(1+hax)) == xp**(2*zp-1) *hax**zp *kaf]
+# [fff*h**zp <= xp**(2*zp-1) *hax**zp *kaf]
+# !! [abs(ev) < 1]
+# [abs(D*n*fff/x**zp**2 * (-h)**zp -N*fff*(-h)**zp) == abs(ev)*(fff*h**zp/D) < (fff*h**zp/D) <= (xp**(2*zp-1) *hax**zp *kaf/D)]
+# [abs(D*n*fff/x**zp**2 * (-h)**zp -N*fff*(-h)**zp) < (xp**(2*zp-1) *hax**zp *kaf/D)]
+# let [i1 := N*fff*(-h)**zp]
+# let [t1 := (xp**(2*zp-1) *hax**zp *kaf/D)]
+
+
+# 最后一项 估值
+# !! [fff == (x**zp -(-h)**zp)/(x+h)]
+# [abs(D*n*fff* (-h/x)**(zp*2) /(x**zp -(-h)**zp)) == (D*n* (h/x)**(zp*2) /(x+h)) == (D*n/x *rr**(zp*2) /(1+rr))]
+# [(r /(1+r)) == 1-1/(1+r)] #递增
+# [(r**(zp*2) /(1+r)): 递增]
+# !! [0 < hix <= rr <= hax < 1]
+# [abs(D*n*fff* (-h/x)**(zp*2) /(x**zp -(-h)**zp)) == (D*n/x *rr**(zp*2) /(1+rr)) <= (D*n/x *hax**(zp*2) /(1+hax))]
+# let [lv := (D*n/x *hax**(zp*2) /(1+hax))]
+
+# [abs(D*n/(x+h) -i0 -i1) < t0 +t1 +lv]
+# let [B := -1 +ceil(t0 +t1 +lv)]
+# [abs(D*n/(x+h) -i0 -i1) <= B]
+
+
+上面所有假设与赋值:
+# 假设 [gcd(n,x) == 1]
+# 假设 [D > 0]
+# 假设 [zp >= 1]
+# 假设 [0 <  min_h <= h <= max_h < x]
+# 假设 [t == 2]
+# 假设 [s==1]|[n/(x**zp)**2 = (N/D +ev/D**2)][abs(ev) < 1]
+# 假设 [zp%2==1]
+# let [fff := (x**zp -(-h)**zp)/(x-(-h))]
+# let [hax := max_h/x] #假设为固定值
+# let [hix := min_h/x] #假设为固定值
+# let [kif := ((1 -(-hix)**zp)/(1+hix))]
+# let [kaf := ((1 -(-hax)**zp)/(1+hax))]
+# let [kff := max{kif,kaf}]
+# let [i0 := N*(fff*x**zp)]
+# let [t0 := (x**(2*zp-1) *kff/D)]
+# let [i1 := N*fff*(-h)**zp]
+# let [t1 := (xp**(2*zp-1) *hax**zp *kaf/D)]
+# let [lv := (D*n/x *hax**(zp*2) /(1+hax))]
+# let [B := -1 +ceil(t0 +t1 +lv)]
+
+# 固定B:看范围合理否
+[t0 +t1 +lv <= ceil(t0 +t1 +lv) == B+1]
+[t0 +t1 +lv <= B+1]
+
+!! [t0 := (x**(2*zp-1) *kff/D)]
+!! [t1 := (xp**(2*zp-1) *hax**zp *kaf/D)]
+!! [lv := (D*n/x *hax**(zp*2) /(1+hax))]
+[(x**(2*zp-1) *kff/D) +(xp**(2*zp-1) *hax**zp *kaf/D) +(D*n/x *hax**(zp*2) /(1+hax)) <= (B+1)]
+[(x**(2*zp-1) *(kff + hax**zp *kaf))/D +D*(n/x *hax**(zp*2) /(1+hax)) <= (B+1)]
+let [aaa := (x**(2*zp-1) *(kff + hax**zp *kaf))]
+let [bbb := (n/x *hax**(zp*2) /(1+hax))]
+[aaa/D +D*bbb <= (B+1)]
+[aaa/D +D*bbb >= 2*sqrt(aaa*bbb)]
+[B >= 2*sqrt(aaa*bbb) -1]
+[D == sqrt(aaa/bbb)]:
+    [D**2
+    == (aaa/bbb)
+    == (x**(2*zp-1) *(kff + hax**zp *kaf)) /(n/x *hax**(zp*2) /(1+hax))
+    == (x**(2*zp) *(1+hax) *kff *(1 + hax**zp *kaf/kff)) /(n *hax**(zp*2))
+    ]
+[(B+1)**2/4
+>= (aaa*bbb)
+== (x**(2*zp-1) *(kff + hax**zp *kaf)) *(n/x *hax**(zp*2) /(1+hax))
+== (n *x**(2*zp-2) *hax**(zp*2) *kff*(1 + hax**zp *kaf/kff) /(1+hax))
+~~ (n *x**(2*zp-2) *hax**(zp*2) *hax
+  == n/x**3 *max_h**(zp*2+1)
+  #zp越大，越糟糕？
+]
+
+]]
+
+[[
+每一项一个D[k]？
+  两边乘上II(D[k])，尾数又搞乱了
+]]
+
+
+[[
+[n/(x+h) == n/x * sum (-h/x)**k {k :<- [0..<t]} + n*(-h/x)**t /(x+h)]
+[t==1]:
+    [n/(x+h) == n/x + n*(-h/x) /(x+h)]
+    [n/(x+h) -n//x == n%x/x + n*(-h/x) /(x+h)]
+        t太小，最后一项 的 估值很大，难以靠(-h/x)**t降低
+但t大了，逼近分数精度不足(ev/D**2)
+    s小=>和式末尾几项无法分离整数(x**-(k-s))
+    s大=>D也大,最后一项 的 估值 大
+
+有没有可能 总能找到 临近的x使得:[n/x**k==N/D +ev/D**3]
+
+
+
+[n/(x+h) -n//x == n%x/x + n*(-h/x) /(x+h)]
+    [n*(h/x) /(x+h) <= B]
+    [(h/x) <= B*(x+h)/n]
+    or:
+    [(h/x) <= B*x/n]
+    let [B == h**/eb][eb>1]
+    [h == B**eb]
+    [(B**eb/x) <= B*x/n]
+    [B**(eb-1) <= x**2/n]
+    [B <= (x**2/n)**/(eb-1)]
+    [B**eb <= (x**2/n)**(eb/(eb-1))]
+    [h <= (x**2/n)**(eb/(eb-1))]
+    [h/x <= (x**(eb+1)/n**eb)**/(eb-1)]
+    [[max_h>=1] -> [x**2>=n]]
+    [eb == 2 == 1+1]:
+      [h/x <= (x**3/n**2)]
+      [B == x**2/n]
+    [eb == 3/2 == 1+1/2]:
+      [h/x <= (x**5/n**3)]
+      [B == x**4/n**2]
+    [eb == 1+1/2**k]:
+      [h/x <= (x**(2**(k+1)+1)/n**(2**k+1))]
+      [B == x**(2**(k+1))/n**(2**k)]
+      [B == (x**2/n)**(2**k)]
+
+]]
+
+
+
+
+
+
+
+
+view others/数学/polynomial/real_root_isolation_method.txt
+  多项式根 在区间内数量
+  univariate, square-free polynomial
+    real root isolation method
+      Vincent's theorem
+        Descartes' Rule of Signs
+      Sturm's theorem
+
+
+
+
+
+
+
+
+[[[
+A deterministic algorithm for integer factorization(2014)(Hiary).pdf
+O(n**(1/3)*log2(n)**2)*time4op<log2(n)bit>
+搜索分区的数量=O(n**(1/3)*log2(n))
+===
+[[
+搜索分区的数量=O(n**(1/3)*log2(n))
+  range(0, x0, n**/2) 每个大区H加1（均匀增长）
+  因为H起始值小，不划算
+  以x0为trial_division的上限，并不合理，应该试除到 x0*log2(n)~x0*log2(n)**2
+===
+    how to reach this claim???
+    [n**/3..n**/2]
+    [H(x==n**/2) == O(n**-/3 * n**/2) == O(n**/6)]
+    [(n**/2-n**/3)/n**/6 = n**/3-n**/6]
+    [[H==1] <-> [x <- [n**/3..<2*n**/3]]]
+    [[H==2] <-> [x <- [2*n**/3..3*n**/3]]]
+    [[H==k] <-> [x <- [k*n**/3..(k+1)*n**/3]]]
+    [num_blocks
+    ~= sum n**/3 /H {H :<- [1..n**/6]}
+    ~= n**/3 *sum 1/H {H :<- [1..n**/6]}
+    ~= n**/3 *Integral 1/H {H :<- [1..n**/6]}
+    ~= n**/3 *ln_(n**/6)
+    ~= n**/3 *ln_(n)
+    ]
+]]
+
+
+===
+
+[@[n,x,H :: int{>0}] -> ?[b,q,q_,e2] -> [[n/x**2 == b/q + e2/q/q_][0 < q <= 4*H <= q_][-1 < e2 < 1]]]
+  # continued fraction
+  # ???难道不该是[-1 <= e2 <= 1]
+  # 下面要求: [abs(H*e2/q_) < 1/4]，所以确实是 [abs(e2) < 1]
+  # 这里的q_只要选取比连分数分母小1就使e2缩水
+  # q1,q2,q3
+  # [q1 <= 4*H < q2] -> [(q,q_) := (q1,q2-1)]
+  # [q2 <= 4*H < q3] -> [(q,q_) := (q2,q3-1)]
+  # 因为分母严格递增，这个选法是有效的
+  #
+  # 还是有个小注意点: 连分数 提前终止，[q==last_q==x**2/gcd(n,x**2)][e2==0]
+  #     [[gcd(n,x)==1] -> [x**2 == last_q >= q]]
+  #     [[last_q:=x**2/gcd(n,x**2)] -> [gcd(n,x)==1] -> [4*H <= x**2] -> [?q. [q <= 4*H <= last_q == x**2]]]
+  #     [[last_q:=x**2/gcd(n,x**2)] -> [last_q < 4*H <= x**2] -> [gcd(n,x)=!=1]]
+  # 原文算法中 并无此判断分支
+  #
+
+lemma2:
+[@[n,x,H :: int{>0}] -> [n >= 400] -> [H/x <= (17*n)**(-1/3)] -> [[b,q,q_,e2] :=> [[n/x**2 == b/q + e2/q/q_][0 < q <= 4*H <= q_][-1 < e2 < 1]]] -> [a := round(q*n/x)] -> [e1 := q*n/x -a] -> [c0 := q*n -a*x] -> [c1 := b*x-a] -> [c2 := b] -> [@[h :: int] -> [-H <= h <= H] -> [n/(x+h) %1 == 0] -> [[c0 + c1*h + c2*h**2 == 0][not$ c0==c1==c2==0]]]]
+
+[1/17 > (17*400)**(-1/3)]
+    <==> [17 < (17*400)**(1/3)]
+    <==> [17**3 < (17*400)]
+    <==> [17**2 < 400]
+    <==> [17**2 < 20**2]
+    <==> [17 < 20]
+>>> 1/17 # > (17*400)**(-1/3)
+0.058823529411764705
+>>> (17*400)**(-1/3)
+0.05278335959890005
+  感觉有毛病，n越大,H反而越小
+  因为均匀增长，效率全靠后期，前期很糟
+  没毛病，随着n变大，整个区间都可能是n的因子，比如:[1..=m]之于[n:=factorial(m)]，不可能 被限制在『最多两个因子』(对应于一元二次函数的实数根)
+
+>>> (17*400)**(1/3)
+18.945364743718187
+>>> 400**(1/2)
+20.0
+xxx n < 400切换到 试除法
+n < 17**2==289 切换到 试除法
+>>> (17*19**2)**(1/3)
+18.308469508668495
+>>> (17*18**2)**(1/3)
+17.660295950650006
+>>> (17*17**2)**(1/3)
+16.999999999999996
+>>> (17*16**2)**(1/3)
+16.326620407669388
+>>> (17*15**2)**(1/3)
+15.639054021882663
+>>> 17**2
+289
+>>>
+
+  [[
+  proof:lemma2:
+  [1/17 > (17*400)**(-1/3)]
+    <==> [17 < (17*400)**(1/3)]
+    <==> [17**3 < (17*400)]
+    <==> [17**2 < 400]
+    <==> [17**2 < 20**2]
+    <==> [17 < 20]
+  [1/17 > (17*400)**(-1/3)]
+  !! [n >= 400]
+  [(17*n)**(-1/3) <= (17*400)**(-1/3) < 1/17 < 0.1]
+  !! [H/x <= (17*n)**(-1/3)]
+  [H/x < 1/17]
+  [H/x < 1/10]
+  [H < x/10]
+  [H < x/2]
+  [H < x]
+  !! [-H <= h <= H]
+  [x+h > 0]
+  [n/(x+h) -n/x
+  == -h*n/x/(x+h)
+  == -h*n/x  *(1 - h/(x+h))/x
+  == -n*h/x**2  + n*h**2/x**2/(x+h)
+  ]
+  [n/(x+h) == n/x -n*h/x**2  + n*h**2/x**2/(x+h)]
+  [q*n/(x+h) == q*n/x -q*n*h/x**2  + q*n*h**2/x**2/(x+h)]
+
+  !! [e1 := q*n/x -a]
+  [q*n/x == a +e1]
+  !! [n/x**2 == b/q + e2/q/q_]
+  [q*n/x**2 == b + e2/q_]
+
+  [q*n/(x+h)
+  == q*n/x -q*n*h/x**2  + q*n*h**2/x**2/(x+h)
+  !! [q*n/x == a +e1]
+  == (a +e1) -q*n*h/x**2  + q*n*h**2/x**2/(x+h)
+  !! [q*n/x**2 == b + e2/q_]
+  == (a +e1) -h*(b + e2/q_)  + q*n*h**2/x**2/(x+h)
+  == (a -b*h) +(e1 -h*e2/q_ + q*n*h**2/x**2/(x+h))
+  ]
+
+  [e(h) := (e1 -h*e2/q_ +q*n*h**2 /x**2/(x+h))]
+
+  [q*n/(x+h)
+  == (a -b*h) +(e1 -h*e2/q_ + q*n*h**2/x**2/(x+h))
+  == (a -b*h) +e(h)
+  ]
+  [q*n/(x+h) == (a -b*h) +e(h)]
+
+  # [n/(x+h) == (a -b*h)/q +e(h)/q]
+  [n/(x+h) %1 == 0]:
+    [q*n/(x+h) %q == 0]
+    !! [q*n/(x+h) == (a -b*h) +e(h)]
+    [(a -b*h +e(h)) %q == 0]
+    !! [a,b,h :: int]
+    [(a -b*h) %1 == 0]
+    [e(h) %1 == 0]
+
+    !! [a := round(q*n/x)]
+    !! [e1 := q*n/x -a]
+    [abs(e1) <= 1/2]
+
+    !! [4*H <= q_]
+    !! [abs(e2) < 1]
+    [abs(H*e2/q_) < 1/4]
+
+    [abs(e(h))
+    == abs$ e1 -h*e2/q_ +q*n*h**2 /x**2/(x+h)
+    <= abs(e1) +abs(h*e2/q_) +q*n*h**2 /x**2/(x+h)
+    !! [abs(h) <= H < x/2]
+    == abs(e1) +abs(H*e2/q_) +q*n*H**2 /x**2/(x-H)
+        #replace h by H except denominator (-H)
+        #   but this is for left side
+        #   for right side, can use +H
+    !! [abs(H*e2/q_) < 1/4]
+    !! [abs(e1) <= 1/2]
+    < 3/4 +q*n*H**2 /x**2/(x-H)
+      !! [q <= 4*H]
+      <= 3/4 +4*n*H**3 /x**2/(x-H)
+      !! [H/x <= (17*n)**(-1/3)]
+      -> [H**3 <= x**3/(17*n)]
+      <= 3/4 +4*n*x**3/(17*n) /x**2/(x-H)
+      == 3/4 +4*x/17/(x-H)
+      == 3/4 +4/17/(1-H/x)
+      !! [H/x < 1/17]
+      < 3/4 +4/17/(1-1/17)
+      == 3/4 +4/17 * 17/16
+
+      == 3/4 +1/4
+      == 1
+    ]
+    [abs(e(h)) < 1]
+    !! [e(h) %1 == 0]
+    [e(h) == 0]
+
+
+
+    !! [e1 := q*n/x -a]
+    [x*e1 == q*n -a*x]
+    !! [c0 := q*n -a*x]
+    [x*e1 == q*n -a*x == c0]
+
+    !! [q*n/x**2 == b + e2/q_]
+    [q*n/x == x*b + x*e2/q_]
+    !! [e1 := q*n/x -a]
+    [e1 +a == x*b + x*e2/q_]
+    [e1 - x*e2/q_ == x*b -a]
+    !! [c1 := b*x-a]
+    [e1 - x*e2/q_ == x*b -a == c1]
+
+    !! [q*n/x**2 == b + e2/q_]
+    [q*n/x**2 -e2/q_ == b]
+    !! [c2 := b]
+    [q*n/x**2 -e2/q_ == b == c2]
+
+    !! [e(h) == 0]
+    [(x+h)*e(h) == 0]
+    [0
+    == (x+h)*e(h)
+    == (x+h)*(e1 -h*e2/q_ +q*n*h**2 /x**2/(x+h))
+    == (x+h)*e1 -(x+h)*h*e2/q_ +q*n*h**2 /x**2
+    == (x*e1+h*e1) -(x*h*e2/q_+h**2*e2/q_) +q*n*h**2 /x**2
+    == x*e1  +h*(e1 -x*e2/q_)  +h**2*(-e2/q_ +q*n/x**2)
+    !! [q*n/x**2 -e2/q_ == b == c2]
+    !! [e1 - x*e2/q_ == x*b -a == c1]
+    !! [x*e1 == q*n -a*x == c0]
+    == c0  +h*c1  +h**2*c2
+    ]
+    [c0  +h*c1  +h**2*c2 == 0]
+
+    [c0==c1==0]:
+      !! [x*e1 == q*n -a*x == c0]
+      [x*e1 == c0 == 0]
+      !! [x > 0]
+      [e1 == 0]
+      !! [e1 - x*e2/q_ == x*b -a == c1]
+      [0 - x*e2/q_ == c1 == 0]
+      !! [x > 0]
+      [e2 == 0]
+
+      !! [q*n/x**2 -e2/q_ == b == c2]
+      [c2 == q*n/x**2 -0/q_ == q*n/x**2]
+      !! [q > 0]
+      !! [n > 0]
+      [c2 == q*n/x**2 > 0]
+      [c2 =!= 0]
+    [[c0==c1==0] -> [c2 =!= 0]]
+    [not$ c0==c1==c2==0]
+
+
+  [n/(x+h) %1 == 0]:
+    [c0  +h*c1  +h**2*c2 == 0]
+    [not$ c0==c1==c2==0]
+  DONE
+  ]]
+  [[ps-proof:
+    ######################
+    [(q*n -a*x) + (b*x-a)*h + b*h**2 == 0]
+    ######################
+    !! [(a -b*h +e(h)) %q == 0]
+    !! [e(h) == 0]
+    [(a -b*h) %q == 0]
+    [b*h == (a +z*q)]
+    [0
+    !! [(q*n -a*x) + (b*x-a)*h + b*h**2 == 0]
+    == (q*n -a*x) + (b*x-a)*h + b*h**2
+    == (q*n -a*x)*b + (b*x-a)*b*h + (b*h)**2
+    !! [b*h == (a +z*q)]
+    == (q*n -a*x)*b + (b*x-a)*(a +z*q) + (a +z*q)**2
+    == (q*n*b -a*x*b) + (b*x-a)*a +(b*x-a)*q*z + (a**2 + 2*a*q*z +(z*q)**2)
+    == q*n*b +(b*x+a)*(q*z) + (q*z)**2
+    == q*(n*b +(b*x+a)*z + q*z**2)
+    ]
+    [(n*b +(b*x+a)*z + q*z**2) == 0]
+    ######################
+    [b*h == (a +z*q)]
+    [(n*b +(b*x+a)*z + q*z**2) == 0]
+    ######################
+  ]]
+
+
+算法:
+def factorization_via_trial_division__blockwise(n, /):
+    x0 = ceil((17*n)**(1/3))
+    ub = min(x0, floor(n**(1/2)))
+    # [x0 >= ub]
+    fs = factorization_via_trial_division__le(ub, n)
+    if fs:
+        return "factors", fs
+    if x0 > ub:
+        # [x0 > ub == floor(n**(1/2))]
+        return "is_prime"
+    # [x0 == ub <= floor(n**(1/2))]
+    x = x0
+    H = 0
+    min_x4next_H = x0
+    while x+H < floor(n**(1/2)):
+        x += 2*H+1
+        # H = floor(x*(17*n)**(-1/3))
+        if not x < min_x4next_H:
+            H += 1
+            min_x4next_H += x0
+        # !! [x >= x0]
+        # !! [H := floor(x*(17*n)**(-1/3))]
+        # [H >= floor(x0*(17*n)**(-1/3)) >= 1]
+        # [H >= 1]
+        #
+        for N,D in approximate_via_continued_fraction_of(n/x**2):
+            if 4*H < D:
+                q_ = D-1
+                break
+            q = D
+            b = N
+        else:
+            # 原文算法中 并无此判断分支
+            # [[last_q:=x**2/gcd(n,x**2)] -> [last_q < 4*H <= x**2] -> [gcd(n,x)=!=1]]
+            assert 4*H <= x**2
+            ft = gcd(n,x)
+            assert 2 <= x < n
+            assert 2 <= ft <= x < n
+            return "factors", [ft]
+        q, b
+        #a = round(q*n/x) = floor(q*n/x +0.5) = floor((q*n+x/2)/x) = floor((q*n+x//2)/x)
+        a = (q*n+x//2)//x
+        may try:
+          ######################
+          [b*h == (a +z*q)]
+          [(n*b +(b*x+a)*z + q*z**2) == 0]
+          ######################
+
+        c0 = q*n -a*x
+        c1 = b*x-a
+        c2 = b
+        # solve [c0  +h*c1  +h**2*c2 == 0]
+        DET = c1**2-4*c2*c0
+        if (DET >= 0 and (SQ := floor_sqrt(DET))**2 == DET:
+            for N in [-c1-SQ, -c1+SQ]:
+                h, r = divmod(N, 2*c2)
+                if r == 0 and x+h > 0 and n%(x+h)==0:
+                    fs.append(x+h)
+        if fs:
+            return "factors", fs
+    #end-while
+    return "is_prime"
+
+
+]]]
+

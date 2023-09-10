@@ -1,0 +1,2962 @@
+
+e ../lots/NOTE/Lua/Lua Quick Start Guide.txt
+view ../lots/NOTE/Lua/Lua Programming--The Ultimate Beginner_s Guide to Learn Lua Step by Step.txt
+view others/book/lang-Lua-20220626.txt
+  e others/book/lang-Lua-20230724.txt
+  !cp others/book/lang-Lua-20230724.txt     /sdcard/0my_files/book/lang/lua/
+
+Lua Quick Start Guide--The easiest way to learn Lua programming(2018)(Gabor).epub
+  DONE@20230724
+
+
+lua - embedded language
+
+e script/lua/print_xxx.lua
+lua script/lua/print_xxx.lua
+  -- comment
+  xxx = "xxx"
+  print(xxx)
+
+
+
+basic types:
+  nil: undefined variable as-if assigned nil
+  boolean: true,false
+  number: double
+  string: "", ''
+  function
+  table: Map k v
+  userdata: C
+  thread
+
+> < <= >= == ~=
++ - * / % ^
+math.floor
+math.ceil
+
+[x%y ?=[def]=? trunc?(x)%trunc?(y)]
+[x^y =[def]= py.pow(x,y)]
+[lua: x~=y === py: x != y]
+
+
+shortcut evaluation
+#[false <-- {false,nil}]
+[x and y =[def]= x if x in {false,nil} else y]
+[x or y =[def]= y if x in {false,nil} else x]
+[not x =[def]= true if x in {false,nil} else false]
+[not 0 === false]
+[not not 0 === true]
+
+type() :: obj -> str
+[type(type(...))==="string"]
+
+
+string:
+  [string.len(s) === #s]
+  [lua: s .. t .. r === hs: s++t++r]
+    " .. " not ".."
+string coercion:
+  "1+2=" .. 3
+    number -> string
+    tostring() :: obj -> str
+      eg. [tostring(nil) === "nil"]
+          ["" .. nil --> err]
+  "3" + 5
+    string -> number
+
+"''"
+'""'
+"-\"-"
+io.read()   -> str
+
+
+
+scope,chunk
+  local,do,end
+g = nil  -- global chunk
+local f = nil  -- file chunk
+do
+  gg = nil  -- global chunk
+  local l = nil  -- local chunk
+  do
+    local n = nil  -- nested local chunk
+  end
+end
+
+
+variable shadowing
+e script/lua/variable_shadowing.lua
+lua script/lua/variable_shadowing.lua
+  print(x)        -- nil # global
+  x = 111
+  do
+    print(x)      -- 111 # global # not nil ==>> "local" donot affect prev
+    local x = 222
+    print(x)      -- 222 # local
+    x = nil
+    print(x)      -- nil # local # not 111
+    x = 333
+    print(x)      -- 333 # local # <<== below show 111
+  end
+  print(x)        -- 111 # global
+  x = 444
+  print(x)        -- 444 # global
+
+output:
+  nil
+  111
+  222
+  nil
+  333
+  111
+  444
+
+
+
+function,end
+function f(x)
+  local x2 = x+x -- function chunk
+  print(x2)
+  return x2  -- "return" must be followed by "end" / function-end or do-end
+        -- see:module:file scope 『return』anonymous table/local table as module
+end
+lua.local ??? 这还不如 py.global+nonlocal
+
+function f(x,y)
+  return x,y,666,999
+end
+[f() === f(nil,nil)]
+[[(a,b,c,d,e) = f(111,222)] -> [e===nil]]
+[[(a,b,c) = f(111,222)] -> [(a,b,c)===(111,222,666)]] #999 discarded
+灾难性的语言特性
+  # arg = ifNone(arg, default)
+  arg = arg or default
+    #arg in {false,nil}
+
+
+operator precedence
+priority (first row) to lower priority (last row):
+  ^
+  not # —(unary)
+  * / %
+  + —
+  ..
+  < > <= >= ~= ==
+  and
+  or
+
+
+
+if ... then
+  ...
+elseif ... then
+  ...
+else
+  ...
+end
+
+
+
+loops:
+  while,repeat,for
+while ... do
+  ...
+end
+repeat
+  ...
+until ...
+#numeric for vs generic for
+* numeric for:
+for ...=..., ..., ... do
+  ...
+end
+for i=first,last,step do
+  ...
+end
+<==>
+do
+  local i = first
+  repeat
+    ...
+    if i==last then break end
+    i = i+step
+  until false
+* generic for:
+for k,v in pairs(tbl) do
+  ...
+end
+for idx,v in ipairs(arr) do
+  ...
+end
+
+
+e script/lua/numeric_for_loop.lua
+lua script/lua/numeric_for_loop.lua
+for i=0, 9, 1 do
+  print(i)
+end
+-- => [0..=9] === range(10)
+
+print(i)    -- nil
+do
+  local j = 0
+  repeat
+    print(j)
+    if j == 9 then break end
+    j = j+1
+  until false
+end
+print(j)    -- nil
+
+
+
+
+
+table :: Map non_nil_obj obj
+array <: table
+
+[{}.xxx === {}['xxx'] === nil]
+
+tbl = {nm = v, [k] = u}
+<==>
+  tbl = {}
+  tbl.nm = v
+  tbl[k] = u
+
+
+array:
+[{a,b,c} === {[1]=a,[2]=b,[3]=c}]
+for 1, #arr do
+  arr[i]
+end
+
+[#{0,1,2} == 2]
+[#{1,2,nil,nil,5} == 2]
+end The length operator # will only count array elements starting from index 1. This means if you use index 0 , it will not be counted towards the number of elements in the array.
+Trying to find the length of a sparse array is tricky. The # considers an array over if it finds two nil values one after the other.
+
+
+
+iter:
+pairs() :: table -> Iter (k,v)
+ipairs() :: array -> Iter (idx,v)
+for k,v in pairs(tbl) do
+  ...
+end
+for idx,v in ipairs(arr) do
+  ...
+end
+
+
+
+closure
+Closures capture the enclosing state of a chunk. A great example of this is having a function that returns an anonymous function.
+function NextNumber()
+  local currentNumber = 0
+  return function ()
+    -- anonymous function
+    -- creating a closure!
+    currentNumber = currentNumber + 1
+    return currentNumber
+  end
+end
+next = NextNumber()
+print (next()) -- call anonymous function using "next"
+The NextNumber function in this example is often called a factory. The function is called a factory because every time you call the function, it produces a new closure.
+
+
+
+days = { "monday", "tuesday", "wednesday", "thursday" }
+function walk(array)
+  local index = 0
+  return function()
+    index = index + 1
+    return array[index]
+  end
+end
+for day in walk(days) do
+  print (day)
+end
+
+A generic for loop holds on to three variables:
+  •  The iterator function, this is your closure
+  •  An invariant state
+  •  A control variable, the first variable returned by the iterator function
+
+The "walk" function in this code is the iterator factory. It takes an array and returns a closure. This closure returns every sequential index of the array argument. Once a nil value is returned, the generic for loop stops executing.
+
+
+e script/lua/generic_for_loop.lua
+lua script/lua/generic_for_loop.lua
+
+days = { "monday", "tuesday", "wednesday", "thursday" }
+function walk(array)
+  local index = 0
+  return function()
+    index = index + 1
+    return array[index]
+  end
+end
+for day in walk(days) do
+  print (day)
+end
+function iterator_factory()
+  iterator_function = function (a,b,c,d)
+    print(111, a,b,c,d)
+      if b==664 then return nil end
+      return b-1, 888
+  end
+  invariant_state = 999
+  control_variable = 666
+  return iterator_function, invariant_state, control_variable
+end
+for a,b,c,d in iterator_factory() do
+    print(333, a,b,c,d)
+end
+
+-- output:
+-- monday
+-- tuesday
+-- wednesday
+-- thursday
+-- 111     999     666     nil     nil
+-- 333     665     888     nil     nil
+-- 111     999     665     nil     nil
+-- 333     664     888     nil     nil
+-- 111     999     664     nil     nil
+
+
+iterator_factory :: ... -> (iterator_function, invariant_state, control_variable)
+iterator_function :: invariant_state -> non_nil-control_variable -> (nil-or-next-control_variable, assoc_result)
+invariant_state === self/this
+control_variable ~~~ key/idx
+
+
+xxx并无『元组』: for k,v in (iterator_function, sf, pre_k) do
+for k,v in iterator_factory() do
+  ...hdl(k,v)...
+end
+<==>
+do
+  xxx并无『元组』: local next_, sf, pre_k = iterator_function, sf, pre_k
+  local next_, sf, pre_k = iterator_factory()
+  while true do
+    local k, v = next_(sf, pre_k)
+    if k==nil then break end
+    ...hdl(k,v)...
+    pre_k = k
+  end
+end
+
+$ lua
+> pairs({})
+function: 0x6321c85cf0  table: 0xb400007d64c37880nil
+> type(pairs({}))
+function
+
+看来『元组』自动解包(赋值之左/调用之输入)，并无此类型/对象
+
+
+meta
+sf_tbl = {...}
+[getmetatable(sf_tbl) == nil]
+meta_tbl = {__add = ...}
+setmetatable(sf_tbl, meta_tbl)
+[getmetatable(sf_tbl) == meta_tbl]
+[sf_tbl + ... =[def]= meta_tbl.__add(sf_tbl, ...)]
+
+The __newindex meta method is complementary to the __index meta method. Where __index is used to retrieve values from missing keys in a table, __newindex is used to assign values to missing keys.
+__index(sf, k) -> v
+  missing key => py.__getitem__
+__newindex(sf, k, v) -> nil
+  missing key => py.__setitem__
+
+rawget(sf, k) -> v
+  py.dict.__getitem__
+rawset(sf, k, v) -> nil
+  py.dict.__setitem__
+
+
+__call
+  functable <: table&&callable
+
+
+•  If the left-hand side of the expression has a meta method, but the right-hand side doesn't, the meta method of the left-hand side is used
+•  If the right-hand side of the expression has a meta method, but the left-hand side doesn't, the meta method of the right-hand side is used
+•  If both sides of the expression have meta methods, the meta method of the left-hand side is used
+
+  __add
+  __sub
+  __mul
+  __div
+  __mod
+  __pow
+
+  __eq
+  __lt
+    [[a > b] =[def]= [b < a]]
+    why not [[a > b] =[def]= [not [a <= b]]] ???
+  __le
+
+__tostring
+__len
+  #tbl
+__concat
+  lhs_tbl .. rhs_tbl
+
+
+
+
+OOP:
+Lua provides some syntactic sugar for calling functions on objects, the colon ( : ) operator.
+[sf:nm(...) =[def]= sf.nm(sf, ...)]
+
+
+
+
+
+
+library:
+topics:
+•  The global table
+•  The Lua math library
+•  The Lua file IO library
+•  Interfacing with the operating system
+•  More strings
+•  Creating and loading modules
+
+
+_G := the global table
+  global chunk
+  global variable
+
+x = y
+<==> _G.x = y
+<==> _G["x"] = y
+
+
+[_G._G === _G]
+[_G._ENV === _G]
+replace _G by _ENV in functions:
+  #用户设置 py.locals() #默认为 py.globals()
+function f()
+  local _ENV = {print=print,_G=_G}
+  x = 111
+  -- [_G[x] == nil]
+  -- [_ENV[x] == 111]
+  -- [_ENV._ENV === _ENV]???
+end
+
+First, note that _ENV is declared to be local ! If you don't declare it as such, _ENV for ALL functions will be overwritten. You don't want that.
+Second, _ENV is not set to an empty table, it's set to {print=print} . This is important. Normally, print lives in _G . But, the function will not be able to access _G anymore. This also means that you can replace any global function with a custom one.
+
+
+
+
+math:
+trigonometry:
+radians, not degrees:
+math.sin(r)
+math.cos(r)
+math.tan(r)
+math.asin(v)
+math.acos(v)
+math.atan(v)
+  <==> math.atan(v,1.0)
+math.atan(x,y)
+  ~ math.atan(x/y)
+
+math.deg(r)
+  :: radian -> degree
+math.rad(d)
+  :: degree -> radian
+math.abs(v)
+math.tointeger(v)
+  if v is convertible to an integer, an integer is returned, otherwise nil
+  lua的数字类型『number』 是 双精度浮点数『double』，整数范围[-2**53..=2**53], [10**15 < 2**53 < 10**16]
+
+
+math.max(x, y)
+math.min(x, y)
+math.ult(x, y)
+  unsigned-__lt__
+  returns true if x is less than y , where both x and y are treated as unsigned integers
+
+
+
+math.randomseed(v) : seeds random with the value of v
+  os.time() : returns the number of seconds since epoch
+  math.randomseed(os.time())
+math.random() -> [0.0~~1.0]?
+math.random(max) =[def]= math.random(1, max)
+math.random(min, max)
+  <==> py.random.randint(trunc?(min), trunc?(max))
+
+
+tonumber( io.read() )
+
+
+math.pi
+  : the value of pi
+math.huge
+  : represents positive infinity
+math.mininteger
+  : represents the smallest integer (non-decimal) number
+math.maxinteger
+  : represents the largest integer (non-decimal) number
+
+> math.pi
+3.1415926535898
+> math.huge
+inf
+> math.mininteger
+-9223372036854775808
+> math.maxinteger
+9223372036854775807
+> 2^53
+9.007199254741e+15
+> math.floor(2^53)
+9007199254740992
+> math.floor(2^53+1)
+9007199254740992
+> math.floor(2^53-1)
+9007199254740991
+>
+
+
+math.ceil(v)
+  : rounds v up to the nearest integer
+math.floor(v)
+  : rounds v down to the nearest integer
+math.fmod(x, y)
+  : returns the remainder of the division x / y
+math.modf(v)
+  : returns two values, the integer part of v and the factoral part of v
+math.sqrt(v)
+  : returns the square root of v
+math.type(variable)
+  : returns the strings integer , float , or nil
+
+
+> math.type(2)
+integer
+> math.type(2^3)
+float
+> math.type(math.floor(2^53))
+integer
+> math.type(math.floor(2^53)+1)
+integer
+> math.floor(2^53)+1
+9007199254740993
+> math.type(math.floor(2^53)*10000000)
+integer
+> math.floor(2^53)*10000000
+-3458764513820540928
+> math.floor(2^64)
+1.844674407371e+19
+> math.floor(2^63)
+9.2233720368548e+18
+> math.floor(2^63-1)
+9.2233720368548e+18
+> math.floor(2^62)
+4611686018427387904
+> math.floor(-2^63)
+-9223372036854775808
+> -(math.floor(-2^63)+1)
+9223372036854775807
+
+
+
+
+
+io:
+io.open(path, mode) -> file|nil if fail
+  mode:
+    "r" : nil if not exists
+    "w" : create|overwrite
+    "a" : create|append
+    "r+" : nil if not exists
+    "w+"
+    "a+"
+  file:close()
+  file:write(*strs)
+  file:read()
+    <==> file:read("*l") -> line | nil if EOF
+  file:read("*a") -> tail_txt
+  file:read("*n") -> number
+  file:read(sz) -> string | nil if EOF and sz>0
+  file:lines()
+    for line in file:lines() do ... end
+
+
+
+os:
+time stamps:
+os.clock() -> returns the number of seconds that have elapsed since the Lua program started running.
+
+os.date(fmt) -> str
+os.date("%H:%M") -> f"{hour}:{minute}"
+
+os.difftime(start/os.clock(), end/os.clock()) -> seconds
+
+
+os.execute()
+if 0==os.execute() then
+  print("no shell/terminal, not supported")
+else
+  status_code = os.execute(cmd)
+end
+  If Lua is running embedded in a program, or is on an OS with no shell/terminal, the os.execute command will return 0. You can test if the current Lua environment has a shell by calling os.execute with no arguments.  If a non-zero value is returned, a shell is available. If zero is returned, there is no shell or terminal.
+
+os.getenv("PATH")
+
+io.open(new_path, "a")
+os.rename(old_path, new_path)
+os.remove(old_path)
+os.execute("mkdir new_folder")
+  Lua can not natively create, rename, enumerate or delete folders
+
+
+string:
+string.find(whole_txt, substr) -> idx|nil
+  ?string.substring(whole_txt, substr) -> idx|nil
+  ?string.substring(whole_txt, regex_pattern)
+
+string.sub(s, first_idx, last_idx) -> s[first_idx:last_idx+1]
+  string.sub(s, first_idx) -> s[first_idx:]
+
+txt:find(substr)
+txt:sub(first_idx, ...)
+txt:upper()
+txt:lower()
+
+
+
+module:
+$ lua
+Lua 5.4.4  Copyright (C) 1994-2022 Lua.org, PUC-Rio
+> package.path
+/data/data/com.termux/files/usr/share/lua/5.4/?.lua;/data/data/com.termux/files/usr/share/lua/5.4/?/init.lua;/data/data/com.termux/files/usr/lib/lua/5.4/?.lua;/data/data/com.termux/files/usr/lib/lua/5.4/?/init.lua;./?.lua;./?/init.lua
+>
+
+A module is just a normal Lua table; a module file is a Lua file which returns a table. For us, this means returning an anonymous table.
+xxx_module.lua:
+  local xxx_module = {}
+    -- It's important that the table returned be local!
+  ...init xxx_module...
+  return xxx_module
+
+
+xxx_module = require("xxx_module")
+  #search in package.path
+
+If you format save data as a valid Lua file, it can be loaded back as a module. Using this feature of Lua, you can avoid having to write code that parses a text file.
+
+yyy_saved = require("yyy_saved")
+  #require() not re-load data.
+  #require() search in package.path
+
+yyy_saved = dofile(".../.../yyy_saved.lua")
+  #dofile() re-load data each time.
+  #dofile() not search in package.path
+
+
+
+topics:
+•  The debug library
+•  Error-handling in Lua
+•  Profiling
+•  Integrated development environments
+
+
+pcall(): protected call
+error()
+function f(a, b)
+  if b == 0 then
+    error("...")
+  end
+  return x, y
+end
+local ok, errmsg_or_x, nil_or_y = pcall(f, a, b)
+if not ok then
+  local errmsg = errmsg_or_x
+else
+  local x = errmsg_or_x
+  local y = nil_or_y
+end
+
+Unlike pcall , assert assumes an error is not recoverable and will simply kill the program.
+assert(obj, errmsg) -> nil
+function f(a, b)
+  assert(b ~= 0, "...")
+  return x, y
+end
+
+
+Profiling code means measuring how long something took to execute, or how many times something has executed.
+
+
+
+
+
+
+
+lua - a standalone language or an embedded scripting language.
+
+
+•  Understand the Lua C API
+•  Understand the Lua stack
+•  Create Lua variables from C
+•  Call Lua functions from C
+•  Call C functions from Lua
+
+•  lua.h : Provides all the functions needed to work with Lua. All functions in this file are prefixed with lua_ .
+•  luaxlib.h : Uses the public API exposed in lua.h to provide higher levels of abstraction for common tasks. All functions in this file are prefixed with luaL_ .
+•  lualib.h : Provides the standard Lua libraries. All functions in this file are also prefixed with luaL_ .
+
+luaL_newstate() -> (lua_State*)
+  no global memory but a runtime-state per lua-?interpreter?-instance
+lua_close(lua_State*)
+luaL_openlibs(lua_State*)
+  load the standard libraries
+
+
+#include "lua.h"
+#include "lauxlib.h"
+#include "lualib.h"
+int main(int argc, char** argv) {
+  // First, create a new lua state
+  lua_State *L = luaL_newstate();
+  // Next, load all the standard libraries
+  luaL_openlibs(L);
+  //Write code that interacts with the Lua runtime here
+  //...
+  // Finally, destory the lua state
+  lua_close(L);
+  return 0;
+}
+
+Lua does not add #ifdef __cplusplus or extern "C" decorations to it's code. This means Lua can be compiled as C or as C++ code. Since C++ mangles function names, make sure to link to the right version of the library.
+
+stack:
+  stack[1] first in
+  stack[-1] last in
+  C <-> stack <-> Lua
+    数据通过stack交换
+  C:
+    push int(5) into Lua Stack
+    push int(2) into Lua Stack
+    call add()
+      ===
+      Lua:
+        pop int(2) from Lua Stack
+        pop int(5) from Lua Stack
+        ?do add(5,2) ?do add(2,5)
+        push int(7) into Lua Stack
+      ===
+    pop int(7) from Lua Stack
+
+
+•  lua_pushnil(lua_State*)
+  : Pushes nil onto the stack
+•  lua_pushboolean(lua_State*, bool)
+  : Pushes a Boolean value onto the stack
+•  lua_pushnumber(lua_State*, lua_Number)
+  : Pushes a double onto the stack
+•  lua_pushinteger(lua_State*, lua_Integer)
+  : Pushes a signed integer onto the stack
+•  lua_pushstring (lua_State*, const char*)
+  : Pushes a NULL terminated string onto the stack
+When you push a string onto the stack, Lua creates its own copy of that string. As soon as the push operation is finished, you can modify or even free the copy of the string you have.
+
+lua_checkstack(lua_State*, int) -> bool
+  may resize stack
+  ===
+  The stack is not infinite. Before pushing data onto the stack, it's a good idea to check whether there is actually room for the data or not. To check how much room the stack has, you can use the int lua_checkstack(lua_State*, int) function. The function takes two arguments: the Lua state and the number of items you want to add to the stack. If there is enough room, the function returns true (1) . If there is not enough room, the function returns false (0) . This function may actually grow the stack if needed.
+
+
+input: stack_idx
+  (lua_State*, int stack_idx) -> int/bool
+    lua_isnumber
+    lua_isstring
+    lua_isboolean
+    lua_istable
+    lua_isnil
+
+  lua_type(lua_State*, int) -> int
+    LUA_TNUMBER
+    LUA_TSTRING
+    LUA_TBOOLEAN
+    LUA_TTABLE
+    LUA_TNIL
+
+
+  lua_toboolean(lua_State*, int) -> int/bool
+  lua_tonumber(lua_State*, int) -> lua_Number/double
+  lua_tointeger(lua_State*, int) -> lua_Integer
+  lua_objlen(lua_State*, int) -> size_t # === "#stack[-1]"
+  const char* lua_tostring(lua_State*, int, size_t*)
+    : Returns a pointer to the internal Lua string. The last parameter is optional; if it's not NULL , the size of the string will be written to it.
+  When calling lua_tostring , the function returns the pointer to an in- ternal string. The return value is const , to remind you that you should not modify this value! As soon as the value is popped off the stack, that string might no longer exist. It's a bad idea to hold on to the return value of this function—instead, make a copy and store it.
+
+
+lua_gettop(lua_State*) -> int/stack_idx<-1>/stack_sz
+lua_settop(lua_State*, int) -> void
+  resize stack
+  pop or push nil
+  macro:lua_pop(lua_State*, int)
+
+
+
+
+
+luaL_loadfile then lua_pcall
+  load/parse then exec/eval
+luaL_loadfile(lua_State*, const char* path) -> int
+  0 - success
+      The resulting Lua chunk is added to the Lua stack.
+      chunk_obj = stack[-1]
+  LUA_ERRSYNTAX
+  LUA_ERRMEM
+  LUA_ERRFILE
+
+lua_pcall(lua_State*, int num_args, int num_results, int error_handler) -> int
+  extra-input:
+    chunk_obj/callable/function = stack[-1]
+      ==>>
+        #vs: ok, a,b,c = pcall(f, x, y)
+        #   ==>> require:num_results{3},num_args{2}
+        [*results] = pcall(chunk_obj, *args)
+        [*args, chunk_obj] = stack.pop(-num_args-1..=-1, reverse?)
+        stack.push(*results[:num_results], reverse?)
+
+  0 - success
+  otherwise - fail
+      if error_handler==0:
+          an error message will be pushed onto the stack
+          err_msg = stack[-1]
+
+
+
+
+read variables from Lua into C:
+  lua_getglobal then lua_to*/lua_tonumber then lua_pop
+    push then read/copy then pop
+lua_getglobal(lua_State*, const char * nm) -> void/int
+  # .epub says "This function does not return anything."
+  # lua.h ==>> int
+  push a global variable onto the stack by name
+  output:
+    global_obj = stack[-1]
+
+
+
+
+
+
+~ $ ls ~/../usr/share/lua/5.3/
+luarocks
+re.lua
+~ $ ls ~/../usr/share/lua/5.3/luarocks/
+
+
+~ $ ls ~/../usr/include/lua* -1
+/data/data/com.termux/files/home/../usr/include/lua5.3:
+lauxlib.h
+lua.h
+lua.hpp
+luaconf.h
+lualib.h
+
+/data/data/com.termux/files/home/../usr/include/lua5.4:
+lauxlib.h
+lua.h
+lua.hpp
+luaconf.h
+lualib.h
+
+/data/data/com.termux/files/home/../usr/include/luajit-2.1:
+lauxlib.h
+lua.h
+lua.hpp
+luaconf.h
+luajit.h
+lualib.h
+
+~ $ lua -v
+Lua 5.4.4  Copyright (C) 1994-2022 Lua.org, PUC-Rio
+
+
+
+
+mkdir -p /sdcard/0my_files/tmp/out4lua/src/
+cp -t /sdcard/0my_files/tmp/out4lua/src/   -r ~/../usr/include/lua5.4
+~ $ ls /sdcard/0my_files/tmp/out4lua/src/lua5.4/ -1
+lauxlib.h
+lua.h
+lua.hpp
+luaconf.h
+lualib.h
+
+view /sdcard/0my_files/tmp/out4lua/src/lua5.4/lua.h
+LUA_API int   (lua_pcallk) (lua_State *L, int nargs, int nresults, int errfunc,
+                            lua_KContext ctx, lua_KFunction k);
+#define lua_pcall(L,n,r,f)	lua_pcallk(L, (n), (r), (f), 0, NULL)
+
+
+LUA_API int (lua_getglobal) (lua_State *L, const char *name);
+
+
+
+The attributes file:"hero.lua":
+class = "Warrior"
+attack = 56
+defense = 43
+没有『return』所以下面pcall().num_results=0
+  仅限于执行脚本，注入全局变量
+
+
+#include "lua.h"
+#include "lauxlib.h"
+#include "lualib.h"
+#include <string.h>
+int main(int argc, char** argv) {
+    lua_State *L = luaL_newstate();
+    luaL_openlibs(L);
+    // Load the file "hero.lua"
+    int result = luaL_loadfile(L, "hero.lua");
+    if (result != 0) {
+        printf("Could not load hero.lua, exiting");
+        lua_close(L);
+        return -1;
+    }
+    // Execute the loaded Lua chunk
+    result = lua_pcall(L, 0, 0, 0);
+    if (result != 0) {
+        const char* error = lua_tostring(L, -1);
+        printf("Error loading hero.lua, exiting.\n")
+
+        printf("Error message %s", error);
+        lua_close(L);
+        return -1;
+    }
+    int stack_base = lua_gettop(L);
+    // Push character attributes onto stack
+    lua_getglobal(L, "class"); // Index 1
+    lua_getglobal(L, "attack"); // Index 2
+    lua_getglobal(L, "defense"); // Index 3
+    // Read the value of each new thing on the stack
+    const char* class_p = lua_tostring(L, stack_base + 1);
+    char class_sz[32];
+    strcpy(class_sz, class_p);
+    int attack = lua_tointeger(L, stack_base + 2);
+    int defense = lua_tointeger(L, stack_base + 3);
+    // Clean up the stack
+    lua_pop(L, 3);
+    // Do something with the values
+    printf("Character is %s with %d attack and %d defense\n", class_sz, attack, defense);
+    // Close Lua & clean up
+    lua_close(L);
+    return 0;
+}
+
+
+
+
+Creating Lua variables from C:
+
+lua_setglobal(lua_State*, const char* nm) -> void
+  <==> _G[nm] = stack.pop()
+
+"printinfo.lua":
+  -- Notice the variables class , attack , and defense are never created in Lua. They can be referenced because they were created in C:
+  print ("Charater is " .. class .. " with " .. attack .. " attack and " .. defense .. " defense");
+
+#include "lua.h"
+#include "lauxlib.h"
+#include "lualib.h"
+int main(int argc, char** argv) {
+    lua_State *L = luaL_newstate();
+    luaL_openlibs(L);
+    // Push values
+    lua_pushstring(L, "Warrior");
+    lua_pushnumber(L, 56);
+    lua_pushnumber(L, 43);
+    // Assign from top of stack, IE reverse order
+    lua_setglobal(L, "defense");
+    lua_setglobal(L, "attack");
+    lua_setglobal(L, "class");
+    // Load the file "printinfo.lua"
+    int result = luaL_loadfile(L, "printinfo.lua");
+    if (result != 0) {
+        printf("Could not load printinfo.lua, exiting");
+        lua_close(L);
+        return -1;
+    }
+    // Execute the loaded Lua chunk
+    result = lua_pcall(L, 0, 0, 0);
+    if (result != 0) {
+        const char* error = lua_tostring(L, -1);
+        printf("Error loading printinfo.lua, exiting.\n")
+;
+        printf("Error message %s", error);
+        lua_close(L);
+        return -1;
+    }
+    lua_close(L);
+    return 0;
+}
+
+
+
+
+Calling Lua functions from C:
+lua:
+num_columns = 7
+function GetIndex(row, col)
+    return row * num_columns + col
+end
+
+C-wrapper:
+int LinearIndex(lua_State*L, int row, int col) {
+    // Push the GetIndex function on the stack
+    lua_getglobal(L, "GetIndex");
+    // Stack: function (GetIndex)
+    // Push the row variable on the stack
+    lua_pushnumber(L, row);
+    // Stack: function (GetIndex), int (row)
+    // Push the col variable on the stack
+    lua_pushnumber(L, col);
+    // Stack: function (GetIndex), int (row), int (col)
+    // Pop two arguments off the stack (row & col)
+    // Call the function on the top of the stack (GetIndex)
+    // Leave one value on the stack
+    lua_pcall(L, 2, 1, 0);
+    // Stack: int (return value of GetIndex)
+    // Remove the result of GetIndex from the stack
+    int result = lua_tointeger(L, -1);
+    lua_pop(L, 1);
+    // Stack: empty
+    return result;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Calling C functions from Lua
+Because functions in C and Lua work so differently, exposing a C function to Lua can get a bit tricky. All C functions that Lua can call must follow the signature of lua_CFunction , which is defined in lua.h as the following:
+  typedef int (*lua_CFunction) (lua_State *L);
+This function takes only one argument, the lua_State. The return value of the function is an integer. This integer is the number of elements that the function pushed onto the stack as return values.
+Lua has multiple stacks—each C function called from Lua has its own stack and does not share the global stack.
+Let's take for example a simple C function that returns the magnitude of a three-dimensional vector. In C, the code for doing so might look something like the following:
+double Vec3Magnitude(double x, double y, double z) {
+    double dot = x * x + y * y + z * z;
+    if (dot == 0.0) {
+        return 0.0;
+    }
+    return sqrt(dot);
+}
+The preceding function can't be exposed to Lua directly because it do - esn't follow the lua_CFunction signature.
+
+int LuaWrapperVec3Magnitude(lua_State* L) {
+    double x = lua_tonumber(L, 3);
+    double y = lua_tonumber(L, 2);
+    double z = lua_tonumber(L, 1);
+    lua_pop(L, 3);
+    // Call the original function so it is responsible
+    // for doing the actual work
+    double result = Vec3Magnitude(x, y, z);
+    if (result == 0.0) {
+        lua_pushnil(L);
+    }
+    else {
+        lua_pushnumber(L, result);
+    }
+    return 1;
+}
+// Code to expose the wrapper function:
+lua_pushcfunction(L, LuaWrapperVec3Magnitude);
+lua_setglobal(L, "Vec3Magnitude");
+
+
+
+
+
+
+
+
+
+
+Working with tables in C
+
+lua_newtable(L);
+lua_setglobal(L, "vector");
+
+
+Reading values from a table
+lua_gettable(lua_State*, int stack_idx4tbl)
+  [stack_idx4key===-1]
+  tbl[key]
+  stack = [..., tbl, ..., key]
+    ?--> stack' = [..., tbl, ..., tbl[key]]
+
+Fields from a table can be retrieved with the lua_gettable(lua_State*, int) function. This function returns nothing; its first argument is the Lua state to work on.
+  Typically, accessing a table in Lua involves both the table and a key, for example: tbl[key] .
+    Using lua_gettable , the table ( tbl ) is expected to be at the index specified by the second variable.
+    The key (key) is expected to be on the top of the stack.
+lua_getglobal(L, "vector");
+lua_pushstring(L, "x");
+lua_gettable(L, -2);
+
+
+
+lua_getfield (lua_State*, int stack_idx4tbl, const char* key)
+  tbl[key]
+  stack = [..., tbl, ...]
+    --> stack' = [..., tbl, ..., tbl[key]]
+
+// Push vector to the top of the stack
+lua_getglobal(L, "vector");
+// The index -1 refers to vector, which is on top of the stack
+// Leaves the value of x on the top of the stack
+lua_getfield(L, -1, "x");
+// The stack has 2 new values (vector & x)on it that will need to be cleaned up at some point
+,
+
+
+
+
+
+Writing values to a table
+lua_settable (lua_State*, int stack_idx4tbl) -> void
+  tbl[key] = val
+  stack = [..., tbl, ..., key, val]
+    --> stack' = [..., tbl, ...]
+
+lua_setfield (lua_State*, int stack_idx4tbl, const char* key)
+  tbl[key] = val
+  stack = [..., tbl, ..., val]
+    --> stack' = [..., tbl, ...]
+
+
+
+Meta tables
+lua_getmetatable (lua_State*, int stack_idx4tbl) -> ok/bool
+  stack = [..., tbl, ...]
+    [ok] --> stack' = [..., tbl, ..., meta<tbl>]
+    [not ok] --> stack' = [..., tbl, ...]
+
+
+
+lua_setmetatable (lua_State*, int stack_idx4tbl) -> ok/bool
+  stack = [..., tbl, ..., meta]
+    --> stack' = [..., tbl, ...]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+User data
+Lua has a special data type called userdata. Userdata can store arbitrary C data structures as Lua data—it's just some arbitrary amount of memory.
+Userdata can have meta tables, which enables us to extend the type using the same mechanism we would use to extend tables.
+  ##???how? header+usr_struct??? how alignment??
+Like tables, userdata is compared by reference, not by value.
+
+
+lua_newuserdata (lua_State*, size_t) -> userdata/(void*)
+  stack = [...]
+    --> stack' = [..., userdata]
+
+A three-dimensional vector might be stored in userdata like as follows:
+struck Vec3 {
+    float x, y, z;
+}
+int make_up_vector(lua_State *L) {
+    Vec3* newVec = (Vev3*)lua_newuserdata(L, sizeof(Vec3));
+    newVec->x = 0;
+    newVec->y = 1;
+    newVec->z = 0;
+    // The new user data is on the stack
+    return 1;
+}
+
+
+
+lua_touserdata (lua_State*, int stack_idx4userdata) ->  userdata/(void*)
+
+int lua_vec3_cross (lua_State *L) {
+    Vec3* a = (Vec3*)lua_touserdata(L, -2);
+    Vec3* b = (Vec3*)lua_touserdata(L, -1);
+    float dot = a->x * b->x + a->y * b->y + a->z * b->z;
+    lua_pushnumber(L, dot);
+    return 1;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Lua C API reference
+https://www.lua.org/manual/5.2/
+Clicking on any of the C API functions will show
+  the signature of the function,
+  a description of how the function works,
+  and some stack information.
+
+
+stack_information<function>:
+1. how many elements the function removes from the stack
+2. how many elements the function adds to the stack
+3. how the function handles errors.
+  •  — : The function will not raise any errors
+  •  m : The function may raise memory-related errors
+  •  e : The function can raise any error
+  •  v : The function may raise an error on purpose
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Lua Bridge
+The Lua C API is verbose and it can sometimes be a bit complicated to navigate. Furthermore, if you are programming in C++, the API doesn't really fit into the OOP idiom. There are a few binding libraries that try to bridge this gap.
+One of the most intuitive and easy-to-use libraries out there is Lua Bridge. You can get Lua Bridge from GitHub at https://github.com/vinniefalco/LuaBridge .
+Lua Bridge is a C++ API. When using Lua Bridge, you have to use a C++ compiler.
+Lua Bridge focuses on letting the user create object-oriented Lua bindings in an intuitive and easy manner.
+  In fact, using Lua Bridge, you can create a fairly complex Lua class with far less code than if you were writing it using the Lua C API alone.
+  One of the nice features of Lua Bridge is the concept of a namespace . A namespace is just a container table that all variables are registered in, like a module.
+  Because of this namespace concept, Lua Bridge will never allocate global variables directly.
+The Lua Bridge reference manual can be found online, at http://vinniefalco.github.io/LuaBridge/Manual.html
+.
+By the end of this chapter, you will be able to do the following:
+•  Understand the Lua Bridge API
+•  Use Lua Bridge to expose C++ classes
+•  Instantiate C++ classes in Lua
+•  Call C++ functions from Lua
+•  Access Lua variables through LuaRef objects
+•  Call Lua functions using LuaRef objects
+
+
+
+
+
+
+
+
+
+API conventions
+  chain:
+    obj.f().g().h()
+
+
+class Foo {
+public:
+  // Assume foo is a singleton
+  static Foo* GetInstance();
+  Foo* DoWork();
+  Foo* PrintResults();
+};
+Foo::GetInstance()->DoWork()->PrintResults();
+
+Lua Bridge does something very similar.
+getGlobalNamespace(L)
+    .beginNamespace("Math")
+        .beginClass<Vector>("Vector")
+
+
+
+
+
+
+
+Namespaces
+Everything inside Lua Bridge must be declared within a namespace.
+  These namespaces have no connection to C++ namespaces, and within Lua, they are just tables.
+  The concept of a namespace is similar to the concept of a Lua module being loaded as a table.
+A global namespace exists, and you can register functions, variables, and classes to that namespace, but it's considered bad practice.
+You can get the global namespace with the following call:
+  getGlobalNamespace(lua_State*)
+
+Once you have the global namespace, you can create your own namespace inside it with the beginNamespace(const char*) call.
+  This function takes a string with the name of the namespace as an argument.
+  Once you are done working with the namespace, you must close it with the endNameSpace() call.
+  If you want to add more classes in different parts of the code in a namespace, it can be opened multiple times.
+  The following code sample demonstrates this:
+getGlobalNamespace(L)
+    .beginNamespace("foo")
+      // Add things to foo
+    .endNamespace()
+// More code
+getGlobalNamespace(L)
+    .beginNamespace("foo")
+      // Add more things to foo
+    .endNamespace()
+
+
+Variables
+  addVariable (char const* nm4var4lua, T* var4cpp, bool isWritable=true)
+The simplest data to register within a namespace is a variable.
+  This function is templated, meaning that any type of variable can be added using the function.
+  The first argument to this function is the name that Lua will call the variable,
+  the second is a pointer to the C++ variable.
+  The third argument is optional. When set to true (the default value), the variable can be read from and written to, and when set to false , the variable becomes read-only.
+
+C++:
+int bar;
+getGlobalNamespace(L)
+    .beginNamespace("foo")
+        .addVariable("bar", &bar)
+    .endNamespace()
+
+Lua:
+  print("bar: " .. foo.bar)
+
+
+
+
+
+Functions
+  addFunction<?>(nm4f4lua, f4cpp)
+  vs:
+  addCFunction(nm4f4lua, lua_CFunction f4cpp)
+  lua_CFunction =[def]= int (lua_State* L)
+
+Global functions can be registered with Lua Bridge as well.
+These functions don't need to have the same signature as lua_CFunction ; as Lua Bridge will generate the required glue code.
+
+int bar() {
+    return 2;
+}
+getGlobalNamespace(L)
+    .beginNamespace("foo")
+        .addFunction("bar", bar)
+    .endNamespace()
+
+It is also possible to register functions written against the Lua C API that match the signature of lua_CFunction . You will most often do this if you need to port some legacy code over, in order to use Lua Bridge.
+
+int bar(lua_State* L) {
+    lua_pushnumber(L, 2);
+    return 1;
+}
+getGlobalNamespace(L)
+    .beginNamespace("foo")
+        .addCFunction("bar", bar)
+    .endNamespace()
+
+
+
+
+
+
+
+
+Properties
+A property is a mix between a function and a variable.
+Properties are similar to C#'s getter/setter system. To Lua, a property looks like a normal variable, but every time that variable is read, a function is called. Similarly, every time the variable is changed, a function is called.
+These are getter/setter functions. If a property has a getter function but no setter, it is effectively read-only.
+
+addProperty (char const* nm4var4lua, TG (T::*getter) () const, void (T::*setter)())
+  read/write
+addProperty (char const* nm4var4lua, TG (T::*getter) () const)
+  readonly
+
+int bar;
+int get_bar () const {
+    // Potentially do some error checking?
+    return bar;
+}
+void set_bar (int b) {
+    bar = b;
+}
+getGlobalNamespace(L)
+    .beginNamespace("foo")
+        .addProperty("bar", get_bar, set_bar)
+        .addProperty("bar_readonly", get_bar)
+    .endNamespace()
+
+
+
+
+
+
+Classes
+The beginClass<C> / endClass functions can be used to expose classes to Lua.
+  The class type must be provided as a template argument to the beginClass function.
+  You can call beingClass / endClass multiple times for the same class, and on each call, new methods and variables can be added.
+
+Suppose that a class named Vec3 exists, to represent a 3D vector. It can be exposed to Lua using Lua Bridge, as follows:
+
+C++:
+class Vec3 { };
+getGlobalNamespace(L)
+    .beginNamespace("Math")
+        .beginClass<Vec3>("Vec3")
+        .endClass()
+    .endNamespace()
+
+Lua:
+local vector = Math.Vec3()
+
+
+
+
+
+
+Constructor
+Lua Bridge only supports a single constructor.
+  Overloaded constructors are not possible to declare with Lua Bridge.
+A constructor can be added with the addConstructor function. The function signature of the constructor must be specified as a template argument, since a class may have multiple overloaded constructors.
+The following code shows a C++ class with three constructors, but only the one that takes three floats is exposed to Lua:
+
+C++:
+class Vec3 {
+  public:
+    Vec3();
+    Vec3(const Vec3& other);
+    Vec3(float x, float y, float z);
+}
+getGlobalNamespace(L)
+    .beginNamespace("Math")
+      .beginClass<Vec3>("Vec3")
+        .addConstructor<void (*) (float, float, float)>()
+      .endClass()
+    .endNamespace();
+
+
+
+
+
+Subclass
+Classes can be subclassed using Lua Bridge.
+  The base class does not need to be exposed to Lua, only the subclass does.
+Subclasses can be exposed to Lua Bridge using the deriveClass method. Unlike beginClass , deriveClass should only be called once.
+  Because of the loosely typed nature of Lua and the limitations placed on deriveClass , it's usually better to expose classes with beginClass , instead.
+For the sake of completeness, the following code sample illustrates how to use deriveClass :
+
+class Foo {
+    int x;
+    int y;
+}
+class Bar : public Foo {
+    int x;
+};
+getGlobalNamespace(L)
+    .beginNamespace("Sample")
+        .beginClass<Foo>("Foo")
+        .endClass()
+        .deriveClass<Bar, Foo>("Bar")
+        .endClass()
+    .endNameSpace();
+
+
+
+
+
+
+
+
+
+
+
+Member variables, properties, and functions
+  addData , addFunction , addProperty
+Adding variables, properties, and functions to a class in Lua Bridge is done in the same fashion as adding any of these things to a namespace.
+  The functions are addData , addFunction , and addProperty .
+  None of these functions require any template data, but the data they point to does have to be scoped to the class it belongs to.
+
+class Vec3 {
+  public:
+    float x, y, z;
+  float Magnitude() const;
+  void Normalize();
+}
+getGlobalNamespace(L)
+    .beginNamespace("Math")
+        .beginClass<Vec3>("Vec3")
+            .addData("x", &Vec3::x)
+            .addData("y", &Vec3::y)
+            .addData("z", &Vec3::z)
+            .addProperty("Magnitude", &Vec3::Magnitude)
+            .addFunction("Normalize", &Vec3::Normalize)
+        .endClass()
+    .endNameSpace();
+
+
+
+
+Static variables, properties, and functions
+  addStaticData , addStaticProperty , addStaticFunction
+Static variables, properties, and functions can be added in the same way that member variables, properties, and functions can.
+  The function calls to do so are addStaticData , addStaticProperty , and addStaticFunction .
+
+class Vec3 {
+  public:
+    static Vec3 zero;
+    static Vec3 get_upvector() {
+        return Vec3(0, 1, 0);
+    }
+    static Vec3 Cross(Vec3 v1, Vec3 v2);
+}
+getGlobalNamespace(L)
+    .beginNamespace("Math")
+        .beginClass<Vec3>("Vec3")
+            .addStaticData("Zero", &Vec3::zero, false)
+            .addStaticProperty("Up", &Vec3::get_upvector)
+            .addStaticFunction("Cross", &Vec3::Cross)
+        .endClass()
+    .endNameSpace();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Calling C functions from Lua
+  ns.f()
+  vs:
+  sf:g()
+  ?cls:g()
+
+All of the code that we have written so far has been about exposing C to Lua using Lua Bridge.
+  Any C function exposed through Lua Bridge can be called from Lua.
+  If a function is in a namespace and not a class, it is called with the dot syntax:
+        Math.Sqrt(16) .
+  But, if a function is in a class, it needs to be called with the colon syntax:
+        vector:Normalize() .
+
+C++:
+class Vec3 {
+  public:
+    float x, y, z;
+    float Normalize() {
+        float dot = x * x + y * y + z * z;
+        if (dot == 0) {
+            return 0;
+        }
+        return sqrt(dot);
+    }
+}
+float Dot(Vec3 a, Vec3 b) {
+    return a.x * b.x + a.y * b.y + a.z * b.z;
+}
+void Register(lua_State* L) {
+    getGlobalNamespace(L)
+      .beginNamespace("Math")
+          .beginClass<Vec3>("Vec3")
+              .addData("x", &Vec3::x)
+              .addData("y", &Vec3::y)
+              .addData("z", &Vec3::z)
+              .addFunction("Normalize", &Vec3::Norma
+lize)
+          .endClass()
+          .addFunction("Dot", Dot)
+      .endNameSpace();
+}
+
+
+Lua:
+local a = Math.Vec3()
+local b = Math.Vec3()
+a.x = 7
+b.x = 3
+print ("Dot: " .. Dot(a, b));
+print ("Normalize both");
+a:Normalize()
+b:Normalize()
+print ("Dot: " .. Dot(a, b));
+
+
+
+
+
+
+
+
+
+
+
+
+
+LuaRef
+  getGlobal(lua_State*, const char* nm4var4lua) -> LuaRef
+Lua Bridge is not just a one-way street, after all, it is a bridge.
+  To read Lua values in C, Lua Bridge provides the LuaRef class.
+  A LuaRef variable can hold any value that a Lua variable can.
+
+Lua:
+foo = "Hello, world"
+bar = 42
+debug = function()
+    print (foo .. " & " .. bar)
+end
+
+
+C++:
+LuaRef foo = getGlobal(L, "foo");
+LuaRef bar = getGlobal(L, "bar");
+LuaRef debug = getGlobal(L, "debug");
+bar = 57;
+debug();
+
+
+
+LuaRef variables have a cast<T> member function that will convert a given LuaRef value into whatever it is being cast to.
+
+C++:
+LuaRef foo = getGlobal(L, "foo");
+printf("foo: %s \n", foo.cast<const char*>());
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+LuaRef and tables
+A LuaRef variable can point to any type of data -- even a table!
+  When a LuaRef variable points to a table, it can be indexed very naturally using brackets ( [] ).
+
+Lua:
+velocity = {
+    x = 7,
+    y = 0,
+    units = "miles"
+}
+velocity.debug = function()
+    print (velocity.x .. ", " .. velocity.y .. " " .. units .. " / hour")
+end
+
+
+C++:
+LuaRef v = getGlobal(L, "velocity");
+v["y"] = 6
+v["units"] = "km"
+v["debug"]();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+book about Lua
+  Learning Game AI Programming with Lua
+  Lua Game Development Cookbook
+  Lua Programming Gems
+
+
+
+
+
+
+
+
+Learning Game AI Programming with Lua
+  Young, David. Learning Game AI Programming with Lua: Leverage the Power of Lua Programming to Create Game AI That Focuses on Motion, Animation, and Tactics . Packt Publishing, 2014.
+  ISBN 13: 9781783281336
+This book focuses on learning to program game AI in a Lua sandbox environment. The sandbox is a great example of how to build a 3D game framework in C++ and embed Lua as a scripting language.
+By using Lua, this book avoids requiring low-level engine code and allows the reader to focus on AI.
+
+
+
+
+
+
+Lua Game Development Cookbook
+Kašuba Mário. Lua Game Development Cookbook . Packt Publishing, 2015.
+ISBN 13: 9781849515504
+The Lua Game Development Cookbook contains over 70 recipes for creating games using Lua. The book covers a wide array of topics such as 2D game development, 3D game development, UI development, game physics, audio, and AI.
+By the end of the book, you will have all the knowledge required to make complete games using Lua.
+
+
+
+
+
+
+
+
+Lua Programming Gems
+Figueiredo, L. H.; Celes, W.; Ierusalimschy, R., eds. Lua Programming Gems . Lua.org, 2008.
+ISBN 13: 9788590379843
+Lua Programming Gems is a collection of articles that capture some Lua best practices as well as clever solutions to difficult problems.
+The book contains gems related to both game and non-game contexts. Algorithms, data structures, and design patterns are all covered in an easy to follow, comprehensive style.
+
+
+download
+  Learning Game AI Programming with Lua
+    https://libgen.ee/
+      --> https://llhlf.com/
+    https://llhlf.com/book_146200286
+      https://libgen.rocks/ads4be9390e186e3836fa34dda86a86e9ffILM8LYUE
+        浏览器设置:高级-禁止新窗口,常规-禁用javascript: https://libgen.rocks/get.php?md5=4be9390e186e3836fa34dda86a86e9ff&key=WZJ979O5TZAM6I8N
+        cd /sdcard/Download/
+        wget 'https://libgen.rocks/get.php?md5=4be9390e186e3836fa34dda86a86e9ff&key=WZJ979O5TZAM6I8N' -O 'Learning Game AI Programming with Lua(2014)(Young).epub'
+          --2023-07-24 22:15:04--  (try: 2)
+        xxx neednot:curl -L -C - -f -S -o 'Learning Game AI Programming with Lua(2014)(Young).epub'    'https://libgen.rocks/get.php?md5=4be9390e186e3836fa34dda86a86e9ff&key=WZJ979O5TZAM6I8N'
+
+
+  Lua Game Development Cookbook
+    https://llhlf.com/book_137338129
+      https://libgen.rocks/adsdd2330a157d603ab9b2fa8a8f17f8326RECJR7PI
+        https://libgen.rocks/get.php?md5=dd2330a157d603ab9b2fa8a8f17f8326&key=TDAE49FT2MZBRXH4
+        wget 'https://libgen.rocks/get.php?md5=dd2330a157d603ab9b2fa8a8f17f8326&key=TDAE49FT2MZBRXH4' -O 'Lua Game Development Cookbook(2015)(Mario Kasuba).epub'
+          --2023-07-24 22:21:29--  (try: 2)
+        xxx neednot:curl -L -C - -f -S -o 'Lua Game Development Cookbook(2015)(Mario Kasuba).epub'    'https://libgen.rocks/get.php?md5=dd2330a157d603ab9b2fa8a8f17f8326&key=TDAE49FT2MZBRXH4'
+
+
+  Lua Programming Gems
+    https://llhlf.com/book_137844407
+      https://libgen.rocks/ads1fb5142e21eb959aae39d123f2ce49e5JZ5VLEP2
+        https://libgen.rocks/get.php?md5=1fb5142e21eb959aae39d123f2ce49e5&key=7Z4NOSLR8ERNQ2UA
+        wget 'https://libgen.rocks/get.php?md5=1fb5142e21eb959aae39d123f2ce49e5&key=7Z4NOSLR8ERNQ2UA' -O 'Lua Programming Gems(2008)(Figueiredo).pdf'
+        #curl -L -C - -f -S -o 'Lua Programming Gems(2008)(Figueiredo).pdf'   
+
+
+
+
+
+
+software using lua:
+  Premake
+  Moho
+  CEGUI
+
+
+Premake
+Premake is used to generate build files for IDEs such as Visual Studio, X Code, Mono Develop, Code::Blocks, and more. Premake makes managing cross-platform projects easier by removing the need to manually update build files for every platform's IDE; instead it generates these files for you. Premake files that define how a project should be structured are just Lua files.
+The website is https://premake.github.io
+.
+
+
+
+Moho
+Moho is vector-based 2D animation software developed by Smith Micro Software. Most of the tools Moho offers are all scripted in Lua. Users can extend the software and create custom tools using Lua.
+Documentation for the Moho Lua API is online at http://mohoscripting.com
+The website is https://my.smithmicro.com/anime-studio-debut.html
+.
+
+
+CEGUI
+Crazy Eddie's GUI ( CEGUI ) is a user interface system written in C++, often used for video games. CEGUI offers a Lua backend scripting module, which allows user interfaces to be built using Lua. The CEGUI library is easy to embed, and the Lua API it exposes allows for Lua to issue callbacks to the application that is embedding it.
+The website is http://cegui.org.uk
+.
+
+
+
+
+
+download
+  Premake
+    https://premake.github.io/download/
+      https://github.com/premake/premake-core/releases/download/v5.0.0-beta2/premake-5.0.0-beta2-src.zip
+
+    [[[
+    https://premake.github.io/docs/What-Is-Premake/
+    ===
+What is Premake?
+Premake is a command line utility which reads a scripted definition of a software project and, most commonly, uses it to generate project files for toolsets like Visual Studio, Xcode, or GNU Make.
+
+workspace "MyWorkspace"
+   configurations { "Debug", "Release" }
+
+project "MyProject"
+   kind "ConsoleApp"
+   language "C++"
+   files { "**.h", "**.cpp" }
+
+   filter { "configurations:Debug" }
+      defines { "DEBUG" }
+      symbols "On"
+
+   filter { "configurations:Release" }
+      defines { "NDEBUG" }
+      optimize "On"
+A sample Premake script.
+
+$ premake5 vs2012
+Building configurations...
+Running action 'vs2012'...
+Generating MyWorkspace.sln...
+Generating MyProject.vcxproj...
+Generating MyProject.vcxproj.user...
+Done.
+Premake reads the script and generates project scripts.
+
+
+
+
+Use Premake To…
+  * Maximize your potential audience by allowing developers to use the platforms and toolsets they prefer.
+
+  * Allow developers to customize the build, and output project files specific to that configuration.
+
+  * Keep builds in sync across toolsets by generating project from the Premake scripts on demand.
+
+  * Quickly update large codebases with many workspaces and projects: make the change once in your Premake script and then regenerate.
+
+  * Create project files for toolsets you don't own.
+
+  * Quickly upgrade to newer versions of your chosen toolset.
+
+  * Script common configuration and build maintenance tasks.
+
+Key Features
+The current development version of Premake 5.0 can generate C, C++, or C# projects targeting:
+  Microsoft Visual Studio 2005-2019
+  GNU Make, including Cygwin and MinGW
+  Xcode
+  Codelite
+
+Previous version of Premake also supported exporting for MonoDevelop and Code::Blocks. We are in the process of bringing these exporters back online for the final release.
+
+Premake 5.0 generated projects can support:
+  32- and 64-bit builds
+  Xbox 360 (Visual Studio only)
+
+Add-on modules can extend Premake with support for additional languages, frameworks, and toolsets.
+
+In addition to its project generation capabilities, Premake also provides a complete Lua scripting environment, enabling the automation of complex configuration tasks such as setting up new source tree checkouts or creating deployment packages. These scripts will run on any platform, ending batch/shell script duplication.
+
+Premake is a "plain old C" application, distributed as a single executable file. It is small, weighing in at around 200K. It does not require any additional libraries or runtimes to be installed, and should build and run pretty much anywhere. It is currently being tested and used on Windows, Mac OS X, Linux, and other POSIX environments. It uses only a handful of platform dependent routines (directory management, mostly). Adding support for additional toolsets and languages is straightforward. The source code is available under the BSD License. The source code is hosted right here on GitHub; file downloads are currently hosted on SourceForge.
+
+Last updated on 6/10/2021 by Troplo
+Previous
+« Home
+Next
+Using Premake »
+Copyright © 2023 Premake
+    ]]]
+    [[[
+    https://premake.github.io/docs/Using-Premake/
+    ===
+Using Premake
+New to Premake? You might want to start with What is Premake?
+
+If you haven't already, you can download Premake here, or build it from source. Premake is a small command line executable, delivered as a single file. Just unpack the download and place the executable on your system search path, or anywhere else convenient.
+
+
+
+
+Using Premake to Generate Project Files
+The simplest Premake command is:
+  #premake5 [action]
+  premake5 vs2013
+
+Premake defines the following list of actions out of the box; projects may also add their own custom actions.
+
+Action	Description
+vs2022	Generate Visual Studio 2022 project files
+... ...
+vs2005	Generate Visual Studio 2005 project files
+gmake	Generate GNU Makefiles (This generator is deprecated by gmake2)
+gmake2	Generate GNU Makefiles (including Cygwin and MinGW)
+xcode4	XCode projects
+codelite	CodeLite projects
+(Premake4 supported some additional actions that haven't yet been ported to this new version; see the Available Feature Matrix for the whole list.)
+
+To generate Visual Studio 2013 project files, use the command:
+  premake5 vs2013
+
+You can see a complete list of the actions and other options supported by a project with the command:
+  premake5 --help
+
+
+
+
+Using the Generated Projects
+For toolsets like Visual Studio and Xcode, you can simply load the generated solution or workspace into your IDE and build as you normally would.
+
+If you have generated makefiles, running make with no options will build all targets using the default configuration, as set by the project author. To see the list of available configurations, type:
+  make help
+
+To build a different configuration, add the config argument:
+  make config=release
+
+To remove all generated binaries and intermediate files:
+
+  make clean                 # to clean the default target
+  make config=release clean  # to clean a different target
+
+Premake generated makefiles do not (currently) support a 『make install』 step. Instead, project owners are encouraged to add an install action to their Premake scripts, which has the advantage of working with any toolset on any platform. You can check for the existence of an install action by viewing the help (run premake5 --help in the project directory).
+
+Last updated on 12/30/2021 by Enhex
+Previous
+« What is Premake?
+Next
+Building Premake »
+    ]]]
+    [[[
+    https://premake.github.io/docs/Building-Premake/
+    ===
+Building Premake
+If you downloaded a prebuilt binary package you can skip this page, which discusses how to build the Premake source code. Jump ahead to one of the next sections to learn how to develop with Premake.
+
+Using a Source Code Package
+If you have one of the official source code packages, you'll find that project files for a variety of toolsets have already been generated for you in the build/ folder. Find the right set for your platform and toolset and build as you normally would (i.e. run make). The resulting binaries will be placed in the top-level bin/ folder.
+  『build/』project files
+  『make』
+  『bin/』『premake5.exe』
+
+Skip ahead to the next section to learn more about using the source version of Premake.
+
+
+
+
+Using the Git Code Repository
+If you are planning to make changes or contribute to Premake, working directly against the source code repository is the way to go. Premake 5's source code is housed right here on GitHub. To get the source code, see the "Clone" options in the sidebar to the right and follow the instructions there.
+
+Once the core source code has been cloned, you can bootstrap your first Premake executable:
+
+nmake -f Bootstrap.mak windows   # for Windows
+make -f Bootstrap.mak osx        # for Mac OS X
+make -f Bootstrap.mak linux      # Linux and similar Posix systems
+
+If your system or toolset is not fully supported by the bootstrap Makefile, you will need to create new project files using an existing version of Premake, however on Windows you can optionally specify the version of Visual Studio to use for the bootstrap using the MSDEV macro. To successfully compile on Windows with Visual C++ you must run vcvars32.bat first. If you don't have Visual C++ as part of your environment variables then you need to use the full path C:\Program Files (x86)\Microsoft Visual Studio <version>\VC\bin\vcvars32.bat. It might be easier to create a batch file with the following contents or copy the contents in appveyor.yml.
+
+call "%VS140COMNTOOLS%\..\..\VC\vcvarsall.bat" # Sets up the necessary environment variables for nmake to run
+nmake -f Bootstrap.mak MSDEV=vs2015 windows    # For Windows with Visual Studio 2015.
+
+On other platforms, if the bootstrap fails to build, you will need to have a working Premake executable on your system. The easiest way to get one is by downloading prebuilt binary package. If a binary is not available for your system, or if you would prefer to build one yourself, grab the latest source code package from that same site and follow the steps in Using a Source Code Package, above.
+
+Once you have a working Premake available, you can generate the project files for your toolset by running a command like the following in the top-level Premake directory:
+
+premake5 gmake  # for makefiles
+premake5 vs2012 # for a Visual Studio 2012 solution
+premake --help  # to see a list of supported toolsets
+
+If this is the first time you have built Premake, or if you have made changes to the Lua scripts, you should prepare them to be embedded into the Premake executable.
+
+premake5 embed
+
+This creates a C file (at src/host/scripts.c) which contains all of the Lua scripts as static string buffers. These then get compiled into the executable, which is how we get away with shipping a single file instead of a whole bunch of scripts.
+
+You should now have a workspace/solution/makefile in the top-level folder, which you can go ahead and build. The resulting binaries will placed into the bin/ folder.
+
+
+
+Running the Tests
+Once you have built an executable, you can verify it by running Premake's unit test suites. From the top-level Premake folder, run:
+
+bin/debug/premake5 test    # or...
+bin/release/premake5 test
+
+
+
+Runtime Script Loading
+If you are modifying or extending Premake, you can skip the embedding and compilation steps and run the scripts directly from the disk. This removes the build from the change-build-test cycle and really speeds up development.
+
+If you are running Premake from the top of its own source tree (where its premake5.lua is located) you will get this behavior automatically. If you are running Premake from some other location, use the --scripts option to provide the path to that top-level folder:
+
+bin/release/premake5 --scripts=../path/to/premake test
+
+If you find yourself doing this repeatedly, or if you want Premake to be able to find other, custom scripts, you can also set a search path with the PREMAKE_PATH environment variable. Set it just like you would set your system PATH variable.
+
+Once your changes are complete and you are ready to distribute them to others, embed them into the executable and rebuild:
+
+bin/release/premake5 embed
+make config=release   # or via Visual Studio, etc.
+
+
+
+Stuck?
+Give us a shout in our Discussions area on GitHub and we'll be glad to help you out.
+
+Last updated on 6/1/2021 by KyrietS
+Previous
+« Using Premake
+Next
+Your First Script »
+    ]]]
+    [[[
+    https://premake.github.io/docs/Your-First-Script/
+    ===
+Your First Script
+Let's start by configuring a build for the traditional "Hello, world!" program, as written in C:
+
+/* hello.c */
+#include <stdio.h>
+
+int main(void) {
+   puts("Hello, world!");
+   return 0;
+}
+
+The Premake script for a typical C program, such as this example, would be:
+
+-- premake5.lua
+workspace "HelloWorld"
+   configurations { "Debug", "Release" }
+
+project "HelloWorld"
+   kind "ConsoleApp"
+   language "C"
+   targetdir "bin/%{cfg.buildcfg}"
+
+   files { "**.h", "**.c" }
+
+   filter "configurations:Debug"
+      defines { "DEBUG" }
+      symbols "On"
+
+   filter "configurations:Release"
+      defines { "NDEBUG" }
+      optimize "On"
+
+If you save this script as a file named premake5.lua, and place it in the same directory as hello.c above, you can then generate project files by running a command like this one:
+
+$ premake5 vs2013
+
+This particular command will generate HelloWorld.sln and HelloWorld.vcxproj files for Visual Studio 2013 (see Using Premake or run premake --help for a complete list of exporters). If you build the generated workspace, you will get a command line executable named HelloWorld.exe in the bin/Debug or bin/Release directory, depending on which configuration was selected within Visual Studio.
+
+If you happened to be on Linux, you could generate and build a makefile like so:
+
+$ premake5 gmake
+$ make                # build default (Debug) configuration
+$ make config=release # build release configuration
+$ make help           # show available configurations
+
+If you'd like to use a name for your script other than the default "premake5.lua", use Premake's --file argument to tell it which file it should load.
+
+$ premake5 --file=MyProjectScript.lua vs2013
+
+
+
+
+What's Going On Here?
+Through the rest of this manual I'll break this sample down and walk through all of the features of Premake in a somewhat logical fashion. It isn't rocket science, and you probably already have the gist of it from the example above, so feel free to skip around. But first, it is helpful to know a few things about Premake scripts in general.
+
+Premake is Lua
+  [[f str_or_tbl] =[def]= [f(str_or_tbl)]]
+Premake is built on Lua, a powerful, fast, lightweight scripting language. Premake scripts are really Lua programs, so anything you can do in Lua can also be done in a Premake script.
+
+Premake builds on the Lua runtime, adding functions for defining workspaces, projects, and configurations as well as common build and file management tasks. It also provides conventions for setting your own command line options and arguments, allowing for construction of sophisticated build configuration and automation scripts.
+
+Because of the descriptive nature of the Lua language, your build scripts will often look more like static configuration files than mini-programs, as you can see from the example above.
+
+You can learn more about Lua here or from their excellent reference manual, but here's what you need to know to understand this example:
+
+  * The identation whitespace is arbitrary; this is the way I happen to like it.
+  * A double dash "--" starts a single line comment.
+  * Curly braces "{" and "}" are used to denote lists of values.
+
+
+
+
+Functions and Arguments
+  [[f str_or_tbl] =[def]= [f(str_or_tbl)]]
+Each line in the sample script is actually a function call. When you call a Lua function with a simple string or table argument you may omit the usual parenthesis for readability. So the first two lines of the sample could also be written as:
+
+workspace("HelloWorld")
+configurations({ "Debug", "Release" })
+
+If you use anything other than a simple string or table, the parenthesis become mandatory.
+
+local lang = "C++"
+language (lang)  -- using a variable, needs parenthesis
+
+workspace("HelloWorld" .. _ACTION) -- using string concatenation, needs parenthesis
+
+
+
+Values and Lists
+Most of Premake's functions accept either a single string or a list of strings as arguments. Single string arguments are easy to use and understand.
+
+language "C++"
+
+If multiple values are encountered for a simple value, the last one seen wins.
+
+language "C++"   -- the value is now "C++"
+language "C"     -- the value is now "C"
+
+
+For functions that accept a list of values, you may supply a list using Lua's curly brace syntax, or a single string value.
+
+defines { "DEBUG", "TRACE" }  -- defines multiple values using list syntax
+defines { "NDEBUG" }           -- defines a single value using list syntax
+defines "NDEBUG"              -- defines a single value as a simple string
+
+
+If multiple values are encountered for a list, they are concatenated.
+
+defines { "DEBUG", "TRACE" }  -- value is now { "DEBUG", "TRACE" }
+defines { "WINDOWS" }         -- value is now { "DEBUG", "TRACE", "WINDOWS" }
+
+
+If you ever wish to remove a previously set value, all list functions define a corresponding remove...() call.
+
+defines { "DEBUG", "TRACE" }  -- value is now { "DEBUG", "TRACE" }
+removedefines { "TRACE" }     -- value is now { "DEBUG" }
+
+
+
+
+
+
+Paths
+You'll be specifying lots of paths in your Premake scripts. There are two rules to remember:
+
+  * Always specify paths relative to the script file in which they appear.
+  * Always use forward slashes ("/") as a path separator. Premake will translate to the appropriate separator when generating the output files.
+
+
+
+
+Last updated on 6/1/2021 by KyrietS
+Previous
+« Building Premake
+Next
+Workspaces & Projects »
+    ]]]
+    [[[
+    https://premake.github.io/docs/Workspaces-and-Projects/
+    ===
+Workspaces & Projects
+For convenience, Premake follows the Visual Studio conventions for structuring a build and the naming of its components.
+
+
+
+
+Workspaces
+At the top level of every build is a workspace, acting as a container for projects. Other tools, notably Visual Studio, may use the term solution.
+
+Workspaces define a common set of build configurations and platforms to be used across all of the contained projects. You may also specify additional build settings (defines, include paths, etc.) at this level which will be similarly inherited by the projects.
+
+Workspaces are defined using the workspace function. Most builds will need only a single workspace, but you are free to create more if needed. Build configurations are specified using the configurations function and are required; see Configurations and Platforms for more information.
+
+workspace "HelloWorld"
+   configurations { "Debug", "Release" }
+The workspace name, provided as a parameter to the function, is used as the default file name of the generated workspace file, so it is best to avoid special characters (spaces are okay). If you wish to use a different name use the filename function to specify it.
+
+workspace "Hello World"
+   filename "Hello"
+   configurations { "Debug", "Release" }
+*(Note: Due to a bug in the way Xcode handles target dependencies, we currently don't generate a "workspace" file for it.
+
+
+
+
+Projects
+The primary purpose of a workspace is to act as a container for projects. A project lists the settings and source files needed to build one binary target. Just about every IDE uses the term "project" for this. In the world of Make, you can think of projects as a makefile for one particular library or executable; the workspace is a meta-makefile that calls each project as needed.
+
+Projects are defined using the project function. You must create the containing workspace first.
+
+workspace "MyWorkspace"
+  configurations { "Debug", "Release" }
+
+project "MyProject"
+
+
+The project name, like the workspace name, is used as the file name for the generated project file so avoid special characters, or use the filename function to provide a different value.
+
+Each project specifies a kind which determines what kind of output is generated, such as a console or windowed executable, or a shared or static library. The kind function is used to specify this value.
+
+Each project also specifies which programming language it uses, such as C++ or C#. The language function is used to set this value.
+
+project "MyProject"
+  kind "ConsoleApp"
+  language "C++"
+
+
+
+Locations
+By default, Premake will place generated workspace and project files in the same directory as the script which defined them. If your Premake script is in C:\Code\MyProject then the generated files will also be in C:\Code\MyProject.
+
+You can change the output location using the location function.
+
+workspace "MyWorkspace"
+  configurations { "Debug", "Release" }
+  location "build"
+
+project "MyProject"
+  location "build/MyProject"
+
+
+Like all paths in Premake, the location should be specified relative to the script file. Using the example and script above, the generated workspace will be placed in C:\Code\MyProject\build and the project in C:\Code\MyProject\build\MyProject.
+
+
+
+Last updated on 6/1/2021 by KyrietS
+Previous
+« Your First Script
+Next
+Scopes & Inheritance »
+    ]]]
+    [[[
+    https://premake.github.io/docs/Scopes-and-Inheritance/
+    ===
+Scopes & Inheritance
+As you may have noticed from the previous samples, Premake uses a pseudo-declarative syntax for specifying project information. You specify a scope (i.e. a workspace or project) for the settings, and then the settings to be placed in that scope.
+
+Scopes have a hierarchy: a global scope containing workspaces, which in turn contains projects. Values placed into the outer scopes are inherited by the inner ones, so workspaces inherit the values stored at the global scope, and projects inherit values stored in workspaces.
+
+-- global scope, all workspaces will receive these values
+defines { "GLOBAL" }
+
+workspace "MyWorkspaces"
+  -- workspace scope inherits the global scope; the list value
+  -- will now be { "GLOBAL", "WORKSPACE" }
+  defines { "WORKSPACE" }
+
+project "MyProject"
+  -- project scope inherits from its workspace; the list value
+  -- will now be { "GLOBAL", "WORKSPACE", "PROJECT" }
+  defines { "PROJECT" }
+
+Sometimes it can be helpful to go back and add values to a previously declared scope. You can do this the same way you declared it in the first place: by calling workspace or project, using the same name.
+
+-- declare my workspace
+workspace "MyWorkspace"
+  defines { "WORKSPACE1" }
+
+-- declare a project or two
+project "MyProject"
+  defines { "PROJECT" }
+
+-- re-select my workspace to add more settings, which will be inherited
+-- by all projects in the workspace
+workspace "MyWorkspace"
+  defines { "WORKSPACE2" }  -- value is now { "WORKSPACE1", "WORKSPACE2" }
+
+You can also select the parent or container of the current scope without having to know its name by using the special "*" name.
+
+-- declare my workspace
+workspace "MyWorkspace"
+  defines { "WORKSPACE1" }
+
+-- declare a project or two
+project "MyProject"
+  defines { "PROJECT" }
+
+-- re-select my workspace to add more settings
+project "*"
+  defines { "WORKSPACE2" }  -- value is now { "WORKSPACE1", "WORKSPACE2" }
+
+-- re-select the global scope
+workspace "*"
+
+Think of the "*" as a wilcard meaning "all projects in my parent container" or "all workspaces in the global scope".
+
+
+
+Last updated on 6/1/2021 by KyrietS
+Previous
+« Workspaces & Projects
+Next
+Adding Source Files »
+    ]]]
+    [[[
+    https://premake.github.io/docs/Adding-Source-Files/
+    ===
+Adding Source Files
+You add files—source code, resources, and so on—to your project using the files function.
+
+files {
+   "hello.h",  -- you can specify exact names
+   "*.c",      -- or use a wildcard...
+   "**.cpp"    -- ...and recurse into subdirectories
+}
+
+You can use wildcards in the file patterns to match a set of files. The wildcard * will match files in one directory; the wildcard ** will match files in one directory and also recurse down into any subdirectories.
+
+Files located in other directories should be specified relative to the script file. For example, if the script is located at MyProject/build and the source files are at MyProject/src, the files should be specified as:
+
+files { "../src/*.cpp" }
+
+Paths should always use the forward slash / as a separator; Premake will translate to the appropriate platform-specific separator as needed.
+
+
+
+
+Excluding Files
+Sometimes you want most, but not all, of the files in a directory. In that case, use the removefiles() function to mask out those few exceptions.
+
+files { "*.c" }
+removefiles { "a_file.c", "another_file.c" }
+
+
+Excludes may also use wildcards.
+
+files { "**.c" }
+removefiles { "tests/*.c" }
+
+Sometimes you may want to exclude all the files in a particular directory, but aren't sure where that directory will fall in the source tree.
+
+files { "**.c" }
+removefiles { "**/Win32Specific/**" }
+
+
+
+
+Last updated on 6/1/2021 by KyrietS
+Previous
+« Scopes & Inheritance
+Next
+Linking »
+    ]]]
+    [[[
+    https://premake.github.io/docs/Linking/
+    ===
+Linking
+Linking to external libraries is done with the links function.
+
+links { "png", "zlib" }
+
+When specifying libraries, system-specific decorations, such as prefixes or file extensions, should be omitted. Premake will synthesize the correct format based on the target platform automatically. The one exception to the rule is Mac OS X frameworks, where the file extension is required to identify it as such.
+
+links { "Cocoa.framework" }
+
+To link to a sibling project (a project in the same workspace) use the project name. Premake will deduce the correct library path and name based on the current platform and configuration.
+
+workspace "MyWorkspace"
+
+   project "MyLibraryProject"
+      -- ...project settings here...
+
+   project "MyExecutableProject"
+      -- ...project settings here...
+      links { "MyLibraryProject" }
+
+
+
+
+Finding Libraries
+You can tell Premake where to search for libraries with the libdirs function.
+
+libdirs { "libs", "../mylibs" }
+
+
+If you need to discover the location of a library, use the os.findlib function.
+
+libdirs { os.findlib("X11") }
+
+
+
+Last updated on 6/1/2021 by KyrietS
+Previous
+« Adding Source Files
+Next
+Configurations & Platforms »
+    ]]]
+    [[[
+    https://premake.github.io/docs/Configurations-and-Platforms/
+    ===
+Configurations & Platforms
+A configuration is a collection of settings to apply to a build, including flags and switches, header file and library search directories, and more. Each workspace defines its own list of configuration names; the default provided by most IDEs is "Debug" and "Release".
+
+Build Configurations
+The previous examples showed how to specify build configurations.
+
+workspace "MyWorkspace"
+   configurations { "Debug", "Release" }
+
+You are not limited to these names, but can use whatever makes sense to your software project and build environment. For instance, if your project can be built as both static or shared libraries, you might use this instead:
+
+workspace "MyWorkspace"
+   configurations { "Debug", "DebugDLL", "Release", "ReleaseDLL" }
+
+It is important to note that these names have no meaning in and of themselves, and that you can use whatever names you like.
+
+workspace "MyWorkspace"
+   configurations { "Froobniz", "Fozbat", "Cthulhu" }
+
+The meaning of the build configuration depends on the settings you apply to it, as shown in the earlier examples.
+
+workspace "HelloWorld"
+   configurations { "Debug", "Release" }
+
+   filter "configurations:Debug"
+      defines { "DEBUG" }
+      flags { "Symbols" }
+
+   filter "configurations:Release"
+      defines { "NDEBUG" }
+      optimize "On"
+
+The Filters section will cover this in more detail.
+
+
+
+
+Platforms
+"Platforms" is a bit of a misnomer here; once again I am following the Visual Studio nomenclature. Really, platforms are just another set of build configuration names, providing another axis on which to configure your project.
+
+configurations { "Debug", "Release" }
+platforms { "Win32", "Win64", "Xbox360" }
+
+Once set, your listed platforms will appear in the Platforms list of your IDE. So you can choose a "Debug Win32" build, or a "Release Xbox360" build, or any combination of the two lists.
+
+Just like the build configurations, the platform names have no meaning on their own. You provide meaning by applying settings using the filter function.
+
+configurations { "Debug", "Release" }
+platforms { "Win32", "Win64", "Xbox360" }
+
+filter { "platforms:Win32" }
+    system "Windows"
+    architecture "x86"
+
+filter { "platforms:Win64" }
+    system "Windows"
+    architecture "x86_64"
+
+filter { "platforms:Xbox360" }
+    system "Xbox360"
+
+Unlike build configurations, platforms are completely optional. If you don't need them, just don't call the platforms function at all and the toolset's default behavior will be used.
+
+Platforms are just another form of build configuration. You can use all of the same settings, and the same scoping rules apply. You can use the system and architecture() settings without platforms, and you can use otherwise non-platform settings in a platform configuration. If you've ever done build configurations like "Debug Static", "Debug DLL", "Release Static", and "Release DLL", platforms can really simplify things.
+
+configurations { "Debug", "Release" }
+platforms { "Static", "DLL" }
+
+filter { "platforms:Static" }
+    kind "StaticLib"
+
+filter { "platforms:DLL" }
+    kind "SharedLib"
+    defines { "DLL_EXPORTS" }
+
+
+
+Per-Project Configurations
+Configurations and platform lists may now be specified per-project. As an example, a project that should build for Windows, but not for a game console, can remove that platform:
+
+workspace "MyWorkspace"
+    configurations { "Debug", "Release" }
+    platforms { "Windows", "PS3" }
+
+project "MyProject"
+    removeplatforms { "PS3" }
+
+A related feature, configuration maps, translate a workspace-level configuration to project-level values, allowing projects with different configuration and platform lists to be combined in a single workspace. For example, a unit test library might be configured with the generic debug and release configurations.
+
+project "UnitTest"
+    configurations { "Debug", "Release" }
+
+To reuse that test project in a workspace which contains a more complex set of configurations, create a mapping from the workspace's configurations to the corresponding project configuration.
+
+workspace "MyWorkspace"
+    configurations { "Debug", "Development", "Profile", "Release" }
+
+project "UnitTest"
+    configmap {
+        ["Development"] = "Debug",
+        ["Profile"] = "Release"
+    }
+
+It is important to note that projects can't add new configurations to the workspace. They can only remove support for existing workspace configurations, or map them to a different project configuration.
+    ## project cannot add
+    ## project can remove or  alias
+
+
+Last updated on 1/16/2023 by Pranjal-Patel
+Previous
+« Linking
+Next
+Filters »
+    ]]]
+    [[[
+    https://premake.github.io/docs/Filters/
+    ===
+Filters
+Premake's filter system allows you target build settings to the exact configurations in which you want them to appear. You can filter by specific build configurations or platforms, operating system, target actions, and more.
+
+Here is an example which sets a preprocessor symbol named "DEBUG" in a workspace's "Debug" build configuration, and "NDEBUG" in the Release configuration.
+
+workspace "MyWorkspace"
+   configurations { "Debug", "Release" }
+
+   filter "configurations:Debug"
+      defines { "DEBUG" }
+
+   filter "configurations:Release"
+      defines { "NDEBUG" }
+
+Filters are always made up of two parts: a prefix that specifies which field is being filtered against, and a pattern that specifies which values of that field should be accepted.
+
+Filters follow Premake's pseudo-declarative style for its scripts: calling filter() makes that filter condition "active". All settings which subsequently appear in the script will be filtered by this condition until a new filter or container (workspace, project) is activated.
+
+-- All of these settings will appear in the Debug configuration
+filter "configurations:Debug"
+  defines { "DEBUG" }
+  flags { "Symbols" }
+
+-- All of these settings will appear in the Release configuration
+filter "configurations:Release"
+  defines { "NDEBUG" }
+  optimize "On"
+
+-- This is a sneaky bug (assuming you always want to link against these lib files).
+-- Because the last filter set was Release. These libraries will only be linked for release.
+-- To fix this place this after the "Deactivate" filter call below. Or before any filter calls.
+links { "png", "zlib" }
+
+-- "Deactivate" the current filter; these settings will apply
+-- to the entire workspace or project (whichever is active)
+
+filter {}
+  files { "**.cpp" }
+
+Filters are evaluated at generation time, when the workspace or project file is being created and written to disk. When it comes time to output the settings for this workspace's "Debug" build configuration, Premake evaluates the list of filters to find those that match the "Debug" criteria.
+
+Using the above example, Premake would first consider the filter "configurations:Debug". It would check the name of the configuration that was currently being output, see that it matched, and so include any settings up to the next filter call.
+
+The filter "configurations:Release" would be skipped, because the pattern "Release" would not match the name of the configuration currently being generated ("Debug").
+
+The last filter "{}" does not define any filtering criteria, and so does not exclude anything. Any settings applied after this filter will appear in all configurations within the workspace or project.
+
+Filters may also be combined, modified with "or" or "not", and use pattern matches. For a more complete description and lots of examples, see filter.
+
+
+Last updated on 6/28/2023 by Mark Carlson
+Previous
+« Configurations & Platforms
+Next
+Build Settings »
+    ]]]
+    [[[
+    https://premake.github.io/docs/Build-Settings/
+    ===
+Build Settings
+Premake provides an ever-growing list of build settings that you can tweak; the following table lists some of the most common configuration tasks with a link to the corresponding functions. For a comprehensive list of available settings and functions, see the Project API and Lua Library Additions.
+
+If you think something should be possible and you can't figure out how to do it, see Support.
+
+Specify the binary type (executable, library)	kind
+Specify source code files	files, removefiles
+Define compiler or preprocessor symbols	defines
+Locate include files	includedirs
+Set up precompiled headers	pchheader, pchsource
+Link libraries, frameworks, or other projects	links, libdirs
+Enable debugging information	symbols
+Optimize for size or speed	optimize
+Add arbitrary build flags	buildoptions, linkoptions
+Set the name or location of compiled targets	targetname, targetdir
+
+
+Last updated on 9/15/2021 by KyrietS
+Previous
+« Filters
+Next
+Command Line Arguments »
+    ]]]
+    [[[
+    https://premake.github.io/docs/Command-Line-Arguments/
+    ===
+Command Line Arguments
+Premake provides the ability to define and handle new command-line arguments from within your project script using the newaction and newoption functions.
+
+
+
+Actions and Options
+Premake recognizes two types of arguments: actions and options.
+
+An action indicates what Premake should do on any given run. For instance, the vs2013 action indicates that Visual Studio 2013 project files should be generated. The clean action causes all generated files to be deleted. Only one action may be specified at a time.
+
+An option modifies the behavior of the action. For instance, the dotnet option is used to change which .NET compiler set is used in the generated files. Options can accept a value, such as --dotnet=mono or act as a flag, like --with-opengl.
+
+From within your script, you can identify the current action with the _ACTION global variable, a string value. You can check for an option using the _OPTIONS table, which contains a list of key-value pairs. The key is the option identifier ("dotnet"), which references the command line value ("mono") or an empty string for valueless options.
+
+-- delete a file if the clean action is running
+if _ACTION == "clean" then
+   -- do something
+end
+
+-- use an option value in a configuration
+targetdir ( _OPTIONS["outdir"] or "out" )
+
+
+
+Creating New Options
+New command-line options are created using the newoption function, passing a table which fully describes the option. This is best illustrated with some examples.
+
+Here is an option intended to force the use of OpenGL in a 3D application. It serves as a simple flag, and does not take any value.
+
+newoption {
+   trigger = "with-opengl",
+   description = "Force the use of OpenGL for rendering, regardless of platform"
+}
+
+
+
+Note the commas after each key-value pair; this is required Lua syntax for a table. Once added to your script, the option will appear in the help text, and you may use the trigger as a keyword in your configuration blocks.
+
+filter { "options:with-opengl" }
+   links { "opengldrv" }
+
+filter { "not options:with-opengl" }
+   links { "direct3ddrv" }
+
+
+The next example shows an option with a fixed set of allowed values. Like the example above, it is intended to allow the user to specify a 3D API.
+
+newoption {
+   trigger = "gfxapi",
+   value = "API",
+   description = "Choose a particular 3D API for rendering",
+   allowed = {
+      { "opengl",    "OpenGL" },
+      { "direct3d",  "Direct3D (Windows only)" },
+      { "software",  "Software Renderer" }
+   },
+   default = "opengl"
+}
+
+As before, this new option will be integrated into the help text, along with a description of each of the allowed values. Premake will check the option value at startup, and raise an error on invalid values. The value field appears in the help text, and is intended to give the user a clue about the type of value that is expected. In this case, the help text will appear like this:
+
+--gfxapi=API      Choose a particular 3D API for rendering; one of:
+    opengl        OpenGL
+    direct3d      Direct3D (Windows only)
+    software      Software Renderer
+
+
+Unlike the example above, you now use the value as a keyword in your configuration blocks.
+
+filter { "options:gfxapi=opengl" }
+   links { "opengldrv" }
+
+filter { "options:gfxapi=direct3d" }
+    links { "direct3ddrv" }
+
+filter { "options:gfxapi=software" }
+    links { "softwaredrv" }
+
+As a last example of options, you may want to specify an option that accepts an unconstrained value, such as an output path. Just leave off the list of allowed values.
+
+newoption {
+   trigger     = "outdir",
+   value       = "path",
+   description = "Output directory for the compiled executable"
+}
+
+
+
+
+
+Creating New Actions
+Actions are defined in much the same way as options, and can be as simple as this:
+
+newaction {
+   trigger     = "install",
+   description = "Install the software",
+   execute = function ()
+      -- copy files, etc. here
+   end
+}
+The actual code to be executed when the action is fired should be placed in the execute() function.
+
+That's the simple version, which is great for one-off operations that don't need to access to the specific project information. For a tutorial for writing a more complete action, see Adding a New Action.
+
+
+Last updated on 9/17/2021 by starkos
+Previous
+« Build Settings
+Next
+Using Modules »
+    ]]]
+    [[[
+    https://premake.github.io/docs/Using-Modules/
+    ===
+Using Modules
+Premake can be extended through the use of third-party modules. Modules can add support for new toolsets, languages, and frameworks as well as entirely new features. See Modules for some examples of what the community has already created.
+
+To use a module, download or clone the module's repository to one of Premake's search paths, making sure that the destination folder has the same name as the module's main script, e.g. qt/qt.lua.
+
+$ git clone https://github.com/dcourtois/premake-qt qt
+
+Then simply call require() from your project or system script to include it.
+
+require "qt"
+
+
+
+
+Including a Module With Your Project
+For convenience, you may wish to keep a copy of the modules you require in your project's source tree. In that case you may place them anywhere you wish, and provide the relative path when requiring it. For instance, if your main premake5.lua is located at the root of your project tree, and your modules are in a folder named build, you may load it like:
+
+require "build/qt"
+
+
+
+System Modules
+You may also put your modules anywhere on Premake's search paths, for example in ~/.premake. In this case no path information is needed, and you can simply call:
+
+require "qt"
+
+If you wish to make a module always available to all of your projects, you may place the call to require() in your system script. In that case, the module will be automatically loaded each time Premake runs, and all of its features will be available.
+
+
+
+
+Version Requirements
+To ensure compatibility with your project script, it can sometimes be helpful to require a minimum version or range of versions for your module dependencies. Premake includes a modified version Lua's require() function which accepts a version test as its second argument.
+
+require("qt", ">=1.1")
+
+See the require() documentation for more information and examples.
+
+
+Last updated on 6/1/2021 by KyrietS
+Previous
+« Command Line Arguments
+Next
+More Authoring Topics »
+    ]]]
+    [[[
+    https://premake.github.io/docs/Topics/
+    ===
+More Authoring Topics
+  Locating Scripts
+  System Scripts
+  Removing Values
+  Tokens
+  Precompiled Headers
+  Custom Build Commands
+  Custom Rules
+  Makefile Projects
+  Debugging Scripts
+
+Last updated on 6/1/2021 by KyrietS
+Previous
+« Using Modules
+Next
+Extending Premake »
+    ]]]
+    [[[
+    https://premake.github.io/docs/Code-Overview/
+    ===
+Code Overview
+A Quick Tour of Premake
+The Premake source code is organized into a few different folders:
+
+src/actions/
+  contains the code for the built-on actions and exporters, e.g. "vs2012" or "gmake". We are gradually migrating these into independent modules, but for now they live here.
+
+src/base/
+  contains the core Lua scripts, the code that is used to read and process your project scripts, and supporting logic for the actions and exporters.
+
+src/host/
+  contains all of the C language code, logic that either can't easily be written in Lua because of the way it needs to interact with the underlying operating system, or because a Lua implementation would be too slow. We try to keep C code to a minimum and use Lua whenever we can, to enable overrides and call arrays.
+
+src/tools/
+  contains the adapters for command line toolsets like GCC and Clang. We will probably be migrating these toward modules in the near-ish future as well.
+
+modules/
+  contains the official set of modules which are distributed as part of Premake. These modules add support for additional languages and toolsets to the core code in the src folder.
+
+In addition to those general categories, there are a few special files of note:
+
+src/_premake_main.lua
+  contains the Lua-side program entry point, and is responsible for the main application flow. The C-side program entry point main() is located in src/host/premake_main.c.
+
+src/_premake_init.lua
+  sets up much of the initial configuration, including all of the project scripting functions, the default set of command line arguments, and the default project configurations.
+
+src/_modules.lua
+  contains the list of built-in modules which are automatically loaded in startup. See Embedding Modules for more information.
+
+src/_manifest.lua
+  lists the Lua scripts that should be embedded into the Premake executable when making the release builds. There are separate manifests for Premake's core scripts and each embedded module.
+
+
+
+
+Code Execution Overview
+Execution starts at main() in src/host/premake_main.c, which calls into to src/host/premake.c to do the real bootstrapping work:
+
+premake_init()
+  installs all of Premake's native C extensions to the Lua scripting environment.
+
+premake_execute()
+  finds and runs src/_premake_main.lua, which may be embedded into the executable for a release build, or located on the filesystem.
+
+src/_premake_main.lua
+  in turn reads src/_manifest.lua and loads all of the scripts listed there. Notably, this includes src/_premake_init.lua which does
+
+Once src/premake_main.lua has finished, premake_execute() calls _premake_main(), which located at the end of src/_premake_main.lua, and waits for it to return.
+
+At this point, execution has moved into and remains in Lua; extending Premake by overriding functions and call arrays now becomes possible.
+
+_premake_main()
+  uses a call array to control the high-level process of evaluating the user scripts and acting on the results. Notable functions in this list include:
+
+prepareEnvironment()
+  sets more global variables and otherwise gets the script environment ready to use.
+
+locateUserScript()
+  handles finding the user's project script, i.e. premake5.lua on the file system.
+
+checkInteractive()
+  is responsible for launching the REPL prompt, if requested.
+
+runSystemScript()
+  runs the user's system script, and runUserScript() runs the project script found by locateUserScript().
+
+processCommandLine()
+  handles any command line options and sets the target action and arguments. This needs to happen after the project script has run, in case it defines new options or modifies the behavior of existing options—a common point of confusion.
+
+bake()
+  takes all of the project and configuration information that has been specified in the user's project script and prepares it for use by the target action, a somewhat convoluted process that is implemented in src/base/oven.lua.
+
+validate()
+  examines the processed configuration information and tries to make sure it all makes sense, and that all required data is available. The main validation logic is located in src/base/validation.lua.
+
+callAction()
+  passes each workspace, project, rule, and other container to the target action, causing the appropriate result--like generating a Visual Studio project or GNU makefile--to occur. This container iteration is done in action.call() in src/base/action.lua.
+
+Calling the action, via callAction(), is where the interesting part for most people begins. Control now transfers to one of exporters, causing the project files to be written. For more information on how that happens, see Creating a New Action.
+
+
+Last updated on 6/1/2021 by KyrietS
+Previous
+« Extending Premake
+Next
+Coding Conventions »
+    ]]]
+    [[[
+    ===
+    ]]]
+    [[[
+    ===
+    ]]]
+    [[[
+    ===
+    ]]]
+
+
+
+
+
+
+
+  Moho
+  CEGUI
+
+
+
+DONE@20230724

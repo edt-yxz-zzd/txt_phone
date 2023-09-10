@@ -1,0 +1,40 @@
+
+e ../lots/NOTE/Python/python-bug/datetime-bug.txt
+[[
+doc err or impl bug?
+===
+utcfromtimestamp(timestamp) -> aware datetime object
+  === datetime(1970, 1, 1, tzinfo=timezone.utc) + timedelta(seconds=timestamp)
+  ~ datetime.fromtimestamp(timestamp, timezone.utc)
+  bug?
+  view ../../python3_src/seed/for_libs/for_time.py
+  assert None is datetime.utcfromtimestamp(0.0).tzinfo
+]]
+
+[[
+strftime,strptime mismatch
+bug?
+  view ../../python3_src/seed/for_libs/for_time.py
+===
+>>> datetime__tz4utc
+datetime.datetime(2023, 8, 22, 16, 46, 25, 434481, tzinfo=datetime.timezone.utc)
+>>> datetime__tz4utc.timestamp().hex()
+'0x1.93939985bce89p+30'
+>>> time_fmt
+'%Y%m%d-%H:%M:%S.%f%z'
+>>> datetime2formatted_str_(time_fmt, datetime__tz4utc)
+'20230822-16:46:25.434481+0000'
+>>> datetime5formatted_str_(time_fmt, _) # --> aware_datetime
+datetime.datetime(2023, 8, 22, 16, 46, 25, 434481, tzinfo=datetime.timezone.utc)
+>>> datetime2formatted_str_(time_fmt, datetime__tz4utc.replace(tzinfo=None)) # === datetime__tz4utc.replace(tzinfo=None).strftime(time_fmt)
+'20230822-16:46:25.434481'
+>>> datetime5formatted_str_(time_fmt, _) # === datetime.strptime(_, time_fmt) #??? why??? %z can output empty???
+Traceback (most recent call last):
+    ...
+ValueError: time data '20230822-16:46:25.434481' does not match format '%Y%m%d-%H:%M:%S.%f%z'
+>>> datetime5formatted_str_(time_fmt[:-2], _) # === datetime.strptime(_, time_fmt[:-2]) # --> naive_datetime
+datetime.datetime(2023, 8, 22, 16, 46, 25, 434481)
+]]
+
+
+

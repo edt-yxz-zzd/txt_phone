@@ -1,0 +1,218 @@
+e others/app/无法访问本地路径.txt
+app 浏览本地网页，防止路径加密
+  app view local webpage by path
+
+file://localhost/sdcard/...
+file:///sdcard/ or file://localhost/sdcard/
+file://sdcard/
+file:///mnt/sdcard/Documents/blabla.html. Opera changed the adress in file://localhost/mnt/Documents...
+/sdcard/Android/data/com.android.chrome/files/Download/
+/sdcard/Download/
+
+
+[[[
+https://android.stackexchange.com/questions/220400/local-files-revisited-opening-local-html-files-file-path-to-file-in-chrome
+===
+Android Enthusiasts
+Local files revisited: Opening local HTML files (file:///path/to/file) in Chrome on Android 10.x
+Asked 3 years, 6 months ago
+Modified 3 months ago
+Viewed 29k times
+10
+
+You may note the almost duplicate title from this question. It keeps coming up when trying to solve my current issue.
+
+I created a little web app to help at work. Just some HTML and JavaScript, and before Android started enforcing the Scoped Storage, I had no issues using it. Now when I try to load the URL (ie: file:///storage/emulated/0/__MyDocs/SignInTracker.html) I get an access denied error.
+
+I could use Firefox, but it seems to be because it's not yet using the Scoped Storage standard, which if I understand correctly, will be a requirement in the next Android version, so that means I cannot rely on it working in the future. Also, Firefox just doesn't run as nicely as Chrome.
+
+Is there a proper way for a non-Android-developer to use a local web app like this? Is there perhaps a location on the phone where I can place my .html and .js files that will allow Chrome to access them without issues? At work, I'm not online or connected to anything, so loading from another server/computer is not an option.
+
+For reference: My Chrome version is 79.0.3945.116, my Firefox version is 68.4.1, and my phone OS is Android 10; Pixel Build/QP1A.191005.007.A1.
+
+internal-storagechrome-for-androidhtmlandroid-10
+Share
+Improve this question
+Follow
+edited Dec 28, 2021 at 13:06
+Andrew T.'s user avatar
+Andrew T.♦
+15k99 gold badges7171 silver badges117117 bronze badges
+asked Jan 17, 2020 at 5:40
+therks's user avatar
+therks
+20311 gold badge22 silver badges66 bronze badges
+This same problem occurs with other browsers like Firefox and Bromite :-( – 
+Dimitri C.
+ Jul 16 at 19:52
+Add a comment
+3 Answers
+Sorted by:
+
+Highest score (default)
+10
+
+You have 2 options:
+
+You can use a local web server in your Android phone itself. There are many server apps out there in the Play Store, one such app is Simple HTTP Server.
+
+You can put your documents into the folder Android/data/com.android.chrome/files/Download/ in the internal storage. It's absolute path is /storage/emulated/0/Android/data/com.android.chrome/files/Download/ or /sdcard/Android/data/com.android.chrome/files/Download/. This is the location where Chrome stores any downloaded files and therefore, this the only location where Chrome can access the files. But remember, uninstalling Chrome will delete this directory.
+
+Share
+Improve this answer
+Follow
+answered Jul 11, 2020 at 12:39
+Puspam's user avatar
+Puspam
+56222 gold badges1111 silver badges2222 bronze badges
+1
+I had tried some server apps but they all had issues (one of them didn't even process Javascript). Placing the files in that directory seems to have worked though. Thanks! – 
+therks
+ Jul 11, 2020 at 22:04
+You can also use Opera browser of you wish. It is much similar to Chrome since both use the same engine. Opera have no issues at all while browsing the storage. – 
+Puspam
+ Jul 17, 2020 at 19:29
+Thanks a lot for the suggestion of Simple HTTP Server: it is very easy to use, is free and works like a charm. This is a very elegant workaround! Still I don't fully understand why Android doesn't allow to give apps access to selected folders in the local storage. Maybe in the future this will be implemented; let's hope. – 
+Dimitri C.
+ Jul 16 at 19:55
+Add a comment
+4
+
+For Android 11 [One UI 3.1]
+Browsing local files (in internal storage space) in Chrome using file:///sdcard/ or file://localhost/sdcard/, one can notice that only media files and subdirectories (if any) are listed in almost every folder except the "Download" folder (but not in its subfolders=subdirs).
+
+This means that on Android 11, the folder from which Chrome can read local (m)HTML is /Download folder, not Android/data/com.android.chrome/files/Download in internal or external storage space like in Android 10.
+
+NOTE: on my Samsung devices, downloads onto internal storage were saved into /Download folder in all versions of Android (9, 10, 11), but downloads on an external SD card changed their folder from /storage/emulated/exSD_CARD/Android/data/com.android.chrome/files/Download in Android 10 to /storage/emulated/exSD_CARD/Download in Android 11, where exSD_CARD is the device's label for external SD card (0123-4567 or 9C33-6BBD in my devices)
+
+Thus, (m)HTML files saved into /Download folder with Chrome (with .mhtml extension from older times or with manually added extension by renaming saved mhtml files without extension - from certain time Chrome stopped to append .mhtml extension to saved mhtml files :) on my devices, I guess from upgrading to Android 10)
+
+This did not work for the mhtml files which have been moved to other folders and then returned to /Download folder. (And because of collecting saved mhtml files in many different folders, I have many mhtml files which are necessary to copy/move back to /Download folder prior to opening but they still cannot be opened)
+
+Notes about opening mhtml files
+I need to use Total Commander's "Open with" functionality with file://url option checked, then choose Chrome in order to open (mhtml) file with Chrome (with file://url checked, the Chrome is in the list to choose from, with file://url option unchecked, it is not listed in the list) or to browse local files in internal storage directly in Chrome (file manager My Files provided with the device was unusable to choose mhtml files to be opened with Chrome)
+
+(mhtml) files from /Download folder opened in this way are opened as offline versions of downloaded web pages - but only if the file was not moved and returned back to /Download folder, otherwise you get Access Denied message. Also, opening (mhtml) files in this way using Total Commander, but from other folders than /Download folder, leads to Access Denied message
+
+Opening mhtml files from any folder using Total Commander, but with file://url option unchecked (in this case, the Chrome is not in 1st list, so you need to choose "Open with *" option with folder icon from the list and subsequently choose Chrome from next list) behaves differently. Opening in such a way leads not to successful opening or Access Denied message but to Save as Dialog Form in which one can choose also if the resaved mhtml file should be saved to internal storage or external SD card (if present). In this way, resaved mhtml files in /Download folder (on internal or external storage space) can be now opened using Total Commander "Open with" dialog with checked file://url option.
+
+Still, there exists a way of opening the (m)HTML files with Chrome
+
+without other browsers/viewer
+without rooting the Android device
+but maybe only until the next update :)
+
+Share
+Improve this answer
+Follow
+edited Dec 28, 2021 at 13:06
+Andrew T.'s user avatar
+Andrew T.♦
+15k99 gold badges7171 silver badges117117 bronze badges
+answered May 17, 2021 at 10:00
+Michal Ilčin's user avatar
+Michal Ilčin
+4111 bronze badge
+Add a comment
+1
+
+My workaround to open local files on my Samsung tablet is this:
+
+Install Ghost Commander from f-droid.org (link)
+
+Navigate to the directory where the .html file is, then double-click on it and open with Chrome, Opera, or Samsung web browser. Sadly I'm unable to associate with Firefox for Android (not listed).
+
+The URL seems a bit random: content://com.ghostsq.commander.FileProvider/FS/L3N0c3JhZ2UvZW11bBF1ZWQvMC9Nb3ZpZXMvenNhbmk/videos.html
+
+But everything works, all the relative paths listed in the .html are working.
+
+In my case, I have a list of videos which I can filter from .css only (embedded inside the .html file) without any additional javascript.
+
+Share
+Improve this answer
+Follow
+edited Dec 28, 2021 at 13:06
+Andrew T.'s user avatar
+Andrew T.♦
+15k99 gold badges7171 silver badges117117 bronze badges
+answered Dec 23, 2021 at 23:26
+user12933's user avatar
+user12933
+11111 bronze badge
+]]]
+[[[
+https://android.stackexchange.com/questions/40771/local-files-revisited-opening-local-html-files-file-path-to-file-in-chrome
+===
+Android Enthusiasts
+Local files revisited: Opening local HTML files (file:///path/to/file) in Chrome on Android 4.x
+Asked 10 years, 4 months ago
+Modified 1 year, 6 months ago
+Viewed 17k times
+7
+
+There are other questions on this same topic, but I'm finding that on 4.0.4 with my HTC One, I can open file:/// URLs just fine with Firefox, but not with Chrome or the Android browser. Those two simply report a security error and show no content.
+
+Is this something that changed since the 2.x era when it was apparently possible? (edit well I realize there was no Chrome for 2.x but ...)
+
+4.0-ice-cream-sandwichfile-systemchrome-for-android
+Share
+Improve this question
+Follow
+edited Dec 28, 2021 at 13:10
+Andrew T.'s user avatar
+Andrew T.♦
+15k99 gold badges7171 silver badges117117 bronze badges
+asked Mar 4, 2013 at 19:13
+Pointy's user avatar
+Pointy
+25011 gold badge22 silver badges1212 bronze badges
+On 4.2.1 the URLs work fine on Chrome and Chrome Beta, but not the builtin browser. – 
+onik
+ Mar 4, 2013 at 19:28
+Hmm let me try my Nexus 7 - thanks for the info. – 
+Pointy
+ Mar 4, 2013 at 19:35
+Possibly it is disallowed to prevent hijacking? – 
+t0mm13b
+ Mar 4, 2013 at 19:39
+For Android 10 or later: Local files revisited: Opening local HTML files (file:///path/to/file) in Chrome on Android 10.x – 
+Andrew T.
+♦
+ Dec 28, 2021 at 13:07
+Add a comment
+1 Answer
+Sorted by:
+
+Highest score (default)
+3
+
+The issue was user error stemming from the less-than-obvious way the Android OS file system works. Everything visible in the file system is under a top-level (the real top) directory called "sdcard". Thus, file:/// URLs only work for paths like file:///sdcard/foo/bar.
+
+I'll add with questionable relevance that if you haven't installed the app "AirDroid", you should. I found it while looking around for answers to a related problem.
+
+Share
+Improve this answer
+Follow
+edited Dec 28, 2021 at 13:10
+Andrew T.'s user avatar
+Andrew T.♦
+15k99 gold badges7171 silver badges117117 bronze badges
+answered Mar 5, 2013 at 14:16
+Pointy's user avatar
+Pointy
+25011 gold badge22 silver badges1212 bronze badges
+I get: "Access to the file was denied" for the extSdCard. – 
+Luis A. Florit
+ Feb 12, 2016 at 18:20
+what path must one use for internal storage?? – 
+Fedor Alexander Steeman
+ Feb 3, 2017 at 10:58
+@FedorSteeman it's in the answer above. – 
+Pointy
+ Feb 3, 2017 at 13:28
+thanks. I was getting confused over the fact that my unit didn't have an sd card, so it didn't make sense to me to go to the "sdcard". – 
+Fedor Alexander Steeman
+ Feb 3, 2017 at 14:24
+]]]
+
+
