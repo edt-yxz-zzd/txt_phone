@@ -476,10 +476,157 @@ Given points P,Q <- ECC(K;a,b), consider the unique line L1through P and Q.
 
 
 
+[[[
 TODO:
     [P*Q %n == ???]
       使用 三值坐标，看看是否可以 省略 除法/求倒数
     三值坐标囗作用:goto
+
+===
+使用 三值坐标
+[P := (xP, yP, zP)]
+[Q := (xQ, yQ, zQ)]
+[p :: prime][p >= 5]:
+    [1/P =[def]= (xP, -yP, zP) if [P =!= o1o] else o1o]
+    how to detect [P == o1o]?
+      [[P == o1o] <-> [zP == 0]]
+    how to detect [Q == P]?
+    how to detect [Q == 1/P]?
+        !! [P := (xP, yP, zP)]
+        !! [Q := (xQ, yQ, zQ)]
+        [[Q==P] <-> [?[k :<- [1..<p]] -> [[xP*k=[%p]=xQ][yP*k=[%p]=yQ][zP*k=[%p]=zQ]]]]
+        [[Q==1/P] <-> [?[k :<- [1..<p]] -> [[xP*k=[%p]=xQ][yP*k=[%p]=-yQ][zP*k=[%p]=zQ]]]]
+        * [zP==0==zQ]:
+          [Q == o1o == P]
+          [Q == P]
+          [Q == 1/P]
+        * [zP==0=!=zQ]:
+          [Q =!= P]
+          [Q =!= 1/P]
+        * [zP=!=0==zQ]:
+          [Q =!= P]
+          [Q =!= 1/P]
+        * [zP=!=0=!=zQ]:
+          [[Q==P] <-> [[xP*zQ=[%p]=xQ*zP][yP*zQ=[%p]=yQ*zP]]]
+          [[Q==1/P] <-> [[xP*zQ=[%p]=xQ*zP][yP*zQ=[%p]=-yQ*zP]]]
+
+
+    [P*Q %p =[def]= ???]
+        [P == o1o][Q == o1o]:
+            [Q == 1/P]
+            [P*Q == o1o]
+        [P == Q][yQ == 0]:
+            [Q == 1/P]
+            [P*Q == o1o]
+        <<==:
+        [P == o1o]:
+            [P*Q == Q]
+        [Q == o1o]:
+            [P*Q == P]
+        [Q == 1/P]:
+            [P*Q == o1o]
+
+        [P =!= o1o][Q =!= o1o][Q =!= 1/P]:
+            [L1 be [y-yP/zP == λ*(x-xP/zP)]]
+            [λ == (yQ −yP)/(xQ −xP) if P =!= Q else (3*xP**2/zP**2 +a)/(yP/zP+yQ/zQ)]
+            [λ == (yQ −yP)/(xQ −xP) if P =!= Q else (3*xP**2 +a*zP**2)*zQ/(yP*zQ+yQ*zP)*zP]
+
+            [λ == (yQ −yP)/(xQ −xP) if P =!= Q else (3*xP**2 +a*zP**2)/(2*yP*zP)]
+            [λ == (yQ −yP)/(xQ −xP) if P =!= Q else (3*xP**2/zP**2 +a)/(2*yP/zP)]
+
+            [N/D := λ]
+            * [P==Q]:
+                [N == (3*xP**2 +a*zP**2)]
+                [D == (2*yP*zP)]
+            * [P=!=Q]:
+                [N == (yQ −yP)]
+                [D == (xQ −xP)]
+            [P*Q == (λ**2 −xP/zP −xQ/zQ, λ*(2*xP/zP +xQ/zQ −λ**2) −yP/zP, 1)]
+            [P*Q == (D*N**2 −(xP/zP+xQ/zQ)*D**3, (2*xP/zP +xQ/zQ)*N*D**2 −N**3 −yP/zP*D**3, D**3)]
+            [P*Q == (zP*zQ*D*N**2 −(xP*zQ+zP*xQ)*D**3, (2*xP*zQ +zP*xQ)*N*D**2 −zP*zQ*N**3 −yP*zQ*D**3, zP*zQ*D**3)]
+              D3 = D**3
+              N3 = N**3
+              ND2 = N*D**2
+              DN2 = D*N**2
+              zPQ = zP*zQ
+              xPzQ
+              zPxQ
+              yPzQ
+            [P*Q == (zPQ*DN2 −(xPzQ+zPxQ)*D3, (2*xPzQ +zPxQ)*ND2 −zPQ*N3 −yPzQ*D3, zPQ*D3)]
+                #why no zPyQ but has yPzQ??
+                #   xPzQ bigger zPxQ
+                #   xPzQ*ND2-yPzQ*D3
+                #   xPzQ*N-yPzQ*D
+                # * [P=!=Q]:
+                #   xPzQ*(yQ −yP)-yPzQ*(xQ −xP)
+                #   (xPyQzQ −xPyPzQ-yPxQzQ +xPyPzQ)
+                #   (xPyQzQ -yPxQzQ)
+                #   (xPyQ -yPxQ)*zQ
+                #   OK!
+                # * [P==Q]:
+                #   xPzQ*(3*xP**2 +a*zP**2)-yPzQ*(2*yP*zP)
+                #   zQ*(3*xPxPxP -2*yPyPzP +a*xPzPzP)
+                #   zQ*zPzPzP*(3*xPxPxP/zPzPzP -2*yPyP/zPzP +a*xP/zP)
+                #   above*D2
+                #   above*D2 /D3 # sonce new z == zPQ*D3
+                #   above/D
+                #   [D == (2*yP*zP)]
+                #   1/(2*yP*zP) *zQ*zPzPzP*(3*xPxPxP/zPzPzP -2*yPyP/zPzP +a*xP/zP)
+                #   zPzQ/(2*yP/zP) *(3*xPxPxP/zPzPzP -2*yPyP/zPzP +a*xP/zP)
+                #   OK!
+
+
+
+[n :: composie][n >= 2][K == ZZ%n][K is not field]:
+    perform a type of ”pseudo-addition”
+    [P*Q %n == ???]
+    [gX := gcd(xP/zP -xQ/zQ, n)]
+    [gY := gcd(yP/zP +yQ/zQ, n)]
+    ==>>
+    [gX := gcd(xP*zQ -xQ*zP, n)]
+    [gY := gcd(yP*zQ +yQ*zP, n)]
+    [gX == n]:
+        [xP*zQ == xQ*zP]
+    [gY == n]:
+        [yP*zQ == -yQ*zP]
+
+    * [[1 < gX < n]or[1 < gY < n]]:
+        [found nontrivial divisor of n]
+    * [[gX == n][gY == n]]:
+        [[xP/zP == xQ/zQ][yP/zP == -yQ/zQ]]
+        [Q == 1/P]
+        [P*Q == o1o]
+    * [[gX == 1][gY <- {1,n}]]:
+        [exists: inv_mod_(n; xQ/zQ -xP/zP)]
+        [λ == (yQ/zQ −yP/zP)/(xQ/zQ −xP/zP)]
+            #same
+    * [[gX == n][gY == 1]]:
+        [λ == (3*xP**2/zP**2 +a)/(yP/zP+yQ/zQ)]
+            #!!!diff!!!
+            # <<== [n==p*q][%p,%q must agree...][P*Q %n --> P*Q %p, P*Q %q]
+    [P*Q == (λ**2 −xP −xQ, λ*(2*xP +xQ −λ**2) −yP, 1)]
+            #same
+
+  分解因子:通过计算 [P**k %n]
+      [P =!= o1o][k > 0]:
+          [n is prime]
+          [n%p == 0][k %group_order_(ECC(ZZ%p;a,b)) == 0]:
+              [P**k %p == o1o]
+              [[P**k %n == o1o]or[breakdown P**k:[found nontrivial divisor of n]]]
+
+          [not$ [[P**k %n == o1o]or[breakdown P**k:[found nontrivial divisor of n]]]]:
+              <==> [@[p :: prime] -> [n%p == 0] -> [P**k %p =!= o1o]]
+
+          [P**k %n == o1o]
+              <==> [@[p :: prime] -> [n%p == 0] -> [P**k %p == o1o]]
+              <<== [@[p :: prime] -> [n%p == 0] -> [k %group_order_(ECC(ZZ%p;a,b)) == 0]]
+
+          [breakdown P**k:[found nontrivial divisor of n]]
+              <==> [[?[p :: prime] -> [n%p == 0] -> [P**k %p == o1o]][?[q :: prime] -> [n%q == 0] -> [P**k %q =!= o1o]]]
+                也就是说，即使 [k %group_order_(ECC(ZZ%p;a,b)) == 0] 不成立，也可能[found nontrivial divisor of n]，只要P足够特殊 [?R -> [P == R**u]][u*k %group_order_(ECC(ZZ%p;a,b)) == 0]，[Hp := group_order_(ECC(ZZ%p;a,b))][u := Hp///gcd(Hp,k)], 此类型P只有(1/u)概率，由于[k==lcm([1..=B])]，u可能是 多个大素数pb>B 与 多个小素数pl<B(次数超过floor_log_(pl;B)) 之积，1/u相当小
+
+
+]]]
 
 
 

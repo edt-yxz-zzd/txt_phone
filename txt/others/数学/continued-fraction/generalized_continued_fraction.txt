@@ -1,0 +1,2592 @@
+
+e others/数学/continued-fraction/generalized_continued_fraction.txt
+view others/数学/exponential.txt
+    https://handwiki.org/wiki/Generalized_continued_fraction
+    https://handwiki.org/wiki/Euler%27s_continued_fraction_formula
+        Sardina, Manny (2007). "General Method for Extracting Roots using (Folded) Continued Fractions". Surrey (UK). http://myreckonings.com/Dead_Reckoning/Online/Materials/General%20Method%20for%20Extracting%20Roots.pdf.
+
+    https://math.stackexchange.com/questions/18445/fastest-way-to-calculate-ex-up-to-arbitrary-number-of-decimals
+        https://imathworks.com/math/math-fastest-way-to-calculate-ex-up-to-arbitrary-number-of-decimals/
+
+[[
+该论文 提到 quotient-difference algorithm，用于将 麦克劳林展开式(无限长)/有理分式 转化为 连分式(部分分子为z，部分分母为实数)。
+  截取 连分式 前n项，则 该有限连分式 展开后 前n项与 原多项式 相同，多了一些高阶项误差
+wget_u 'https://ttu-ir.tdl.org/bitstream/handle/2346/20231/31295015507519.pdf?sequence=1' -o 'continued fractions and their application in the computation of definite riemann integrals(1973)(stanley)(tdl).pdf'
+  good!!
+===
+ttu dspace repository
+mathematics, the subject of continued fractions plays an extensive, if not vital, role in analytic theory as well as arithmetic theory. powerful applications involving the use of continued fractions exist with respect to the theory of equations, orthogonal polynomials, power series, infinite matrices and quadratic forms in infinitely many
+]]
+
+
+
+
+generalized continued fraction
+[gcf[d0; n1$d1, n2$d2, ..., nN$dN, z[N+1]] =[def]= (d0 + n1/(d1 + n2/(d2 + ... + nN/(dN+z[N+1]))))]
+  [n[i] =!= 0]
+  [n[i] :: Real]
+  [z[i] == n[i]/gcf[d[i]; n[i+1]$d[i+1], ...]]
+[n/d _+ z =[def]= n/(d+z)]
+  partial numerators and denominators
+[gcf[d0; n1$d1, n2$d2, ..., nN$dN, z] == (d0 + n1/d1 _+ n2/d2 _+ ... _+ nN/dN _+ z[N+1])]
+[d ^+ n | z =[def]= d + n/z]
+[gcf[d0; n1$d1, n2$d2, ..., nN$dN, z[N+1]] == (d0 ^+ n1 | d1 ^+ n2 | d2 ^+ ... ^+ nN | dN + z[N+1])]
+
+equivalence transformation
+[gcf[..., ni$di, nj$dj, nk$dk, ...]
+== gcf[..., c*ni$c*di, c*nj$dj, nk$dk, ...]
+== gcf[..., c*ni$c*di, nj$(dj/c), (nk/c)$dk, ...]
+[c := 1/ni]
+== gcf[..., 1$(di/ni), nj$(dj*ni), (nk*ni)$dk, ...]
+== gcf[..., 1$(di/ni), nj$(dj*ni), ..., n[t]$d[t]*ni**(-1)**(t-i+1), ...]
+== gcf[..., 1$(di/ni), ..., n[t]$d[t]*ni**(-1)**(t-i+1), ...]
+== gcf[d0; ..., 1$(d[t]*II n[i]**(-1)**(t-i+1) {i :<- [1..=t]}), ...]
+  转化为 接近 simple cf 的 形式，只是 不一定是 整数，不一定 (>=1)
+== gcf[d0; 1$(d[1]/n[1]), 1$(d[2]/n[2]*n[1]), 1$(d[3]/n[3]*n[2]/n[1]), ..., 1$(d[t]/II n[i]**(-1)**(t-i) {i :<- [1..=t]}), ...]
+== gcf[d0; 1$(d[1]/n[1]), 1$(d[2]*n[1]/n[2]), 1$(d[3]*n[2]/(n[3]*n[1])), ..., 1$(d[t]*(II n[t-1-2*i] {i :<- [0..=t//2-1]})/(II n[t-2*i] {i :<- [0..=(t-1)//2]})), ...]
+]
+==>>:
+[[?[N >= 1] -> [@[i >= N] -> [[n[i] > 0][d[i] > 0][d[t]*(II n[t-1-2*i] {i :<- [0..=t//2-1]}) >= (II n[t-2*i] {i :<- [0..=(t-1)//2]}) > 0]]]] -> [gcf[d0; ..., n[i]$d[i], ...] converges]]
+  #充分条件
+
+上面将n[i]转化为1
+下面将d[i]转化为1
+[gcf[..., ni$di, nj$dj, nk$dk, ...]
+== gcf[..., c*ni$c*di, c*nj$dj, nk$dk, ...]
+[c := 1/di]
+== gcf[..., (ni/di)$1, (nj/di)$dj, nk$dk, ...]
+== gcf[..., (ni/di)$1, (nj/di/dj)$1, (nk/dj)$dk, ...]
+== d0*gcf[1; (n1/d0/d1)$1, (n2/d1/d2)$1, ..., (n[t]/d[t-1]/d[t])$1, ...]
+  #[:gcf2all_denominators_be_one]:here
+]
+[[?[N >= 1] -> [@[i >= N] -> [[n[i] > 0][d[i] > 0][d[i-1]*d[i] >= n[i] > 0]]]] -> [gcf[d0; ..., n[i]$d[i], ...] converges]]
+  #充分条件
+[[@[i >= 1] -> [n[i] == 0]] -> [gcf[d0; ..., n[i]$d[i], ...] converges]]
+  #?? [d[i] == 0] ??
+
+
+
+Euler's continued fraction formula
+[j :<- [0..=N]]:
+    [S_(N;j) =[def]= sum II a[i] {i :<- [j..<k]} {k :<- [j..=N]}]
+[j :<- [0..<N]]:
+    [S_(N;j) == 1 +a[j]*S_(N;j+1)]
+[S_(N;0)
+== 1 +a0 +a0*a1 +a0*a1*a2 +... +a0*a1*...*a[N-1]
+== 1/(1/S_(N;0))
+!! long-div<a0>: [(lead_term_<a0>(1)/lead_term_<a0>(S_(N;0))) == (1/1) == 1 == the quotient to be extracted]
+== 1/(1 +???/S_(N;0))
+== 1/(1 -a0*S_(N;1)/S_(N;0))
+== (0 ^+ 1 | 1 ^+ -a0*S_(N;1) | S_(N;0))
+== (0 ^+ 1 | 1 ^+ -a0 | S_(N;0)/S_(N;1))
+!! long-div<a1>: [(lead_term_<a1>(S_(N;0))/lead_term_<a1>(S_(N;1))) == ((1+a0)/1) == 1+a0 == the quotient to be extracted]
+== (0 ^+ 1 | 1 ^+ -a0 | (1+a0) +(S_(N;0) -(1+a0)*S_(N;1))/S_(N;1))
+== (0 ^+ 1 | 1 ^+ -a0 | (1+a0) +(1 -S_(N;1))/S_(N;1))
+== (0 ^+ 1 | 1 ^+ -a0 | (1+a0) +(-a1*S_(N;2))/S_(N;1))
+== (0 ^+ 1 | 1 ^+ -a0 | (1+a0) ^+ -a1 | S_(N;1)/S_(N;2))
+!! [(S_(N;0)/S_(N;1)) == ((1+a0) ^+ -a1 | S_(N;1)/S_(N;2))]
+=> [(S_(N;1)/S_(N;2)) == ((1+a1) ^+ -a2 | S_(N;2)/S_(N;3))]
+== (0 ^+ 1 | 1 ^+ -a0 | (1+a0) ^+ -a1 | (1+a1) ^+ -a2 | S_(N;2)/S_(N;3))
+== (0 ^+ 1 | 1 ^+ -a0 | (1+a0) ^+ -a1 | (1+a1) ^+ -a2 | (1+a2) ^+ ... -a[N-1] | S_(N;N-1)/S_(N;N))
+== (0 ^+ 1 | 1 ^+ -a0 | (1+a0) ^+ -a1 | (1+a1) ^+ -a2 | (1+a2) ^+ ... -a[N-1] | (1+a[N-1])/1)
+== gcf[0; 1$1, (-a0)$(1+a0), (-a1)$(1+a1), ..., (-a[k-2])$(1+a[k-2]), ..., (-a[N-1])$(1+a[N-1])]
+    #uniform-ver
+
+== gcf[0; 1$1, (-a0)$(1+a0 +z)]
+== 1/(1 -a0/(1+a0 +z))
+== (1+a0 +z)/((1+a0 +z) -a0)
+== (1+a0 +z)/(1+z)
+== 1 +a0/(1+z)
+== gcf[1; a0$(1+z)]
+== gcf[1; a0$1, (-a1)$(1+a1), ..., (-a[k-2])$(1+a[k-2]), ..., (-a[N-1])$(1+a[N-1])]
+    #nonuniform-ver
+]
+
+[S_(N;0)
+== sum II a[i] {i :<- [0..<k]} {k :<- [0..=N]}
+== 1 +a0 +a0*a1 +a0*a1*a2 +... +a0*a1*...*a[N-1]
+== gcf[0; 1$1, (-a0)$(1+a0), (-a1)$(1+a1), ..., (-a[k-2])$(1+a[k-2]), ..., (-a[N-1])$(1+a[N-1])]
+    #uniform-ver
+    #[:uniform_ver4Euler_continued_fraction_formula]:here
+== gcf[1; a0$1, (-a1)$(1+a1), ..., (-a[k-2])$(1+a[k-2]), ..., (-a[N-1])$(1+a[N-1])]
+    #nonuniform-ver
+    #[:nonuniform_ver4Euler_continued_fraction_formula]:here
+]
+
+
+[sum u[i] {i :<- [0..=N]}
+== u0 +u1 +u2 +... +u[N]
+== u0*(1 +(u1/u0) +(u1/u0)*(u2/u1) +... +(u1/u0)*(u2/u1)*...*(u[N]/u[N-1]))
+!! [:nonuniform_ver4Euler_continued_fraction_formula]:goto
+== u0*gcf[1; (u1/u0)$1, (-u2/u1)$(1+u2/u1), ..., (-u[k-1]/u[k-2])$(1+u[k-1]/u[k-2]), ..., (-u[N]/u[N-1])$(1+u[N]/u[N-1])]
+== gcf[u0; u1$1, (-u2/u1)$(1+u2/u1), ..., (-u[k-1]/u[k-2])$(1+u[k-1]/u[k-2]), ..., (-u[N]/u[N-1])$(1+u[N]/u[N-1])]
+    # [:nonuniform_ver4continued_fraction5series_formula]:here
+]
+#Taylor series
+[f(x) == sum ((DDD<x>**i)f)(x0) *(x-x0)**i /factorial(i) {i :<- [0..]}]:
+    [u[i] := ((DDD<x>**i)f)(x0) *(x-x0)**i /factorial(i)]
+    [u0 == f(x0)]
+    [u1 == Df(x0)*(x-x0)]
+    [[i>=1] -> [u[i]/u[i-1] == (x-x0)/i *((DDD<x>**i)f)(x0) /((DDD<x>**(i-1))f)(x0)]]
+
+    [f(x) == e**x]:
+        [[i>=1] -> [u[i]/u[i-1] == (x-x0)/i]]
+        [e**x
+        == u0*gcf[1; (u1/u0)$1, (-u2/u1)$(1+u2/u1), ..., (-u[k-1]/u[k-2])$(1+u[k-1]/u[k-2]), ...]
+        == e**x0 *gcf[1; (x-x0)$1, -((x-x0)/2)$(1+((x-x0)/2)), -((x-x0)/3)$(1+((x-x0)/3)), ...]
+        == e**x0 *gcf[1; (x-x0)$1, -1*(x-x0)$(2+(x-x0)), -2*(x-x0)$(3+(x-x0)), ...]
+        * [x0 := 0][x := 1]:
+          ... == e == 1*gcf[1; 1$1, -1$3, -2$4, -3$5, -4$6...]
+        * [x0 := 0][x := -1]:
+          ... == 1/e == 1*gcf[1; -1$1, 1$1, 2$2, 3$3, 4$4...]
+              == gcf[1; -1$(1+z)]
+              == 1 -1/(1+z)
+              == z/(1+z)
+              == 1/(1+1/z)
+              == gcf[0; 1$(1+1/z)]
+              == gcf[0; 1$2, 2$2, 3$3, 4$4, ...]
+              => [e == gcf[2, 2$2, 3$3, 4$4, ...]]
+        ]
+
+
+
+# 下面 大概就是 quotient-difference algorithm 的 梗概？
+#   只不过 原算法 要求 部分分子 为z，部分分母 不含 z (不一定为1)
+#   下面的算法 部分分子 带系数，幂指数大于等于1(不一定为1)，部分分母 恒为1
+#
+# 原算法 对 输入颇有要求
+# 下面算法 对 输入几乎没有要求
+#
+多项式/分式 转化为 连分式:部分分子 为 c[?]*z**k, 部分分母 不含 z (实际上 恒为1)
+
+* 多项式 转化为 连分式:部分分子 为 c[?]*z**k, 部分分母 不含 z (实际上 恒为1)
+[1 +c0*z**e0 + c0*c1*z**(e0+e1) + c0*c1*c2*z**(e0+e1+e2) + ...
+[u0 := 1]
+[u1/u0 := c0*z**e0]
+[u2/u1 := c1*z**e1]
+...
+== u0*gcf[1; (u1/u0)$1, (-u2/u1)$(1+u2/u1), (-u3/u2)$(1+u3/u2), ...]
+    #部分分母 含 z，不合要求
+
+#重来:
+[a0 := c0*z**e0]
+[a1 := c1*z**e1]
+[a2 := c2*z**e2]
+...
+== 1 +a0*tail0
+== 1 +a0/(1/tail0)
+== 1 +a0/(1 +(1-tail0)/tail0)
+== 1 +a0/(1 -a1*tail1/tail0)
+== 1 +a0/(1 -a1/(tail0/tail1))
+== (1 ^+ a0 | 1 ^+ -a1 | (tail0/tail1))
+  # case for (tail0/tail1)
+
+
+== (1 ^+ a0 | 1 ^+ -a1 | (1 +a1*tail1)/tail1)
+== (1 ^+ a0 | 1 ^+ -a1 | 1 ^+ (1 +a1*tail1 -tail1)/tail1)
+== (1 ^+ a0 | 1 ^+ -a1 | 1 ^+ (1 +a1*tail1 -(1 +a2*tail2))/tail1)
+== (1 ^+ a0 | 1 ^+ -a1 | 1 ^+ (a1*tail1 -a2*tail2)/tail1)
+* [e1 < e2]:
+    [a_1_2 := a1]
+* [e1 > e2]:
+    [a_1_2 := a2]
+* [e1 == e2][c1 =!= c2]:
+    [a_1_2 := a1-a2]
+* [e1 == e2][c1 == c2]:
+    [a_1_2 := lead_term_<z>(a1*tail1 -a2*tail2)]
+[a_1_2*tail_1_2 := (a1*tail1 -a2*tail2)]
+== (1 ^+ a0 | 1 ^+ -a1 | 1 ^+ a_1_2*tail_1_2/tail1)
+* [tail_1_2 == 1]:
+    ... == (1 ^+ a0 | 1 ^+ -a1 | 1 ^+ a_1_2/tail1)
+    finish!
+* [tail_1_2 == 1 +a_2_1*tail_2_1]:
+    ... == (1 ^+ a0 | 1 ^+ -a1 | 1 ^+ a_1_2 | (tail1/tail_1_2))
+    == ...vivi above-case for (tail0/tail1)...
+]
+
+* 分式 转化为 连分式:部分分子 为 c[?]*z**k, 部分分母 不含 z (实际上 恒为1)
+[@[ks :: (&KS:=[([KS],uint)])] -> @[i :: uint] -> [tail[ks...;i] == 1 +c[ks...;i+1]*z**e[ks...;i+1]*tail[ks...;i+1]]]
+[@[ks :: (&KS:=[([KS],uint)])] -> @[i :: uint] -> [lead_term_<z>(tail[ks...;i]) == 1]]
+[@[ks :: (&KS:=[([KS],uint)])] -> @[i :: uint] -> [e[ks...;i+1] >= 1]]
+[@[ks :: (&KS:=[([KS],uint)])] -> @[i :: uint] -> [c[ks...;i+1] =!= 0]]
+[tail[ks0...;i0] -tail[ks1...;i1]
+* [lhs == rhs]:
+    ... == 0
+* [lhs =!= rhs]:
+    ... == c[ks0,ks1;0]*z**e[ks0,ks1;0] *tail[ks0,ks1;0]
+]
+[(tail[;0]/tail[;1])
+    # ...vivi above-case for (tail0/tail1)...
+
+* [lhs == rhs]:
+    ... == 1
+* [lhs =!= rhs]:
+    ... == (1 + (tail[;0] -tail[;1]) /tail[;1])
+    == (1 + (tail[;0] -tail[;1]) /tail[;1])
+    == (1 + c[([],0),([],1);0]*z**e[([],0),([],1);0] *tail[([],0),([],1);0] /tail[;1])
+    == (1 ^+ (c[([],0),([],1);0]*z**e[([],0),([],1);0]) | (tail[;1] /tail[([],0),([],1);0]))
+    == ...recur: (tail[;1] /tail[([],0),([],1);0]) vivi (tail[;0]/tail[;1]) ...
+        # [:分式转化为连分式]:here
+]
+[e**z == 1 + z + z**2/factorial(2) +... +z**k/factorial(k) +...]
+[e**z
+== sum z**i/factorial(i) {i :<- [0..]}
+== 1 +z*(sum z**i/factorial(i+1) {i :<- [0..]})
+== 1 +z*(1 +sum z**i/factorial(i+1) {i :<- [1..]})
+== (1 ^+ z | (1+0)/(1 +sum z**i/factorial(i+1) {i :<- [1..]}))
+##########
+== (1 ^+ z | 1 ^+ (-sum z**i/factorial(i+1) {i :<- [1..]}) | (1 +sum z**i/factorial(i+1) {i :<- [1..]}))
+== (1 ^+ z | 1 ^+ (-z/2)*(1+sum z**i *factorial(2)/factorial(i+2) {i :<- [1..]}) | (1 +sum z**i/factorial(i+1) {i :<- [1..]}))
+== (1 ^+ z | 1 ^+ (-z/2) | (1 +sum z**i/factorial(i+1) {i :<- [1..]})/(1+sum z**i *factorial(2)/factorial(i+2) {i :<- [1..]}))
+##########
+== (1 ^+ z | 1 ^+ (-z/2) | 1 ^+ (sum z**i/factorial(i+1) {i :<- [1..]} -sum z**i *factorial(2)/factorial(i+2) {i :<- [1..]}) | (1+sum z**i *factorial(2)/factorial(i+2) {i :<- [1..]}))
+== (1 ^+ z | 1 ^+ (-z/2) | 1 ^+ (sum z**i *((i+2) -factorial(2))/factorial(i+2) {i :<- [1..]}) | (1+sum z**i *factorial(2)/factorial(i+2) {i :<- [1..]}))
+== (1 ^+ z | 1 ^+ (-z/2) | 1 ^+ (sum z**i *i/factorial(i+2) {i :<- [1..]}) | (1+sum z**i *factorial(2)/factorial(i+2) {i :<- [1..]}))
+== (1 ^+ z | 1 ^+ (-z/2) | 1 ^+ z/factorial(3)*(1 +sum z**i *(i+1)*factorial(3)/factorial(i+3) {i :<- [1..]}) | (1+sum z**i *factorial(2)/factorial(i+2) {i :<- [1..]}))
+== (1 ^+ z | 1 ^+ (-z/2) | 1 ^+ z/6 | (1+sum z**i *factorial(2)/factorial(i+2) {i :<- [1..]})/(1 +sum z**i *(i+1)*factorial(3)/factorial(i+3) {i :<- [1..]}))
+##########
+== (1 ^+ z | 1 ^+ (-z/2) | 1 ^+ z/6 | 1 ^+ (sum z**i *factorial(2)/factorial(i+2) {i :<- [1..]} -sum z**i *(i+1)*factorial(3)/factorial(i+3) {i :<- [1..]}) | (1 +sum z**i *(i+1)*factorial(3)/factorial(i+3) {i :<- [1..]}))
+== (1 ^+ z | 1 ^+ (-z/2) | 1 ^+ z/6 | 1 ^+ (sum z**i *(factorial(2)*(i+3) -(i+1)*factorial(3))/factorial(i+3) {i :<- [1..]}) | (1 +sum z**i *(i+1)*factorial(3)/factorial(i+3) {i :<- [1..]}))
+== (1 ^+ z | 1 ^+ (-z/2) | 1 ^+ z/6 | 1 ^+ (sum z**i *(-4*i)/factorial(i+3) {i :<- [1..]}) | (1 +sum z**i *(i+1)*factorial(3)/factorial(i+3) {i :<- [1..]}))
+== (1 ^+ z | 1 ^+ (-z/2) | 1 ^+ z/6 | 1 ^+ -4/factorial(4)*z*(1 +sum z**i *(i+1)*factorial(4)/factorial(i+4) {i :<- [1..]}) | (1 +sum z**i *(i+1)*factorial(3)/factorial(i+3) {i :<- [1..]}))
+== (1 ^+ z | 1 ^+ (-z/2) | 1 ^+ z/6 | 1 ^+ -z/6 | (1 +sum z**i *(i+1)*factorial(3)/factorial(i+3) {i :<- [1..]})/(1 +sum z**i *(i+1)*factorial(4)/factorial(i+4) {i :<- [1..]}))
+##########
+== (1 ^+ z | 1 ^+ (-z/2) | 1 ^+ z/6 | 1 ^+ -z/6 | 1 ^+ (sum z**i *(i+1)*factorial(3)/factorial(i+3) {i :<- [1..]} -sum z**i *(i+1)*factorial(4)/factorial(i+4) {i :<- [1..]}) | (1 +sum z**i *(i+1)*factorial(4)/factorial(i+4) {i :<- [1..]}))
+== (1 ^+ z | 1 ^+ (-z/2) | 1 ^+ z/6 | 1 ^+ -z/6 | 1 ^+ (sum z**i *(i+1)*(factorial(3)*(i+4) -factorial(4))/factorial(i+4) {i :<- [1..]}) | (1 +sum z**i *(i+1)*factorial(4)/factorial(i+4) {i :<- [1..]}))
+== (1 ^+ z | 1 ^+ (-z/2) | 1 ^+ z/6 | 1 ^+ -z/6 | 1 ^+ (sum z**i *(i+1)*(6*i)/factorial(i+4) {i :<- [1..]}) | (1 +sum z**i *(i+1)*factorial(4)/factorial(i+4) {i :<- [1..]}))
+== (1 ^+ z | 1 ^+ (-z/2) | 1 ^+ z/6 | 1 ^+ -z/6 | 1 ^+ 6*2/factorial(5) *z*(1 +sum z**i *(i+1)*(i+2)/2 *factorial(5)/factorial(i+5) {i :<- [1..]}) | (1 +sum z**i *(i+1)*factorial(4)/factorial(i+4) {i :<- [1..]}))
+== (1 ^+ z | 1 ^+ (-z/2) | 1 ^+ z/6 | 1 ^+ -z/6 | 1 ^+ z/choose(5;2) | (1 +sum z**i *(i+1)*factorial(4)/factorial(i+4) {i :<- [1..]})/(1 +sum z**i *choose(i+2;2) *factorial(5)/factorial(i+5) {i :<- [1..]}))
+##########
+== (1 ^+ z | 1 ^+ (-z/2) | 1 ^+ z/6 | 1 ^+ -z/6 | 1 ^+ z/choose(5;2) | 1 ^+ (sum z**i *(i+1)*factorial(4)/factorial(i+4) {i :<- [1..]} -sum z**i *choose(i+2;2) *factorial(5)/factorial(i+5) {i :<- [1..]}) | (1 +sum z**i *choose(i+2;2) *factorial(5)/factorial(i+5) {i :<- [1..]}))
+== (1 ^+ z | 1 ^+ (-z/2) | 1 ^+ z/6 | 1 ^+ -z/6 | 1 ^+ z/choose(5;2) | 1 ^+ (sum z**i *((i+1) *(i+5) -choose(i+2;2) *5)*factorial(4)/factorial(i+5) {i :<- [1..]}) | (1 +sum z**i *choose(i+2;2) *factorial(5)/factorial(i+5) {i :<- [1..]}))
+== (1 ^+ z | 1 ^+ (-z/2) | 1 ^+ z/6 | 1 ^+ -z/6 | 1 ^+ z/choose(5;2) | 1 ^+ (sum z**i *(i+1)*((i+5)*factorial(2) -(i+2)*5)*factorial(4)/factorial(2)/factorial(i+5) {i :<- [1..]}) | (1 +sum z**i *choose(i+2;2) *factorial(5)/factorial(i+5) {i :<- [1..]}))
+== (1 ^+ z | 1 ^+ (-z/2) | 1 ^+ z/6 | 1 ^+ -z/6 | 1 ^+ z/choose(5;2) | 1 ^+ -36*(sum z**i *(i+1)*i/factorial(i+5) {i :<- [1..]}) | (1 +sum z**i *choose(i+2;2) *factorial(5)/factorial(i+5) {i :<- [1..]}))
+== (1 ^+ z | 1 ^+ (-z/2) | 1 ^+ z/6 | 1 ^+ -z/6 | 1 ^+ z/choose(5;2) | 1 ^+ -36*2/factorial(6) *z(1 +sum z**i *(i+1)*(i+2)/2 *factorial(6)/factorial(i+6) {i :<- [1..]}) | (1 +sum z**i *choose(i+2;2) *factorial(5)/factorial(i+5) {i :<- [1..]}))
+== (1 ^+ z | 1 ^+ (-z/2) | 1 ^+ z/6 | 1 ^+ -z/6 | 1 ^+ z/choose(5;2) | 1 ^+ -z/choose(5;2) | (1 +sum z**i *choose(i+2;2) *factorial(5)/factorial(i+5) {i :<- [1..]})/(1 +sum z**i *choose(i+2;2) *factorial(6)/factorial(i+6) {i :<- [1..]}))
+##########
+== (1 ^+ z | 1 ^+ (-z/2) | 1 ^+ z/6 | 1 ^+ -z/6 | 1 ^+ z/choose(5;2) | 1 ^+ -z/choose(5;2) | 1 ^+ (sum z**i *choose(i+2;2) *factorial(5)/factorial(i+5) {i :<- [1..]} -sum z**i *choose(i+2;2) *factorial(6)/factorial(i+6) {i :<- [1..]}) | (1 +sum z**i *choose(i+2;2) *factorial(6)/factorial(i+6) {i :<- [1..]}))
+== (1 ^+ z | 1 ^+ (-z/2) | 1 ^+ z/6 | 1 ^+ -z/6 | 1 ^+ z/choose(5;2) | 1 ^+ -z/choose(5;2) | 1 ^+ (sum z**i *choose(i+2;2) *factorial(5)/factorial(i+6) *((i+6) -6) {i :<- [1..]}) | (1 +sum z**i *choose(i+2;2) *factorial(6)/factorial(i+6) {i :<- [1..]}))
+== (1 ^+ z | 1 ^+ (-z/2) | 1 ^+ z/6 | 1 ^+ -z/6 | 1 ^+ z/choose(5;2) | 1 ^+ -z/choose(5;2) | 1 ^+ (sum z**i *choose(i+2;3)*3 *factorial(5)/factorial(i+6) {i :<- [1..]}) | (1 +sum z**i *choose(i+2;2) *factorial(6)/factorial(i+6) {i :<- [1..]}))
+== (1 ^+ z | 1 ^+ (-z/2) | 1 ^+ z/6 | 1 ^+ -z/6 | 1 ^+ z/choose(5;2) | 1 ^+ -z/choose(5;2) | 1 ^+ 1/(2*7)*(sum z**i *choose(i+2;3) *factorial(7)/factorial(i+6) {i :<- [1..]}) | (1 +sum z**i *choose(i+2;2) *factorial(6)/factorial(i+6) {i :<- [1..]}))
+== (1 ^+ z | 1 ^+ (-z/2) | 1 ^+ z/6 | 1 ^+ -z/6 | 1 ^+ z/choose(5;2) | 1 ^+ -z/choose(5;2) | 1 ^+ z/(2*7)*(1 +sum z**i *choose(i+3;3) *factorial(7)/factorial(i+7) {i :<- [1..]}) | (1 +sum z**i *choose(i+2;2) *factorial(6)/factorial(i+6) {i :<- [1..]}))
+== (1 ^+ z | 1 ^+ (-z/(2*1)) | 1 ^+ z/(2*3) | 1 ^+ -z/(2*3) | 1 ^+ z/(2*5) | 1 ^+ -z/(2*5) | 1 ^+ z/(2*7) | (1 +sum z**i *choose(i+2;2) *factorial(6)/factorial(i+6) {i :<- [1..]})/(1 +sum z**i *choose(i+3;3) *factorial(7)/factorial(i+7) {i :<- [1..]}))
+##########
+
+==>>:???:
+== -1 +2*(1 ^+ z/(2*1) | 1 ^+ -z/(2*1) | 1 ^+ z/(2*3) | 1 ^+ -z/(2*3) | 1 ^+ z/(2*5) | 1 ^+ -z/(2*5) | 1 ^+ z/(2*7) | ... | 1 ^+ (-1)**(k+1)*z/(2*(k-1 +k%2)) | ...)
+
+== (1 ^+ z | 1 ^+ -z/(2) | 1 ^+ z/(2) | 3 ^+ -z/(2) | 1 ^+ z/(2) | 5 ^+ -z/(2) | 1 ^+ z/(2) | ...)
+== (1 ^+ z | 1 ^+ -z | 2 ^+ z | 3 ^+ -z | 2 ^+ z | 5 ^+ -z | 2 ^+ z | ...)
+== gcf[1; z$1, -z$2, z$3, -z$2, z$5, -z$2, z$7, ..., ((-1)**(k+1)*z)$(k if k%2 else 2), ...]
+##########
+]
+[e**z == gcf[1; z$1, -z$2, z$3, -z$2, z$5, -z$2, z$7, ..., ((-1)**(k+1)*z)$(k if k%2 else 2), ...]]
+  # [:折叠可能改变正负]:goto
+
+
+
+
+
+
+
+
+general convergence of continued fraction
+  using nonzero tail z := z[N+1] instead of 0
+
+
+
+convergent
+    === continued fraction approximation
+    === approximant
+    === canonical_numerator / canonical_denominator
+        #canonical numerator/denominator are generated by recurrence, gcd >= 1
+continuants === numerator and denominator of convergent
+recurrence
+the fundamental recurrence formulas of successive convergents:
+[A[i] == d[i]*A[i-1] +n[i]*A[i-2]]
+[B[i] == d[i]*B[i-1] +n[i]*B[i-2]]
+[A[-1] == 1]
+[B[-1] == 0]
+[A[0] == d[0]]
+[B[0] == 1]
+==>>:
+[A[-2] == 0]
+[B[-2] == 1]
+[n[0] == 1]
+==>>:
+[n[-1] == 1]
+[d[-1] == 0]
+[d[-2] == 0]
+[gcf[d0; n1$d1, n2$d2, ..., nN$dN, z]
+== (0 ^+ 1 | 0 ^+ 1 | d0 ^+ n1 | d1 ^+ n2 | d2 ^+ ... ^+ nN | dN + z)
+== (d[-2] ^+ n[-1] | d[-1] ^+ n0 | d0 ^+ n1 | d1 ^+ n2 | d2 ^+ ... ^+ nN | dN + z)
+]
+
+==>>:
+[B[i]
+== d[i]*B[i-1] +n[i]*B[i-2]
+== d[i]*(d[i-1]*B[i-2] +n[i-1]*B[i-3]) +n[i]*B[i-2]
+== (d[i]*d[i-1] +n[i])*B[i-2] +d[i]*n[i-1]*B[i-3]
+]
+
+[B[i]/d[i]
+== B[i-1] +n[i]/d[i]*B[i-2]
+== d[i-1]*(B[i-2] +n[i-1]/d[i-1]*B[i-3]) +n[i]/d[i]*B[i-2]
+== (d[i-1] +n[i]/d[i])*B[i-2] +n[i-1]*B[i-3]
+]
+
+[B[i]/B[i-1]
+== d[i] + n[i]*B[i-2]/B[i-1]
+== d[i] + n[i]/(B[i-1]/B[i-2])
+]
+[DB[i] := B[i]/B[i-1]]
+[DB[i]
+== d[i] + n[i]/DB[i-1]
+== (d[i] ^+ n[i] | DB[i-1])
+== (d[i] ^+ n[i] | d[i-1] ^+ n[i-1] | DB[i-2])
+== (d[i] ^+ n[i] | d[i-1] ^+ n[i-1] | ... | d[2] ^+ n[2] | DB[1])
+== (d[i] ^+ n[i] | d[i-1] ^+ n[i-1] | ... | d[2] ^+ n[2] | B[1]/B[0])
+== (d[i] ^+ n[i] | d[i-1] ^+ n[i-1] | ... | d[2] ^+ n[2] | d[1]/1)
+== gcf[d[i]; n[i]$d[i-1], ..., n[i+1-k]$d[i-k], ..., n[2]$d[1]]
+]
+[DA[i] := A[i]/A[i-1]]
+[DA[i]
+== d[i] + n[i]/DA[i-1]
+== (d[i] ^+ n[i] | DA[i-1])
+== (d[i] ^+ n[i] | d[i-1] ^+ n[i-1] | DA[i-2])
+== (d[i] ^+ n[i] | d[i-1] ^+ n[i-1] | ... | d[2] ^+ n[2] | DA[1])
+== (d[i] ^+ n[i] | d[i-1] ^+ n[i-1] | ... | d[1] ^+ n[1] | A[0]/A[-1])
+== (d[i] ^+ n[i] | d[i-1] ^+ n[i-1] | ... | d[1] ^+ n[1] | d[0]/1)
+== gcf[d[i]; n[i]$d[i-1], ..., n[i+1-k]$d[i-k], ..., n[1]$d[0]]
+]
+#[:反序定理]:here
+[[i>=1] -> [B[i]/B[i-1] == gcf[d[i]; n[i]$d[i-1], ..., n[i+1-k]$d[i-k], ..., n[2]$d[1]]]]
+[[i>=0] -> [A[i]/A[i-1] == gcf[d[i]; n[i]$d[i-1], ..., n[i+1-k]$d[i-k], ..., n[1]$d[0]]]]
+[[d[0] == 0] -> [i>=2] -> [A[i]/A[i-1] == gcf[d[i]; n[i]$d[i-1], ..., n[i+1-k]$d[i-k], ..., n[3]$d[2]]]]
+
+
+
+
+
+
+
+
+
+
+determinant formula:
+[(A[i-1]*B[i] -A[i]*B[i-1]) == II(-n[k]){k :<- [1..=i]}]
+  # cf x = d[0]+n[1]/(d[1] +n[2]/(d[2] +...))
+  # relate the numerators and denominators of successive convergents x[i-1],x[i]
+[(A[i-1]*B[i+1] -A[i+1]*B[i-1]) == d[i+1] * (A[i-1]*B[i] -A[i]*B[i-1])]
+
+[i==0]:
+  #1/0; d0/1
+  [A[0-1]*B[0] -A[0]*B[0-1] == 1*1 -d0*0 == 1]
+[i==1]:
+  #1/0; d0/1; (d0*d1+n1)/d1
+  [A[1-1]*B[1] -A[1]*B[1-1] == d0*d1 -(d0*d1+n1)*1 == -n1]
+
+
+
+bound:
+[gcf[:i+1] == A[i]/B[i]]
+[gcf[:i] == A[i-1]/B[i-1]]
+
+[gcf[:i+1] -gcf[:i]
+== -(A[i-1]*B[i] -A[i]*B[i-1])/(B[i]*B[i-1])
+== -1/(B[i]*B[i-1]) * II(-n[k]){k :<- [1..=i]}
+== (-1)**(i+1)/(B[i]*B[i-1]) * II n[k] {k :<- [1..=i]}
+    #[:prepare4gcf_accuracy]:here
+]
+[gcf[:i+2] -gcf[:i+1]
+== (-1)**(i+2)/(B[i+1]*B[i]) * II n[k] {k :<- [1..=i+1]}
+]
+[gcf[:i+2] -gcf[:i]
+== (gcf[:i+2] -gcf[:i+1]) +(gcf[:i+1] -gcf[:i])
+== (-1)**(i+2)/(B[i+1]*B[i]) * II n[k] {k :<- [1..=i+1]}
++  (-1)**(i+1)/(B[i]*B[i-1]) * II n[k] {k :<- [1..=i]}
+== (-1)**(i+1)/(B[i]*B[i-1]) * II n[k] {k :<- [1..=i]} * (1 -n[i+1]*B[i-1] /B[i+1])
+]
+[(gcf[:i+2] -gcf[:i])/(gcf[:i+1] -gcf[:i])
+== (1 -n[i+1]*B[i-1] /B[i+1])
+]
+
+
+[gcf converges][@[i>=1] -> [[n[i] > 0][d[i] > 0]]]:
+    !! [gcf converges]
+    [@[err>0] -> ?[N>=0] -> @[i>=N] -> [abs(gcf[:i] -gcf) < err]]
+    [?[N>=0] -> @[i>=N] -> [abs(gcf[:i] -gcf) < 1]]
+    [?[N>=0] -> @[i>=N] -> [log2(abs(gcf[:i] -gcf)) < 0]]
+
+    !! [@[i>=1] -> [[n[i] > 0][d[i] > 0]]]
+    => [[gcf[:i] < gcf[:i+2] < gcf < gcf[:i+1]]or[gcf[:i] > gcf[:i+2] > gcf > gcf[:i+1]]]
+
+    [abs(gcf[:i] -gcf[:i+2]) <= abs(gcf[:i] -gcf) <= abs(gcf[:i] -gcf[:i+1])]
+    [abs(gcf[:i+1] -gcf[:i+3]) <= abs(gcf[:i+1] -gcf) <= abs(gcf[:i+1] -gcf[:i+2])]
+
+    [(-log2(abs(gcf[:i+1] -gcf))/-log2(abs(gcf[:i] -gcf)))
+    == (log2(1/abs(gcf[:i+1] -gcf))/log2(1/abs(gcf[:i] -gcf)))
+    !! [abs(gcf[:i+1] -gcf) <= abs(gcf[:i+1] -gcf[:i+2])] # < 1
+    !! [abs(gcf[:i] -gcf[:i+2]) <= abs(gcf[:i] -gcf)] # < 1
+    >= (log2(1/abs(gcf[:i+1] -gcf[:i+2]))/log2(1/abs(gcf[:i] -gcf[:i+2])))
+    == (log2(abs(gcf[:i+1] -gcf[:i+2]))/log2(abs(gcf[:i] -gcf[:i+2])))
+    == (log2(abs$ 1/(B[i+1]*B[i]) * II n[k] {k :<- [1..=i+1]})/log2(abs$ 1/(B[i]*B[i-1]) * II n[k] {k :<- [1..=i]} * (1 -n[i+1]*B[i-1] /B[i+1])))
+    ]
+[[gcf converges] -> [@[i>=1] -> [[n[i] > 0][d[i] > 0]]] -> [(-log2(abs(gcf[:i+1] -gcf))/-log2(abs(gcf[:i] -gcf))) >= (log2(abs$ 1/(B[i+1]*B[i]) * II n[k] {k :<- [1..=i+1]})/log2(abs$ 1/(B[i]*B[i-1]) * II n[k] {k :<- [1..=i]} * (1 -n[i+1]*B[i-1] /B[i+1])))]]
+      # [:prepare4gcf_convergence_rate__000]:here
+
+
+
+
+
+
+
+
+
+
+[@[i>=1] -> [[n[i] == 1][d[i] == d0]]]:
+    !! [B[i] == d[i]*B[i-1] +n[i]*B[i-2]]
+    !! [n[i] == 1]
+    !! [d[i] == d0]
+    => [B[i] == d0*B[i-1] +B[i-2]]
+    solve [x**2 -d0*x -1 == 0] for x:
+        [x0 == (d0 -sqrt(d0**2+4))/2]
+        [x1 == (d0 +sqrt(d0**2+4))/2]
+        [x <- {x0,x1}]
+    let k0,k1 :=> [B[i] == k0*x0**i +k1*x1**i]
+    !! [B[-1] == 0]
+    !! [B[0] == 1]
+    [k0/x0 +k1/x1 == 0]
+    [k0 +k1 == 1]
+    [k1 == -x1/x0 *k0]
+    [k1 == 1 -k0]
+    [k0 == 1/(-x1/x0 +1) == x0/(x0-x1)]
+    [k1 == 1/(-x1/x0 +1) == x1/(x1-x0)]
+    [B[i] == (x0**(i+1) -x1**(i+1))/(x0-x1) == sum x0**j * x1**(i-j) {j :<- [0..=i]}]
+    !! [x0*x1 == -1]
+    !! [x0 < 0 < x1]
+    * [d0 > 0]:
+        [-1 < x0 < 0 < 1 < x1]
+        [B[i] ~= (x1**(i+1))/(x1-x0)]
+    * [d0 < 0]:
+        [x0 < -1 < 0 < x1 < 1]
+        [B[i] ~= (x0**(i+1))/(x0-x1)]
+
+    !! [B[i] == d0*B[i-1] +B[i-2]]
+    !! [B[-1] == 0]
+    !! [B[0] == 1]
+    [B[1] == d0]
+    [B[2] == d0**2 +1]
+    [B[3] == d0**3 +2*d0]
+    [B[4] == d0**4 +3*d0**2 +1]
+    [B[5] == d0**5 +4*d0**3 +3*d0]
+    [B[6] == d0**6 +5*d0**4 +6*d0**2 +1]
+    [B[7] == d0**7 +6*d0**5 +10*d0**3 +4*d0]
+    [B[k] == sum choose(k-i;i)*d0**(k-2*i) {i :<- [0..=k//2]}]
+    [B[k+1] == sum choose(k+1-i;i)*d0**(k+1-2*i) {i :<- [0..=(k+1)//2]}]
+    [B[k+2]
+    == d0*B[k+1] + B[k]
+    == d0*sum choose(k+1-i;i)*d0**(k+1-2*i) {i :<- [0..=(k+1)//2]}
+    +  sum choose(k-i;i)*d0**(k-2*i) {i :<- [0..=k//2]}
+    == choose(k+1;0)*d0**(k+2)
+    +  sum choose(k+1-i;i)*d0**(k+2-2*i) {i :<- [1..=(k+1)//2]}
+    +  sum choose(k-i;i)*d0**(k-2*i) {i :<- [0..=k//2]}
+    == 1*d0**(k+2)
+    +  sum choose(k-i;i+1)*d0**(k-2*i) {i :<- [0..=(k-1)//2]}
+    +  sum choose(k-i;i)*d0**(k-2*i) {i :<- [0..=k//2]}
+    == 1*d0**(k+2)
+    +  sum (choose(k-i;i+1)+choose(k-i;i))*d0**(k-2*i) {i :<- [0..=(k-1)//2]}
+    +  sum [(k+1)//2==k//2]:choose(k-i;i)*d0**(k-2*i) {i :<- [(k+1)//2..=k//2]}
+    == 1*d0**(k+2)
+    +  sum choose(k+1-i;i+1)*d0**(k-2*i) {i :<- [0..=(k-1)//2]}
+    +  sum [k==2*i]:choose(k-i;i)*d0**(k-2*i) {i :<- [(k+1)//2..=k//2]}
+    == choose(k+2;0)*d0**(k+2)
+    +  sum choose(k+2-i;i)*d0**(k+2-2*i) {i :<- [1..=(k+1)//2]}
+    +  [k%2==0]:1
+    == sum choose(k+2-i;i)*d0**(k+2-2*i) {i :<- [0..=(k+1)//2]}
+    +  [k%2==0][i:=(k+2)///2]:choose(k+2-i;i)*d0**(k+2-2*i)
+    == sum choose(k+2-i;i)*d0**(k+2-2*i) {i :<- [0..=(k+2)//2]}
+      #verify:ok!
+    ]
+
+[[@[i>=1] -> [[n[i] == 1][d[i] == d0]]] -> @[k>=0] -> [B[k] == sum choose(k-i;i)*d0**(k-2*i) {i :<- [0..=k//2]}]]
+[[@[i>=1] -> [[n[i] == 1][d[i] == d0]]] -> @[k>=0] -> [B[k] == sum choose(k-i;i)*d0**(k-2*i) {i :: int}]]
+[[@[i>=1] -> [[n[i] == 1][d[i] == d0]]] -> [[d0 =!= 0][x0 == (d0 -sqrt(d0**2+4))/2][x1 == (d0 +sqrt(d0**2+4))/2]] -> @[i>=0] -> [[[d0 > 0] -> [B[i] ~= (x1**(i+1))/(x1-x0)]][[d0 < 0] -> [B[i] ~= (x0**(i+1))/(x0-x1)]]]]
+    # [:nk_eq1__dk_eq_d0_gt0____eval_Bk]:here
+
+
+
+
+
+[gcf converges][@[i>=1] -> [[n[i] == 1][d[i] > 0]]]:
+    !! [:prepare4gcf_convergence_rate__000]:goto
+    [(-log2(abs(gcf[:i+1] -gcf))/-log2(abs(gcf[:i] -gcf)))
+    >= (log2(1/(B[i+1]*B[i]))/log2(1/(B[i]*B[i-1]) * (1 -B[i-1] /B[i+1])))
+    == (log2(B[i+1]*B[i])/log2((B[i]*B[i-1]) / (1 -B[i-1] /B[i+1])))
+    == (log2(B[i+1]*B[i])/log2((B[i]*B[i-1]) *B[i+1]/(B[i+1] -B[i-1] )))
+    !! [B[i] == d[i]*B[i-1] +n[i]*B[i-2]]
+    !! [n[i] == 1]
+    => [B[i] == d[i]*B[i-1] +B[i-2]]
+    => [B[i+1] == d[i+1]*B[i] +B[i-1]]
+    => [B[i+1] -B[i-1] == d[i+1]*B[i]]
+    == (log2(B[i+1]*B[i])/log2((B[i]*B[i-1]) *B[i+1]/(d[i+1]*B[i])))
+    == (log2(B[i+1]*B[i])/log2(B[i+1]*B[i-1]/d[i+1]))
+        # [:prepare4gcf_convergence_rate__nk_eq1__dk_gt0]:here
+
+    ]
+
+[gcf converges][@[i>=1] -> [[n[i] == 1][d[i] == d0][d0 > 0]]]:
+    !! [:prepare4gcf_convergence_rate__nk_eq1__dk_gt0]:goto
+    [(-log2(abs(gcf[:i+1] -gcf))/-log2(abs(gcf[:i] -gcf)))
+    >= (log2(B[i+1]*B[i])/log2(B[i+1]*B[i-1]/d[i+1]))
+    !! [:nk_eq1__dk_eq_d0_gt0____eval_Bk]:goto
+      # [B[i] ~= (x1**(i+1))/(x1-x0)]
+    ~= (log2((x1**(2*i+3))/(x1-x0)**2)/log2((x1**(2*i+2))/(x1-x0)**2 /d0))
+    ~= 1
+        # [:prepare4gcf_convergence_rate__nk_eq1__dk_eq_d0_gt0]:here
+    ]
+
+
+
+
+
+
+[@[i>=1] -> [[n[i] == n1][d[i] == 1]]]:
+    !! [B[i] == d[i]*B[i-1] +n[i]*B[i-2]]
+    !! [n[i] == n1]
+    !! [d[i] == 1]
+    => [B[i] == B[i-1] +n1*B[i-2]]
+    solve [x**2 -x -n1 == 0] for x:
+        [x0 == (1 -sqrt(1+4*n1))/2]
+        [x1 == (1 +sqrt(1+4*n1))/2]
+        [x <- {x0,x1}]
+    let k0,k1 :=> [B[i] == k0*x0**i +k1*x1**i]
+    !! [B[-1] == 0]
+    !! [B[0] == 1]
+    [k0/x0 +k1/x1 == 0]
+    [k0 +k1 == 1]
+    [k1 == -x1/x0 *k0]
+    [k1 == 1 -k0]
+    [k0 == 1/(-x1/x0 +1) == x0/(x0-x1)]
+    [k1 == 1/(-x1/x0 +1) == x1/(x1-x0)]
+    [B[i] == (x0**(i+1) -x1**(i+1))/(x0-x1) == sum x0**j * x1**(i-j) {j :<- [0..=i]}]
+    !! [x0*x1 == -n1]
+    !! [x0+x1 == 1]
+    !! [x0 == (1 -sqrt(1+4*n1))/2]
+    !! [x1 == (1 +sqrt(1+4*n1))/2]
+    * [0 < n1 < 2]:
+        [-1 < x0 < 0 < 1 < x1 < 2]
+        [B[i] ~= (x1**(i+1))/(x1-x0)]
+    * [n1 > 2]:
+        [x0 < -1 < 0 < 1 < 2 < x1]
+        [-x0 +1 == x1]
+        [abs(x0) +1 == abs(x1)]
+        [abs(x0) < abs(x1)]
+        [B[i] ~= ???]
+        [B[i] == x1**(i+1)*(1 -(1/x1 -1)**(i+1))/(x1-(1-x1)) ~= x1**i /(2-1/x1)]
+        [x1 --> +oo]:
+            [x0/x1 --> -1]
+            [B[i]/x1**i/(1+x0/x1) ==  (1 -(x0/x1)**(i+1))/(1-x0/x1)/(1+x0/x1) ~= (i+1)/2 *(x0/x1)**i]
+            [B[i] ~= (i+1)/2 *(x0/x1)**i *x1**i *(1+x0/x1)]
+            [B[i] ~= (i+1)/2 *x0**i /x1]
+    * [-1/4 < n1 < 0]:
+        [0 < x0 < 1/2 < x1 < 1]
+        [B[i] ~= ???]
+    * [n1 < -1/4]:
+        [x0,x1 are not real]
+        [B[i] ~= ???]
+[[@[i>=1] -> [[n[i] == n1][d[i] == 1]]] -> [[0 < n1 < 2][x0 == (1 -sqrt(1+4*n1))/2][x1 == (1 +sqrt(1+4*n1))/2]] -> [B[i] ~= (x1**(i+1))/(x1-x0)]]
+    # [:nk_eq_n1_gt0lt2__dk_eq1____eval_Bk]:here
+
+[gcf converges][@[i>=1] -> [[n[i] == n1][0 < n1 < 2][d[i] == 1]]]:
+    !! [:prepare4gcf_convergence_rate__000]:goto
+    [(-log2(abs(gcf[:i+1] -gcf))/-log2(abs(gcf[:i] -gcf)))
+    >= (log2(abs$ 1/(B[i+1]*B[i]) * II n[k] {k :<- [1..=i+1]})/log2(abs$ 1/(B[i]*B[i-1]) * II n[k] {k :<- [1..=i]} * (1 -n[i+1]*B[i-1] /B[i+1])))
+    == (log2(abs$ 1/(B[i+1]*B[i]) * n1**(i+1))/log2(abs$ 1/(B[i]*B[i-1]) * n1**i * (1 -n1*B[i-1] /B[i+1])))
+    !! [:nk_eq_n1_gt0lt2__dk_eq1____eval_Bk]:goto
+      # [B[i] ~= (x1**(i+1))/(x1-x0)]
+    ~= (log2((x1-x0)**2/x1**(2*i+3) * n1**(i+1))/log2((x1-x0)**2/x1**(2*i+1) * n1**i * abs(1 -n1/x1**2)))
+    !! [x1**2 == x1 +n1]
+    => [n1/x1**2 == 1 -1/x1 == -x0/x1]
+    == (log2((x1-x0)**2/x1**(2*i+3) * n1**(i+1))/log2((x1-x0)**2/x1**(2*i+1) * n1**i * 1/x1))
+    == (log2((x1-x0)**2/x1**(2*i+3) * n1**(i+1))/log2((x1-x0)**2/x1**(2*i+2) * n1**i))
+    == (i*log2(n1/x1**2)+CCC_A)/(i*log2(n1/x1**2)+CCC_B)
+    == (i*log2(-x0/x1)+CCC_A)/(i*log2(-x0/x1)+CCC_B)
+    == (i*log2(-x1/x0)-CCC_A)/(i*log2(-x1/x0)-CCC_B)
+    !! [-1 < x0 < 0 < 1 < x1 < 2]
+    => [-x1/x0 > 1]
+    => [log2(-x1/x0) > 0]
+
+    ~= 1
+        # [:prepare4gcf_convergence_rate__nk_eq_n1_gt0lt2__dk_eq1]:here
+
+    ]
+
+
+
+
+
+
+
+rate of convergence
+[gcf_convergence_rate_(gcf) =[def]= limit (-log2(abs(gcf[:i+1] -gcf))/-log2(abs(gcf[:i] -gcf))) {i --> +oo}]
+
+!! [:gcf2all_denominators_be_one]:goto
+consider only case for [d[i] == 1]
+!! locality
+consider only periodic case: [period==2][n[i] == n1][d[i] == d[i%2]]
+convert to case [d[i] == 1]
+convert to case [n[i] == 1]
+[gcf[d0, n1$d1, n1$d0, n1$d1, n1$d0, ...]
+== d0*gcf[1, (n1/d0/d1)$1, (n1/d0/d1)$1, ...]
+
+
+== gcf[d0, 1$(d1/n1), 1$d0, n1$d1, n1$d0, ...]
+== gcf[d0, 1$(d1/n1), 1$d0, 1$(d1/n1), 1$d0, ...]
+  # [d[2*k] == d0]
+  # [d[2*k+1] == d1/n1]
+  # [n[k] == 1]
+]
+
+[gcf_convergence_rate_(gcf)
+== limit (-log2(abs(gcf[:i+1] -gcf))/-log2(abs(gcf[:i] -gcf))) {i --> +oo}
+!! [:prepare4gcf_convergence_rate__000]:goto
+>= limit (log2(abs$ 1/(B[i+1]*B[i]) * II n[k] {k :<- [1..=i+1]})/log2(abs$ 1/(B[i]*B[i-1]) * II n[k] {k :<- [1..=i]} * (1 -n[i+1]*B[i-1] /B[i+1]))) {i --> +oo}
+
+!! [:prepare4gcf_convergence_rate__nk_eq_n1_gt0lt2__dk_eq1]:goto
+* [@[i>=1] -> [[n[i] == n1][0 < n1 < 2][d[i] == 1]]]:
+... ~>= 1
+
+!! [:prepare4gcf_convergence_rate__nk_eq1__dk_eq_d0_gt0]:goto
+* [@[i>=1] -> [[n[i] == 1][d[i] == d0][d0 > 0]]]:
+... ~>= 1
+]
+[locality-->periodic]不行，因为提速靠的就是局部性，全局统一最终沦为1。
+  但计算精度还是可以的
+
+
+[[Akmm := A[k-1]][Bkmm := B[k-1]][Ak := A[k]][Bk := B[k]][Akp1 := A[k+1]][Bkp1 := B[k+1]][Akp2 := A[k+2]][Bkp2 := B[k+2]][nkmm := n[k-1]][dkmm := d[k-1]][nk := n[k]][dk := d[k]][nkp1 := n[k+1]][dkp1 := d[k+1]][nkp2 := n[k+2]][dkp2 := d[k+2]][@[i>=k-1] -> [[n[i] > 0][d[i] > 0]]][gcf converges]]:
+    !! [:prepare4gcf_convergence_rate__000]:goto
+    !! [gcf converges]
+    [assume (Akmm/Bkmm -Ak/Bk) small enough]
+    !! [@[i>=k-1] -> [[n[i] > 0][d[i] > 0]]]
+    => [[gcf[:k] < gcf[:k+2] < gcf < gcf[:k+1]]or[gcf[:k] > gcf[:k+2] > gcf > gcf[:k+1]]]
+
+    [abs(gcf[:k] -gcf[:k+2]) <= abs(gcf[:k] -gcf) <= abs(gcf[:k] -gcf[:k+1])]
+    [abs(gcf[:k+1] -gcf[:k+3]) <= abs(gcf[:k+1] -gcf) <= abs(gcf[:k+1] -gcf[:k+2])]
+
+    [(-log2(abs(gcf[:k+1] -gcf))/-log2(abs(gcf[:k] -gcf)))
+    == (log2(1/abs(gcf[:k+1] -gcf))/log2(1/abs(gcf[:k] -gcf)))
+    !! [abs(gcf[:k+1] -gcf) <= abs(gcf[:k+1] -gcf[:k+2])] # < 1
+    !! [abs(gcf[:k] -gcf[:k+2]) <= abs(gcf[:k] -gcf)] # < 1
+    >= (log2(1/abs(gcf[:k+1] -gcf[:k+2]))/log2(1/abs(gcf[:k] -gcf[:k+2])))
+    == (log2(abs(gcf[:k+1] -gcf[:k+2]))/log2(abs(gcf[:k] -gcf[:k+2])))
+    == (log2(abs(Ak/Bk -Akp1/Bkp1))/log2(abs(Akmm/Bkmm -Akp1/Bkp1)))
+    ]
+
+    [(Ak/Bk -Akp1/Bkp1)*Bk*Bkp1
+    == (Ak*Bkp1 -Akp1*Bk)
+    == (Ak*(dkp1*Bk+nkp1*Bkmm) -(dkp1*Ak+nkp1*Akmm)*Bk)
+    == (Ak*(nkp1*Bkmm) -(nkp1*Akmm)*Bk)
+    == nkp1*(Ak*Bkmm -Akmm*Bk)
+    ]
+    [(Ak/Bk -Akp1/Bkp1)
+    == nkp1/(Bk*Bkp1) *(Ak*Bkmm -Akmm*Bk)
+    == -nkp1*Bkmm/Bkp1 *(Akmm/Bkmm -Ak/Bk)
+    ]
+
+    [(Akmm/Bkmm -Akp1/Bkp1)
+    == (Akmm/Bkmm -Ak/Bk) +(Ak/Bk -Akp1/Bkp1)
+    == (1- nkp1*Bkmm/Bkp1) *(Akmm/Bkmm -Ak/Bk)
+    == dkp1*Bk/Bkp1 *(Akmm/Bkmm -Ak/Bk)
+    ]
+    [(Akmm/Bkmm -Akp1/Bkp1) == dkp1*Bk/Bkp1 *(Akmm/Bkmm -Ak/Bk)]
+    [(Ak/Bk -Akp1/Bkp1) == -nkp1*Bkmm/Bkp1 *(Akmm/Bkmm -Ak/Bk)]
+
+    [(-log2(abs(gcf[:k+1] -gcf))/-log2(abs(gcf[:k] -gcf)))
+    >= (log2(abs(Ak/Bk -Akp1/Bkp1))/log2(abs(Akmm/Bkmm -Akp1/Bkp1)))
+    !! [(Ak/Bk -Akp1/Bkp1) == -nkp1*Bkmm/Bkp1 *(Akmm/Bkmm -Ak/Bk)]
+    !! [(Akmm/Bkmm -Akp1/Bkp1) == dkp1*Bk/Bkp1 *(Akmm/Bkmm -Ak/Bk)]
+    == (log2(abs(-nkp1*Bkmm/Bkp1 *(Akmm/Bkmm -Ak/Bk)))/log2(abs(dkp1*Bk/Bkp1 *(Akmm/Bkmm -Ak/Bk))))
+    == (log2(abs(Bkp1/nkp1/Bkmm /(Akmm/Bkmm -Ak/Bk)))/log2(abs(Bkp1/dkp1/Bk /(Akmm/Bkmm -Ak/Bk))))
+    !! [assume (Akmm/Bkmm -Ak/Bk) small enough]
+    ??? [log2(1/(Akmm/Bkmm -Ak/Bk)) dominate] ???
+        # ??? not true! Bkp1 is growing too!!!!
+    !! [@[i>=k-1] -> [[n[i] > 0][d[i] > 0]]]
+    == ((log2(abs(Bkp1/nkp1/Bkmm)) + log2(1/abs(Akmm/Bkmm -Ak/Bk)))/(log2(abs(Bkp1/dkp1/Bk)) + log2(1/abs(Akmm/Bkmm -Ak/Bk))))
+    == ((log2(abs(Bkp1/nkp1/Bkmm)) + BBB_kmm)/(log2(abs(Bkp1/dkp1/Bk)) + BBB_kmm))
+    == ((log2(abs(1+ (dkp1*Bk)/(nkp1*Bkmm))) + BBB_kmm)/(log2(abs(1+ (nkp1*Bkmm)/(dkp1*Bk))) + BBB_kmm))
+    ]
+    [(dkp1*Bk)/(nkp1*Bkmm)
+    == (dkp1*(dk*Bkmm+nk*Bkm2))/(nkp1*Bkmm)
+    == (dkp1*dk/nkp1 +(dkp1*nk*Bkm2)/(nkp1*Bkmm))
+    ]
+    [BBB_kmm
+    == log2(1/abs(Akmm/Bkmm -Ak/Bk))
+    == log2(abs$ Bkmm*Bk/(Akmm*Bk -Ak*Bkmm))
+    == log2(abs$ Bkmm*Bk/II n[i] {i :<- [1..=k]})
+    ]
+
+    [@[i>=1] -> [n[i] === 1][d[i] > 0]]:
+        [gcf_convergence_rate_(gcf) >= 2]:
+            [log2(abs(1+ (dkp1*Bk)/(nkp1*Bkmm))) > BBB_kmm]
+            [dkp1*dk > Bkmm*Bk]
+            !! [@[i>=1] -> [B[i] >= 1]]
+            [dk < Bk]
+            [dkp1 > Bk]
+            [dk > Bkmm]
+            [?N. [@[i>=N] -> [d[i] > B[i-1]]]]
+        # 若要求 [rate >= 2]，大概有: [d[i] > B[i-1]]
+
+
+
+
+
+
+folded GCF
+if original gcf has positive n[i] and positive d[i] and be folded such that two terms into one, the become gcf.odd or gcf.even, which would be monotonic with negative n[i] and positive d[i].
+
+[(d0 ^+ n1 | d1 ^+ n2 | d2 + z3)
+== (d0 ^+ (d2 + z3)*n1 | (d2 + z3)*d1 + n2)
+* [z3 := 0]:
+... == (d0 ^+ (d2*n1) | (d2*d1+n2))
+
+# extract to vivi when [z3==0]
+== (d0 ^+ d2*n1 | d2*d1 ^+ d2*n2 | d2 + z3)
+== (d0 ^+ (d2*n1) | (d2*d1+n2) ^+ (d2*n2 -(d2+z3)*n2) | d2 + z3)
+== (d0 ^+ (d2*n1) | (d2*d1+n2) ^+ (-z3*n2) | d2 + z3)
+== (d0 ^+ (d2*n1) | (d2*d1+n2) ^+ (-n2) | 1 + d2/z3)
+
+[z3 := n3/(d3+z4)]
+== (d0 ^+ (d2*n1) | (d2*d1+n2) ^+ (-n2) | 1 + d2*(d3+z4)/n3)
+== (d0 ^+ (d2*n1) | (d2*d1+n2) ^+ (-n2*n3) | (n3+d2*d3) +d2*z4)
+* [z4 := 0]:
+... == (d0 ^+ (d2*n1) | (d2*d1+n2) ^+ (-n2*n3) | (n3+d2*d3))
+
+[z4 := n4/(d4+z5)]
+== (d0 ^+ (d2*n1) | (d2*d1+n2) ^+ (-n2*n3) | (n3+d2*d3) +d2*n4/(d4+z5))
+== (d0 ^+ (d2*n1) | (d2*d1+n2) ^+ (-n2*n3) | (n3+d2*d3) ^+ (d2*n4) | d4 + z5)
+== (d0 ^+ n1 | (d1+n2/d2) ^+ (-n2*n3) | d2*(n3+d2*d3) ^+ (d2*d2*n4) | d4 + z5)
+== (d0 ^+ n1 | (d1+n2/d2) ^+ (-n2/d2*n3/d2) | (n3/d2+d3) ^+ n4 | d4 + z5)
+]
+==>>:
+[(d0 ^+ n1 | d1 ^+ n2 | d2 ^+ n3 | d3 ^+ n4 | d4 + z5)
+== (d0 ^+ (d2*n1) | (d2*d1+n2) ^+ (-n2*n3) | (n3+d2*d3) ^+ (d2*n4) | d4 + z5)
+  # eliminate one term, 5 terms --> 4 terms
+  # affect 3.5 fractions: n1$d1,n2$d2,n3$d3,n4
+== (d0 ^+ n1 | (d1+n2/d2) ^+ (-n2/d2*n3/d2) | (n3/d2+d3) ^+ n4 | d4 + z5)
+  # affect 2.5 fractions: d1,n2$d2,n3$d3
+  # 实际上，就是 直接切出 n2/d2，以糅合(..., n2$d2, n3$d3, ...)
+  #     毕竟，截断后 要保持一致，只能如此
+  #
+  # 既可能产生负号，也可能去掉负号
+  # [:折叠可能改变正负]:here
+
+# 连切两次，负负得正:
+== (d0 ^+ n1 | (d1+n2/d2) ^+ (-n2/d2*n3/d2) | (n3/d2+d3) ^+ n4 | d4 + z5)
+[D1 := (d1+n2/d2)]
+[N2 := (-n2/d2*n3/d2)]
+[D2 := (n3/d2+d3)]
+== (d0 ^+ n1 | D1 ^+ N2 | D2 ^+ n4 | d4 ^+ n5 | d5 + z6)
+== (d0 ^+ n1 | (D1+N2/D2) ^+ (-N2/D2*n4/D2) | (n4/D2+d4) ^+ n5 | d5 + z6)
+== (d0 ^+ n1 | ((d1+n2/d2)+(-n2/d2*n3/d2)/(n3/d2+d3)) ^+ (-(-n2/d2*n3/d2)/(n3/d2+d3) *n4/(n3/d2+d3)) | (n4/(n3/d2+d3)+d4) ^+ n5 | d5 + z6)
+== (d0 ^+ n1 | (d1 +n2/(d2 +n3/d3)) ^+ ((n4*n2/d3*n3/d3)/(d2 +n3/d3)**2) | (d4 +n4/(d3 +n3/d2)) ^+ n5 | d5 + z6)
+    # (d4 +n4/(d3 +n3/d2)) 反序？
+== (d0 ^+ n1 | (d1 +n2/(d2 +n3/d3)) ^+ (n2/(d2 +n3/d3) *(n3/d3/d2) *n4/(d3 +n3/d2)) | (n4/(d3 +n3/d2) +d4) ^+ n5 | d5 + z6)
+    == (d0 ^+ n1 | (d1 +d_1_3) ^+ (d_1_3 *(n3/d3/d2) *d_4_2) | (d_4_2 +d4) ^+ n5 | d5 + z6)
+        # 前一致 *(n3/d3/d2) *后一致
+        # (n3/d3/d2) : 部分分母 d2,d3 归一？
+        == (d0 ^+ n1 | d1 ^+ n2 | d2 ^+ n3 | d3 ^+ n4 | d4 ^+ n5 | d5 + z6)
+        == (d0 ^+ n1 | d1 ^+ n2/d2 | 1 ^+ (n3/d3/d2) | 1 ^+ n4/d3 | d4 ^+ n5 | d5 + z6)
+        * [d2 == 1 == d3]:
+            ... == (d0 ^+ n1 | d1 ^+ n2 | 1 ^+ n3 | 1 ^+ n4 | d4 ^+ n5 | d5 + z6)
+            == (d0 ^+ n1 | (d1 +n2/(1 +n3)) ^+ (n2/(1 +n3) *n3 *n4/(1 +n3)) | (n4/(1 +n3) +d4) ^+ n5 | d5 + z6)
+]
+[(d0 ^+ n1 | d1 ^+ n2 | 1 ^+ n3 | d3 ^+ n4 | d4 + z5)
+== (d0 ^+ n1 | (d1+n2) ^+ (-n2*n3) | (n3+d3) ^+ n4 | d4 + z5)
+]
+[(d0 ^+ n1 | d1 ^+ n2 | 1 ^+ n3 | 1 ^+ n4 | d4 ^+ n5 | d5 + z6)
+== (d0 ^+ n1 | (d1 +n2/(1 +n3)) ^+ (n2/(1 +n3) *n3 *n4/(1 +n3)) | (n4/(1 +n3) +d4) ^+ n5 | d5 + z6)
+]
+[(d0 ^+ n1 | d1 ^+ n2 | 1 ^+ n3 | 1 ^+ n4 | 1 ^+ n5 | d5 + n6 | d6 + z7)
+== (d0 ^+ n1 | (d1 +d_1_4) ^+ n_2_5 | (d_5_2 +d5) ^+ n6 | d6 + z7)
+    # d_1_4不含d1
+    # d_5_2不含d5
+[截断:n_2_5/(...)]:
+    [(d0 ^+ n1 | (d1 +d_1_4))
+    == (d0 ^+ n1 | d1 ^+ n2 | 1 ^+ n3 | 1 ^+ n4 | 1)
+    ]
+    ==>>:
+    [d_1_4 == (0 ^+ n2 | 1 ^+ n3 | 1 ^+ n4 | 1)]
+    [d_1_4 == n2/(1+ n3/(1 +n4))]
+[截断:n6/(...)]:
+    [(d0 ^+ n1 | (d1 +d_1_4) ^+ n_2_5 | (d_5_2 +d5))
+    == (d0 ^+ n1 | d1 ^+ n2 | 1 ^+ n3 | 1 ^+ n4 | 1 ^+ n5 | d5)
+    ]
+    ==>>:
+    [(d_1_4 ^+ n_2_5 | (d_5_2 +d5))
+    == (0 ^+ n2 | 1 ^+ n3 | 1 ^+ n4 | 1 ^+ n5 | d5)
+    == d_1_5_
+    ]
+    [n_2_5 /(d_5_2 +d5)
+    == d_1_5_ -d_1_4
+    !! [(A[i-1]*B[i] -A[i]*B[i-1]) == II(-n[k]){k :<- [1..=i]}]
+    == -(n2*n3*n4*n5)/B?B?
+    # B: 1, 1, 1+n3, 1+n3+n4, (1+n3+n4)*d5 +n5*(1+n3)
+    == -(n2*n3*n4*n5) /(1+n3+n4) /((1+n3+n4)*d5 +n5*(1+n3))
+    # !! d_5_2不含d5
+    == (-(n2*n3*n4*n5) /(1+n3+n4) /(1+n3+n4)) /(n5*(1+n3) /(1+n3+n4) +d5)
+    ]
+    [n_2_5 == (-(n2*n3*n4*n5) /(1+n3+n4) /(1+n3+n4))]
+    [d_5_2 == n5*(1+n3) /(1+n3+n4)]
+]
+[gcf[d0; n1$d1, n2$d2, ..., nkmm$dkmm, nk$dk, nkpp$dkpp, tail...]
+== gcf[d0; n1$(d1 +d_1_kmm), n_2_k$(d_k_2 +dk), nkpp$dkpp, tail...]
+    # d_1_kmm不含d1
+    # d_k_2不含dk
+[截断:n_2_k/(...)]:
+    [gcf[d0; n1$(d1 +d_1_kmm)]
+    == gcf[d0; n1$d1, n2$d2, ..., nkmm$dkmm]
+    ]
+    ==>>:
+    [d_1_kmm == gcf[0; n2$d2, ..., nkmm$dkmm]]
+[截断:nkpp/(...)]:
+    [gcf[d0; n1$(d1 +d_1_kmm), n_2_k$(d_k_2 +dk)]
+    == gcf[d0; n1$d1, n2$d2, ..., nkmm$dkmm, nk$dk]
+    ]
+    ==>>:
+    [(d_1_kmm + n_2_k /(d_k_2 +dk))
+    == gcf[0; n2$d2, ..., nkmm$dkmm, nk$dk]
+    == d_1_k_
+    ]
+    [n_2_k /(d_k_2 +dk)
+    == d_1_k_ -d_1_kmm
+    !! [(A[i-1]*B[i] -A[i]*B[i-1]) == II(-n[k]){k :<- [1..=i]}]
+    == -(-n2*-n3*...*-nk)/B?B?
+    # canonical denominators:B: 1, d2, d3*d2+n3, d4*(d3*d2+n3)+n4*d2, ...
+    == -II(-n[i]){i:<-[2..=k]} /d_1_kmm.B /d_1_k_.B
+    [d_1_km2 := gcf[0; n2$d2, ..., n[k-2]$d[k-2]]]
+    == -II(-n[i]){i:<-[2..=k]} /d_1_kmm.B /(dk*d_1_kmm.B +nk*d_1_km2.B)
+    !! d_k_2不含dk
+    == (-II(-n[i]){i:<-[2..=k]} /d_1_kmm.B**2) /(nk*d_1_km2.B/d_1_kmm.B +dk)
+    ]
+    [n_2_k == (-II(-n[i]){i:<-[2..=k]} /d_1_kmm.B**2)]
+    [d_k_2 == nk*d_1_km2.B/d_1_kmm.B]
+    !! [:反序定理]:goto
+    # [[i>=1] -> [B[i]/B[i-1] == gcf[d[i]; n[i]$d[i-1], ..., n[i+1-k]$d[i-k], ..., n[2]$d[1]]]]
+    !! [d_1_kmm == gcf[0; n2$d2, ..., nkmm$dkmm]]
+    !! [d_1_km2 := gcf[0; n2$d2, ..., n[k-2]$d[k-2]]]
+    [d_1_kmm.B/d_1_km2.B == gcf[dkmm; nkmm$d[k-2], ..., n[3]$d[2]]]
+    [d_k_2 == nk*d_1_km2.B/d_1_kmm.B == gcf[0; nk$dkmm, nkmm$d[k-2], ..., n[3]$d[2]]]
+
+
+== gcf[d0; n1$(d1 +d_1_kmm), n_2_k$(d_k_2 +dk), nkpp$dkpp, tail...]
+    !! [d_1_kmm == gcf[0; n2$d2, ..., nkmm$dkmm]]
+    !! [n_2_k == (-II(-n[i]){i:<-[2..=k]} /d_1_kmm.B**2)]
+    !! [d_k_2 == nk*d_1_km2.B/d_1_kmm.B == gcf[0; nk$dkmm, nkmm$d[k-2], ..., n[3]$d[2]]]
+== gcf[d0; n1$(gcf[d1; n2$d2, ..., nkmm$dkmm]), (-II(-n[i]){i:<-[2..=k]} /(gcf[d1; n2$d2, ..., nkmm$dkmm].canonical_denominator)**2)$(gcf[dk; nk$dkmm, nkmm$d[k-2], ..., n[3]$d[2]]), nkpp$dkpp, tail...]
+* [k==2]:
+    ... == gcf[d0; n1$(gcf[d1;]), (-(-n[2]) /(gcf[d1;].canonical_denominator)**2)$(gcf[dk;]), nkpp$dkpp, tail...]
+    == gcf[d0; n1$d1, (n2 /(1)**2)$dk, nkpp$dkpp, tail...]
+    == gcf[d0; n1$d1, n2$dk, nkpp$dkpp, tail...]
+    == gcf[d0; n1$d1, ..., nk$dk, nkpp$dkpp, tail...]
+    # verify:ok!
+]
+==>>:
+[gcf[d0; n1$d1, n2$d2, ..., nkmm$dkmm, nk$dk, nkpp$dkpp, tail...]
+== gcf[d0; n1$(gcf[d1; n2$d2, ..., nkmm$dkmm]), (-II(-n[i]){i:<-[2..=k]} /(gcf[d1; n2$d2, ..., nkmm$dkmm].canonical_denominator)**2)$(gcf[dk; nk$dkmm, nkmm$d[k-2], ..., n[3]$d[2]]), nkpp$dkpp, tail...]
+* [k==3]:
+    ... == gcf[d0; n1$(d1 +n2/d2), (-n2*n3 /d2**2)$(d3 +n3/d2), n4$d4, tail...]
+* [k==4]:
+    ... == gcf[d0; n1$(gcf[d1; n2$d2, n3$d3]), (n2*n3*n4 /(d3*d2+n3*1)**2)$(gcf[d4; n4$d3, n3$d2]), n5$d5, tail...]
+* [k==5]:
+    ... == gcf[d0; n1$(gcf[d1; n2$d2, n3$d3, n4$d4]), (-n2*n3*n4*n5 /(d4*(d3*d2+n3*1) +n4*d2)**2)$(gcf[d5; n5$d4, n4$d3, n3$d2]), n6$d6, tail...]
+]
+==>>:
+[gcf[d0; n1$d1, n2$d2, ..., nkmm$dkmm, nk$dk, nkpp$dkpp, tail...]
+== gcf[(gcf[d0; n1$d1, ..., nkmm$dkmm]); (-II(-n[i]){i:<-[1..=k]} /(gcf[d0; n1$d1, ..., nkmm$dkmm].canonical_denominator)**2)$(gcf[dk; nk$dkmm, nkmm$d[k-2], ..., n3$d2, n2$d1]), nkpp$dkpp, tail...]
+* [k==2]:
+    ... == gcf[(d0 +n1/d1); (-n1*n2 /d1**2)$(d2 +n2/d1), n3$d3, tail...]
+]
+[(d0 ^+ n1 | d1 ^+ n2 | d2 + z3)
+== ((d0 +n1/d1) ^+ (-n1*n2 /d1**2) | (d2 +n2/d1) + z3)
+== ((d0 +n1/d1) ^+ (-n1*n2 /d1**2) | (n2/d1 +d2 +n3/d3) ^+ (-n3*n4 /d3**2) | (n4/d3 +d4) + z5)
+== ((d0 +n1/d1) ^+ (-n1*n2 /d1**2) | (n2/d1 +d2 +n3/d3) ^+ (-n3*n4 /d3**2) | (n4/d3 +d4 +n5/d5) ^+ (-n5*n6 /d5**2) | (n6/d5 +d6) + z7)
+== ((d0 +n1/d1) ^+ (-n1*n2 /d1**2) | (n2/d1 +d2 +n3/d3) ^+ (-n3*n4 /d3**2) | (n4/d3 +d4 +n5/d5) ^+ (-n5*n6 /d5**2) | ... | (n[2*k]/d[2*k-1] +d[2*k] +n[2*k+1]/d[2*k+1]) ^+ (-n[2*k+1]*n[2*k+2] /d[2*k+1]**2) | (n[2*k+2]/d[2*k+1] +d[2*k+2]) + z[2*k+3])
+]
+[gcf_contraction__odd_part_(gcf[d0; n1$d1, n2$d2, n3$d3, n4$d4, ...])
+== gcf[d0+n1/d1; (-n1*n2 /d1**2)$(n2/d1 +d2 +n3/d3), (-n3*n4 /d3**2)$(n4/d3 +d4 +n5/d5), ..., (-n[2*k-1]*n[2*k] /d[2*k-1]**2)$(n[2*k]/d[2*k-1] +d[2*k] +n[2*k+1]/d[2*k+1]), ...]
+* [@[i>=1] -> [d[i] == 1]]:
+    ... == gcf[d0+n1; (-n1*n2)$(n2 +1 +n3), (-n3*n4)$(n4 +1 +n5), ..., (-n[2*k-1]*n[2*k])$(n[2*k] +1 +n[2*k+1]), ...]
+]
+[gcf_contraction__even_part_(gcf[d0;n1$d1,n2$d2,...])
+== gcf[d0; n1$(d1+n2/d2), (-n2*n3 /d2**2)$(n3/d2 +d3 +n4/d4), (-n4*n5 /d4**2)$(n5/d4 +d5 +n6/d6), ..., (-n[2*k-2]*n[2*k-1] /d[2*k-2]**2)$(n[2*k-1]/d[2*k-2] +d[2*k-1] +n[2*k]/d[2*k]), ...]
+* [@[i>=1] -> [d[i] == 1]]:
+    ... == gcf[d0; n1$(1+n2), (-n2*n3)$(n3 +1 +n4), (-n4*n5)$(n5 +1 +n6), ..., (-n[2*k-2]*n[2*k-1])$(n[2*k-1] +1 +n[2*k]), ...]
+]
+[@[i>=N] -> [d[i] > 0]]:
+    [只要有限范围内 有带正号的n[i]，其后所有相连的负号n[i+j] 都可尝试折叠到 该正号项，看看是否转正]
+    [n[i]正负交替，应用 2阶折叠，转正的充分条件是[(n[k]/d[k]/d[k-1] +1 +n[k+1]/d[k+1]/d[k]) > 0] (可以单在 奇位/偶位 成立就行)]
+      # <==> [(d[k-1]*d[k]*d[k+1]) > abs(d[k-1]*abs(n[k+1]) -d[k+1]*abs(n[k]))]
+[@[i>=N] -> [[n[i] < 0][d[i] > 0]]]:
+    [将 折叠法 用于消除负号 似乎不太行]
+      #然而这种情形很常见，比如:gcf_contraction__odd_part_/gcf_contraction__even_part_ (渐近分数 是 单调序列)
+      #负号 的 主要毛病是 难以判断 误差上限，甚至 不收敛
+
+# 消去 e**z 展开式 中的 负号:
+!! [e**z == gcf[1; z$1, -z$2, z$3, -z$2, z$5, -z$2, z$7, ..., ((-1)**(k+1)*z)$(k if k%2 else 2), ...]]
+[e**z
+== gcf[1; z$1, -z$2, z$3, -z$2, z$5, -z$2, z$7, ..., ((-1)**(k+1)*z)$(k if k%2 else 2), ...]
+[i >= 1]:
+    [n[2*i] == -z]
+    [d[2*i] == 2]
+    [n[2*i-1] == z]
+    [d[2*i-1] == 2*i-1]
+!! see:gcf_contraction__even_part_
+== gcf[d0; n1$(d1+n2/d2), (-n2*n3 /d2**2)$(n3/d2 +d3 +n4/d4), (-n4*n5 /d4**2)$(n5/d4 +d5 +n6/d6), ..., (z**2 /2**2)$(z/2 +(2*k-1) -z/2), ...]
+== gcf[1; z$(1-z/2),     (z**2 /4)$(2*2-1), (z**2 /4)$(2*3-1), ..., (z**2 /4)$(2*k-1), ...]
+== gcf[1; 2*z$(2-z),     (z**2)$2*(2*2-1), (z**2)$2*(2*3-1), ..., (z**2)$2*(2*k-1), ...]
+* [z := 1]:
+    ... == e == gcf[1; 2$1,     1$2*(2*2-1), 1$2*(2*3-1), ..., 1$2*(2*k-1), ...]
+    == gcf[1; 2$1,     1$6, 1$10, 1$14, ..., 1$2*(2*k-1), ...]
+    => [2/(e-1) == gcf[1;     1$6, 1$10, 1$14, ..., 1$2*(2*k+1), ...]]
+    => [(e+1)/(e-1) == 1 +2/(e-1) == gcf[2; 1$6, 1$10, 1$14, ..., 1$2*(2*k+1), ...]]
+    => [(e+1)/(e-1) == cf[2; 6, 10, 14, ..., 2*(2*k+1), ...]]
+
+
+
+!! see:gcf_contraction__odd_part_
+== gcf[d0+n1/d1; (-n1*n2 /d1**2)$(n2/d1 +d2 +n3/d3), (-n3*n4 /d3**2)$(n4/d3 +d4 +n5/d5), ..., (z**2 /(2*k-1)**2)$(-z/(2*k-1) +2 +z/(2*k+1)), ...]
+== gcf[1+z; (z**2/1**2)$(2-2*z/1/3), (z**2/3**2)$(2-2*z/3/5), ..., (z**2 /(2*k-1)**2)$(2 -2*z/(2*k-1)/(2*k+1)), ...]
+== gcf[1+z; (z**2*1*3/1**2)$2*(1*3-z),     (z**2*1*5)$2*(3*5-z), (z**2*3*7)$2*(5*7-z), ..., (z**2*(2*k-3)*(2*k+1))$2*((2*k-1)*(2*k+1) -z), ...]
+== gcf[1+z; (3*z**2)$2*(3-z),     (1*5*z**2)$2*(3*5-z), (3*7*z**2)$2*(5*7-z), ..., ((2*k-3)*(2*k+1) *z**2)$2*((2*k-1)*(2*k+1) -z), ...]
+* [z := 1]:
+    ... == e == gcf[2; 3$4,     (1*5)$2*(3*5-1), (3*7)$2*(5*7-1), ..., ((2*k-3)*(2*k+1))$2*((2*k-1)*(2*k+1) -1), ...]
+    == gcf[2; 3$4,     5$28, 21$68, ..., ((2*k-1)**2-4)$4*(2*k**2 -1), ...]
+]
+==>>:
+[e**z
+== gcf[1; z$1, -z$2, z$3, -z$2, z$5, -z$2, z$7, ..., ((-1)**(k+1)*z)$(k if k%2 else 2), ...]
+#even
+== gcf[1; 2*z$(2-z),     (z**2)$2*(2*2-1), (z**2)$2*(2*3-1), ..., (z**2)$2*(2*k-1), ...]
+#odd
+== gcf[1+z; (3*z**2)$2*(3-z),     (1*5*z**2)$2*(3*5-z), (3*7*z**2)$2*(5*7-z), ..., ((2*k-3)*(2*k+1) *z**2)$2*((2*k-1)*(2*k+1) -z), ...]
+]
+==>>:
+[e == gcf[1; 2$1,     1$6, 1$10, 1$14, ..., 1$2*(2*k-1), ...]]
+[e == gcf[2; 3$4,     5$28, 21$68, ..., ((2*k-1)**2-4)$4*(2*k**2 -1), ...]]
+
+[DDD<x>(sin(x)) == cos(x)]
+[DDD<x>(cos(x)) == -sin(x)]
+[DDD<x>(tan(x))
+== DDD<x>(sin(x)/cos(x))
+== DDD<x>(sin(x))/cos(x)
+-  sin(x)*cos(x)**-2 *DDD<x>(cos(x))
+== 1 +sin(x)**2 *cos(x)**-2
+== 1 +tan(x)**2
+== 1/cos(x)**2
+]
+[y == arctan(x)]:
+    [x == tan(y)]
+    [1
+    == DDD<x>(x)
+    == DDD<x>(tan(y))
+    == (1 +tan(y)**2) *DDD<x>(y)
+    == (1 +x**2) *DDD<x>(arctan(x))
+    ]
+[DDD<x>(arctan(x)) == 1/(1 +x**2)]
+[DDD<x>(arctan(x)) == sum (-1)**k *x**(2*k) {k :<- [0..]}]
+!! [tan(0) == sin(0)/cos(0) == 0]
+[arctan(0) == 0]
+[arctan(x) == sum (-1)**k /(2*k+1) *x**(2*k+1) {k :<- [0..]}]
+[arctan(x)
+== sum (-1)**k /(2*k+1) *x**(2*k+1) {k :<- [0..]}
+!! [:nonuniform_ver4continued_fraction5series_formula]:goto
+[u0 := x]
+[u[k]/u[k-1] := (-x**2 *(2*k-1)/(2*k+1))]
+== gcf[x; (-x**3 /3)$1,     (x**2 *1/3)$(1 -x**2 *1/3), (x**2 *3/5)$(1 -x**2 *3/5), ..., (x**2 *(2*k-3)/(2*k-1))$(1 -x**2 *(2*k-3)/(2*k-1)), ...]
+== gcf[x; (-x**3 /3)$1,     (x**2 *1**2)$(3 -1*x**2), (x**2 *3**2)$(5 -3*x**2), ..., (x**2 *(2*k-3)**2)$((2*k-1) -(2*k-3)*x**2), ...]
+* [x := 1]:
+    ... == pi/4 == gcf[1; (-1/3)$1,     (1**2)$(3 -1), (3**2)$(5 -3), ..., ((2*k-3)**2)$((2*k-1) -(2*k-3)), ...]
+    == gcf[1; (-1/3)$1,     (1**2)$2, (3**2)$2, ..., ((2*k-3)**2)$2, ...]
+    => [pi == gcf[4; (-4/3)$1,     (1**2)$2, (3**2)$2, ..., ((2*k-3)**2)$2, ...]]
+    !! [(d0 ^+ n1 | d1 ^+ n2 | d2 + z3) == ((d0 +n1/d1) ^+ (-n1*n2 /d1**2) | (d2 +n2/d1) + z3)]
+    => [pi == gcf[4 +(-4/3)/1; ((4/3)*(1**2)/(1**2))$(2+(1**2)/1),     (3**2)$2, ..., ((2*k-1)**2)$2, ...]]
+    => [pi == gcf[8/3; (4/3)$3,     (3**2)$2, (5**2)$2, ..., ((2*k-1)**2)$2, ...]]
+        # slow! log2(2*2/(2*k-1)**2) bits per convergent
+]
+[arctan(x)
+== sum (-1)**k /(2*k+1) *x**(2*k+1) {k :<- [0..]}
+# !! [:分式转化为连分式]:goto
+== x*(sum (-1)**k /(2*k+1) *x**(2*k) {k :<- [0..]})
+== x*(1 +sum (-1)**k /(2*k+1) *x**(2*k) {k :<- [1..]})
+== (0 ^+ x | (1+0)/(1 +sum (-1)**k /(2*k+1) *x**(2*k) {k :<- [1..]}))
+######
+== (0 ^+ x | 1 ^+ (-sum (-1)**k /(2*k+1) *x**(2*k) {k :<- [1..]}) | (1 +sum (-1)**k /(2*k+1) *x**(2*k) {k :<- [1..]}))
+== (0 ^+ x | 1 ^+ (x**2 /3) *(1 +sum (-1)**k *3/(2*k+3) *x**(2*k) {k :<- [1..]}) | (1 +sum (-1)**k /(2*k+1) *x**(2*k) {k :<- [1..]}))
+== (0 ^+ x | 1 ^+ (x**2 /3) | (1 +sum (-1)**k /(2*k+1) *x**(2*k) {k :<- [1..]})/(1 +sum (-1)**k *3/(2*k+3) *x**(2*k) {k :<- [1..]}))
+######
+== (0 ^+ x | 1 ^+ (x**2 /3) | 1 ^+ (sum (-1)**k /(2*k+1) *x**(2*k) {k :<- [1..]} -sum (-1)**k *3/(2*k+3) *x**(2*k) {k :<- [1..]}) | (1 +sum (-1)**k *3/(2*k+3) *x**(2*k) {k :<- [1..]}))
+== (0 ^+ x | 1 ^+ (x**2 /3) | 1 ^+ (sum (-1)**k *x**(2*k) *(1/(2*k+1) -3/(2*k+3)) {k :<- [1..]}) | (1 +sum (-1)**k *3/(2*k+3) *x**(2*k) {k :<- [1..]}))
+== (0 ^+ x | 1 ^+ (x**2 /3) | 1 ^+ (sum (-1)**k *x**(2*k) *(-4*k)/(2*k+1)/(2*k+3) {k :<- [1..]}) | (1 +sum (-1)**k *3/(2*k+3) *x**(2*k) {k :<- [1..]}))
+== (0 ^+ x | 1 ^+ (x**2 /3) | 1 ^+ (4/15 *x**2) *(1 +sum (-1)**k *x**(2*k) *(k+1)*15/(2*k+3)/(2*k+5) {k :<- [1..]}) | (1 +sum (-1)**k *3/(2*k+3) *x**(2*k) {k :<- [1..]}))
+== (0 ^+ x | 1 ^+ (x**2 /3) | 1 ^+ (4/15 *x**2) | (1 +sum (-1)**k *3/(2*k+3) *x**(2*k) {k :<- [1..]})/(1 +sum (-1)**k *x**(2*k) *(k+1)*15/(2*k+3)/(2*k+5) {k :<- [1..]}))
+######
+== (0 ^+ x | 1 ^+ (x**2 /3) | 1 ^+ (4/15 *x**2) | 1 ^+ (sum (-1)**k *3/(2*k+3) *x**(2*k) {k :<- [1..]} -sum (-1)**k *x**(2*k) *(k+1)*15/(2*k+3)/(2*k+5) {k :<- [1..]}) | (1 +sum (-1)**k *x**(2*k) *(k+1)*15/(2*k+3)/(2*k+5) {k :<- [1..]}))
+== (0 ^+ x | 1 ^+ (x**2 /3) | 1 ^+ (4/15 *x**2) | 1 ^+ (sum (-1)**k *x**(2*k) *(3*(2*k+5) -(k+1)*15)/(2*k+3)/(2*k+5) {k :<- [1..]}) | (1 +sum (-1)**k *x**(2*k) *(k+1)*15/(2*k+3)/(2*k+5) {k :<- [1..]}))
+== (0 ^+ x | 1 ^+ (x**2 /3) | 1 ^+ (4/15 *x**2) | 1 ^+ (sum (-1)**k *x**(2*k) *(-9*k)/(2*k+3)/(2*k+5) {k :<- [1..]}) | (1 +sum (-1)**k *x**(2*k) *(k+1)*15/(2*k+3)/(2*k+5) {k :<- [1..]}))
+== (0 ^+ x | 1 ^+ (x**2 /3) | 1 ^+ (4/15 *x**2) | 1 ^+ (9/35 *x**2) *(1 +sum (-1)**k *x**(2*k) *(k+1)*35/(2*k+5)/(2*k+7) {k :<- [1..]}) | (1 +sum (-1)**k *x**(2*k) *(k+1)*15/(2*k+3)/(2*k+5) {k :<- [1..]}))
+== (0 ^+ x | 1 ^+ (x**2 /3) | 1 ^+ (4/15 *x**2) | 1 ^+ (9/35 *x**2) | (1 +sum (-1)**k *x**(2*k) *(k+1)*15/(2*k+3)/(2*k+5) {k :<- [1..]})/(1 +sum (-1)**k *x**(2*k) *(k+1)*35/(2*k+5)/(2*k+7) {k :<- [1..]}))
+######
+== (0 ^+ x | 1 ^+ (x**2 /3) | 1 ^+ (4/15 *x**2) | 1 ^+ (9/35 *x**2) | 1 ^+ (sum (-1)**k *x**(2*k) *(k+1)*15/(2*k+3)/(2*k+5) {k :<- [1..]} -sum (-1)**k *x**(2*k) *(k+1)*35/(2*k+5)/(2*k+7) {k :<- [1..]}) | (1 +sum (-1)**k *x**(2*k) *(k+1)*35/(2*k+5)/(2*k+7) {k :<- [1..]}))
+== (0 ^+ x | 1 ^+ (x**2 /3) | 1 ^+ (4/15 *x**2) | 1 ^+ (9/35 *x**2) | 1 ^+ (sum (-1)**k *x**(2*k) *5*(k+1)*(3*(2*k+7) -7*(2*k+3))/(2*k+3)/(2*k+5)/(2*k+7) {k :<- [1..]}) | (1 +sum (-1)**k *x**(2*k) *(k+1)*35/(2*k+5)/(2*k+7) {k :<- [1..]}))
+== (0 ^+ x | 1 ^+ (x**2 /3) | 1 ^+ (4/15 *x**2) | 1 ^+ (9/35 *x**2) | 1 ^+ (sum (-1)**k *x**(2*k) *40*(k+1)*(-k)/(2*k+3)/(2*k+5)/(2*k+7) {k :<- [1..]}) | (1 +sum (-1)**k *x**(2*k) *(k+1)*35/(2*k+5)/(2*k+7) {k :<- [1..]}))
+== (0 ^+ x | 1 ^+ (x**2 /3) | 1 ^+ (4/15 *x**2) | 1 ^+ (9/35 *x**2) | 1 ^+ (40/*(5*7*9/2) *x**2)*(1 +sum (-1)**k *x**(2*k) *(k+1)*(k+2)*(5*7*9/2)/(2*k+5)/(2*k+7)/(2*k+9) {k :<- [1..]}) | (1 +sum (-1)**k *x**(2*k) *(k+1)*35/(2*k+5)/(2*k+7) {k :<- [1..]}))
+== (0 ^+ x | 1 ^+ (x**2 /3) | 1 ^+ (4/15 *x**2) | 1 ^+ (9/35 *x**2) | 1 ^+ (16/(7*9) *x**2) | (1 +sum (-1)**k *x**(2*k) *(k+1)*35/(2*k+5)/(2*k+7) {k :<- [1..]})/(1 +sum (-1)**k *x**(2*k) *(k+1)*(k+2)*(5*7*9/2)/(2*k+5)/(2*k+7)/(2*k+9) {k :<- [1..]}))
+######
+
+==>>:???:
+== gcf[0; x$1,     ((1*x)**2 /(1*3))$1, ((2*x)**2 /(3*5))$1, ((3*x)**2 /(5*7))$1, ..., (((k-1)*x)**2 /((2*k-3)*(2*k-1)))$1, ...]
+== gcf[0; x$1,     ((1*x)**2)$3, ((2*x)**2)$5, ((3*x)**2)$7, ..., (((k-1)*x)**2)$(2*k-1), ...]
+* [x==1]:
+    ... == pi/4 == gcf[0; 1$1,     (1**2)$3, (2**2)$5, (3**2)$7, ..., ((k-1)**2)$(2*k-1), ...]
+    => [pi == gcf[0; 4$1,     (1**2)$3, (2**2)$5, (3**2)$7, ..., ((k-1)**2)$(2*k-1), ...]]
+    => [4/pi == gcf[1, (1**2)$3, (2**2)$5, (3**2)$7, ..., (k**2)$(2*k+1), ...]]
+######
+]
+==>>:
+[pi == gcf[0; 4$1,     (1**2)$3, (2**2)$5, (3**2)$7, ..., ((k-1)**2)$(2*k-1), ...]]
+    #从e,pi的逼近 来看 nonuniform_ver4continued_fraction5series_formula<Euler> 真的不行
+    # 还是得靠[分式转化为连分式]
+
+[1 == DDD<x>(sin(arcsin(x))) == cos(arcsin(x))*DDD<x>(arcsin(x))]
+[DDD<x>(arcsin(x))
+== 1/cos(arcsin(x))
+== 1/sqrt(1 -sin(arcsin(x))**2)
+== 1/sqrt(1 -x**2)
+== (1 -x**2)**(-1/2)
+]
+[DDD<x>((1 -x**2)**(-1/2))
+== (-1/2)*(1 -x**2)**(-3/2) *(-2*x)
+== x*(1 -x**2)**(-3/2)
+]
+[DDD<x>(x**e *(1 -x**2)**(-(2*k+1)/2))
+== (e*x**(e-1) *(1 -x**2)**(-(2*k+1)/2)) +(x**e *(-(2*k+1)/2)*(1 -x**2)**(-(2*k+3)/2) *(-2*x))
+== (e*x**(e-1) *(1 -x**2)**(-(2*k+1)/2)) +(x**(e+1) *(2*k+1)*(1 -x**2)**(-(2*k+3)/2))
+== (e *(1 -x**2) +x**2 *(2*k+1)) *x**(e-1) *(1 -x**2)**(-(2*k+3)/2)
+== (e +x**2 *(2*k+1 -e)) *x**(e-1) *(1 -x**2)**(-(2*k+3)/2)
+== (e*x**(e-1) +(2*k+1 -e) *x**(e+1)) *(1 -x**2)**(-(2*k+3)/2)
+]
+[DDD<x>**i $ arcsin(x) =:
+arcsin(x)
+  0 :--> 0
+(1 -x**2)**(-1/2)
+  0 :--> 1
+x*(1 -x**2)**(-3/2)
+  0 :--> 0
+(1 +2*x**2)*(1 -x**2)**(-5/2)
+  0 :--> 1
+    # == 1/6 *factorial(2)
+(9*x +10*x**3) *(1 -x**2)**(-7/2)
+  0 :--> 0
+(9 +63*x +30*x**2 +70*x**3) *(1 -x**2)**(-9/2)
+  0 :--> 9
+    # == 3/40 *factorial(5)
+]
+#见下面: binomial series +generalized binomial coefficient
+[arcsin(x) == x + 1/2*x**3/3 + 1/2*3/4*x**5/5 + 1/2*3/4*5/6*x**7/7 +...]
+[arcsin(x) == sum choose(2*k;k)/2**(2*k) *x**(2*k+1)/(2*k+1) {k :<- [0..]}]
+[arcsin(x)
+== sum choose(2*k;k)/2**(2*k) *x**(2*k+1)/(2*k+1) {k :<- [0..]}
+# !! [:分式转化为连分式]:goto
+== x*(1 +sum choose(2*k;k)/2**(2*k) *x**(2*k)/(2*k+1) {k :<- [1..]})
+== (0 ^+ x | (1+0)/(1 +sum choose(2*k;k)/2**(2*k) *x**(2*k)/(2*k+1) {k :<- [1..]}))
+######
+== (0 ^+ x | 1 ^+ (-sum choose(2*k;k)/2**(2*k) *x**(2*k)/(2*k+1) {k :<- [1..]}) | (1 +sum choose(2*k;k)/2**(2*k) *x**(2*k)/(2*k+1) {k :<- [1..]}))
+== (0 ^+ x | 1 ^+ (-x**2 /2/3)*(1 +sum choose(2*k+2;k+1)*2/2**(2*k+2) *x**(2*k) *3/(2*k+3) {k :<- [1..]}) | (1 +sum choose(2*k;k)/2**(2*k) *x**(2*k)/(2*k+1) {k :<- [1..]}))
+== (0 ^+ x | 1 ^+ (-x**2 /6) | (1 +sum choose(2*k;k)/2**(2*k) *x**(2*k)/(2*k+1) {k :<- [1..]})/(1 +sum choose(2*k+2;k+1)*2/2**(2*k+2) *x**(2*k) *3/(2*k+3) {k :<- [1..]}))
+######
+== (0 ^+ x | 1 ^+ (-x**2 /6) | 1 ^+ (sum choose(2*k;k)/2**(2*k) *x**(2*k)/(2*k+1) {k :<- [1..]} -sum choose(2*k+2;k+1)*2/2**(2*k+2) *x**(2*k) *3/(2*k+3) {k :<- [1..]}) | (1 +sum choose(2*k+2;k+1)*2/2**(2*k+2) *x**(2*k) *3/(2*k+3) {k :<- [1..]}))
+== (0 ^+ x | 1 ^+ (-x**2 /6) | 1 ^+ (sum x**(2*k)/2**(2*k+1) *(choose(2*k;k) *2/(2*k+1) -choose(2*k+2;k+1) *3/(2*k+3)) {k :<- [1..]}) | (1 +sum choose(2*k+2;k+1)*2/2**(2*k+2) *x**(2*k) *3/(2*k+3) {k :<- [1..]}))
+== (0 ^+ x | 1 ^+ (-x**2 /6) | 1 ^+ (sum x**(2*k)/2**(2*k+1) *(2*k)!/(k+1)!**2 *(2*k+2) *((k+1)*(2*k+3) -3*(2*k+1)**2) /(2*k+1)/(2*k+3) {k :<- [1..]}) | (1 +sum choose(2*k+2;k+1)*2/2**(2*k+2) *x**(2*k) *3/(2*k+3) {k :<- [1..]}))
+== (0 ^+ x | 1 ^+ (-x**2 /6) | 1 ^+ (-x**2)*(sum x**(2*k)/2**(2*k+2) *(2*k+2)!/(k+2)!/k! *(10*k+17) /(2*k+3)/(2*k+5) {k :<- [0..]}) | (1 +sum choose(2*k+2;k+1)*2/2**(2*k+2) *x**(2*k) *3/(2*k+3) {k :<- [1..]}))
+== (0 ^+ x | 1 ^+ (-x**2 /6) | 1 ^+ (-x**2 /4 *17/3/5)*(1 +sum x**(2*k) *4/2**(2*k+2) *(2*k+2)!/(k+2)!/k! *(10*k+17) /(2*k+3)/(2*k+5) *3*5/17 {k :<- [1..]}) | (1 +sum choose(2*k+2;k+1)*2/2**(2*k+2) *x**(2*k) *3/(2*k+3) {k :<- [1..]}))
+== (0 ^+ x | 1 ^+ (-x**2 /6) | 1 ^+ (-x**2 *17/3/4/5) | (1 +sum choose(2*k+2;k+1)*2/2**(2*k+2) *x**(2*k) *3/(2*k+3) {k :<- [1..]})/(1 +sum x**(2*k) *4/2**(2*k+2) *(2*k+2)!/(k+2)!/k! *(10*k+17) /(2*k+3)/(2*k+5) *3*5/17 {k :<- [1..]}))
+######
+== (0 ^+ x | 1 ^+ (-x**2 /6) | 1 ^+ (-x**2 *17/3/4/5) | 1 ^+ (sum choose(2*k+2;k+1)*2/2**(2*k+2) *x**(2*k) *3/(2*k+3) {k :<- [1..]} -sum x**(2*k) *4/2**(2*k+2) *(2*k+2)!/(k+2)!/k! *(10*k+17) /(2*k+3)/(2*k+5) *3*5/17 {k :<- [1..]}) | (1 +sum x**(2*k) *4/2**(2*k+2) *(2*k+2)!/(k+2)!/k! *(10*k+17) /(2*k+3)/(2*k+5) *3*5/17 {k :<- [1..]}))
+
+== (0 ^+ x | 1 ^+ (-x**2 /6) | 1 ^+ (-x**2 *17/3/4/5) | 1 ^+ ( *3)*(sum x**(2*k)/2**(2*k+1) *(2*k+2)!/(k+2)!/(k+1)! *(17*(k+2)*(2*k+5)  -10*(k+1)*(10*k+17))/(2*k+3)/(2*k+5)/17 {k :<- [1..]}) | (1 +sum x**(2*k) *4/2**(2*k+2) *(2*k+2)!/(k+2)!/k! *(10*k+17) /(2*k+3)/(2*k+5) *3*5/17 {k :<- [1..]}))
+
+== (0 ^+ x | 1 ^+ (-x**2 /6) | 1 ^+ (-x**2 *17/3/4/5) | 1 ^+ (-x**2 *9/2/17)*(sum x**(2*k-2)/2**(2*k) *(2*k+2)!/(k+2)!/(k+1)! *k*(22*k+39)/(2*k+3)/(2*k+5) {k :<- [1..]}) | (1 +sum x**(2*k) *4/2**(2*k+2) *(2*k+2)!/(k+2)!/k! *(10*k+17) /(2*k+3)/(2*k+5) *3*5/17 {k :<- [1..]}))
+
+== (0 ^+ x | 1 ^+ (-x**2 /6) | 1 ^+ (-x**2 *17/3/4/5) | 1 ^+ (-x**2 *9/2/17 /4 *2 *61/5/7)*(1 +sum x**(2*k) *4/2**(2*k+2) *(2*k+4)!/(k+3)!/(k+2)! /2 *(k+1)*(22*k+61)/(2*k+5)/(2*k+7) *5*7/61 {k :<- [1..]}) | (1 +sum x**(2*k) *4/2**(2*k+2) *(2*k+2)!/(k+2)!/k! *(10*k+17) /(2*k+3)/(2*k+5) *3*5/17 {k :<- [1..]}))
+== (0 ^+ x | 1 ^+ (-x**2 /6) | 1 ^+ (-x**2 *17/3/4/5) | 1 ^+ (-x**2 *9*61/17/4/5/7) | (1 +sum x**(2*k) *4/2**(2*k+2) *(2*k+2)!/(k+2)!/k! *(10*k+17) /(2*k+3)/(2*k+5) *3*5/17 {k :<- [1..]})/(1 +sum x**(2*k) *4/2**(2*k+2) *(2*k+4)!/(k+3)!/(k+2)! /2 *(k+1)*(22*k+61)/(2*k+5)/(2*k+7) *5*7/61 {k :<- [1..]}))
+######
+[[[
+e ./script/convert_1_leading_series_to_generalized_continued_fraction.py
+===
+py_adhoc_call   script.convert_1_leading_series_to_generalized_continued_fraction   ,convert_power_series4arcsin_to_generalized_continued_fraction_ =10
+Fraction(0, 1)
+(Fraction(1, 1), 1)
+(Fraction(-1, 6), 2)
+(Fraction(-17, 60), 2)
+(Fraction(-549, 2380), 2)
+(Fraction(-69049, 261324), 2)
+(Fraction(-399121325, 1667947644), 2)
+(Fraction(-9600903541557, 37091075359052), 2)
+(Fraction(-3109112782183806769, 12810036504055156860), 2)
+(Fraction(-4201832398286608520252509, 16391659978047051834461340), 2)
+
+$ py_adhoc_call   script.convert_1_leading_series_to_generalized_continued_fraction   ,convert_power_series4arcsin_to_generalized_continued_fraction_ =10 +factor_as_p2e
+Fraction(0, 1)
+(((), ()), 1)
+((((-1, 1),), ((2, 1), (3, 1))), 2)
+((((-1, 1), (17, 1)), ((2, 2), (3, 1), (5, 1))), 2)
+((((-1, 1), (3, 2), (61, 1)), ((2, 2), (5, 1), (7, 1), (17, 1))), 2)
+((((-1, 1), (29, 1), (2381, 1)), ((2, 2), (3, 2), (7, 1), (17, 1), (61, 1))), 2)
+((((-1, 1), (5, 2), (17, 1), (939109, 1)), ((2, 2), (3, 2), (11, 1), (29, 1), (61, 1), (2381, 1))), 2)
+((((-1, 1), (3, 2), (61, 1), (8447, 1), (2070319, 1)), ((2, 2), (11, 1), (13, 1), (29, 1), (2381, 1), (939109, 1))), 2)
+((((-1, 1), (7, 2), (29, 1), (59, 1), (419, 1), (2381, 1), (37172089, 1)), ((2, 2), (3, 1), (5, 1), (13, 1), (8447, 1), (939109, 1), (2070319, 1))), 2)
+^C
+KeyboardInterrupt
+]]]
+
+
+
+######
+######
+######
+]
+
+
+
+
+
+
+
+
+
+
+accuracy
+!! [:prepare4gcf_accuracy]:goto
+[gcf[:i+1] -gcf[:i] == (-1)**(i+1)/(B[i]*B[i-1]) * II n[k] {k :<- [1..=i]}]
+[gcf_accuracy_(i; gcf) =[def]= -log2(abs(gcf[:i+1] -gcf))]
+[delta_gcf_accuracy_(i; gcf) =[def]= gcf_accuracy_(i; gcf) -gcf_accuracy_(i-1; gcf)]
+[delta_gcf_accuracy_(i; gcf)
+== gcf_accuracy_(i; gcf) -gcf_accuracy_(i-1; gcf)
+== (-log2(abs(gcf[:i+1] -gcf))) -(-log2(abs(gcf[:i] -gcf)))
+== log2(abs((gcf[:i] -gcf)/(gcf[:i+1] -gcf)))
+]
+[[Bkm2 := B[k-2]][Akmm := A[k-1]][Bkmm := B[k-1]][Ak := A[k]][Bk := B[k]][Akp1 := A[k+1]][Bkp1 := B[k+1]][Akp2 := A[k+2]][Bkp2 := B[k+2]][nkmm := n[k-1]][dkmm := d[k-1]][nk := n[k]][dk := d[k]][nkp1 := n[k+1]][dkp1 := d[k+1]][nkp2 := n[k+2]][dkp2 := d[k+2]][@[i>=k-1] -> [[n[i] > 0][d[i] > 0]]][gcf converges][Bkm2/Bkmm > 0]]:
+    !! [:prepare4gcf_convergence_rate__000]:goto
+    !! [gcf converges]
+    [assume (Akmm/Bkmm -Ak/Bk) small enough]
+    !! [@[i>=k-1] -> [[n[i] > 0][d[i] > 0]]]
+    => [[gcf[:k] < gcf[:k+2] < gcf < gcf[:k+1]]or[gcf[:k] > gcf[:k+2] > gcf > gcf[:k+1]]]
+
+    [abs(gcf[:k] -gcf[:k+2]) <= abs(gcf[:k] -gcf) <= abs(gcf[:k] -gcf[:k+1])]
+    [abs(gcf[:k+1] -gcf[:k+3]) <= abs(gcf[:k+1] -gcf) <= abs(gcf[:k+1] -gcf[:k+2])]
+
+    [delta_gcf_accuracy_(k; gcf)
+    == log2(abs((gcf[:k] -gcf)/(gcf[:k+1] -gcf)))
+    !! [abs(gcf[:k+1] -gcf) <= abs(gcf[:k+1] -gcf[:k+2])] # < 1
+    !! [abs(gcf[:k] -gcf[:k+2]) <= abs(gcf[:k] -gcf)] # < 1
+    >= log2(abs((gcf[:k] -gcf[:k+2])/(gcf[:k+1] -gcf[:k+2])))
+    == log2(abs((Akmm/Bkmm -Akp1/Bkp1)/(Ak/Bk -Akp1/Bkp1)))
+    !! [(Akmm/Bkmm -Akp1/Bkp1) == dkp1*Bk/Bkp1 *(Akmm/Bkmm -Ak/Bk)]
+    !! [(Ak/Bk -Akp1/Bkp1) == -nkp1*Bkmm/Bkp1 *(Akmm/Bkmm -Ak/Bk)]
+    == log2(abs(dkp1*Bk/Bkp1 *(Akmm/Bkmm -Ak/Bk)/(-nkp1*Bkmm/Bkp1 *(Akmm/Bkmm -Ak/Bk))))
+    == log2(abs(dkp1/nkp1 *Bk/Bkmm))
+    * 简化一:
+        == log2(abs(dkp1/nkp1 *(dk +nk*Bkm2/Bkmm)))
+        == log2(abs(dk*dkp1/nkp1 *(1 +nk/dk *Bkm2/Bkmm)))
+        !! [@[i>=k-1] -> [[n[i] > 0][d[i] > 0]]]
+        => [nk/dk > 0]
+        !! [Bkm2/Bkmm > 0]
+        >= log2(abs(dk*dkp1/nkp1))
+        !! [@[i>=k-1] -> [[n[i] > 0][d[i] > 0]]]
+        == log2(dk*dkp1/nkp1)
+    * 简化二:
+        == log2(abs(dkp1/nkp1 *Bk/Bkmm))
+        !! [:反序定理]:goto
+        #  [[i>=1] -> [B[i]/B[i-1] == gcf[d[i]; n[i]$d[i-1], ..., n[i+1-k]$d[i-k], ..., n[2]$d[1]]]]
+        == log2(abs(dkp1/nkp1 *gcf[d[k]; n[k]$d[k-1], ..., n[k+1-k]$d[k-k], ..., n[2]$d[1]]))
+        == ???
+    ]
+
+[[[dk := d[k]][nkp1 := n[k+1]][dkp1 := d[k+1]][@[i>=k-1] -> [[n[i] > 0][d[i] > 0]]][gcf converges][Bkm2 := B[k-2]][Bkmm := B[k-1]][Bkm2/Bkmm > 0]] -> [delta_gcf_accuracy_(k; gcf) >= log2(dk*dkp1/nkp1)]]
+    #[:gcf_accuracy]:here
+
+
+
+
+
+
+
+
+[[[
+Sardina, Manny (2007). "General Method for Extracting Roots using (Folded) Continued Fractions". Surrey (UK). http://myreckonings.com/Dead_Reckoning/Online/Materials/General%20Method%20for%20Extracting%20Roots.pdf.
+===
+unfolded formula for (**(m/n)):
+[(y)**(m/n) == (a**n+b)**(m/n) == a**m+err == a**m*(1 ^+ m*b | 1*n*(y-b) ^+ (1*n-m)*b | 2 ^+ (1*n+m)*b | 3*n*(y-b) ^+ (2*n-m)*b | 2 ^+ (2*n+m)*b | ... | k*n*(y-b) ^+ ((k///2)*n-m)*b | 2 ^+ ((k-1)///2*n+m)*b | ...)]
+    # k依所在 部分分数(n[k]$d[k])为准
+
+unfolded formula for sqrt:
+[sqrt(y) == sqrt(a+b) == a+err
+== a*(1 ^+ b | 1*2*(y-b) ^+ (1*2-1)*b | 2 ^+ (1*2+1)*b | 3*2*(y-b) ^+ (2*2-1)*b | 2 ^+ (2*2+1)*b | ... | k*2*(y-b) ^+ ((k///2)*2-1)*b | 2 ^+ ((k-1)///2*2+1)*b | ...)
+    # k依所在 部分分数(n[k]$d[k])为准
+== a*(1 ^+ b | 1*2*(y-b) ^+ 1*b | 2 ^+ 3*b | 3*2*(y-b) ^+ 3*b | 2 ^+ 5*b | ... | k*2*(y-b) ^+ (k-1)*b | 2 ^+ k*b | ...)
+== a*(1 ^+ b | 2*(y-b) ^+ b | 2 ^+ b | 2*(y-b) ^+ b | 2 ^+ b | ... | 2*(y-b) ^+ b | 2 ^+ b | ...)
+== a*(1 ^+ b | 2*a**2 ^+ b | 2 ^+ b | 2*a**2 ^+ b | 2 ^+ b | ... | 2*a**2 ^+ b | 2 ^+ b | ...)
+== a*(1 ^+ b/a | 2*a ^+ b | 2*a ^+ b | 2*a ^+ b | 2*a ^+ b | ... | 2*a ^+ b | 2*a ^+ b | ...)
+== (a ^+ b | 2*a ^+ b | ... | 2*a ^+ b | ...)
+
+
+== (a ^+ b/(2*a) | 1 ^+ b/(2*a)**2 | ... | 1 ^+ b/(2*a)**2 | ...)
+== (a ^+ b/(2*a) | 1 ^+ b/(4*(y-b)) | ... | 1 ^+ b/(4*(y-b)) | ...)
+]
+
+
+folded formula for (**(m/n)):
+[(y)**(m/n) == (a**n+b)**(m/n) == a**m+err == a**m*(1 ^+ 2*m*b | (-m*b + 1*n*(2*y-b)) ^+ -(n**2-m**2)*b**2 | 3*n*(2*y-b) ^+ -(4*n**2-m**2)b**2 | ... | (2*k-1)*(2*y-b) ^+ -((k-1)**2*n**2-m**2)b**2 | ...)]
+
+folded formula for sqrt:
+[sqrt(y) == sqrt(a**2+b) == a+err == a*(1 ^+ 2*b | (-b +(4*y-2*b)) ^+ -b**2 | (4*y-2*b) ^+ -b**2 | ... | (4*y-2*b) ^+ -b**2 | ...)]
+
+
+======
+5.3 Convergence of the Square Root Formula
+It can be shown that for square roots there is a gain of approximately
+5.3a 2*log10(4*y/abs(β) -2) decimal places with each additional folded fraction
+
+??? 2*log10(4*y/abs(β) -2) 怎么来的???
+    因为输出是十进制小数，所以使用『log10』
+      #原文只是log，很有歧义，虽然简单的数值计算就能澄清
+    开头的『2*』来自于『fold』，两步合并为一步
+    unfolded版 部分分数是(b$(2*a))即(b$(2*sqrt(y-b)))
+    unfolded版 [d[i]===1] 部分分数是((b/(2*a)**2)$1)即((b/(4*(y-b)))$1)
+    好吧，最后『-2』到底怎么来的？
+
+    !! [:gcf_accuracy]:goto
+    [delta_gcf_accuracy_(k; gcf) >= log2(dk*dkp1/nkp1)]
+    # 因为 folded 版 使用 负数n[i]所以只考虑unfolded版，并假设[b>0]
+    [log2(dk*dkp1/nkp1) == log2(4*(y-b)/b)]
+    [2*log10(dk*dkp1/nkp1) == 2*log10(4*y/b -4)]
+    依然不明最后的『-2』怎么来的？
+
+
+
+]]]
+[[[
+[limit abs(x[k+1]-x)/abs(x[k]-x) {k :--> +oo} == C]
+* [C==1]:
+  [x[k] 次线性收敛（sublinear convergence）]
+* [0<C<1]:
+  [x[k] 线性收敛（linear convergence）]
+* [C==0]:
+  [x[k] 超线性收敛（superlinear convergence）]
+
+===
+https://zhuanlan.zhihu.com/p/278151142?utm_id=0
+收敛速度的三种形式
+落落小方地发卡
+===
+wget_U 'https://zhuanlan.zhihu.com/p/278151142?utm_id=0' -O '收敛速度的三种形式.落落小方地发卡.html'
+html2text -i 收敛速度的三种形式.落落小方地发卡.html -o 收敛速度的三种形式.落落小方地发卡.html.txt -ver www_zhihu_com
+
+view /sdcard/Download/收敛速度的三种形式.落落小方地发卡.html.txt
+===
+当我们设计迭代算法的时候，总是不可避免地要提到收敛速度这个概念。
+
+比如，我们常说牛顿法是平方收敛的，弦截法是1.618阶收敛的，梯度下降法是线性收敛的，随机梯度下降法是次线性收敛的。
+
+在数值分析或者优化方法中，我们经常能看到如下这几句话：
+
+[limit abs(x[k+1]-x)/abs(x[k]-x) {k :--> +oo} == C]
+\lim _{k \rightarrow \infty} \frac{\left\|x^{(k+1)}-x^{*}\right\|}{\left\|x^{(k)}-x^{*}\right\|}=C ，且 C=1 ，我们就说序列 x^{(k)} 是次线性收敛（sublinear convergence）到 x^* 的。
+
+如果 0<C<1 ，那么就是线性收敛（linear convergence）。
+
+如果 C=0 ，那么就说是超线性收敛（superlinear convergence）。
+
+在超线性收敛的基础上，如果对 p>1 成立 \lim _{k \rightarrow \infty} \frac{\left\|x^{(k+1)}-x^{*}\right\|}{\left\|x^{(k)}-x^{*}\right\|^p}=C 为常数，就说序列 x^{(k)} 是p 阶收敛到 x^* 的。
+
+（此处 \lVert \cdot \rVert 表示一种范数，若范数具有等价性，则通常选取为2范数）
+
+
+
+这样的一套定义其实是非常抽象的，我敢说正常人第一次接触这个东西肯定没法正确想象平方收敛到底比线性收敛快多少。要在脑子里直观地想象它们的收敛速度，最好的方式是找几个例子，再画个图，来比较一下。
+
+令：a_k=1/k ，这里 a_k 是次线性收敛的b_k=1/k^2 ，这里 b_k 也是次线性收敛的c_k=1/2^k ，这里 c_k 是线性收敛的d_k=1/2^{2^k} ，这里 d_k 是平方收敛的
+
+这四个序列都以0为极限，可以感受到， 哪怕是普通的线性收敛都已经达到指数级别的收敛速度了（这也是我们为什么把线性收敛也叫指数收敛的原因！）超线性收敛的效果更是难以想象！
+
+画出四个数列的对数图：
+
+线性收敛在对数坐标图上已经是一条直线了，平方收敛就更是一条急速向下的曲线，这也就是为什么牛顿法能够在短短四五步迭代就达到我们期望的误差限的原因。
+
+至于次线性收敛，则一般是以多项式的速度逼近，如 \frac{1}{\sqrt k} 、 \frac{1}{k^3} 这些都是次线性收敛的。但即便都是次线性收敛，其实快慢也是可以有区别的。上面这种描述收敛性的方式无法对次线性收敛进行更加精确的比较！
+收敛速度的其它表示方法
+
+优化里面，很多算法都还不能达到线性收敛（指数速度收敛）这样的速度，为了比较各种次线性收敛，就必须要引入更精细的表示收敛速度的方式！
+
+比如，在某一条件下，以 t 为固定学习率的梯度下降法的函数值序列满足：  f\left(x^{(k)}\right)-f^{\star} \leq \frac{\left\|x^{(0)}-x^{\star}\right\|_{2}^{2}}{2 t k}  \\  
+
+这时候我们就会说序列 f\left(x^{(k)}\right) 收敛到 f^* 的速度是 O(1/k) 的，这里的 1/k 表示误差， k 越大，误差越小；如果 k 扩大2倍，也就是迭代步数乘以2，误差缩小为原来的一半。
+
+另一种表示这种收敛速度的方式是 O(1/\epsilon) ， 1/\epsilon 的意思是，如果我们希望将误差控制在 \epsilon 内，令 \frac{\left\|x^{(0)}-x^{\star}\right\|_{2}^{2}}{2 t k} \leq \epsilon ，得到迭代次数 k\geq \frac{\left\|x^{(0)}-x^{\star}\right\|_{2}^{2}}{2 t \epsilon}  是 O(1/\epsilon) 阶的；换句话说，要让误差减少为原来的一半，就必须将迭代次数扩大一倍！
+
+
+
+更好一点的算法，比如 O(1/k^2) 的（对应是 O(1/\sqrt{\epsilon}) ），它也是次线性收敛的，但是速度要比 O(1/k) 快很多。
+
+用这两种方式我们就能对次线性收敛进行比较啦！
+
+同时：线性收敛的表示： O(\gamma^{-k})\;\; (\gamma > 1) ；或者 O(\log \frac{1}{\epsilon}) 平方收敛的表示： O(\gamma^{-2^{k}})\;\;(\gamma >1) ；或者 O(\log \log \frac{1}{\epsilon}) 
+
+
+
+总结：本文用图比较了各种收敛性的收敛速度，并给出了收敛速度三种表示方式的描述和分析。
+看到这里了都，确定不点赞、关注+收藏嘛！
+
+其它写的不错的相似内容：
+href="https://www.zhihu.com/question/296828990/answer/502071622"
+
+
+建议阅读：
+href="https://link.zhihu.com/?target=https%3A//en.wikipedia.org/wiki/Rate_of_convergence"
+
+
+
+
+附画图的代码：
+import numpy as np
+import matplotlib.pyplot as plt
+
+plt.style.use("ggplot")
+plt.semilogy(np.arange(1, 30), 1/np.arange(1, 30))
+plt.semilogy(np.arange(1, 30), 1/np.arange(1, 30)**2)
+plt.semilogy(np.arange(1, 30), 1/2**np.arange(1, 30))
+plt.semilogy(np.arange(1, 6), 1/2**(2**np.arange(1, 6)))
+plt.legend([r"$1/k$", r"$1/k^2$", r"$1/2^k$", r"$1/2^{2^k}$"])
+
+
+编辑于 2022-02-26 21:20
+
+===
+
+
+]]]
+[[[
+https://oi-wiki.org/math/number-theory/continued-fraction/
+连分数 基本术语
+===
+跳转至
+OI Wiki
+连分数
+
+
+
+OI Wiki
+ OI-wiki/OI-wiki
+15.7k
+3.1k
+简介
+简介
+Getting Started
+关于本项目
+如何参与
+OI Wiki 不是什么
+格式手册
+数学符号表
+F.A.Q.
+用 Docker 部署 OI Wiki
+镜像站列表
+致谢
+比赛相关
+比赛相关
+比赛相关简介
+赛事
+赛事
+OI 赛事与赛制
+ICPC/CCPC 赛事与赛制
+题型
+题型
+题型概述
+交互题
+学习路线
+学习资源
+技巧
+技巧
+读入、输出优化
+分段打表
+常见错误
+常见技巧
+出题
+工具软件
+工具软件
+工具软件简介
+代码编辑工具
+代码编辑工具
+Vim
+Emacs
+VS Code
+Atom
+Eclipse
+Notepad++
+Kate
+Dev-C++
+CLion
+Geany
+Xcode
+GUIDE
+Sublime Text
+CP Editor
+评测工具
+评测工具
+评测工具简介
+Arbiter
+Cena
+CCR Plus
+Lemon
+命令行
+编译器
+WSL (Windows 10)
+Special Judge
+Testlib
+Testlib
+Testlib 简介
+通用
+Generator
+Validator
+Interactor
+Checker
+Polygon
+OJ 工具
+LaTeX 入门
+Git
+语言基础
+语言基础
+语言基础简介
+C++ 基础
+C++ 基础
+Hello, World!
+C++ 语法基础
+变量
+运算
+流程控制语句
+流程控制语句
+分支
+循环
+高级数据类型
+高级数据类型
+数组
+结构体
+联合体
+指针
+函数
+文件操作
+C++ 标准库
+C++ 标准库
+C++ 标准库简介
+STL 容器
+STL 容器
+STL 容器简介
+迭代器
+序列式容器
+关联式容器
+无序关联式容器
+容器适配器
+STL 算法
+bitset
+string
+pair
+C++ 进阶
+C++ 进阶
+类
+命名空间
+值类别
+重载运算符
+引用
+常值
+新版 C++ 特性
+Lambda 表达式
+pb_ds
+pb_ds
+pb_ds 简介
+堆
+平衡树
+编译优化
+C++ 与其他常用语言的区别
+Pascal 转 C++ 急救
+Python 速成
+Java 速成
+Java 进阶
+算法基础
+算法基础
+算法基础简介
+复杂度
+枚举
+模拟
+递归 & 分治
+贪心
+排序
+排序
+排序简介
+选择排序
+冒泡排序
+插入排序
+计数排序
+基数排序
+快速排序
+归并排序
+堆排序
+桶排序
+希尔排序
+锦标赛排序
+tim排序
+排序相关 STL
+排序应用
+前缀和 & 差分
+二分
+倍增
+构造
+搜索
+搜索
+搜索部分简介
+DFS（搜索）
+BFS（搜索）
+双向搜索
+启发式搜索
+A*
+迭代加深搜索
+IDA*
+回溯法
+Dancing Links
+Alpha-Beta 剪枝
+优化
+动态规划
+动态规划
+动态规划部分简介
+动态规划基础
+记忆化搜索
+背包 DP
+区间 DP
+DAG 上的 DP
+树形 DP
+状压 DP
+数位 DP
+插头 DP
+计数 DP
+动态 DP
+概率 DP
+DP 优化
+DP 优化
+单调队列/单调栈优化
+斜率优化
+四边形不等式优化
+状态设计优化
+其它 DP 方法
+字符串
+字符串
+字符串部分简介
+字符串基础
+标准库
+字符串匹配
+字符串哈希
+字典树 (Trie)
+前缀函数与 KMP 算法
+Boyer–Moore 算法
+Z 函数（扩展 KMP）
+自动机
+AC 自动机
+后缀数组 (SA)
+后缀数组 (SA)
+后缀数组简介
+最优原地后缀排序算法
+后缀自动机 (SAM)
+后缀平衡树
+广义后缀自动机
+后缀树
+Manacher
+回文树
+序列自动机
+最小表示法
+Lyndon 分解
+Main–Lorentz 算法
+数学
+数学
+数学部分简介
+符号
+进位制
+位运算
+二进制集合操作
+平衡三进制
+高精度计算
+快速幂
+置换和排列
+弧度制与坐标系
+复数
+数论
+数论
+数论基础
+素数
+最大公约数
+数论分块
+欧拉函数
+筛法
+Meissel–Lehmer 算法
+分解质因数
+裴蜀定理
+类欧几里德算法
+欧拉定理 & 费马小定理
+乘法逆元
+线性同余方程
+中国剩余定理
+升幂引理
+威尔逊定理
+卢卡斯定理
+同余方程
+二次剩余
+原根
+离散对数
+剩余
+莫比乌斯反演
+杜教筛
+Powerful Number 筛
+Min_25 筛
+洲阁筛
+连分数
+目录
+连分数
+定义
+简单连分数
+定义
+无限连分数
+定义
+渐进分数
+定义
+定义
+余项和部分商
+定义
+求解简单连分数表示
+性质
+递推
+反序定理
+渐进分数的差分
+倒数定理
+最佳逼近
+连行列式
+实现
+误差和余项的估计
+例题 扩展欧几里得
+几何解释
+例题 鼻子拉伸算法
+定义
+例题
+线下凸包
+Timus - Crime and Punishment
+June Challenge 2017 - Euler Sum
+NAIPC 2019 - It's a Mod, Mod, Mod, Mod World
+Library Checker - Sum of Floor of Linear
+OKC 2 - From Modular to Rational
+习题
+Stern–Brocot 树与 Farey 序列
+二次域
+循环连分数
+Pell 方程
+多项式与生成函数
+多项式与生成函数
+多项式与生成函数简介
+代数基本定理
+快速傅里叶变换
+快速数论变换
+快速沃尔什变换
+Chirp Z 变换
+多项式牛顿迭代
+多项式多点求值|快速插值
+多项式初等函数
+常系数齐次线性递推
+多项式平移|连续点值平移
+符号化方法
+普通生成函数
+指数生成函数
+狄利克雷生成函数
+组合数学
+组合数学
+排列组合
+抽屉原理
+容斥原理
+康托展开
+斐波那契数列
+错位排列
+卡特兰数
+斯特林数
+贝尔数
+伯努利数
+Entringer Number
+Eulerian Number
+分拆数
+范德蒙德卷积
+图论计数
+线性代数
+线性代数
+线性代数简介
+向量
+内积和外积
+矩阵
+初等变换
+行列式
+线性空间
+线性基
+线性映射
+特征多项式
+对角化
+Jordan标准型
+线性规划
+线性规划
+线性规划简介
+单纯形算法
+群论
+群论
+群论简介
+置换群
+概率论
+概率论
+基本概念
+条件概率与独立性
+随机变量
+随机变量的数字特征
+概率不等式
+博弈论
+博弈论
+博弈论简介
+公平组合游戏
+非公平组合游戏
+反常游戏
+数值算法
+数值算法
+拉格朗日插值
+数值积分
+高斯消元
+牛顿迭代法
+傅里叶-莫茨金消元法
+序理论
+杨氏矩阵
+Schreier–Sims 算法
+Berlekamp–Massey 算法
+数据结构
+数据结构
+数据结构部分简介
+栈
+队列
+链表
+哈希表
+并查集
+并查集
+并查集
+并查集复杂度
+堆
+堆
+堆简介
+二叉堆
+配对堆
+左偏树
+块状数据结构
+块状数据结构
+分块思想
+块状数组
+块状链表
+树分块
+Sqrt Tree
+单调栈
+单调队列
+ST 表
+树状数组
+线段树
+李超线段树
+区间最值操作 & 区间历史最值
+划分树
+二叉搜索树 & 平衡树
+二叉搜索树 & 平衡树
+二叉搜索树 & 平衡树
+Treap
+Splay 树
+WBLT
+Size Balanced Tree
+AVL 树
+B 树
+B+ 树
+替罪羊树
+Leafy Tree
+笛卡尔树
+红黑树
+左偏红黑树
+AA 树
+2-3 树
+跳表
+可持久化数据结构
+可持久化数据结构
+可持久化数据结构简介
+可持久化线段树
+可持久化块状数组
+可持久化平衡树
+可持久化字典树
+可持久化可并堆
+树套树
+树套树
+线段树套线段树
+平衡树套线段树
+线段树套平衡树
+树状数组套权值线段树
+分块套树状数组
+K-D Tree
+动态树
+动态树
+Link Cut Tree
+Euler Tour Tree
+Top Tree
+析合树
+PQ 树
+手指树
+霍夫曼树
+图论
+图论
+图论部分简介
+图论相关概念
+图的存储
+DFS（图论）
+BFS（图论）
+树上问题
+树上问题
+树基础
+树的直径
+最近公共祖先
+树的重心
+树链剖分
+树上启发式合并
+虚树
+树分治
+动态树分治
+AHU 算法
+树哈希
+树上随机游走
+矩阵树定理
+有向无环图
+拓扑排序
+最小生成树
+斯坦纳树
+最小树形图
+最小直径生成树
+最短路
+拆点
+差分约束
+k 短路
+同余最短路
+连通性相关
+连通性相关
+强连通分量
+双连通分量
+割点和桥
+圆方树
+点/边连通度
+2-SAT
+欧拉图
+哈密顿图
+二分图
+最小环
+平面图
+图的着色
+网络流
+网络流
+网络流简介
+最大流
+最小割
+费用流
+上下界网络流
+Stoer–Wagner 算法
+图的匹配
+图的匹配
+图匹配
+增广路
+二分图最大匹配
+二分图最大权匹配
+一般图最大匹配
+一般图最大权匹配
+Prüfer 序列
+LGV 引理
+弦图
+最大团搜索算法
+支配树
+计算几何
+计算几何
+计算几何部分简介
+二维计算几何基础
+三维计算几何基础
+距离
+Pick 定理
+三角剖分
+凸包
+扫描线
+旋转卡壳
+半平面交
+平面最近点对
+随机增量法
+反演变换
+计算几何杂项
+杂项
+杂项
+杂项简介
+离散化
+双指针
+离线算法
+离线算法
+离线算法简介
+CDQ 分治
+整体二分
+莫队算法
+莫队算法
+莫队算法简介
+普通莫队算法
+带修改莫队
+树上莫队
+回滚莫队
+二维莫队
+莫队二次离线
+莫队配合 bitset
+分数规划
+随机化
+随机化
+随机函数
+随机化技巧
+爬山算法
+模拟退火
+悬线法
+计算理论基础
+字节顺序
+约瑟夫问题
+格雷码
+表达式求值
+在一台机器上规划任务
+主元素问题
+Garsia–Wachs 算法
+15-puzzle
+Kahan 求和
+珂朵莉树/颜色段均摊
+专题
+专题
+RMQ
+并查集应用
+括号序列
+线段树与离线询问
+关于 Hulu
+关于 Hulu
+关于 Hulu
+连分数
+连分数
+连分数 是实数作为有理数的特定收敛序列的表示。它们在算法竞赛（competitive programming）中很有用，因为它们易于计算，并且可以有效地用于在分母不超过给定值的所有数字中，找到基础实数（underlying real number）的最佳可能有理近似（best possible rational approximation）。
+
+除此之外，连分数与欧几里得算法密切相关，这使得它们在一系列数论问题中非常有用。
+
+定义
+连分数是一种记号。例如，长为 4 的连分数：
+
+ 
+ 
+ 
+
+[a_0,a_1,a_2,a_3]=a_0+\frac{1}{a_1+\frac{1}{a_2+\frac{1}{a_3}}}
+只是为了形式上简洁，才记成等号左边的样子。这里的四个变元可以任意取值。
+
+连分数各变元的下标从 0 开始。
+
+简单连分数
+可以证明，任何有理数都可以精确地以两种方式表示为连分数：
+
+
+r = [a_0;a_1,\dots,a_k,1] = [a_0;a_1,\dots,a_k+1]
+此外，对于 
+ 
+r=\frac{p}{q}，这种连分数的长度 k 估计为 k = O(\log \min(p, q))。
+
+一旦深入研究了连分数构造的细节，这背后的原因就会很清楚。
+
+定义
+设 a_0, a_1, \dots, a_k \in \mathbb Z 和 a_1, a_2, \dots, a_k \geq 1。然后表达式
+
+ 
+ 
+ 
+
+r=a_0 + \frac{1}{a_1 + \frac{1}{\dots + \frac{1}{a_k}}}
+称为有理数 r 的 连分数表示，并简短地表示为 r=[a_0;a_1,a_2,\dots,a_k]。
+
+示例
+对于有限连分数，全体结尾为 1 的有限连分数和全体结尾不为 1 的有限连分数一一对应，即同一个连分数有两种表示：
+
+[a_0,a_1,a_2,a_3]=[a_0,a_1,a_2,a_3-1,1]
+
+简单连分数：连分数从第 1 项开始全都是正整数。如果有限，要求最后一项不为 1。（第 0 项可以任意）
+
+简单连分数的值，一定大于偶数的渐进分数，一定小于奇数的渐进分数。无限简单连分数一定收敛。
+
+仿照一般分数的概念，第 0 项是 0 的连分数称为「真分数」。显然如果这之后的所有变元都大于等于 1，那么得到的真分数一定落在 0 到 1 之间。
+
+无限连分数
+如果分式无限地写下去，有无限个变元，就得到无限连分数。无限连分数收敛等价于渐进分数收敛。
+
+有定理：
+
+无限连分数，如果各变元均大于等于 1，那么一定收敛。
+
+因为只要各变元为正，无限连分数的偶渐进分数单调递增（都比它小），奇渐进分数单调递减（都比它大）。而在均大于等于 1 时，相邻（奇偶间）两个渐进分数之间距离可以给出估计式，趋于 0，因此收敛。
+
+显然可以看到，连分数关于下标为偶数的变元单调递增，关于下标为奇数的变元单调递减。这无论它有限或无限都成立。
+
+定义
+设 a_0,a_1,a_2, \dots 为整数序列，使得 a_1, a_2, \dots \geq 1。设 r_k = [a_0; a_1, \dots, a_k]。然后表达式
+
+ 
+ 
+ 
+r = a_0 + \frac{1}{a_1 + \frac{1}{a_2+\dots}} = \lim\limits_{k \to \infty} r_k
+称为无理数 r 的 连分数表示，并简短地表示为 r = [a_0;a_1,a_2,\dots]。
+
+注意，对于 r=[a_0;a_1,\dots] 和整数 k，有 r+k = [a_0+k; a_1, \dots]。
+
+另一个重要的观察结果是，当 a_0>0 时，
+ 
+\frac{1}{r}=[0;a_0, a_1, \dots]；当 ＝a_1＝0 时，
+ 
+\frac{1}{r} = [a_1; a_2, \dots]。
+
+渐进分数
+定义
+在上面的定义中，有理数 r_0, r_1, r_2, \dots 称为 r 的 渐进分数（convergents，意为「收敛」）。
+
+相应地，单个 
+ 
+r_k = [a_0; a_1, \dots, a_k] = \frac{p_k}{q_k} 称为 r 的第 k 个渐进分数。
+
+示例
+定义
+设 r_k = [a_0; a_1, \dots, a_{k-1}, a_k]。对于 1 \leq t \leq a_k，[a_0; a_1, \dots, a_{k-1}, t] 称为 中间分数（semiconvergents，「semi」意为「半」）。
+
+通常将大于 r 的分数称为 上（upper）渐进分数或中间分数，将小于 r 者称为 下（lower）渐进分数或中间分数。
+
+余项和部分商
+定义
+作为渐进分数的补充，定义 余项（完全商，complete quotients）为 s_k = [a_k; a_{k+1}, a_{k+2}, \dots]。
+
+相应地，将单个 s_k 称为 r 的第 k 个完全商。
+
+相应地，取整得到的 a_k 称为部分商。
+
+对于各项均为正数的连分数，所有的余项也都是正数。
+
+根据以上定义，可以得出 s_k \geq 1 代表 k \geq 1 的结论。
+
+将 [a_0; a_1, \dots, a_k] 视为一个形式代数表达式，并允许任意实数代替 a_i，得到
+
+
+r = [a_0; a_1, \dots, a_{k-1}, s_k]
+特别地，r = [s_0] = s_0。另一方面，可以将 s_k 表示为
+
+ 
+
+s_k = [a_k; s_{k+1}] = a_k + \frac{1}{s_{k+1}}
+这意味着可以从 s_k 计算 a_k = \lfloor s_k \rfloor 和 s_{k+1} = (s_k - a_k)^{-1}。
+
+序列 a_0, a_1, \dots 定义良好，除非 s_k=a_k，这仅在 r 为有理数时发生。
+
+因此，对于任何无理数 r，连分数表示都是唯一的。
+
+求解简单连分数表示
+在代码片段中主要假设有限的连分数。
+
+如果要求 (0,1) 区间内某个数的简单连分数表示（第 0 项为 0），只需：
+
+取倒数，得到的余项大于 1。
+取整得到整数部分为部分商，小数部分在 0 到 1 之间。
+对小数部分重复上述操作。
+这样就得到了相应的表示。
+
+从 s_k 到 s_{k+1} 的转换如下
+
+ 
+
+s_k =\left\lfloor s_k \right\rfloor + \frac{1}{s_{k+1}}
+从这个表达式中，下一个完全商 s_{k+1} 如下
+
+
+s_{k+1} = \left(s_k-\left\lfloor s_k\right\rfloor\right)^{-1}
+对于 
+ 
+s_k=\frac{p}{q}，这意味着
+
+ 
+ 
+ 
+ 
+ 
+
+s_{k+1} = \left(\frac{p}{q}-\left\lfloor \frac{p}{q} \right\rfloor\right)^{-1} = \frac{q}{p-q\cdot \lfloor \frac{p}{q} \rfloor} = \frac{q}{p \bmod q}.
+因此，
+ 
+r=\frac{p}{q} 的连分数表示的计算遵循 p 和 q 的欧几里得算法的步骤。
+
+由此，
+ 
+\frac{p_k}{q_k} = [a_0; a_1, \dots, a_k] 的 \gcd(p_k, q_k) = 1。因此，渐进分数总是不可约的。
+
+
+C++
+Python
+
+auto fraction(int p, int q) {
+    vector<int> a;
+    while(q) {
+        a.push_back(p / q);
+        tie(p, q) = make_pair(q, p % q);
+    }
+    return a;
+}
+
+如果规定第 0 项是该数的取整，那么全体实数都有「唯一的简单连分数表示」。其中：
+
+如果两个无限简单连分数的值相等，必然逐项相等。
+
+如果两个有限简单连分数的值相等，不仅要逐项相等，而且必然项数也相同。
+
+无限简单连分数不能与有限简单连分数值相等。有理数与有限简单连分数具有一一对应关系，因此无限简单连分数全都是无理数。
+
+性质
+为了给连分数的进一步研究提供一些动力，现在给出一些性质。
+
+递推
+递推
+渐进分数分子和分母具有完全相同的递推关系：
+
+
+p_k=a_kp_{k-1}+p_{k-2}
+
+q_k=a_kq_{k-1}+q_{k-2}
+这里和 Farey 数列的递推关系很像。
+
+形式上记初项：
+
+
+p_{-1}=1 \quad p_0=a_0
+
+q_{-1}=0 \quad q_0=1
+只是形式上成立。第 -1 项渐进分数是 1/0，没有实际意义。
+
+证明
+可以注意到，p_k 与 q_k 对于 a_k 和 b_k 都是线性函数。这是因为，a_k 和 b_k 都只出现了一次，无论如何通分也不会有另一个 a_k 或 b_k 乘上去。于是通过待定系数，即可解得这个递推关系。
+
+反序定理
+ 
+
+\frac{q_k}{q_{k-1}}=[a_k,a_{k-1},\ldots,a_1]
+如果 a_0\neq 0：
+
+ 
+
+\frac{p_k}{p_{k-1}}=[a_k,a_{k-1},\ldots,a_0]
+如果 a_0=0：
+
+ 
+
+\frac{p_k}{p_{k-1}}=[a_k,a_{k-1},\ldots,a_2]
+证明
+对递推关系稍加改造，有：
+
+ 
+ 
+ 
+
+\frac{p_k}{p_{k-1}}=a_k+\frac{1}{\frac{p_{k-1}}{p_{k-2}}}
+ 
+ 
+ 
+
+\frac{q_k}{q_{k-1}}=a_k+\frac{1}{\frac{q_{k-1}}{q_{k-2}}}
+又利用初值，即可证明反序定理。
+
+渐进分数的差分
+计算相邻两项渐进分数的差，需要通分。通分后的分子代入递推关系：
+
+
+p_{k+1}q_k-q_{k+1}p_k=\left(a_{k+1}p_k+p_{k-1}\right)q_k-\left(a_{k+1}q_k+q_{k-1}\right)p_k=-\left(p_kq_{k-1}-q_kp_{k-1}\right)
+代入初值就有渐进分数的差分：
+
+
+p_{k+1}q_k-q_{k+1}p_k=(-1)^k
+ 
+ 
+ 
+
+\frac{p_{k+1}}{q_{k+1}}-\frac{p_k}{q_k}=\frac{(-1)^k}{q_{k+1}q_k}
+注
+可以观察到，式 p_{k+1}q_k-q_{k+1}p_k 特别像一个行列式，完全可以按「行列式」理解。
+
+渐进分数的递推关系很像行列式的列变换。行列式一列加到另一列上不改变它的值，两列交换则反号。
+
+根据递推式，如果连分数各项均为整数，则渐进分数分子分母总是互素。
+
+对于有理数的简单连分数展开，常用渐进分数差分的等式，求解一次线性不定方程（参见 扩展欧几里得算法）：
+
+
+p_{k+1}q_k-q_{k+1}p_k=(-1)^k
+
+ax-by=1
+因为 a 与 b 互素，
+ 
+\frac{a}{b} 就是最简的有理数，也就是它本身的最后一个渐进分数。那么，它的前一个渐进分数就是所求的解。
+
+倒数定理
+由于实数与简单连分数一一对应，称实数的简单连分数的渐进分数，就是实数的渐进分数。于是就有倒数定理：
+
+对于大于 1 的实数 x，x 的渐进分数的倒数恰好是 
+ 
+\frac{1}{x} 的渐进分数。显然，该定理也应该对于 0 到 1 之间的实数 x 成立。
+
+证明
+
+x=[a_0,a_1,a_2,\ldots]
+ 
+ 
+
+\frac{1}{x}=\frac{1}{[a_0,a_1,a_2,\ldots]}=[0,a_0,a_1,a_2,\ldots]
+于是根据新的初值与递推就能发现倒数关系成立。
+
+最佳逼近
+最佳逼近
+因此允许通过检查 r 是否中间分数来找到其最佳有理逼近。
+
+下面会对这些性质建立一些直觉并做出进一步解释。
+
+连行列式
+继续看前面定义的渐近分数。对于 r=[a_0, a_1, a_2, \dots]，其渐近分数为
+
+ 
+\begin{gathered}
+r_0=[a_0] \\ r_1=[a_0, a_1] \\ \dots \\ r_k=[a_0, a_1, \dots, a_k]
+\end{gathered}
+渐近分数是连分数的核心概念，因此研究它们的性质很重要。
+
+对于数字 r，其第 k 个渐近分数 
+ 
+r_k = \frac{p_k}{q_k} 可以计算为
+
+ 
+ 
+
+r_k = \frac{P_k(a_0,a_1,\dots,a_k)}{P_{k-1}(a_1,\dots,a_k)} = \frac{a_k p_{k-1} + p_{k-2}}{a_k q_{k-1} + q_{k-2}}
+其中 P_k(a_0,\dots,a_k) 是连行列式（continuant），定义为
+
+ 
+
+P_k(x_0,x_1,\dots,x_k) = \det \begin{bmatrix}
+x_k & 1 & 0 & \dots & 0 \\
+-1 & x_{k-1} & 1 & \dots & 0 \\
+0 & -1 & x_2 & . & \vdots \\
+\vdots & \vdots & . & \ddots & 1 \\
+0 & 0 & \dots & -1 & x_0
+\end{bmatrix}_{\textstyle .}
+因此，r_k 是 r_{k-1} 和 r_{k-2} 的加权中间值（mediant）。
+
+为了一致性，定义了两个额外的渐近分数 
+ 
+r_{-1} = \frac{1}{0} 和 
+ 
+r_{-2} = \frac{0}{1}。
+
+详细说明
+实现
+把渐进分数计算为一对序列 p_{-2}, p_{-1}, p_0, p_1, \dots, p_k 和 q_{-2}, q_{-1}, q_0, q_1, \dots, q_k：
+
+
+C++
+Python
+
+auto convergents(vector<int> a) {
+    vector<int> p = {0, 1};
+    vector<int> q = {1, 0};
+    for(auto it: a) {
+        p.push_back(p[p.size() - 1] * it + p[p.size() - 2]);
+        q.push_back(q[q.size() - 1] * it + q[q.size() - 2]);
+    }
+    return make_pair(p, q);
+}
+
+误差和余项的估计
+误差
+实数 x 也可以写成：
+
+
+x=[a_0,a_1,\ldots,a_k,r_{k+1}]
+最后一项渐近分数就是 x 本身。于是根据渐进分数的递推式，就有：
+
+ 
+
+x=\frac{r_{k+1}p_k+p_{k-1}}{r_{k+1}q_k+q_{k-1}}
+于是可以估计渐进分数的误差：
+
+ 
+ 
+
+x-\frac{p_k}{q_k}=\frac{(-1)^k}{q_k\left(r_{k+1}q_k+q_{k-1}\right)}
+分别对 k 取奇数偶数就得到，x 总小于其奇数阶渐近分数，大于其偶数阶渐近分数。
+
+对于数字 r 及其第 k 个渐进分数 
+ 
+r_k=\frac{p_k}{q_k}，以下公式成立：
+
+ 
+ 
+
+r_k = a_0 + \sum\limits_{i=1}^k \frac{(-1)^{i-1}}{q_i q_{i-1}}
+特别地，这意味着
+
+ 
+
+r_k - r_{k-1} = \frac{(-1)^{k-1}}{q_k q_{k-1}}
+并且
+
+
+p_k q_{k-1} - p_{k-1} q_k = (-1)^{k-1}
+由此可以得出结论
+
+ 
+ 
+ 
+
+\left| r-\frac{p_k}{q_k} \right| \leq \frac{1}{q_{k+1}q_k} \leq \frac{1}{q_k^2}
+后一种不等式是由于 r_k 和 r_{k+1} 通常位于 r 的不同侧面，因此
+
+
+|r-r_k| = |r_k-r_{k+1}|-|r-r_{k+1}| \leq |r_k - r_{k+1}|
+详细说明
+例题 扩展欧几里得
+您将获得 A, B, C \in \mathbb Z。查找 x, y \in \mathbb Z，使 Ax + By = C.
+
+解答
+几何解释
+格点
+对于渐进分数 
+ 
+r_k = \frac{p_k}{q_k}，设 
+\vec r_k = (q_k;p_k)。然后，以下重复出现：
+
+
+\vec r_k = a_k \vec r_{k-1} + \vec r_{k-2}
+设 
+\vec r = (1;r)。然后，每个向量 (x;y) 对应于等于其斜率系数 
+ 
+\frac{y}{x} 的数字。
+
+利用外积 (x_1;y_1) \times (x_2;y_2) = x_1 y_2 - x_2 y_1 的概念，可以看出（参见下面的解释）
+
+ 
+ 
+
+s_k = -\frac{\vec r_{k-2} \times \vec r}{\vec r_{k-1} \times \vec r} = \left|\frac{\vec r_{k-2} \times \vec r}{\vec r_{k-1} \times \vec r}\right|
+最后一个等式是由于 r_{k-1} 和 r_{k-2} 位于 r 的不同侧，因此 
+\vec r_{k-1} 和 
+\vec r_{k-2} 与 
+\vec r 的外积具有不同的符号。考虑到 a_k = \lfloor s_k \rfloor，
+\vec r_k 的公式如下
+
+ 
+
+\vec r_k = \vec r_{k-2} + \left\lfloor \left| \frac{\vec r \times \vec r_{k-2}}{\vec r \times \vec r_{k-1}}\right|\right\rfloor \vec r_{k-1}
+注意到 
+\vec r_k \times r = (q;p) \times (1;r) = qr - p，因此
+
+ 
+
+a_k = \left\lfloor \left| \frac{q_{k-1}r-p_{k-1}}{q_{k-2}r-p_{k-2}} \right| \right\rfloor
+解释
+例题 鼻子拉伸算法
+每次将 
+\vec r_{k-1} 添加到向量 
+\vec p 时，
+\vec p \times \vec r 的值都会增加 
+\vec r_{k-1} \times \vec r。
+
+因此，a_k=\lfloor s_k \rfloor 是 
+\vec r_{k-1} 向量的最大整数，可以将其添加到 
+\vec r_{k-2}，而无需更改与 
+\vec r 的外积的符号。
+
+换句话说，a_k 是您可以将 
+\vec r_{k-1} 添加到 
+\vec r_{k-2} 的最大整数次数，而无需跨越 
+\vec r 定义的线：
+
+
+
+在上面的图片中，
+\vec r_2 = (4;3) 是通过将 
+\vec r_1 = (1;1) 重复添加到 
+\vec r_0 = (1;0) 而获得的。
+
+当不可能在不跨越 y=rx 线的情况下将 
+\vec r_1 进一步添加到 
+\vec r_0 时，转到另一侧，重复将 
+\vec r_2 添加到 
+\vec r_1 以获得 
+\vec r_3 = (9;7)。
+
+此过程生成接近直线的指数较长的向量。
+
+对于这一特性，Boris Delaunay 将生成结果收敛向量的过程称为 鼻子拉伸算法（Nose stretching algorithm）。
+
+如果观察在点 
+\vec r_{k-2}、
+\vec r_{k} 和 
+\vec 0 上绘制的三角形，会注意到它的加倍面积是
+
+
+|\vec r_{k-2} \times \vec r_k| = |\vec r_{k-2} \times (\vec r_{k-2} + a_k \vec r_{k-1})| = a_k |\vec r_{k-2} \times \vec r_{k-1}| = a_k
+结合 Pick 定理，这意味着三角形内部没有严格的格点，其边界上的唯一格点是 
+\vec 0 和 
+\vec r_{k-2} + t \cdot \vec r_{k-1}，对于所有整数 t，使得 0 \leq t \leq a_k。当连接所有可能的 k 时，这意味着在由偶数索引和奇数索引收敛向量形成的多边形之间的空间中没有整数点。
+
+这反过来意味着，具有奇数系数的 
+\vec r_k 形成了线 y=rx 上方 x \geq 0 的格点凸包，而具有偶数系数的 
+\vec r_k 形成线 y=rx 下方 x > 0 的格点凸包。
+
+定义
+这些多边形也被称为 克莱因多边形（Klein polygons），以费利克斯·克莱因（Felix Klein）的名字命名，他首次提出了对连续分数的几何解释。
+
+例题
+既然已经介绍了最重要的事实和概念，那么是时候深入研究具体的例题了。
+
+线下凸包
+找到格点 (x;y) 的凸包，使得 
+ 
+r=[a_0;a_1,\dots,a_k]=\frac{p_k}{q_k} 的 0 \leq x \leq N 和 0 \leq y \leq rx。
+
+解答
+Timus - Crime and Punishment
+您将得到整数 A、B 和 N。查找 x \geq 0 和 y \geq 0，使 Ax + By \leq N 和 Ax + By 达到最大值。
+
+解答
+June Challenge 2017 - Euler Sum
+计算 
+ 
+\sum\limits_{x=1}^N \lfloor \mathrm{e}x \rfloor，其中 \mathrm{e} = [2; 1, 2, 1, 1, 4, 1, 1, 6, 1, \dots, 1, 2n, 1, \dots] 是自然对数的底，N \leq 10^{4000}。
+
+解答
+NAIPC 2019 - It's a Mod, Mod, Mod, Mod World
+给定 p、q 和 n，计算 
+ 
+\sum\limits_{i=1}^n [p \cdot i \bmod q]。
+
+解答
+Library Checker - Sum of Floor of Linear
+给定 N、M、A 和 B，计算 
+ 
+ 
+\sum\limits_{i=0}^{N-1} \lfloor \frac{A \cdot i + B}{M} \rfloor。
+
+解答
+OKC 2 - From Modular to Rational
+有一个有理数 
+ 
+\frac{p}{q}，即 1 \leq p, q \leq 10^9。您可以询问几个素数 m 的 p q^{-1} 模 m \sim 10^9 的值。恢复 
+ 
+\frac{p}{q}。
+
+这个问题等价于：查找 1 \leq x \leq N 中，使 Ax \bmod M 最小的 x。
+
+解答
+习题
+UVa OJ - Continued Fractions
+ProjectEuler+ #64: Odd period square roots
+Codeforces Round #184 (Div. 2) - Continued Fractions
+Codeforces Round #201 (Div. 1) - Doodle Jump
+Codeforces Round #325 (Div. 1) - Alice, Bob, Oranges and Apples
+POJ Founder Monthly Contest 2008.03.16 - A Modular Arithmetic Challenge
+2019 Multi-University Training Contest 5 - fraction
+SnackDown 2019 Elimination Round - Election Bait
+本页面主要译自博文 Continued fractions，版权协议为 CC-BY-SA 4.0。
+
+本页面最近更新：2023/7/23 11:23:15，更新历史
+发现错误？想一起完善？ 在 GitHub 上编辑此页！
+本页面贡献者：383494, CCXXXI, chunibyo-wly, Enter-tainer, Great-designer, Menci, shuzhouliu, StudyingFather, Tiphereth-A
+本页面的全部内容在 CC BY-SA 4.0 和 SATA 协议之条款下提供，附加条款亦可能应用
+
+
+下一页Stern–Brocot 树与 Farey 序列
+Copyright © 2016 - 2023 OI Wiki Team
+Made with Material for MkDocs
+最近更新：604cc6a2, 2023-09-13
+]]]
+
+
+
+[[[
+continued fractions and their application in the computation of definite riemann integrals(1973)(stanley)(tdl).pdf
+===
+continued fraction corresponding to power series
+[[gcf5pws := gcf[1; m1*z$1, m2*z$1, ...]][@[i>=1] -> [m[i] =!= 0]][pws := 1 +sum c[i]*z**i {i :<- [1..]}]]:
+
+]]]
+
+[[[
+extension vs contraction
+    fold --> contraction
+    unfold --> extension
+===
+wget_U 'https://math.wcupa.edu/sciences-mathematics/mathematics/jMcLaughlin/documents/extcf29jan2004e.pdf' -O 'Ramanujan and extensions and contractions of continued fractions(2003)(laughlin).pdf'
+  good
+
+
+West Chester University
+https://math.wcupa.edu/sciences-mathematics/mathematics/j...
+[PDF]RAMANUJAN AND EXTENSIONS AND CONTRACTIONS OF CONTINUED…
+per we describe some simple ideas concerning extensions and contractions of continued fractions which may have led Ramanujan to some of the elegant entries concerning continued fractions that he made in his famous notebooks (See [2], Chapter 12). Suppose we are given a continued fraction d 0 +K∞ n=1 c n/d n whose limit is sought.
+]]]
+differentiation
+integration
+[[[
+https://math.stackexchange.com/questions/197874/maclaurin-expansion-of-arcsin-x
+https://www.planetmath.org/taylorseriesofarcussine
+[arcsin(x) == x + 1/2*x**3/3 + 1/2*3/4*x**5/5 + 1/2*3/4*5/6*x**7/7 +...]
+[arcsin(x) == sum choose(2*k;k)/2**(2*k) *x**(2*k+1)/(2*k+1) {k :<- [0..]}]
+===
+[arcsin(x) == Integrate (1-t**2)**-1/2 dt {t : 0-->x}]
+
+generalized binomial coefficient
+[generalized_choose(z;k) =[def]= II (z-i) {i :<- [0..<k]} /factorial(k)]
+binomial series
+[(1+z)**r == sum generalized_choose(r;k) *z**k {k :<- [0..]}]
+
+
+[(1-t**2)**-1/2
+== sum generalized_choose(-1/2;k) *(-t**2)**k {k :<- [0..]}
+== 1
++  (-1/2)/1! *(-t**2)**1
++  (-1/2)*(-3/2)/2! *(-t**2)**2
++  (-1/2)*(-3/2)*(-5/2)/3! *(-t**2)**3
+...
+== 1 +sum ((2*k-1)!!)/(k!)/2**k *(t**2)**k {k :<- [1..]}
+== 1 +sum ((2*k)!!)*((2*k-1)!!)/((2*k)!!)/(k!)/2**k *(t**2)**k {k :<- [1..]}
+== 1 +sum ((2*k)!)/(k!)/2**k/(k!)/2**k *(t**2)**k {k :<- [1..]}
+== 1 +sum choose(2*k;k)/2**(2*k) *(t**2)**k {k :<- [1..]}
+== sum choose(2*k;k)/2**(2*k) *t**(2*k) {k :<- [0..]}
+]
+[(1-t**2)**-1/2 == sum choose(2*k;k)/2**(2*k) *t**(2*k) {k :<- [0..]}]
+[arcsin(x)
+!! [sin(0) == 0]
+[arcsin(0) == 0]
+== Integrate (1-t**2)**-1/2 dt {t : 0-->x}
+== sum choose(2*k;k)/2**(2*k) *x**(2*k+1)/(2*k+1) {k :<- [0..]}
+]
+
+[arcsin(x) == sum choose(2*k;k)/2**(2*k) *x**(2*k+1)/(2*k+1) {k :<- [0..]}]
+
+]]]
