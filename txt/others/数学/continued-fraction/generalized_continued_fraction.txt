@@ -10,7 +10,7 @@ view others/数学/exponential.txt
 
 [[
 该论文 提到 quotient-difference algorithm，用于将 麦克劳林展开式(无限长)/有理分式 转化为 连分式(部分分子为z，部分分母为实数)。
-  截取 连分式 前n项，则 该有限连分式 展开后 前n项与 原多项式 相同，多了一些高阶项误差
+  截取 连分式 前n项，则 该有限连分式 展开后 前n项与 原幂级数 相同，多了一些高阶项误差
 wget_u 'https://ttu-ir.tdl.org/bitstream/handle/2346/20231/31295015507519.pdf?sequence=1' -o 'continued fractions and their application in the computation of definite riemann integrals(1973)(stanley)(tdl).pdf'
   good!!
 ===
@@ -156,10 +156,26 @@ Euler's continued fraction formula
 #
 # 原算法 对 输入颇有要求
 # 下面算法 对 输入几乎没有要求
+#   但仔细想想，部分分子/部分分母，本来就可以随便选，总有有个挑选的标准
+#   变体无穷:
+#       * 1:恒量偏移:在一致处理下，第一步会是首项归一，意味着『恒量偏移』也是『恒量缩放』，结果大不同(见:convert_power_series4xxx_to_generalized_continued_fraction_:kw:offset)
+#       * xxx 2:变量缩放:???效果待定 结果:无用
+#           kw:scale4z 无用，转化为 连分式 后，再缩放z也一样
+#       * 3:部分分母(长除法的部分商)要截取几项？:在下面算法中，部分分母固定为1项，其值恒为1，但显然可以是 多项式。
+#           部分分母=部分商
+#           被除式/除式=部分商+余式/除式
+#       * 4:部分分子不必是单向式。只是提取单向式 比较简单。否则就变成:
+#           余式/除式=部分分子/(除式*部分分子/余式)
+#           部分分子 的 一个可能选择是 余式的前几项，这样能保证 首项归一 与 余式缩减
+#           # e**z vs e**f(z)
 #
-多项式/分式 转化为 连分式:部分分子 为 c[?]*z**k, 部分分母 不含 z (实际上 恒为1)
+# 下载 『Handbook of continued fractions for special functions(2008)(Cuyt).pdf』后，发现这算法 叫『The method of Viskovatov』，确实优于Euler
+# [[m00 =!= 0 =!= m10] -> [(m10 +m11 +m12 +...)/(m00 +m01 +m02 +...) == 1/((m00 +m01 +m02 +...)/(m10 +m11 +m12 +...)) == (0 ^+ m10 | m00 ^+ ((m01*m10 -m00*m11) +(m02*m10 -m00*m12) +...) | (m10 +m11 +m12 +...))]]
+#
+power series 幂级数
+幂级数/分式 转化为 连分式:部分分子 为 c[?]*z**k, 部分分母 不含 z (实际上 恒为1)
 
-* 多项式 转化为 连分式:部分分子 为 c[?]*z**k, 部分分母 不含 z (实际上 恒为1)
+* 幂级数 转化为 连分式:部分分子 为 c[?]*z**k, 部分分母 不含 z (实际上 恒为1)
 [1 +c0*z**e0 + c0*c1*z**(e0+e1) + c0*c1*c2*z**(e0+e1+e2) + ...
 [u0 := 1]
 [u1/u0 := c0*z**e0]
@@ -285,6 +301,9 @@ Euler's continued fraction formula
 
 [e**z == gcf[0; 1$1, (-z)$1, z$2, (-z)$3, z$2, (-z)$5, z$2, (-z)$7, z$2, ...]
   # 若是 上面转化 第一步 与其余保持一致，即『(0 ^+ 1 | (1+0)/(1+z+z**2/2+...))』，则 变成上式，合并看看 有无不同
+
+[e**z == gcf[2; -1$1, z$1, -z*3/2$1,     z/18$1, -z/18$1, z*3/10$1, -z*3/10$1, z/42$1, -z/42$1, z*3/18$1, -z*3/18$1, ..., let [j:=k//4] in *{z/6*(4*j-1)$1, -z/6*(4*j-1)$1, z*3/2/(4*j+1)$1, -z*3/2/(4*j+1)$1}, ...]
+    # 先整体偏移-2，幂级数 变 连分式gcf[0;...]，再整体偏移+2，连分式 更新为gcf[2;...]
 
 
 
@@ -909,7 +928,21 @@ if original gcf has positive n[i] and positive d[i] and be folded such that two 
 == gcf[(gcf[d0; n1$d1, ..., nkmm$dkmm]); (-II(-n[i]){i:<-[1..=k]} /(gcf[d0; n1$d1, ..., nkmm$dkmm].canonical_denominator)**2)$(gcf[dk; nk$dkmm, nkmm$d[k-2], ..., n3$d2, n2$d1]), nkpp$dkpp, tail...]
 * [k==2]:
     ... == gcf[(d0 +n1/d1); (-n1*n2 /d1**2)$(d2 +n2/d1), n3$d3, tail...]
+* [k==3]:
+    ... == gcf[(d0 +n1/(d1 +n2/d2)); (n1*n2*n3 /(d2*d1+n2*1)**2)$(d3 +n3/(d2 +n2/d1)), n4$d4, tail...]
 ]
+#再来一次:
+[gcf[d0; n1$d1, n2$d2, ..., nkmm$dkmm, nk$dk, zkpp]
+== (A[k]+zkpp*A[k-1])/(B[k]+zkpp*B[k-1])
+# == A[k]/B[k] +((A[k]+zkpp*A[k-1])/(B[k]+zkpp*B[k-1]) -A[k]/B[k])
+== A[k-1]/B[k-1] +((A[k]+zkpp*A[k-1])/(B[k]+zkpp*B[k-1]) -A[k-1]/B[k-1])
+== A[k-1]/B[k-1] +((A[k]+zkpp*A[k-1])*B[k-1] -A[k-1]*(B[k]+zkpp*B[k-1]))/B[k-1]/(B[k]+zkpp*B[k-1])
+== A[k-1]/B[k-1] +(A[k]*B[k-1] -A[k-1]*B[k])/B[k-1]/(B[k]+zkpp*B[k-1])
+== A[k-1]/B[k-1] +((A[k]*B[k-1] -A[k-1]*B[k])/B[k-1]**2)/(B[k]/B[k-1]+zkpp)
+== (A[k-1]/B[k-1] ^+ (A[k]*B[k-1] -A[k-1]*B[k])/B[k-1]**2 | B[k]/B[k-1]+zkpp)
+== gcf[(gcf[d0; n1$d1, ..., nkmm$dkmm]); (-II(-n[i]){i:<-[1..=k]} /(gcf[d0; n1$d1, ..., nkmm$dkmm].canonical_denominator)**2)$(gcf[dk; nk$dkmm, nkmm$d[k-2], ..., n3$d2, n2$d1]), nkpp$dkpp, tail...]
+]
+
 [(d0 ^+ n1 | d1 ^+ n2 | d2 + z3)
 == ((d0 +n1/d1) ^+ (-n1*n2 /d1**2) | (d2 +n2/d1) + z3)
 == ((d0 +n1/d1) ^+ (-n1*n2 /d1**2) | (n2/d1 +d2 +n3/d3) ^+ (-n3*n4 /d3**2) | (n4/d3 +d4) + z5)
@@ -973,6 +1006,7 @@ if original gcf has positive n[i] and positive d[i] and be folded such that two 
 == gcf[1; z$1, -z$2, z$3, -z$2, z$5, -z$2, z$7, ..., ((-1)**(k+1)*z)$(k if k%2 else 2), ...]
 #even
 == gcf[1; 2*z$(2-z),     (z**2)$2*(2*2-1), (z**2)$2*(2*3-1), ..., (z**2)$2*(2*k-1), ...]
+    # [:Handbook__formula_11_1_2]:goto
 #odd
 == gcf[1+z; (3*z**2)$2*(3-z),     (1*5*z**2)$2*(3*5-z), (3*7*z**2)$2*(5*7-z), ..., ((2*k-3)*(2*k+1) *z**2)$2*((2*k-1)*(2*k+1) -z), ...]
 ]
@@ -1030,7 +1064,7 @@ if original gcf has positive n[i] and positive d[i] and be folded such that two 
     #旧式
 [[[
 py_adhoc_call   script.convert_1_leading_series_to_generalized_continued_fraction   ,convert_power_series4xxx_to_generalized_continued_fraction_  :natural_exponential_function  =25 --args4iter_power_series4xxx_=[-2]
-Fraction(0, 1)
+Fraction(0, 1) #not-offset back
 (Fraction(-1, 1), 0)
 (Fraction(1, 1), 1)
 (Fraction(-3, 2), 1)
@@ -1055,7 +1089,46 @@ Fraction(0, 1)
 (Fraction(1, 14), 1)
 (Fraction(-1, 14), 1)
 (Fraction(1, 138), 1)
+==>>:
+[e**z == gcf[2; -1$1, z$1, -z*3/2$1, z/18$1, -z/18$1, z*3/10$1, -z*3/10$1, z/42$1, -z/42$1, z/6$1, -z/6$1, z/66$1, -z/66$1, z*3/26$1, -z*3/26$1, z/90$1, -z/90$1, z*3/34$1, -z*3/34$1, z/114$1, -z/114$1, z/14$1, -z/14$1, z/138$1, ...]
+[e**z == gcf[2; -1$1, z$1, -z*3/2$1
+    , z/18$1, -z/18$1, z*3/10$1, -z*3/10$1
+    , z/42$1, -z/42$1, z*3/18$1, -z*3/18$1
+    , z/66$1, -z/66$1, z*3/26$1, -z*3/26$1
+    , z/90$1, -z/90$1, z*3/34$1, -z*3/34$1
+    , z/114$1, -z/114$1, z*3/42$1, -z*3/42$1
+    , z/138$1, ...]
+[e**z == gcf[2; -1$1, z$1, -z*3/2$1,     z/18$1, -z/18$1, z*3/10$1, -z*3/10$1, z/42$1, -z/42$1, z*3/18$1, -z*3/18$1, ..., let [j:=k//4] in *{z/6*(4*j-1)$1, -z/6*(4*j-1)$1, z*3/2/(4*j+1)$1, -z*3/2/(4*j+1)$1}, ...]
+
 看起来 很接近e的简单连分数，有必要折叠起来好好瞧瞧
+py_adhoc_call   script.convert_1_leading_series_to_generalized_continued_fraction   ,convert_power_series4xxx_to_generalized_continued_fraction_  :natural_exponential_function  =25 --offset=-2  +to_eliminate_denominators_in_coeffs
+Fraction(2, 1)
+((-1, 0), 1)
+((1, 1), 1)
+((-3, 1), 2)
+((1, 1), 9)
+((-1, 1), 2)
+((3, 1), 5)
+((-3, 1), 2)
+((1, 1), 21)
+((-1, 1), 2)
+((1, 1), 3)
+((-1, 1), 2)
+((1, 1), 33)
+((-1, 1), 2)
+((3, 1), 13)
+((-3, 1), 2)
+((1, 1), 45)
+((-1, 1), 2)
+((3, 1), 17)
+((-3, 1), 2)
+((1, 1), 57)
+((-1, 1), 2)
+((1, 1), 7)
+((-1, 1), 2)
+((1, 1), 69)
+==>>:
+[e**z == gcf[2; -1$1, z$1, -3*z$2, z$9, -z$2, 3*z$5, -3*z$2, z$21, ...]
 TODO
 ]]]
 
@@ -2671,3 +2744,114 @@ binomial series
 [arcsin(x) == sum choose(2*k;k)/2**(2*k) *x**(2*k+1)/(2*k+1) {k :<- [0..]}]
 
 ]]]
+[[[
+https://librarygenesis.wiki/
+  https://libgen.ee/
+    --> https://llhlf.com/
+    https://llhlf.com/book_135849672
+===
+Title: Handbook of continued fractions for special functions Edition: 1
+
+Author(s): Annie A.M. Cuyt, Vigdis Petersen, Brigitte Verdonk, Haakon Waadeland, William B. Jones, F. Backeljauw, C. Bonan-Hamada
+
+Publisher: Springer
+
+Year: 2008
+
+Pages: 430
+
+ISBN: 9781402069482; 1402069480
+
+Language:English
+
+book
+
+E-Book Mutual Aid
+
+
+Edition ID: 135849672
+
+Added: 2009-07-20 03:45:11
+
+Modified: 2019-12-21 21:23:21
+
+Changes history
+
+JSON
+
+Edit record
+
+Report an error
+
+Add to the list
+
+Add a file
+
+
+Special functions are pervasive in all fields of science and industry. The most well-known application areas are in physics, engineering, chemistry, computer science and statistics. Because of their importance, several books and websites (see for instance http: functions.wolfram.com) and a large collection of papers have been devoted to these functions. Of the standard work on the subject, the Handbook of mathematical functions with formulas, graphs and mathematical tables edited by Milton Abramowitz and Irene Stegun, the American National Institute of Standards claims to have sold over 700 000 copies!
+But so far no project has been devoted to the systematic study of continued fraction representations for these functions. This handbook is the result of such an endeavour. We emphasise that only 10% of the continued fractions contained in this book, can also be found in the Abramowitz and Stegun project or at the Wolfram website!
+Cover......Page 1
+Handbook of Continued Fractions for Special Functions......Page 2
+Copyright......Page 4
+Table of Contents......Page 5
+Preface......Page 10
+Notation......Page 12
+0 General considerations......Page 16
+Part I Basic Theory......Page 22
+1 Basics......Page 23
+2 Continued fraction representation of functions......Page 43
+3 Convergence criteria......Page 58
+4 Padé approximants......Page 72
+5 Moment theory and orthogonal functions......Page 89
+Part II Numerics......Page 117
+6 Continued fraction construction......Page 118
+7 Truncation error bounds......Page 140
+8 Continued fraction evaluation......Page 159
+Part III Special Functions......Page 170
+9 On tables and graphs......Page 171
+10 Mathematical constants......Page 182
+11 Elementary functions......Page 199
+12 Gamma function and related functions......Page 227
+13 Error function and related [...]
+
+
+===
+https://libgen.pm/ads40f9d3ccd8243925f0fb31d0a2dea08cAR25HH0V
+  浏览器:设置:禁用JavaScript
+  wget_U 'https://libgen.pm/get.php?md5=40f9d3ccd8243925f0fb31d0a2dea08c&key=43LZR6Q1P6ZYRUZH' -O 'Handbook of continued fractions for special functions(2008)(Cuyt).pdf'
+      good
+===
+GET
+	Title: Handbook of continued fractions for special functions
+Series:
+Author(s): Annie A.M. Cuyt, Vigdis Petersen, Brigitte Verdonk, Haakon Waadeland, William B. Jones, F. Backeljauw, C. Bonan-Hamada
+Publisher: Springer
+Year: 2008
+ISBN: 9781402069482; 1402069480
+@book{book:{91195785},
+   title =     {Handbook of continued fractions for special functions},
+   author =    {Annie A.M. Cuyt, Vigdis Petersen, Brigitte Verdonk, Haakon Waadeland, William B. Jones, F. Backeljauw, C. Bonan-Hamada},
+   publisher = {Springer},
+   isbn =      {9781402069482; 1402069480},
+   year =      {2008},
+   edition =   {1},
+   url =       {libgen.li/file.php?md5=40f9d3ccd8243925f0fb31d0a2dea08c}}
+===
+pg194:200/430:11.1.2:
+[e**z == gcf[1; (2*z)$(2-z), (z**2 /6)$1,      (z**2 /60)$1, (z**2 /140)$1, ..., (z**2 /4/(2*k-3)/(2*k-1))$1, ...]]
+    # [:Handbook__formula_11_1_2]:here
+    <==> [e**z == gcf[1; (2*z)$(2-z),       (z**2)$6,(z**2)$10, (z**2)$14, ..., (z**2)$2*(2*k-1), ...]]
+===
+pg196:202/430:
+[ln :: real{>0} -> real]
+[Ln :: complex{not negative real} -> complex]
+[[z :: complex] -> [z =!= 0] -> [z == Norm(z)*e**(1j*Arg(z))]]
+[[z :: complex] -> [z =!= 0] -> [-pi < Arg z <= pi] -> [Ln(z) =[def]= ln(Norm(z)) + 1j*Arg(z)]]
+[[Norm(z) < 1] -> [Ln(1+z) == sum (-1)**(k+1) *z**k /k {k :<- [1..]}]]
+
+pg196:202/430:11.2.2:
+[[abs(Arg(1+z)) < pi] -> [Ln(1+z) == gcf[0; z$1,      (z/2)$1, (z/6)$1, (z/3)$1, (z/5)$1, ..., let [j:=k//2] in *{(z*j/2/(2*j-1))$1, (z*j/2/(2*j+1))$1}, ...]]]
+
+===
+]]]
+

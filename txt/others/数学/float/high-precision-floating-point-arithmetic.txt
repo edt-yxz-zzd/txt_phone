@@ -1,0 +1,1441 @@
+
+e others/数学/float/high-precision-floating-point-arithmetic.txt
+
+
+待续...
+
+泰勒展开式 除了整数输入，很难用
+  如何 拆开输入 如同 拆开输出？
+    我的想法是：需要找到以下形式的展开式，以方便计算浮点数:
+    [truncate_(B,k;x) =[def]= floor_(x*B**k)/B**k]
+    [series__radix_(B;f(x)) == sum K(k) *truncate_(B,k;x)**e4x(k) /B**e4B(k) {k :<- [0..]}]
+      [K :: uint -> int]
+      [e4x :: uint -> uint]
+      [e4B :: uint -> uint]
+  或者 上下界限 夹逼
+
+
+
+
+浮动数高精度算法
+  float algorithm arithmetic arbitrary precision accuracy significand
+[[http://webhome.auburn.edu/~tamtiny/lecture%207.pdf
+!mv /sdcard/Download/'lecture 7.pdf' /sdcard/Download/'floating-point-arithmetic and stability--backward stable algorithm--limited precision(tamtiny-lecture-7).pdf'
+Floating point arithmetic and stability
+Machine precision:
+  * machine epsilon:eM =[def]= min{x <- all_floating_point | [x>1]} -1.0 = radix**(1-precision) = (radix-1)/((radix-1)*radix**(precision-1))[#1至radix之间所有浮点数的间隔#] = (1-1/radix)/((radix-1)*radix**(precision-1))*radix[#1/radix至1之间所有浮点数的间隔的radix倍#]
+  * roundoff unit:u =[def]= eM/2 #the most useful quantity in error analysis.
+rounding
+stability and conditioning
+perturbation
+We concentrate on designing backward stable algorithms!
+  bug?:乘法怎么可能是『backward stable algorithm』？
+输入数据的误差，算法的稳定性，问题本身的敏感性
+perturbation n. 微扰
+  perturb vt. 扰乱
+precision n. 精度
+accuracy n. 精确度/准确度
+mantissa n. 尾数，定点小数部分
+significand n. 有效位数
+exponent n. 指数/幂
+radix/base n. 基数/根数/底
+]]
+[[https://cs.gmu.edu/~setia/cs365-S02/ch4-lec3.pdf
+!mv /sdcard/Download/ch4-lec3.pdf /sdcard/Download/'IEEE 754 floating-point--computer arithmetic constrained by limited precision(cs365-S02-ch4-lec3).pdf'
+  – sign, exponent, significand: (–1)**sign× significand × 2**exponent
+  – more bits for significand gives more accuracy
+  – more bits for exponent increases range
+mantissa = decimal point + sign + magnitude
+exponent = sign + magnitude
+radix = base
+magnitude * radix**exponent
+IEEE 754 floating-point standard: (–1)**sign× (1+significand) × 2**(exponent-bias)
+]]
+[[[
+https://www.cs.umd.edu/~meesh/411/CA-online/chapter/floating-point-arithmetic-unit/index.html
+===
+CONTENTS
+COMPUTER ARCHITECTURE
+7 Floating Point Arithmetic Unit
+DR A. P. SHANTHI
+
+ 
+
+The objectives of this module are to discuss the need for floating point numbers, the standard representation used for floating point numbers and discuss how the various floating point arithmetic operations of addition, subtraction, multiplication and division are carried out.
+
+ 
+
+Floating-point numbers and operations
+
+ 
+
+Representation
+
+ 
+
+When you have to represent very small or very large numbers, a fixed point representation will not do. The accuracy will be lost. Therefore, you will have to look at floating-point representations, where the binary point is assumed to be floating. When you consider a decimal number 12.34 * 107, this can also be treated as 0.1234 * 109, where 0.1234 is the fixed-point mantissa. The other part represents the exponent value, and indicates that the actual position of the binary point is 9 positions to the right (left) of the indicated binary point in the fraction. Since the binary point can be moved to any position and the exponent value adjusted appropriately, it is called a floating-point representation. By convention, you generally go in for a normalized representation, wherein the floating-point is placed to the right of the first nonzero (significant) digit. The base need not be specified explicitly and the sign, the significant digits and the signed exponent constitute the representation.
+
+ 
+
+The IEEE (Institute of Electrical and Electronics Engineers) has produced a standard for floating point arithmetic. This standard specifies how single precision (32 bit) and double precision (64 bit) floating point numbers are to be represented, as well as how arithmetic should be carried out on them. The IEEE single precision floating point standard representation requires a 32 bit word, which may be represented as numbered from 0 to 31, left to right. The first bit is the sign bit, S, the next eight bits are the exponent bits, ‘E’, and the final 23 bits are the fraction ‘F’. Instead of the signed exponent E, the value stored is an unsigned integer E’ = E + 127, called the excess-127 format. Therefore, E’ is in the range 0 £ E’ £ 255.
+
+ 
+
+S E’E’E’E’E’E’E’E’ FFFFFFFFFFFFFFFFFFFFFFF
+
+ 
+
+0 1                                     8  9                                                                    31
+
+ 
+
+The value V represented by the word may be determined as follows:
+
+ 
+
+If E’ = 255 and F is nonzero, then V = NaN (“Not a number”)
+If E’ = 255 and F is zero and S is 1, then V = -Infinity
+If E’ = 255 and F is zero and S is 0, then V = Infinity
+If 0 < E< 255 then V =(-1)**S * 2 ** (E-127) * (1.F) where “1.F” is intended to represent the binary number created by prefixing F with an implicit leading 1 and a binary point.
+If E’ = 0 and F is nonzero, then V = (-1)**S * 2 ** (-126) * (0.F). These are “unnormalized” values.
+If E’= 0 and F is zero and S is 1, then V = -0
+If E’ = 0 and F is zero and S is 0, then V = 0
+For example,
+
+ 
+
+0 00000000 00000000000000000000000 = 0
+
+ 
+
+1 00000000 00000000000000000000000 = -0
+
+ 
+
+0 11111111 00000000000000000000000 = Infinity
+
+ 
+
+1 11111111 00000000000000000000000 = -Infinity
+
+ 
+
+0 11111111 00000100000000000000000 = NaN
+
+ 
+
+1 11111111 00100010001001010101010 = NaN
+
+ 
+
+0 10000000 00000000000000000000000 = +1 * 2**(128-127) * 1.0 = 2
+
+ 
+
+0 10000001 10100000000000000000000 = +1 * 2**(129-127) * 1.101 = 6.5
+
+ 
+
+1 10000001 10100000000000000000000 = -1 * 2**(129-127) * 1.101 = -6.5
+
+ 
+
+0  00000001 00000000000000000000000 = +1 * 2**(1-127) * 1.0 = 2**(-126)
+
+ 
+
+0  00000000 10000000000000000000000 = +1 * 2**(-126) * 0.1 = 2**(-127)
+
+ 
+
+0  00000000 00000000000000000000001 = +1 * 2**(-126) *
+
+ 
+
+0.00000000000000000000001 = 2**(-149) (Smallest positive value)
+
+ 
+
+(unnormalized values)
+
+ 
+
+ 
+
+Double Precision Numbers:
+
+ 
+
+The IEEE double precision floating point standard representation requires a 64-bit word, which may be represented as numbered from 0 to 63, left to right. The first bit is the sign bit, S, the next eleven bits are the excess-1023 exponent bits, E’, and the final 52 bits are the fraction ‘F’:
+
+ 
+
+S  E’E’E’E’E’E’E’E’E’E’E’
+
+ 
+
+FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+
+ 
+
+0 1                                                     11 12
+
+ 
+
+63
+
+ 
+
+The value V represented by the word may be determined as follows:
+
+If E’ = 2047 and F is nonzero, then V = NaN (“Not a number”)
+If E’= 2047 and F is zero and S is 1, then V = -Infinity
+If E’= 2047 and F is zero and S is 0, then V = Infinity
+If 0 < E’< 2047 then V = (-1)**S * 2 ** (E-1023) * (1.F) where “1.F” is intended to represent the binary number created by prefixing F with an implicit leading 1 and a binary point.
+If E’= 0 and F is nonzero, then V = (-1)**S * 2 ** (-1022) * (0.F) These are “unnormalized” values.
+If E’= 0 and F is zero and S is 1, then V = – 0
+If E’= 0 and F is zero and S is 0, then V = 0
+ 
+
+Arithmetic unit
+
+ 
+
+Arithmetic operations on floating point numbers consist of addition, subtraction, multiplication and division. The operations are done with algorithms similar to those used on sign magnitude integers (because of the similarity of representation) — example, only add numbers of the same sign. If the numbers are of opposite sign, must do subtraction.
+
+ 
+
+ADDITION
+
+ 
+
+Example on decimal value given in scientific notation:
+
+ 
+
+3.25 x 10 ** 3
+
++ 2.63 x 10 ** -1
+
+—————–
+
+    first step: align decimal points
+
+second step: add
+
+ 
+
+3.25       x 10 ** 3
+
++  0.000263 x 10 ** 3
+
+——————–
+
+3.250263 x 10 ** 3
+
+(presumes use of infinite precision, without regard for accuracy)
+
+ 
+
+third step:  normalize the result (already normalized!)
+
+ 
+
+Example on floating pt. value given in binary:
+
+ 
+
+.25 =    0 01111101 00000000000000000000000
+
+ 100 =    0 10000101 10010000000000000000000
+
+To add these fl. pt. representations,
+
+ 
+
+step 1:  align radix points
+
+ 
+
+shifting the mantissa left by 1 bit decreases the exponent by 1
+
+ 
+
+shifting the mantissa right by 1 bit increases the exponent by 1
+
+ 
+
+we want to shift the mantissa right, because the bits that fall off the end should come from the least significant end of the mantissa
+
+ 
+
+-> choose to shift the .25, since we want to increase it’s exponent.
+
+-> shift by  10000101
+
+-01111101
+
+———
+
+00001000    (8) places.
+
+ 
+
+0 01111101 00000000000000000000000 (original value)
+
+0 01111110 10000000000000000000000 (shifted 1 place)
+
+(note that hidden bit is shifted into msb of mantissa)
+
+0 01111111 01000000000000000000000 (shifted 2 places)
+
+0 10000000 00100000000000000000000 (shifted 3 places)
+
+0 10000001 00010000000000000000000 (shifted 4 places)
+
+0 10000010 00001000000000000000000 (shifted 5 places)
+
+ 
+
+0 10000011 00000100000000000000000 (shifted 6 places)
+
+0 10000100 00000010000000000000000 (shifted 7 places)
+
+0 10000101 00000001000000000000000 (shifted 8 places)
+
+ 
+
+ 
+
+step 2: add (don’t forget the hidden bit for the 100)
+
+ 
+
+0 10000101 1.10010000000000000000000  (100)
+
++    0 10000101 0.00000001000000000000000  (.25)
+
+—————————————
+
+0 10000101 1.10010001000000000000000
+
+ 
+
+step 3:  normalize the result (get the “hidden bit” to be a 1)
+
+It already is for this example.
+
+result is	0 10000101 10010001000000000000000
+ 
+
+SUBTRACTION
+
+ 
+
+Same as addition as far as alignment of radix points
+
+Then the algorithm for subtraction of sign mag. numbers takes over.
+
+ 
+
+before subtracting,
+
+compare magnitudes (don’t forget the hidden bit!)
+
+change sign bit if order of operands is changed.
+
+ 
+
+don’t forget to normalize number afterward.
+
+ 
+
+ 
+
+MULTIPLICATION
+
+ 
+
+Example on decimal values given in scientific notation:
+
+ 
+
+3.0 x 10 ** 1
+
++  0.5 x 10 ** 2
+
+—————–
+
+ 
+
+Algorithm:  multiply mantissas
+
+add exponents
+
+ 
+
+3.0 x 10 ** 1
+
++  0.5 x 10 ** 2
+
+—————–
+
+1.50 x 10 ** 3
+
+ 
+
+Example in binary:     Consider a mantissa that is only 4 bits.
+
+ 
+
+ 
+
+0 10000100 0100
+
+x 1 00111100 1100
+
+ 
+
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+Add exponents:
+
+ 
+
+always add true exponents (otherwise the bias gets added in twice)
+
+
+DIVISION
+
+It is similar to multiplication.
+
+do unsigned division on the mantissas (don’t forget the hidden bit)
+
+subtract TRUE exponents
+
+ 
+
+The organization of a floating point adder unit and the algorithm is given below.
+
+
+ 
+
+The floating point multiplication algorithm is given below. A similar algorithm based on the steps discussed before can be used for division.
+
+
+
+ 
+
+Rounding
+
+ 
+
+The floating point arithmetic operations discussed above may produce a result with more digits than can be represented in 1.M. In such cases, the result must be rounded to fit into the available number of M positions. The extra bits that are used in intermediate calculations to improve the precision of the result are called guard bits. It is only a tradeoff of hardware cost (keeping extra bits) and speed versus accumulated rounding error, because finally these extra bits have to be rounded off to conform to the IEEE standard.
+
+ 
+
+Rounding Methods:
+
+Truncate
+ 
+
+–   Remove all digits beyond those supported
+
+–   1.00100 -> 1.00
+
+Round up to the next value
+ 
+
+–   1.00100 -> 1.01
+
+Round down to the previous value
+ 
+
+–   1.00100 -> 1.00
+
+–   Differs from Truncate for negative numbers
+
+Round-to-nearest-even
+ 
+
+–   Rounds to the even value (the one with an LSB of 0)
+
+–   1.00100 -> 1.00
+
+–   1.01100 -> 1.10
+
+–   Produces zero average bias
+
+–   Default mode
+
+A product may have twice as many digits as the multiplier and multiplicand
+
+–   1.11 x 1.01 = 10.0011
+
+ 
+
+For round-to-nearest-even, we need to know the value to the right of the LSB (round bit) and whether any other digits to the right of the round digit are 1’s (the sticky bit is the OR of these digits). The IEEE standard requires the use of 3 extra bits of less significance than the 24 bits (of mantissa) implied in the single precision representation – guard bit, round bit and sticky bit. When a mantissa is to be shifted in order to align radix points, the bits that fall off the least significant end of the mantissa go into these extra bits (guard, round, and sticky bits). These bits can also be set by the normalization step in multiplication, and by extra bits of quotient (remainder) in division. The guard and round bits are just 2 extra bits of precision that are used in calculations. The sticky bit is an indication of what is/could be in lesser significant bits that are not kept. If a value of 1 ever is shifted into the sticky bit position, that sticky bit remains a 1 (“sticks” at 1), despite further shifts.
+
+ 
+
+To summarize, in his module we have discussed the need for floating point numbers, the IEEE standard for representing floating point numbers, Floating point addition / subtraction, multiplication, division and the various rounding methods.
+
+ 
+
+Web Links / Supporting Materials
+
+ 
+
+Computer Organization, Carl Hamacher, Zvonko Vranesic and Safwat Zaky, 5th.Edition, McGraw- Hill Higher Education, 2011.
+Computer Organization and Design – The Hardware / Software Interface, David A. Patterson and John L. Hennessy, 4th.Edition, Morgan Kaufmann, Elsevier, 2009.
+ 
+
+ 
+
+Icon for the Creative Commons Attribution-NonCommercial 4.0 International License
+
+Floating Point Arithmetic Unit by Dr A. P. Shanthi is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License, except where otherwise noted.
+
+INFLIBNET UGC
+]]]
+
+
+[[[[[[[
+high precision floating point arithmetic
+===
+[[[
+https://mathworld.wolfram.com/BBPFormula.html
+BBP Formula
+===
+Number Theory  Constants  Pi 
+Calculus and Analysis  Series  BBP Formulas 
+Discrete Mathematics  Experimental Mathematics 
+BBP Formula
+
+The BBP (named after Bailey-Borwein-Plouffe) is a formula for calculating pi discovered by Simon Plouffe in 1995,
+
+ pi=sum_(n=0)^infty(4/(8n+1)-2/(8n+4)-1/(8n+5)-1/(8n+6))(1/(16))^n. 
+Amazingly, this formula is a digit-extraction algorithm for pi in base 16.
+
+Following the discovery of this and related formulas, similar formulas in other bases were investigated. This class of formulas are now known as BBP-type formulas.
+
+SEE ALSO
+BBP-Type Formula, Pi
+]]]
+[[[
+https://mathworld.wolfram.com/BBP-TypeFormula.html
+BBP-Type Formula
+===
+Number Theory  Constants  Pi 
+Calculus and Analysis  Series  BBP Formulas 
+Discrete Mathematics  Experimental Mathematics 
+More...
+BBP-Type Formula
+
+A base-b BBP-type formula is a convergent series formula of the type
+
+ alpha=sum_(k=0)^infty(p(k))/(b^kq(k)) 	
+(1)
+where p(k) and q(k) are integer polynomials in k (Bailey 2000; Borwein and Bailey 2003, pp. 54 and 128-129).
+
+Bailey (2000) and Borwein and Bailey (2003, pp. 128-129) give a collection of such formulas. The following extends those compilations to include several additional BBP-type formulas.
+
+pi	=	sum_(k=0)^(infty)1/(16^k)(4/(8k+1)-2/(8k+4)-1/(8k+5)-1/(8k+6))	
+(2)
+	=	1/2sum_(k=0)^(infty)1/(16^k)(8/(8k+2)+4/(8k+3)+4/(8k+4)-1/(8k+7))	
+(3)
+pi^2	=	9/8sum_(k=0)^(infty)1/(64^k)[(16)/((6k+1)^2)-(24)/((6k+2)^2)-8/((6k+3)^2)-6/((6k+4)^2)+1/((6k+5)^2)]	
+(4)
+	=	2/(27)sum_(k=0)^(infty)1/(729^k)[(243)/((12k+1)^2)-(405)/((12k+2)^2)-(81)/((12k+4)^4)-(27)/((12k+5)^2)-(72)/((12k+6)^2)-9/((12k+7)^2)-9/((12k+8)^2)-5/((12k+10)^2)+1/((12k+11)^2)]	
+(5)
+ln(9/(10))	=	-sum_(k=1)^(infty)1/(10^k·k)	
+(6)
+ln2	=	2/3sum_(k=0)^(infty)1/(9^k(2k+1))	
+(7)
+(ln2)^2	=	1/(32)sum_(k=0)^(infty)[(64)/((6k+1)^2)-(160)/((6k+2)^2)-(56)/((6k+3)^2)-(40)/((6k+4)^2)+4/((6k+5)^2)-1/((6k+6)^2)]	
+(8)
+ln3	=	1/(729)sum_(k=0)^(infty)1/(729^k)((729)/(6k+1)+(81)/(6k+2)+(81)/(6k+3)+9/(6k+4)+9/(6k+5)+1/(6k+6))	
+(9)
+	=	sum_(k=0)^(infty)1/(4^k(2k+1))	
+(10)
+ln10	=	1/(32)sum_(k=0)^(infty)1/((-64)^k)((64)/(12k+1)+(16)/(12k+2)+8/(12k+4)-(16)/(12k+5)+8/(12k+6)+(12)/(12k+7)-2/(12k+8)+4/(12k+9)+1/(12k+10)-3/(12k+11)-1/(12k+12))	
+(11)
+	=	1/2sum_(k=0)^(infty)1/((-4)^k)(6/(4k+1)-3/(4k+3)-1/(4k+4))	
+(12)
+	=	1/(16)sum_(k=0)^(infty)1/(16^k)((24)/(4k+1)+(20)/(4k+2)+6/(4k+3)+1/(4k+4))	
+(13)
+	=	1/8sum_(k=0)^(infty)1/(16^k)((16)/(8k+1)+8/(8k+2)-8/(8k+3)+4/(8k+4)-4/(8k+5)+2/(8k+6)+2/(8k+7)+1/(8k+8))	
+(14)
+	=	2/9sum_(k=0)^(infty)1/(81^k)(9/(4k+1)+2/(4k+2)+1/(4k+3))	
+(15)
+	=	2/(729)sum_(k=0)^(infty)1/(6561^k)((729)/(8k+1)+(162)/(8k+2)+(81)/(8k+3)+9/(8k+3)+2/(8k+3)+1/(8k+7))	
+(16)
+pisqrt(2)	=	sum_(k=0)^(infty)1/((-8)^k)(4/(6k+1)+1/(6k+3)+1/(6k+5))	
+(17)
+	=	1/(64)sum_(k=0)^(infty)1/((-512)^k)((256)/(18k+1)+(64)/(6k+3)+(64)/(18k+5)-(32)/(18k+7)-8/(18k+9)-8/(18k+11)+4/(18k+13)+1/(18k+15)+1/(18k+17))	
+(18)
+	=	4sum_(k=0)^(infty)(-1)^k(1/(4k+1)+1/(4k+3))	
+(19)
+	=	4sum_(k=0)^(infty)(-1)^k(1/(12k+1)+1/(12k+3)-1/(12k+5)-1/(12k+7)+1/(12k+9)+1/(12k+11))	
+(20)
+	=	sum_(k=0)^(infty)(-1)^k(3/(20k+1)+3/(20k+3)+2/(20k+5)-3/(20k+7)+3/(20k+9)+3/(20k+11)-3/(20k+13)+2/(20k+17)+3/(20k+19))	
+(21)
+	=	1/8sum_(k=0)^(infty)1/(64^k)((32)/(12k+1)+8/(2k+3)+8/(12k+5)-4/(12k+7)-1/(12k+9)-1/(12k+11))	
+(22)
+pisqrt(3)	=	1/4sum_(k=0)^(infty)1/(64^k)((20)/(6k+1)+6/(6k+2)-1/(6k+3)-3/(6k+4)-1/(6k+5))	
+(23)
+	=	1/9sum_(k=0)^(infty)1/(729^k)((81)/(12k+1)-(54)/(12k+2)-9/(12k+4)-(12)/(12k+6)-3/(12k+7)-2/(12k+8)-1/(12k+10))	
+(24)
+	=	1/(36)sum_(k=0)^(infty)1/(729^k)((81)/(12k+1)+(27)/(12k+2)-(162)/(12k+3)-9/(12k+4)+(27)/(12k+5)+(24)/(12k+6)-3/(12k+7)+7/(12k+8)+6/(12k+9)+3/(12k+10)-1/(12k+11))	
+(25)
+	=	1/9sum_(k=0)^(infty)1/(729^k)((81)/(12k+1)+(189)/(12k+2)+(45)/(12k+4)+(27)/(12k+5)+(24)/(12k+6)-3/(12k+7)+1/(12k+8)+1/(12k+10)-1/(12k+11))	
+(26)
+piln2	=	1/(256)sum_(k=0)^(infty)1/(4096^k)[(4096)/((24k+1)^2)-(8192)/((24k+2)^2)-(26112)/((24k+3)^3)+(15360)/((24k+4)^2)-(1024)/((24k+5)^2)+(9984)/((24k+6)^2)+(11520)/((24k+8)^2)+(2368)/((24k+9)^2)-(512)/((24k+10)^2)+(768)/((24k+12)^2)-(64)/((24k+13)^2)+(408)/((24k+15)^2)+(720)/((24k+16)^2)+(16)/((24k+17)^2)+(196)/((24k+18)^2)+(60)/((24k+20)^2)-(37)/((24k+21)^2)]	
+(27)
+K	=	sum_(k=0)^(infty)((-1)^k)/((2k+1)^2)	
+(28)
+	=	1/(1024)sum_(k=0)^(infty)1/(4096^k)[(3072)/((24k+1)^2)-(3072)/((24k+2)^2)-(23040)/((24k+3)^2)+(12288)/((24k+4)^2)-(768)/((24k+5)^2)+(9216)/((24k+6)^2)+(10368)/((24k+8)^2)+(2496)/((24k+9)^2)-(192)/((24k+10)^2)+(768)/((24k+12)^2)-(48)/((24k+13)^2)+(360)/((24k+15)^2)+(648)/((24k+16)^2)+(12)/((24k+17)^2)+(168)/((24k+18)^2)+(48)/((24k+20)^2)-(39)/((24k+21)^2)]	
+(29)
+Cl_2(1/3pi)	=	sqrt(3)sum_(k=0)^(infty)[1/((6k+1)^2)+1/((6k+2)^2)-1/((6k+4)^2)-1/((6k+5)^2)]	
+(30)
+	=	(sqrt(3))/9sum_(k=0)^(infty)((-1)^k)/(27^k)[(18)/((6k+1)^2)-(18)/((6k+2)^2)-(24)/((6k+3)^2)-6/((6k+4)^2)+2/((6k+5)^2)].	
+(31)
+where K is Catalan's constant, Cl_2(pi/3) is the hyperbolic volume of the figure eight knot complement, Cl_2(x) is Clausen's integral, and Cl_2(pi/3) is also the hyperbolic volume of the knot complement of the figure eight knot.
+
+Another example is the Dirichlet L-series
+
+ L_(-7)(2)=sum_(n=0)^infty[1/((7n+1)^2)+1/((7n+2)^2)-1/((7n+3)^2)+1/((7n+4)^2)-1/((7n+5)^2)-1/((7n+6)^2)]  	
+(32)
+(Bailey and Borwein 2005; Bailey et al. 2007, pp. 5 and 62).
+
+Note that this sort of sum is closely related to the polygamma function since, for example, the above sum can also be written
+
+ L_(-7)(2)=1/(49)[psi_1(1/7)+psi_1(2/7)-psi_1(3/7)+psi_1(4/7)-psi_1(5/7)-psi_1(6/7)].   	
+(33)
+Borwein et al. (2004) have recently shown that pi has no Machin-type BBP arctangent formula that is not binary, although this does not rule out a completely different scheme for digit-extraction algorithms in other bases.
+
+A beautiful example of a BBP-type formula in a non-integer base is
+
+ pi^2=50sum_(k=0)^infty1/(phi^(5k))[(phi^(-2))/((5k+1)^2)-(phi^(-1))/((5k+2)^2)-(phi^(-2))/((5k+3)^2)+(phi^(-5))/((5k+4)^2)+(2phi^(-5))/((5k+5)^2)],  	
+(34)
+where phi is the golden ratio, found by B. Cloitre (Cloitre; Borwein and Chamberland 2005; Bailey et al. 2007, p. 277).
+
+SEE ALSO
+Apéry's Constant, BBP Formula, Catalan's Constant, Digit-Extraction Algorithm, Dirichlet L-Series, Inverse Sine, Natural Logarithm of 2, Pi, Pi Formulas, Spigot Algorithm, Zero
+EXPLORE WITH WOLFRAM|ALPHA
+WolframAlpha
+pi squared
+
+More things to try:
+
+ pi squared
+ pi
+(110110 base 2) / (11 base 2)
+REFERENCES
+Adamchik, V. and Wagon, S. "A Simple Formula for pi." Amer. Math. Monthly 104, 852-855, 1997.
+Adamchik, V. and Wagon, S. "Pi: A 2000-Year Search Changes Direction." http://www-2.cs.cmu.edu/~adamchik/articles/pi.htm.
+Bailey, D. H. "A Compendium of BBP-Type Formulas for Mathematical Constants." 28 Nov 2000. http://crd.lbl.gov/~dhbailey/dhbpapers/bbp-formulas.pdf.
+Bailey, D. H. and Borwein, J. M. "Experimental Mathematics: Examples, Methods, and Implications." Not. Amer. Math. Soc. 52, 502-514, 2005.
+Bailey, D. H.; Borwein, J. M.; Calkin, N. J.; Girgensohn, R.; Luke, D. R.; and Moll, V. H. Experimental Mathematics in Action. Wellesley, MA: A K Peters, pp. 31-33 and 222, 2007.
+Bailey, D. H.; Borwein, P. B.; and Plouffe, S. "On the Rapid Computation of Various Polylogarithmic Constants." Math. Comput. 66, 903-913, 1997.
+Borwein, J. and Bailey, D. "Other BBP-Type Formulas" and "Does Pi Have a Nonbinary BBP Formula?" §3.6 and 3.7 in Mathematics by Experiment: Plausible Reasoning in the 21st Century. Wellesley, MA: A K Peters, pp. 127-133, 2003.
+Borwein, J. M.; Borwein, D.; and Galway, W. F. "Finding and Excluding b-ary Machin-Type Individual Digit Formulae." Canad. J. Math. 56, 897-925, 2004.
+Borwein, J. M. and Chamberland, M. "A Golden Example." Unpublished manuscript. Feb. 7, 2005.
+Cloitre, B. "A BBP Formula for pi^2 in Golden Base." Unpublished manuscript. Undated.
+Finch, S. R. "Archimedes' Constant." §1.4 in Mathematical Constants. Cambridge, England: Cambridge University Press, pp. 17-28, 2003.
+Gourévitch, B. "L'univers de pi. §6: Formules BBP en base 2: s in N, v=p/q, x=1/(2^n) dans Psi." http://www.pi314.net/hypergse6.php.
+Plouffe, S. "The Story Behind a Formula for Pi." sci.math and sci.math.symbolic newsgroup posting. 23 Jun 2003.
+REFERENCED ON WOLFRAM|ALPHA
+BBP-Type Formula
+CITE THIS AS:
+Weisstein, Eric W. "BBP-Type Formula." From MathWorld--A Wolfram Web Resource. https://mathworld.wolfram.com/BBP-TypeFormula.html
+
+SUBJECT CLASSIFICATIONS
+Number Theory  Constants  Pi 
+Calculus and Analysis  Series  BBP Formulas 
+Discrete Mathematics  Experimental Mathematics 
+More...
+About MathWorld MathWorld Classroom Send a Message MathWorld Book wolfram.com
+13,973 Entries Last Updated: Fri Sep 15 2023 ©1999–2023 Wolfram Research, Inc. Terms of Use
+Created, developed and nurtured by Eric Weisstein at Wolfram Research
+]]]
+[[[
+https://mathworld.wolfram.com/Digit-ExtractionAlgorithm.html
+Digit-Extraction Algorithm
+===
+Discrete Mathematics  Computer Science  Algorithms  General Algorithms 
+Digit-Extraction Algorithm
+An algorithm which allows digits of a given number to be calculated without requiring the computation of earlier digits. The BBP formula for pi is the best-known such algorithm, but an algorithm also exists for e.
+
+Plouffe (2022) gives a particularly simple digit-extraction algorithm for the decimal digits of pi by defining
+
+ pi_n=((2(-1)^(n+1)(2n)!)/(2^(2n)B_(2n)(1-2^(-n))(1-3^(-n))(1-5^(-n))(1-7^(-n))))^(1/(2n)). 	
+(1)
+Then the nth digit to the right of the decimal point of pi for n>=3 is given by
+
+ d_n=int(10frac(10^(n-1)pi_(n-1))) 	
+(2)
+where int(x) is the integer part and frac(x) is the fractional part. Similar formulas can be obtained using
+
+ lim_(n->infty)((2^(2n+2)(-1)^n(2n)!)/(E_(2n)))^(1/(2n+1))=pi 	
+(3)
+and
+
+ lim_(n->infty)((2^(2n+2)(-1)^n(2n)!)/(E_(2n))(1-1/(3^(2n+1))))^(1/(2n+1))=pi, 	
+(4)
+where E_n is an Euler number, which gives a base-9 (or binary) digit extraction formula (Plouffe 2022). Similar results can be also obtained for pi^2, pi^n, pi^(2n+1), e^pi, lnpi, and sqrt(pi) (Plouffe 2022).
+
+SEE ALSO
+BBP Formula, Pi Digits, Pi Formulas
+EXPLORE WITH WOLFRAM|ALPHA
+WolframAlpha
+algorithm
+
+More things to try:
+
+ algorithm
+(A union B) intersect C
+circle, diameter=10
+REFERENCES
+Plouffe, S. "A Formula for the n'th Decimal Digit or Binary of pi and pi^n." https://arxiv.org/abs/2201.12601. 29 Jan 2022.
+REFERENCED ON WOLFRAM|ALPHA
+Digit-Extraction Algorithm
+CITE THIS AS:
+Weisstein, Eric W. "Digit-Extraction Algorithm." From MathWorld--A Wolfram Web Resource. https://mathworld.wolfram.com/Digit-ExtractionAlgorithm.html
+
+SUBJECT CLASSIFICATIONS
+Discrete Mathematics  Computer Science  Algorithms  General Algorithms 
+About MathWorld MathWorld Classroom Send a Message MathWorld Book wolfram.com
+13,973 Entries Last Updated: Fri Sep 15 2023 ©1999–2023 Wolfram Research, Inc. Terms of Use
+Created, developed and nurtured by Eric Weisstein at Wolfram Research
+]]]
+
+
+
+[[[
+wget_U 'https://www.davidhbailey.com/dhbtalks/dhb-capp.pdf' -O 'High-Precision Arithmetic and Mathematical Physics(ppt)(2012)(Bailey)[good].pdf'
+===
+davidhbailey.com
+https://www.davidhbailey.com/dhbtalks/dhb-capp.pdf
+[PDF]High-Precision Arithmetic and Mathematical Physics - David H.…
+Thus high-precision arithmetic is often a better remedy for severe numerical round-off error, even if the error could, in principle, be improved with more advanced algorithms or coding techniques. 4 . Growth of Condition Number with System Size . Consider the very simple differential equation y’’(x) = -f(x). Discretization leads to the matrix: .
+
+File Size: 6MB
+Page Count: 62
+]]]
+
+[[[
+
+wget_U 'https://www.davidhbailey.com/dhbpapers/hp-arith.pdf' -O 'High-Precision Arithmetic-Progress and Challenges(after2015)(Bailey).pdf'
+BBP formula for π
+===
+davidhbailey.com
+https://www.davidhbailey.com/dhbpapers/hp-arith.pdf
+[PDF]High-Precision Arithmetic: Progress and Challenges - David H.…
+high-precision arithmetic. Navigate through a hierarchy of precision levels (32-bit, 64-bit or higher as needed). The current version of this tool is known as “Prec-imonious.” Details on this tool, with some examples of its usage, are presented in [63]. 1.4 Computations that require extra precision Some scientiﬁc computations actually ...
+]]]
+[[[
+===
+wget_U 'https://www.davidhbailey.com/dhbpapers/bbp-alg.pdf' -O 'The BBP Algorithm for Pi(2006)(Bailey).pdf'
+davidhbailey.com
+https://www.davidhbailey.com/dhbpapers/bbp-alg.pdf
+[PDF]The BBP Algorithm for Pi - David H. Bailey
+BBP algorithm for π: To compute the hexadecimal digits of π beginning after the first d hex digits (i.e., beginning at position d+1): Let {·} denote the fractional part as before. Given an integer d > 0, we can write, from formula (4), {16dπ} =. {4{16dS1} − 2{16dS4} − {16dS5} − {16dS6}}, (5) where.
+
+File Size: 114KB
+Page Count: 7
+]]]
+[[[
+wget_U 'https://carmamaths.org/resources/jon/Preprints/Books/Other/bbp.pdf' -O 'Unpacking the BBP Formula for Pi(preprints)(carmamaths.org).pdf'
+===
+carmamaths.org
+https://carmamaths.org/resources/jon/Preprints/Books/Other/bbp.pdf
+[PDF]3.5 Unpacking the BBP Formula for Pi - carmamaths.org
+3.5 Unpacking the BBP Formula for Pi. It is worth asking “why” the formula. π =. 16i 8i. ∞ 4 2 1 1. i=0 − + 1 8i + 4 − 8i + 5 − (3.38) 8i + 6. exists. As observed above, this identity is equivalent to, and can be proved by establishing: 1/√2 4√2 8x3 4√2x4 8x5 π = − − − dx.
+]]]
+
+
+
+[[[
+https://www.davidhbailey.com/dhbpapers
+wget_U 'https://www.davidhbailey.com/dhbpapers' -O 'www.davidhbailey.com-dhbpapers.html'
+view /sdcard/Download/www.davidhbailey.com-dhbpapers.html
+===
+Publications by David H Bailey
+Update: 8 July 2023
+
+Below is a catalogue of Bailey's publications (except books and presentations), listed in approximate chronological order, with most recent listed last. This includes:
+Refereed journal articles.
+Refereed conference papers.
+Various other unrefereed technical reports.
+Articles published in the Huffington Post.
+Articles published in the Conversation.
+Articles published in the Math Drudge blog (2009-2016).
+Articles published in the Math Scholar blog (2017-present).
+Articles published in the Mathematical Investor blog (2013-present).
+This list does not include over 200 other articles published in various other venues such as the SMR blog.
+For some of the articles listed below as published in the Mathematical Investor blog, as indicated by an asterisk * in the author list, Bailey acknowledges input from colleagues who prefer not to be listed.
+
+David H. Bailey, "Vector computer memory bank contention," IEEE Transactions on Computers, vol. C-36, no. 3 (Mar. 1987), pg. 293-298, preprint draft available at PDF.
+David H. Bailey, "A high-performance fast Fourier transform algorithm for the Cray-2," Journal of Supercomputing, vol. 1, no. 1 (Jul 1987), pg. 43-60, preprint draft available at PDF .
+David H. Bailey, "A high-performance FFT algorithm for vector supercomputers," International Journal of Supercomputer Applications, vol. 2, no. 1 (1988), pg. 82-87, preprint draft available at PDF .
+David H. Bailey, "Numerical results on the transcendence of constants involving Pi, E, and Gamma," Mathematics of Computation, vol. 50, no. 181 (Jan 1988), pg. 275-281, preprint draft available at PDF.
+David H. Bailey, "The computation of Pi to 29,360,000 decimal digits using Borweins' quartically convergent algorithm," Mathematics of Computation, vol. 50, no. 181 (Jan. 1988), pg. 283-296, preprint draft available at PDF.
+Don A. Calahan and David H. Bailey, "Measurement and analysis of memory conflicts on vector multiprocessors," in Joanne L. Martin, ed., Performance Evaluation of Supercomputers, North-Holland, 1988, pg. 83-106, preprint draft available at PDF.
+David H. Bailey, "Extra-high speed matrix multiplication on the Cray-2," SIAM Journal on Scientific and Statistical Computing, vol. 9, no. 3, (May 1988), pg. 603-607, preprint draft available at PDF.
+David H. Bailey and Helaman R. P. Ferguson, "A Strassen-Newton algorithm for high-speed parallelizable matrix inversion," Proceedings of Supercomputing 1988, Oct 1988, pg. 419-424, preprint draft available at PDF.
+Jonathan M. Borwein, Peter B. Borwein and David H. Bailey, "Ramanujan, modular equations, and approximations to Pi," American Mathematical Monthly, Mar. 1989, pg. 201-219. The authors of this paper later received both the Chauvenet Prize and the Merten Hesse Prize from the Mathematical Association of America, preprint draft available at PDF.
+David H. Bailey, Horst D. Simon, John T. Barton and Martin J. Fouts, "Floating point arithmetic in future supercomputers," International Journal of Supercomputer Applications, vol. 3, no. 3 (1989), pg. 86-90, preprint draft available at PDF.
+David H. Bailey, "Array transposition in SSD," manuscript, 3 Oct 1989, available at PDF.
+David H. Bailey and H. R. P. Ferguson, "Numerical results on relations between numerical constants using a new algorithm," Mathematics of Computation, vol. 53, no. 188 (Oct 1989), pg. 649-656, preprint draft available at PDF.
+David H. Bailey, "FFTs in external or hierarchical memory," Journal of Supercomputing, vol. 4, no. 1 (Mar 1990), pg. 23-35, preprint draft available at PDF.
+David H. Bailey, Eric Barszcz, Rod A. Fatoohi, Horst D. Simon and Sisira Weeratunga, "Performance results on the Intel Touchstone Gamma prototype," Proceedings of the Fifth Distributed Memory Computing Conference, Apr 1990, pg. 1236-1245, preprint draft available at PDF.
+David H. Bailey, "In response to the fate of Fortran-8X," Communications of the ACM, vol. 33, no. 4 (Apr 1990), pg. 391-392, preprint draft available at PDF.
+David H. Bailey, Eric Barszcz, John T. Barton, David S. Browning, Russell L. Carter, Leo Dagum, Rod A. Fatoohi, Paul O. Frederickson, Thomas A. Lasinski, Robert S. Schreiber, Horst D. Simon, Venkat Venkatakrishnan and Sisira Weeratunga, "The NAS Parallel Benchmarks," International Journal of Supercomputer Applications, vol. 5, no. 3 (Fall 1991), pg. 66-73, preprint draft available at PDF.
+Helaman R. P. Ferguson and David H. Bailey, "A polynomial time, numerically stable integer relation algorithm," manuscript, 1991, available at PDF.
+David H. Bailey, King Lee, and Horst D. Simon, "Using Strassen's algorithm to accelerate the solution of linear systems," Journal of Supercomputing, vol. 4., no. 4 (Jan 1991), pg. 357-371, preprint draft available at PDF.
+David H. Bailey, "Twelve ways to fool the masses when giving performance results on parallel computers," Supercomputing Review, Aug 1991, pg. 54-55, preprint draft available at PDF.
+David H. Bailey and P. N. Swarztrauber, "The fractional Fourier transform and applications," SIAM Review, vol. 33 no. 3 (Sep 1991), pg. 389-404; please also see the errata note that follows this item; preprint draft available at PDF.
+David H. Bailey, "Errata to 'The fractional Fourier transform and applications,'" manuscript, 1991, available at PDF.
+David H. Bailey, Eric Barszcz, John T. Barton, David S. Browning, Russell L. Carter, Leo Dagum, Rod A. Fatoohi, Paul O. Frederickson, Thomas A. Lasinski, Robert S. Schreiber, Horst D. Simon, Venkat Venkatakrishnan and Sisira Weeratunga, "The NAS Parallel Benchmarks: Summary and preliminary results," Proceedings of Supercomputing 1991, ACM/IEEE Computer Society, Nov 1991, 158-165. The paper won the 2015 Test of Time Award from the Supercomputing Conference (sponsored by the ACM and the IEEE Computer Society), preprint draft available at PDF.
+David H. Bailey and Paul O. Frederickson, "Performance of two of the NAS Parallel Benchmarks," Proceedings of Supercomputing 1991, ACM/IEEE Computer Society, Nov 1991, pg. 166-173, preprint draft available at PDF.
+David H. Bailey, "Misleading performance reporting in the supercomputing field", Scientific Programming, vol. 1., no. 2 (Winter 1992), pg. 141-151, preprint draft available at PDF.
+David H. Bailey, "How useful are today's parallel computers?", Computers in Physics, vol. 6, no. 2 (Mar./Apr. 1992), pg. 216, preprint draft available at PDF.
+David H. Bailey, Eric Barszcz, Leo Dagum and Horst D. Simon, "NAS Parallel Benchmark results," Proceedings of Supercomputing 1992, Nov 1992, pg. 386-393, preprint draft available at PDF.
+David H. Bailey, R. Krasny and R. Pelz, "Multiple precision, multiple processor vortex sheet roll-up computation," Proceedings of the Sixth SIAM Conference on Parallel Processing for Scientific Computing, 1993, SIAM, Philadelphia, pg. 52-56, preprint draft available at PDF.
+David H. Bailey, "Automatic translation of Fortran programs to multiprecision," NASA RNR Technical Report, RNR-91-025, updated 1993, preprint draft available at PDF.
+David H. Bailey, "Experience with parallel computers at NASA Ames", International Journal of High Speed Computing, vol. 5, no. 1 (1993), pg. 51-62, preprint draft available at PDF.
+David H. Bailey, "A portable high performance multiprecision package," NASA RNR Technical Report, RNR-90-022, updated 1993, preprint draft available at PDF.
+David H. Bailey, "RISC microprocessors and scientific computing," Proceedings of Supercomputing '93, IEEE Computer Society, 1993, pg. 645-654, preprint draft available at PDF.
+David H. Bailey, Eric Barszcz, Leo Dagum and Horst D. Simon, "NAS Parallel Benchmark results," IEEE Parallel and Distributed Technology, Feb 1993, pg. 43-51, preprint draft available at PDF.
+David H. Bailey, "Multiprecision translation and execution of Fortran programs," ACM Transactions on Mathematical Software, vol. 19, no. 3, Sep 1993, pg. 288-319, preprint draft available at PDF.
+David H. Bailey, Jonathan M. Borwein and Roland Girgensohn, "Experimental evaluation of Euler sums", Experimental Mathematics, vol. 3, no. 1 (1994), pg. 17-30, preprint draft available at PDF.
+David H. Bailey, M. Berry, J. Dongarra, Vladimir Getov, T. Haupt, Tony Hey, Roger W. Hockney, D. Walker, "PARKBENCH Report-1: Public International Benchmarks for Parallel Computers," Technical Report: UT-CS-93-213, 1994, preprint draft available at PDF.
+D. Bailey, E. Barszcz, J. Barton, D. Browning, R. Carter, L. Dagum, R. Fatoohi, S. Fineberg, P. Frederickson, T. Lasinski, R. Schreiber, H. Simon, V. Venkatakrishman and S. Weeratunga, "The NAS Parallel Benchmarks," NASA RNR Technical Report, RNR-94-007, updated 1994, preprint draft available at PDF.
+David H. Bailey and P. N. Swarztrauber, "A fast method for the numerical evaluation of continuous Fourier transforms," SIAM Journal on Scientific Computing, vol. 15, no. 5 (Sep 1994), pg. 1105-1110, preprint draft available at PDF.
+David H. Bailey, "Unfavorable strides in cache memory systems," Scientific Programming, vol. 4 (1995), pg. 53-58, preprint draft available at PDF.
+David H. Bailey and Paul N. Swarztrauber, "Efficient detection of a continuous-wave signal with a linear frequency drift," SIAM Journal on Scientific Computing, vol. 16 (1995), pg. 1233-1239, preprint draft available at PDF.
+David H. Bailey, Tim Harris, William Saphir, Rob van der Wijngaart, Alex Woo and Maurice Yarrow, "The NAS Parallel Benchmarks 2.0," manuscript, Dec 1995, available at PDF.
+David H. Bailey, "A Fortran-90 based multiprecision system," ACM Transactions on Mathematical Software, vol. 21, no. 4 (Dec 1995), pg. 379-387, preprint draft available at PDF.
+David H. Bailey, "On the computational cost of FFT-based linear convolutions", manuscript, Jun 1996, available at PDF.
+Subhash Saini and David H. Bailey, "NAS Parallel Benchmark (version 1.0) results 11-96," manuscript, Nov 1996, available at PDF.
+Al Globus, David H. Bailey, Steve Langhoff, Andrew Pohorille and Creon Levit, "Computational molecular nanotechnology at NASA Ames Research Center, 1996," manuscript, Dec 1996, available at PDF.
+David H. Bailey, Jonathan M. Borwein and Richard E. Crandall, "On the Khintchine constant," Mathematics of Computation, vol. 66 (1997), pg. 417-431, preprint draft available at PDF.
+David H. Bailey and Simon Plouffe, "Recognizing numerical constants," Proceedings of the Workshop on Organic Mathematics, Canadian Mathematical Society, vol. 20 (1997), pg. 73-88, preprint draft available at PDF.
+David H. Bailey, "Little's Law and high performance computing," manuscript, 1997, available at PDF.
+Alan H. Karp, Al Geist and David H. Bailey, "1996 Gordon Bell Prize winners," IEEE Computer, Jan 1997, pg. 80-85, preprint draft available at PDF.
+David H. Bailey, Jonathan M. Borwein, Peter B. Borwein and Simon Plouffe, "The quest for Pi," Mathematical Intelligencer, vol. 19, no. 1 (Jan 1997), pg. 50-57, preprint draft available at PDF.
+David H. Bailey, Peter B. Borwein and Simon Plouffe, "On the rapid computation of various polylogarithmic constants," Mathematics of Computation, vol. 66, no. 218 (Apr 1997), pg. 903-913, preprint draft available at PDF.
+David H. Bailey, "Onward to petaflops computing," ACM Communications, vol. 40, no. 6 (Jun 1997), pg. 90-92, preprint draft available at PDF.
+David H. Bailey, Rupak Biswas and Rob Van Der Wijngaart, "NAS applications and advanced architectures," NAS Technical Report NAS-97-031, NASA Ames Research Center (Nov 1997), preprint draft available at PDF.
+David H. Bailey, "Challenges of future high-end computing," in Jonathan Schaeffer, ed., High Performance Computer Systems and Applications, Kluwer Academic Press, Boston, 1998, preprint draft available at PDF.
+Al Globus, David H. Bailey, Jie Han, Richard Jaffe, Creon Levit, Ralph Merkle and Deepak Srivastava, "NASA applications of molecular nanotechnology," Journal of the British Interplanetary Society," vol. 15 (1998), pg. 145-152, available at HTML.
+David H. Bailey, "Finding new mathematical identities via numerical computations," ACM SIGNUM, vol. 33, no. 1 (Jan 1998), pg. 17-22, preprint draft available at PDF.
+Alan H. Karp, Ewing Lusk and David H. Bailey, "1997 Gordon Bell Prize winners," IEEE Computer, Jan 1998, pg. 86-92, preprint draft available at PDF.
+Ji Wang, P. C. Y. Lee and David H. Bailey, "Thickness-shear and flexural vibrations of linearly contoured crystal strips with multiprecision computation," Computers and Structures, vol. 70 (1999), pg. 437-445.
+David H. Bailey and David J. Broadhurst, "A seventeenth-order polylogarithm ladder," 1999, preprint draft available at PDF.
+Helaman R. P. Ferguson, David H. Bailey and Stephen Arno, "Analysis of PSLQ, an integer relation finding algorithm," Mathematics of Computation, vol. 68, no. 225 (Jan 1999), pg. 351-369, preprint draft available at PDF.
+Adrian T. Wong, Leonid Oliker, William T. C. Kramer, Teresa L. Kaltz and David H. Bailey, "Evaluating system effectiveness in high performance computing systems," Nov 1999, preprint draft available at PDF.
+David H. Bailey, "Integer relation detection," Computing in Science and Engineering, Jan-Feb, 2000, pg. 24-28, preprint draft available at PDF.
+Adrian T. Wong, Leonid Oliker, William T. C. Kramer, Teresa L. Kaltz and David H. Bailey, "System utilization benchmark on the Cray T3E and IBM SP," Fifth Workshop on Job Scheduling, May 1999; also published in Job Scheduling Strategies for Parallel Processing, Dror G. Feitelson and Larry Rudolph, ed. Springer, 2000, pg. 56-67, preprint draft available at PDF.
+David H. Bailey and David J. Broadhurst, "Parallel integer relation detection: Techniques and applications," Mathematics of Computation, vol. 70, no. 236 (Oct 2000), pg. 1719-1736, preprint draft available at PDF.
+Yozo Hida, Xiaoye S. Li and David H. Bailey, "Quad-double arithmetic: Algorithms, implementation, and application," Oct 2000, preprint draft available at PDF.
+Adrian T. Wong, Leonid Oliker, William T. C. Kramer, Teresa L. Kaltz and David H. Bailey, "ESP: A system utilization benchmark," Proceedings of SC2000, Nov 2000, preprint draft available at PDF.
+David H. Bailey and Jonathan M. Borwein, "Experimental mathematics: Recent developments and future outlook," in Bjorn Engquist and Wilfried Schmid, ed., Mathematics Unlimited -- 2001 and Beyond, Springer, 2001, pg. 51-66, preprint draft available at PDF.
+Adrian T. Wong, William T. C. Kramer, Leonid Oliker and David H. Bailey, "Comparison of the ESP benchmark with observed system utilization," manuscript, 2001, available at PDF.
+Yozo Hida, Xiaoye S. Li and David H. Bailey, "Algorithms for quad-double precision floating point arithmetic," 15th IEEE Symposium on Computer Arithmetic, IEEE Computer Society, 2001, pg. 155-162, preprint draft available at PDF.
+David H. Bailey, "How fast is my Beowulf?," in Thomas Sterling, ed., Beowulf Cluster Computing with Linux, and in Beowulf Cluster Computing with Windows, MIT Press, 2001, preprint draft available at PDF.
+David H. Bailey and Richard E. Crandall, "On the random character of fundamental constant expansions," Experimental Mathematics, vol. 10, no. 2 (Jun 2001), pg. 175-190, preprint draft available at PDF.
+C. William McCurdy, Horst D. Simon, William G. C. Kramer, Robert F. Lucas, William E. Johnston and David H. Bailey, "Future directions in scientific supercomputing," Computer Physics Communications, vol. 147 (2002), pg. 34-39, preprint draft available at PDF.
+David H. Bailey, David Broadhurst, Yozo Hida, Sherry Li and Brandon Thompson, "High performance computing meets experimental mathematics," Proceedings of SC2002, preprint draft available at PDF.
+David H. Bailey and Richard E. Crandall, "Random generators and normal numbers," Experimental Mathematics, vol. 11, no. 4 (2002), pg. 527-546, preprint draft available at PDF.
+David H. Bailey and Daniel J. Rudolph, "An ergodic proof that rational times normal is normal", Feb 2002, preprint draft available at PDF.
+X. S. Li, J. W. Demmel, D. H. Bailey, G. Henry, Y. Hida, J. Iskandar, W. Kahan, A. Kapur, M. C. Martin, T. Tung, D. J. Yoo, "Design, implementation and testing of extended and mixed precision BLAS," ACM Transactions on Mathematical Software, vol. 28, no. 2 (Jun 2002), pg. 152-205, preprint draft available at PDF.
+David H. Bailey, "A reclusive kind of science," Computing in Science and Engineering, Sept-Oct 2002, pg. 79-81, preprint draft available at PDF.
+David H. Bailey, Yozo Hida, Xiaoye S. Li and Brandon Thompson, "ARPREC: An arbitrary precision computation package," Sept 2002, preprint draft available at PDF.
+David H. Bailey and Alexei M. Frolov, "Universal variational expansion for high-precision bound-state calculations in three-body systems," Journal of Physics B: Atomic, Molecular and Optical Physics, vol. 35, no. 20 (28 Oct 2002), pg. 4287-4298, preprint draft available at PDF.
+Alexei M. Frolov and David H. Bailey, "Highly accurate evaluation of the few-body auxiliary functions and four-body integrals," Journal of Physics B: Atomic, Molecular and Optical Physics, vol. 36, no. 9 (14 May 2003), pg. 1857-1867, preprint draft available at PDF.
+David H. Bailey, "Some background on Kanada's recent pi calculation," manuscript, 16 May 2003, available at PDF.
+David H. Bailey, Bronis de Supinski, Jack Dongarra, Thomas Dunigan, Guang Gao, Adolfy Hoisie, Paul Hovland, Jeffrey Hollingsworth, David Jefferson, Chandrika Kamath, Allen Malony, Boyanna Norris, Daniel Quinlan, Sally McKee, Celso Mendes, Shirley Moore, Daniel Reed, Allan Snavely, Erich Strohmaier, Jeffrey Vetter, Patrick Worley, "Performance technologies for peta-scale systems: A white paper prepared by the Performance Evaluation Research Center and collaborators," manuscript, 14 May 2003, available at PDF.
+David H. Bailey and Xiaoye S. Li, "A comparison of three high-precision quadrature schemes," Proceedings of the Real Numbers and Computing Conference, Lyon, France, Sep 2003. See revised version below.
+David H. Bailey, Jonathan M. Borwein, Richard E. Crandall and Carl Pomerance, "On the binary expansions of algebraic numbers," Journal of Number Theory Bordeaux, vol. 16 (2004), pg. 487-518, preprint draft available at PDF.
+David H. Bailey, "Java meets numerical analysis," Scientific Programming, vol. 12 (2004), no. 1, pg. 59-60, preprint draft available at PDF.
+David H. Bailey, "A Pseudo-random number generator based on normal numbers," Dec 2004, preprint draft available at PDF.
+David H. Bailey, Xiaoye S. Li and Karthik Jeyabalan, "A comparison of three high-precision quadrature schemes," Experimental Mathematics, vol. 14 (2005), no. 3, pg 317-329, preprint draft available at PDF.
+David H. Bailey, "Review of The Siam 100-Digit Challenge: A Study in High-Accuracy Numerical Computing," Bulletin of the American Mathematical Society, vol. 42 (2005), no. 4, pg 545-548, preprint draft available at PDF.
+Horst Simon, William Kramer, William Saphir, John Shalf, David Bailey, Leonid Oliker, Michael Banda, C. William McCurdy, John Hules, Andrew Canning, Marc Day, Philip Colella, David Serafini, Michael Wehner and Peter Nugent, "Science-driven system architecture: A new process for leadership class computing," Journal of the Earth Simulator, vol. 2, no. 1 (Jan 2005), pg 1-9, preprint draft available at PDF.
+David H. Bailey, "A hot-spot proof of normality for the alpha constants," Jan 2005, preprint draft available at PDF.
+Piotr Luszczek, Jack J. Dongarra, David Koester, Rolf Rabenseifner, Bob Lucas, Jeremy Kepner, John McCalpin, David Bailey and Daisuke Takahashi, "Introduction to the HPC Challenge Benchmark Suite," Apr 2005, preprint draft available at PDF.
+David H. Bailey, "High-precision floating-point arithmetic in scientific computation," Computing in Science and Engineering, May-Jun, 2005, pg. 54-61, preprint draft available at PDF.
+David H. Bailey and Jonathan M. Borwein, "Experimental mathematics: Examples, methods and implications," Notices of the American Mathematical Society, vol. 52, no. 5 (May 2005), pg. 502-514, available at AMS Notices PDF | Preprint PDF.
+David H. Bailey and Alexei M. Frolov, "Positron annihilation in the bipositronium Ps sub 2", Physical Review A, vol. 72 (11 Jul 2005), pg. 014501-1 to 014501-4, preprint draft available at PDF.
+David H. Bailey and Allan S. Snavely, "Performance modeling: Understanding the present and predicting the future," Proceedings of Euro-Par 2005, Lisbon, Portugal, Sep 2005, preprint draft available at PDF.
+David H. Bailey and Jonathan M. Borwein, "Future prospects for computer-assisted mathematics," Notes of the Canadian Mathematical Society, vol. 37, no. 8 (Dec 2005), pg. 2-6, preprint draft available at PDF.
+David H. Bailey and Michal Misiurewicz, "A strong hot spot theorem," Proceedings of the American Mathematical Society, vol. 134 (2006), no. 9, pg. 2495-2501, preprint draft available at PDF.
+David H. Bailey, Jonathan M. Borwein and Richard E. Crandall, "Integrals of the Ising class," Journal of Physics A: Mathematical and General, vol. 39 (2006), pg. 12271-12302, preprint draft available at PDF | Ising data: PDF; LaTeX.
+David H. Bailey, Jonathan M. Borwein and David M. Bradley, "Experimental determination of Apery-like identities for zeta(2n+2)," Experimental Mathematics, vol. 15 (2006), pg. 281-289, preprint draft available at PDF.
+David H. Bailey, "Review of Accuracy and Reliability in Scientific Computing," by Bo Einarsson, ed., Scientific Programming, vol. 14 (2006), pg. 41-42, preprint draft available at PDF.
+Leonid Oliker, Rupak Biswas, Rob Van der Wijngaart, David H. Bailey and Allan Snavely, "Performance evaluation and modeling of ultra-scale systems," Parallel Processing for Scientific Computing, SIAM, Philadelphia, PA, 2006, preprint draft available at PDF.
+David H. Bailey, "Tanh-sinh high-precision quadrature," Jan 2006, preprint draft available at PDF.
+David H. Bailey and Jonathan M. Borwein, "Effective error bounds in Euler-Maclaurin-based quadrature schemes," Jun 2005, preprint draft available at PDF Condensed version in Proceedings of the 2006 High-Performance Computing Conference (HPCS): PDF.
+David H. Bailey, Jonathan M. Borwein, Vishal Kapoor and Eric Weisstein, "Ten problems in experimental mathematics," American Mathematical Monthly, vol. 113, no. 6 (Jun 2006), pg. 481-509, preprint draft available at PDF.
+David H. Bailey, "The BBP algorithm for Pi," manuscript, Sep 2006, available at PDF.
+David H. Bailey and Jonathan M. Borwein, "Finding general explicit formulas for Ising integral recursions," manuscript, Oct 2006, available at PDF.
+Hongzhang Shan, Erich Strohmaier, Ji Qiang, David H. Bailey, and Kathy Yelick, "Performance modeling and optimization of a high energy colliding beam simulation code," Proceedings of SC2006, Nov 2006, preprint draft available at PDF.
+David H. Bailey, Jonathan M. Borwein and Richard E. Crandall, "Box integrals," Journal of Computational and Applied Mathematics, vol. 206 (2007), pg. 196-208, preprint draft available at PDF. Note: This PDF file corrects an error on page 5. Box integral data: PDF; LaTeX.
+David H. Bailey, David Borwein, Jonathan M. Borwein and Richard Crandall, "Hypergeometric forms for Ising-class integrals," Experimental Mathematics, vol. 16 (2007), no. 3, pg. 257-276, preprint draft available at PDF.
+David H. Bailey and Jonathan M. Borwein, "Solution to Monthly Problem #11515," manuscript, Feb 2007, available at PDF.
+David H. Bailey and Jonathan M. Borwein, "Solution to Monthly problem #11275," manuscript, Feb 2007, available at PDF.
+David H. Bailey, Robert Lucas, Paul Hovland, Boyana Norris, Kathy Yelick, Dan Gunter, Bronis de Supinski, Dan Quinlan, Pat Worley, Jeff Vetter, Phil Roth, John Mellor-Crummey, Allan Snavely, Jeff Hollingsworth, Dan Reed, Rob Fowler, Ying Zhang, Mary Hall, Jacque Chame, Jack Dongarra, Shirley Moore, "Performance engineering: Understanding and improving the performance of large-scale codes," CT Watch Quarterly, vol. 3, no. 4 (Nov 2007), pg. 18-23, preprint draft available at PDF.
+David H. Bailey and Jonathan M. Borwein, "Solution to Monthly problem #11277," manuscript, Mar 2007, available at PDF.
+David H. Bailey, "A non-normality result," manuscript, Aug 2007, available at PDF.
+David H. Bailey, "On a tan product conjecture," manuscript, Aug 2007, available at PDF.
+Natalie J. Durgin, Sofia M. Garcia, Tamara Flournoy and David H. Bailey, "'Syncing' Up with the Quinn-Rand-Strogatz constant: Hurwitz-Zeta functions in non-linear physics," Sep 2007, preprint draft available at PDF.
+David H. Bailey, Jonathan M. Borwein, David Broadhurst and M. L. Glasser, "Elliptic integral evaluations of Bessel moments," Journal of Physics A: Mathematical and General, vol. 41 (2008), pg. 205203, preprint draft available at PDF.
+David H. Bailey, "Review of An Introduction to Parallel and Vector Scientific Computing," Scientific Programming, vol. 16 (2008), pg. 97-98, preprint draft available at PDF.
+David H. Bailey and Jonathan M. Borwein, "High-precision computation and mathematical physics," XII Advanced Computing and Analysis Techniques in Physics Research, 2008, preprint draft available at PDF.
+David H. Bailey, "Resolving numerical anomalies in scientific computation," manuscript, Jan 2008, available at PDF | Gzipped code file.
+David Bailey, Jacqueline Chame, Chun Chen, Jack Dongarra, Mary Hall, Jeffrey K. Hollingsworth, Paul Hovland, Shirley Moore, Keith Seymour, Jaewook Shin, Ananta Tiwari, Sam Williams, Haihang You, "PERI auto-tuning," Journal of Physics: Conference Series, vol. 125 (2008), 012089, preprint draft available at PDF; journal copy: PDF.
+David H. Bailey and Jonathan M. Borwein, "Highly parallel, high-precision numerical integration," manuscript, Apr 2008, available at PDF.
+Yozo Hida, Xiaoye S. Li and David H. Bailey, "Library for double-double and quad-double arithmetic," manuscript, 8 May 2008, available at PDF.
+David H. Bailey and Jonathan M. Borwein, "Computer-assisted discovery and proof," Tewodros Amdeberhan and Victor H. Moll, ed., Tapas in Experimental Mathematics, Contemporary Mathematics, American Mathematical Society, May 2008, pg. 21-52, preprint draft available at PDF.
+Samuel Williams, Kaushik Datta, Jonathan Carter, Leonid Oliker, John Shalf, Kathy Yelick and David H. Bailey, "PERI -- Auto-tuning memory-intensive kernels for multicore," Journal of Physics: Conference Series, vol. 125 (2008), Nov. 2008, available at IOP PDF | Preprint PDF.
+Lin-Wang Wang, Byounghak Lee, Hongzhang Shan, Zhengji Zhao, Juan Meza, Erich Strohmaier, David Bailey, "Linearly scaling 3D fragment method for large-scale electronic structure calculations," Proceedings of SC08, Nov 2008. Winner of the 2008 ACM Gordon Bell Prize in a special category for "algorithmic innovation." preprint draft available at PDF.
+David H. Bailey, Richard E. Crandall and Jonathan M. Borwein, "Resolution of the Quinn-Rand-Strogatz constant of nonlinear physics," Experimental Mathematics, vol. 18 (2009), pg. 107-116, preprint draft available at PDF.
+David H. Bailey, "Can an evolutionary process generate English text?", Biological Theory, vol. 4, no. 2 (Spring 2009), pg. 125-131, preprint draft available at PDF.
+David H. Bailey and Jonathan M. Borwein, "Solutions to Monthly Problems 11456 and 11457," manuscript, 2009, available at PDF.
+David H. Bailey and Jonathan M. Borwein, "Proposed SIAM problem," manuscript 2009, available at PDF.
+David H. Bailey, Jonathan M. Borwein and Jorg Waldvogel, "Problem proposed for the American Mathematical Monthly," American Mathematical Monthly, May 2009 (problem section), preprint draft available at PDF.
+David H. Bailey and Jonathan M. Borwein, "Solution to Monthly Problem #11410," manuscript, Feb 2009, available at PDF.
+J. Meza, S. Campbell, and D. Bailey, "Mathematical and statistical opportunities in cyber security," Lawrence Berkeley National Laboratory Technical Report, Mar 2009, preprint draft available at PDF.
+Bronis R. de Supinski, Sadaf Alam, David H. Bailey, Laura Carrington, Chris Daley, Anshu Dubey, Todd Gamblin, Dan Gunter, Paul Hovland, Heike Jagode, Karen Karavanic, Gabriel Marin, John Mellor-Crummey, Shirley Moore, Boyana Norris, Leonid Oliker, Cathie Olschanowsky, Philip C. Roth, Martin Schulz, Sameer Shende, Allan Snavely, Wyatt Spear, Mustafa Tikir, Jeff Vetter, Pat Worley and Nick Wright, "Modeling the Office of Science Ten Year Facilities Plan: The PERI architecture tiger team," Journal of Physics: Conference Series, Jun 2009, preprint draft available at PDF.
+David H. Bailey and Jonathan M. Borwein, "Solution to Monthly Problem #11418," manuscript, Mar 2009, available at PDF.
+David H. Bailey and Jonathan M. Borwein, "Experimental mathematics and computational statistics," Edward Wegman, Yasmin H. Said and David W. Scott, editors, Wiley Interdisciplinary Reviews: Computational Statistics, Apr 2009, preprint draft available at PDF.
+David H. Bailey, "Misleading performance claims in scientific computation," Proceedings of DAC2009, May 2009, preprint draft available at PDF.
+Zhengji Zhao, Juan Meza, Byounghak Lee, Hongzhang Shan, Eric Strohmaier, David Bailey and Lin-Wang Wang, "The linearly scaling 3D fragment method for large scale electronic structure calculations," Journal of Physics: Conference Series, Jun 2009, preprint draft available at PDF.
+David H. Bailey and Jonathan M. Borwein, "Einstein on the 'cosmic religious feeling' as motive for scientific research," Math Drudge, 10 Jun 2009, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Semiotic fiddling while a digital Rome burns," Math Drudge, 23 Jun 2009, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Numeracy, relative risk and public policy," Math Drudge, 25 Jun 2009, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Unscientific America," Math Drudge, 1 Aug 2009, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Misuse of probability by 'creation scientists'," Math Drudge, 13 Aug 2009, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "How did the economists get it so wrong?," Math Drudge, 12 Sep 2009, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "PSLQ: An algorithm to discover integer relations," Computeralgebra Rundbrief, no 45 (Oct 2009), pg. 8-11, preprint draft available at PDF.
+David H. Bailey and Jonathan M. Borwein, "John D. Barrow's New Theories of Everything," Math Drudge, 12 Oct 2009, available at HTML.
+David H. Bailey, "The NAS Parallel Benchmarks," David Padua, ed., Encyclopedia of Parallel Computing, Springer, Nov 2009, preprint draft available at PDF.
+David H. Bailey and Jonathan M. Borwein, "Experimental computation with oscillatory integrals," Tewodros Amdeberhan, Luis A. Medina and Victor H. Moll, ed., Gems in Experimental Mathematics, Contemporary Mathematics, American Mathematical Society, vol. 517 (2010), pg. 25-40, preprint draft available at PDF.
+David H. Bailey, Jonathan M. Borwein, David Broadhurst and Wadim Zudlin, "Experimental mathematics and mathematical physics," Tewodros Amdeberhan, Luis A. Medina and Victor H. Moll, ed., Gems in Experimental Mathematics, Contemporary Mathematics, vol. 517 (2010), American Mathematical Society, pg. 41-58, preprint draft available at PDF.
+David H. Bailey and Jonathan M. Borwein, "Sad state of math and science education," Math Drudge, 7 Jan 2010, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "The confusing morass of copyright laws," Math Drudge, 28 Jan 2010, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "The greatest mathematical discovery?," Math Drudge, 6 Feb 2010, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Creationism, global warming denial, and scientific integrity," Math Drudge, 7 Mar 2010, available at HTML.
+Alex Kaiser, Samuel Williams, Kamesh Madduri, Khaled Ibrahim, David Bailey, James Demmel and Erich Strohmaier, "A principled kernel testbed for hardware/software co-design research," Proceedings of the 2nd USENIX Workshop on Hot Topics in Parallelism (HotPar), Apr 2010, preprint draft available at PDF.
+David H. Bailey and Jonathan M. Borwein, "Fermi's Paradox and Stephen Hawking," Math Drudge, 30 Apr 2010, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "How reliable are the radiometric methods used for geologic ages?," Math Drudge, 14 May 2010, available at HTML.
+Erich Strohmaier, Sam Williams, Alex Kaiser, Kamesh Madduri, Khaled Ibrahim, David H. Bailey, James W. Demmel, "A kernel testbed for parallel architecture, language, and performance research," Proceedings of the International Conference of Numerical Analysis and Applied Mathematics (ICNAAM), Jun 2010, preprint draft available at PDF.
+David H. Bailey, Jonathan M. Borwein and Richard E. Crandall, "Advances in the theory of box integrals," Mathematics of Computation, vol. 79, no. 271 (Jul 2010), pg. 1839-1866, preprint draft available at PDF. Note: This PDF file corrects errors on page 4 of the published copy.
+David H. Bailey and Jonathan M. Borwein, "Latest research indicates we unconsciously pursue goals," Math Drudge, 4 Jul 2010, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Political threats to science funding," Math Drudge, 12 Sep 2010, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Can machines teach themselves?," Math Drudge, 10 Oct 2010, available at HTML.
+Alex Kaiser, Samuel Williams, Kamesh Madduri, Khaled Ibrahim, David H. Bailey, James W. Demmel, Erich Strohmaier, "TORCH computational reference kernels: A testbed for computer science research," manuscript, Dec 2010, available at PDF.
+Samuel W. Williams and David H. Bailey, "Parallel computer architecture," in David H. Bailey, Robert F. Lucas and Samuel W. Williams, ed., Performance Tuning of Scientific Applications, CRC Press, Boca Raton, FL, 2011, pg. 11-33.
+David H. Bailey and Jonathan M. Borwein, "High-precision numerical integration: Progress and challenges," Journal of Symbolic Computation, vol. 46 (2011), pg. 741-754, preprint draft available at PDF.
+David H. Bailey, Allan Snavely and Laura Carrington, "Performance modeling: The convolution approach," in David H. Bailey, Robert F. Lucas and Samuel W. Williams, ed., Performance Tuning of Scientific Applications, CRC Press, Boca Raton, FL, 2011, pg. 151-164.
+David H. Bailey, Lin-Wang Wang, Hongzhang Shan, Zhengji Zhao, Juan Meza, Erich Strohmaier and Byounghak Lee, "Tuning an electronic structure code," in David H. Bailey, Robert F. Lucas and Samuel W. Williams, ed., Performance Tuning of Scientific Applications, CRC Press, Boca Raton, FL, 2011, pg. 339-354.
+David H. Bailey, "Introduction," in David H. Bailey, Robert F. Lucas and Samuel W. Williams, ed., Performance Tuning of Scientific Applications, CRC Press, Boca Raton, FL, 2011, pg. 1-10.
+David H. Bailey and Jonathan M. Borwein, "IBM's 'Watson' victorious: Our new computer overlords?," Math Drudge, 17 Feb 2011, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "What does Watson's victory really mean?," Math Drudge, 20 Feb 2011, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Pi goes on forever," Math Drudge, 9 Mar 2011, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "The greatest mathematical discovery?", manuscript, May 2011, available at PDF.
+David H. Bailey and Jonathan M. Borwein, "The Greatest Mathematical Discovery?," Math Drudge, 9 May 2011, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Are science and mathematics socially constructed?," Math Drudge, 29 May 2011, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Semiotic fiddling while a digital Rome burns," Math Drudge, 29 May 2011, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Quick tests for checking whether a new math result is plausible," Math Drudge, 8 Jun 2011, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Ancient Indian square roots," Math Drudge, 14 Jun 2011, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Merchants of Doubt," Math Drudge, 17 Jul 2011, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "PIIGS, BRICs and STRAW," Math Drudge, 23 Jul 2011, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "What if base-10 arithmetic had been discovered earlier?," Math Drudge, 27 Jul 2011, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Is mathematics invented or discovered?," Math Drudge, 7 Aug 2011, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Is math ability inborn or developed?," Math Drudge, 14 Aug 2011, available at HTML.
+Orianna DeMasi, Juan Meza and David H. Bailey, "Dimension reduction using rule ensemble machine learning methods: A numerical study of three ensemble methods," manuscript, 30 Aug 2011, available at PDF.
+Jonathan Borwein and David H. Bailey, "Magic numbers: The beauty of decimal notation," The Conversation, 23 Aug 2011, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Where is everybody?," Math Drudge, 9 Sep 2011, available at HTML.
+Jonathan Borwein and David H. Bailey, "Where is everybody? Doing the maths on extraterrestrial life," The Conversation, 15 Sep 2011, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "How far away is everybody?," Math Drudge, 29 Sep 2011, available at HTML.
+Jonathan Borwein and David H. Bailey, "How far away is everybody? Climbing the cosmic distance ladder," The Conversation, 24 Oct 2011, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Mathematics and scientific fraud," Math Drudge, 3 Nov 2011, available at HTML.
+Jonathan Borwein and David H. Bailey, "When things don't add up: Statistics, maths and scientific fraud," The Conversation, 14 Nov 2011, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Exploratory experimentation and computation," Notices of the American Mathematical Society, vol. 58 (Nov 2011), pg. 1410-1419, available at AMS Notices PDF | Preprint PDF.
+David H. Bailey and Jonathan M. Borwein, "Proposed mathematical journal rating system," Math Drudge, 20 Nov 2011, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "That mysterious but important number zero," Math Drudge, 21 Nov 2011, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Innumeracy and public risk," Math Drudge, 4 Dec 2011, available at HTML.
+Jonathan Borwein and David H. Bailey, "Danger of death: Are we programmed to miscalculate risk?," The Conversation, 8 Dec 2011, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "The remarkable decline of violence," Math Drudge, 15 Dec 2011, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "The great decline of Western society: What are the facts?," Math Drudge, 23 Dec 2011, available at HTML.
+David H. Bailey, Jonathan M. Borwein, Cristian S. Calude, Michael J. Dinneen, Monica Dumitrescu and Alex Yee, "An empirical approach to the normality of pi," Experimental Mathematics, vol. 21 (2012), pg. 375-384, preprint draft available at PDF.
+David H. Bailey and Jonathan M. Borwein, "Hand-to-hand combat with thousand-digit integrals," Journal of Computational Science, vol. 3 (2012), pg. 77-86, preprint draft available at PDF.
+David H. Bailey, Roberto Barrio, and Jonathan M. Borwein, "High precision computation: Mathematical physics and dynamics," Applied Mathematics and Computation, vol. 218 (2012), pg. 10106-10121, preprint draft available at PDF.
+David H. Bailey and Jonathan M. Borwein, "Nonnormality of Stoneham constants," Ramanujan Journal, vol. 29 (2012), pg. 409-422; DOI 10.1007/s11139-012-9417-3, preprint draft available at PDF.
+David H. Bailey and Jonathan M. Borwein, "Moore's Law and the future of science and mathematics," Math Drudge, 2 Jan 2012, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Poor-quality math and computer science courses threaten technological leadership," Math Drudge, 10 Jan 2012, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Does probability refute evolution?," Math Drudge, 22 Jan 2012, available at HTML.
+Jonathan Borwein and David H. Bailey, "Make mine a double: Moore's Law and the future of mathematics," The Conversation, 31 Jan 2012, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Exploration, Experimentation and Computation" (Chinese translation of similarly titled article above), International Advances in Mathematics (ISBN 1003-3092), Chinese Academy of Sciences, vol. 31, no. 1 (Jan 2012), pg. 1-14, preprint draft available at PDF.
+David H. Bailey, Jonathan M. Borwein, Cristian S. Calude, Michael J. Dinneen, Monica Dumitrescu and Alex Yee, "Normality and the digits of Pi," in David H. Bailey and Jonathan M. Borwein, Exploratory Experimentation in Mathematics: Selected Works, Perfectly Scientific Press, Portland, OR, 2012, 3 Feb 2012, preprint draft available at PDF.
+David H. Bailey, Edward A. Baron, Hemant Shukla and Xiaoye S. Li, "High-precision arithmetic and exascale computing," manuscript, 9 Feb 2012, available at PDF.
+David H. Bailey and Jonathan M. Borwein, "Global warming denial and scientific integrity," Math Drudge, 10 Feb 2012, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Scientists in politics: What is the score, and what can be done?," Math Drudge, 16 Feb 2012, available at HTML.
+Jonathan Borwein and David H. Bailey, "Doctor, doctor: why so few scientists in top government jobs?," The Conversation, 29 Feb 2012, available at HTML.
+Jonathan Borwein and David H. Bailey, "Hot and bothered: The uncertain mathematics of global warming," The Conversation, 17 Feb 2012, available at HTML.
+David H. Bailey and Marcos M. Lopez de Prado, "Balanced baskets: A new approach to trading and hedging risks," Journal of Investment Strategies, vol. 14 (2012), preprint draft available at SSRN PDF | Preprint PDF.
+David H. Bailey and Jonathan M. Borwein, "How old is the earth? Calculate it for yourself," Math Drudge, 3 Mar 2012, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Numeracy crisis threatens first-world economies," Math Drudge, 4 Mar 2012, available at HTML.
+Jonathan Borwein and David H. Bailey, "How old is Earth? A word to skeptics on the dating game," The Conversation, 22 Mar 2012, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Emmy Noether: pillar of 20th century mathematics and physics," Math Drudge, 27 Mar 2012, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Are computers playing games with us?," Math Drudge, 27 Mar 2012, available at HTML.
+David H. Bailey and Marcos M. Lopez de Prado, "The Sharpe ratio efficient frontier," Journal of Risk, vol. 15 (2012), pg. 3-44, preprint draft available at SSRN PDF | Preprint PDF.
+David H. Bailey and Jonathan M. Borwein, "Are computers playing games with us?," Huffington Post, 2 Apr 2012, available at HTML.
+Jonathan Borwein and David H. Bailey, "Yes, there's a numeracy crisis -- so what's the solution?," The Conversation, 13 Apr 2012, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Book Review: Why Beliefs Matter: Reflections on the Nature of Science," Math Drudge, 23 Apr 2012, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Is your mate actually a computer? Would you pass the 'Turing test'?," Math Drudge, 27 Apr 2012, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "What does the latest DNA data say about evolution?," Math Drudge, 1 May 2012, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "2001: A Space Odyssey: Art versus 2012 reality," Math Drudge, 7 May 2012, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "2001: A Space Odyssey: Art vs. 2012 reality," Huffington Post, 9 May 2012, available at HTML.
+David H. Bailey, Orianna DeMasi and Juan Meza, "Feature selection and multi-class classification using a rule ensemble method," manuscript, 25 May 2012, available at PDF.
+Jonathan Borwein and David H. Bailey, "Person or computer: Could you pass the Turing test?," The Conversation, 3 May 2012, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Is modern science 'forever tentative' and 'socially constructed'? No Way!," Math Drudge, 31 May 2012, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Feast or famine? Promoting green energy in an era of abundant gas and oil," Math Drudge, 11 Jun 2012, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Bad numbers are bad news," Math Drudge, 24 Jun 2012, available at HTML.
+Jonathan Borwein and David H. Bailey, "Bad numbers make for killer headlines -- and dodgy news," The Conversation, 26 Jun 2012, available at HTML.
+Jonathan Borwein and David H. Bailey, "How to sell green energy in an era of abundant gas and oil," The Conversation, 15 Jun 2012, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Solution to Monthly problem 11650," manuscript, 14 Jun 2012, available at PDF.
+David H. Bailey and Jonathan M. Borwein, "Is science 'forever tentative' and 'socially constructed'? No way!," Huffington Post, 7 Jun 2012, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "The uneven preparation of K-12 math teachers," Math Drudge, 19 Jul 2012, available at HTML.
+Jonathan Borwein and David H. Bailey, "School maths is failing children -- a US and Australian perspective," The Conversation, 25 Jul 2012, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Algebra is essential in a 21st century economy," Math Drudge, 31 Jul 2012, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Algebra is essential in a 21st century economy," Huffington Post, 1 Aug 2012, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Talking points for 'Algebra is essential in a 21st century economy'," Math Drudge, 9 Aug 2012, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Numerical nonsense in the U.S. presidential campaign," Math Drudge, 17 Aug 2012, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Numerical nonsense in the U.S. presidential campaign," Huffington Post, 20 Aug 2012, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Smart meters for dummies," Math Drudge, 6 Sep 2012, available at HTML.
+Jonathan Borwein and David H. Bailey, "Smart meters are about as dangerous as...," The Conversation, 10 Sep 2012, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "The heart of the matter: do scientific journalists need ground rules?," Math Drudge, 19 Oct 2012, available at HTML.
+Jonathan Borwein and David H. Bailey, "How to stop the media reporting science fiction as fact," The Conversation, 22 Oct 2012, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Does math anxiety trigger pain networks in the brain?," Math Drudge, 31 Oct 2012, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Ancient Indian square roots: An exercise in forensic paleo-mathematics," American Mathematical Monthly, vol. 119, no. 8 (Oct 2012), pg. 646-657, preprint draft available at PDF.
+Jonathan Borwein and David H. Bailey, "Newly calculated: Maths anxiety triggers pain in the brain," The Conversation, 1 Nov 2012, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "What on earth do they think? U.S. politicians on the age of the planet," Math Drudge, 19 Nov 2012, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "What on earth do they think? U.S. politicians on the age of the planet." Huffington Post, 20 Nov 2012, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Life on Mars!? Maybe we are all Martians," Math Drudge, 3 Dec 2012, available at HTML.
+Jonathan Borwein and David H. Bailey, "Just out of Curiosity, did life on Earth come from Mars?" The Conversation, 3 Dec 2012, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Is believing in climate change 'an insult to God'?," Math Drudge, 6 Dec 2012, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Is believing in climate change an insult to God?," Huffington Post, 7 Dec 2012, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Alarm bells sound over latest international test scores," Math Drudge, 12 Dec 2012, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Mathematician/physicist/inventor Richard Crandall dies at 64," Math Drudge, 21 Dec 2012, available at HTML.
+Francisco J. Aragon Artacho, David H. Bailey, Jonathan M. Borwein and Peter B. Borwein, "Walking on real numbers," Mathematical Intelligencer, vol. 35 (2013), pg. 42-60, preprint draft available at PDF.
+David H. Bailey, Jonathan M. Borwein, Richard E. Crandall and John Zucker, "Lattice sums arising from the Poisson equation," Journal of Physics A: Mathematical and Theoretical, vol. 46 (2013), pg. 115201, preprint draft available at PDF.
+David H. Bailey and Jonathan M. Borwein, "Compressed lattice sums arising from the Poisson equation: Dedicated to Professor Hari Sirvastava," Boundary Value Problems, vol. 75 (2013), DOI: 10.1186/1687-2770-2013-75, available at Boundary Value Problems PDF | Preprint PDF.
+David H. Bailey and Jonathan M. Borwein, "Normal numbers and pseudorandom generators," in David H. Bailey, Heinz H. Bauschke, Peter Borwein, Frank Garvan, Michel Thera, Jon D. Vanderwerff and Henry, Wolkowicz, ed., Computational and Analytical Mathematics in Honour of Jonathan Borwein's 60th Birthday, Springer, 2013, preprint draft available at PDF.
+David H. Bailey, Jonathan M. Borwein, Andrew Mattingly and Glenn Wightwick, "The computation of previously inaccessible digits of Pi^2 and Catalan's constant," Notices of the American Mathematical Society, vol. 60 (2013), no. 7, pg. 844-854. The authors of this paper were awarded the 2017 Levi L. Conant Prize by the American Mathematical Society. Available at AMS Notices PDF | Preprint PDF.
+David H. Bailey, "A New Kind of Science: Ten years later," in Hector Zenil, ed., Irreducibility and Computational Equivalence, Springer, 2013, preprint draft available at PDF.
+David H. Bailey and Jonathan M. Borwein, "Set the default to 'open': Reproducible science in the computer age," Math Drudge, 20 Jan 2013, available at HTML.
+Abhinav Sarje, Samuel Williams and David H. Bailey, "MPQC: Performance analysis and optimization," manuscript, 24 Jan 2013, available at PDF.
+Taghrid Samak, Christine Morin and David H. Bailey, "Energy consumption models and predictions for large-scale systems," Proceedings of the Ninth Workshop on High-Performance, Power-Aware Computing, 22 Jan 2013, preprint draft available at PDF.
+David H. Bailey and Jonathan M. Borwein, "Scientific nonsense and relative risk," Math Drudge, 13 Feb 2013, available at HTML.
+Jonathan Borwein and David H. Bailey, "Danger, you're at serious risk of ... no, sorry, it's all relative," The Conversation, 15 Feb 2013, available at HTML.
+Victoria Stodden, David H. Bailey, Jonathan M. Borwein, Randall J. LeVeque, William Rider and William Stein, "Setting the default to reproducible: Reproducibility in computational and experimental mathematics," manuscript, 2 Feb 2013, available at PDF.
+David H. Bailey and Jonathan M. Borwein, "Smart meters, dumb science," Math Drudge, 26 Feb 2013, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Smart meters, dumb science," Huffington Post, 28 Feb 2013, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Set the default to 'Open': Reproducible science in the computer age," Huffington Post, 7 Feb 2013, available at HTML.
+David H. Bailey, Marcos M. Lopez de Prado and Eva del Pozo, "The strategy approval decision: A Sharpe ratio indifference curve approach," Algorithmic Finance, vol. 2 (2013), pg. 99-109, preprint draft available at SSRN PDF | Preprint PDF.
+David H. Bailey and Jonathan M. Borwein, "The Higgs boson: What does it mean?," Math Drudge, 18 Mar 2013, available at HTML.
+Jonathan Borwein and David H. Bailey, "A Higgs, the Higgs ... is maths at the root of reality?," The Conversation, 21 Mar 2013, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "March 26, 2013: The 100th birthday of Paul Erdos," Math Drudge, 25 Mar 2013, available at HTML.
+David H. Bailey and Marcos Lopez de Prado, "An open-source implementation of the critical line algorithm for portfolio optimization," Algorithms, vol. 6 (2013), pg. 169-196, DOI: 10.3390/a6010169, preprint draft available at SSRN PDF | Preprint PDF | CLA-files.zip.
+Cindy Rubio-Gonzalez, Cuong Nguyen, Hong Diep Nguyen, James Demmel, William Kahan, Koushik Sen, David H. Bailey, Costin Iancu and David Hough, "Precimonious: Tuning assistant for floating-point precision," Proceedings of SC13, 26 Apr 2013, preprint draft available at PDF.
+David H. Bailey and Jonathan M. Borwein, "The last Japanese WWII holdout: A lesson for creationists," Math Drudge, 1 Apr 2013, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Criminology, sports drug testing and evolution," Math Drudge, 1 Apr 2013, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Are the digits of pi random?," Math Drudge, 15 Apr 2013, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Are the digits of pi random?," Huffington Post, 16 Apr 2013, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Why E.O. Wilson is wrong," Math Drudge, 17 Apr 2013, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Reliability, reproducibility and the Reinhart-Rogoff error," Math Drudge, 18 Apr 2013, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Why E.O. Wilson is wrong," Huffington Post, 18 Apr 2013, available at HTML.
+George Michelogiannakis, Xiaoye S. Li, David H. Bailey and John Shalf, "Extending summation precision for network reduction operations," Proceedings of the International Symposium on Computer Architecture and High Performance Computing, 26 Apr 2013, preprint draft available at PDF.
+Jonathan Borwein and David H. Bailey, "The Reinhart-Rogoff error -- or how not to Excel at economics," The Conversation, 23 Apr 2013, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Fraud, foolishness and error in scientific research," Math Drudge, 4 May 2013, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "The colorful life of the four-color theorem: A tribute to Kenneth Appel," Math Drudge, 7 May 2013, available at HTML.
+Jonathan Borwein and David H. Bailey, "Scientific fraud, sloppy science -- yes, they happen," The Conversation, 7 May 2013, available at HTML.
+Anubhav Jain, Ivano E. Castelli, Geoffroy Hautier, David H. Bailey and Karsten W. Jacobsen, "Performance of genetic algorithms in search for water splitting perovskites," Journal of Materials Science, DOI 10.1007/s10853-013-7448-9, May 2013, preprint draft available at PDF.
+David H. Bailey and Jonathan M. Borwein, "The mad politics of science funding," Math Drudge, 8 May 2013, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "The Abel Prize on Jeopardy!," Math Drudge, 10 May 2013, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Frank W.J. Olver (1924-2013)," Math Drudge, 12 May 2013, available at HTML.
+Jonathan Borwein and David H. Bailey, "Stupid science funding decisions? Australia's not the only dunce," The Conversation, 13 May 2013, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Two breakthrough results in number theory," Math Drudge, 24 May 2013, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Hype now, hide later: No way to do scientific research," Math Drudge, 26 May 2013, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Hype now, hide later: No way to do scientific research," Huffington Post, 28 May 2013, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "The colorful life of the four-color theorem: A tribute to Kenneth Appel," Huffington Post, 8 May 2013, available at HTML.
+Victoria Stodden, Jonathan Borwein and David H. Bailey, "'Setting the default to reproducible' in computational science research," SIAM News, vol. 46, no. 5 (Jun 2013), pg. 4-6.
+Orianna DeMasi, Taghrid Samak and David H. Bailey, "Identifying HPC codes via performance logs and machine learning," Proceedings of the First Workshop on Changing Landscapes in HPC Security, ACM, New York, 17-21 Jun 2013, pg. 23-30, preprint draft available at PDF.
+David H. Bailey, Jonathan M. Borwein and Victoria Stodden, "Set the default to 'open'," Notices of the American Mathematical Society, Jun/Jul 2013, pg. 679, preprint draft available at AMS Notices PDF | Preprint PDF.
+David H. Bailey and Jonathan M. Borwein, "Plagiarism is a symptom not a disease," Math Drudge, 31 May 2013, available at HTML.
+Jonathan Borwein and David H. Bailey, "You wait ages for number theory results, then two come at once," The Conversation, 3 Jun 2013, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Getting it wrong: Australian science literacy hits new low," Math Drudge, 17 Jul 2013, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Brown, Sokal and Friedman on nonsense in psychology," Math Drudge, 18 Jul 2013, available at HTML.
+Jonathan Borwein and David H. Bailey, "Glum and glummer: Australia vs US on science literacy results," The Conversation, 19 Jul 2013, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "High-precision arithmetic: Progress and challenges," manuscript, 8 Aug 2013, available at PDF. An updated version of this manuscript is "High-precision arithmetic in mathematical physics" (see below), available at PDF.
+David H. Bailey, Jonathan M. Borwein, Richard E. Crandall and Michael G. Rose, "Expectations on fractal sets," Applied Mathematics and Computation, vol. 220 (1 Sep 2013), pg. 695-721. https://dx.doi.org/10.1016/j.amc.2013.06.078, preprint draft available at PDF.
+David H. Bailey and Jonathan M. Borwein, "Did dinosaurs live with humans? Were dragons real?," Math Drudge, 27 Aug 2013, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Troubles beset Kentucky's Creation Museum," Math Drudge, 27 Aug 2013, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Massachusetts leads the way in science and math education," Math Drudge, 3 Sep 2013, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Please mess with Texas: Texas textbook fiasco threatens US science," Math Drudge, 15 Sep 2013, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Please mess with Texas: Textbook fiasco threatens U.S. science," Huffington Post, 18 Sep 2013, available at HTML.
+David H. Bailey, Jonathan M. Borwein, Marcos Lopez de Prado and Jim Zhu, "The two towers of finance," Mathematical Investor, 21 Oct 2013, available at HTML.
+David H. Bailey, Jonathan M. Borwein, Marcos Lopez de Prado and Jim Zhu, "Two tales of the Kelly formula," Mathematical Investor, 27 Oct 2013, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "When skepticism becomes denial: The unholy alliance between science denial movements," Math Drudge, 3 Nov 2013, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "When skepticism becomes denial: The unholy alliance between science denial movements," Huffington Post, 5 Nov 2013, available at HTML.
+David H. Bailey, Jonathan M. Borwein, Marcos Lopez de Prado and Jim Zhu, "The art of investing," Mathematical Investor, 15 Nov 2013, available at HTML.
+David H. Bailey, Jonathan M. Borwein, Marcos Lopez de Prado and Jim Zhu, "The myth of the Halloween indicator," Mathematical Investor, 15 Nov 2013, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Pi in the Simpsons," Math Drudge, 18 Nov 2013, available at HTML.
+David H. Bailey, "The Mathematical Investor: A personal perspective by DHB," Mathematical Investor, 28 Nov 2013, available at HTML.
+David H. Bailey, Jonathan M. Borwein, Marcos Lopez de Prado and Jim Zhu, "Do large cap stocks boost portfolio performance at year's end?," Mathematical Investor, 28 Nov 2013, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "PISA international test scores show Australia, Canada, UK, USA lagging," Math Drudge, 6 Dec 2013, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Tipsy tottering, sunlight and the smell of coffee: it's all random," Math Drudge, 18 Dec 2013, available at HTML.
+David H. Bailey, Jonathan M. Borwein, Marcos Lopez de Prado and Jim Zhu, "What Wittgenstein can teach all of us about investing," Mathematical Investor, 28 Dec 2013, available at HTML.
+David H. Bailey, Jonathan M. Borwein, Marcos Lopez de Prado and Jim Zhu, "Are individual investors equipped to make basic financial decisions?," Mathematical Investor, 30 Dec 2013, available at HTML.
+Jonathan M. Borwein and David H. Bailey, "The recent trademarking of Pi: a troubling precedent," Notices of the American Mathematical Society, vol. 61 (2014), pg. 1224-1227, available at AMS Notices PDF | Preprint PDF.
+George Michelogiannakis, Xiaoye S. Li, David H. Bailey and John Shalf, "Extending summation precision for network reduction operations," Springer International Journal of Parallel Programming, vol. 43 (2014), pg. 1218-1243, available at HTML.
+David H. Bailey, Jonathan M. Borwein and Alexander D. Kaiser, "Automated simplification of large symbolic expressions," Journal of Symbolic Computation, vol. 60 (Jan 2014), pg. 120-136, available at Science Direct PDF | Preprint PDF | Code.
+David H. Bailey, Jonathan M. Borwein, Marcos Lopez de Prado and Jim Zhu, "Testing early warning indicators," Mathematical Investor, 5 Jan 2014, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Are our brains hard-wired for numbers?," Math Drudge, 14 Jan 2014, available at HTML.
+David H. Bailey, Jonathan M. Borwein, Marcos Lopez de Prado and Jim Zhu, "Seminar at the International Association for Quantitative Finance," Mathematical Investor, 14 Jan 2014, available at HTML.
+David H. Bailey, Jonathan M. Borwein, Marcos Lopez de Prado and Jim Zhu, "Fedspeak, Karl Popper and market directions," Mathematical Investor, 19 Jan 2014, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Max Tegmark's Our Mathematical Universe," Math Drudge, 31 Jan 2014, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Why mathematics is beautiful and why that matters," Math Drudge, 14 Feb 2014, available at HTML.
+David H. Bailey, Jonathan M. Borwein, Marcos Lopez de Prado and Jim Zhu, "The 'scary chart' fallacy," Mathematical Investor, 16 Feb 2014, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Why mathematics is beautiful and why it matters," Huffington Post, 18 Feb 2014, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Pi day 3.14 (14)," Math Drudge, 23 Feb 2014, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Pi day is upon us again, and we still do not know if pi is normal," American Mathematical Monthly, Mar 2014, pg. 191-206, available at MAA PDF | Preprint PDF.
+David H. Bailey and Jonathan M. Borwein, "Pi day is upon us again, and we still do not know if pi is normal," (Chinese translation of similarly titled article above), Mathematical Advances of Translation, vol. 33 (2014), pg. 222-235, preprint draft available at PDF.
+David H. Bailey, Stephanie Ger, Marcos Lopez de Prado, Alexander Sim and Kesheng Wu, "Statistical overfitting and backtest performance," manuscript, 07 Oct 2014, available at SSRN PDF | Preprint PDF.
+Jonathan Borwein and David H. Bailey, "We still can't get enough pi ... but why?," The Conversation, 14 Mar 2014, available at HTML.
+David H. Bailey, Jonathan M. Borwein, Marcos Lopez de Prado and Qiji Jim Zhu, "Pseudo-mathematics and financial charlatanism: The effects of backtest overfitting on out-of-sample performance," Notices of the American Mathematical Society, May 2014, pg. 458-471, available at AMS Notices PDF | SSRN PDF | Preprint PDF.
+David H. Bailey and Marcos Lopez de Prado, "The deflated Sharpe ratio: Correcting for selection bias, backtest overfitting and non-normality," Journal of Portfolio Management, vol. 40 (2014), pg. 94-107, preprint draft available at SSRN PDF | Preprint PDF.
+David H. Bailey and Jonathan M. Borwein, "Is philosophy needed in mathematics and science?," Math Drudge, 13 Mar 2014, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Pi Day 3.14 (14)," Huffington Post, 14 Mar 2014, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Gravitational waves confirm mathematical prediction of inflationary big bang," Math Drudge, 18 Mar 2014, available at HTML.
+David H. Bailey, Jonathan M. Borwein, Marcos Lopez de Prado and Jim Zhu, "A sobering analysis of financial gurus' market forecasts," Mathematical Investor, 30 Mar 2014, available at HTML.
+Jonathan Borwein and David H. Bailey, "When science and philosophy collide in a 'fine-tuned' universe," The Conversation, 2 Apr 2014, available at HTML
+David H. Bailey, Jonathan M. Borwein, Marcos Lopez de Prado and Jim Zhu, "Pseudo-mathematics and financial charlatanism," Mathematical Investor, 4 Apr 2014, available at HTML.
+David H. Bailey, Jonathan M. Borwein, Marcos Lopez de Prado and Jim Zhu, "FAQs on backtest overfitting," Mathematical Investor, 13 Apr 2014, available at HTML.
+David H. Bailey, Jonathan M. Borwein, Marcos Lopez de Prado and Jim Zhu, "Is the stock market weaker during mid-term election years?," Mathematical Investor, 16 Apr 2014, available at HTML.
+David H. Bailey, Jonathan M. Borwein, Marcos Lopez de Prado and Jim Zhu, "Review of Dark Pools and Flash Boys," Mathematical Investor, 18 Apr 2014, available at HTML.
+David H. Bailey, Jonathan M. Borwein, Marcos Lopez de Prado and Jim Zhu, "Do new backtested index ETFs outperform the market?," Mathematical Investor, 23 Apr 2014, available at HTML.
+David H. Bailey, Jonathan M. Borwein, Marcos Lopez de Prado and Jim Zhu, "Latest DALBAR report underscores poor long-term performance of individual investors," Mathematical Investor, 9 May 2014, available at HTML.
+David H. Bailey, Jonathan M. Borwein, Marcos Lopez de Prado and Jim Zhu, "SEC to propose new rules for high-frequency trading," Mathematical Investor, 7 Jun 2014, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Can Pi be trademarked?," Math Drudge, 11 Jun 2014, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Can Pi be trademarked?," Huffington Post, 20 Jun 2014, available at HTML.
+David H. Bailey, Jonathan M. Borwein and Richard E. Crandall, "Computation and theory of extended Mordell-Tornheim-Witten sums," Mathematics of Computation, vol. 83, no. 288 (Jul 2014), pg. 1795-1821, preprint draft available at PDF.
+David H. Bailey, Jonathan M. Borwein, Marcos Lopez de Prado and Jim Zhu, "How financially literate are individual investors?," Mathematical Investor, 19 Jul 2014, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "How financially literate is the investing public?," Huffington Post, 29 Jul 2014, available at HTML.
+David H. Bailey, Jonathan M. Borwein, Olga Caprotti, Ursula Martin, Bruno Salvy, Michela Taufer, "Opportunities and challenges in 21st century mathematical computation: ICERM workshop report,'' manuscript, 31 Jul 2014, available at PDF | Comments by Nelson H. F. Beebe (PDF).
+David H. Bailey and Jonathan M. Borwein, "Formal proof completed for Kepler's conjecture on sphere packing," Math Drudge, 16 Aug 2014, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Opportunities and challenges in experimental mathematics," Math Drudge, 26 Aug 2014, available at HTML.
+David H. Bailey, Jonathan M. Borwein, Marcos Lopez de Prado and Jim Zhu, "New online tool to demonstrate backtest overfitting," Mathematical Investor, 28 Aug 2014, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "To frack or not to frack: That's not the question," Math Drudge, 7 Sep 2014, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "To frack or not to frack: That is the question," Huffington Post, 9 Sep 2014, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Tilting at windmills," Math Drudge, 17 Sep 2014, available at HTML.
+David H. Bailey, Jonathan M. Borwein, Marcos Lopez de Prado and Jim Zhu, "Is 'cherry picking' a factor in hedge fund performance?," Mathematical Investor, 25 Sep 2014, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Fusion energy: Hope or hype?," Math Drudge, 18 Oct 2014, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Fusion energy: Hope or hype?," Huffington Post, 23 Oct 2014, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Opportunities and challenges in experimental mathematics," SIAM News, vol. 47, no. 9 (2014), pg. 4, 8, preprint draft available at Preprint PDF.
+David H. Bailey, Jonathan M. Borwein, Marcos Lopez de Prado and Jim Zhu, "Index investing: 'Confidence in the mathematics'," Mathematical Investor, 4 Nov 2014, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Dubious digits: Is this data really that accurate?," Math Drudge, 8 Nov 2014, available at HTML.
+David H. Bailey, Jonathan M. Borwein, Marcos Lopez de Prado and Jim Zhu, "Dubious digits: Is this data really that accurate?," Mathematical Investor, 9 Nov 2014, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Dubious digits: Is this data really that accurate?," Huffington Post, 10 Nov 2014, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Big Bucks for Big Breakthroughs: Prize recipients give three million dollar maths talks," Math Drudge, 11 Nov 2014, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Low energy nuclear reactions: Papers and patents," Math Drudge, 19 Nov 2014, available at HTML.
+Jonathan Borwein and David H. Bailey, "The significance of digits: just how reliable are reported numbers?," The Conversation, 26 Nov 2014, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Low energy nuclear reactions: Papers and patents," Huffington Post, 28 Nov 2014, available at HTML.
+David H. Bailey, Jonathan M. Borwein, Marcos Lopez de Prado and Jim Zhu, "How have 2014 market prophets fared?," Mathematical Investor, 2 Dec 2014, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "How have 2014 market prophets fared?," Huffington Post, 9 Dec 2014, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "New results on the prime gap conjecture," Math Drudge, 11 Dec 2014, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Experimental computation as an ontological game changer: The impact of modern mathematical computation tools on the ontology of mathematics," in Ernest Davis and Philip J. Davis, ed., Mathematics, Substance and Surmise: Views on the Meaning and Ontology of Mathematics, Springer, New York, 2015, pg. 25-67, preprint draft available at PDF.
+David H. Bailey, David Borwein and Jonathan M. Borwein, "On Eulerian log-gamma integrals and Tornheim-Witten zeta functions," Ramanujan Journal, vol. 36 (2015), 43-68, DOI 10.1007/s11139-012-9427-1, preprint draft available at PDF.
+David H. Bailey and Jonathan M. Borwein, "High-precision arithmetic in mathematical physics," Mathematics, vol. 3 (2015), pg. 337-367, available at Journal PDF | Preprint PDF.
+David H. Bailey and Jonathan M. Borwein, "Experimental applied mathematics," in N. J. Higham, M. R. Dennis, P. Glendinning, P. A. Martin, F. Santosa and J. Tanner, ed., Princeton Companion for Applied Mathematics, Princeton University Press, Princeton, NJ, 2015, pg. 925-933, preprint draft available at PDF.
+David H. Bailey and Marcos Lopez de Prado, "Stop-outs under serial correlation and the 'triple penance' rule," Journal of Risk, vol. 18 (2015), no. 2, pg. 61-93, preprint draft available at SSRN PDF | Preprint PDF.
+David H. Bailey, Jonathan M. Borwein, Amir Salehipour, Marcos Lopez de Prado and Qiji Zhu, "Online tools for demonstration of backtest overfitting," manuscript, 29 Nov 2015, available at Preprint PDF | SSRN PDF.
+David H. Bailey and Jonathan M. Borwein, "Amir Aczel's Finding Zero," Math Drudge, 13 Jan 2015, available at HTML.
+David H. Bailey, Jonathan M. Borwein, Marcos Lopez de Prado and Jim Zhu, "Swiss franc episode exposes risky investments," Mathematical Investor, 19 Jan 2015, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Does public opinion always agree with scientific fact?," Math Drudge, 30 Jan 2015, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Is the nature of mathematical proof changing?," Math Drudge, 6 Feb 2015, available at HTML.
+David H. Bailey, Jonathan M. Borwein, Marcos Lopez de Prado and Jim Zhu, "How much do investors lose from conflicted advice?," Mathematical Investor, 28 Feb 2015, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "I Prefer Pi: Background for Big Pi Day (3/14/15)," Math Drudge, 12 Mar 2015, available at HTML.
+Jonathan Borwein and David H. Bailey, "Prepared for Pi Day? This year it's a once in a century celebration," The Conversation, 13 Mar 2015, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Where is ET? Fermi's paradox turns 65," Math Drudge, 6 Apr 2015 available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Where is ET? Fermi's paradox turns 65," Huffington Post, 10 Apr 2015, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Desperately seeking ET: Fermi's paradox turns 65 (Part II)," Math Drudge, 16 Apr 2015, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Desperately seeking ET: Fermi's paradox turns 65 (Part II)," Huffington Post, 17 Apr 2015, available at HTML.
+David H. Bailey, Jonathan M. Borwein, Marcos Lopez de Prado and Jim Zhu, "Lessons from the 'Flash Crash' regulatory fiasco," Mathematical Investor, 26 Apr 2015, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Lessons from the 'Flash Crash' regulatory fiasco," Huffington Post, 27 Apr 2015, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Are there 'missing links' in the human family tree?," Math Drudge, 2 Jun 2015, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "How certain are scientists that the earth is many millions of years old?," Math Drudge, 2 Jun 2015, available at HTML.
+David H. Bailey, Jonathan M. Borwein, Marcos Lopez de Prado and Jim Zhu, "Do individual investors understand Social Security and its overseas counterparts?," Mathematical Investor, 16 Jun 2015, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "How well do individuals understand Social Security (and its overseas counterparts)?," Huffington Post, 25 Jun 2015, available at HTML.
+Jonathan Borwein and David H. Bailey, "Moore's Law is 50 years old but will it continue?," The Conversation, 20 Jul 2015, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Moore's Law is 50 years old: Will it continue?," Math Drudge, 14 Jul 2015, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Is US crime soaring? Do gun controls encourage crime? The science of crime statistics," Math Drudge, 31 Jul 2015, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Cold fusion heats up: Fusion energy and LENR update," Math Drudge, 27 Aug 2015, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Cold fusion heats up: Fusion energy and LENR update," Huffington Post, 28 Aug 2015, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Computation and theory of extended Mordell-Tornheim-Witten sums II," Journal of Approximation Theory, vol. 197 (Sept. 2015), pg. 115--140, available at JAT PDF | Preprint PDF.
+David H. Bailey and Jonathan M. Borwein, "Crandall's computation of the incomplete gamma function and the Hurwitz zeta function with applications to Dirichlet L-series," Applied Mathematics and Computation, vol. 268C (Oct 2015), pg. 462-477, preprint draft available at PDF.
+David H. Bailey, Jonathan M. Borwein, Marcos Lopez de Prado and Jim Zhu, "Are hedge funds losing their edge?," Mathematical Investor, 16 Sep 2015, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Interview with Andrea Rossi, LENR energy pioneer," Math Drudge, 5 Oct 2015, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Interview with Andrea Rossi, LENR energy pioneer," Huffington Post, 6 Oct 2015, available at HTML.
+Naomi Borwein and Jonathan M. Borwein, "Antisocial Networking Kills, Again," Math Drudge, 7 Oct 2015, available at HTML.
+David H. Bailey, Jonathan M. Borwein, Marcos Lopez de Prado and Jim Zhu, "Is research in finance and economics reproducible?," Mathematical Investor, 10 Oct 2015, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "More mathematics (and Pi) in the media," Math Drudge, 3 Dec 2015, available at HTML.
+David H. Bailey, Jonathan M. Borwein, Marcos Lopez de Prado and Jim Zhu, "High noon for 2015 market prophets," Mathematical Investor, 24 Dec 2015, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Data vs theory: the mathematical battle for the soul of physics," Math Drudge, 27 Dec 2015, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Data vs theory: The mathematical battle for the soul of physics," Huffington Post, 30 Dec 2015, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Ancient Indian square roots," in Helaine Selin, ed., Encyclopedia of the History of Science, Technology and Medicine in Non-Western Cultures, third edition, Springer, 2016, preprint draft available at PDF.
+David H. Bailey, Jonathan M. Borwein and Victoria Stodden, "Facilitating reproducibility in scientific computing: Principles and practice," in Harald Atmanspacher and Sabine Maasen, eds, Reproducibility: Principles, Problems, Practices and Prospects, John Wiley and Sons, New York, 2016, pg. 205-232. This book received the 2017 Prose Award (Honorable Mention) in the category "Textbook/Best in Physical Sciences and Mathematics." preprint draft available at PDF.
+David H. Bailey and Jonathan M. Borwein, "Computation and structure of character polylogarithms with applications to character Mordell-Tornheim-Witten sums," Mathematics of Computation, vol. 85 (2016), no. 297, pg. 295-324, preprint draft available at PDF.
+David H. Bailey and Jonathan M. Borwein, "Experimental Mathematics in the Society of the Future," 7th European Mathematics Congress (EMC) on Mathematics in the Society of the Future, European Mathematical Society, Zurich, Switzerland, 2016, pg. 7--25, preprint draft available at PDF.
+David H. Bailey, Jonathan M. Borwein, Marcos Lopez de Prado and Jim Zhu, "How well does the 'January barometer' work?," Mathematical Investor, 21 Jan 2016, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "How likely is it that scientists are engaged in a conspiracy?," Math Drudge, 30 Jan 2016, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "How likely is it that scientists are engaged in a conspiracy?," Huffington Post, 1 Feb 2016, available at HTML.
+David H. Bailey, Jonathan M. Borwein, Amir Salehipour, Marcos Lopez de Prado and Qiji Zhu, "Backtest overfitting in financial markets," Automated Trader, issue 39 (2016), preprint draft available at Preprint PDF | SSRN PDF.
+David H. Bailey and Jonathan M. Borwein, "Gravitational waves detected, as predicted by Einstein's mathematics," Math Drudge, 11 Feb 2016, available at HTML.
+David H. Bailey, Jonathan M. Borwein, Marcos Lopez de Prado and Jim Zhu, "How well does a 'robot AI' predict the Japanese stock market?," Mathematical Investor, 19 Feb 2016, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Pi Day 2016," Math Drudge, 10 Mar 2016, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Pi Day 2016," Huffington Post, 14 Mar 2016, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Unexpected pattern found in prime number digits," Math Drudge, 15 Mar 2016, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Sphere packing problem solved in 8 and 24 dimensions," Math Drudge, 1 Apr 2016, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Space exploration: The future is now," Math Drudge, 14 Apr 2016, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Space exploration: The future is now," Huffington Post, 15 Apr 2016, available at HTML.
+David H. Bailey, Jonathan M. Borwein, Marcos Lopez de Prado and Jim Zhu, "Tough times for hedge funds," Mathematical Investor, 22 Apr 2016, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Why are so many mathematicians also musicians?," Math Drudge, 30 Apr 2016, available at HTML.
+Cuong Nguyen, Cindy Rubio-Gonzalez, Benjamin Mehne, Koushik Sen, Costin Iancu, James Demmel, William Kahan, Wim Lavrijsen, David H. Bailey and David Hough, "Floating-point precision tuning using blame analysis," 38th International Conference on Software Engineering (ICSE 2016), 14-22 May 2016, Austin, Texas, USA, preprint draft available at PDF.
+David H. Bailey and Jonathan M. Borwein, "Why are so many mathematicians also musicians?," Huffington Post, 3 May 2016, available at HTML.
+Jonathan Borwein and David H. Bailey, "Will computers replace humans in mathematics?," The Conversation, 2 Jun 2016, available at HTML.
+David H. Bailey, Jonathan M. Borwein, Marcos Lopez de Prado and Jim Zhu, "Where are the billionaire financial academics?," Mathematical Investor, 18 Jul 2016, available at HTML.
+David H. Bailey, "Jonathan Borwein dies at 65," Math Drudge, 2 Aug 2016, available at HTML.
+David H. Bailey, Marcos Lopez de Prado and Jim Zhu, "The folly of panic selling," Mathematical Investor, 23 Aug 2016, available at HTML.
+David H. Bailey, Jonathan M. Borwein, Richard Brent and Mohsen Reisi Ardali, "Reproducibility in computational science: a case study: Randomness of the digits of Pi," Experimental Mathematics, 24 Aug 2016, vol. 26, pg. 298-305, available at DOI | Preprint PDF.
+David H. Bailey, Jonathan M. Borwein, Jason Kimberley and Watson Ladd, "Computer discovery and analysis of large Poisson polynomials," Experimental Mathematics, 27 Aug 2016, vol. 26, pg. 349-363, available at DOI | Preprint PDF.
+David H. Bailey, Marcos Lopez de Prado and Jim Zhu, "How difficult is it to design a stock fund based on backtests?" Mathematical Investor, 8 Sep 2016, available at HTML.
+David H. Bailey, "Why science needs the humanities," Huffington Post, 18 Oct 2016, available at HTML.
+David H. Bailey, Marcos Lopez de Prado and Jim Zhu, "Is blockchain technology about to upend the financial world?" Mathematical Investor, 21 Oct 2016, available at HTML.
+David H. Bailey, Marcos Lopez de Prado and Jim Zhu, "The mathematics behind blockchain" Mathematical Investor, 21 Oct 2016, available at HTML.
+David H. Bailey, Marcos Lopez de Prado and Jim Zhu, "Erdos Numbers: A True 'Prince and the Pauper' story" Mathematical Investor, 6 Nov 2016, available at HTML.
+David H. Bailey, "A short history of pi formulas," manuscript, 8 Nov 2016, available at PDF.
+David H. Bailey, "Asian tigers roar in latest international test results; will the U.S. respond?," Huffington Post, 5 Dec 2016, available at HTML.
+Victoria Stodden, Marcia McNutt, David H. Bailey, Ewa Deelman, Yolanda Gil, Brooks Hanson, Michael A. Heroux, John P.A. Ioannidis and Michela Taufer, "Enhancing reproducibility for computational methods," Science, vol. 356, no. 3617 (3 Dec 2016), pg. 1240-1241, available at PDF.
+David H. Bailey, "How qualified, scientifically, are Trump's appointees?," Huffington Post, 23 Dec 2016, available at HTML.
+David H. Bailey, "Jonathan M. Borwein's Extraordinary Mathematical Career," Notes of the Canadian Mathematical Society, Dec 2016, pg. 14-15, available at PDF.
+David H. Bailey and Jonathan M. Borwein, "A computational mathematics view of space, time and complexity," in Shyam Wuppuluri and Giancarlo Ghirardi, ed., Space, Time and the Limits of Human Understanding, Springer, New York, 2017, pg. 403-416, preprint draft available at PDF.
+David H. Bailey, "Jonathan Borwein: Experimental mathematician," Experimental Mathematics, vol. 26 (2017), no. 2, pg. 125-129, preprint draft available at PDF.
+David H. Bailey, Jonathan M. Borwein and Marcos Lopez de Prado, "Stock portfolio design and backtest overfitting," Journal of Investment Management, vol. 15 (2017), no. 1, pg. 75-87, preprint draft available at Preprint PDF | SSRN PDF.
+David H. Bailey, Marcos Lopez de Prado and Jim Zhu, "How much of hedge fund profits are taken by management?," Mathematical Investor, 2 Jan 2017, available at HTML.
+David H. Bailey, Marcos Lopez de Prado and Jim Zhu, "Backtest overfitting in smart beta investments," Mathematical Investor, 31 Jan 2017, available at HTML.
+David H. Bailey, Marcos Lopez de Prado and Jim Zhu, "Investment advice from the world's most successful stock picker" Mathematical Investor, 28 Feb 2017, available at HTML.
+David H. Bailey and Jonathan M. Borwein, "Computation and experimental evaluation of Mordell-Tornheim-Witten sum derivatives," Experimental Mathematics, published online 17 Mar 2017, pg. 370-376, available at EM PDF | Preprint PDF.
+David H. Bailey, "Why science needs the humanities," Math Scholar, 23 Mar 2017, available at HTML.
+David H. Bailey, "Shawn Otto's The War on Science," Math Scholar, 23 Mar 2017, available at HTML.
+David H. Bailey, "Are humans or computers better at mathematics?," Math Scholar, 23 Mar 2017, available at HTML.
+David H. Bailey, "Asian tigers roar in the latest TIMSS math-science rankings," Math Scholar, 23 Mar 2017, available at HTML.
+David H. Bailey, "My Search for Ramanujan," Math Scholar, 23 Mar 2017, available at HTML.
+David H. Bailey, "Reproducibility: Principles, Problems, Practices, and Prospects," Math Scholar, 23 Mar 2017, available at HTML.
+David H. Bailey, "Exoplanets, 4 billion-year-old life, Fermi's paradox and zero-one laws," Math Scholar, 23 Mar 2017, available at HTML.
+David H. Bailey, Marcos Lopez de Prado and Jim Zhu, "How accurate are market forecasters?" Mathematical Investor, 29 Mar 2017, available at HTML.
+David H. Bailey, Jonathan M. Borwein, Marcos Lopez de Prado and Qiji Jim Zhu, "The probability of backtest overfitting," Journal of Computational Finance, vol. 20, no. 4 (Apr 2017), pg. 39-69, preprint draft available at SSRN PDF | Preprint PDF.
+David H. Bailey, "Is the universe fine-tuned for intelligent life?," Math Scholar, 1 Apr 2017, available at HTML.
+David H. Bailey, Marcos Lopez de Prado and Jim Zhu, "Gender, marital status and investment performance," Mathematical Investor, 15 May 2017, available at HTML.
+David H. Bailey, "Carlos Rovelli's Reality Is Not What It Seems," Math Scholar, 3 Jul 2017, available at HTML.
+David H. Bailey, "Are Hollywood stars qualified to comment on science?," Math Scholar, 9 Jul 2017, available at HTML.
+David H. Bailey, "Pi and the collapse of peer review," Math Scholar, 20 Jul 2017, available at HTML.
+David H. Bailey, "Does mathematical training pay off in the long run?," Math Scholar, 30 Jul 2017, available at HTML.
+David H. Bailey,* "Which hedge funds actually beat the market?," Mathematical Investor, 11 Aug 2017, available at HTML.
+Gordon Bell, David H. Bailey, Jack Dongarra, Alan H. Karp and Kevin Walsh, "A look back on 30 years of the Gordon Bell Prize," International Journal of High Performance Computing Applications, vol. 3 (2017), no. 6, pg. 469-484, preprint draft available at PDF.
+David H. Bailey, "Origin of decimal arithmetic with zero pushed back to 3rd century CE," Math Scholar, 15 Sep 2017, available at HTML.
+David H. Bailey,* "Charts and technical analysis: Do they work?," Mathematical Investor, 18 Sep 2017, available at HTML.
+David H. Bailey, "Fibonacci: A man of numbers," Math Scholar, 12 Oct 2017, available at HTML.
+David H. Bailey,* "Poor investor performance: What can be done?," Mathematical Investor, 13 Oct 2017, available at HTML.
+David H. Bailey, "New Go-playing program teaches itself, beating previous program 100-0," Math Scholar, 19 Oct 2017, available at HTML.
+David H. Bailey,* "Will artificial intelligence upend the financial world?," Mathematical Investor, 21 Oct 2017, available at HTML.
+David H. Bailey, "Fine tuning and Fermi's paradox," Math Scholar, 22 Nov 2017, available at HTML.
+David H. Bailey,* "How is big data impacting the finance world?," Mathematical Investor, 11 Dec 2017, available at HTML.
+David H. Bailey, "The future of artificial intelligence: Utopia or dystopia?," Math Scholar, 21 Dec 2017, available at HTML.
+David H. Bailey,* "Can the January effect be exploited in the market?," Mathematical Investor, 2 Jan 2018, available at HTML.
+David H. Bailey,* "Can mutual fund investors beat the market?," Mathematical Investor, 22 Jan 2018, available at HTML.
+David H. Bailey, "Evolutionary computing and artificial intelligence," Math Scholar, 23 Jan 2018, available at HTML.
+David H. Bailey, Jonathan M. Borwein, Amir Salehipour and Marcos Lopez de Prado, "Evaluation and ranking of market forecasters," Journal of Investment Management, vol. 16, no. 2 (Apr 2018), pg. 47-64, preprint draft available at Preprint PDF | SSRN PDF.
+David H. Bailey, "Pinker's Enlightenment Now: Humanism and scientific progress," Math Scholar, 28 Feb 2018, available at HTML.
+David H. Bailey, "Has cosmic fine-tuning been refuted?," Math Scholar, 14 Mar 2018, available at HTML.
+David H. Bailey,* "Does indexing threaten the market?," Mathematical Investor, 17 Mar 2018, available at HTML.
+David H. Bailey,* "Advances in Financial Machine Learning," Mathematical Investor, 21 Mar 2018, available at HTML.
+David H. Bailey, "Noted mathematician and two computer scientists win prestigious awards," Math Scholar, 21 Mar 2018, available at HTML.
+David H. Bailey,* "The most important plot in finance," Mathematical Investor, 1 Apr 2018, available at HTML.
+David H. Bailey, "Amateur mathematician makes key advance in classic graph theory problem," Math Scholar, 19 Apr 2018, available at HTML.
+David H. Bailey,* "Economics, finance and pseudoscience," Mathematical Investor, 29 Apr 2018, available at HTML.
+David H. Bailey, "Will experimental anomalies lead to new physics?," Math Scholar, 30 Apr 2018, available at HTML.
+David H. Bailey, "Chromosomes, DNA and human evolution," Math Scholar, 14 May 2018, available at HTML.
+David H. Bailey, "Pseudoscience from the political left and right," Math Scholar, 19 Jun 2018, available at HTML.
+David H. Bailey, "Fermi's paradox and the Copernican principle," Math Scholar, 28 Jun 2018, available at HTML.
+David H. Bailey, "Does beautiful mathematics lead physics astray?," Math Scholar, 29 Jun 2018, available at HTML.
+David H. Bailey,* "Are economics and finance 'lost in math'?," Mathematical Investor, 6 Jul 2018, available at HTML.
+David H. Bailey, "The rise of pay-to-publish journals and the decline of peer review," Math Scholar, 14 Jul 2018, available at HTML.
+David H. Bailey,* "Are target-date funds the answer?," Mathematical Investor, 21 July 2018, available at HTML.
+David H. Bailey,* "Mutual fund performance and survivorship bias," Mathematical Investor, 3 Aug 2018, available at HTML.
+David H. Bailey, "Does the string theory multiverse really exist?," Math Scholar, 10 Aug 2018, available at HTML.
+David H. Bailey,* "Doomsayers and market prophets," Mathematical Investor, 29 Aug 2018, available at HTML.
+David H. Bailey, "New books and articles on the 'great silence'," Math Scholar, 7 Sep 2018, available at HTML.
+David H. Bailey,* "Hedge fund performance report card," Mathematical Investor, 13 Sep 2018, available at HTML.
+David H. Bailey, "Simple proofs of great theorems," Math Scholar, 29 Sep 2018, available at HTML.
+David H. Bailey, "Simple proofs: The irrationality of pi," Math Scholar, 29 Sep 2018, available at HTML.
+David H. Bailey, "Simple proofs: The fundamental theorem of algebra," Math Scholar, 29 Sep 2018, available at HTML.
+David H. Bailey, "Simple proofs: The impossibility of trisection," Math Scholar, 29 Sep 2018, available at HTML.
+David H. Bailey,* "Profits, prophets and pseudoscience," Mathematical Investor, 3 Nov 2018, available at HTML.
+David H. Bailey,* "The problem with financial oracles," Mathematical Investor, 5 Nov 2018, available at HTML.
+David H. Bailey, "US leads but China rises in latest Top500 Supercomputer list," Math Scholar, 16 Nov 2018, available at HTML.
+David H. Bailey, "2018: The year that artificial intelligence came of age," Math Scholar, 29 Dec 2018, available at HTML.
+David H. Bailey, "Is scientific progress real?," Math Scholar, 9 Jan 2019, available at HTML.
+David H. Bailey,* "Jack Bogle: The apostle of index investing," Mathematical Investor, 18 Jan 2019, available at HTML.
+David H. Bailey, "Simple proofs: The fundamental theorem of calculus," Math Scholar, 2 Feb 2019, available at HTML.
+David H. Bailey, "Simple proofs: Archimedes' calculation of pi," Math Scholar, 9 Feb 2019, available at HTML.
+David H. Bailey,* "Mutual fund report card: February 2019," Mathematical Investor, 15 Feb 2019, available at HTML.
+David H. Bailey, Judith Borwein, Naomi Simone Borwein and Richard P. Brent, "Jonathan Borwein: Mathematician extraordinaire," Proceedings of the Jonathan Borwein Memorial Conference, to appear, 20 Feb 2019, preprint draft available at PDF.
+David H. Bailey, "New result for Mordell's cube sum problem," Math Scholar, 15 Mar 2019, available at HTML.
+David H. Bailey, "LENR Energy: Science or pseudoscience?," Math Scholar, 18 Mar 2019, available at HTML.
+David H. Bailey, "Karen Uhlenbeck wins the Abel Prize," Math Scholar, 19 Mar 2019, available at HTML.
+David H. Bailey,* "Majority of highest-earning hedge fund managers and traders are at quant firms," Mathematical Investor, 20 Mar 2019, available at HTML.
+David H. Bailey, "LENR: A skeptical perspective," Math Scholar, 24 Mar 2019, available at HTML.
+David H. Bailey,* "What is the best training for finance PhDs?," Mathematical Investor, 27 Mar 2019, available at HTML.
+David H. Bailey,* "Ray Dalio on why capitalism must be reformed," Mathematical Investor, 6 Apr 2019, available at HTML.
+David H. Bailey, Neil Burgess, Jack Dongarra, Alyson Fox, Jeffrey A. F. Hittinger and Cindy Rubio-Gonzaalez, "Variable precision in mathematical and scientific computing," proposal for an ICERM workshop, 10 Apr 2019, available at PDF.
+David H. Bailey, "An n log(n) algorithm for multiplication," Math Scholar, 12 Apr 2019, available at HTML.
+David H. Bailey,* "The seven reasons most econometric investments fail," Mathematical Investor, 16 Apr 2019, available at HTML.
+David H. Bailey, "P-hacking and scientific reproducibility," Math Scholar, 20 Apr 2019, available at HTML.
+David H. Bailey,* "P-hacking and backtest overfitting," Mathematical Investor, 23 Apr 2019, available at HTML.
+David H. Bailey, "Google AI system proves over 1200 mathematical theorems," Math Scholar, 26 Apr 2019, available at HTML.
+David H. Bailey, "Pi, climate change denial and creationism," Math Scholar, 29 Apr 2019, available at HTML.
+David H. Bailey, "Researchers use 'magic functions' to prove sphere-packing results," Math Scholar, 17 May 2019, available at HTML.
+David H. Bailey, "Computational tools help create new living organism," Math Scholar, 18 May 2019, available at HTML.
+David H. Bailey,* "Technical analysis in major brokerages and financial media," Mathematical Investor, 21 May 2019, available at HTML.
+David H. Bailey, "Mathematicians prove result tied to the Riemann hypothesis," Math Scholar, 23 May 2019, available at HTML.
+David H. Bailey,* "Frank Fabozzi blasts the state of academic economics and finance," Mathematical Investor, 6 Jun 2019, available at HTML.
+David H. Bailey, "Homo Deus: A brief history of tomorrow," Math Scholar, 18 Jun 2019, available at HTML.
+David H. Bailey, "Protein folding via machine learning may spawn medical advances," Math Scholar, 19 Jul 2019, available at HTML.
+David H. Bailey, "How fast is the universe expanding? New results deepen the controversy," Math Scholar, 8 Aug 2019, available at HTML.
+David H. Bailey, "How many habitable exoplanets are there, really?," Math Scholar, 21 Aug 2019, available at HTML.
+David H. Bailey,* "Interview with Marcos Lopez de Prado," Mathematical Investor, 5 Sep 2019, available at HTML.
+David H. Bailey,* "Go with big data and machine learning, or leave finance to those who do," Mathematical Investor, 6 Sep 2019, available at HTML.
+David H. Bailey,* "Will investors outlive their savings?," Mathematical Investor, 15 Sep 2019, available at HTML.
+David H. Bailey, "New paper proves 80-year-old approximation conjecture," Math Scholar, 23 Sep 2019, available at HTML.
+David H. Bailey, "Reproducibility and variable precision computing," Supercomputing 19: Workshop on Computational Reproducibility at Exascale, 30 Sep 2019, preprint draft available at PDF.
+David H. Bailey,* "The 'Master of the Robots' on machine learning in finance," Mathematical Investor, available at HTML.
+David H. Bailey, "Pi as the limit of n-sided circumscribed and inscribed polygons," Math Scholar, 14 Oct 2019, available at HTML.
+David H. Bailey, "Quantum supremacy has been achieved; or has it?," Math Scholar, 28 Oct 2019, available at HTML.
+David H. Bailey,* "Quantum supremacy has been achieved; or has it?," Mathematical Investor, 28 Oct 2019, available at HTML. This is essentially identical to the previous item.
+David H. Bailey, "The scientific debate is over: it is time to act on climate change," Math Scholar, 3 Nov 2019, available at HTML.
+David H. Bailey,* "Feast or famine? The financial risks of climate change," Mathematical Investor, 6 Nov 2019, available at HTML.
+David H. Bailey, "Jim Simons: The man who solved the market," Math Scholar, 5 Dec 2019, available at HTML.
+David H. Bailey,* "Jim Simons: The man who solved the market," Mathematical Investor, 5 Dec 2019, available at HTML. This is essentially identical to the previous item.
+David H. Bailey,* "Marcos Lopez de Prado testifies before U.S. Congress," Mathematical Investor, 6 Dec 2019, available at HTML.
+David H. Bailey, "New factorization advances: Is your bank account safe?," Math Scholar, 15 Dec 2019, available at HTML.
+David H. Bailey, "Do probability arguments refute evolution?," Math Scholar, 3 Jan 2020, available at HTML.
+David H. Bailey, "Universe or multiverse? The war rages on," Math Scholar, 15 Jan 2020, available at HTML.
+David H. Bailey,* "Is AI coming after your job?," Math Scholar, 30 Jan 2020, available at HTML.
+David H. Bailey, "MPFUN2015: A thread-safe arbitrary precision package (full documentation)," manuscript, 7 Feb 2020, available at PDF.
+David H. Bailey, "Why are people embracing astrology in an age of science?," Math Scholar, 16 Mar 2020, available at HTML.
+David H. Bailey, "From Analysis to Visualization: A Celebration of the Life and Legacy of Jonathan M. Borwein," Math Scholar, 28 Mar 2020, available at HTML.
+David H. Bailey, Jonathan M. Borwein, Amir Salehipour and Marcos Lopez de Prado, "Do financial gurus produce reliable forecasts?," From Analysis to Visualization: A Celebration of the Life and Legacy of Jonathan M. Borwein, David H. Bailey, Naomi Simone Borwein, Richard P. Brent, Regina S. Burachik, Judy-anne Heather Osborn, Brailey Sims and Qiji J. Zhu, ed., Springer Proceedings of Mathematics and Statistics, vol. 313, Springer, 2020, 255-274, preprint draft available at PDF.
+David H. Bailey,* "Exit strategies for Covid-19," Mathematical Investor, 19 Apr 2020, available at HTML.
+David H. Bailey, "Pseudoscience in the age of Coronavirus," Math Scholar, 28 Apr 2020, available at HTML.
+David H. Bailey, "The origin of life in an inflationary universe," Math Scholar, 4 May 2020, available at HTML.
+David H. Bailey, "Reproducibility and variable precision computing," International Journal of High Performance Computing Applications, 8 July 2020, DOI copy, preprint draft available at PDF.
+David H. Bailey, "Covid-19 and the worth of a human life," Math Scholar, 3 Jun 2020, available at HTML.
+David H. Bailey,* "Day-trading in the age of coronavirus," Mathematical Investor, 10 Jul 2020, available at HTML.
+David H. Bailey, "How old is the universe? New results clash," Math Scholar, 1 Aug 2020, available at HTML.
+David H. Bailey, "Two mathematicians' triple play," Math Scholar, 3 Aug 2020, available at HTML.
+David H. Bailey, "Peter Borwein dies at 67," Math Scholar, 29 Aug 2020, available at HTML.
+David H. Bailey, "Can computers do mathematical research?," Math Scholar, 1 Sep 2020, available at HTML.
+David H. Bailey, "Do odd perfect numbers exist? New results on an old problem," Math Scholar, 22 Sep 2020, available at HTML.
+David H. Bailey, "Another miserable year for market forecasters," Mathematical Investor, 20 Dec 2020, available at HTML.
+David H. Bailey, "Machine-learning breakthrough in protein folding," Math Scholar, 30 Dec 2020, available at HTML.
+David H. Bailey, "Jonathan Borwein: Renaissance mathematician," American Mathematical Monthly, to appear, 21 Jan 2021, preprint draft available at PDF.
+David H. Bailey,* "The failure of anomaly indicators in finance," Mathematical Investor, 1 Feb 2021, available at HTML.
+David H. Bailey, "Pandemics, misinformation and pseudoscience," Math Scholar, 2 Mar 2021, available at HTML.
+David H. Bailey, "Two researchers share Abel prize for work in discrete mathematics and computer science," Math Scholar, 17 Mar 2021, available at HTML.
+David H. Bailey, "Aho and Ullman receive the ACM Turing Award," Math Scholar, 1 Apr 2021, available at HTML.
+David H. Bailey, "Muon result may rewrite standard model of physics," Math Scholar, 7 Apr 2021, available at HTML.
+David H. Bailey, "AI system finds counterexamples to graph theory conjectures," Math Scholar, 20 May 2021, available at HTML.
+David H. Bailey, "Bach as mathematician," Math Scholar, 4 Jun 2021, available at HTML.
+David H. Bailey,* "Can astrology predict financial markets??," Mathematical Investor, 17 Jun 2021, available at HTML.
+David H. Bailey, "Computer theorem prover verifies sophisticated new result," Math Scholar, 30 Jul 2021, available at HTML.
+David H. Bailey, "Finding large Poisson polynomials using four-level variable precision," Correctness 2021: 5th International Workshop on Software Correctness for HPC Applications, 10 Nov 2021, preprint draft available at PDF.
+David H. Bailey and Scott Chapman, "Introduction to the special issue," American Mathematical Monthly, vol. 128 (2021), no. 9, pg. 772.
+David H. Bailey, "Jonathan Borwein: Renaissance mathematician," American Mathematical Monthly, vol. 128 (2021), no. 9, pg. 773-779.
+Marcos Lopez de Prado and David H. Bailey, "The false strategy theorem: A financial application of experimental mathematics," American Mathematical Monthly, vol. 128 (2021), no. 9, pg. 825-831, preprint draft available at SSRN PDF.
+David H. Bailey, "The brave new world of probability and statistics," Math Scholar, 3 Nov 2021, available at HTML.
+David H. Bailey and Marcos Lopez de Prado, "How 'backtest overfitting' in finance leads to false discoveries," Significance, Royal Statistical Society, vol. 18, no. 6 (Dec 2021), pg. 22--25. SSRN preprint draft available at PDF.
+David H. Bailey,* "Backtest overfitting and the post-hoc probability fallacy," Mathematical Investor, 1 Feb 2022, available at HTML.
+David H. Bailey, "Latest experimental data compounds the Hubble constant discrepancy," Math Scholar, 14 Feb 2022, available at HTML.
+David H. Bailey,* "Active mutual funds underperform passive funds, again," Mathematical Investor, 3 Mar 2022, available at HTML.
+David H. Bailey, "A catalogue of mathematical formulas involving pi, with analysis," Journal of Numerical Analysis and Approximation Theory, vol. 50 (14 Mar 2022), pg. 108-125, preprint draft available at PDF | Fortran programs (assuming MPFUN-MPFR has been installed): piform1.f90 | piform2.f90 | piform3.f90.
+David H. Bailey, "Where are the extraterrestrials? Fermi's paradox, diversity and the origin of life," Math Scholar, 18 Mar 2022, available at HTML.
+David H. Bailey, "Advances in artificial intelligence raise major questions," Math Scholar, 23 Jun 2022, available at HTML.
+David H. Bailey, "2022 Fields Medalists: Diverse backgrounds, breakthrough mathematics," Math Scholar, 6 Jul 2022, available at HTML.
+David. H. Bailey,* "How safe are cryptocurrency investments?," Mathematical Investor, 17 Aug 2022, available at HTML.
+David H. Bailey, "Breakthrough Prizes honor AlphaFold and quantum computing pioneers," Math Scholar, 26 Sep 2022, available at HTML.
+David H. Bailey,* "Are hedge funds losing their hedge?," Mathematical Investor, 22 Oct 2022, available at HTML.
+David H. Bailey, "Machine learning program finds new matrix multiplication algorithms," Math Scholar, 26 Oct 2022, available at HTML.
+David H. Bailey, "Can factor investing become scientific?," Mathematical Investor, 30 Jan 2023, available at HTML.
+David H. Bailey, "Can ChatGPT prove math theorems?," Math Scholar, 2 Feb 2023, available at HTML.
+David H. Bailey, "Review of The Failures of Mathematical Anti-Evolution," Reports of the National Center for Scientific Education, vol. 23, no. 1 (Winter 2023), available at PDF.
+David H. Bailey,* "Major brokerages and news media feature technical analysis," Mathematical Investor, 15 Feb 2023, available at HTML.
+David H. Bailey, "MPFUN2020: A new thread-safe arbitrary precision package (full documentation)," manuscript, updated 29 Mar 2023, available at PDF.
+David H. Bailey, "Peter Borwein: A visionary mathematician," Notices of the American Mathematical Society, Apr 2023, pg. 610-613, available at PDF.
+David H. Bailey, "A compendium of BBP-type formulas for mathematical constants," updated 4 Apr 2023, available at PDF.
+David H. Bailey,* "Chart-watching market timers fail again," Mathematical Investor, 2 Jul 2023, available at HTML.
+David H. Bailey, "Large Poisson polynomials: Computation, results and analysis," manuscript, 8 Jul 2023, available at PDF.
+
+===
+
+<li>David H. Bailey, "Reproducibility and variable precision computing," <em>International Journal of High Performance Computing Applications</em>, 8 July 2020, <a href="https://doi.org/10.1177/1094342020938424">DOI copy</a>, preprint draft available at
+<a href="https://www.davidhbailey.com/dhbpapers/repro-varprec.pdf">PDF</a>.
+
+wget_U 'https://www.davidhbailey.com/dhbpapers/repro-varprec.pdf' -O 'Reproducibility and variable precision computing(preprint draft)(2020)(Bailey).pdf'
+===
+David H. Bailey, Roberto Barrio, and Jonathan M. Borwein, "High precision computation: Mathematical physics and dynamics," Applied Mathematics and Computation, vol. 218 (2012), pg. 10106-10121, preprint draft available at PDF.
+David H. Bailey, Edward A. Baron, Hemant Shukla and Xiaoye S. Li, "High-precision arithmetic and exascale computing," manuscript, 9 Feb 2012, available at PDF.
+
+<li>David H. Bailey, Roberto Barrio, and Jonathan M. Borwein, "High precision computation: Mathematical physics and dynamics," <em>Applied Mathematics and Computation</em>, vol. 218 (2012), pg. 10106-10121, preprint draft available at
+<a href="https://www.davidhbailey.com/dhbpapers/hpmpd.pdf">PDF</a>.
+
+wget_U 'https://www.davidhbailey.com/dhbpapers/hpmpd.pdf' -O 'High precision computation-Mathematical physics and dynamics(preprint draft)(2012)(Bailey).pdf'
+
+===
+
+<li>David H. Bailey, Edward A. Baron, Hemant Shukla and Xiaoye S. Li, "High-precision arithmetic and exascale computing," manuscript, 9 Feb 2012, available at
+<a  href="https://www.davidhbailey.com/dhbpapers/qd-white.pdf">PDF</a>.
+
+wget_U 'https://www.davidhbailey.com/dhbpapers/qd-white.pdf' -O '[useless]High-precision arithmetic and exascale computing(manuscript)(2012)(Bailey).pdf'
+===
+===
+]]]
+
+]]]]]]]

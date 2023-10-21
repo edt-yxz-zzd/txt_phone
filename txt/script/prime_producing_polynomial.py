@@ -1,0 +1,112 @@
+#__all__:goto
+r'''[[[
+e script/prime_producing_polynomial.py
+
+
+script.prime_producing_polynomial
+py -m nn_ns.app.debug_cmd   script.prime_producing_polynomial -x
+py -m nn_ns.app.doctest_cmd script.prime_producing_polynomial:__doc__ -ff -v
+py_adhoc_call   script.prime_producing_polynomial   @f
+from script.prime_producing_polynomial import *
+
+
+[[[
+e others/数学/prime/prime-producing-polynomial.txt
+===
+Prime numbers-A Computational Perspective(2ed)(2005)(Pomerance).pdf
+8.4 Diophantine analysis
+pg418 [427/604]
+[:prime_producing_polynomial_1976_Jones_Sato_Wada_Wiens]:here
+[prime_producing_polynomial_1976_Jones_Sato_Wada_Wiens(a..z) =[def]=
+(k + 2)*( 1 - (w*z + h + j - q)**2 - ((g*k + 2*g + k + 1)*(h + j) + h - z)**2
+- (2*n + p + q + z - e)**2 - (16*(k + 1)**3 *(k + 2)*(n + 1)**2 + 1 - f**2)**2
+- (e**3 *(e + 2)*(a + 1)**2 + 1 - o**2)**2 - (a**2 *y**2 - y**2 + 1 - x**2)**2
+- (16*r**2 *y**4 *(a**2 - 1) + 1 - u**2)**2
+- (((a + u**4 - u**2 *a)**2 - 1)*(n + 4*d*y)**2 + 1 - (x + c*u)**2)**2
+- (n + l + v - y)**2 - (a**2 *l**2 - l**2 + 1 - m**2)**2 - (a*i + k + 1 - l - i)**2
+- (p + l*(a - n - 1) + b*(2*a*n + 2*a - n**2 - 2*n - 2) - m)**2
+- (q + y*(a - p - 1) + s*(2*a*p + 2*a - p**2 - 2*p - 2) - x)**2
+- (z + p*l*(a - p) + t*(2*a*p - p**2 - 1) - p*m)**2 )
+]
+==>>:
+[prime_producing_polynomial_1976_Jones_Sato_Wada_Wiens(a..z) ==
+((k + 2)*( 1
+  - (w*z + h + j - q)**2
+  - ((g*k + 2*g + k + 1)*(h + j) + h - z)**2
+  - (2*n + p + q + z - e)**2
+  - (16*(k + 1)**3 *(k + 2)*(n + 1)**2 + 1 - f**2)**2
+  - (e**3 *(e + 2)*(a + 1)**2 + 1 - o**2)**2
+  - (a**2 *y**2 - y**2 + 1 - x**2)**2
+  - (16*r**2 *y**4 *(a**2 - 1) + 1 - u**2)**2
+  - (((a + u**4 - u**2 *a)**2 - 1)*(n + 4*d*y)**2 + 1 - (x + c*u)**2)**2
+  - (n + l + v - y)**2
+  - (a**2 *l**2 - l**2 + 1 - m**2)**2
+  - (a*i + k + 1 - l - i)**2
+  - (p + l*(a - n - 1) + b*(2*a*n + 2*a - n**2 - 2*n - 2) - m)**2
+  - (q + y*(a - p - 1) + s*(2*a*p + 2*a - p**2 - 2*p - 2) - x)**2
+  - (z + p*l*(a - p) + t*(2*a*p - p**2 - 1) - p*m)**2
+  )
+)]
+其结构是这样的:『(k+2)*(1 -sum xxx**2 {xxx})』
+  (k+2) 是 素数候选
+  sum 为0时，(k+2)是素数
+    <==> 方程组 [xxx==0] 有 自然数 解 时，(k+2)是素数
+
+
+
+
+
+
+[is_Diophantine_set(S) =[def]= [S <= {1..}][?[k :: uint] -> ?[P :: Polynomial(ZZ;X, *[Y[i] | [i :<- [0..<k]]])] -> [S == {x | [x :<- [1..]][[y[i] :<- [1..]] | [i :<- [0..<k]]][0==P(x, *[y[i] | [i :<- [0..<k]]])]}]]]
+[[is_Diophantine_set(S)] <-> [S <= {1..}][?[k :: uint] -> ?[Q :: Polynomial(ZZ; *[Y[i] | [i :<- [0..<k]]])] -> [S == {x | [[y[i] :<- [0..]] | [i :<- [0..<k]]][x := Q(*[y[i] | [i :<- [0..<k]]])][x > 0]}]]]
+
+
+[is_Diophantine_set(all_primes)]
+<<==:
+pg417 [426/604]
+a Diophantine set, which is a set S of positive integers such that some multivariate polynomial P(X,Y1,...,Yl) exists with coefficients in Z with the property that x ∈ S if and only if P(x,y1,...,yl) = 0 has a positive integer solution in the y[j].
+It is not hard to prove the theorem of H. Putnam from 1960, see [Ribenboim 1996, p. 189], that a set S of positive integers is Diophantine if and only if there is a multivariate polynomial Q with integer coefficients such that the set of its positive values at nonnegative integer arguments is exactly the set S.
+
+the set of prime numbers is Diophantine.
+That is, there exists a polynomial Q--with integer coefficients in some number of variables--such that as its variables range over the nonnegative integers, the set of positive values of Q is precisely the set of primes.
+One such polynomial given explicitly by Jones, Sato, Wada, and Wiens in 1976 (see [Ribenboim 1996]) is
+[:prime_producing_polynomial_1976_Jones_Sato_Wada_Wiens]:goto
+
+]]]
+
+
+
+
+
+#]]]'''
+__all__ = r'''
+    prime_producing_polynomial_1976_Jones_Sato_Wada_Wiens
+'''.split()#'''
+__all__
+
+
+def prime_producing_polynomial_1976_Jones_Sato_Wada_Wiens(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,/):
+    return ((k + 2)*( 1
+    - (w*z + h + j - q)**2
+    - ((g*k + 2*g + k + 1)*(h + j) + h - z)**2
+    - (2*n + p + q + z - e)**2
+    - (16*(k + 1)**3 *(k + 2)*(n + 1)**2 + 1 - f**2)**2
+    - (e**3 *(e + 2)*(a + 1)**2 + 1 - o**2)**2
+    - (a**2 *y**2 - y**2 + 1 - x**2)**2
+    - (16*r**2 *y**4 *(a**2 - 1) + 1 - u**2)**2
+    - (((a + u**4 - u**2 *a)**2 - 1)*(n + 4*d*y)**2 + 1 - (x + c*u)**2)**2
+    - (n + l + v - y)**2
+    - (a**2 *l**2 - l**2 + 1 - m**2)**2
+    - (a*i + k + 1 - l - i)**2
+    - (p + l*(a - n - 1) + b*(2*a*n + 2*a - n**2 - 2*n - 2) - m)**2
+    - (q + y*(a - p - 1) + s*(2*a*p + 2*a - p**2 - 2*p - 2) - x)**2
+    - (z + p*l*(a - p) + t*(2*a*p - p**2 - 1) - p*m)**2
+    )
+)
+
+if __name__ == "__main__":
+    pass
+__all__
+
+
+from script.prime_producing_polynomial import *

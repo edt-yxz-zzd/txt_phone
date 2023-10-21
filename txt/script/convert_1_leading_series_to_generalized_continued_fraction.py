@@ -4,6 +4,7 @@ e ./script/convert_1_leading_series_to_generalized_continued_fraction.py
 view others/数学/continued-fraction/generalized_continued_fraction.txt
     # [:分式转化为连分式]:goto
 
+power series 幂级数
 
 script.convert_1_leading_series_to_generalized_continued_fraction
 py -m nn_ns.app.debug_cmd   script.convert_1_leading_series_to_generalized_continued_fraction -x
@@ -229,6 +230,46 @@ Fraction(0, 1)
 (Fraction(-1, 14), 1)
 (Fraction(1, 138), 1)
 看起来 很接近e的简单连分数，有必要折叠起来好好瞧瞧
+py_adhoc_call   script.convert_1_leading_series_to_generalized_continued_fraction   ,convert_power_series4xxx_to_generalized_continued_fraction_  :natural_exponential_function  =25 --offset=-2
+Fraction(2, 1)
+(Fraction(-1, 1), 0)
+(Fraction(1, 1), 1)
+(Fraction(-3, 2), 1)
+(Fraction(1, 18), 1)
+(Fraction(-1, 18), 1)
+(Fraction(3, 10), 1)
+...
+(Fraction(-1, 14), 1)
+(Fraction(1, 138), 1)
+py_adhoc_call   script.convert_1_leading_series_to_generalized_continued_fraction   ,convert_power_series4xxx_to_generalized_continued_fraction_  :natural_exponential_function  =25 --offset=-2  +to_eliminate_denominators_in_coeffs
+Fraction(2, 1)
+((-1, 0), 1)
+((1, 1), 1)
+((-3, 1), 2)
+((1, 1), 9)
+((-1, 1), 2)
+((3, 1), 5)
+((-3, 1), 2)
+((1, 1), 21)
+((-1, 1), 2)
+((1, 1), 3)
+((-1, 1), 2)
+((1, 1), 33)
+((-1, 1), 2)
+((3, 1), 13)
+((-3, 1), 2)
+((1, 1), 45)
+((-1, 1), 2)
+((3, 1), 17)
+((-3, 1), 2)
+((1, 1), 57)
+((-1, 1), 2)
+((1, 1), 7)
+((-1, 1), 2)
+((1, 1), 69)
+py_adhoc_call   script.convert_1_leading_series_to_generalized_continued_fraction   ,convert_power_series4xxx_to_generalized_continued_fraction_  :natural_exponential_function  =25 --scale4z=2
+    kw:scale4z 无用，转化为 连分式 后，再缩放z也一样
+
 ]]]
 
 
@@ -310,13 +351,32 @@ class Error__coeff4power_series__eq_zero(BaseError):pass
 
 
 
-def convert_power_series4xxx_to_generalized_continued_fraction_(nm, sz, /, *, factor_as_p2e=False, list_p2e=False, args4iter_power_series4xxx_=(), sz4cut_power_series=None):
+def convert_power_series4xxx_to_generalized_continued_fraction_(nm, sz, /, *, factor_as_p2e=False, list_p2e=False, args4iter_power_series4xxx_=(), sz4cut_power_series=None, offset=None, to_eliminate_denominators_in_coeffs=False, scale4z=None):
     iter_power_series4xxx_ = globals()[f'iter_power_series4{nm}_']
     power_series = iter_power_series4xxx_(*args4iter_power_series4xxx_)
+
     if not sz4cut_power_series is None:
         power_series = islice(power_series, sz4cut_power_series)
+
+    if not scale4z is None:
+        scale4z = Fraction(scale4z) # 5str
+        power_series = scale_z_in_power_series_(scale4z, power_series)
+    if not offset is None:
+        offset = Fraction(offset) # 5str
+        power_series = offset_power_series_(offset, power_series)
+
     it = convert_power_series_to_generalized_continued_fraction__coeff_is_Fraction_(power_series, factor_as_p2e=factor_as_p2e, list_p2e=list_p2e)
     it = islice(it, sz)
+    if not offset is None:
+        it = offset_gcf_(-offset, it)
+
+    if not factor_as_p2e:
+        gcf__Fraction__nk_only = it
+        one = Fraction(1)
+        gcf__Fraction = supply_one_as_partial_denominators__gcf_(one, gcf__Fraction__nk_only)
+        if to_eliminate_denominators_in_coeffs:
+            gcf__int = eliminate_denominators_in_coeffs__eqv_transform__gcf__coeff_is_Fraction_(gcf__Fraction)
+            it = gcf__int
     return it
 def convert_power_series4arcsin_to_generalized_continued_fraction_(sz, /, *, factor_as_p2e=False, list_p2e=False):
     power_series = iter_power_series4arcsin_()
@@ -346,6 +406,77 @@ def iter_power_series4natural_exponential_function_(offset=0, /):
     for k in count_(1):
         acc /= k
         yield (acc, k)
+def offset_gcf_(offset, gcf, /):
+    gcf = iter(gcf)
+    for d0 in gcf:
+        break
+    else:
+        if offset:
+            yield offset
+        return
+    d0 += offset
+    yield d0
+    yield from gcf
+def scale_z_in_power_series_(scale4z, power_series, /):
+    power_series = iter(power_series)
+    for c, e in power_series:
+        e = __index__(e)
+        c *= scale4z**e
+        yield (c, e)
+def offset_power_series_(offset, power_series, /):
+    power_series = iter(power_series)
+    for c0, e0 in power_series:
+        e0 = __index__(e0)
+        break
+    else:
+        return
+    if e0 == 0:
+        c0 += offset
+        if c0:
+            yield (c0, e0)
+    else:
+            yield (c0, e0)
+    yield from power_series
+
+def supply_one_as_partial_denominators__gcf_(one, gcf, /):
+    '-> iter([d0; ((c,e),one)*])'
+    gcf = iter(gcf)
+    for d0 in gcf:
+        break
+    else:
+        return
+    yield d0
+    for c, e in gcf:
+        yield (c, e), one
+            # (partial_numerator, partial_denominator)
+            # (n[k], d[k])
+def eliminate_denominators_in_coeffs__eqv_transform__gcf__coeff_is_Fraction_(gcf, /):
+    gcf = iter(gcf)
+    for d0 in gcf:
+        break
+    else:
+        return
+    yield d0
+
+    acc = 1
+    for (c4nk, e4nk), dk in gcf:
+        c4nk *= acc
+        acc = 1
+
+        d_N,d_D = dk.as_integer_ratio()
+        scale = d_D
+        c4nk *= scale
+        dk = d_N
+        acc *= scale
+
+        n_N,n_D = c4nk.as_integer_ratio()
+        scale = n_D
+        c4nk = n_N
+        dk *= scale
+        acc *= scale
+
+        yield (c4nk, e4nk), dk
+            # ((int, uint), int)
 
 def _factor_(ps, n, /):
     p2e_, u = semi_factor_pint_via_trial_division(ps, n)
@@ -375,8 +506,8 @@ def convert_power_series_to_generalized_continued_fraction__coeff_is_Fraction_(p
             raise 000
         yield d0
         ps = {2}
-        for nk,e in it:
-            N,D = nk.as_integer_ratio()
+        for c4nk,e4nk in it:
+            N,D = c4nk.as_integer_ratio()
             absN = abs(N)
             p2e4N = _factor_(ps, absN)
             p2e4D = _factor_(ps, D)
@@ -384,7 +515,7 @@ def convert_power_series_to_generalized_continued_fraction__coeff_is_Fraction_(p
                 p2e4N[-1] = 1
             ps8N = _f__ls(p2e4N)
             ps8D = _f__ls(p2e4D)
-            yield ((ps8N, ps8D), e)
+            yield ((ps8N, ps8D), e4nk)
     def _f__ls(p2e, /):
         ps = (*sorted(p2e.items()),)
         if list_p2e:
