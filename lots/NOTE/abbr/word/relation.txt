@@ -1,0 +1,98 @@
+preorder
+    reflexive
+    #xxx:symmetric,antisymmetric
+    transitive
+    #xxx:total
+
+partial_order # <: preorder
+    reflexive
+    antisymmetric
+    transitive
+    #xxx:total
+
+total_order # <: partial_order <: preorder
+    reflexive
+    antisymmetric
+    transitive
+    total
+        # [[a <= b]or[b <= a]]
+        # generic:exclude diagonal
+        # [[a===b]or[a <= b]or[b <= a]]
+        # [[a===b]or[a < b]or[b < a]]
+
+
+(==)
+    reflexive
+    symmetric
+    transitive
+    #xxx:total
+
+(=!=)
+    irreflexive
+    symmetric
+    #xxx:transitive
+    #xxx:total
+
+# int cmp:
+(<=) # :: total_order <: partial_order <: preorder
+    reflexive
+    antisymmetric
+        #exclude self/reflexive/diagonal
+    transitive
+    total
+
+(<)
+    irreflexive
+    antisymmetric
+    transitive
+    #???:total
+
+# set cmp:
+(|<=|) # :: partial_order <: preorder
+    reflexive
+    antisymmetric
+        #exclude self/reflexive/diagonal
+    transitive
+    #xxx:total
+
+(|<|)
+    irreflexive
+    antisymmetric
+    transitive
+    #xxx:total
+
+
+
+
+[[
+antisymmetric,transitive:
+view ../lots/NOTE/Types and Programming Languages (2002)(Benjamin C. Pierce)/preordered set.u8
+
+irreflexive:
+view ../lots/NOTE/The Art of Multiprocessor Programming/linearizability.txt
+
+view ../../python3_src/seed/math/generate_partition4additive_semigroup__total_ordering__increasing.py
+    __lt__ :: k -> k -> bool
+        [@[a :: k] -> [not$ __lt__(a,a)]]
+            #irreflexive
+        [@[a,b :: k] -> [not$ __eq__(a,b)] -> [__lt__(a,b)] -> [not$ __lt__(b,a)]]
+            #antisymmetric
+        [@[a,b,c :: k] -> [__lt__(a,b)] -> [__lt__(b,c)] -> [__lt__(a,c)]]
+            #transitive
+        [@[a,b :: k] -> [not$ __lt__(a,b)] -> [not$ __lt__(b,a)] -> [__eq__(a,b)]]
+            <==> [@[a,b :: k] -> [not$ __lt__(a,b)] -> [__le__(b,a)]]
+            <==> [@[a,b :: k] -> [not$ __le__(a,b)] -> [__lt__(b,a)]]
+            <==> [@[a,b :: k] -> [not$ __le__(a,b)] -> [__le__(b,a)]] #total
+
+    __add__<G> :: x -> x -> x
+        [@[x,y :<- G] -> [__add__(x,y) <- G]]
+            #closure
+        [@[x,y :<- G] -> [__add__(x,y) == __add__(y,x)]]
+            #commutative
+        [@[x,y,z :<- G] -> [__add__(x,__add__(y,z)) == __add__(__add__(x,y),z)]]
+            #associative
+        [@[x,y :<- G] -> [__lt__(x,__add__(x,y))]]
+            #strict_monotone_increasing__gt0
+        [@[x,y,z :<- G] -> [__lt__(y,z)] -> [__lt__(__add__(x,y),__add__(x,z))]]
+            #strict_monotone_increasing__gtR
+]]

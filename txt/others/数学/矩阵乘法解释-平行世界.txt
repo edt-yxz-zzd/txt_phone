@@ -1,0 +1,54 @@
+
+e others/数学/矩阵乘法解释-平行世界.txt
+
+元素乘法=串行，元素加法=并行，矩阵乘法=平行世界简并态迭进
+
+矩阵乘法
+    #范畴？
+    矩阵元素 := 函数
+        # a->a
+        # cat a a
+        # arr a a
+    矩阵元素乘法 := 函数串行组接 # 函数复合
+        # Haskell.Category.(.)
+        # Haskell.Arrow.(>>>)
+    矩阵元素加法 := 函数并行简并
+        # Haskell.Arrow.(+++)
+
+e.g.
+    矩阵元素:
+        f = add {{a=1}:1}
+            === lambda x2n: acc [(x{a := x.a+1},n) | [(x,n) :<- x2n.items()]]
+        g = add {{b=1}:1}
+            === lambda x2n: acc [(x{b := x.b+1},n) | [(x,n) :<- x2n.items()]]
+        s = add {{a=1, b=1}:1}
+            === lambda x2n: acc [(x{a := x.a+1, b := x.b+1},n) | [(x,n) :<- x2n.items()]]
+        p = add {{a=1}:1, {b=1}:1}
+            === lambda x2n: acc $ chain [[(x{a := x.a+1}:n), (x{b := x.b+1},n)] | [(x,n) :<- x2n.items()]]
+    矩阵元素乘法:
+        f . g === g >>> f
+            === add {{a=1,b=1}:1}
+            === s
+        f . f === f >>> f
+            === add {{a=2}:1}
+        f . g . f
+            === add {{a=2,b=1}:1}
+
+    矩阵元素加法:
+        f + g
+            === add {{a=1}:1,{b=1}:1}
+            === p
+        f + f
+            === add {{a=1}:2}
+            === lambda x2n: acc [(x{a := x.a+1},n*2) | [(x,n) :<- x2n.items()]]
+        f + g + f
+            === add {{a=1}:2,{b=1}:1}
+            === lambda x2n: acc $ chain [[(x{a := x.a+1}:n*2), (x{b := x.b+1},n)] | [(x,n) :<- x2n.items()]]
+        f + g + f + (f . g)
+            === add {{a=1}:2,{b=1}:1,{a=1,b=1}:1}
+
+
+
+grep -F '(.)' -r ../lots/NOTE/Haskell/
+grep -F 'Cat' -r ../lots/NOTE/Haskell/
+

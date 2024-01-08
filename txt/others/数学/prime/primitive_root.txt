@@ -15,6 +15,190 @@ OEIS least prime primitive root
 [[p :: prime] -> [p%2==1] -> [is_primitive_root_mod_(p;g)] -> [k :<- [1..]] -> [[is_primitive_root_mod_(p**k;g)]or[is_primitive_root_mod_(p**k;g+p)]]]
 [[p :: prime] -> [p%2==1] -> [is_primitive_root_mod_(p;g)] -> [k :<- [1..]] -> [is_primitive_root_mod_(2*p**k;g+[g%2==0]*p**k)]]
 
+
+
+
+
+[[[
+copy from:
+  view ../../python3_src/seed/math/primality_proving__plain.py
+copy to:
+    view others/数学/prime/primitive_root.txt
+===
+给定素数p，p最小 的 平方非剩余 必定是 素数
+给定素数p，p最小 的 本原根 不一定是 素数
+    本原根 相当于 merge_partial_pseudo_primitive_roots_into_single_one，所以 最小者 不一定是 素数
+===
+但是，p最小的 ft-partial_pseudo_primitive_root<p> 必定是 素数
+    [:最小正伪偏本原根必是素数]:goto
+===
+[[is_prime_(N)] -> [N%2 == 1] -> [[is_a_partial_primitive_root_mod_(N,N-1,2; g)] <-> [is_a_quadratic_nonresidue_mod_(N; g)]]]
+    [:关于二的伪偏本原根等价于与模互素的平方非剩余]:goto
+
+===definitions:
+######################new-definitions:
+# qualifier: pseudo + partial
+    # partial: pass test for not-necessary-all factors
+    # pseudo: pass test for not-necessary-prime factor
+    #
+# rename: partial_pseudo_primitive_root --> pseudo_partial_primitive_root
+#
+[modulus :<- [2..]][pseudo_order :<- [1..<modulus]][partial_ft :<- [2..=pseudo_order]][pseudo_order %partial_ft == 0][g :: int]:
+    [is_a_pseudo_partial_primitive_root_mod_(modulus, pseudo_order, partial_ft; g) =[def]= [[g**pseudo_order %modulus == 1][g**(pseudo_order///partial_ft) %modulus =!= 1]]]
+
+    # drop qualifier 'pseudo'
+    [is_a_partial_primitive_root_mod_(modulus, pseudo_order, partial_ft; g) =[def]= [[is_prime_(partial_ft)][is_a_pseudo_partial_primitive_root_mod_(modulus, pseudo_order, partial_ft; g)]]]
+
+[modulus :<- [2..]][order :<- [1..<modulus]][g :: int]:
+    # drop qualifier 'pseudo' 'partial'
+    [is_a_primitive_root_mod_(modulus, order; g) =[def]= [@[p4order :<- all_prime_factors_of(order] -> [is_a_partial_primitive_root_mod_(modulus, order, p4order; g)]]]
+
+[modulus :<- [2..]][pseudo_order :<- [1..<modulus]][partial_ft :<- [2..=pseudo_order]][pseudo_order %partial_ft == 0]:
+    [all_std_pseudo_partial_primitive_roots_mod_(modulus, pseudo_order; partial_ft) =[def]= {g | [[g :<- [1..<modulus]][is_a_pseudo_partial_primitive_root_mod_(modulus, pseudo_order, partial_ft; g)]]}]
+    [exists_a_pseudo_partial_primitive_root_mod_(modulus, pseudo_order; partial_ft) =[def]= [len(all_std_pseudo_partial_primitive_roots_mod_(modulus, pseudo_order; partial_ft)) > 0]]
+[modulus :<- [2..]][pseudo_order :<- [1..<modulus]][partial_ft :<- [2..=pseudo_order]][pseudo_order %partial_ft == 0][exists_a_pseudo_partial_primitive_root_mod_(modulus, pseudo_order; partial_ft)]:
+    # is_the_least_positive-pseudo_partial_primitive_root
+    [the_least_positive_pseudo_partial_primitive_root_mod_(modulus, pseudo_order; partial_ft) =[def]= min{g | [[g :<- [1..<modulus]][gcd(g, modulus) == 1][is_a_pseudo_partial_primitive_root_mod_(modulus, pseudo_order, partial_ft; g)]]}]
+
+[modulus :<- [2..]][g :<- [1..<modulus]][gcd(g, modulus) == 1]:
+    [order_mod_(modulus; g) =[def]= min{e | [[e :<- [1..<modulus]][g**e %modulus == 1]]}]
+
+[modulus :<- [2..]]:
+    [max_order_mod_(modulus) =[def]= max{order_mod_(modulus; g) | [[g :<- [1..<modulus]][gcd(g, modulus) == 1]]}]
+    ######################
+    [max_order_mod_(modulus) == lcm~ (p4M-1) *p4M**(gde_(p4M;modulus)-1 -[p4M==2][modulus%8==0]) ~{p4M :<- all_prime_factors_of(modulus)}]
+    ######################
+    [@[g :<- [1..<modulus]] -> [gcd(g, modulus) == 1] -> [g**max_order_mod_(modulus) %modulus == 1]]
+    [@[g :<- [1..<modulus]] -> [gcd(g, modulus) == 1] -> [max_order_mod_(modulus) %order_mod_(modulus;g) == 0]]
+    ######################
+    [?[g :<- [1..<modulus]] -> [gcd(g, modulus) == 1] -> [max_order_mod_(modulus) == order_mod_(modulus;g)]]
+    ######################
+    ######################
+    [[max_order_mod_(modulus) %2 == 0] <-> [modulus >= 3]]
+    [[modulus >= 3] -> [[is_a_partial_primitive_root_mod_(modulus, max_order_mod_(modulus), 2; g)] <-> [[gcd(g,modulus) == 1][is_a_quadratic_nonresidue_mod_(modulus; g)]]]]
+        # [:关于二的伪偏本原根等价于与模互素的平方非剩余]:here
+        ######################
+        # from: [[is_prime_(N)] -> [N%2 == 1] -> [[is_a_partial_primitive_root_mod_(N,N-1,2; g)] <-> [is_a_quadratic_nonresidue_mod_(N; g)]]]
+    ######################
+
+[[[modulus :<- [2..]][pseudo_order :<- [1..<modulus]][partial_ft :<- [2..=pseudo_order]][pseudo_order %partial_ft == 0][exists_a_pseudo_partial_primitive_root_mod_(modulus, pseudo_order; partial_ft)]]
+    -> [g4ft :<- [1..<modulus]]
+    -> [[pseudo_order %max_order_mod_(modulus) == 0]or[[b :<- [2..<g4ft]] -> [is_prime_(b)] -> [modulus %b =!= 0] -> [b**pseudo_order %modulus == 1]]]
+    -> [g4ft == the_least_positive_pseudo_partial_primitive_root_mod_(modulus, pseudo_order; partial_ft)]
+    -> [is_prime_(g4ft)]
+    ]
+    # [:最小正伪偏本原根必是素数]:here
+    ######################
+    # from: [[0 < g4ft4Nmm < N] -> [[is_prime_(N)]or[[b :<- [2..<g4ft4Nmm]] -> [is_prime_(b)] -> [b**Nmm %N == 1]]] -> [g4ft4Nmm == the_least_positive_pseudo_partial_primitive_root_mod_(N, Nmm; ft4Nmm)] -> [is_prime_(g4ft4Nmm)]]
+    ######################
+    [[proof:
+    [pseudo_order %max_order_mod_(modulus) == 0]:
+        !! [@[g :<- [1..<modulus]] -> [gcd(g, modulus) == 1] -> [g**max_order_mod_(modulus) %modulus == 1]]
+        [@[g :<- [1..<modulus]] -> [gcd(g, modulus) == 1] -> [g**pseudo_order %modulus == 1]]
+        !! [g4ft :<- [1..<modulus]]
+        [[b :<- [2..<g4ft]] -> [is_prime_(b)] -> [modulus %b =!= 0] -> [b**pseudo_order %modulus == 1]]
+
+    [[pseudo_order %max_order_mod_(modulus) == 0] -> [[b :<- [2..<g4ft]] -> [is_prime_(b)] -> [modulus %b =!= 0] -> [b**pseudo_order %modulus == 1]]]
+    !! [[pseudo_order %max_order_mod_(modulus) == 0]or[[b :<- [2..<g4ft]] -> [is_prime_(b)] -> [modulus %b =!= 0] -> [b**pseudo_order %modulus == 1]]]
+    [[b :<- [2..<g4ft]] -> [is_prime_(b)] -> [modulus %b =!= 0] -> [b**pseudo_order %modulus == 1]]
+    [[b :<- [2..<g4ft]] -> [gcd(g, modulus) == 1] -> [b**pseudo_order %modulus == 1]]
+    !! [g4ft == the_least_positive_pseudo_partial_primitive_root_mod_(modulus, pseudo_order; partial_ft)]
+    [[b :<- [2..<g4ft]] -> [gcd(g, modulus) == 1] -> [b**(pseudo_order///partial_ft) %modulus == 1]]
+
+    [not$ is_prime_(g4ft)]:
+        [(u,v) :=> [1 < u <= v < g4ft == u*v]]
+        !! [g4ft == the_least_positive_pseudo_partial_primitive_root_mod_(modulus, pseudo_order; partial_ft)]
+        [gcd(g4ft, modulus) == 1]
+        [gcd(u, modulus) == 1]
+        [gcd(v, modulus) == 1]
+        !! [[b :<- [2..<g4ft]] -> [gcd(g, modulus) == 1] -> [b**(pseudo_order///partial_ft) %modulus == 1]]
+        [u**(pseudo_order///partial_ft) %modulus == 1]
+        [v**(pseudo_order///partial_ft) %modulus == 1]
+        [(u*v)**(pseudo_order///partial_ft) %modulus == 1]
+        [g4ft**(pseudo_order///partial_ft) %modulus == 1]
+        !! [g4ft == the_least_positive_pseudo_partial_primitive_root_mod_(modulus, pseudo_order; partial_ft)]
+        [g4ft**(pseudo_order///partial_ft) %modulus =!= 1]
+        _L
+    [is_prime_(g4ft)]
+    :DONE
+    ]]
+
+
+
+######################old-definitions:
+[g4q4Nmm is_a q4Nmm-partial_primitive_root<N>] =[def]=:
+    [is_prime_(q4Nmm)]
+    [g4q4Nmm is_a q4Nmm-partial_pseudo_primitive_root<N>]
+
+[g4ft4Nmm is_a ft4Nmm-partial_pseudo_primitive_root<N>] =[def]=:
+    #partial: ft4Nmm only (not all nontrivial factors of Nmm)
+    #pseudo => not-require: [is_prime_(ft4Nmm)]
+    #
+    [N == Nmm +1]
+    [Nmm %ft4Nmm == 0]
+    [g4ft4Nmm**Nmm %N == 1]
+    [g4ft4Nmm**(Nmm///ft4Nmm) %N =!= 1]
+
+===
+[[0 < g4ft4Nmm < N] -> [[is_prime_(N)]or[[b :<- [2..<g4ft4Nmm]] -> [is_prime_(b)] -> [b**Nmm %N == 1]]] -> [g4ft4Nmm is_the_least_positive ft4Nmm-partial_pseudo_primitive_root<N>] -> [is_prime_(g4ft4Nmm)]]
+    [[proof:
+    !! [[is_prime_(N)]or[[b :<- [2..<g4ft4Nmm]] -> [is_prime_(b)] -> [b**Nmm %N == 1]]]
+    * [is_prime_(N)]:
+        !! [is_prime_(N)]
+        [[b :<- [1..<N]] -> [b**Nmm %N == 1]]
+        !! [0 < g4ft4Nmm < N]
+        [[b :<- [2..<g4ft4Nmm]] -> [b**Nmm %N == 1]]
+
+    * [[b :<- [2..<g4ft4Nmm]] -> [is_prime_(b)] -> [b**Nmm %N == 1]]
+        !! [[b :<- [2..<g4ft4Nmm]] -> [is_prime_(b)] -> [b**Nmm %N == 1]]
+        [[b :<- [2..<g4ft4Nmm]] -> [b**Nmm %N == 1]]
+
+    [[b :<- [2..<g4ft4Nmm]] -> [b**Nmm %N == 1]]
+
+    !! [g4ft4Nmm is_the_least_positive ft4Nmm-partial_pseudo_primitive_root<N>]
+    [[b :<- [2..<g4ft4Nmm]] -> [not$ b is_a ft4Nmm-partial_pseudo_primitive_root<N>]]
+    !! [[b :<- [2..<g4ft4Nmm]] -> [b**Nmm %N == 1]]
+    [[b :<- [2..<g4ft4Nmm]] -> [b**(Nmm///ft4Nmm) %N == 1]]
+
+
+    [g4ft4Nmm == a*b][1 < a <= b < g4ft4Nmm]:
+        !! [[b :<- [2..<g4ft4Nmm]] -> [b**(Nmm///ft4Nmm) %N == 1]]
+        [a**(Nmm///ft4Nmm) %N == 1]
+        [b**(Nmm///ft4Nmm) %N == 1]
+        [(a*b)**(Nmm///ft4Nmm) %N == 1]
+        [g4ft4Nmm**(Nmm///ft4Nmm) %N == 1]
+        !! [g4ft4Nmm is_the_least_positive ft4Nmm-partial_pseudo_primitive_root<N>]
+        [g4ft4Nmm**(Nmm///ft4Nmm) %N =!= 1]
+        _L
+    [is_prime_(g4ft4Nmm)]
+    :DONE
+    ]]
+
+===
+example for: [[g4ft4Nmm is_the_least_positive ft4Nmm-partial_pseudo_primitive_root<N>] -> [is_prime_(g4ft4Nmm)]]
+    view ../../python3_src/seed/math/_output_/seed.math.primality_proving__plain..iter_continue4iter_xxx_odd_prime_exs__radix_pow_dominance_Pmm__P_per_num_digits4N_.10.out.txt
+    view ../../python3_src/seed/math/_output_/seed.math.primality_proving__plain..iter_continue4iter_odd_prime_exs__zpow_dominance_Pmm__P_per_bit_length_.out.txt
+        (14, 3, 12, 11)
+        (15, 9, 11, 5)
+        (16, 5, 13, 3)
+        (17, 1, 16, 3)
+        (18, 5, 15, 3)
+        (19, 33, 13, 5)
+        (20, 3, 18, 5)
+    found bug@view ../../python3_src/seed/math/primality_proving-202310.py
+        view ../../python3_src/seed/math/_output_/seed.math.primality_proving..filter_out_composites___output5iter_odd_primes__one_prime_per_bit_length_.end-719.txt
+        (14, 3<<12^1, [22, 2])
+        (15, 9<<11^1, [10, 2])
+        (16, 5<<13^1, [6, 2])
+        (17, 1<<16^1, [6])
+        (18, 5<<15^1, [6, 2])
+        (19, 33<<13^1, [10, 2])
+        (20, 3<<18^1, [10, 2])
+===
+===
+]]]
+
+
 [[[
 https://math.stackexchange.com/questions/1416422/how-does-one-find-the-primitive-roots-of-a-non-prime-number
 ===

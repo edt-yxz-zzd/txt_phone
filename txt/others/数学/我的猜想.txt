@@ -142,3 +142,185 @@ sqrt(xx) =[%p]= base**(e4y///2) * xx**(inv_mod_(odd;2**e)*2**e*(odd+1)///2)
 
 ]]
 
+
+
+
+
+[[[
+view others/数学/condition4_WW1_eq_2VV.txt
+===
+[@[w,v :: uint] -> [w**2+1==2*v**2] -> ?[k :: uint] -> [[v;w;] == [3,2;4,3;]**k *[1;1;]]]
+[@[w,v :: uint] -> [w**2+1==2*v**2] -> ?[k :: uint] -> [[vs[k] == ((1+sqrt2)**(1+2*k) -(1-sqrt2)**(1+2*k))*sqrt2/4][ws[k] == ((1+sqrt2)**(1+2*k) +(1-sqrt2)**(1+2*k))/2]]]
+[[w**2+1==2*v**2][v,w :: int][v,w > 0] -> [_v := abs(3*v-2*w)] -> [_w := abs(-4*v+3*w)] -> [[_w**2+1 == 2*_v**2][_v,_w >= 1][[1 <= _v < v]or[_v == v == 1]]]]
+    # [:WW1_eq_2VV___vw_abs_decrease_until_eq1]:goto
+===
+[@[w,v :: uint] -> [2*w**2+1==v**2] -> ?[k :: uint] -> [[v;w;] == [3,4;2,3;]**k *[1;0;]]]
+[@[w,v :: uint] -> [2*w**2+1==v**2] -> ?[k :: uint] -> [[vs[k] == 1/2*(s0**k +s1**k)][ws[k] == sqrt2/4*(s0**k -s1**k)]]]
+[[2*w**2+1==v**2][v,w :: int][[v > 0][w >= 0]] -> [_v := abs(3*v-4*w)] -> [_w := abs(-2*v+3*w)] -> [[2*_w**2+1 == _v**2][_v >= 1][_w >= 0][[1 <= _v < v]or[[(v,w) == (1,0)][(_v,_w) == (3,2)]]]]]
+    # [:2WW1_eq_VV___v_abs_decrease_until_eq1___loop_roots_are_1_3]:goto
+===
+]]]
+
+
+[[[
+view ../../python3_src/seed/math/right_angled_triangle_side_length.py
+TODO:我的猜想:证明:
+    coprime_ratio vs non_coprime_triple
+===
+######################
+# coprime_ratio case:
+???[coprime_ratio case][hypotenuse[k-1] ~= 2*pi*k]???
+    ???[hypotenuse[2**k-1] ~= (25/4)*2**k]???
+    ???[hypotenuse[10**k-1] ~= 2*pi*10**k]???
+    #HOE = (hypotenuse_side, odd_side, even_side)
+???[non_coprime_triple case][hypotenuse[k-1] ~= 2*pi*k/(ln_(k) -lnln_(k))]???
+==>>:猜想推论:
+    ???[num_right_angled_triangles__hypotenuse_lt_lowerbound4hypotenuse5lowerbound4B_(b0) ~= lowerbound4hypotenuse5lowerbound4B_(b0)/(2*pi)]???
+        # [:conjecture4num_right_angled_triangles__hypotenuse_lt_lowerbound4hypotenuse5lowerbound4B_]:here
+==>>:猜想推论:
+推导:???[non_coprime_triple case][hypotenuse[k-1] ~= 2*pi*k/(ln_(k) -lnln_(k))]???
+[???[coprime_ratio case][hypotenuse[k-1] ~= 2*pi*k]???]:
+    [num_right_angled_triangles__hypotenuse_lt_(max1_hypotenuse, case=coprime_ratio) ~= (max1_hypotenuse/(2*pi))]
+    [num_right_angled_triangles__hypotenuse_lt_(max1_hypotenuse, case=non_coprime_triple)
+    == sum[k*(num_right_angled_triangles__hypotenuse_lt_(max1_hypotenuse/k, case=coprime_ratio) -num_right_angled_triangles__hypotenuse_lt_(max1_hypotenuse/(k+1), case=coprime_ratio)) | [k :<- [1..]]]
+    ~= sum[k*(num_right_angled_triangles__hypotenuse_lt_(max1_hypotenuse/k, case=coprime_ratio) -num_right_angled_triangles__hypotenuse_lt_(max1_hypotenuse/(k+1), case=coprime_ratio)) | [k :<- [1..<sqrt_(max1_hypotenuse)]]] + sum[max1_hypotenuse/hypotenuse[i] | [i :<- [1..][hypotenuse[i] < sqrt_(max1_hypotenuse)]]]
+    ~= max1_hypotenuse/2pi*sum{1/k | [k :<- [1..<sqrt_(max1_hypotenuse)]]} + max1_hypotenuse/2pi*sum{1/i | [i :<- [1..<sqrt_(max1_hypotenuse)/2pi]]}
+    ~= max1_hypotenuse/2pi*(ln_(sqrt_(max1_hypotenuse)) +ln_(sqrt_(max1_hypotenuse)/2pi))
+    ~= (max1_hypotenuse/2pi)*ln_(max1_hypotenuse/2pi)
+    ]
+    [num_right_angled_triangles__hypotenuse_lt_(max1_hypotenuse, case=non_coprime_triple) ~= (max1_hypotenuse/2pi)*ln_(max1_hypotenuse/2pi)]
+    [f(h) == h*ln_(h)][g == f**-1]:
+        [k == f(g(k)) == g(k)*ln_(g(k))]
+        [ln_(k) == ln_(g(k)) +ln_(ln_(g(k)))]
+        [g(k) == k/ln_(g(k)) == k/(ln_(k) -ln_(ln_(g(k))))]
+        [ln_(g(k)) == ln_(k) -ln_(ln_(k) -ln_(ln_(g(k)))) ~= ln_(k)]
+        [g(k) ~= k/(ln_(k) -ln_(ln_(k)))]
+    [[f(h) == h*ln_(h)] -> [k ~= f(k/(ln_(k) -lnln_(k))]]
+    [hypotenuse[k-1] ~= 2*pi*k/(ln_(k) -lnln_(k))]
+
+######################
+# data4conjecture:
+######################
+view /sdcard/0my_files/tmp/out4py/seed.math.GaussInteger..iter_right_angled_triangles_with_coprime_side_length__len_hypotenuse_lt.1000000.HOE.out.txt
+######################
+py -m nn_ns.app.line_selector --begin4lineno=1 --lineno_generator='2**?' -i /sdcard/0my_files/tmp/out4py/seed.math.GaussInteger..iter_right_angled_triangles_with_coprime_side_length__len_hypotenuse_lt.1000000.HOE.out.txt
+[1@0.0]:(5, 3, 4)
+[2@0.1]:(13, 5, 12)
+[4@0.2]:(25, 7, 24)
+[8@0.3]:(53, 45, 28)
+[16@0.4]:(97, 65, 72)
+[32@0.5]:(197, 195, 28)
+[64@0.6]:(401, 399, 40)
+[128@0.7]:(797, 555, 572)
+[256@0.8]:(1609, 1591, 240)
+[512@0.9]:(3221, 2829, 1540)
+[1024@0.10]:(6421, 3379, 5460)
+[2048@0.11]:(12889, 10439, 7560)
+[4096@0.12]:(25769, 25431, 4160)
+[8192@0.13]:(51481, 24569, 45240)
+[16384@0.14]:(102901, 22099, 100500)
+[32768@0.15]:(205957, 197245, 59268)
+[65536@0.16]:(411757, 60635, 407268)
+[131072@0.17]:(823553, 767775, 297928)
+[262144@0.18]:(1647005, 1640043, 151276)
+[524288@0.19]:(3294205, 2581387, 2046516)
+
+py -m nn_ns.app.line_selector --begin4lineno=1 --lineno_generator='10**?' -i /sdcard/0my_files/tmp/out4py/seed.math.GaussInteger..iter_right_angled_triangles_with_coprime_side_length__len_hypotenuse_lt.1000000.HOE.out.txt
+[1@0.0]:(5, 3, 4)
+[10@0.1]:(65, 33, 56)
+[100@0.2]:(629, 429, 460)
+[1000@0.3]:(6277, 6205, 948)
+[10000@0.4]:(62849, 11649, 61760)
+[100000@0.5]:(628325, 334947, 531604)
+[1000000@0.6]:(6283313, 5507055, 3025288)
+
+######################
+???[coprime_ratio case][hypotenuse[10**k-1] ~= 2*pi*10**k]???
+    [k==0]:[HOE == (5, 3, 4)]
+    [k==1]:[HOE == (65, 33, 56)]
+    [k==2]:[HOE == (629, 429, 460)]
+    [k==3]:[HOE == (6277, 6205, 948)]
+    [k==4]:[HOE == (62849, 11649, 61760)]
+    [k==5]:[HOE == (628325, 334947, 531604)]
+    [k==6]:[HOE == (6283313, 5507055, 3025288)]
+    ######################
+
+???[coprime_ratio case][hypotenuse[2**k-1] ~= (25/4)*2**k]???
+    [HOE[1-1] == (5, 3, 4)]
+    [HOE[2-1] == (13, 5, 12)]
+    [HOE[4-1] == (25, 7, 24)]
+    [HOE[8-1] == (53, 45, 28)]
+    [HOE[16-1] == (97, 65, 72)]
+    [HOE[32-1] == (197, 195, 28)]
+    [HOE[64-1] == (401, 399, 40)]
+    [HOE[128-1] == (797, 555, 572)]
+    [HOE[256-1] == (1609, 1591, 240)]
+    [HOE[512-1] == (3221, 2829, 1540)]
+    [HOE[1024-1] == (6421, 3379, 5460)]
+    [HOE[2048-1] == (12889, 10439, 7560)]
+    [HOE[4096-1] == (25769, 25431, 4160)]
+    [HOE[8192-1] == (51481, 24569, 45240)]
+    [HOE[16384-1] == (102901, 22099, 100500)]
+    [HOE[32768-1] == (205957, 197245, 59268)]
+    [HOE[65536-1] == (411757, 60635, 407268)]
+    [HOE[131072-1] == (823553, 767775, 297928)]
+    [HOE[262144-1] == (1647005, 1640043, 151276)]
+    [HOE[524288-1] == (3294205, 2581387, 2046516)]
+    # [HOE[1048576-1] == ???]
+    ######################
+
+######################
+# non_coprime_triple case:
+py_adhoc_call   seed.math.GaussInteger   ,1000000:iter_right_angled_triangles_with_coprime_side_length__len_hypotenuse_lt  +to_sort +SML_vs_HOE +turnoff__coprime   =6*10**5 > /sdcard/0my_files/tmp/out4py/seed.math.GaussInteger..iter_right_angled_triangles_with_coprime_side_length__len_hypotenuse_lt.1000000.HOE.non_coprime.out.txt
+du -h /sdcard/0my_files/tmp/out4py/seed.math.GaussInteger..iter_right_angled_triangles_with_coprime_side_length__len_hypotenuse_lt.1000000.HOE.non_coprime.out.txt
+    23MB
+
+######################
+view /sdcard/0my_files/tmp/out4py/seed.math.GaussInteger..iter_right_angled_triangles_with_coprime_side_length__len_hypotenuse_lt.1000000.HOE.non_coprime.out.txt
+######################
+???[non_coprime_triple case][hypotenuse[10**k-1] ~= ???]???
+    [k==0]:[HOE == (5, 3, 4)]
+    [k==1]:[HOE == (29, 21, 20)]
+    [k==2]:[HOE == (170, 26, 168)]
+    [k==3]:[HOE == (1108, 460, 1008)]
+    [k==4]:[HOE == (8214, 7770, 2664)]
+    [k==5]:[HOE == (64730, 38838, 51784)]
+    [k==6]:[HOE == (531852, 116748, 518880)]
+    ######################
+
+???[non_coprime_triple case][hypotenuse[2**k-1] ~= ???]???
+    [HOE[1-1] == (5, 3, 4)]
+    [HOE[2-1] == (10, 6, 8)]
+    [HOE[4-1] == (15, 9, 12)]
+    [HOE[8-1] == (25, 15, 20)]
+    [HOE[16-1] == (40, 24, 32)]
+    [HOE[32-1] == (68, 60, 32)]
+    [HOE[64-1] == (117, 45, 108)]
+    [HOE[128-1] == (202, 198, 40)]
+    [HOE[256-1] == (357, 315, 168)]
+    [HOE[512-1] == (629, 595, 204)]
+    [HOE[1024-1] == (1131, 405, 1056)]
+    [HOE[2048-1] == (2053, 1475, 1428)]
+    [HOE[4096-1] == (3754, 2970, 2296)]
+    [HOE[8192-1] == (6890, 6106, 3192)]
+    [HOE[16384-1] == (12740, 12348, 3136)]
+    [HOE[32768-1] == (23664, 22800, 6336)]
+    [HOE[65536-1] == (44145, 36855, 24300)]
+    [HOE[131072-1] == (82741, 55445, 61416)]
+    [HOE[262144-1] == (155600, 109392, 110656)]
+    [HOE[524288-1] == (293620, 255532, 144624)]
+    # [HOE[1048576-1] == ???]
+    ######################
+>>> from math import pi, log as ln_
+>>> f=lambda h:(hh:=h/2/pi)*ln_(hh)
+>>> f(293620)/2**19
+0.9583667851245002
+>>> f(531852)/10**6
+0.9604240501866983
+>>> g=lambda k:2*pi*k/(ln_(k) -ln_(ln_(k)))
+>>> g(2**19)/293620
+1.0592329805298375
+>>> g(10**6)/531852
+1.0557714287426916
+
+]]]

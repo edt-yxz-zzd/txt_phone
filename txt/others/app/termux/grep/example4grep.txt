@@ -1,0 +1,369 @@
+
+e others/app/termux/grep/example4grep.txt
+view others/app/termux/grep/grep-regex-pattern-README.txt
+view others/app/termux/grep/man_grep__4regex.txt
+  -F 字符串
+  -G 基本正则表达式
+  -E 扩展正则表达式
+  -P Perl正则表达式
+
+
+
+grep_G_E_P__supports:goto
+
+^ $ . * [ ]
+\| \+ \? \( \) \{ \}
+
+[[:digit:]]
+    # 不支持 『\d』
+
+[[
+grep '^,a$\|^,com\+.\?$\|^,z\([o]\)\{1,2\}.*$\|.*WIN[[:digit:]].*'  ./script/欧路词典囗.py.out.计算机词汇.词典.txt
+,a
+,comb
+,come
+,comma
+,comp
+:-新一代的WIN/WIN95软件开发系统
+,zone
+,zoo
+,zoom
+,zooming
+]]
+
+[[
+grep '9\d'  ./script/欧路词典囗.py.out.计算机词汇.词典.txt
+    # <NONE>
+    # 不支持 『\d』
+]]
+
+grep 'peek\|peak' -a -l  --exclude-dir=__pycache__  -r ../../python3_src/seed/io
+grep 'peek\|peak' -a  --exclude=*.swp --exclude-dir=__pycache__  -r ../../python3_src/seed/
+
+
+
+[[
+-F, --fixed-strings
+===
+grep -F '[[:digit:]]' <<here_doc
+3 a
+a a
+aa,[[:digit:]]\s\d
+33+
+here_doc
+==>>:
+aa,[[:digit:]]\s\d
+]]
+[[
+-G, --basic-regexp
+-E, --extended-regexp
+-P, --perl-regexp
+===
+grep -G '[[:digit:]]' <<here_doc
+3 a
+a a
+aa,[[:digit:]]\s\d
+33+
+here_doc
+==>>:
+3 a
+33+
+]]
+[[
+-G, --basic-regexp
+===
+grep -G '\d\|\s' <<here_doc
+3 a
+a a
+aa,[[:digit:]]\s\d
+33+
+here_doc
+==>>:
+3 a
+a a
+aa,[[:digit:]]\s\d
+  # support \s but not \d
+  # 『\d』===『d』
+]]
+[[
+-E, --extended-regexp
+-P, --perl-regexp
+===
+grep -P '\d\|\s' <<here_doc
+3 a
+a a
+aa,[[:digit:]]\s\d
+33+
+here_doc
+==>>:
+  <NONE>
+  # 『\|』===『[|]』
+]]
+[[
+-G, --basic-regexp
+===
+grep -G '\d|\s' <<here_doc
+3 a
+a a
+aa,[[:digit:]]\s\d
+33+
+here_doc
+==>>:
+  <NONE>
+  # 『|』===『[|]』
+]]
+[[
+-E, --extended-regexp
+===
+grep -E '\d|\s' <<here_doc
+3 a
+a a
+aa,[[:digit:]]\s\d
+33+
+here_doc
+==>>:
+3 a
+a a
+aa,[[:digit:]]\s\d
+  # support |, \s but not \d
+  # 『\d』===『d』
+]]
+[[
+-P, --perl-regexp
+===
+grep -P '\d|\s' <<here_doc
+3 a
+a a
+aa,[[:digit:]]\s\d
+33+
+here_doc
+==>>:
+3 a
+a a
+33+
+  # support |, \s, \d
+]]
+
+[[[
+grep_G_E_P__supports:here
+-G,-E,-P support
+===
+-F, --fixed-strings
+-G, --basic-regexp
+-E, --extended-regexp
+-P, --perl-regexp
+===
+
+-G,-E support:
+  ^ $
+  \< \> \b \B
+  \w \W
+  \s \S
+  \\
+  [[:alnum:]]
+-G,-E not support:
+  \d \D
+  \n \t \x40 \u4e00
+  \l \L
+  \u \U
+  [\w]
+  [[:^alnum:]]
+  [:w:]
+
+-P support:
+  ^ $
+  \b \B
+  \w \W
+  \s \S
+  \\
+  \d \D
+  \t \\ \x40
+  \x{4e00}
+  [\w]
+  [[:alnum:]]
+  [[:^alnum:]]
+-P not support:
+  \u4e00
+  \< \>
+  \l \L
+  \u \U
+  \n?????
+  [:w:]
+
+
+-G,-E support:
+  . * []
+-G,-E diff support:
+  -G:  \| \? \+ \{\} \(\)
+  -E:  | ? + {} ()
+
+
+support:
+  [:alnum:]
+  [:alpha:]
+  [:cntrl:]
+  [:digit:]
+  [:graph:]
+  [:lower:]
+  [:print:]
+  [:punct:]
+  [:space:]
+  [:upper:]
+  [:xdigit:]
+  [:blank:]
+not support:
+  [:d:]
+  [:s:]
+  [:w:]
+
+===
+
+echo '=aa c' | grep -G '^\W\<\b\w\Ba\b\>\s\S$'
+=aa c
+echo '=aa c' | grep -G '^\W\b\w\Ba\b\s\S$'
+=aa c
+echo 'a' | grep -P '\<a'
+  <NONE>
+echo 'a' | grep -P '\ba\b'
+  <NONE>
+echo '3' | grep -G '\d'
+  <NONE>
+echo '3' | grep -E '\d'
+  <NONE>
+echo '3' | grep -P '\d'
+3
+echo 'a' | grep -E '\D'
+  <NONE>
+echo 'a' | grep -P '\D'
+a
+echo 'a' | grep -E '\l'
+  <NONE>
+echo 'a' | grep -P '\l'
+  grep: PCRE does not support \L, \l, \N{name}, \U, or \u
+
+echo $'\n' | grep -G '\n'
+  <NONE>
+echo 'n' | grep -E '\n'
+n
+echo 't' | grep -E '\t'
+t
+echo 't' | grep -P '\t'
+  <NONE>
+echo 'n' | grep -P '\n'
+  <NONE>
+echo $'\t' | grep -P '\t'
+  matched
+echo $'\n' | grep -P '\n'
+  <NONE>
+  why fail???
+echo $'\n3' | grep -P '\n3'
+  <NONE>
+echo $'\n' | grep -P '(*CR)\n'
+  <NONE>
+echo $'\n' | grep -P $'\n'
+  matched
+echo $'\t' | grep -P $'\t'
+  matched
+echo '\' | grep -G '\\'
+\
+echo $'\x40' | grep -E '\x40'
+  <NONE>
+echo $'\x40' | grep -P '\x40'
+@
+echo $'\u4e00' | grep -E '\u4e00'
+  <NONE>
+echo $'\u4e00' | grep -P '\u4e00'
+  grep: PCRE does not support \L, \l, \N{name}, \U, or \u
+echo $'\u4e00' | grep -P '\x{4e00}'
+一
+
+
+echo 'a' | grep -G '.'
+a
+echo 'a' | grep -G '[\.]'
+  <NONE>
+echo 'a' | grep -G '\w'
+a
+echo 'a' | grep -E '[\w]'
+  <NONE>
+echo 'a' | grep -P '[\w]'
+a
+echo 'a' | grep -G '[[:w:]]'
+  grep: Invalid character class name
+echo 'a' | grep -P '[[:w:]]'
+  grep: unknown POSIX class name
+echo ',' | grep -G '[^[:alnum:]]'
+,
+echo ',' | grep -G '[[:^alnum:]]'
+  grep: Invalid character class name
+echo ',' | grep -G '[[^[:alnum:]]]'
+echo '[]' | grep -E '[[^[:alnum:]]]'
+[]
+  # [[^[:alnum:]]] --> { 『[』 『^』 『[:alnum:]』 } +++ 『]』
+echo ',' | grep -P '[^[:alnum:]]'
+,
+echo ',' | grep -P '[[:^alnum:]]'
+,
+echo ',' | grep -P '[[:^blank:]]'
+,
+echo ',' | grep -G '[^[:blank:]]'
+,
+
+echo 'a' | grep -G 'a|b'
+  <NONE>
+echo 'a' | grep -G 'a\|b'
+a
+echo 'a' | grep -E 'a|b'
+a
+echo 'a' | grep -E 'a\|b'
+  <NONE>
+echo 'a' | grep -G '(a)'
+  <NONE>
+echo 'a' | grep -G '\(a\)'
+a
+echo 'a' | grep -E '(a)'
+a
+echo 'a' | grep -E '\(a\)'
+  <NONE>
+echo 'abc' | grep -G 'ab?c'
+  <NONE>
+echo 'abc' | grep -G 'ab\?c'
+abc
+echo 'abc' | grep -E 'ab?c'
+abc
+echo 'abc' | grep -E 'ab\?c'
+  <NONE>
+echo 'abc' | grep -G 'ab+c'
+  <NONE>
+echo 'abc' | grep -G 'ab\+c'
+abc
+echo 'abc' | grep -E 'ab+c'
+abc
+echo 'abc' | grep -E 'ab\+c'
+  <NONE>
+echo 'abc' | grep -G 'ab*c'
+abc
+  # !!!NOTE:-G『*』
+echo 'abc' | grep -G 'ab\*c'
+  <NONE>
+echo 'abc' | grep -E 'ab*c'
+abc
+echo 'abc' | grep -E 'ab\*c'
+  <NONE>
+
+echo 'abc' | grep -G 'ab{1}c'
+  <NONE>
+echo 'abc' | grep -G 'ab\{1}c'
+  grep: Unmatched \{
+  #补偿:\}
+echo 'abc' | grep -G 'ab\{1\}c'
+abc
+echo 'abc' | grep -E 'ab{1}c'
+abc
+echo 'abc' | grep -E 'ab\{1}c'
+  <NONE>
+echo 'abc' | grep -E 'ab\{1\}c'
+  <NONE>
+
+===
+]]]

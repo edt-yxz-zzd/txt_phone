@@ -1,0 +1,83 @@
+
+e others/数学/integration-inequality.txt
+
+monotone nondecreasing function
+monotone nonincreasing function
+
+[f :: monotone_nondecreasing_function]
+[g :: monotone_nonincreasing_function]
+
+[a,b :: int][a <= b][@[x,y :: real] -> [a <= x <= y <= b] -> [f(x) <= f(y)]]:
+  [sum{f(i) | [i :<- [a..=b-1]]} <= integrate{f(x) | [x :<- (a-->b)]} <= sum{f(i) | [i :<- [a+1..=b]]}]
+  [sum{f(i) | [i :<- [a+1..=b]]} -sum{f(i) | [i :<- [a..=b-1]]} == f(b) -f(a) >= 0]
+  [0 <= integrate{f(x) | [x :<- (a-->b)]} -sum{f(i) | [i :<- [a..=b-1]]} <= f(b) -f(a)]
+  [0 <= sum{f(i) | [i :<- [a+1..=b]]} -integrate{f(x) | [x :<- (a-->b)]} <= f(b) -f(a)]
+
+  [f(a) <= sum{f(i) | [i :<- [a..=b]]} -integrate{f(x) | [x :<- (a-->b)]} <= f(b)]
+
+
+[a,b :: int][a <= b][@[x,y :: real] -> [a <= x <= y <= b] -> [g(x) >= g(y)]]:
+  [sum{g(i) | [i :<- [a..=b-1]]} >= integrate{g(x) | [x :<- (a-->b)]} >= sum{g(i) | [i :<- [a+1..=b]]}]
+  [sum{g(i) | [i :<- [a..=b-1]]} -sum{g(i) | [i :<- [a+1..=b]]} == g(a) -g(b) >= 0]
+  [0 <= sum{g(i) | [i :<- [a..=b-1]]} -integrate{g(x) | [x :<- (a-->b)]} <= g(a) -g(b)]
+  [0 <= integrate{g(x) | [x :<- (a-->b)]} -sum{g(i) | [i :<- [a+1..=b]]} <= g(a) -g(b)]
+
+  [g(b) <= sum{g(i) | [i :<- [a..=b]]} -integrate{g(x) | [x :<- (a-->b)]} <= g(a)]
+
+
+######################
+[a,b :: int][a <= b][f :: real -> real]:
+  [sum__(a,b;f) =[def]= sum{f(i) | [i :<- [a..=b]]}]
+  [integrate__(a,b;f) =[def]= integrate{f(x) | [x :<- (a-->b)]}]
+######################
+
+[a,b :: int][a <= b][f :: real -> real][@[x,y :: real] -> [a <= x <= y <= b] -> [f(x) <= f(y)]]:
+  [sum__(a,b-1;f) <= integrate__(a,b;f) <= sum__(a+1,b;f)]
+  [sum__(a+1,b;f) -sum__(a,b-1;f) == f(b) -f(a) >= 0]
+  [0 <= integrate__(a,b;f) -sum__(a,b-1;f) <= f(b) -f(a)]
+  [0 <= sum__(a+1,b;f) -integrate__(a,b;f) <= f(b) -f(a)]
+
+  [f(a) <= sum__(a,b;f) -integrate__(a,b;f) <= f(b)]
+
+
+[a,b :: int][a <= b][f :: real -> real][@[x,y :: real] -> [a <= x <= y <= b] -> [g(x) >= g(y)]]:
+  [sum__(a,b-1;g) >= integrate__(a,b;g) >= sum__(a+1,b;g)]
+  [sum__(a,b-1;g) -sum__(a+1,b;g) == g(a) -g(b) >= 0]
+  [0 <= sum__(a,b-1;g) -integrate__(a,b;g) <= g(a) -g(b)]
+  [0 <= integrate__(a,b;g) -sum__(a+1,b;g) <= g(a) -g(b)]
+
+  [g(a) >= sum__(a,b;g) -integrate__(a,b;g) >= g(b)]
+
+  [0 < a <= b][g(x) == 1/x]:
+    [integrate__(a,b;g) == ln_(b) -ln_(a) == ln_(b/a)]
+    !! [g(a) >= sum__(a,b;g) -integrate__(a,b;g) >= g(b)]
+    [1/a >= sum__(a,b;g) -ln_(b/a) >= 1/b]
+
+######################
+[a,b,d :: real][a <= b][d > 0][(b-a)%d==0][f :: real -> real]:
+  [d_sum___(d;a,b;f) =[def]= d*sum{f(i) | [i :<- [a,a+d..=b]]}]
+  [integrate__(a,b;f) =[def]= integrate{f(x) | [x :<- (a-->b)]}]
+######################
+[a,b,d :: real][a <= b][d > 0][(b-a)%d==0][f :: real -> real][@[x,y :: real] -> [a <= x <= y <= b] -> [f(x) <= f(y)]]:
+  [d_sum___(d;a,b-d;f) <= integrate__(a,b;f) <= d_sum___(d;a+d,b;f)]
+  [d_sum___(d;a+d,b;f) -d_sum___(d;a,b-d;f) == d*(f(b) -f(a)) >= 0]
+  [0 <= integrate__(a,b;f) -d_sum___(d;a,b-d;f) <= d*(f(b) -f(a))]
+  [0 <= d_sum___(d;a+d,b;f) -integrate__(a,b;f) <= d*(f(b) -f(a))]
+
+  [d*f(a) <= d_sum___(d;a,b;f) -integrate__(a,b;f) <= d*f(b)]
+
+
+[a,b,d :: real][a <= b][d > 0][(b-a)%d==0][g :: real -> real][@[x,y :: real] -> [a <= x <= y <= b] -> [g(x) >= g(y)]]:
+  [d_sum___(d;a,b-d;g) >= integrate__(a,b;g) >= d_sum___(d;a+d,b;g)]
+  [d_sum___(d;a,b-d;g) -d_sum___(d;a+d,b;g) == d*(g(a) -g(b)) >= 0]
+  [0 <= d_sum___(d;a,b-d;g) -integrate__(a,b;g) <= d*(g(a) -g(b))]
+  [0 <= integrate__(a,b;g) -d_sum___(d;a+d,b;g) <= d*(g(a) -g(b))]
+
+  [d*g(a) >= d_sum___(d;a,b;g) -integrate__(a,b;g) >= d*g(b)]
+
+  [0 < a <= b][g(x) == 1/x]:
+    [integrate__(a,b;g) == ln_(b) -ln_(a) == ln_(b/a)]
+    !! [d*g(a) >= d_sum___(d;a,b;g) -integrate__(a,b;g) >= d*g(b)]
+    [d/a >= d_sum___(d;a,b;g) -ln_(b/a) >= d/b]
+
+
