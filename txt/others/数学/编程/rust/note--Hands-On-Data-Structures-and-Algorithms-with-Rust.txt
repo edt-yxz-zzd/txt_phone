@@ -1,0 +1,242 @@
+e others/数学/编程/rust/note--Hands-On-Data-Structures-and-Algorithms-with-Rust.txt
+view others/数学/编程/rust/rust内存管理.txt
+
+######################
+######################
+######################
+[所有权=[def]=析构权/负责析构权]
+[所有权/析构权 与 操作权 无关]
+[[权限归类:
+权限:
+  + 所有权
+    * 析构权
+      * 负责析构权
+  + 操作权:
+    * 只读权
+      + 只读借出权
+    * 读写权
+      + 借出权
+        + 只读借出权
+        + 读写借出权
+]]
+[[权限变更:
+#####
+赋值:『let x = y』
+  * move转移:
+      * 显式『move』关键字
+      * 并未[impl Copy trait]
+      转移后操作权丢失
+      转移后析构权未改变
+  * copy复制:
+      * [impl Copy trait][未使用『move』]
+      复制后权限未改变
+#####
+借出:#?借用?
+  * 只读借出『&x』
+      只读借出后只读权保留
+      只读借出后读写权丢失
+      只读借出后析构权未改变
+  * 读写借出『&mut x』
+      读写借出后操作权丢失
+      读写借出后析构权未改变
+      #与『转移』的权限变更 完全相同
+#####
+]]
+######################
+总结之后:扩展了一下权限:见:
+  view others/数学/编程/术语/我的术语.txt
+    对象冫权限丶责任丶约束
+
+######################
+######################
+######################
+/sdcard/0my_files/book/lang/Rust/Hands-On Data Structures and Algorithms with Rust(2019)(Claus).epub
+######################
+[pg31/437] Objects and behavior
+struct Door {
+    is_open: bool
+}
+impl Door {
+    fn new(is_open: bool) ->Door {
+        Door { is_open: is_open }
+    }
+}
+trait Openable {
+    fn open(&mut self);
+}
+impl Openable for Door {
+    fn open(&mut self) {
+        self.is_open = true;
+    }
+}
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn open_door() {
+        let mut door = Door::new(false);
+        door.open();
+        assert!(door.is_open);
+    }
+}
+
+######################
+[pg32/437] Going wrong #if-let, match
+fn find(needle: u16, haystack: Vec<u16>) ->Option<usize>{
+    // find the needle in the haystack
+}
+fn read_file(path: &str) -> Result<String, io::Error> {
+    // open the path as a file and read it
+} Handling those return values is often done
+match find(2, vec![1,3,4,5]) {
+    Some(_) => println!("Found!"),
+    None => println!("Not found :(")
+}
+if let Some(result) = find(2, vec![1,2,3,4]) {
+    println!("Found!")
+}
+// similarly for results!
+match read_file("/tmp/not/a/file") {
+    Ok(content) => println!(content),
+    Err(error) => println!("Oh no!")
+}
+
+######################
+[pg33/437] Macros
+This is a simplified example for the declarative vec![] macro provided in the Rust Book (second edition, Appendix D):
+#[macro_export]
+macro_rules!
+ vec {
+     ( $( $x:expr ),* ) => {
+         {
+             let
+  mut
+ temp_vec =
+Vec
+::new();
+             $( temp_vec.push($x); )*
+            temp_vec
+         }
+    };
+}
+
+Declarative macros work on patterns and run code if that pattern matches; the previous example matches 0 — n expressions (for example, a number, or a function that returns a number) and inserts temp_vec.push(...) n times, iterating over the provided expressions as a parameter.
+The second type, procedural macros, operate differently and are often used to provide a default trait implementation. In many code bases, the #[derive(Clone, Debug)] statement can be found on top of structures to implement the Clone and Debug traits automatically.
+Later in this chapter, we are going to use a structure, FileName , to illustrate reference counting, but for printing it to the command line using the debug literal "{:?}" , we need to derive Debug , which recursively prints all members to the command line:
+#[derive(Debug)]
+struct
+  FileName
+ {
+    name: Rc < String > ,
+    ext: Rc < String >
+}
+
+######################
+#[ownership:owned reference --> owner]
+#[owned reference =[def]= (mut reference | immutable reference)]
+#[owned object ~~~ 0..1 mut reference]
+#[owned object ~~~ 0.. immutable reference]
+#[scope =[def]= stmt_block | struct_instance]
+#[value 1-->1 variable 0..-->1 scope]
+#
+[pg36/437] Borrowing and ownership
+Rust is famous for its memory management model, which replaces runtime garbage collection with compile-time checks for memory safety. The reason why Rust can work without a garbage collector and still free the programmer from error-prone memory management is simple (but not easy): borrowing and ownership.
+The lifetime is clearly defined too, from the beginning to end of a block or function, or as long as the struct instance lives.
+#####
+The rules of ownership are as follows:
+•  The owner of a value is a variable
+•  At any time, only a single owner is allowed
+•  The value is lost once the owner goes out of scope
+#####
+two primary strategies:
+•  Every variable is owned by exactly one scope at any time
+•  Therefore, the developer is forced to pass ownership as required
+#####
+These are the rules of borrowing:
+•  Owners can have immutable or mutable references, but not both
+•  There can be multiple immutable references, but only one mutable reference
+•  References cannot be invalid
+#####
+When trying to compile this snippet, the compiler will complain:
+fn my_function() {
+    let x = 10;
+    do_something(x); // ownership is moved here
+    let y = x;       // x is now invalid!
+}
+#####
+By changing the previous snippet to borrow the variable to do_something() (assuming this is allowed, of course), the compiler will be happy:
+fn my_function() {
+    let x = 10;
+    do_something(&x); // pass a reference to x
+    let y = x;        // x is still valid!
+}
+#####
+Borrowed variables rely heavily on lifetimes. The most basic lifetime is the scope it was created in.
+However, if a reference should go into a struct field, how can the compiler know that the underlying value has not been invalidated?
+    The answer is explicit lifetimes!
+        见下面:[pg39/437] Exceptional lifetimes
+#####
+######################
+# 声明 引用型 元素 存活期 至少 等同于 容器 存活期
+#   『'a』『'static a』
+#   『'a』不是 数据类型，而是 存活期，出现于 函数 静态泛化参数列表 #类似于 forall
+[pg39/437] Exceptional lifetimes
+#####
+this snippet cannot work:
+fn another_function(mut passing_through: MyStruct) -> MyStruct {
+    let x = vec![1, 2, 3];
+    // passing_through cannot hold a reference
+    // to a shorter lived x!
+    // the compiler will complain.
+    passing_through.x = &x;
+    return passing_through;
+} // x's life ends here
+The reason is that the passing_through variable outlives x .
+There are several solutions to this problem:
+    #####
+•  Change the type definition of MyStruct to require ownership. This way, the structure now owns the variable and it will live as long as the structure:
+fn another_function(mut passing_through: MyStruct) -> MyStruct {
+    let x = vec![1, 2, 3];
+    // passing_through owns x and it will be
+    // dropped together with passing_through.
+    passing_through.x = x;
+    return passing_through;
+}
+    #####
+•  Clone x to pass ownership into passing_through :
+fn another_function(mut passing_through: MyStruct) -> MyStruct {
+    let x = vec![1, 2, 3];
+    let y = &x;
+    // passing_through owns a deep copy of x'value that is be
+    // dropped together with passing_through.
+    passing_through.x = y.clone();
+    return passing_through;
+}
+    #####
+•  In this case, vec![] is statically defined, so it could make sense to add it as a function parameter. This is not only more allocation-efficient, but also can enforce an appropriate lifetime:
+fn another_function<'a>(mut passing_through: MyStruct<'a>, x: &'a Vec<u32>) -> MyStruct<'a> {
+    // The compiler knows and expects a lifetime that is
+    // at least as long as the struct's
+    // of any reference passed in as x.
+    passing_through.x = x;
+    return passing_through;
+}
+#####
+Lifetimes cause a lot of strange errors for many Rust users, and in the 2018 edition there is one less to worry about.
+    With the introduction of non-lexical lifetimes, the borrow checker got a lot smarter and it is now able to check—up to a certain degree—semantically whether the variable was used.
+    Recall from the rules of borrowing that, if a mutable reference is created, no immutable references can exist.
+        ????????????有这要求？？？
+This code did not compile before Rust 1.31:
+fn main() {
+    let mut a = 42;
+    let b = &a; // borrow a
+    let c = &mut a; // borrow a again, mutably
+    // ... but don't ever use b
+}
+Now it will compile since the compiler does not just check the beginning and ending of a scope, but also if the reference was used at all.
+
+#####
+#####
+######################
+######################
+######################

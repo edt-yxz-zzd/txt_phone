@@ -2,8 +2,12 @@
 r'''[[[
 e script/汉语字典囗.py
 主要输出:
+    ===
     view /sdcard/0my_files/tmp/out4py/汉语字典囗.py..nn_ns.fileformat.sqlite3_dump_cmd.out.txt
+        view /sdcard/0my_files/tmp/out4py/汉语字典囗.py..仅提取笔顺码..nn_ns.fileformat.sqlite3_dump_cmd.out.txt
+    ===
     view /sdcard/0my_files/tmp/out4py/古汉语字典囗.py..nn_ns.fileformat.sqlite3_dump_cmd.out.txt
+    ===
 
 
 script.汉语字典囗
@@ -189,7 +193,7 @@ py_adhoc_call   nn_ns.fileformat.sqlite3_dump_cmd   ,sqlite3_dump_cmd --ipath:/s
 
 
 zi(id,zi,py,wubi,bushou,bihua,pinyin,jijie,xiangjie,bishun)
-字(id,字,py无音调拼音,五笔,部首,笔画,拼音,基解/基本解释,详解/详细解释,笔顺名)
+字(id,字,py无音调拼音,五笔,部首,笔画,拼音,基解/基本解释,详解/详细解释,笔顺码)
     x0x1x2x3 vs 上面GHY.DAT:(字，音节，部首，部首笔画数，字笔画数，笔顺编号/笔顺码，释义)
 
 py_adhoc_call   nn_ns.fileformat.sqlite3_dump_cmd   @sqlite3_dump_cmd --ipath:/sdcard/0my_files/unzip/apk/dictionary/han_yu_zi_dian-assets-x0x1x2x3/x0x1x2x3  --nm4table:zi =2
@@ -375,7 +379,7 @@ py_adhoc_call   nn_ns.fileformat.sqlite3_dump_cmd   @sqlite3_dump_cmd --ipath:/s
 汉语字典
 x0x1x2x3
 zi(id,zi,py,wubi,bushou,bihua,pinyin,jijie,xiangjie,bishun)
-字(id,字,py无音调拼音,五笔,部首,笔画,拼音,基解/基本解释/maybe NULL,详解/详细解释===None,笔顺名)
+字(id,字,py无音调拼音,五笔,部首,笔画,拼音,基解/基本解释/maybe NULL,详解/详细解释===None,笔顺码)
     部分字 无 基解
 py_adhoc_call   nn_ns.fileformat.sqlite3_dump_cmd   @sqlite3_dump_cmd --ipath:/sdcard/0my_files/unzip/apk/dictionary/han_yu_zi_dian-assets-x0x1x2x3/x0x1x2x3  --nm4table:zi --nms4columns:id,zi,bushou,bihua,bishun,wubi,py,pinyin,jijie   --fmtr4row="lambda id,zi,bushou,bihua,bishun,wubi,py,pinyin,jijie:(lambda jijie_:f',{zi}\n:{id}:{bushou}:{bihua}:{bishun}:{wubi}:{py}:{pinyin}\n:{jijie_}')('' if jijie is None else jijie.replace('\r\n', '\n').replace('\n', '\n/'))"   --opath:/sdcard/0my_files/tmp/out4py/汉语字典囗.py..nn_ns.fileformat.sqlite3_dump_cmd.out.txt
 view /sdcard/0my_files/tmp/out4py/汉语字典囗.py..nn_ns.fileformat.sqlite3_dump_cmd.out.txt
@@ -417,6 +421,65 @@ py_adhoc_call   nn_ns.fileformat.sqlite3_dump_cmd   @sqlite3_dump_cmd --ipath:/s
 =====
 ]]
 
+
+
+[[20240127:
+提取笔顺码暨比较
+===
+view /sdcard/0my_files/tmp/out4py/汉语字典囗.py..nn_ns.fileformat.sqlite3_dump_cmd.out.txt
+view ./script/汉语字典囗.py
+view ../../python3_src/nn_ns/fileformat/sqlite3_dump_cmd.py
+view ../../python3_src/seed/for_libs/for_sqlite3.py
+
+######################
+#old-version:peek 4 lines:
+# --nms4columns:... --fmtr4row=...
+py_adhoc_call   nn_ns.fileformat.sqlite3_dump_cmd   @sqlite3_dump_cmd --ipath:/sdcard/0my_files/unzip/apk/dictionary/han_yu_zi_dian-assets-x0x1x2x3/x0x1x2x3  --nm4table:zi --nms4columns:zi,bishun   --fmtr4row='lambda zi,bishun:f"{zi!s}:{bishun!s}"' =4
+
+######################
+#new-version:peek 4 lines:
+# --nms4columns:<DEFAULT> --fmtr4row=...
+py_adhoc_call   nn_ns.fileformat.sqlite3_dump_cmd   @sqlite3_dump_cmd --ipath:/sdcard/0my_files/unzip/apk/dictionary/han_yu_zi_dian-assets-x0x1x2x3/x0x1x2x3  --nm4table:zi   --fmtr4row:'\zi,bishun -> f"{zi!s}:{bishun!s}"' =4
+
+######################
+#new-version:dump to file: with NULL
+py_adhoc_call   nn_ns.fileformat.sqlite3_dump_cmd   @sqlite3_dump_cmd --ipath:/sdcard/0my_files/unzip/apk/dictionary/han_yu_zi_dian-assets-x0x1x2x3/x0x1x2x3  --nm4table:zi   --fmtr4row:'\zi,bishun -> f"{zi!s}:{bishun!s}"' > /sdcard/0my_files/tmp/out4py/汉语字典囗.py..仅提取笔顺码..nn_ns.fileformat.sqlite3_dump_cmd.out.txt
+view /sdcard/0my_files/tmp/out4py/汉语字典囗.py..仅提取笔顺码..nn_ns.fileformat.sqlite3_dump_cmd.out.txt
+    total:21004 line:ok
+du -h /sdcard/0my_files/tmp/out4py/汉语字典囗.py..仅提取笔顺码..nn_ns.fileformat.sqlite3_dump_cmd.out.txt
+    368KB
+发现:
+    麇:None
+    牙合:None
+######################
+#new-version:dump to file: without NULL
+py_adhoc_call   nn_ns.fileformat.sqlite3_dump_cmd   @sqlite3_dump_cmd --ipath:/sdcard/0my_files/unzip/apk/dictionary/han_yu_zi_dian-assets-x0x1x2x3/x0x1x2x3  --nm4table:zi   --fmtr4row:'\zi,bishun -> f"{zi!s}:{bishun!s}"'  --condition:'bishun NOT NULL' > /sdcard/0my_files/tmp/out4py/汉语字典囗.py..仅提取笔顺码.withoutNULL..nn_ns.fileformat.sqlite3_dump_cmd.out.txt
+view /sdcard/0my_files/tmp/out4py/汉语字典囗.py..仅提取笔顺码.withoutNULL..nn_ns.fileformat.sqlite3_dump_cmd.out.txt
+    total:20947 line:==21004-57
+echo $[21004-20947]
+    57
+du -h /sdcard/0my_files/tmp/out4py/汉语字典囗.py..仅提取笔顺码.withoutNULL..nn_ns.fileformat.sqlite3_dump_cmd.out.txt
+    368KB
+===
+比较:
+    view ../../python3_src/nn_ns/CJK/CJK_data/raw/汉字笔顺表[20200913]/stroke-seq_MB-master[汉字笔顺表][20200827]/单字_笔顺码_29685个.txt
+    view /sdcard/0my_files/tmp/out4py/汉语字典囗.py..仅提取笔顺码..nn_ns.fileformat.sqlite3_dump_cmd.out.txt
+
+view ./script/hz/部件拆分.py
+===
+
+]]
+[[
+提取拼音
+===
+py_adhoc_call   nn_ns.fileformat.sqlite3_dump_cmd   @sqlite3_dump_cmd --ipath:/sdcard/0my_files/unzip/apk/dictionary/han_yu_zi_dian-assets-x0x1x2x3/x0x1x2x3  --nm4table:zi   --fmtr4row:'\zi,py,pinyin -> f"{zi!s}:{py!s}>{pinyin!s}"'  --condition:'py NOT NULL AND pinyin NOT NULL' > /sdcard/0my_files/tmp/out4py/汉语字典囗.py..仅提取拼音.withoutNULL..nn_ns.fileformat.sqlite3_dump_cmd.out.txt
+view /sdcard/0my_files/tmp/out4py/汉语字典囗.py..仅提取拼音.withoutNULL..nn_ns.fileformat.sqlite3_dump_cmd.out.txt
+    total:20976 line:==21004-28
+echo $[21004-20976]
+    28
+du -h /sdcard/0my_files/tmp/out4py/汉语字典囗.py..仅提取拼音.withoutNULL..nn_ns.fileformat.sqlite3_dump_cmd.out.txt
+    280KB
+]]
 
 
 

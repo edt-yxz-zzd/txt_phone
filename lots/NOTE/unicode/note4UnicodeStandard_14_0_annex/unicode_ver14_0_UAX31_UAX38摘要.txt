@@ -33,6 +33,7 @@ Version 	Unicode 14.0.0
 Table 5. Recommended Scripts
 Table 4. Excluded Scripts
   旧/弃用/体系还未清楚
+  view /sdcard/0my_files/unzip/e_book/unicode_13__UCD/Scripts.txt
 
 view /storage/emulated/0/0my_files/unzip/e_book/unicode_13__UCD/PropList.txt
     view ../../python3_src/nn_ns/CJK/unicode/ucd_unihan/ucd/parsed_result__of__PropList_txt__of_ver13_0.py
@@ -45,6 +46,124 @@ view /storage/emulated/0/0my_files/unzip/e_book/unicode_13__UCD/PropList.txt
     : [(0x9, 0xe), (0x20, 0x21), (0x85, 0x86), (0x200e, 0x2010), (0x2028, 0x202a)]
 
 
+
+]]
+[[20240113:
+view /sdcard/0my_files/unicode/unicode14_0/www.unicode.org/reports/tr31/tr31-35.html
+[
+UAX31-D1. Default Identifier Syntax:
+    <Identifier> := <Start> <Continue>* (<Medial> <Continue>+)*
+===
+ID_Start
+    [\p{L}\p{Nl}\p{Other_ID_Start}-\p{Pattern_Syntax}-\p{Pattern_White_Space}]
+ID_Continue
+    [\p{ID_Start}\p{Mn}\p{Mc}\p{Nd}\p{Pc}\p{Other_ID_Continue}-\p{Pattern_Syntax}-\p{Pattern_White_Space}]
+]
+
+[
+Table 2. Properties for Lexical Classes for Identifiers
+===
+Properties
+    General Description of Coverage
+===
+ID_Start
+    ID_Start characters are derived from the Unicode General_Category of uppercase letters, lowercase letters, titlecase letters, modifier letters, other letters, letter numbers, plus Other_ID_Start, minus Pattern_Syntax and Pattern_White_Space code points.
+    In UnicodeSet notation:
+        [\p{L}\p{Nl}\p{Other_ID_Start}-\p{Pattern_Syntax}-\p{Pattern_White_Space}]
+===
+XID_Start
+    XID_Start characters are derived from ID_Start as per Section 5.1, NFKC Modifications.
+===
+ID_Continue
+    ID_Continue characters include ID_Start characters, plus characters having the Unicode General_Category of nonspacing marks, spacing combining marks, decimal number, connector punctuation, plus Other_ID_Continue , minus Pattern_Syntax and Pattern_White_Space code points.
+    In UnicodeSet notation:
+        [\p{ID_Start}\p{Mn}\p{Mc}\p{Nd}\p{Pc}\p{Other_ID_Continue}-\p{Pattern_Syntax}-\p{Pattern_White_Space}]
+===
+XID_Continue
+    XID_Continue characters are derived from ID_Continue as per Section 5.1, NFKC Modifications.
+
+XID_Continue characters are also known simply as Identifier Characters, because they are a superset of the XID_Start characters.
+===
+Note that “other letters” includes ideographs. For more about the stability extensions, see Section 2.5 Backward Compatibility.
+]
+The innovations in the identifier syntax to cover the Unicode Standard include the following:
+    Incorporation of proper handling of combining marks.
+    Allowance for layout and format control characters, which should be ignored when parsing identifiers.
+The XID_Start and XID_Continue properties are improved lexical classes that incorporate the changes described in Section 5.1, NFKC Modifications . They are recommended for most purposes, especially for security, over the original ID_Start and ID_Continue properties.
+
+profile
+[
+Another such profile would be to include some set of the optional characters, for example:
+    Start := XID_Start, plus some characters from Table 3
+    Continue := Start + XID_Continue, plus some characters from Table 3b
+    Medial := some characters from Table 3a
+        Note: Characters in the Medial class must not overlap with those in either the Start or Continue classes. Thus, any characters added to the Medial class from Table 3a must be be checked to ensure they do not also occur in either the newly defined Start class or Continue class.
+]
+[
+Optional Characters:
+
+Table 3: [\$_]
+Table 3a: ['\-.\:·֊״་\u200C‐’‧゠・]
+Table 3b: [\u200D ׳]
+
+U+200C ZERO WIDTH NON-JOINER (ZWNJ)
+U+200D ZERO WIDTH JOINER (ZWJ)
+
+===
+Table 3. Optional Characters for Start
+Code Point	Character	Name
+0024	$	DOLLAR SIGN
+005F	_	LOW LINE
+
+===
+Table 3a. Optional Characters for Medial
+Code Point	Character	Name
+0027	'	APOSTROPHE
+002D	-	HYPHEN-MINUS
+002E	.	FULL STOP
+003A	:	COLON
+00B7	·	MIDDLE DOT
+058A	֊	ARMENIAN HYPHEN
+05F4	״	HEBREW PUNCTUATION GERSHAYIM
+0F0B	་	TIBETAN MARK INTERSYLLABIC TSHEG
+200C	\u200C	ZERO WIDTH NON-JOINER*
+2010	‐	HYPHEN
+2019	’	RIGHT SINGLE QUOTATION MARK
+2027	‧	HYPHENATION POINT
+30A0	゠	KATAKANA-HIRAGANA DOUBLE HYPHEN
+30FB	・	KATAKANA MIDDLE DOT
+
+===
+Table 3b. Optional Characters for Continue
+Code Point	Character	Name
+05F3	׳	HEBREW PUNCTUATION GERESH
+200D	\u200D	ZERO WIDTH JOINER*
+===
+]
+[
+Immutable Identifiers
+排除法:排除固定字集
+优点:不变
+缺点:由于使用未赋值码元，字串 不可 规范化
+===
+UAX31-R2. Immutable Identifiers: To meet this requirement, an implementation shall define identifiers to be any non-empty string of characters that contains no character having any of the following property values:
+    * Pattern_White_Space=True
+    * Pattern_Syntax=True
+    * General_Category=Private_Use, Surrogate, or Control
+    * Noncharacter_Code_Point=True
+
+===
+In its profile, a specification can define identifiers to be more in accordance with the Unicode identifier definitions at the time the profile is adopted, while still allowing for strict immutability. For example, an implementation adopting a profile after a particular version of Unicode is released (such as Unicode 5.0) could define the profile as follows:
+    + All characters satisfying UAX31-R1 Default Identifiers according to Unicode 5.0
+    + Plus all code points unassigned in Unicode 5.0 that do not have the property values specified in UAX31-R2 Immutable Identifiers.
+
+
+===
+Immutable identifers that allow unassigned characters cannot provide for normalization forms or these properties, which means that they:
+    * cannot be compared for NFC, NFKC, or case-insensitive equality
+    * are unsuitable for restrictions such as those in UTS #39
+
+]
 ]]
 
 UAX38
