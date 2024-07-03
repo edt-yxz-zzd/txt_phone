@@ -1,0 +1,482 @@
+
+e others/app/gvim/encoding.txt
+view others/app/gvim/vim with encoding.txt
+
+
+:h charset-conversion
+encoding
+  内存
+fileencoding
+  文件
+termencoding
+  终端:交互/显示器/键盘
+encoding{LC_MESSAGES}
+  gettext
+  翻译？
+『:scriptencoding』
+  脚本文件不同区域使用不同编码
+makeencoding
+  『:make』这类外部程序的输出的编码
+
+
+
+
+:h charset-conversion
+:h enc
+  <==>
+  :h encoding
+  :h 'encoding'
+  字符的内存表达用编码&&GUI图形界面终端显示使用的字符编码
+  vim程序:字符变量的内存表达形式
+  :set encoding?
+    =>『utf-8』
+  没必要改变
+:h encoding-names
+  可用的字符的内存表达用编码
+  主要分为:单字节，双字节，unicode-编码(utf-8:变长编码,ucs-4:四字节编码)
+  屏幕宽度？unicode 字节数与宽度不一致
+
+:h fenc
+  :h 'fileencoding'
+  字符的文件表达用编码
+  转化:
+  读取冫文件:字符的文件表达用编码-->字符的内存表达用编码
+  写到冫文件:字符的内存表达用编码-->字符的文件表达用编码
+
+:h fencs
+  :h 'fileencodings'
+  :h ++enc
+  set fenc?
+  set fencs?
+  读取冫文件:
+      先确定『fileencoding』
+      再转换编码:fileencoding --> encoding
+      <<==:
+      读取命令不含『++enc』:逐个尝试fencs，以得到『fileencoding』
+      读取命令含『++enc』:『view ++enc=gbk /path/to/file.gb.txt』直接使用『++enc』参数值作为『fileencoding』
+  写到冫文件:
+      转换编码: encoding --> fileencoding
+
+:h tenc
+  :h 'termencoding'
+  :set tenc?
+    =>『utf-8』
+  控制台终端显示使用的字符编码&&键盘使用的字符编码
+      #但是:GUI图形界面终端显示使用的字符编码==encoding
+
+:h scriptencoding
+  同一文件不同区域不同编码？
+  此命令只能用于脚本文件中
+  似乎要求所有编码兼容ASCII
+    =>『:scriptencoding utf-8』在任何编码下保持原貌
+    =>不支持编码:『ucs-2』『ucs-4』
+  缺省时，取消冫转换编码
+    :scriptencoding xxx
+    ...此区间文本编码为xxx...
+    :scriptencoding
+  脚本文件更改『encoding』，必须有:
+    :set enc=xxx
+    :scriptencoding xxx
+    ???为啥？？
+      可能是vim不够智能，更改enc之后，不知自动更改...
+
+:h 'makeencoding'
+  程序『make』的输出使用的字符编码
+  或者说:vim外部程序输出使用的字符编码
+    :h :make
+    :h :grep
+    :h global-local
+    :h terminal-function-details
+    :h function-list
+
+
+
+:h iconv()
+  xxx :: (str, iencoding, oencoding) -> str
+  :: (char[], iencoding, oencoding) -> char[]
+  :: ((uint8_t*), iencoding, oencoding) -> (uint8_t*)
+  ===
+  iconv(?,?,&enc)
+      最后参数似乎只能是『encoding』
+  ===
+  ???字符串???真的不是 字节串!!!
+  但是『字符串』不是统一使用『encoding』编码吗？
+    似乎可随意处理，并不保证是『utf-8』
+      只有文本转换编码时，才记起有编码这一回事
+      这根本就是字节串！！
+  ===
+  :h String
+    xxx字符串
+    字节串
+      是C-style char[]
+      不是python-str
+      String        A NUL terminated string of 8-bit unsigned characters (bytes).
+      getfsize({fname})		Number	size in bytes of file {fname}
+
+  ===
+  :h Blob
+    字节串
+    :h blob-modification
+    :h str2list()
+    :h list2str()
+    :h add()
+    :h method
+    :h lambda
+
+  ===
+  :echo printf('%X', char2nr('一'))
+    =>『4E00』
+  :echo iconv('一', 'gbk', 'utf-8')
+  :echo iconv('一', 'utf-8',  'gbk')
+  :echo str2list(iconv('一', 'gbk', 'utf-8'))
+  :echo str2list(iconv('一', 'utf-8',  'gbk'))
+  =>『[1211]』
+  :echo printf('%X', char2nr(iconv('一', 'utf-8',  'gbk')))
+  =>『4BB』
+
+  :redir @"> | echo str2list(iconv('一', 'gbk', 'utf-8')) | redir END | put
+  =>『[28051, 8364]』
+  :redir @"> | echo str2list(iconv("\x04\xbb", 'gbk', 'utf-8')) | redir END | put
+  =>『[4, 63, 63]』
+  :echo str2list(iconv(list2str([4, 63, 63]), 'utf-8',  'gbk'))
+  =>『[4, 63, 63]』
+  :echo iconv(list2str([4, 63, 63]), 'utf-8',  'gbk')
+
+  :echo "\x4E"
+  =>『N』
+  :echo "\x4E\x00\x00\x00"
+  =>『N』
+  :echo str2list("\x4E\x00")
+  =>『[78]』
+
+  >>> '一'.encode('u8')
+  b'\xe4\xb8\x80'
+  >>> '一'.encode('gbk')
+  b'\xd2\xbb'
+  :echo str2list(iconv("\xd2\xbb", 'latin1',  'gbk'))
+  =>『[63]』
+  :echo str2list(iconv("\xe4\xb8\x80", 'latin1',  'gbk'))
+  =>『[63, 63]』
+  :echo str2list(iconv("\xe4\xb8\x80", 'utf-8',  'gbk'))
+  =>『[1211]』
+  :echo iconv("\xd2\xbb",  'gbk', 'utf-8')
+  =>『一』
+  :echo iconv("\xd2\xbb",  'gbk', &enc)
+  =>『一』
+
+:h locale
+  :h encoding-table
+
+
+
+
+
+
+
+
+
+
+
+
+
+:h charset-conversion
+:h viminfo-file
+    保存冫命令行历史
+    保存冫搜索历史
+    保存冫文件中的锚点
+    保存冫打开的所有文件
+:h session-file
+    保存冫全局变量
+    保存冫窗口状态
+:h viminfo-file-name
+    全局唯一，不用考虑
+:h viminfo-encoding
+    基本不用考虑
+:h viminfo-read-write
+    人工复制registers于不同编辑状态
+:h :mks
+    输出冫会议状态/输出冫所有对话窗口状态
+    恢复状态/读取并运行:『:source』
+:h :mkview
+    输出冫当前窗口状态
+    恢复状态/读取并运行:『:source』
+:h :source
+    运行冫用户脚本
+:h :runtime
+    运行冫插件脚本/运行冫库包模块脚本
+:h runtimepath
+    :h rtp
+    :set rtp?
+    标准库路径列表
+:h packpath
+    :h 'pp'
+    :h packages
+    插件库路径列表
+
+[[
+:h charset-conversion
+===
+CONVERSION						*charset-conversion*
+
+Vim will automatically convert from one to another encoding in several places:
+- When reading a file and 'fileencoding' is different from 'encoding'
+- When writing a file and 'fileencoding' is different from 'encoding'
+- When displaying characters and 'termencoding' is different from 'encoding'
+- When reading input and 'termencoding' is different from 'encoding'
+- When displaying messages and the encoding used for LC_MESSAGES differs from
+  'encoding' (requires a gettext version that supports this).
+- When reading a Vim script where |:scriptencoding| is different from
+  'encoding'.
+- When reading or writing a |viminfo| file.
+Most of these require the |+iconv| feature.  Conversion for reading and
+writing files may also be specified with the 'charconvert' option.
+
+Useful utilities for converting the charset:
+    All:	    iconv
+	GNU iconv can convert most encodings.  Unicode is used as the
+	intermediate encoding, which allows conversion from and to all other
+	encodings.  See http://www.gnu.org/directory/libiconv.html.
+
+
+]]
+[[
+:h viminfo-file
+===
+The viminfo file is used to store:
+- The command line history.
+- The search string history.
+- The input-line history.
+- Contents of non-empty registers.
+- Marks for several files.
+- File marks, pointing to locations in files.
+- Last search/substitute pattern (for 'n' and '&').
+- The buffer list.
+- Global variables.
+
+The viminfo file is not supported when the |+viminfo| feature has been
+disabled at compile time.
+
+You could also use a Session file.  The difference is that the viminfo file
+does not depend on what you are working on.  There normally is only one
+viminfo file.  Session files are used to save the state of a specific editing
+Session.  You could have several Session files, one for each project you are
+working on.  Viminfo and Session files together can be used to effectively
+enter Vim and directly start working in your desired setup. |session-file|
+
+
+]]
+[[
+:h session-file
+===
+
+						*Session* *session-file*
+A Session keeps the Views for all windows, plus the global settings.  You can
+save a Session and when you restore it later the window layout looks the same.
+You can use a Session to quickly switch between different projects,
+automatically loading the files you were last working on in that project.
+
+Views and Sessions are a nice addition to viminfo-files, which are used to
+remember information for all Views and Sessions together |viminfo-file|.
+
+You can quickly start editing with a previously saved View or Session with the
+|-S| argument: >
+	vim -S Session.vim
+<
+All this is {not available when compiled without the |+mksession| feature}.
+
+
+]]
+[[
+:h viminfo-file-name
+===
+VIMINFO FILE NAME					*viminfo-file-name*
+
+- The default name of the viminfo file is "$HOME/.viminfo" for Unix,
+  "s:.viminfo" for Amiga, "$HOME\_viminfo" for Win32.  For the last two, when
+  $HOME is not set, "$VIM\_viminfo" is used.  When $VIM is also not set,
+  "c:\_viminfo" is used.
+- The 'n' flag in the 'viminfo' option can be used to specify another viminfo
+  file name |'viminfo'|.
+- The "-i" Vim argument can be used to set another file name, |-i|.  When the
+  file name given is "NONE" (all uppercase), no viminfo file is ever read or
+  written.  Also not for the commands below!
+- The 'viminfofile' option can be used like the "-i" argument.  In fact, the
+  value form the "-i" argument is stored in the 'viminfofile' option.
+- For the commands below, another file name can be given, overriding the
+  default and the name given with 'viminfo' or "-i" (unless it's NONE).
+
+
+
+]]
+[[
+:h viminfo-encoding
+===
+CHARACTER ENCODING					*viminfo-encoding*
+
+The text in the viminfo file is encoded as specified with the 'encoding'
+option.  Normally you will always work with the same 'encoding' value, and
+this works just fine.  However, if you read the viminfo file with another
+value for 'encoding' than what it was written with, some of the text
+(non-ASCII characters) may be invalid.  If this is unacceptable, add the 'c'
+flag to the 'viminfo' option: >
+	:set viminfo+=c
+Vim will then attempt to convert the text in the viminfo file from the
+'encoding' value it was written with to the current 'encoding' value.  This
+requires Vim to be compiled with the |+iconv| feature.  Filenames are not
+converted.
+
+
+]]
+[[
+:h :mks
+===
+							*:mks* *:mksession*
+:mks[ession][!] [file]	Write a Vim script that restores the current editing
+			session.
+			When [!] is included an existing file is overwritten.
+			When [file] is omitted "Session.vim" is used.
+
+The output of ":mksession" is like ":mkvimrc", but additional commands are
+added to the file.  Which ones depends on the 'sessionoptions' option.  The
+resulting file, when executed with a ":source" command:
+1. Restores global mappings and options, if 'sessionoptions' contains
+   "options".  Script-local mappings will not be written.
+2. Restores global variables that start with an uppercase letter and contain
+   at least one lowercase letter, if 'sessionoptions' contains "globals".
+3. Unloads all currently loaded buffers.
+4. Restores the current directory if 'sessionoptions' contains "curdir", or
+   sets the current directory to where the Session file is if 'sessionoptions'
+   contains "sesdir".
+5. Restores GUI Vim window position, if 'sessionoptions' contains "winpos".
+6. Restores screen size, if 'sessionoptions' contains "resize".
+7. Reloads the buffer list, with the last cursor positions.  If
+   'sessionoptions' contains "buffers" then all buffers are restored,
+   including hidden and unloaded buffers.  Otherwise only buffers in windows
+   are restored.
+8. Restores all windows with the same layout.  If 'sessionoptions' contains
+   "help", help windows are restored.  If 'sessionoptions' contains "blank",
+   windows editing a buffer without a name will be restored.
+   If 'sessionoptions' contains "winsize" and no (help/blank) windows were
+   left out, the window sizes are restored (relative to the screen size).
+   Otherwise, the windows are just given sensible sizes.
+9. Restores the Views for all the windows, as with |:mkview|.  But
+   'sessionoptions' is used instead of 'viewoptions'.
+10. If a file exists with the same name as the Session file, but ending in
+   "x.vim" (for eXtra), executes that as well.  You can use *x.vim files to
+   specify additional settings and actions associated with a given Session,
+   such as creating menu items in the GUI version.
+
+After restoring the Session, the full filename of your current Session is
+available in the internal variable "v:this_session" |this_session-variable|.
+An example mapping: >
+  :nmap <F2> :wa<Bar>exe "mksession! " . v:this_session<CR>:so ~/sessions/
+This saves the current Session, and starts off the command to load another.
+
+A session includes all tab pages, unless "tabpages" was removed from
+'sessionoptions'. |tab-page|
+
+The |SessionLoadPost| autocmd event is triggered after a session file is
+loaded/sourced.
+						*SessionLoad-variable*
+While the session file is loading the SessionLoad global variable is set to 1.
+Plugins can use this to postpone some work until the SessionLoadPost event is
+triggered.
+
+]]
+[[
+							*:mkvie* *:mkview*
+:mkvie[w][!] [file]	Write a Vim script that restores the contents of the
+			current window.
+			When [!] is included an existing file is overwritten.
+			When [file] is omitted or is a number from 1 to 9, a
+			name is generated and 'viewdir' prepended.  When the
+			last path part of 'viewdir' does not exist, this
+			directory is created.  E.g., when 'viewdir' is
+			"$VIM/vimfiles/view" then "view" is created in
+			"$VIM/vimfiles".
+			An existing file is always overwritten then.  Use
+			|:loadview| to load this view again.
+			When [file] is the name of a file ('viewdir' is not
+			used), a command to edit the file is added to the
+			generated file.
+
+The output of ":mkview" contains these items:
+1. The argument list used in the window.  When the global argument list is
+   used it is reset to the global list.
+   The index in the argument list is also restored.
+2. The file being edited in the window.  If there is no file, the window is
+   made empty.
+3. Restore mappings, abbreviations and options local to the window if
+   'viewoptions' contains "options" or "localoptions".  For the options it
+   restores only values that are local to the current buffer and values local
+   to the window.
+   When storing the view as part of a session and "options" is in
+   'sessionoptions', global values for local options will be stored too.
+4. Restore folds when using manual folding and 'viewoptions' contains
+   "folds".  Restore manually opened and closed folds.
+5. The scroll position and the cursor position in the file.  Doesn't work very
+   well when there are closed folds.
+6. The local current directory, if it is different from the global current
+   directory and 'viewoptions' contains "curdir".
+
+Note that Views and Sessions are not perfect:
+- They don't restore everything.  For example, defined functions, autocommands
+  and ":syntax on" are not included.  Things like register contents and
+  command line history are in viminfo, not in Sessions or Views.
+- Global option values are only set when they differ from the default value.
+  When the current value is not the default value, loading a Session will not
+  set it back to the default value.  Local options will be set back to the
+  default value though.
+- Existing mappings will be overwritten without warning.  An existing mapping
+  may cause an error for ambiguity.
+- When storing manual folds and when storing manually opened/closed folds,
+  changes in the file between saving and loading the view will mess it up.
+- The Vim script is not very efficient.  But still faster than typing the
+  commands yourself!
+
+							*:lo* *:loadview*
+:lo[adview] [nr]	Load the view for the current file.  When [nr] is
+			omitted, the view stored with ":mkview" is loaded.
+			When [nr] is specified, the view stored with ":mkview
+			[nr]" is loaded.
+
+The combination of ":mkview" and ":loadview" can be used to store up to ten
+different views of a file.  These are remembered in the directory specified
+with the 'viewdir' option.  The views are stored using the file name.  If a
+file is renamed or accessed through a (symbolic) link the view will not be
+found.
+
+You might want to clean up your 'viewdir' directory now and then.
+
+To automatically save and restore views for *.c files: >
+	au BufWinLeave *.c mkview
+	au BufWinEnter *.c silent loadview
+
+
+]]
+[[
+:h locale
+===
+A linguistic environment corresponding to an area is called "locale".
+    This includes information about the used language, the charset, collating order for sorting, date format, currency format and so on.
+    For Vim only the language and charset really matter.
+
+You can only use a locale if your system has support for it.
+    The language which you want to use may not be on your system.
+    In that case you might be able to install it as an extra package.
+
+							*locale-name*
+The (simplified) format of |locale| name is:
+	language
+or	language_territory
+or	language_territory.codeset
+
+Territory means the country (or part of it), codeset means the |charset|.
+]]
+[[
+]]
+
+
+
+
+

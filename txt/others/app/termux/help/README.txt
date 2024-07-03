@@ -1,4 +1,7 @@
 e others/app/termux/help/README.txt
+view ../../python3_src/bash_script/app/man__save_to_file
+view ../../python3_src/bash_script/app/help__save_to_file
+
 
 [[what is "quote"??
     # /sdcard/0my_files//git_repos//python3_src//bash_script//app/h: line 22: quote: command not found
@@ -83,9 +86,14 @@ help export
 help declare
 
 
+view ../../python3_src/bash_script/app/man__save_to_file
+view ../../python3_src/bash_script/app/help__save_to_file
+
 [[hexdump:
-man -c hexdump | col -b -x > others/app/termux/help/hexdump.man.txt
-hexdump --help > others/app/termux/help/hexdump.help.txt
+man__save_to_file hexdump
+help__save_to_file hexdump
+    man -c hexdump | col -b -x > others/app/termux/help/hexdump.man.txt
+    hexdump --help > others/app/termux/help/hexdump.help.txt
 e others/app/termux/help/hexdump.example.txt
 
 view others/app/termux/help/hexdump.man.txt
@@ -93,8 +101,10 @@ view others/app/termux/help/hexdump.help.txt
 view others/app/termux/help/hexdump.example.txt
 ]]
 [[bash:
-man -c bash | col -b -x > others/app/termux/help/bash.man.txt
-bash --help > others/app/termux/help/bash.help.txt
+man__save_to_file bash
+help__save_to_file bash
+    man -c bash | col -b -x > others/app/termux/help/bash.man.txt
+    bash --help > others/app/termux/help/bash.help.txt
 e others/app/termux/help/bash.example.txt
 
 view others/app/termux/help/bash.man.txt

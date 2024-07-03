@@ -480,6 +480,17 @@ echo $[21004-20976]
 du -h /sdcard/0my_files/tmp/out4py/汉语字典囗.py..仅提取拼音.withoutNULL..nn_ns.fileformat.sqlite3_dump_cmd.out.txt
     280KB
 ]]
+[[
+搜索:未详
+    #<<==义未详
+py_adhoc_call   nn_ns.fileformat.sqlite3_dump_cmd   @sqlite3_dump_cmd --ipath:/sdcard/0my_files/unzip/apk/dictionary/han_yu_zi_dian-assets-x0x1x2x3/x0x1x2x3  --nm4table:zi --nms4columns:zi,py,pinyin,jijie --condition:'jijie NOT NULL AND py NOT NULL AND pinyin NOT NULL' --py_condition='lambda zi,py,pinyin,jijie:("未详" in jijie)'  --fmtr4row='lambda zi,py,pinyin,jijie:f"{zi}:{pinyin}"'  > /sdcard/0my_files/tmp/out4py/汉语字典囗.py..义未详.withoutNULL..nn_ns.fileformat.sqlite3_dump_cmd.out.txt
+view /sdcard/0my_files/tmp/out4py/汉语字典囗.py..义未详.withoutNULL..nn_ns.fileformat.sqlite3_dump_cmd.out.txt
+203字
+0xE856
+丆乛乧乯乲乷匇厑剦兓隡兯仒佨佦侤俧傦儏厼亪蓜蕱藵蘒迚迲遖遤飝巬弖彁彅廭幉幥叾吿哛唜嚑嚰嚸囄猠獈岃峅嵙嵜嵶嵵嶶嶿壭壿抣捤汢浌溂澚潉潌濸瀭垊垉垰堏堒堔塀塭墛墸墹壗尡愥孧旕炞烥焒煱焾煶爘朩朰杦栆椩榋榌樭樰樮橻橸櫊櫤櫦欍禣甅珯琒琑琓琻璤璴怺曻脌脵膤朥爳穃穒穝睝矋砛砽硛硓硘碷磮礂礖礢畩窧襔襨螁螧蟐蟵蠴聣耟籾粂粐粫粩糬縇衐褜舿艠笽筽簯籎籡輧軅軉豣誮諚謃酜趰鋴鍅錿鎆鎾鏲鏯鏱鐡鑧鑦閖闏闎闦饂雫靎靏駲麉麶鵈鵤鵢鮘鮕衘蘒
+
+
+]]
 
 
 

@@ -1,0 +1,1074 @@
+
+e ../lots/NOTE/html/js/js_DOM.txt
+goto:
+  搜索定位+移动游走
+  修改页面:构造节点+插入节点+删除节点+复制节点
+      所有插入方法其实都是移位方法冫先自旧所删除再插入新所
+  命名对照
+      『-小写字母』变『大写字母』
+  样式冫宽高位移滚动耂关系:坐标
+
+<!DOCTYPE HTML><html><head></head><body></body></html>
+<ul><li>
+<table><tr><th>
+<table><tr><td>
+setTimeout
+setInterval
+window
+document
+
+
+
+
+
+
+
+view /sdcard/0my_files/book/lang/js/[js]Part 2 Browser_ Document, Events.pdf
+
+全局变量:『window』
+全局变量:『document』
+window:
+  *--> document/DOM/html-tree
+      DOM (Document Object Model)
+  *--> BOM/浏览器对象...
+      BOM (Browser object model)
+  *--> JS/各种变量对象
+
+document.head
+document.body
+逐步添加对象，head里面的js取得document.body为null
+
+DOM:12类节点
+主要4种:
+  document
+      #根节点(包含了开头声明)
+  element nodes #tag
+      #非叶的内节点
+      #??非根的内节点??
+      document.documentElement
+          <html>『element nodes』类别里的根节点
+          但若不限制类型为『element nodes』则不是根节点
+          .parentElement
+  text nodes #叶节点
+  comment nodes #叶节点
+
+[tag==element <: node]
+element/tag:属性:
+  .innerHTML :: str
+  .outerHTML :: str
+      赋值时，变量本身不变，对象被剥离出来(新对象替换入DOM)
+  .style.backgroundColor = 'red';
+  .tagName
+node:属性:
+  .nodeType now using 『instanceof』
+  .nodeName #vs: .tagName
+  .nodeValue
+  .data    #vs: .innerHTML, .outerHTML
+      text.data     # text node
+      comment.data  # <!-- -->
+      text.textContent #去掉尖括号内容
+          .textContent读:少见
+          但.textContent写入:常见，自动转义字符串，是纯文本
+            .innerHTML写入，不转义字符，是格式化的html文本
+  .hidden
+      三种等价形式:
+      <div hidden>
+      <div style="display:none" >
+      <div id="elem"> + 『elem.hidden = true; 』
+  .id
+  <input> , <select> , <textarea>
+    .value
+  <a href="...">
+    .href
+  <table>相关:见下面
+
+  显示所有属性:console.dir(elem) and read the properties. Or explore “DOM properties” in the Elements tab of the browser developer tools.
+
+node:移动游走:
+  .firstChild
+  .lastChild
+  .childNodes
+      .length
+      [i]
+      for...of
+  .hasChildNodes()
+  .parentNode -->*--> document
+  .previousSibling
+  .nextSibling
+  以上:所有类型节点
+  以下:只含element-node:
+  .firstElementChild
+  .lastElementChild
+  .children
+  .parentElement -->*--> document.documentElement#<html>
+  .previousElementSibling
+  .nextElementSibling
+  ==>>:
+  『document』node不是『element-node』
+  alert( document.documentElement.parentNode ); // document
+  alert( document.documentElement.parentElement ); // null
+
+x.firstChild === x.childNodes[0]
+x.lastChild === x.childNodes[x.childNodes.length-1]
+document.body.parentNode === document.documentElement
+    parent of <body> is <html>
+document.head.nextSibling === document.body
+    // after <head> goes <body>
+document.body.previousSibling === document.head
+    // before <body> goes <head>
+
+element/tag:移动游走:搜索定位:
+    DOM navigation properties
+    Searching: getElement*, querySelector*
+    <xxx id='the_nm'>
+    document.getElementById('the_nm')
+    ##下面只是兼容旧版#容易于js变量混淆
+    <==>window['the_nm']
+    <==>window.the_nm #但是 不支持『xxx-yyy』含『-』形式
+    <==>the_nm
+There are 6 main methods to search for nodes in DOM:
+Method
+    Searches by...
+    Can call on an element?
+    Live?
+querySelector
+    CSS-selector
+    element.querySelector()
+    对象而非视图
+    <==>elem.querySelectorAll(css)[0]
+        但更快
+querySelectorAll
+    CSS-selector
+    element.querySelectorAll('div')
+    对象而非视图
+    element.querySelector('#the-id_nm')
+    element.querySelectorAll('div.cssNm2[name="a-nm"]')
+      已经过测试:<style>div.cssNm2#the-id_nm {}</style> /*不含空格*/
+      已经过测试:<style>h1.cls4h1#id4h1[name=nm4h1]  {}</style> /*不含空格*/
+      /*table, th, td {...}*/
+      /*bug:『>』直接子女:table.collapsed-border, table.collapsed-border > th, table.collapsed-border > td {}*/
+      /*『 』:后代:table.collapsed-border, table.collapsed-border   th, table.collapsed-border   td {}*/
+      未测试:<style>h1.cls4h1#id4h1[name=nm4h1]:before {}</style> /*不含空格*/
+        :before,:after,:focus,:visited,:active,:link,...
+    element.querySelectorAll('div ul li p')
+    element.querySelectorAll('div > ul > li > p')
+    element.querySelectorAll('body *')
+    猜测用法:
+      element.querySelectorAll('div.css-class-nm1.cssNm2[id="the-id_nm"][name="a-nm"]')
+      element.querySelectorAll('div')
+getElementById
+    id
+    document.getElementById('the-id_nm')
+    对象而非视图
+getElementsByName
+    name
+    document.getElementsByName('a-nm')
+    活视图
+getElementsByTagName
+    tag or '*'
+    element.getElementsByTagName()
+    活视图
+getElementsByClassName
+    class
+    element.getElementsByClassName('css-class-nm1')
+    活视图
+<div  id='the-id_nm'  name='a-nm' class='css-class-nm1   cssNm2' >
+matches, closest, contains:
+    elem.matches(css) -> bool
+    elem.closest(css) -> self or ancestor or null
+    elemA.contains(elemB) =[def]= elemB is inside elemA (a descendant of elemA ) or when elemA==elemB
+
+css-selector:过滤器:实例:
+elem.closest('.cssNm2')
+elem.closest('div')
+elem.matches('a[href$="zip"]')
+document.querySelectorAll('[html-attribute]')
+document.querySelectorAll('ul > li:last-child')
+Can use pseudo-classes as well
+  document.querySelectorAll(':hover')
+  document.querySelectorAll(':active')
+
+
+
+for..in
+for (let 属性 in object){}
+
+for..of
+for (let 元素 of collecton){}
+    iterable:Symbol.iterator
+    DOM collecton 只读视图:可观察到改变
+
+x.childNodes:不是数组
+  Array.from(x).filter
+
+js格式化字符串#vs:py.『f'{}'』
+  for (let attr of elem.attributes) {
+      alert( `${attr.name} = ${attr.value}` );
+  }
+
+
+
+
+
+<script>
+// can be any collection instead of document.body.children
+for (let elem of document.body.children) {
+  if (elem.matches('a[href$="zip"]')) {
+    alert("The archive reference: " + elem.href );
+  }
+}
+</script>
+
+
+<ul> <li>The</li> <li>test</li> </ul>
+<ul> <li>has</li> <li>passed</li> </ul>
+<script>
+    let elements = document.querySelectorAll('ul > li:last-child');
+    for (let elem of elements) {
+        alert(elem.innerHTML); // "test", "passed"
+    }
+</script>
+
+
+
+
+<script>
+for (let i = 0; i < document.body.childNodes.length; i++) {
+    alert( document.body.childNodes[i] ); // Text, DIV, Text, UL, ..., SCRIPT
+}
+for (let elem of document.body.children) {
+    alert(elem); // DIV, UL, DIV, SCRIPT
+}
+
+</script>
+
+
+
+for (let node of document.body.childNodes) {
+    alert(node); // shows all nodes from the collection
+        #容器元素:for...of
+}
+
+<script>
+// shows 0, 1, length, item, values and more.
+for (let prop in document.body.childNodes) alert(prop);
+        #容器属性:for...in
+</script>
+
+// .parentElement  :vs:  .parentNode
+while(elem = elem.parentElement) {
+    alert( elem ); // parent chain till <html>
+}
+
+
+
+<ul><li>
+<table><tr><th>
+<table><tr><td>
+
+不同tag各自拥有特色属性:如<table>
+Certain types of DOM elements may provide additional properties, specific to their type, for convenience.
+Tables are a great example and important particular case of that.
+[[
+view ../lots/NOTE/html/tag/table--complete-struct.html
+order should be:
+<table>
+  <caption>
+  <colgroup>
+    <col>
+  <thead>
+    <tr>
+      <th>
+  <tbody>
+    <tr>
+      <th>
+      <td>
+  <tfoot>
+    <tr>
+      <th>
+      <td>
+]]
+
+
+
+<table>
+    .rows[0]
+        <tr>
+            .sectionRowIndex
+            .rowIndex
+            .cells[0]
+                <td>, <th>
+                    .cellIndex
+                    tr-『r』:row
+                    th-『h』:header-row-cell?
+                    td-『d』:data-row-cell?
+    .caption
+    .tHead
+    .tFoot
+        <caption> , <thead> , <tfoot>
+            .rows[0]
+                <tr>
+<table> element supports (in addition to the given above) these properties:
+    table.rows – the collection of <tr> elements of the table.
+    table.caption/tHead/tFoot – references to elements <caption> , <thead> , <tfoot> .
+    table.tBodies – the collection of <tbody> elements (can be many according to the standard).
+
+
+<thead> , <tfoot> , <tbody> elements provide the rows property:
+    tbody.rows – the collection of <tr> inside.
+
+
+<tr> :
+    tr.cells – the collection of <td> and <th> cells inside the given <tr> .
+    tr.sectionRowIndex – the position (index) of the given <tr> inside the enclosing <thead>/<tbody>/<tfoot> .
+    tr.rowIndex – the number of the <tr> in the table as a whole (including all table rows).
+
+
+<td> and <th> :
+    td.cellIndex – the number of the cell inside the enclosing <tr> .
+
+<table id="table">
+    <tr> <td>one</td><td>two</td> </tr>
+    <tr> <td>three</td><td>four</td> </tr>
+</table> <script>
+    // get the content of the first row, second cell
+    alert( table.rows[0].cells[1].innerHTML ) // "two"
+</script>
+
+
+
+
+
+getElementById
+<div id="elem">
+    <div id="elem-content">Element</div>
+</div> <script>
+    alert(elem); // DOM-element with id="elem"
+    alert(window.elem); // accessing global variable like this also works
+    // for elem-content things are a bit more complex
+    // that has a dash inside, so it can't be a variable name
+    alert(window['elem-content']); // ...but accessible using square brackets [...]
+    let elem = 5;
+        // 覆盖了 id='elem' 的tag
+        // 上面是废置用法，应该用下面:getElementById
+</script><script>
+    // 正常
+    let elem = document.getElementById('elem');
+    elem.style.background = 'red';
+</script>
+
+
+
+
+
+can use instanceof to check the inheritance:
+  alert( document.body.constructor.name ); // HTMLBodyElement
+  alert( document.body ); // [object HTMLBodyElement]
+  alert( document.body instanceof HTMLBodyElement ); // true
+  alert( document.body instanceof HTMLElement ); // true
+  alert( document.body instanceof Element ); // true
+  alert( document.body instanceof Node ); // true
+  alert( document.body instanceof EventTarget ); // true
+
+.nodeType
+  elem.nodeType == 1 for element nodes,
+  elem.nodeType == 3 for text nodes,
+  elem.nodeType == 9 for the document object,
+
+
+
+
+
+<div id="elem1"></div>
+<div id="elem2"></div>
+<script>
+let name = prompt("What's your name?", "<b>Winnie-the-pooh!</b>");
+  elem1.innerHTML = name;
+      // 加粗的『Winnie-the-pooh!』
+  elem2.textContent = name;
+      // 『<b>Winnie-the-pooh!</b>』
+</script>
+
+
+
+隐藏:不显示:
+<div>Both divs below are hidden</div>
+  <div hidden>With the attribute "hidden"</div>
+  <div id="elem">JavaScript assigned the property "hidden"</div> <script>
+      elem.hidden = true;
+  </script>
+
+Technically, hidden works the same as style="display:none" . But it’s shorter to write.
+Here’s a blinking element:
+
+<div id="elem">A blinking element</div>
+  <script>
+      setInterval(() => elem.hidden = !elem.hidden, 1000);
+  </script>
+
+
+
+HTML attributes vs DOM properties
+  HTML_attributes:名称大小写不敏感,值必是字符串
+  DOM_properties:名称大小写敏感,值可是任何js对象/值
+  property-attribute synchronization
+    When a standard attribute changes, the corresponding property is auto-updated, and (with some exceptions) vice versa.
+      部分同步:部分不同步
+          DOM_properties的类型与HTML_attributes的类型(即字符串)不一定一致
+          DOM_properties的数据更完整:即填充修正了HTML_attributes的数据
+      非标准的属性:避免与未来标准属性碰撞:
+        attribute "data-about"
+              ==>> elem.dataset.about
+        attribute "data-order-state"
+              ==>> elem.dataset.orderState
+
+  the attribute-property mapping is not one-to-one!
+  只有『标准的』HTML attributes 才会自动成为 DOM properties
+  DOM对象 是 JS对象，DOM properties可随意增删，甚至修改原型prototype(类似py.metaclass)
+  『非标准的』HTML attributes可通过特定函数访问
+      elem.hasAttribute(name) -> bool
+      elem.getAttribute(name)
+      elem.setAttribute(name, value)
+      elem.removeAttribute(name)
+        These methods operate exactly with what’s written in HTML.
+      elem.attributes
+
+随意修改:DOM properties
+document.body.myData = { name: 'Caesar', title: 'Imperator' };
+  alert(document.body.myData.title); // Imperator
+
+增加对象方法:DOM properties
+document.body.sayTagName = function() { alert(this.tagName); };
+  document.body.sayTagName(); // BODY (the value of "this" in the method is document.body)
+
+修改原型对象:DOM properties
+We can also modify built-in prototypes like Element.prototype and add new methods to all elements:
+Element.prototype.sayHi = function() { alert(`Hello, I'm ${this.tagName}`); };
+  document.documentElement.sayHi(); // Hello, I'm HTML
+  document.body.sayHi(); // Hello, I'm BODY
+
+DOM properties and methods behave just like those of regular JavaScript objects:
+  They can have any value.
+  They are case-sensitive (write elem.nodeType , not elem.NoDeTyPe ).
+vs:
+HTML attributes have the following features:
+  Their name is case-insensitive ( id is same as ID ).
+  Their values are always strings.
+
+
+HTML attributes
+In HTML, tags may have attributes. When the browser parses the HTML to create DOM objects for tags, it recognizes 『standard』 attributes and creates DOM properties from them.
+<body id="test" something="non-standard">
+  <script>
+  alert(document.body.id); // test
+  // non-standard attribute does not yield a property
+  alert(document.body.something); // undefined
+  </script>
+</body>
+不同tag的『标准』attributes不同:
+<body id="body" type="...">
+  <input id="input" type="text">
+  <script>
+  alert(input.type); // text
+  alert(body.type); // undefined: DOM property not created, because it's non-st
+  </script>
+</body>
+
+
+<body something="non-standard">
+  <script>
+  alert(document.body.getAttribute('something')); // non-standard
+  </script>
+</body>
+
+
+
+<body>
+  <div id="elem" about="Elephant"></div>
+  <script>
+  alert( elem.getAttribute('About') ); // (1) 'Elephant', reading
+  elem.setAttribute('Test', 123); // (2), writing
+  alert( elem.outerHTML ); // (3), see it's there
+  for (let attr of elem.attributes) { // (4) list all
+      alert( `${attr.name} = ${attr.value}` );
+  }
+  </script>
+</body>
+
+
+
+
+
+
+
+部分同步:
+<input>
+  <script>
+  let input = document.querySelector('input');
+  // attribute => property
+  input.setAttribute('id', 'id');
+  alert(input.id); // id (updated)
+  // property => attribute
+  input.id = 'newId';
+  alert(input.getAttribute('id')); // newId (updated)
+  </script>
+
+部分不同步:同步有方向性
+<input>
+  <script>
+  let input = document.querySelector('input');
+  // attribute => property
+  input.setAttribute('value', 'text');
+  alert(input.value); // text
+  // NOT property => attribute
+  input.value = 'newValue';
+  alert(input.getAttribute('value')); // text (not updated!)
+</script>
+
+部分不同步:同步带类型化
+    DOM_properties的类型与HTML_attributes的类型(即字符串)不一定一致
+<input id="input" type="checkbox" checked> checkbox
+  <script>
+  alert(input.getAttribute('checked')); // the attribute value is: empty string
+  alert(input.checked); // the property value is: true
+  </script>
+
+<div id="div" style="color:red;font-size:120%">Hello</div>
+  <script>
+  // string
+  alert(div.getAttribute('style')); // color:red;font-size:120%
+  // object
+  alert(div.style); // [object CSSStyleDeclaration]
+  alert(div.style.color); // red
+  </script>
+
+部分不同步:同步带填充
+<a id="a" href="#hello">link</a>
+  <script>
+  // attribute
+  alert(a.getAttribute('href')); // #hello
+  // property
+  alert(a.href ); // full URL in the form http://site.com/page#hello
+  </script>
+
+
+
+非标准的属性:
+Non-standard attributes, dataset
+Sometimes non-standard attributes are used to pass custom data from HTML to JavaScript, or to “mark” HTML-elements for JavaScript.  Like this:
+<!-- mark the div to show "name" here -->
+<div show-info="name"></div>
+<!-- and age here -->
+<div show-info="age"></div>
+  <script>
+  // the code finds an element with the mark and shows what's requested
+  let user = {
+  name: "Pete",
+  age: 25
+  };
+  for(let div of document.querySelectorAll('[show-info]')) {
+      // insert the corresponding info into the field
+      let field = div.getAttribute('show-info');
+      div.innerHTML = user[field]; // Pete, then age
+  }
+  </script>
+
+
+
+<div class="order" order-state="new"> A new order.  </div>
+<div class="order" order-state="pending"> A pending order.  </div>
+<div class="order" order-state="canceled"> A canceled order.  </div>
+  <style>
+      /* styles rely on the custom attribute "order-state" */
+      .order[order-state="new"] { color: green; }
+      .order[order-state="pending"] { color: blue; }
+      .order[order-state="canceled"] { color: red; }
+  </style>
+不同css而用非标准属性的优点:
+Why the attribute may be preferable to classes like .order-state-new , .order-state-pending , order-state-canceled ?
+    That’s because an attribute is more convenient to manage. The state can be changed as easy as:
+    // a bit simpler than removing old/adding a new class
+    div.setAttribute('order-state', 'canceled');
+
+非标准的属性:避免与未来标准属性碰撞:
+To avoid conflicts, there exist data-* attributes.
+  All attributes starting with “data-” are reserved for programmers’ use.
+  They are available in the dataset property.
+  Multiword attributes like data-order-state become camel-cased:
+  attribute "data-about"
+        ==>> elem.dataset.about
+  attribute "data-order-state"
+        ==>> elem.dataset.orderState
+
+
+
+
+
+
+修改页面:构造节点+插入节点+删除节点+复制节点
+构造节点:
+document.createElement('div')
+  ++ elem.innerHTML = 'xxx'
+document.createTextNode(text)
+  parentElem.replaceChild(node, oldChild) -> node
+
+插入节点:
+  All insertion methods automatically remove the node from the old place.
+  所有插入方法其实都是移位方法冫先自旧所删除再插入新所
+新式:
+  node.append(...nodes or strings)
+  node.prepend(...nodes or strings)
+  node.before(...nodes or strings)
+  node.after(...nodes or strings)
+  node.replaceWith(...nodes or strings)
+  输入:多个
+  输入:若是字节串:当作.textContent/纯文本(自动转义)，而非.innerHTML(自带修正不完整tag??)
+  ++补充:非纯文本方法: .insertAdjacentHTML
+旧式:
+  a_parent_elem.appendChild(node) -> node
+    document.body.appendChild(div)
+  parentElem.insertBefore(node, nextSibling) -> node
+
+
+
+*insertAdjacentHTML/Text/Element
+.insertAdjacentHTML
+    str as .innerHTML
+    :: this/elem => (where, html) -> elem?
+.insertAdjacentText
+    str as .textContent
+    :: this/elem => (where, text) -> elem?
+.insertAdjacentElement
+    elem
+    :: this/elem => (where, new_elem) -> elem?
+where =:
+    "beforebegin"
+        before #插入前兄
+    "afterbegin"
+        prepend #插入长子
+    "beforeend"
+        append #插入幼子
+    "afterend"
+        after #插入后弟
+
+<style>
+  .alert {
+  padding: 15px;
+  border: 1px solid #d6e9c6;
+  border-radius: 4px;
+  color: #3c763d;
+  background-color: #dff0d8;
+  }
+  </style> <script>
+    let div = document.createElement('div');
+    div.className = "alert alert-success";
+    div.innerHTML = "<strong>Hi there!</strong> You've read an important message.";
+
+    document.body.appendChild(div);
+    document.body.prepend(div, '<<<');
+    div.before('<p>Hello</p>', document.createElement('hr'));
+        // &lt;p&gt;Hello&lt;/p&gt;
+        // <hr>
+        // <div ...>...</div>
+    div.insertAdjacentHTML('beforebegin', '<p>Hello</p>');
+    div.insertAdjacentHTML('afterend', '<p>Bye</p>');
+</script>
+
+
+
+删除节点:
+  All insertion methods automatically remove the node from the old place.
+  所有插入方法其实都是移位方法冫先自旧所删除再插入新所
+新式:
+  node.remove()
+    Removes the node/this from its place.
+旧式:
+  parentElem.removeChild(node)
+      Removes node from parentElem (assuming it’s a child).
+<script>
+  let div = document.createElement('div');
+  div.className = "alert alert-success";
+  div.innerHTML = "<strong>Hi there!</strong> You've read an important message.";
+  document.body.append(div);
+  setTimeout(() => div.remove(), 1000);
+  // or setTimeout(() => document.body.removeChild(div), 1000);
+</script>
+
+
+复制节点:
+    .cloneNode(true)
+    elem.cloneNode(true)
+        creates a “deep” clone of the element – with all attributes and subelements
+    elem.cloneNode(false)
+        the clone is made without child elements.
+<script>
+  let div2 = div.cloneNode(true); // clone the message
+  div2.querySelector('strong').innerHTML = 'Bye there!'; // change the clone
+  div.after(div2); // show the clone after the existing div
+</script>
+
+
+
+DocumentFragment:自动解包
+  .append(fragment)
+  <==>
+  .append(...elem_array)
+DocumentFragment is rarely used explicitly. Why append to a special kind of node, if we can return an array of nodes instead?
+  We mention DocumentFragment mainly because there are some concepts on top of it, like template element, that we’ll cover much later.
+<ul id="ul"></ul>
+  <script>
+  function getListContent() {
+    let fragment = new DocumentFragment();
+    for(let i=1; i<=3; i++) {
+      let li = document.createElement('li');
+      li.append(i);
+      fragment.append(li);
+    }
+    return fragment;
+  }
+  ul.append(getListContent()); // (*)
+</script>
+<ul>
+  <li>1</li>
+  <li>2</li>
+  <li>3</li>
+</ul>
+<ul id="ul"></ul> <script>
+  function getListContent() {
+    let result = [];
+    for(let i=1; i<=3; i++) {
+      let li = document.createElement('li');
+      li.append(i);
+      result.push(li);
+    }
+    return result;
+  }
+  ul.append(...getListContent()); // append + "..." operator = friends!
+  </script>
+
+
+
+
+旧式:“document.write”
+  document.write(html)
+  只在页面加载阶段正常工作:即:就地写入
+      页面加载阶段之后调用:导致原页面被擦除
+
+The call to document.write(html) writes the html into page “right here and now”.
+    The html string can be dynamically generated, so it’s kind of flexible.
+    We can use JavaScript to create a full-fledged webpage and write it.
+The method comes from times when there was no DOM, no standards… Really old times. It still lives, because there are scripts using it.
+In modern scripts we can rarely see it, because of the following important limitation:
+  The call to document.write only works while the page is loading.
+  If we call it afterwards, the existing document content is erased.
+For instance:
+
+
+<p>Somewhere in the page...</p> <script>
+  document.write('<b>Hello from JS</b>');
+  </script>
+  <p>The end</p>
+
+<p>After one second the contents of this page will be replaced...</p> <script>
+  // document.write after 1 second
+  // that's after the page loaded, so it erases the existing content
+  setTimeout(() => document.write('<b>...By this.</b>'), 1000);
+  </script>
+
+
+
+
+
+
+
+HTML_attributes__style__class
+DOM_properties__style__className__classList
+getComputedStyle
+
+
+html设定样式冫两种方式
+  <style> .cssNm2 { display:none; } </style> <div class="css-nm1 cssNm2">
+  <div style="display:none" >
+js设定样式:
+  getComputedStyle(element[, pseudo_element])
+      即:应用css之后,并由相对性设置变换成绝对性设定:『height:1em; font-size:125%』-->『width:50.5px』
+  elem.className = "css-nm1 cssNm2"
+  elem.classList.add("cssNm2")
+  elem.classList.remove("cssNm2")
+  elem.classList.toggle("cssNm2") // add or remove if:
+      elem.classList.contains("cssNm2") -> bool
+
+  elem.style.cssText = "color: red; width: 100px"
+      // 整个样式文本
+  elem.style.display = 'none'
+      // 单个样式属性文本带单位
+
+命名规范:命名对照:『-小写字母』变『大写字母』
+background-color => elem.style.backgroundColor
+z-index => elem.style.zIndex
+border-left-width => elem.style.borderLeftWidth
+Browser-prefixed properties:
+  -moz-border-radius
+  -webkit-border-radius
+  =>
+  button.style.MozBorderRadius = '5px';
+  button.style.WebkitBorderRadius = '5px';
+
+
+
+
+样式冫宽高位移滚动耂关系:常规节点布局
+border外框宽度((客户区+滚动条)之外)
+  隔离带宽度
+padding内框宽度(占用客户区空间,使用客户区背景)
+  留白宽度
+  // 既然有border+padding，那margin又是啥？
+  见下面:e script/html/try_margin_border_padding.html
+      经测试:margin,padding不允许颜色
+      margin是内部节点的隔离带外沿与外部节点的留白框内沿的左沿丶右沿丶下沿以及前兄节点的下沿 之间的间隔
+height:客户区去除上下padding之后剩下的『紧致内容区』高度
+width:客户区去除左右padding之后剩下的『竖向滚动条宽度+紧致内容区宽度』
+    只有『竖向滚动条』，且夹在隔离带与留白之间，不与紧致内容区相接
+    (含:scrollbar宽度)
+xxx:overflow ==>> scrolling??
+
+<div id="example"> ...Text...  </div> <style>
+  #example {
+  width: 300px;
+  height: 200px;
+  border: 25px solid #E8C48F;
+  padding: 20px;
+  overflow: auto;
+  }
+  </style>
+
+
+
+Geometry#所有数值隐含单位:px
+  7个方框:
+    1.逻辑上的数据视图/数据虚拟总视图区外沿
+        #虚拟，只显示部分，部分滚动出不被显示
+        #(含 留白，不含 滚动条)
+    2.最近的父定位节点(是特别种类的节点)
+        #xxx父定位窗口:窗口浮动于文档之上，位于不同层
+        #   滚动整个文档时，窗口与节点总显示区的位置关系发生变化，但文档内部的各节点之间相对位置保持不变
+    3.隔离带外沿/外框外沿/节点总显示区
+    4.隔离带内沿 (被忽略)
+        隔离带内沿 == (客户区/留白框外沿 + 竖向滚动条)
+    5.客户区/可视化背景区/留白框外沿
+    6.紧致内容区/留白框内沿
+    7.竖向滚动条#应该可能有:横向滚动条
+        父定位节点 >= 隔离带外沿/外框外沿 >= 隔离带内沿 >= 客户区/可视化背景区/留白框外沿 >= 紧致内容区
+        数据虚拟总视图区外沿 >= 客户区/可视化背景区/留白框外沿 >= 紧致内容区
+        前者包含后者
+外部几何定位:offset*
+    隔离带外沿@父定位节点
+    offsetParent===父定位节点#null表示『fixed』固定位置
+    offsetLeft
+    offsetTop
+        左上角偏移量#隔离带外沿:相对于:父定位节点
+    offsetWidth
+    offsetHeight
+        宽高#隔离带外沿
+客户区的外沿定位:client*
+    客户区外沿@隔离带外沿
+    clientTop
+    clientLeft #可能含 滚动条 宽度<<==文本自右向左
+        左上角偏移量#客户区外沿:相对于:隔离带外沿
+    clientWidth
+    clientHeight
+        宽高#客户区外沿
+逻辑上的数据视图:scroll*
+    scrollWidth
+    scrollHeight
+        宽高#数据虚拟总视图区外沿
+          #若没有『横向滚动条』则scrollWidth==clientWidth(含 留白，不含 滚动条)
+    scrollLeft
+    scrollTop
+        左上角偏移量#客户区外沿:相对于:逻辑上的数据视图
+
+
+Don’t take width/height from CSS
+  getComputedStyle也不行
+Why should we use geometry properties instead? There are two reasons:
+  1. First, CSS width/height depend on another property: box-sizing that defines “what is” CSS width and height. A change in box-sizing for CSS purposes may break such JavaScript.
+  2. Second, CSS width/height may be auto , for instance for an inline element:
+    <span id="elem">Hello!</span> <script>
+        alert( getComputedStyle(elem).width ); // auto
+        </script>
+    From the CSS standpoint, width:auto is perfectly normal, but in JavaScript we need an exact size in px that we can use in calculations. So here CSS width is useless at all.
+  3. And there’s one more reason: a scrollbar.
+    Sometimes the code that works fine without a scrollbar starts to bug with it, because a scrollbar takes the space from the content in some browsers.
+    So the real width available for the content is less than CSS width. And clientWidth/clientHeight take that into account.
+    …But with getComputedStyle(elem).width the situation is different. Some browsers (e.g. Chrome) return the real inner width, minus the scrollbar, and some of them (e.g. Firefox) – CSS width (ignore the scrollbar). Such cross-browser differences is the reason not to use getComputedStyle , but rather rely on geometry properties.
+  Please note that the described difference is only about reading getComputedStyle(...).width from JavaScript, visually everything is correct.
+
+
+
+
+样式冫宽高位移滚动耂关系:整页面尺寸丷常规节点尺寸
+How to find out the width and height of the browser window? How to get the full width and height of the document, including the scrolled out part? How to scroll the page using JavaScript?
+    From the DOM point of view, the root document element is document.documentElement . That element corresponds to <html> and has geometry properties described in the previous chapter. For some cases we can use it, but there are additional methods and peculiarities important enough to consider.
+
+<!DOCTYPE HTML>
+    window.innerWidth
+    window.innerHeight
+      含:滚动条
+    document.documentElement.clientWidth
+    document.documentElement.clientHeight
+      不含:滚动条
+    下面因为兼容问题并非有效:
+        xxx:document.documentElement.scrollWidth
+        xxx:document.documentElement.scrollHeight
+    手动计算:
+      Why so? Better don’t ask. These inconsistencies come from ancient times, not a “smart” logic.
+    let scrollHeight = Math.max(
+        document.body.scrollHeight
+        document.body.offsetHeight
+        document.body.clientHeight
+        , document.documentElement.scrollHeight,
+        , document.documentElement.offsetHeight,
+        , document.documentElement.clientHeight
+        );
+    alert('Full document height, with scrolled out part: ' + scrollHeight);
+
+    整体版的elem.scrollLeft/scrollTop应改用:
+      --> window.pageXOffset/pageYOffset
+
+DOCTYPE is important
+  Please note: top-level geometry properties may work a little bit differently when there’s no <!DOCTYPE HTML> in HTML. Odd things are possible.
+  In modern HTML we should always write DOCTYPE .
+  Generally that’s not a JavaScript question, but here it affects JavaScript as well.
+
+
+
+
+样式冫宽高位移滚动耂关系:滚动整页面丷滚动常规节点
+Scrolling: scrollTo, scrollBy, scrollIntoView
+These methods work for all browsers:
+    整体版:
+    window.scrollBy(0,10)
+        scrolls the page 10px down
+    window.scrollTo(0,0)
+        scroll to the very beginning,
+    其余常规节点版:
+        修改:document.documentElement.scrollTop
+        修改:document.documentElement.scrollLeft
+
+elem.scrollIntoView(top)
+  滚动至可见
+  top :: bool
+    ===顶部丷底部
+
+
+冻结滚动:
+elem.style.overflow = "hidden"
+document.body.style.overflow = "hidden"
+  The page will freeze on its current scroll.
+
+
+
+
+样式冫宽高位移滚动耂关系:坐标
+两种坐标:
+  * 相对于文档(整个文档左上角)
+      (pageX,pageY)@page
+      相应css为『position:absolute』
+        滚动整个文档时此坐标不变#文档整体捆绑滚动
+      得手动计算:
+        (pageX,pageY) === (clientX,clientY) .+. (window.pageXOffset, window.pageYOffset)
+
+  * 相对于窗口(该页面于浏览器的窗口左上角)
+      (clientX,clientY)@viewport/window
+      相应css为『position:fixed』
+        滚动整个文档时此坐标变化#窗口所见内容变化
+      document.elementFromPoint(x, y);
+          null <==> 坐标在窗口外
+          取最内层嵌套的节点
+      elem.getBoundingClientRect();
+          .top
+              隔离带外沿顶沿._topY -窗口._topY
+          .left
+              隔离带外沿左沿._leftX -窗口._leftX
+          .right
+              隔离带外沿右沿._rightX -窗口._leftX#依然是_leftX!!
+          .bottom
+              隔离带外沿底沿._bottomY -窗口._topY#依然是_topY!!
+              注意:css则不然:
+                //相同？elem.style.position.left
+                //相同？elem.style.position.top
+                不同:
+                .right
+                    隔离带外沿右沿._rightX -窗口._rightX
+                .bottom
+                    隔离带外沿底沿._bottomY -窗口._bottomY
+
+
+坐标值可能是分数、负数..., 单位为px
+
+
+let centerX = document.documentElement.clientWidth / 2;
+  let centerY = document.documentElement.clientHeight / 2;
+  let elem = document.elementFromPoint(centerX, centerY);
+  elem.style.background = "red";
+  alert(elem.tagName);
+
+
+
+let elem = document.getElementById("coords-show-mark");
+  function createMessageUnder(elem, html) {
+    // create message element
+    let message = document.createElement('div');
+    // better to use a css class for the style here
+    message.style.cssText = "position:fixed; color: red";
+    // assign coordinates, don't forget "px"!
+    let coords = elem.getBoundingClientRect();
+    message.style.left = coords.left + "px";
+    message.style.top = coords.bottom + "px";
+    message.innerHTML = html;
+    return message;
+    }
+  // Usage:
+  // add it for 5 seconds in the document
+  let message = createMessageUnder(elem, 'Hello, world!');
+  document.body.append(message);
+  setTimeout(() => message.remove(), 5000);
+
+
+// get document coordinates of the element
+function getCoords(elem) {
+  let box = elem.getBoundingClientRect();
+  return {
+      top: box.top + pageYOffset,
+      left: box.left + pageXOffset
+      };
+  }
+
+
+
+
+
+
+
+e script/html/try_margin_border_padding.html
+  经测试:margin,padding不允许颜色
+  margin是内部节点的隔离带外沿与外部节点的留白框内沿的左沿丶右沿丶下沿以及前兄节点的下沿 之间的间隔
+<!DOCTYPE HTML><html><head>
+  <style>
+    body * {
+      margin: 36px;
+      border: 8px solid blue;
+      padding: 20px;
+    }
+  </style>
+</head>
+<body>
+<form onclick="alert('form')">FORM
+  <div onclick="alert('div')">DIV
+  <p onclick="alert('p')">P</p>
+  </div>
+</form>
+</body></html>
+
+
+

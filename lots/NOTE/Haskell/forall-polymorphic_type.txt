@@ -1,0 +1,73 @@
+
+e ../lots/NOTE/Haskell/forall-polymorphic_type.txt
+
+注意:可能需得直接『通过匹配解包』 来使用多态类型 #间接『通过函数解包』不太行
+    见下面:try_using_polymorphic_type_12使用Mk_Wrapper而不使用unbox_Wrapper
+
+原Haskell的 数据类型『*』并不支持 多态类型『forall ...』
+    即:多态类型 不能用作 输入输出类型/类型别名/类型家族
+    即:多态类型 只能用作 签名类型/schema
+
+{-# LANGUAGE RankNTypes #-}
+  包含: {-# LANGUAGE ExplicitForAll #-}
+{-# LANGUAGE ImpredicativeTypes #-}
+
+可能有用:
+-- {-# LANGUAGE ScopedTypeVariables #-}
+    外层forall显化的类型变量名，直接用于内层(where/let)的类型签名
+-- {-# LANGUAGE GADTs #-}
+    泛化抽象数据类型
+    data Xxx a b where ...
+
+{-# LANGUAGE KindSignatures #-}
+    『*』
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE TypeFamilies #-}
+    class Ccc a b where
+        type Ttt a b :: *
+
+
+-- {-# LANGUAGE DataKinds #-}
+    ?? 『'』『`』
+-- {-# LANGUAGE DefaultSignatures #-}
+    class Ccc a where
+        f :: ...
+        default f :: Xxx a => ...
+        f = ...
+
+
+
+
+
+type Echo = (forall a. a -> a)
+data Try_RankNTypes = Try_RankNTypes5echo (forall a. a -> a)
+    -- {-# LANGUAGE RankNTypes #-}
+    -- {-# LANGUAGE ImpredicativeTypes #-}
+unbox_Try_RankNTypes :: Try_RankNTypes -> (a -> a)
+unbox_Try_RankNTypes (Try_RankNTypes5echo echo) = echo
+
+try_using_polymorphic_type_0 :: Echo -> (a -> a)
+try_using_polymorphic_type_0 = id
+
+try_using_polymorphic_type_1 :: Try_RankNTypes -> (a -> a)
+try_using_polymorphic_type_1 = unbox_Try_RankNTypes
+
+try_using_polymorphic_type_2 :: Try_RankNTypes -> (Bool -> Bool)
+try_using_polymorphic_type_2 = unbox_Try_RankNTypes
+
+data Wrapper a = Mk_Wrapper a
+type Try_PolymorphicType = Wrapper Echo
+unbox_Wrapper :: Wrapper a -> a
+unbox_Wrapper (Mk_Wrapper a) = a
+
+
+{-
+try_using_polymorphic_type_11 :: Try_PolymorphicType -> (a -> a)
+try_using_polymorphic_type_11 = unbox_Wrapper
+    --fail:使用unbox_Wrapper
+-}
+try_using_polymorphic_type_12 :: Try_PolymorphicType -> (a -> a)
+try_using_polymorphic_type_12 (Mk_Wrapper a) = a
+    --ok:使用Mk_Wrapper而不使用unbox_Wrapper
+
+

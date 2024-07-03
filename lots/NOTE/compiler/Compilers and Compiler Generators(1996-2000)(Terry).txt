@@ -1,0 +1,2516 @@
+TODO:
+在:3.1 Using a high-level host language
+[(T5S_H,T5H_T,runT) => (T5S_T,runT;program_T5S.xxx)]
+#替换[T:=M]:
+[(M5S_H,M5H_M,runM) => (M5S_M,runM;program_M5S.xxx)]
+vs:
+[(T5S_H,runH) => (T5S_H,runH;program_T5S.xxx)]
+#替换[T:=M]:
+[(M5S_H,runH) => (M5S_H,runH;program_M5S.xxx)]
+
+\[(T5S_H,runH) => (T5S_H,runH;program_T5S.t000_H)]\[#注意:可能有\[H==K]#]
+其后新增:
+  [(T5S_H,T5H_T,runT) => (T5S_T,runT;program_T5S.t999_T)][#注意:可能有[H==K]#]
+
+在:3.2:
+可能新增？:
+[(H5S_H,T5H_T,runT) => (H5S_T,T5H_T,runT;program_T5S.xxx)]
+#替换[T:=M]:
+[(H5S_H,M5H_M,runM) => (H5S_M,M5H_M,runM;program_M5S.xxx)]
+
+在:3.4 Self-compiling compilers
+可能新增？:
+[(T5S_H,T5S_S,runT,runH) => (T5S_T,runT;program_T5S.xxx)]
+  单T5S_T:源自:T5S_S
+[(T5S_H,T5H_T,T5S_S,runT) => (T5S_T,runT;program_T5S.xxx)]
+  双T5S_T:分别源自:T5S_H,T5S_S
+[(T5S_H,T5H_T,runT) => (T5S_T,runT;program_T5S.xxx)]
+  单T5S_T:源自:T5S_H
+
+[(T5S_H,T5H_T,T5S_S,runT) => (T5S_T.1,T5S_T.2,T5S_T.3,runT;program_T5S.xxx)]
+[(T5S_H,T5H_T,runT) => (T5S_T.1,runT;program_T5S.xxx)]
+[(T5S_H,T5S_S,runT,runH) => (T5S_T.2,runT;program_T5S.xxx)]
+
+#替换[T:=M]:
+[(M5S_H,M5H_M,M5S_S,runM) => (M5S_M.1,M5S_M.2,M5S_M.3,runM;program_M5S.xxx)]
+[(M5S_H,M5H_M,runM) => (M5S_M.1,runM;program_M5S.xxx)]
+[(M5S_H,M5S_S,runM,runH) => (M5S_M.2,runM;program_M5S.xxx)]
+
+在:3.5
+可能新增？:
+[(V5S_V,T5S_S{:=手动修改(V5S_S)},runV,runT) => (T5S_T,runT;program_T5S.xxx)]
+#替换[T:=M]:
+[(V5S_V,M5S_S{:=手动修改(V5S_S)},runV{:=runV_O},runM) => (M5S_M,runM;program_M5S.xxx)] #重点是『M5S_S』『runV』
+
+
+
+在:3.7
+可能新增？:
+[(T5S_T,M5T_M,runM) => (T5S_M,M5T_M,runM;program_M5S.m666_1_M)]
+#替换:[(M,T,m666_1_M):=(T,V,t666_1_T)]:
+[(V5S_V,T5V_T,runT) => (V5S_T,T5V_T,runT;program_T5S.t666_1_T)]
+
+===
+e ../lots/NOTE/compiler/Compilers and Compiler Generators(1996-2000)(Terry).txt
+refered by:
+  view others/数学/编程/编译/翻译框架设计.txt
+
+[[
+[:def__portable_interpretive_compiler_kit]:goto
+[:文件后缀扩展名与翻译器命名规范]:goto
+  [:翻译器源代码文件类型重整]:goto
+[:分类冫文件名模式]:goto
+[:翻译框架设计冫总结集中处]:goto
+  [:翻译框架设计冫总结集中处冫统计特殊文件名模式]:goto
+  [:翻译框架设计]:goto
+    [:翻译框架设计冫泛结论]:goto
+    [:翻译框架设计冫特化结论]:goto
+    [:翻译框架设计冫泛结论牜串联冫辅助语言]:goto
+    [:翻译框架设计冫泛结论牜串联冫目标语言]:goto
+    [:翻译框架设计冫特化结论牜串联冫目标语言]:goto
+        TODO
+  [:翻译框架设计冫封装完整性]:goto
+  [:翻译框架设计冫主要目标]:goto
+    [:关系冫自举丶自译出口丶自驻进口]:goto
+    [:翻译框架设计冫最泛化形式]:goto
+]]
+定义冫通用递归结构:goto
+    def__AST:goto
+
+
+===
+/sdcard/0my_files/book/lang/编译/Compilers and Compiler Generators/pdfvers.pdf
+Compilers and Compiler Generators--an introduction with C++ © P.D. Terry, 1996-2000
+===
+
+
+
+translator <: program
+  algorithm==program
+translator :: source_language{program} -> target_language{program}
+  compiler <: translator
+      #from below:
+      {compiler_generator,interpretive_compiler} <: compiler <: translator
+      emulator <: interpreter <: translator
+  object_language==target_language
+
+host_language==source_language{translator}
+  implementation_language==host_language
+
+compilation (compile-time) phase
+execution (run-time) phase
+
+cross-compilation + bootstrapping
+
+
+language_specification==syntax + static semantics + dynamic semantics
+  句法 + 静态约束(类型、作用域...,？前置条件) + 动态约束(副作用:语句执行后的效果:后置条件)
+  language_description==language_specification
+
+formal_specification <: language_specification
+compiler_generator <: translator <: program
+compiler_generator :: formal_specification{programming_language} -> host_language{compiler}
+  compiler_generator :: source_language{compiler{source_language:=programming_language}} -> target_language{compiler{source_language:=programming_language}}
+      #或者:改compiler为translator
+T-diagram:
+  program :: implementation_language=>input_data->output_data
+  translator :: host_language=>source_language->target_language
+编译器相关冫三语言:
+  * 一:用户 使用 programming_language/source_language{program}
+  * 二:compiler_generator 确定 host_language{compiler}/target_language{compiler}, target_language{program}
+  translator{host_language=>source_language->target_language}
+  宿主语言=>编程语言/源语言->目标语言
+  xxx圄语=>圃语->圂语
+  囥语=>圙语->囷语
+    囥kang4藏#?谐音:炕=>地基/背景
+    圙lve4草场#?谐音:略=>表达简洁#?望文:八面=>面向用户
+    囷qun1谷仓#?:字义:仓库=>汇编
+:囥kàng
+/藏。
+圙:lve>lüè
+:圐kū
+/〔圐圙〕蒙古语“库伦”的旧译，指围起来的草场，多用于村镇名。
+:囷qūn
+/古代一种圆形谷仓：“（大荒）而囷鹿（方形仓）空虚。”
+/样子像囷仓的事物：“……少宝之山，百草木成囷。”
+/积聚；聚拢。
+
+
+M_code==machine_code <: target_language
+virtual_machine==abstract_machine
+
+
+分类:
+translator =:
+  | assembler
+  | macro_assembler
+  | compiler
+  | pre_processor
+  | high_level_translator
+  | disassembler
+  | decompiler
+
+assembler :: fmap . (source_language_statement -> machine_level_instruction)
+macro_assembler :: assembler . text_replacement_facility
+compiler :: chain . fmap . (source_language_statement -> [machine_level_instruction])
+pre_processor :: (superset{high_level_language} -> high_level_language) . text_replacement_facility
+high_level_translator :: source_high_level_language -> target_high_level_language
+  particularly useful as components of a two-stage compiling system, or in assisting with the bootstrapping techniques
+disassembler :: machine_code -> assembler_level_code
+decompiler :: low_level_object_code -> higher_level_source_code
+
+
+
+[self_resident_translator==translator{囷语===囥语}]#文件名模式:X5Y_X
+  [:关系冫自举丶自译出口丶自驻进口]:goto
+  translators generate code for their host machines.
+cross_translator==translator{囷语=!=囥语}
+  translators generate code for machines other than the host machine.
+
+    Cross-translators are often used in connection with microcomputers, especially in embedded systems, which may themselves be too small to allow self-resident translators to operate satisfactorily.
+      Of course, cross-translation introduces additional problems in connection with transferring the object code from the donor machine to the machine that is to execute the translated program, and can lead to delays and frustration in program development.
+
+
+
+
+
+固定地址/可直接运行:
+The output of some translators is absolute machine code, left loaded at fixed locations in a machine ready for immediate execution.
+翻译暨执行/load_and_go
+Other translators, known as load-and-go translators, may even initiate execution of this code.
+  load and go
+  新世纪英汉科技大词典
+  装配立即执行
+  load-and-go
+  新世纪英汉科技大词典
+  装入并执行
+  程序装入立即执行
+  连续存取运算
+  在线英汉－汉英词典
+  n. 装入并执行(法)
+可重定位/semicompiled_form/binary_symbolic_form/relocatable_form
+However, a great many translators do not produce fixed-address machine code. Rather, they produce something closely akin to it, known as semicompiled or binary symbolic or relocatable form.
+  A frequent use for this is in the development of composite libraries of special purpose routines, possibly originating from a mixture of source languages.
+  relocatable
+  新世纪英汉科技大词典
+  浮点形式
+  浮动的
+  浮动形式
+  可浮动的
+  可再定位的
+  可重定位
+  计算机词汇
+  可重置的
+链接器/linkage_editor/linker
+Routines compiled in this way are linked together by programs called linkage editors or linkers, which may be regarded almost as providing the final stage for a multi-stage translator.
+
+
+
+
+translator == front_end + back_end
+front_end==analytic_phase
+  syntactic and static semantic constraints
+  分析:检查:句法+静态约束#目标机器无关
+back_end==synthetic_phase
+  综合:生成目标代码#目标机器相关
+
+source_code
+->???character_handler(non_portable)???
+->lexical_analyzer==scannar
+->syntax_analyzer==parser
+->constraint_analyzer==static_semantic_analyzer
+->intermediate_code_analyzer
+->code_optimizer
+->code_generator(non_portable)
+->peephole_optimizer(non_portable)
+->object_code
+
+front_end==analytic_phase==character_handler+lexical_analyzer+syntax_analyzer+constraint_analyzer
+back_end==synthetic_phase==intermediate_code_analyzer+code_optimizer+code_generator+peephole_optimizer
+
+table_handler ~ lexical_analyzer+syntax_analyzer+constraint_analyzer+intermediate_code_analyzer+code_optimizer
+  与所有可移植组件相关
+  与所有非non_portable组件相关
+error_reporter ~ character_handler+lexical_analyzer+syntax_analyzer+constraint_analyzer+intermediate_code_analyzer+code_optimizer+code_generator
+  与所有非peephole_optimizer组件相关
+
+==>>:
+character_handler(non_portable)
+  character_handler :: ipath/ifile/[Byte] -> [Char]
+  As character sets and file handling vary from system to system, this phase is often machine or operating system dependent.
+lexical_analyzer==scannar
+  lexical_analyzer :: [Char] -> [Token]
+  Token==name+value+...lineno+columnno+text...
+syntax_analyzer==parser
+constraint_analyzer==static_semantic_analyzer==contextual_constraint_analyser
+  (constraint_analyzer . syntax_analyzer) :: [Token] -> AST
+  strongly_typed_language
+  concrete_syntax_tree: include keyword...include intermediate left_symbol/nonterminal...
+  abstract_syntax_tree (AST)
+    尽量消除无用组件:并联展符/关键词/语法常量
+  AST == (type, contextual_information, value, [AST])
+    (type,contextual_information) => "decorated" tree
+      def__AST:here
+      定义冫通用递归结构:goto
+intermediate_code_analyzer
+  The major difference between intermediate code and actual machine code is that intermediate code need not specify in detail such things as the exact machine registers to be used, the exact addresses to be referred to, and so on.
+  howto handling compound Boolean expressions:
+    * sequential_conjunction_approach==short_circuit_approach
+        惰性
+    * Boolean_operator_approach
+        类似函数调用
+code_optimizer
+code_generator(non_portable)
+  In a real compiler this phase takes the output from the previous phase and produces the object code, by deciding on the memory locations for data, generating code to access such locations, selecting registers for intermediate calculations and indexing, and so on.
+peephole_optimizer(non_portable)
+  attempts are made to reduce unnecessary operations still further by examining short sequences of generated code in closer detail.
+
+
+table_handler
+symbol_table
+  translator keeps track of the names used by the program, and associated properties for these, such as their type, and their storage requirements (in the case of variables), or their values (in the case of constants) in symbol_table.
+
+
+error_reporter
+  It is desirable that compilation of erroneous programs be continued, if possible, so that the user can clean several errors out of the source before recompiling.
+      This raises very interesting issues regarding the design of error_recovery and error_correction.
+
+error_handler
+  error_recovery
+    the translation process attempts to carry on after detecting an error
+  error_correction==error_repair
+    translator attempts to correct the error from context -- usually a contentious subject, as the correction may be nothing like what the programmer originally had in mind.
+
+Error detection at compile-time in the source code must not be confused with error detection at run-time when executing the object code.
+  Many code generators are responsible for adding error-checking code to the object program (to check that subscripts for arrays stay in bounds, for example).
+  This may be quite rudimentary, or it may involve adding considerable code and data structures for use with sophisticated debugging systems.
+  Such ancillary code can drastically reduce the efficiency of a program, and some compilers allow it to be suppressed.
+Sometimes mistakes in a program that are detected at compile-time are known as errors, and errors that show up at run-time are known as exceptions, but there is no universally agreed terminology for this.
+
+
+
+
+multi_stage_translator
+Besides being conceptually divided into phases, translators are often divided into passes, in each of which several phases may be combined or interleaved.
+  Traditionally, a pass reads the source program, or output from a previous pass, makes some transformations, and then writes output to an intermediate file, whence it may be rescanned on a subsequent pass.
+
+These passes may be handled by different integrated parts of a single compiler, or they may be handled by running two or more separate programs.
+  They may communicate by using their own specialized forms of intermediate language, they may communicate by making use of internal data structures (rather than files), or they may make several passes over the same original source code.
+
+The number of passes used depends on a variety of factors.
+  Certain languages require at least two passes to be made if code is to be generated easily
+      -- for example, those where declaration of identifiers may occur after the first reference to the identifier
+      , or where properties associated with an identifier cannot be readily deduced from the context in which it first appears.
+  A multi-pass compiler can often save space.
+      Although modern computers are usually blessed with far more memory than their predecessors of only a few years back, multiple passes may be an important consideration if one wishes to translate complicated languages within the confines of small systems.
+  Multi-pass compilers may also allow for better provision of code optimization, error reporting and error handling.
+  Lastly, they lend themselves to team development, with different members of the team assuming responsibility for different passes.
+  However, multi-pass compilers are usually slower than single-pass ones, and their probable need to keep track of several files makes them slightly awkward to write and to use.
+      Compromises at the design stage often result in languages that are well suited to single-pass compilation.
+
+two_stage_translator
+  high_level_translator :: source_program -> (ASSEMBLER | high_level_language{exists:efficient_translator})
+
+It is increasingly common to find compilers for high-level languages that have been implemented using C, and which themselves produce C code as output.
+  The success of these is based on the premises that
+      "all modern computers come equipped with a C compiler"
+      and "source code written in C is truly portable".
+  Neither premise is, unfortunately, completely true.
+      However, compilers written in this way are as close to achieving the dream of themselves being portable as any that exist at the present time.
+
+
+
+
+
+
+
+
+
+
+
+interpreter
+interpretive_compiler
+emulator
+
+compiler:
+  + they usually aim to produce object code that can run at the full speed of the target machine.
+  + they are usually arranged to compile an entire section of code before any of it can be executed.
+
+
+interpreter:
+In some interactive environments the need arises for systems that can execute part of an application without preparing all of it, or ones that allow the user to vary his or her course of action on the fly.
+  Typical scenarios involve the use of spreadsheets, on-line databases, or batch files or shell scripts for operating systems.
+  With such systems it may be feasible (or even desirable) to exchange some of the advantages of speed of execution for the advantage of procuring results on demand.
+Systems like these are often constructed so as to make use of an interpreter.
+  An interpreter is a translator that effectively accepts a source program and executes it directly, without, seemingly, producing any object code first.
+  It does this by fetching the source program instructions one by one, analysing them one by one, and then "executing" them one by one.
+  Clearly, a scheme like this, if it is to be successful, places some quite severe constraints on the nature of the source program.
+  Complex program structures such as nested procedures or compound statements do not lend themselves easily to such treatment.
+  On the other hand, one-line queries made of a data base, or simple manipulations of a row or column of a spreadsheet, can be handled very effectively.
+
+
+interpretive_compiler:
+interpretive_compiler :: source_code -> intermediate_code
+compiler :: (intermediate_code -> machine_code) . interpretive_compiler
+interpreter :: intermediate_code{program} -> input_data{program} -> output_data{program}
+  pseudo_code==intermediate_code
+  native_code==machine_code
+  machine_code :: [instruction]
+  source_code :: [statement]
+
+emulator <: interpreter
+emulator{target_machine}==interpreter{intermediate_code:=machine_code{target_machine}}
+
+virtual_machine==host_machine+emulator{target_machine}
+
+target_machine
+donor_machine
+===
+donor:供体,授体,施主
+donee:受体,受赠者
+===
+vs:native_code_approach,interpretive_approach
+interpretive_approach:
+优点:
++ It is far easier to generate hypothetical machine code (which can be tailored towards the quirks of the original source language) than real machine code (which has to deal with the uncompromising quirks of real machines).
++ A compiler written to produce (as output) well-defined pseudo-machine code capable of easy interpretation on a range of machines can be made highly portable, especially if it is written in a host language that is widely available (such as ANSI C), or even if it is made available already implemented in its own pseudo-code.
++ It can more easily be made "user friendly" than can the native code approach.
+    Since the interpreter works closer to the source code than does a fully translated program, error messages and other debugging aids may readily be related to this source.
++ A whole range of languages may quickly be implemented in a useful form on a wide range of different machines relatively easily.
+    This is done by producing intermediate code to a well-defined standard, for which a relatively efficient interpreter should be easy to implement on any particular real machine.
++ It proves to be useful in connection with cross-translators such as were mentioned earlier.
+    The code produced by such translators can sometimes be tested more effectively by simulated execution on the donor machine, rather than after transfer to the target machine -- the delays inherent in the transfer from one machine to the other may be balanced by the degradation of execution time in an interpretive simulation.
++ Lastly, intermediate languages are often very compact, allowing large programs to be handled, even on relatively small machines.
+    The success of the once very widely used UCSD Pascal and UCSD p-System stands as an example of what can be done in this respect.
+
+缺点:
++ For all these advantages, interpretive systems carry fairly obvious overheads in execution speed, because execution of intermediate code effectively carries with it the cost of virtual translation into machine code each time a hypothetical machine instruction is obeyed.
+
+
+
+
+
+
+实例: "Pascal-P" compiler
+One of the best known of the early portable interpretive compilers was the one developed at Zürich and known as the "Pascal-P" compiler (Nori et al., 1981).
+  This was supplied in a kit of three components:
+  + The first component was the source form of a Pascal compiler, written in a very complete subset of the language, known as Pascal-P.
+      The aim of this compiler was to translate Pascal-P source programs into a well-defined and well-documented intermediate language, known as P-code, which was the "machine code" for a hypothetical stack-based computer, known as the P-machine.
+      V5S_S :: Pascal_P_language => Pascal_P_language -> P_code
+        #P5PasP_PasP
+  + The second component was a compiled version of the first -- the P-codes that would be produced by the Pascal-P compiler, were it to compile itself.
+      V5S_V :: P_code => Pascal_P_language -> P_code
+        #P5PasP_P
+  + Lastly, the kit contained an interpreter for the P-code language, supplied as a Pascal algorithm.
+      runV_S :: Pascal_P_language => P_code -> IO ()
+        #runP_PasP
+
+
+[[
+[:def__portable_interpretive_compiler_kit]:here
+===
+[portable_interpretive_compiler_kit := (V5S_S,V5S_V,runV_S)]
+[runS := ???]
+    !! [compilerZ -> runZ]
+[existed:runS]:
+  #这假设？？#起草portable_interpretive_compiler_kit，使用早已存在的S-翻译器:生成V5S_V
+  [runV := runS runV_S]
+  [program_V5S.v333_S := runS V5S_S]
+  [V5S_V := runS V5S_S V5S_S]
+  [(V5S_S,runS) => V5S_V]
+  [(runV_S,runS) => runV]
+  [(V5S_S,runV_S,runS) => portable_interpretive_compiler_kit/(V5S_S,V5S_V,runV_S)]
+[existed:runV]:
+  #这假设？？#直接下载宿主机相应二进制文件，直接使用portable_interpretive_compiler_kit
+  [program_V5S.v444_V := runV V5S_V]
+  [runV:解释器][program_V5S.v444_V:翻译器]
+    =>完整,无需V5S_S
+
+[旧机器:宿主机:existed:runV/runV_O][新机器:目标机:nonexisted:runV/runV_M,M5S_S]:
+  # [(V5S_V,M5S_S{:=手动修改(V5S_S)},runV{:=runV_O},runM) => (M5S_M,runM;program_M5S.xxx)] #重点是『M5S_S』『runV_O』
+  [(V5S_V,M5S_S{:=手动修改(V5S_S)},runV{:=runV_O}) => (M5S_V,M5S_M)] #重点是『M5S_S』『runV_O』
+      在宿主机上生成M5S_M，完成 翻译器的移植
+  [(runV_S,M5S_V,runV{:=runV_O}) => (runV_M)] #重点是『runV_O』与之前生成的『M5S_V』
+      在宿主机上生成runV_M，完成 解释器的移植
+  [(runV_S,M5S_M,runM) => (runV_M)] #重点是宿主机上生成的『M5S_M』，即移植到目标机上的翻译器
+      在目标机上生成runV_M，完成 解释器的移植
+  +宿主机:构造:翻译器
+  +????机:构造:解释器
+    *宿主机:构造:解释器
+    *目标机:构造:解释器
+]]
+
+
+
+
+compiler:
+  + 强调运行效率
+  + 涉及所有代码
+
+interpreter:
+  + 只涉及部分代码
+    => 复合语句:违反这一原则
+    => 复杂定义/复杂声明:违反这一原则
+    => 原则上只含简单语句/汇编代码
+    => 使用interpretive_compiler进行预编译，生成伪代码，作为interpreter的输入
+  + 不生成中间代码文件
+  + 牺牲运行效率，强调即时交换特性
+
+interpretive_compiler:
+  生成伪代码，作为interpreter的输入
+
+emulator:
+  使用目标机的机器语言，作为输入的伪代码
+virtual_machine:
+  虚拟机==虚拟机的宿主机+目标机的仿真器
+  虚拟机==宿主机{虚拟机}+仿真器{目标机}
+  虚拟机==施主机/授者机+受者机仿真器
+
+
+
+Pascal_P_language <: Pascal_language
+Pascal_P_compiler >: Pascal_compiler
+Pascal_P_compiler :: Pascal_P_language@P_code => Pascal_P_language -> P_code
+      P_machine:
+        hypothetical stack-based computer
+      P_code:
+        well-defined and well-documented intermediate language
+        P_code==machine_code{P_machine}
+
+
+
+
+
+
+
+
+
+
+
+
+[[[
+第三章
+===
+[[
+3 COMPILER CONSTRUCTION AND BOOTSTRAPPING
+
+when a translator is required for an old language on a new machine, or a new language on an old machine (or even a new language on a new machine)
+    * 旧机器新语言
+    * 新机器旧语言
+    * 新机器新语言
+
+
+翻译框架大纲:
+runM_M :: M_code => M_code -> IO ()
+M5E_M :: M_code => E_language -> M_code
+  E_language := a well-established language
+M5F_M :: M_code => F_language -> M_code
+  F_language := a new/fresh/face language
+
+existed: runM_M, M5E_M
+nonexisted: M5F_M, runF_M
+required: M5F_E|E5F_E
+
+program_M5F :: E_language@M_code => F_language -> M_code
+program_E5F :: E_language@M_code => F_language -> E_language
+
+M5F_E :: E_language => F_language -> M_code
+M5F_E := source_code{program_M5F}
+    具象化:M5F_E
+
+E5F_E :: E_language => F_language -> E_language
+E5F_E := source_code{program_E5F}
+    具象化:E5F_E
+
+E5F_M :: M_code => F_language -> E_language
+E5F_M := M5E_M E5F_E
+
+M5F_M := M5E_M . E5F_M
+M5F_M
+  === M5E_M . E5F_M
+  === M5E_M . (M5E_M E5F_E)
+    已具象化:E5F_E
+or:
+M5F_M := M5E_M M5F_E
+    已具象化:M5F_E
+
+runF_M :: F_language -> IO ()
+runF_M := runM_M . M5F_M
+runF_M
+  === runM_M . M5F_M
+  === runM_M . M5E_M . E5F_M
+  === runM_M . M5E_M . (M5E_M E5F_E)
+    已具象化:E5F_E
+or:
+runF_M
+  === runM_M . M5F_M
+  === runM_M . (M5E_M M5F_E)
+    已具象化:M5F_E
+
+[:文件后缀扩展名与翻译器命名规范]:goto
+
+]]
+==>>:分类:
+[[
+3.1 Using a high-level host language
+
+翻译框架大纲:旧机器新语言
+    Using a high-level host language
+    ===
+required: M5F_E
+M5F_E := source_code{program_M5F}
+M5F_M := M5E_M M5F_E
+runF_M := runM_M . M5F_M
+runF_M
+  === runM_M . M5F_M
+  === runM_M . (M5E_M M5F_E)
+
+==:
+[(M5F_E,M5E_M,runM) => (M5F_M,runM;program_M5F.xxx)]
+==:
+[(T5S_H,T5H_T,runT) => (T5S_T,runT;program_T5S.xxx)]
+#替换[T:=M]:
+[(M5S_H,M5H_M,runM) => (M5S_M,runM;program_M5S.xxx)]
+vs:
+[(T5S_H,runH) => (T5S_H,runH;program_T5S.xxx)]
+#替换[T:=M]:
+[(M5S_H,runH) => (M5S_H,runH;program_M5S.xxx)]
+]]
+[[
+3.2 Porting a high level translator
+
+翻译框架大纲:新机器旧语言
+    Porting a high level translator
+    ===
+    porting translator
+    移植编译器
+    移植旧翻译器到新机器
+required: E5F_E
+E5F_E := source_code{program_E5F}
+E5F_M := M5E_M E5F_E
+M5F_M := M5E_M . E5F_M
+M5F_M
+  === M5E_M . E5F_M
+  === M5E_M . (M5E_M E5F_E)
+runF_M := runM_M . M5F_M
+runF_M
+  === runM_M . M5F_M
+  === runM_M . M5E_M . E5F_M
+  === runM_M . M5E_M . (M5E_M E5F_E)
+
+
+
+==:
+two-stage compiler
+[(E5F_E,M5E_M,runM) => (E5F_M,M5E_M,runM;program_M5F.xxx)]
+==:
+[(H5S_H,T5H_T,runT) => (H5S_T,T5H_T,runT;program_T5S.xxx)]
+#替换[T:=M]:
+[(H5S_H,M5H_M,runM) => (H5S_M,M5H_M,runM;program_M5S.xxx)]
+
+]]
+[[
+3.3 Bootstrapping
+
+bootstrapping
+[bootstrapping_translator==translator{囥语<:圙语;囥语=!=圙语}] #T5S_K
+  vs: [self_compiling_compiler==translator{囥语==圙语}]#文件名模式:X5Y_Y
+  [:关系冫自举丶自译出口丶自驻进口]:goto
+自举:某语言的翻译器的宿主语言为某语言的子语言
+  xxx将某语言翻译成子语言
+host_language{translator} <: source_language{translator}
+囥语 <: 圙语
+但问题是，目标语言/囷语 随机器改变而改变，这样一来，整个自举链上的翻译器都得重写一遍
+  最好是:将某语言翻译成子语言
+  target_language{translator} == host_language{translator} <: source_language{translator}
+    # [K5S_K <: K5S_S]
+  但是还是有毛病:整个自举链无法斩断，翻译过程太长...
+      ==>>???self_compiling_compiler
+        back_end怎么搞? 虚拟机？
+        [:def__portable_interpretive_compiler_kit]:goto
+          [portable_interpretive_compiler_kit := (V5S_S,V5S_V,runV_S)]
+
+[:关系冫自举丶自译出口丶自驻进口]:goto
+    [T5S_K === catK T5K_K K5S_K]
+    [自举 === 出口低级语言 . 进口高级语言]
+    [自举/bootstrapping_translator === 出口低级语言/self_compiling_compiler . 进口高级语言/self_resident_translator]
+    [自举/T5S_V === 出口低级语言/自译出口/T5V_V `catV` 进口高级语言/自驻进口/V5S_V]
+    [T5S_V === T5V_V `catV` V5S_V]
+    [T5S_T === runV (runV V5S_V T5S_S) T5S_S]
+    移植旧翻译器到新机器:[T5S_T/自驻进口 === runV (runV V5S_V/自驻进口 T5S_S/自译出口) T5S_S/自译出口]
+]]
+[[
+3.4 Self-compiling compilers
+
+[self_compiling_compiler==translator{囥语==圙语}]#文件名模式:X5Y_Y
+  vs: [bootstrapping_translator==translator{囥语<:圙语;囥语=!=圙语}] #T5S_K
+  [:关系冫自举丶自译出口丶自驻进口]:goto
+host_language{self_compiling_compiler} == source_language{self_compiling_compiler}
+两份编译器代码:M5F_E,M5F_F
+
+#M5F_E
+M5F_M.1 := M5E_M M5F_E
+
+#M5F_F
+M5F_M.2 := M5F_M.1 M5F_F
+
+M5F_M.3 := M5F_M.2 M5F_F
+assert M5F_M.3 =!= M5F_M.2
+assert M5F_M.3 === M5F_M.2 M5F_F
+assert M5F_M.3 === M5F_M.3 M5F_F
+  !! [M5F_M.3,M5F_M.2 所用算法相同，都是M5F_F]
+    理应相同，不同则有故障
+    一致性检查
+
+==:
+[(M5F_E,M5F_F,runM,runE) => (M5F_M,runM;program_M5F.xxx)]
+==:
+[(T5S_H,T5S_S,runT,runH) => (T5S_T.2,runT;program_T5S.xxx)]
+  单T5S_T:源自:T5S_S
+  [T5S_T.2 := runH T5S_H T5S_S]
+[(T5S_H,T5H_T,T5S_S,runT) => (T5S_T.1,T5S_T.2,T5S_T.3,runT;program_T5S.xxx)]
+  三T5S_T:分别源自:T5S_H,T5S_S(使用不同翻译器)
+  [T5S_T.1 := runT T5H_T T5S_H]
+  [T5S_T.2 := runT T5S_T.1 T5S_S]
+  [T5S_T.3 := runT T5S_T.2 T5S_S]
+  [T5S_T.3 === runT T5S_T.3 T5S_S]
+  [runH := runT . (runT T5H_T)]
+  [T5S_T.2 === runH T5S_H T5S_S]
+[(T5S_H,T5H_T,runT) => (T5S_T.1,runT;program_T5S.xxx)]
+  单T5S_T:源自:T5S_H
+  [T5S_T.1 := runT T5H_T T5S_H]
+==:
+[(T5S_H,T5H_T,T5S_S,runT) => (T5S_T.1,T5S_T.2,T5S_T.3,runT;program_T5S.xxx)]
+[(T5S_H,T5H_T,runT) => (T5S_T.1,runT;program_T5S.xxx)]
+[(T5S_H,T5S_S,runT,runH) => (T5S_T.2,runT;program_T5S.xxx)]
+#替换[T:=M]:
+[(M5S_H,M5H_M,M5S_S,runM) => (M5S_M.1,M5S_M.2,M5S_M.3,runM;program_M5S.xxx)]
+[(M5S_H,M5H_M,runM) => (M5S_M.1,runM;program_M5S.xxx)]
+[(M5S_H,M5S_S,runM,runH) => (M5S_M.2,runM;program_M5S.xxx)]
+
+<<==:
+缺点:
+  工作量大<<==两份编译器代码:M5F_E,M5F_F
+    但假如E,F 两门语言相似，工作量不至于有两倍
+优点:
+  + 相当于一个非平凡测试实例
+  + 摆脱依赖原宿主语言编译器
+  + 后端优化，目标代码优化，可立即编译集成更新到编译器中
+  + 一致性检查
+  + 更易于构造方言编译器
+Developing a self-compiling compiler has four distinct points to recommend it.
+  + Firstly, it constitutes a non-trivial test of the viability of the language being compiled.
+  + Secondly, once it has been done, further development can be done without recourse to other translator systems.
+  + Thirdly, any improvements that can be made to its back end manifest themselves both as improvements to the object code it produces for general programs and as improvements to the compiler itself.
+  + Lastly, it provides a fairly exhaustive self-consistency check, for if the compiler is used to compile its own source code, it should, of course, be able to reproduce its own object code.
+  + Furthermore, given a working compiler for a high-level language it is then very easy to produce compilers for specialized dialects of that language.
+]]
+[[
+3.5 The half bootstrap
+
+half_bootstrap
+  为何叫『半自举』？感觉区别不大
+
+移植编译器:半自举:手动修改:易错
+M-授机语言/宿主机机器语言 #D#donor_machine
+W-受机语言/目标机机器语言 #T#target_machine
+F-圙语/源语言             #S#source_language
+existed:M5F_M,M5F_F
+nonexisted:W5F_W,W5F_F
+
+M5F_M <: self_resident_translator
+M5F_F <: self_compiling_compiler
+
+W5F_F := 手动修改(M5F_F)
+W5F_F <: self_compiling_compiler
+
+W5F_M := M5F_M W5F_F
+W5F_M <: cross_translator
+
+W5F_W := W5F_M W5F_F
+W5F_W <: self_resident_translator
+
+W5F_W
+  === W5F_M W5F_F
+  === M5F_M W5F_F W5F_F
+  === runM (runM M5F_M W5F_F) W5F_F
+  === \ [W5F_F := 手动修改(M5F_F)] -> runM (runM M5F_M W5F_F) W5F_F
+
+==:
+[(M5F_M,W5F_F{:=手动修改(M5F_F)},runM,runW) => (W5F_W,runW;program_W5F.xxx)]
+==:
+3.5 <==> 3.6:
+[(V5S_V,T5S_S{:=手动修改(V5S_S)},runV,runT) => (T5S_T,runT;program_T5S.xxx)]
+#替换[T:=M]:
+[(V5S_V,M5S_S{:=手动修改(V5S_S)},runV{:=runV_O},runM) => (M5S_M,runM;program_M5S.xxx)] #重点是『M5S_S』『runV』
+    [:def__portable_interpretive_compiler_kit]:goto
+
+
+==>>:
+This porting operation was an example of what is known as a half bootstrap system.
+  The work of transportation is essentially done entirely on the donor machine, without the need for any translator in the target machine, but a crucial part of the original compiler (the back end, or code generator) has to be rewritten in the process.
+  Clearly the method is hazardous- any flaws or oversights in writing W5F_F could have spelled disaster.
+  Such problems can be reduced by minimizing changes made to the original compiler.
+  Another technique is to write an emulator for the target machine that runs on the donor machine, so that the final compiler can be tested on the donor machine before being transferred to the target machine.
+]]
+[[
+3.6 Bootstrapping from a portable interpretive compiler
+
+
+full_bootstrap
+  [:翻译框架设计冫主要目标]:goto
+  #全自举:full_bootstrap:同时实现:一级目标+二级目标
+  [program_T5S := runV (runV V5S_V T5S_S)]
+    #一级目标:program_T5S
+  [T5S_T := runV (runV V5S_V T5S_S) T5S_S]
+    #二级目标:T5S_T
+    #   +作为输入的二级目标:T5S_S
+[portable_interpretive_compiler_kit := (V5S_S,V5S_V,runV_S)]
+
+<<==:
+bootstrapping from a portable interpretive compiler
+
+V5S_V <: self_resident_translator
+T5S_S <: self_compiling_compiler
+  ???T5S_S := 手动修改(V5S_S)
+    ???没有V5S_S
+  新机器旧语言:移植旧翻译器到新机器
+  新T旧S旧V
+  假设:新机器(新:目标机器):T是新机器低层语言
+  假设:旧语言(旧:宿主机/虚拟机):V是虚拟机低层语言，S是虚拟机高层语言
+  旧S旧V => V5S_S 早已存在
+  旧S旧V => V5S_V 早已存在
+  [portable_interpretive_compiler_kit := (V5S_S,V5S_V,runV_S)]
+
+[T5S_S -> V5S_V -> runV -> T5S_T]
+[T5S_V := runV V5S_V T5S_S]
+[T5S_T := runV T5S_V T5S_S]
+T5S_T
+  === runV T5S_V T5S_S
+  === runV (runV V5S_V T5S_S) T5S_S
+
+vs:half_bootstrap
+W5F_W
+  === runM (runM M5F_M W5F_F) W5F_F
+？？？一模一样？？？
+区别在于:
+  half_bootstrap:M是宿主机，得到W5F_W后只能在仿真器里运行调试
+  full_bootstrap:V是虚拟机，大概率是 运行于目标机上的虚拟机，得到T5S_T后，可直接在目标机上运行调试
+
+]]
+[[
+3.7 A P-code assembler
+
+P-code assembler
+  == P-code to M-code assembler
+  == P-code/M-code assembler
+  :: M_code => P_code -> M_code
+  #M5T_M
+
+the P-codes for the P-code compiler
+  :: P_code => Pascal_P_language -> P_code
+  #T5S_T
+
+T5S_M := runM M5T_M T5S_T
+T5S_M <: cross_translator
+  交叉编译
+program_M5S := (runM M5T_M) . (runM T5S_M)
+program_M5S
+  === (runM M5T_M) . (runM T5S_M)
+  === (runM M5T_M) . (runM $ runM M5T_M T5S_T)
+
+
+#替换:[(M,T):=(T,V)]:
+program_T5S
+  === (runT T5V_T) . (runT V5S_T)
+  === (runT T5V_T) . (runT $ runT T5V_T V5S_V)
+
+
+==>>:
+[(T5S_T,M5T_M,runM) => (T5S_M,M5T_M,runM;program_M5S.m666_1_M)]
+  !! [T5S_M := runM M5T_M T5S_T]
+  !! [program_M5S.m666_1_M := (runM M5T_M) . (runM T5S_M)]
+
+#替换:[(M,T,m666_1_M):=(T,V,t666_1_T)]:
+[(V5S_V,T5V_T,runT) => (V5S_T,T5V_T,runT;program_T5S.t666_1_T)]
+  !! [V5S_T := runT T5V_T V5S_V]
+  !! [program_T5S.t666_1_T := (runT T5V_T) . (runT V5S_T)]
+
+下面原来已有:
+  [(V5S_V,T5V_T,runT) => (V5S_T,T5V_T,runT;program_T5S.t666_1_T)]
+  [(V5S_V,T5V_V,runV) => (V5S_V,T5V_V,runV;program_T5S.t777_V)]
+  =>添加:
+    [(T5S_T,M5T_M,runM) => (T5S_M,M5T_M,runM;program_M5S.m666_1_M)]
+
+]]
+[[
+3.1~3.7:
+[(M5S_H,M5H_M,runM) => (M5S_M,runM;program_M5S.xxx)]
+[(H5S_H,M5H_M,runM) => (H5S_M,M5H_M,runM;program_M5S.xxx)]
+vs:
+  M5S_H #考虑后端
+  H5S_H #不考虑后端，两段式翻译
+[(M5S_H,M5H_M,M5S_S,runM) => (M5S_M.1,M5S_M.2,M5S_M.3,runM;program_M5S.xxx)]
+  共通:M5S_H #考虑后端
+[(M5S_H,M5H_M,runM) => (M5S_M.1,runM;program_M5S.xxx)]
+  省略:M5S_S
+[(M5S_H,M5S_S,runM,runH) => (M5S_M.2,runM;program_M5S.xxx)]
+  改换:M5H_M-->(M5S_S,runH)
+[(V5S_V,M5S_S{:=手动修改(V5S_S)},runV{:=runV_O},runM) => (M5S_M,runM;program_M5S.xxx)] #重点是『M5S_S』『runV』
+  自译出口:M5S_S #考虑后端
+  自驻进口:V5S_V
+  宿主机辅助:runV_O:移植旧翻译器到新机器
+  早已存在:V5S_V,V5S_S,runV_O
+  新出现:runM,M5S_S
+[(V5S_V,T5V_T,runT) => (V5S_T,T5V_T,runT;program_T5S.t666_1_T)]
+  自驻进口:V5S_V,T5V_T
+  =>交叉编译:V5S_T
+]]
+===
+#end-第三章
+]]]
+[[[
+===
+
+[[
+[:文件后缀扩展名与翻译器命名规范]:here
+翻译器代码文件标识名:X5Y_Z
+  [X5Y_Z :: Z => Y -> Z]
+  [翻译器 :: 囥语 => 圙语 -> 囷语]
+
+文件后缀扩展名+翻译器命名规范:
+  + ???只有后缀为『_M』的文件才是可执行文件
+    现在改为必须使用runM:[runM X5Y_M]
+    当前只有三种可执行文件:
+      catZ
+      runZ
+      program_X5Y
+      <<==:
+      [program_X5Y === runZ X5Y_Z]
+      [program_X5Y === program_X5A . program_A5Y]
+      [X5Y_Z === catZ X5A_Z A5Y_Z]
+    考虑增加:
+      compilerZ
+      <<==:
+      #[uuu === compilerZ uuu_Z]
+      [program_X5Y === compilerZ X5Y_Z]
+      [runY === compilerZ runY_Z]
+      [runZ uuu_Z === exec (compilerZ uuu_Z)]
+      [runZ === exec . compilerZ]
+      [compilerZ -> runZ]
+      [catY === compilerZ catY_Z]
+      [compilerY === compilerZ compilerY_Z]
+  + ???runX_M解释运行后缀为『_X』的文件
+    现在省略runX_M中的『_M』，假设 宿主机程序格式未知
+  + ???X5Y_M 将后缀为『_Y』的文件翻译成后缀为『_X』的文件
+    ???[zzz_X := X5Y_M zzz_Y]
+    现在改为必须使用runM:[zzz_X := runM X5Y_M zzz_Y]
+    [zzz_X := runZ X5Y_Z zzz_Y]
+
+[:翻译器源代码文件类型重整]:here
+type Sc8Tr = Script8Translator :: * -> * -> * -> *
+X5Y_Z :: Sc8Tr Z Y X
+program_X5Y :: Sc8Tr Y b a -> Sc8Tr X b a
+runZ :: Sc8Tr Z y x -> Sc8Tr y b a -> Sc8Tr x b a
+catZ :: Sc8Tr Z a x -> Sc8Tr Z y a -> Sc8Tr Z y x
+
+
+
+
+[
+copy to:
+  e ../../python3_src/useful__cjk_naming.txt
+===
+#X5Y_M 即 "X5Y.M"
+#   『牜某某』相当于『后缀扩展名』#符合:『牜』的『版本』义项
+X5Y_M vs 囷语巛圙语牜囥语
+文件命名: 文件内容牜文件格式
+  囷语巛圙语牜囥语牜字符编码
+    文件内容:翻译器代码{圙语->囷语}
+    文件格式:代码使用囥语书就，字符编码...
+
+]
+]]
+[[
+[:分类冫文件名模式]:here
+  共五个模式:
+  * 非凡有用的模式有两个:
+  [self_resident_translator==translator{囷语===囥语}]#文件名模式:X5Y_X
+      进口高级语言
+  [self_compiling_compiler==translator{囥语==圙语}]#文件名模式:X5Y_Y
+      出口低级语言
+  * 平凡有用的模式有两个:
+    [echo_translator===translator{囷语===圙语}]#文件名模式:X5X_Y,X5X_X
+  * 平凡无用的模式有一个:
+    文件名模式:X5Y_Z
+    特例:自举:[bootstrapping_translator==translator{囥语<:圙语;囥语=!=圙语}] #T5S_K
+    [:关系冫自举丶自译出口丶自驻进口]:goto
+===
++ 文件名模式:X5Y_Z
+  泛型
+  useless
++ 文件名模式:X5X_X
+  echo
+  useless
++ 文件名模式:X5X_Y
+  echo
+  useless
++ 文件名模式:X5Y_X
+  [self_resident_translator==translator{囷语===囥语}]#文件名模式:X5Y_X
+  ===
+  /\(.\)5._\1
+  ===
+  /\(T5S_T\|M5S_M\|T5V_T\|M5V_M\|V5S_V\|M5T_M\|M5E_M\|M5F_M\|E5F_E\|W5F_W\|X5Y_X\|X5X_X\)\@!\(.\)5._\2
+  ===里面of:[:翻译框架设计]:goto
+  T5S_T
+  M5S_M
+  T5V_T
+  M5V_M
+  V5S_V
+  M5T_M
+  ===外面of:[:翻译框架设计]:goto
+  M5E_M
+  M5F_M
+  E5F_E
+  W5F_W
+  ===模板:
+  X5Y_X
+  X5X_X
+  ===
++ 文件名模式:X5Y_Y
+  [self_compiling_compiler==translator{囥语==圙语}]#文件名模式:X5Y_Y
+  ===
+  /.5\(.\)_\1
+  ===
+  /\(T5S_S\|T5K_K\|M5T_T\|M5V_V\|T5V_V\|M5F_F\|W5F_F\|X5Y_Y\|X5X_X\)\@!.5\(.\)_\2
+  ===里面of:[:翻译框架设计]:goto
+  T5S_S
+  T5K_K
+  M5T_T
+  M5V_V
+  T5V_V
+  ===外面of:[:翻译框架设计]:goto
+  M5F_F
+  W5F_F
+  ===模板:
+  X5Y_Y
+  X5X_X
+  ===
+
+]]
+[[
+[:翻译框架设计]:here
+    [:翻译框架设计冫泛结论]:goto
+    [:翻译框架设计冫特化结论]:goto
+    [:翻译框架设计冫泛结论牜串联冫辅助语言]:goto
+    [:翻译框架设计冫泛结论牜串联冫目标语言]:goto
+    [:翻译框架设计冫特化结论牜串联冫目标语言]:goto
+[:翻译框架设计冫封装完整性]:goto
+[:翻译框架设计冫主要目标]:goto
+  [:关系冫自举丶自译出口丶自驻进口]:goto
+  [:翻译框架设计冫最泛化形式]:goto
+===
+S-圙语/源语言/编程语言      #S#source_language
+  不变
+K-囝圙语/源语言的子语言     #K#kernel#subset_source_language
+  可随时更换
+  不一定是:真子集#即:[可能有[K==S]]
+  囝:jian,nan>jiǎn,nān
+  囡:nan>nān
+T-囷语/目标语言/跨平台语言  #T#target_language
+  长期稳定目标，虽可更换
+  意图:可移植性高/跨平台/虚拟机，抽象化后端处理
+H-囥语/宿主语言/辅助语言    #H#host_language/helper_language/high_level_language
+  可随时更换
+M-机器语言                  #M#machine_code
+  可随时更换
+  不一定是:宿主机机器语言
+?-宿主机机器语言:未知
+  可随时更换
+===
+串联中间态语言:
+I-囝圙语/源语言的子语言
+    [I是中间态的K][I比K高级]
+J-囥语/宿主语言/辅助语言
+    [J是中间态的H][J比H高级]
+V-囷语/目标语言/跨平台语言
+    [V是中间态的T][V比T高级]
+    [V同角色于S][V=!=S]
+    #[#注意:可能有[V==K]#]
+    #[#注意:可能有[V==H]#]
+    #[#注意:可能有[V==I]#]
+    #[#注意:可能有[V==J]#]
+
+===
+主目标: program_T5S
+  不可移植的目标:
+  program_M5S
+  ===
+  program_T5S <: program_T5K
+  program_M5S <: program_M5K
+    # !! [program_X5S <: program_X5K]
+===
+不同格式:
+  T5S_S
+  T5S_K <: T5S_S
+    # !! [T5S_K <: {T5S_S,T5K_K} <: T5K_S]
+  T5S_T
+  T5S_H
+  T5S_M
+  ===
+  不可移植的目标:
+  M5S_M
+  M5S_T
+  ===
+===
+可能的需求:
+  ===
+  !! 宿主机机器语言未知(可随时更换),可能是cross_translator
+  => 任一格式的代码均不能直接运行，都需要仿真器模拟执行
+  ==:
+  runM
+  runT
+  runH
+  runK
+  runS
+  ==:
+  runV
+  runJ
+  runI
+  ===
+  区分:代码vs程序:
+    代码 可作为 翻译器输入 进一步变换
+        代码格式 静态明确
+        代码串联需要:特定工具程序:catW
+            [X5Z_W === catW X5Y_W Y5Z_W]
+    程序 默认为 宿主机 可执行文件
+        宿主机 实际类型未知 导致 程序类型未知
+        同一宿主机的程序允许多种类型(脚本、字节码...) 导致 程序类型未知
+        程序串联无需求:
+            [program_X5Z === program_X5Y . program_Y5Z]
+  ===
+===
+假设 T相对低级，不利于人工编程
+  [M .<$ T .<$ {H; K .<=$ S}]
+  M最低级，T次低级
+  S,K,H高级
+    {S,H}两者之间不可比较
+    {K,H}两者之间不可比较
+      [#注意:可能有[H==K]#]
+    !! [K <: S]
+    => [S比K高级]or[K==S]
+      [#注意:可能有[K==S]#]
+  !! M,T相对低级，不利于人工编程
+  => 应当自动生成 T5S_T,T5S_M,M5S_M,M5S_T
+  => 应当需要 T5S_S或T5S_K或T5S_H
+
+  ===
+  串联中间态语言:
+  [K <: I <: S]
+    # 子集递降
+  [K .<$ I .<$ S]
+    # !! [[I出现]->[K=!=S]]
+  [H .<$ J]
+  [M .<$ T .<$ {V; H .<$ J; K .<$ I .<$ S}]
+  {V,S}两者之间不可比较
+    [V同角色于S][V=!=S]
+  {V,I}两者之间不可比较
+    #[#注意:可能有[V==I]#]
+  {V,J}两者之间不可比较
+    #[#注意:可能有[V==J]#]
+  {V,K}两者之间不可比较
+    #[#注意:可能有[V==K]#]
+  {V,H}两者之间不可比较
+    #[#注意:可能有[V==H]#]
+===
+1.起始，假设未有 S-compiler:
+  !! 假设未有 S-compiler
+  => T5S_S无用
+  !! 应当需要 T5S_S或T5S_K或T5S_H
+  => 应当需要 T5S_K或T5S_H
+  !! 可令 [H := K][T5S_H := T5S_K][runH := runK]
+  => 需要:T5S_H
+  => 需要:T5S_H,runH
+  !! [zzz_T === runH T5S_H zzz_S]
+  !! [zzz_X === program_X5Y.xxx zzz_Y]
+  => [program_T5S.t000_H =[等效]= runH T5S_H]
+  => 打包输出(T5S_H,runH;program_T5S.t000_H)
+  ===
+  [(T5S_H,runH) => (T5S_H,runH;program_T5S.t000_H)][#注意:可能有[H==K]#]
+  ===
+  [(T5S_H,T5H_T,runT) => (T5S_T,runT;program_T5S.t999_T)][#注意:可能有[H==K]#]
+      ===
+      !! [runH := runT . (runT T5H_T)]
+      !! [program_T5S.t000_H := runH T5S_H]
+      ===
+      !! [T5S_T := (runT T5H_T T5S_H)]
+      !! [program_T5S.t999_T := runT T5S_T]
+      ===
+  ===
+===
+2.接着，假设已有 K-compiler:program_T5K.xxx(e.g. program_T5S.t000_H)
+  !! 摆脱依赖<<==H可随时更换
+  => 需要:T5S_K
+  => 需要:T5S_K,runT,program_T5K.xxx
+  !! [zzz_X === program_X5Y.xxx zzz_Y]
+  => [T5S_T := program_T5K.xxx T5S_K]
+  !! [zzz_T === runT T5S_T zzz_S]
+  !! [zzz_X === program_X5Y.xxx zzz_Y]
+  => [program_T5S.t111_T =[等效]= runT T5S_T]
+  => 打包输出(T5S_T,runT;program_T5S.t111_T)
+  ===
+  [(T5S_K,runT,program_T5K.xxx) => (T5S_T,runT;program_T5S.t111_T)][#注意:可能有[K==S]#]
+  ===
+===
+3_1.假设已有 S-compiler:program_T5S.t111_T
+  !! 移植到M
+  => 需要:M5T_T
+  => 需要:M5T_T,T5S_T,runT,runM
+  => 需要:M5T_T,program_T5S.t111_T(<=>:T5S_T,runT),runM
+  => [T5S_M := runT M5T_T T5S_T]
+  => [program_T5S.t222_M =[等效]= runM T5S_M]
+  => 打包输出(T5S_M,runM;program_T5S.t222_M)
+  ===
+  [(M5T_T,program_T5S.t111_T(<=>:T5S_T,runT),runM) => (T5S_M,runM;program_T5S.t222_M)][#注意:优缺点:绑定于T#]
+      优缺点:绑定于T
+        优势:不需要:program_T5K.xxx
+        xxx劣势:更低层，不支持T更换
+          #皆不支持T更换
+        优势:编译更省时
+        劣势:源代码存储空间大
+  ===
+  !! [(T5S_K,runT,program_T5K.xxx) => (T5S_T,runT;program_T5S.t111_T)][#注意:可能有[K==S]#]
+  [(M5T_T,T5S_K,runT,program_T5K.xxx,runM) => (T5S_M,runM;program_T5S.t222_M)][#注意:优缺点:绑定于K#]
+      优缺点:绑定于K
+        xxx优势:更高层，支持T更换
+          #皆不支持T更换
+        劣势:需要:program_T5K.xxx
+        优势:源代码存储空间小
+        劣势:编译更耗时
+  ===
+===
+3_2.假设已有 S-compiler:program_T5K.xxx
+  !! 移植到M
+  => 需要:catT,M5T_T,T5S_K
+  !! [X5Z_W === catW X5Y_W Y5Z_W]
+  [X5Z_T === catT X5Y_T Y5Z_T]
+  => 需要:catT,M5T_T,T5S_K,runT,runM,program_T5K.xxx
+  => [T5S_T := program_T5K.xxx T5S_K]
+  !! [program_M5S =[等效]= (runT M5T_T) . (runT T5S_T)]
+  !! [X5Z_T === catT X5Y_T Y5Z_T]
+  => [M5S_T := catT M5T_T T5S_T]
+  => [M5S_M := runT M5T_T M5S_T]
+  => [program_M5S.m000_T =[等效]= runT M5S_T]
+  => [program_M5S.m000_M =[等效]= runM M5S_M]
+  => 打包输出(M5S_M,M5S_T,runM,runT;program_M5S.m000_M,program_M5S.m000_T)
+  ===
+  [(catT,M5T_T,T5S_K,runT,runM,program_T5K.xxx) => ((M5S_M,runM;program_M5S.m000_M),(M5S_T,runT;program_M5S.m000_T))][#注意:可能有[K==S]#]
+  ===
+===
+==>>:
+  # [:翻译框架设计冫泛结论]:here
+  [(T5S_H,runH) => (T5S_H,runH;program_T5S.t000_H)][#注意:可能有[H==K]#]
+  [(T5S_H,T5H_T,runT) => (T5S_T,runT;program_T5S.t999_T)][#注意:可能有[H==K]#]
+  [(T5S_K,runT,program_T5K.xxx) => (T5S_T,runT;program_T5S.t111_T)][#注意:可能有[K==S]#]
+  [(M5T_T,program_T5S.t111_T(<=>:T5S_T,runT),runM) => (T5S_M,runM;program_T5S.t222_M)][#注意:优缺点:绑定于T#]
+  [(M5T_T,T5S_K,runT,program_T5K.xxx,runM) => (T5S_M,runM;program_T5S.t222_M)][#注意:优缺点:绑定于K#]
+  [(catT,M5T_T,T5S_K,runT,runM,program_T5K.xxx) => ((M5S_M,runM;program_M5S.m000_M),(M5S_T,runT;program_M5S.m000_T))][#注意:可能有[K==S]#]
+
+==>>:
+推论:
+
+分类:
+  * [S是派生语言]
+  * [S是原生语言]
+
+[H==K=!=S]:
+  #S是派生语言
+  !! [(T5S_H,runH) => (T5S_H,runH;program_T5S.t000_H)][#注意:可能有[H==K]#]
+  [(T5S_K,runK) => (T5S_K,runK;program_T5S.t000_1_K)]
+
+  !! [(T5S_H,T5H_T,runT) => (T5S_T,runT;program_T5S.t999_T)][#注意:可能有[H==K]#]
+  [(T5S_K,T5K_T,runT) => (T5S_T,runT;program_T5S.t999_1_T)]
+
+  !! [(T5S_K,runT,program_T5K.xxx) => (T5S_T,runT;program_T5S.t111_T)][#注意:可能有[K==S]#]
+  !! [program_T5S.t000_1_K <: program_T5K.xxx]
+  [(T5S_K,runK,runT) => (T5S_T,runT;program_T5S.t111_T)]
+
+  !! [(M5T_T,T5S_K,runT,program_T5K.xxx,runM) => (T5S_M,runM;program_T5S.t222_M)][#注意:优缺点:绑定于K#]
+  !! [program_T5S.t000_1_K <: program_T5K.xxx]
+  [(M5T_T,T5S_K,runK,runT,runM) => (T5S_M,runM;program_T5S.t222_M)][#注意:优缺点:绑定于K#]
+
+  !! [(catT,M5T_T,T5S_K,runT,runM,program_T5K.xxx) => ((M5S_M,runM;program_M5S.m000_M),(M5S_T,runT;program_M5S.m000_T))][#注意:可能有[K==S]#]
+  !! [program_T5S.t000_1_K <: program_T5K.xxx]
+  [(catT,M5T_T,T5S_K,runK,runT,runM) => ((M5S_M,runM;program_M5S.m000_M),(M5S_T,runT;program_M5S.m000_T))]
+[H=!=K==S]:
+  #S是原生语言
+  !! [(T5S_K,runT,program_T5K.xxx) => (T5S_T,runT;program_T5S.t111_T)][#注意:可能有[K==S]#]
+  [(T5S_S,runT,program_T5S.xxx) => (T5S_T,runT;program_T5S.t111_T)]
+
+  !! [(T5S_H,runH) => (T5S_H,runH;program_T5S.t000_H)][#注意:可能有[H==K]#]
+  !! [program_T5S.t000_H <: program_T5K.xxx]
+  !! [(T5S_S,runT,program_T5S.xxx) => (T5S_T,runT;program_T5S.t111_T)]
+  [(T5S_S,T5S_H,runH,runT) => (T5S_T,runT;program_T5S.t111_T)]
+
+  ####useless:
+  ## !! [(T5S_H,T5H_T,runT) => (T5S_T,runT;program_T5S.t999_T)][#注意:可能有[H==K]#]
+  ## !! [program_T5S.t999_T <: program_T5K.xxx]
+  ## !! [(T5S_S,runT,program_T5S.xxx) => (T5S_T,runT;program_T5S.t111_T)]
+  ## [(T5S_S,T5S_H,T5H_T,runT) => (T5S_T,runT;program_T5S.t111_T)]
+
+  !! [(M5T_T,T5S_K,runT,program_T5K.xxx,runM) => (T5S_M,runM;program_T5S.t222_M)][#注意:优缺点:绑定于K#]
+  [(M5T_T,T5S_S,runT,program_T5S.xxx,runM) => (T5S_M,runM;program_T5S.t222_M)]
+
+  !! [program_T5S.t000_H <: program_T5K.xxx]
+  !! [(M5T_T,T5S_S,runT,program_T5S.xxx,runM) => (T5S_M,runM;program_T5S.t222_M)]
+  [(M5T_T,T5S_S,T5S_H,runH,runT,runM) => (T5S_M,runM;program_T5S.t222_M)]
+
+  !! [(catT,M5T_T,T5S_K,runT,runM,program_T5K.xxx) => ((M5S_M,runM;program_M5S.m000_M),(M5S_T,runT;program_M5S.m000_T))][#注意:可能有[K==S]#]
+  [(catT,M5T_T,T5S_S,runT,runM,program_T5S.xxx) => ((M5S_M,runM;program_M5S.m000_M),(M5S_T,runT;program_M5S.m000_T))]
+
+  !! [program_T5S.t000_H <: program_T5K.xxx]
+  !! [(catT,M5T_T,T5S_S,runT,runM,program_T5S.xxx) => ((M5S_M,runM;program_M5S.m000_M),(M5S_T,runT;program_M5S.m000_T))]
+  [(catT,M5T_T,T5S_S,T5S_H,runH,runT,runM) => ((M5S_M,runM;program_M5S.m000_M),(M5S_T,runT;program_M5S.m000_T))]
+
+
+
+==>>:
+综上:
+# [:翻译框架设计冫特化结论]:here
+
+分类:
+  * [H,K无关结论]
+  * [S是派生语言]
+  * [S是原生语言]
+
+[H,K无关结论]:
+  [(M5T_T,program_T5S.t111_T(<=>:T5S_T,runT),runM) => (T5S_M,runM;program_T5S.t222_M)][#注意:优缺点:绑定于T#]
+
+[H==K=!=S]:
+  #S是派生语言
+  [(T5S_K,runK) => (T5S_K,runK;program_T5S.t000_1_K)]
+  [(T5S_K,runK,runT) => (T5S_T,runT;program_T5S.t111_T)]
+  [(M5T_T,T5S_K,runK,runT,runM) => (T5S_M,runM;program_T5S.t222_M)][#注意:优缺点:绑定于K#]
+  [(catT,M5T_T,T5S_K,runK,runT,runM) => ((M5S_M,runM;program_M5S.m000_M),(M5S_T,runT;program_M5S.m000_T))]
+
+[H=!=K==S]:
+  #S是原生语言
+  [(T5S_S,T5S_H,runH,runT) => (T5S_T,runT;program_T5S.t111_T)]
+  [(M5T_T,T5S_S,T5S_H,runH,runT,runM) => (T5S_M,runM;program_T5S.t222_M)]
+  [(catT,M5T_T,T5S_S,T5S_H,runH,runT,runM) => ((M5S_M,runM;program_M5S.m000_M),(M5S_T,runT;program_M5S.m000_T))]
+
+===
+串联:翻译链
+  两种情况:
+    * [V是中间态的T][V比T高级][V同角色于S][V=!=S]:
+      #V是中间态的T
+      #[#注意:可能有[V==K]#]
+      #[#注意:可能有[V==H]#]
+      #[#注意:可能有[V==I]#]
+      #[#注意:可能有[V==J]#]
+      * [V==H]:
+        #特意提取出来:因为有用
+      ===
+      * [not$ V <- {K,I,H,J}]:
+      * [V==I=!=H]:
+      * [V==J=!=K]:
+      * [V==K=!=H]:
+      * [V==H=!=K]:
+      * [V==H==K=!=S]:
+    * [J是中间态的H][J比H高级]:
+        #J是中间态的H
+        #
+        #区分后，结论无实质性进展
+        #=> 以下区分:不必要
+        * [H==K<J==I<S][I是中间态的K][I比K高级]:
+          #S是派生语言
+          #I是中间态的K
+          #J是中间态的H
+        * [H=!=J=!=K==S]:
+          #S是原生语言
+          #J是中间态的H
+
+
+[V是中间态的T][V比T高级][V同角色于S][V=!=S]:
+  #V是中间态的T
+  #[#注意:可能有[V==K]#]
+  #[#注意:可能有[V==H]#]
+  #[#注意:可能有[V==I]#]
+  #[#注意:可能有[V==J]#]
+
+  !! [:翻译框架设计冫泛结论]:goto
+  !! [(T5S_H,runH) => (T5S_H,runH;program_T5S.t000_H)][#注意:可能有[H==K]#]
+  !! [(T5S_H,T5H_T,runT) => (T5S_T,runT;program_T5S.t999_T)][#注意:可能有[H==K]#]
+  !! [(T5S_K,runT,program_T5K.xxx) => (T5S_T,runT;program_T5S.t111_T)][#注意:可能有[K==S]#]
+  !! [(M5T_T,program_T5S.t111_T(<=>:T5S_T,runT),runM) => (T5S_M,runM;program_T5S.t222_M)][#注意:优缺点:绑定于T#]
+  !! [(M5T_T,T5S_K,runT,program_T5K.xxx,runM) => (T5S_M,runM;program_T5S.t222_M)][#注意:优缺点:绑定于K#]
+  !! [(catT,M5T_T,T5S_K,runT,runM,program_T5K.xxx) => ((M5S_M,runM;program_M5S.m000_M),(M5S_T,runT;program_M5S.m000_T))][#注意:可能有[K==S]#]
+  [S:=V]:
+      !! [V同角色于S][V=!=S]:
+      [(T5V_H,runH) => (T5V_H,runH;program_T5V.t000_4_H)][#注意:可能有[H==K]#]
+      [(T5V_H,T5H_T,runT) => (T5V_T,runT;program_T5V.t999_1_T)][#注意:可能有[H==K]#]
+      [(T5V_K,runT,program_T5K.xxx) => (T5V_T,runT;program_T5V.t111_3_T)][#注意:可能有[K==V]#]
+      [(M5T_T,program_T5V.t111_T(<=>:T5V_T,runT),runM) => (T5V_M,runM;program_T5V.t222_1_M)][#注意:优缺点:绑定于T#]
+      [(M5T_T,T5V_K,runT,program_T5K.xxx,runM) => (T5V_M,runM;program_T5V.t222_1_M)][#注意:优缺点:绑定于K#]
+      [(catT,M5T_T,T5V_K,runT,runM,program_T5K.xxx) => ((M5V_M,runM;program_M5V.m000_1_M),(M5V_T,runT;program_M5V.m000_1_T))][#注意:可能有[K==V]#]
+
+  [T:=V]:
+      !! [V是中间态的T][V比T高级]
+      [(V5S_H,runH) => (V5S_H,runH;program_V5S.v000_H)][#注意:可能有[H==K]#]
+      [(V5S_H,V5H_V,runV) => (V5S_V,runV;program_V5S.t999_2_V)][#注意:可能有[H==K]#]
+      [(V5S_K,runV,program_V5K.xxx) => (V5S_V,runV;program_V5S.v111_V)][#注意:可能有[K==S]#]
+      [(M5V_V,program_V5S.v111_V(<=>:V5S_V,runV),runM) => (V5S_M,runM;program_V5S.v222_M)][#注意:优缺点:绑定于V#]
+      [(M5V_V,V5S_K,runV,program_V5K.xxx,runM) => (V5S_M,runM;program_V5S.v222_M)][#注意:优缺点:绑定于K#]
+      [(catV,M5V_V,V5S_K,runV,runM,program_V5K.xxx) => ((M5S_M,runM;program_M5S.m000_2_M),(M5S_V,runV;program_M5S.m000_2_V))][#注意:可能有[K==S]#]
+
+
+
+  !! [X5Z_W === catW X5Y_W Y5Z_W]
+  [X5Z_H === catH X5Y_H Y5Z_H]
+
+  [existed:(catH,V5S_H,T5V_H,runH)]:
+      !! [(V5S_H,runH) => (V5S_H,runH;program_V5S.v000_H)][#注意:可能有[H==K]#]
+      !! [(T5V_H,runH) => (T5V_H,runH;program_T5V.t000_4_H)][#注意:可能有[H==K]#]
+      [existed:(program_V5S.v000_H,program_T5V.t000_4_H)]
+      !! [X5Z_H === catH X5Y_H Y5Z_H]
+      [T5S_H === catH T5V_H V5S_H]
+      !! [(T5S_H,runH) => (T5S_H,runH;program_T5S.t000_H)][#注意:可能有[H==K]#]
+      [existed:program_T5S.t000_H]
+      [(catH,V5S_H,T5V_H,runH) => (T5S_H,runH;program_T5S.t000_H)]
+        # [catH并非必要]
+  [(catH,V5S_H,T5V_H,runH) => (T5S_H,runH;program_T5S.t000_H)][#注意:[catH并非必要]#]
+
+  [existed:(V5S_H,T5V_H,runH)]:
+      !! [zzz_T === (runH T5V_H) . (runH V5S_H) $ zzz_S]
+      !! [zzz_X === program_X5Y.xxx zzz_Y]
+      => [program_T5S.t333_H =[等效]= (runH T5V_H) . (runH V5S_H)]
+      => 打包输出(V5S_H,T5V_H,runH;program_T5S.t333_H)
+
+  [(V5S_H,T5V_H,runH) => (V5S_H,T5V_H,runH;program_T5S.t333_H)]
+
+
+
+
+
+
+  !! [(T5V_H,T5H_T,runT) => (T5V_T,runT;program_T5V.t999_1_T)][#注意:可能有[H==K]#]
+  !! [(V5S_H,V5H_V,runV) => (V5S_V,runV;program_V5S.t999_2_V)][#注意:可能有[H==K]#]
+   [(V5S_H,T5V_H,T5H_T,runT) => (V5S_T,T5V_T,runT;program_T5S.t996_T)]
+      !! [T5V_T := runT T5H_T T5V_H]
+      !! [V5S_T := runT T5H_T V5S_H]
+      !! [program_T5S.t996_T := (runT T5V_T) . (runT V5S_T)]
+
+
+
+  [existed:(V5S_K,T5V_K,runT,runV,program_T5K.xxx,program_V5K.xxx)]:
+      !! [(V5S_K,runV,program_V5K.xxx) => (V5S_V,runV;program_V5S.v111_V)][#注意:可能有[K==S]#]
+      !! [(T5V_K,runT,program_T5K.xxx) => (T5V_T,runT;program_T5V.t111_3_T)][#注意:可能有[K==V]#]
+      [existed:(program_V5S.v111_V,program_T5V.t111_3_T)]
+      [T5V_T := (program_T5K.xxx T5V_K)]
+      [V5S_V := (program_V5K.xxx V5S_K)]
+      [program_T5S.t444_T_V := (runT T5V_T) . (runV V5S_V)]
+      [program_T5S.t444_T_V === program_T5V.t111_3_T . program_V5S.v111_V]
+  [(V5S_K,T5V_K,runT,runV,program_T5K.xxx,program_V5K.xxx) => (V5S_V,T5V_T,runT,runV;program_T5S.t444_T_V)]#前提并非必要
+
+  [existed:(V5S_K,T5V_K,runA,program_A5K.xxx)]:
+      [T5V_A := (program_A5K.xxx T5V_K)]
+      [V5S_A := (program_A5K.xxx V5S_K)]
+      [program_T5S.t555_A === (runA T5V_A) . (runA V5S_A)]
+      [(V5S_K,T5V_K,runA,program_A5K.xxx) => (V5S_A,T5V_A,runA;program_T5S.t555_A)]
+  [(V5S_K,T5V_K,runA,program_A5K.xxx) => (V5S_A,T5V_A,runA;program_T5S.t555_A)]
+
+  # [A:=T]:
+  [(V5S_K,T5V_K,runT,program_T5K.xxx) => (V5S_T,T5V_T,runT;program_T5S.t555_1_T)]
+  # [A:=V]:
+  [(V5S_K,T5V_K,runV,program_V5K.xxx) => (V5S_V,T5V_V,runV;program_T5S.t555_2_V)]
+  #泛化:
+  [(V5S_Kv,T5V_Kt,runAv,runAt,program_Av5Kv.xxx,program_At5Kt.xxx) => (V5S_Av,T5V_At,runAv,runAt;program_T5S.t555_3_Av_At)]
+
+
+
+  !! [(M5T_T,program_T5V.t111_T(<=>:T5V_T,runT),runM) => (T5V_M,runM;program_T5V.t222_1_M)][#注意:优缺点:绑定于T#]
+  !! [(M5V_V,program_V5S.v111_V(<=>:V5S_V,runV),runM) => (V5S_M,runM;program_V5S.v222_M)][#注意:优缺点:绑定于V#]
+  [(V5S_V,T5V_T,M5T_T,runT,runM) => (V5S_M,T5V_M,runM;program_T5S.t222_2_M)]
+      !! [T5V_M := (runT M5T_T T5V_T)]
+      !! [V5S_M := (runT M5T_T V5S_V)]
+      !! [program_T5S.t222_2_M := (runM T5V_M) . (runM V5S_M)]
+
+  [(V5S_V,T5V_T,M5T_M,runM) => (V5S_M,T5V_M,runM;program_T5S.t222_2_M)]
+      !! [T5V_M := (runM M5T_M T5V_T)]
+      !! [V5S_M := (runM M5T_M V5S_V)]
+      !! [program_T5S.t222_2_M := (runM T5V_M) . (runM V5S_M)]
+
+
+
+
+  !! [(catT,M5T_T,T5V_K,runT,runM,program_T5K.xxx) => ((M5V_M,runM;program_M5V.m000_1_M),(M5V_T,runT;program_M5V.m000_1_T))][#注意:可能有[K==V]#]
+  !! [(catV,M5V_V,V5S_K,runV,runM,program_V5K.xxx) => ((M5S_M,runM;program_M5S.m000_2_M),(M5S_V,runV;program_M5S.m000_2_V))][#注意:可能有[K==S]#]
+  [(catT,V5S_K,T5V_K,M5T_T,runT,runM,program_T5K.xxx) => ((M5S_M,runM;program_M5S.m000_3_M),(M5S_T,runT;program_M5S.m000_3_T))]
+      !! [V5S_T := program_T5K.xxx V5S_K]
+      !! [T5V_T := program_T5K.xxx T5V_K]
+      !! [T5S_T := catT T5V_T V5S_T]
+      !! [M5S_T := catT M5T_T T5S_T]
+      !! [program_M5S.m000_3_T := runT M5S_T]
+      !! [M5S_M := runT M5T_T M5S_T]
+      !! [program_M5S.m000_3_M := runM M5S_M]
+
+  ==>>:
+  # [:翻译框架设计冫泛结论牜串联冫目标语言]:here
+  .[(catH,V5S_H,T5V_H,runH) => (T5S_H,runH;program_T5S.t000_H)][#注意:[catH并非必要]#]
+  [(V5S_H,T5V_H,runH) => (V5S_H,T5V_H,runH;program_T5S.t333_H)]
+
+   [(V5S_H,T5V_H,T5H_T,runT) => (V5S_T,T5V_T,runT;program_T5S.t996_T)]
+
+  [(V5S_K,T5V_K,runA,program_A5K.xxx) => (V5S_A,T5V_A,runA;program_T5S.t555_A)]
+  [(V5S_K,T5V_K,runT,program_T5K.xxx) => (V5S_T,T5V_T,runT;program_T5S.t555_1_T)]
+  [(V5S_K,T5V_K,runV,program_V5K.xxx) => (V5S_V,T5V_V,runV;program_T5S.t555_2_V)]
+  [(V5S_Kv,T5V_Kt,runAv,runAt,program_Av5Kv.xxx,program_At5Kt.xxx) => (V5S_Av,T5V_At,runAv,runAt;program_T5S.t555_3_Av_At)]
+
+  .[(V5S_V,T5V_T,M5T_T,runT,runM) => (V5S_M,T5V_M,runM;program_T5S.t222_2_M)]
+  [(V5S_V,T5V_T,M5T_M,runM) => (V5S_M,T5V_M,runM;program_T5S.t222_2_M)]
+
+  [(catT,V5S_K,T5V_K,M5T_T,runT,runM,program_T5K.xxx) => ((M5S_M,runM;program_M5S.m000_3_M),(M5S_T,runT;program_M5S.m000_3_T))]
+
+
+  ===
+  !! [:翻译框架设计冫泛结论牜串联冫辅助语言]:goto
+    !! [nonexisted:T5S_H,T5J_T,runJ,program_T5J.xxx]
+    !! [(T5S_J,runH,program_H5J.xxx) => (T5S_H,runH;program_T5S.t000_H)]
+    !! [(T5J_H,T5S_J,runH,runT) => (T5S_T,runT;program_T5S.t111_1_T)]
+    需求:T5S_J,((T5J_H,runH)|program_H5J.xxx)
+
+  特化分类:
+  * [V==H]:
+    #特意提取出来:因为有用
+    !! [V==H]
+    => [V是高层辅助语言]
+    => 有源代码名:『..._V』
+    !! [V是高层目标语言]
+    => 有源代码名:『V5...』
+    => 假设:[existed:V5S_V]
+    #文件名模式:X5Y_X
+    [:翻译框架设计冫泛结论]:goto
+    [:翻译框架设计冫特化结论]:goto
+    [existed:(V5S_V,T5V_A,runA,runT)]:
+        [V5S_T := runA T5V_A V5S_V]
+        [program_T5S.t666_A_T := (runA T5V_A) . (runT V5S_T)]
+        [(V5S_V,T5V_A,runA,runT) => (V5S_T,T5V_A,runA,runT;program_T5S.t666_A_T)]
+    [(V5S_V,T5V_A,runA,runT) => (V5S_T,T5V_A,runA,runT;program_T5S.t666_A_T)]
+    #[A:=T]:
+    [(V5S_V,T5V_T,runT) => (V5S_T,T5V_T,runT;program_T5S.t666_1_T)]
+
+    [(V5S_V,T5V_T,runT) => (V5S_T,T5V_T,runT;program_T5S.t666_1_T)]
+      !! [V5S_T := runT T5V_T V5S_V]
+      !! [program_T5S.t666_1_T := (runT T5V_T) . (runT V5S_T)]
+    #替换:[(T,V,t666_1_T):=(M,T,m666_1_M)]:
+    [(T5S_T,M5T_M,runM) => (T5S_M,M5T_M,runM;program_M5S.m666_1_M)]
+      !! [T5S_M := runM M5T_M T5S_T]
+      !! [program_M5S.m666_1_M := (runM M5T_M) . (runM T5S_M)]
+
+
+
+    [existed:(V5S_V,T5V_V,runV)]:
+        [program_T5S.t777_V := (runV T5V_V) . (runV V5S_V)]
+        [(V5S_V,T5V_V,runV) => (V5S_V,T5V_V,runV;program_T5S.t777_V)]
+    [(V5S_V,T5V_V,runV) => (V5S_V,T5V_V,runV;program_T5S.t777_V)]
+
+  ===
+  * [not$ V <- {K,I,H,J}]:
+    !! [:翻译框架设计冫泛结论]:goto
+    ...无实质性进展
+  * [V==I=!=H]:
+    !! [K .<$ I .<$ S]
+    !! [K <: I <: S]
+    !! [V==I]
+    [V是S的真子集]
+    !! [V=!=H]
+    [V不是高层辅助语言]
+    [V虽是S的真子集,但不是高层辅助语言]
+    ...无实质性进展
+  TODO
+  * [V==J=!=K]:
+  * [V==K=!=H]:
+  * [V==H=!=K]:
+  * [V==H==K=!=S]:
+    #见上面:[V==H]:
+    !! [(V5S_V,T5V_A,runA,runT) => (V5S_T,T5V_A,runA,runT;program_T5S.t666_A_T)]
+    !! [(V5S_V,T5V_T,runT) => (V5S_T,T5V_T,runT;program_T5S.t666_1_T)]
+    !! [(V5S_V,T5V_V,runV) => (V5S_V,T5V_V,runV;program_T5S.t777_V)]
+    #不含V=>取消:[(T5S_T,M5T_M,runM) => (T5S_M,M5T_M,runM;program_M5S.m666_1_M)]
+
+    #替换:[V:=K]:
+    [(K5S_K,T5K_A,runA,runT) => (K5S_T,T5K_A,runA,runT;program_T5S.t666_A_T)]
+    [(K5S_K,T5K_T,runT) => (K5S_T,T5K_T,runT;program_T5S.t666_1_T)]
+    [(K5S_K,T5K_K,runK) => (K5S_K,T5K_K,runK;program_T5S.t777_K)]
+  ==>>:
+  # [:翻译框架设计冫特化结论牜串联冫目标语言]:here
+  .[(V5S_V,T5V_A,runA,runT) => (V5S_T,T5V_A,runA,runT;program_T5S.t666_A_T)]
+  [(V5S_V,T5V_T,runT) => (V5S_T,T5V_T,runT;program_T5S.t666_1_T)]
+  [(V5S_V,T5V_V,runV) => (V5S_V,T5V_V,runV;program_T5S.t777_V)]
+  [(T5S_T,M5T_M,runM) => (T5S_M,M5T_M,runM;program_M5S.m666_1_M)]
+
+  .[(K5S_K,T5K_A,runA,runT) => (K5S_T,T5K_A,runA,runT;program_T5S.t666_A_T)]
+  [(K5S_K,T5K_T,runT) => (K5S_T,T5K_T,runT;program_T5S.t666_1_T)]
+  [(K5S_K,T5K_K,runK) => (K5S_K,T5K_K,runK;program_T5S.t777_K)]
+  TODO
+
+[J是中间态的H][J比H高级]:
+  #J是中间态的H
+  [H .<$ J]
+
+  !! [:翻译框架设计冫泛结论]:goto
+
+
+  !! [(T5S_H,runH) => (T5S_H,runH;program_T5S.t000_H)][#注意:可能有[H==K]#]
+  !! [[existed:(T5S_H,runH)] -> [useless:J]]
+  假设:[(T5S_H,runH)并非都存在]
+  !! [(T5S_H,T5H_T,runT) => (T5S_T,runT;program_T5S.t999_T)][#注意:可能有[H==K]#]
+  假设:[(T5S_H,T5H_T,runT)并非都存在]
+
+  [H:=J]:
+      !! [(T5S_H,runH) => (T5S_H,runH;program_T5S.t000_H)][#注意:可能有[H==K]#]
+      [(T5S_J,runJ) => (T5S_J,runJ;program_T5S.t000_2_J)]
+      !! [(T5S_H,T5H_T,runT) => (T5S_T,runT;program_T5S.t999_T)][#注意:可能有[H==K]#]
+      [(T5S_J,T5J_T,runT) => (T5S_T,runT;program_T5S.t999_2_T)]
+  [(T5S_J,runJ) => (T5S_J,runJ;program_T5S.t000_2_J)]
+  [(T5S_J,T5J_T,runT) => (T5S_T,runT;program_T5S.t999_2_T)]
+  !! [[existed:(T5S_J,runJ)] -> [useless:H]]
+  假设:[(T5S_J,runJ)并非都存在]
+  假设:[(T5S_J,T5J_T,runT)并非都存在]
+
+  [S:=J]:
+      !! [(T5S_H,runH) => (T5S_H,runH;program_T5S.t000_H)][#注意:可能有[H==K]#]
+      [(T5J_H,runH) => (T5J_H,runH;program_T5J.t000_3_H)]
+      !! [(T5S_H,T5H_T,runT) => (T5S_T,runT;program_T5S.t999_T)][#注意:可能有[H==K]#]
+      [(T5J_H,T5H_T,runT) => (T5J_T,runT;program_T5J.t999_3_T)]
+  [(T5J_H,runH) => (T5J_H,runH;program_T5J.t000_3_H)]
+  [(T5J_H,T5H_T,runT) => (T5J_T,runT;program_T5J.t999_3_T)]
+
+
+  !! [H .<$ J]
+  假设:[existed:T5S_J]
+  !! 假设:[(T5S_J,runJ)并非都存在]
+  [nonexisted:runJ]
+  假设:[existed:runH]
+  !! 假设:[(T5S_H,runH)并非都存在]
+  [nonexisted:T5S_H]
+
+  !! 假设:[(T5S_H,T5H_T,runT)并非都存在]
+  假设:[existed:T5H_T,runT]
+  !! 假设:[(T5S_J,T5J_T,runT)并非都存在]
+  !! 假设:[existed:T5S_J]
+  [nonexisted:T5J_T]
+
+  [nonexisted:T5S_H,T5J_T,runJ]
+  [existed:T5S_J,runH]:
+    [required:program_H5J.xxx]:
+      [T5S_H := program_H5J.xxx T5S_J]
+      !! [(T5S_H,runH) => (T5S_H,runH;program_T5S.t000_H)][#注意:可能有[H==K]#]
+      [(T5S_J,runH,program_H5J.xxx) => (T5S_H,runH;program_T5S.t000_H)]
+  [(T5S_J,runH,program_H5J.xxx) => (T5S_H,runH;program_T5S.t000_H)]
+
+  [existed:T5S_J,runH]:
+    [required:T5J_H]:
+      !! [(T5J_H,runH) => (T5J_H,runH;program_T5J.t000_3_H)]
+      [existed:program_T5J.t000_3_H]
+      [T5S_T := program_T5J.t000_3_H T5S_J]
+        # <==> [T5S_T := runH T5J_H T5S_J]
+      [(T5J_H,T5S_J,runH,runT) => (T5S_T,runT;program_T5S.t111_1_T)]
+  [(T5J_H,T5S_J,runH,runT) => (T5S_T,runT;program_T5S.t111_1_T)]
+
+  [existed:T5S_J]:
+    [required:program_T5J.xxx]:
+      [T5S_T := program_T5J.xxx T5S_J]
+      [(T5S_J,runT,program_T5J.xxx) => (T5S_T,runT;program_T5S.t111_2_T)]
+      [H无用，不合理的假设]
+  假设:[nonexisted:program_T5J.xxx]
+  ==>>:
+  # [:翻译框架设计冫泛结论牜串联冫辅助语言]:here
+  综上:
+  [nonexisted:T5S_H,T5J_T,runJ,program_T5J.xxx]
+  [(T5S_J,runH,program_H5J.xxx) => (T5S_H,runH;program_T5S.t000_H)]
+  [(T5J_H,T5S_J,runH,runT) => (T5S_T,runT;program_T5S.t111_1_T)]
+  ===
+
+[H==K<J==I<S][I是中间态的K][I比K高级]:
+  #S是派生语言
+  #I是中间态的K
+  #J是中间态的H
+
+  !! [:翻译框架设计冫泛结论牜串联冫辅助语言]:goto
+  # 见上面#结论无实质性进展:仅仅替换{H:=K,J:=I}
+  !! [nonexisted:T5S_H,T5J_T,runJ,program_T5J.xxx]
+  [nonexisted:T5S_K,T5I_T,runI,program_T5I.xxx]
+
+  !! [(T5S_J,runH,program_H5J.xxx) => (T5S_H,runH;program_T5S.t000_H)]
+  [(T5S_I,runK,program_K5I.xxx) => (T5S_K,runK;program_T5S.t000_1_K)]
+
+  !! [(T5J_H,T5S_J,runH,runT) => (T5S_T,runT;program_T5S.t111_1_T)]
+  [(T5I_K,T5S_I,runK,runT) => (T5S_T,runT;program_T5S.t111_1_T)]
+
+
+[H=!=J=!=K==S]:
+  #S是原生语言
+  #J是中间态的H
+  #
+  !! [:翻译框架设计冫泛结论牜串联冫辅助语言]:goto
+  !! 见上面#没有任何改变
+  [nonexisted:T5S_H,T5J_T,runJ,program_T5J.xxx]
+  [(T5S_J,runH,program_H5J.xxx) => (T5S_H,runH;program_T5S.t000_H)]
+  [(T5J_H,T5S_J,runH,runT) => (T5S_T,runT;program_T5S.t111_1_T)]
+
+===
+===
+===
+===
+===
+===
+===
+===
+===
+===
+===
+总结:
+[:翻译框架设计冫总结集中处]:goto
+  [:翻译框架设计冫总结集中处冫统计特殊文件名模式]:goto
+  [:翻译框架设计]:goto
+    [:翻译框架设计冫泛结论]:goto
+    [:翻译框架设计冫特化结论]:goto
+    [:翻译框架设计冫泛结论牜串联冫辅助语言]:goto
+    [:翻译框架设计冫泛结论牜串联冫目标语言]:goto
+    [:翻译框架设计冫特化结论牜串联冫目标语言]:goto
+  [:翻译框架设计冫封装完整性]:goto
+  [:翻译框架设计冫主要目标]:goto
+    [:关系冫自举丶自译出口丶自驻进口]:goto
+    [:翻译框架设计冫最泛化形式]:goto
+===
+[:翻译框架设计冫总结集中处]:here
+[:翻译框架设计冫总结集中处冫统计特殊文件名模式]:here
+  [self_resident_translator==translator{囷语===囥语}]#文件名模式:X5Y_X
+  ===
+  /\(.\)5._\1
+  /\(T5S_T\|M5S_M\|T5V_T\|V5S_V\|M5T_M\|K5S_K\|T5K_T\)\@!\(.\)5._\2
+  这里共七个:T5S_T,T5V_T,V5S_V,M5S_M,M5T_M,K5S_K,T5K_T
+  M,T,V,K(V:=K) 作为平台语言，独力本地化翻译高级语言，进口高级语言
+  ===
+  ===
+  [self_compiling_compiler==translator{囥语==圙语}]#文件名模式:X5Y_Y
+  ===
+  /.5\(.\)_\1
+  /\(M5T_T\|T5S_S\|T5V_V\|T5K_K\)\@!.5\(.\)_\2
+  这里共四个:M5T_T,T5S_S,T5V_V,T5K_K
+  T,S,V,K(V:=K) 作为跨平台高层语言，独力将本地语言翻译成低级语言，出口低级语言
+  ===
+  ===
+  ===
+  文件名模式:X5Y_Z
+      特例:[bootstrapping_translator==translator{囥语<:圙语;囥语=!=圙语}] #T5S_K
+  /\<\(.\)5\(.\)_\1\@!\2\@!.\>
+  /\(T5S_H\|T5S_K\|T5S_M\|M5S_T\|T5S_J\|T5J_H\|V5S_H\|T5V_H\|V5S_K\|T5V_K\|V5S_A\|T5V_A\|V5S_T\|V5S_M\|T5V_M\|T5K_A\|K5S_T\)\@!\<\(.\)5\(.\)_\3\@!\2\@!.\>
+  这里共十七个:T5S_H,T5S_K,T5S_M,T5S_J,T5J_H,T5V_H,T5V_K,T5V_A,T5V_M,T5K_A,M5S_T,V5S_H,V5S_K,V5S_A,V5S_T,V5S_M,K5S_T
+    ===
+    T5[^SJVK]
+    ===
+    T5S_[^HKMJ]
+    T5J_[^H]
+    T5V_[^HKAM]
+    T5K_[^A]
+    M5S_[^T]
+    V5S_[^HKATM]
+    K5S_[^T]
+    [17==4+1+4+1+1+5+1]
+    ===
+    但凡人工手写代码，总是:
+      * 或者 使用 辅助语言H/J/K(H:=K)
+      * 或者 self_compiling_compiler:T5S_S,T5V_V,T5K_K
+      * 或者 bootstrapping_translator:T5S_K,V5S_K,K5S_K#T5S_I
+    ===
+  ===
+[:翻译框架设计]:goto
+[:翻译框架设计冫泛结论]:goto
+  [(T5S_H,runH) => (T5S_H,runH;program_T5S.t000_H)][#注意:可能有[H==K]#]
+  [(T5S_K,runT,program_T5K.xxx) => (T5S_T,runT;program_T5S.t111_T)][#注意:可能有[K==S]#]
+  [(M5T_T,program_T5S.t111_T(<=>:T5S_T,runT),runM) => (T5S_M,runM;program_T5S.t222_M)][#注意:优缺点:绑定于T#]
+      [M5T_T <: self_compiling_compiler]
+  [(M5T_T,T5S_K,runT,program_T5K.xxx,runM) => (T5S_M,runM;program_T5S.t222_M)][#注意:优缺点:绑定于K#]
+      [M5T_T <: self_compiling_compiler]
+  [(catT,M5T_T,T5S_K,runT,runM,program_T5K.xxx) => ((M5S_M,runM;program_M5S.m000_M),(M5S_T,runT;program_M5S.m000_T))][#注意:可能有[K==S]#]
+      [M5T_T <: self_compiling_compiler]
+
+[:翻译框架设计冫特化结论]:goto
+  #[H,K无关结论]:
+  [(M5T_T,program_T5S.t111_T(<=>:T5S_T,runT),runM) => (T5S_M,runM;program_T5S.t222_M)][#注意:优缺点:绑定于T#]
+      [M5T_T <: self_compiling_compiler]
+
+  #[H==K=!=S]:
+  #S是派生语言
+  [(T5S_K,runK) => (T5S_K,runK;program_T5S.t000_1_K)]
+  [(T5S_K,runK,runT) => (T5S_T,runT;program_T5S.t111_T)]
+  [(M5T_T,T5S_K,runK,runT,runM) => (T5S_M,runM;program_T5S.t222_M)][#注意:优缺点:绑定于K#]
+      [M5T_T <: self_compiling_compiler]
+  [(catT,M5T_T,T5S_K,runK,runT,runM) => ((M5S_M,runM;program_M5S.m000_M),(M5S_T,runT;program_M5S.m000_T))]
+      [M5T_T <: self_compiling_compiler]
+
+  #[H=!=K==S]:
+  #S是原生语言
+  [(T5S_S,T5S_H,runH,runT) => (T5S_T,runT;program_T5S.t111_T)]
+      [T5S_S <: self_compiling_compiler]
+  [(M5T_T,T5S_S,T5S_H,runH,runT,runM) => (T5S_M,runM;program_T5S.t222_M)]
+      [M5T_T,T5S_S <: self_compiling_compiler]
+  [(catT,M5T_T,T5S_S,T5S_H,runH,runT,runM) => ((M5S_M,runM;program_M5S.m000_M),(M5S_T,runT;program_M5S.m000_T))]
+      [M5T_T,T5S_S <: self_compiling_compiler]
+
+
+[:翻译框架设计冫泛结论牜串联冫辅助语言]:goto
+  [nonexisted:T5S_H,T5J_T,runJ,program_T5J.xxx]
+  [(T5S_J,runH,program_H5J.xxx) => (T5S_H,runH;program_T5S.t000_H)]
+  [(T5J_H,T5S_J,runH,runT) => (T5S_T,runT;program_T5S.t111_1_T)]
+
+[:翻译框架设计冫泛结论牜串联冫目标语言]:goto
+  .[(catH,V5S_H,T5V_H,runH) => (T5S_H,runH;program_T5S.t000_H)][#注意:[catH并非必要]#]
+  [(V5S_H,T5V_H,runH) => (V5S_H,T5V_H,runH;program_T5S.t333_H)]
+
+   [(V5S_H,T5V_H,T5H_T,runT) => (V5S_T,T5V_T,runT;program_T5S.t996_T)]
+
+  [(V5S_K,T5V_K,runA,program_A5K.xxx) => (V5S_A,T5V_A,runA;program_T5S.t555_A)]
+  [(V5S_K,T5V_K,runT,program_T5K.xxx) => (V5S_T,T5V_T,runT;program_T5S.t555_1_T)]
+  [(V5S_K,T5V_K,runV,program_V5K.xxx) => (V5S_V,T5V_V,runV;program_T5S.t555_2_V)]
+      [T5V_V <: self_compiling_compiler]
+  [(V5S_Kv,T5V_Kt,runAv,runAt,program_Av5Kv.xxx,program_At5Kt.xxx) => (V5S_Av,T5V_At,runAv,runAt;program_T5S.t555_3_Av_At)]
+
+  .[(V5S_V,T5V_T,M5T_T,runT,runM) => (V5S_M,T5V_M,runM;program_T5S.t222_2_M)]
+      [M5T_T <: self_compiling_compiler]
+  [(V5S_V,T5V_T,M5T_M,runM) => (V5S_M,T5V_M,runM;program_T5S.t222_2_M)]
+
+  [(catT,V5S_K,T5V_K,M5T_T,runT,runM,program_T5K.xxx) => ((M5S_M,runM;program_M5S.m000_3_M),(M5S_T,runT;program_M5S.m000_3_T))]
+      [M5T_T <: self_compiling_compiler]
+
+[:翻译框架设计冫特化结论牜串联冫目标语言]:goto
+  .[(V5S_V,T5V_A,runA,runT) => (V5S_T,T5V_A,runA,runT;program_T5S.t666_A_T)]
+  [(V5S_V,T5V_T,runT) => (V5S_T,T5V_T,runT;program_T5S.t666_1_T)]
+  [(V5S_V,T5V_V,runV) => (V5S_V,T5V_V,runV;program_T5S.t777_V)]
+      [T5V_V <: self_compiling_compiler]
+  [(T5S_T,M5T_M,runM) => (T5S_M,M5T_M,runM;program_M5S.m666_1_M)]
+
+  .[(K5S_K,T5K_A,runA,runT) => (K5S_T,T5K_A,runA,runT;program_T5S.t666_A_T)]
+  [(K5S_K,T5K_T,runT) => (K5S_T,T5K_T,runT;program_T5S.t666_1_T)]
+  [(K5S_K,T5K_K,runK) => (K5S_K,T5K_K,runK;program_T5S.t777_K)]
+      [T5K_K <: self_compiling_compiler]
+  TODO
+
+[:翻译框架设计冫封装完整性]:goto
+  [[existed:X5Y_Z] -> [[existed:(runZ|program_A5Z|A5Z_B)][existed:(runX|program_A5X|A5X_B)]]]
+[:关系冫自举丶自译出口丶自驻进口]:goto
+  [T5S_K := catK T5K_K K5S_K]
+  [自举 === 出口低级语言 . 进口高级语言]
+  [自举/bootstrapping_translator === 出口低级语言/self_compiling_compiler . 进口高级语言/self_resident_translator]
+  [自举/T5S_V === 出口低级语言/自译出口/T5V_V `catV` 进口高级语言/自驻进口/V5S_V]
+  [T5S_V === T5V_V `catV` V5S_V]
+  [T5S_T === runV (runV V5S_V T5S_S) T5S_S]
+  移植旧翻译器到新机器:[T5S_T/自驻进口 === runV (runV V5S_V/自驻进口 T5S_S/自译出口) T5S_S/自译出口]
+[:翻译框架设计冫最泛化形式]:goto
+  [runJ->program_T5V->V5S_J->program_T5S]
+  [(V5S_J,runJ,program_T5V.xxx) => (V5S_J,runJ,program_T5V.xxx;program_T5S.t888_V_J)]
+===
+/5._[^HKTMSJIAV0-9XYZWEF\\]
+  所有后缀扩展名如上
+/5._[HKTMSJIAV]
+===
+[:翻译框架设计冫封装完整性]:here
+[[existed:X5Y_Z] -> [[existed:(runZ|program_A5Z|A5Z_B)][existed:(runX|program_A5X|A5X_B)]]]
+<<==:
+[[existed:Z5Y_X] -> [existed:(runZ|program_A5Z|A5Z_B)]]
+[[existed:X5Y_Z] -> [existed:(runZ|program_A5Z|A5Z_B)]]
+[[existed:X5Y_Z] -> [existed:(runX|program_A5X|A5X_B)]]
+
+==>>:
+def 检查冫封装完整性扌(列表纟被封装文件名, /):
+    检查冫封装完整性牜后缀扩展名扌(列表纟被封装文件名)
+    检查冫封装完整性牜输出扩展名扌(列表纟被封装文件名)
+===
+  * 后缀扩展名:
+    def 检查冫封装完整性牜后缀扩展名扌(列表纟被封装文件名, /):
+        #检查:所有后缀扩展名终究可被运行
+        for fnm in 列表纟被封装文件名:
+            if not len(fnm)==5:continue
+            'X5Y_Z'
+            后缀扩展名 = 取冫后缀扩展名扌(fnm)
+            'Z'
+            检查冫封装完整性牜后缀扩展名牜特定扌(后缀扩展名, 列表纟被封装文件名)
+    def 检查冫封装完整性牜后缀扩展名牜特定扌(后缀扩展名, 列表纟被封装文件名, /):
+        #检查:特定后缀扩展名终究可被运行
+        'Z'
+        '.5._Z'
+        for fnm in 列表纟被封装文件名:
+            if 匹配扌(f'.5{后缀扩展名}_.', fnm):
+                #其实,得要求脱出有向图强连通分量#包括：自环
+                'A5Z_B'
+                #脱出有向图强连通分量=>肯定会被翻译成别的语言
+                return
+            elif 匹配扌(f'program_.5{后缀扩展名}[.].*', fnm):
+                'program_A5Z.xxx'
+                #肯定会被翻译成别的语言
+                return
+            elif 匹配扌(f'run{后缀扩展名}', fnm):
+                'runZ'
+                #可被解释执行
+                return
+            elif 匹配扌(f'cat{后缀扩展名}', fnm):
+                pass
+            else:
+                #raise UnknownFileType
+                pass
+        raise Fail
+  ===
+  * 输出扩展名:
+    def 检查冫封装完整性牜输出扩展名扌(列表纟被封装文件名, /):
+        #检查:所有输出文件终究可被运行
+        for fnm in 列表纟被封装文件名:
+            if 匹配扌(r'.5._.', fnm):
+                'Z5A_B'
+                输出扩展名 = fnm[0]
+            elif 匹配扌(r'program_.5.[.].*', fnm):
+                'program_Z5A.xxx'
+                输出扩展名 = fnm[8]
+            elif 匹配扌(r'run.', fnm):
+                'runZ'
+                输出扩展名 = fnm[3]
+                #可被解释执行
+            elif 匹配扌(f'cat.', fnm):
+                continue
+            else:
+                raise UnknownFileType
+            输出扩展名
+            'Z'
+            检查冫封装完整性牜后缀扩展名牜特定扌(输出扩展名, 列表纟被封装文件名)
+  ===
+===
+===
+[:翻译框架设计冫主要目标]:here
+  # [:关系冫自举丶自译出口丶自驻进口]:goto
+  # [:翻译框架设计冫最泛化形式]:goto
+  + 起始性手写目标:([nonexisted:program_T5S.xxx],runJ,program_T5V)=>V5S_J
+  + 一级目标:program_T5S
+    #扩展目标:program_V5S
+  + 二级目标:T5S_S,T5S_T
+    #扩展目标:V5S_S,V5S_V
+  + 三级目标:catS,runS
+  #上面所有V:
+    [#注意:可能有[V==T]#]
+    [#注意:可能有[V==H]#]
+    [#注意:可能有[V==K]#]
+
+  <<==:
+  首要目标:program_T5S
+    #可执行文件
+  #很有必要的目标:
+    T5S_S #自译出口:用于自举未来的超集语言
+        #self_compiling_compiler
+        #出口低级语言
+        !! [:关系冫自举丶自译出口丶自驻进口]:goto
+        H5S_S
+        K5S_S
+        V5S_S
+          [#注意:可能有[V==T]#]
+          [#注意:可能有[V==H]#]
+          [#注意:可能有[V==K]#]
+    T5S_T #方便移植/跨平台
+        #self_resident_translator
+        #进口高级语言
+        H5S_H
+        K5S_K
+        V5S_V
+          [#注意:可能有[V==T]#]
+          [#注意:可能有[V==H]#]
+          [#注意:可能有[V==K]#]
+  #可以考虑的目标:
+    catS #源代码串联:必须在设计编程语言时便考虑这个需求
+    runS #解释器/虚拟机/仿真器/interpreter
+      [runS := runT . program_T5S]
+      [runS := runT . (runT T5S_T)]
+      [runT := runM . program_M5T]
+      [runT := runM . (runM M5T_M)]
+  #起始性的单选性的手写目标:
+    #起始性:即:[已存在:(T5S_A,program_T5A.xxx) 则无需再手写]
+    [nonexisted:program_T5S.xxx]
+    * (runH)=>T5S_H
+      #直接手写:辅助语言
+      [#注意:可能有[H==K]#]
+      <<== 『* (runK)=>T5S_K』
+      [program_T5S := runA T5S_A]
+    * (T5H_H,runH)=>H5S_H
+      #半手写:辅助语言:进口高级语言
+      [#注意:可能有[H==K]#]
+      <<== 『* (T5K_K,runK)=>K5S_K』
+      [program_T5S := (runA T5A_A) . (runA A5S_A)]
+    * (V5S_V,runV)=>T5S_S
+      <==> 『* (runV)=>(T5S_S,V5S_V)』
+      为何『V5S_V』在前提里？
+      怎么快速得到『T5S_S』？
+        新机器旧语言:移植旧翻译器到新机器
+        新T旧S旧V
+        假设:新机器(新:目标机器):T是新机器低层语言
+        假设:旧语言(旧:宿主机/虚拟机):V是虚拟机低层语言，S是虚拟机高层语言
+        旧S旧V => V5S_S 早已存在
+          => 『V5S_V』是『T5S_S』的底稿
+          => 通过篡改『V5S_V』得到『T5S_S』
+        旧S旧V => V5S_V 早已存在
+          => 『V5S_V』在前提里
+        [portable_interpretive_compiler_kit := (V5S_S,V5S_V,runV_S)]
+      ==:
+      #全自举:full_bootstrap:同时实现:一级目标+二级目标
+      [program_T5S := runV (runV V5S_V T5S_S)]
+        #一级目标:program_T5S
+      [T5S_T := runV (runV V5S_V T5S_S) T5S_S]
+        #二级目标:T5S_T
+        #   +作为输入的二级目标:T5S_S
+    * (runJ,program_T5V)=>V5S_J
+      #递降:这是最泛化形式:包含前面两种情况!!??包含第三种情况??
+      [#注意:可能有[V==T][J==S]#] #<==>第三种情况
+      [#注意:[runS===runV . runV V5S_V]#]
+      [#注意:可能有[J==S]#]
+      [#注意:可能有[J==K]#]
+      [#注意:可能有[J==H]#]
+      [#注意:可能有[J==V]#]
+      [#注意:可能有[J==T]#]
+      [#注意:可能有[V==J==H]#] #<==>第二种情况
+      [#注意:[program_T5H===runH T5H_H]#]
+      [#注意:可能有[V==T][J==H]#] #<==>第一种情况
+      [#注意:可能有[V==T]#]
+      [#注意:[program_A5A===echo_translator]#]
+      [#注意:[runT->program_T5A->runA]#]
+      <<== 『* (runT,program_T5V,program_T5J)=>V5S_J』
+      [[proof:[runT->program_T5A->runA]
+      [runA := runT . program_T5A]
+      DONE!!
+      ]]
+      [[proof:[runJ->program_T5V->V5S_J->program_T5S]
+      [program_T5S := program_T5V . (runJ V5S_J)]
+      DONE!!
+      ]]
+      # [:翻译框架设计冫最泛化形式]:here
+      [runJ->program_T5V->V5S_J->program_T5S]
+      [(V5S_J,runJ,program_T5V.xxx) => (V5S_J,runJ,program_T5V.xxx;program_T5S.t888_V_J)]
+  <<==:
+  #A5S_B:
+  #A,B固定
+  T5S_T
+    #自动生成:可移植的低层代码:进口高级语言
+  #A固定,B未定
+  T5S_H
+    #直接手写
+    #或 自动生成:
+    # [T5S_H := catH T5H_H H5S_H]
+    ===
+    T5S_K
+      #直接手写:自举#bootstrapping_translator
+      #或 自动生成:
+      # [T5S_K := catK T5K_K K5S_K]
+      # [自举 === 出口低级语言 . 进口高级语言]
+      # [自举/bootstrapping_translator === 出口低级语言/self_compiling_compiler . 进口高级语言/self_resident_translator]
+      # [自举/T5S_V === 出口低级语言/自译出口/T5V_V `catV` 进口高级语言/自驻进口/V5S_V]
+      # [T5S_V === T5V_V `catV` V5S_V]
+      # [T5S_T === runV (runV V5S_V T5S_S) T5S_S]
+      # 移植旧翻译器到新机器:[T5S_T/自驻进口 === runV (runV V5S_V/自驻进口 T5S_S/自译出口) T5S_S/自译出口]
+      #     [:关系冫自举丶自译出口丶自驻进口]:here
+    T5S_S
+      #直接手写:自译:出口低级语言#self_compiling_compiler
+      #或 自动生成:
+      # [T5S_S := catS T5V_S V5S_S]
+      # [T5S_S := catS T5V_K V5S_S]
+      # [T5S_S := catK T5V_K V5S_K]
+      # [T5S_S := catK T5K_K K5S_K]
+      # [T5S_S := T5S_K]
+  #A,B未定
+  V5S_J
+    #递降
+    V5S_S
+      #递降:出口低级语言
+      K5S_S
+    V5S_V
+      #递降:进口高级语言
+    K5S_J
+      #递降:子集特化
+    V5S_K
+      #递降:自举
+    K5S_K
+      #递降:子集特化+自举:进口高级语言
+===
+===
+===
+]]
+]]]
+
+[[[
+第四章
+===
+4 MACHINE EMULATION
+4.1 Simple machine architecture
+[[
+]]
+[[
+
+]]
+[[
+]]
+===
+#end-第四章
+]]]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+定义冫通用递归结构:here
+    def__AST:goto
+通用递归结构==(种类标签/(用户标签字符串|内建标签字符串), 结构属性, 外赋属性/标准无类型数据, 内禀属性/标准无类型数据, 外赋递归/{符号性键值:通用递归结构}, 内禀递归/[通用递归结构])
+    结构属性:内部链接用地址/id唯一, 用作有向图的有向边，值本身不重要可被等价替换
+    符号性键值:类似id，但外部可见，稳定
+    区分:内建标签字符串,用户标签字符串
+      通过给字符串添加前缀来区分#类似『b''』『r''』『f''』『0x00』『0b00』
+    内建标签:注释，内部用引用(id唯一)，外部用引用(符号性键值)
+    外赋属性:文档/注释，调试用信息...
+    内禀属性:特定于:种类标签
+    标准无类型数据=:
+      | 序列/[标准无类型数据]
+      | 映射/{标准无类型数据:标准无类型数据}
+      | 字符串#~= (编码,[整数])
+      | 有理数#>:整数
+      # | 具名符号
+
+
+
+[[[
+
+待查:BOOTSTRAPPING,emulator,quirk,uncompromising,compromise,contemplate,radical,tailored,hypothetical
+  Fortunately one rarely has to contemplate such a radical step.
+===
+
+[[
+BOOTSTRAPPING
+===
+bootstrapping
+在线英汉－汉英词典
+n. 步步为营法
+===
+boot-strap
+在线英汉－汉英词典
+n. 开机,解靴带
+===
+bootstrap
+新世纪英汉科技大词典
+引导
+自持系统
+共益
+人工线路
+21世纪英汉汉英双向词典
+<<可数名词>>
+[常~s] 拔靴带
+((靴筒后或两旁之皮圈; 穿靴时用以拉靴者))
+pull oneself up [lift oneself] by one's (own) bootstraps
+((口语))靠自己力量出人头地; 自力更生
+===
+]]
+[[
+emulator
+新世纪英汉科技大词典
+仿真程序
+仿真器
+21世纪英汉汉英双向词典
+<<可数名词>>
+竞争者; 竞相学习 [模仿] 的人
+计算机词汇
+竞争者
+]]
+[[
+===
+？《诡秘之主》？
+===
+quirk
+英 /kwɜːk/
+美 /kwɝk/
+quirk n. 怪癖，急转，借口
+新世纪英汉科技大词典
+狭凹槽
+火道
+深槽
+21世纪英汉汉英双向词典
+quirk
+<<可数名词>>
+1 a.急转,剧变
+by a ~ of fate
+命运的剧变 [播弄]
+b.反覆无常,任性
+2 奇行,怪癖
+===
+quirkish
+21世纪英汉汉英双向词典
+<<形容词>>
+双关语的; 诡辩的
+在线英汉－汉英词典
+adj. 双关语的；含糊其辞的；讥讽的
+===
+quirky
+21世纪英汉汉英双向词典
+<<形容词>>
+剧变的; 反覆无常的,任性的
+在线英汉－汉英词典
+adj. 诡诈的；古怪的；离奇的
+===
+quirkiness
+在线英汉－汉英词典
+n. 诡诈；离奇
+===
+]]
+[[
+uncompromising
+compromise
+===
+uncompromising
+e ../lots/NOTE/abbr/欧路词典冫音标表达.txt
+(Qn`kBmprE9maIzIN; Qn5kCmprEmaiziN)
+英 /ʌn'kɒmprəmaɪzɪŋ/
+美 /ʌn'kɑmprəmaɪzɪŋ/
+21世纪英汉汉英双向词典
+<<形容词>>
+1 不妥协的,不让步的
+his ~ espousal of the bill
+他对法案的坚定支持
+2 顽固的,强硬的
+<<副词>>
+~.ly
+在线英汉－汉英词典
+adj. 不让步的；不妥协的；强硬的
+===
+compromise
+(`kBmprE9maIz; 5kCmprEmaiz)
+英 /'kɒmprəmaɪz/
+美 /'kɑmprəmaɪz/
+新世纪英汉科技大词典
+妥协
+折衷
+21世纪英汉汉英双向词典
+`14`《源自拉丁文“共同约定,意见一致”的意思》
+<<名词>>
+1 妥协,和解
+by ~
+藉著妥协
+make a ~ with
+﹍与…妥协
+reach a ~
+达成协议
+2 (C)折衷方案; 折衷 [中间] 物[between]
+a ~ between opposite opinions
+对立意见的折衷方案
+a ~ between East and West
+东方与西方之间的妥协 [和解]
+<<及物动词>>
+1 使 <纷争> 和解,折衷处理
+An arbiter ~d their differences.
+仲裁者折衷调解[处理]了他们的纷争
+2 a. 危害,污损<名誉等>
+He ~d his reputation.
+他污损了自己的名誉
+b. [~ oneself] (因愚行、暴行等) 伤及自己的名誉,有失体面
+<<不及物动词>>
+[就某事] 妥协,和解
+[with][on]
+We ~d with them on the matter.
+关于那件事我们跟他们妥协了
+计算机词汇
+妥协处理
+===
+新世纪英汉科技大词典
+compromise balancing network
+粗调平衡网络
+compromise strategy
+调和对策
+===
+]]
+[[
+contemplate
+temple
+contemplation意图
+contemplated预期的
+uncontemplated意外的
+template模板
+===
+contemplate
+英 /'kɒntempleɪt/
+美 /'kɑntəmplet/
+21世纪英汉汉英双向词典
+con.tem.plate
+(`kBntEm9plet, kEn`tZmplet; 5kCntempleit, -tEm-)`14`《源自拉丁文“观察处 (temple 之原义) ,凝视”的意思》
+<<及物动词>>
+1 注视,凝视
+They ~d each other for some minutes.
+他们两人互相凝视几分钟
+2 a. 仔细考虑,熟虑<问题等>
+She is contemplating a change of work.
+她在考虑换工作
+b. 考虑<做…>
+He ~d going to some health resort.
+他考虑到某一休养胜地
+c. 考虑<…事>
+We are contemplating where we should travel [where to travel] to.
+我们在考虑要到哪里去旅行
+3 期待,预期
+We did not ~ such a consequence.
+我们没有预料到会有这种结果
+<<不及物动词>>
+沈思,默想
+All day he did nothing but ~.
+他整天除了沈思外没做任何事
+在线英汉－汉英词典
+vt. & vi. 深思, 细想, 仔细考虑 vt. 注视, 凝视
+===
+temple
+英 /ˈtempl/
+美 /ˈtɛmpəl/
+新世纪英汉科技大词典
+寺院
+边撑
+21世纪英汉汉英双向词典
+temple
+<<名词>>
+(织机的) 边撑; 伸幅器
+tem.ple
+(`tZmpl; 5templ)`14`《源自拉丁文“被划分出来的场所”的意思》
+<<可数名词>>
+1 (基督教以外的佛教、印度教、犹太教等的) 神殿,庙,寺,祠堂
+2 (摩门教的) 教堂,礼拜堂
+3 [又作 T~] 犹太人在古都耶路撒冷所建三庙宇之一
+4 [又作T~] 所罗门王在耶路撒冷所建三庙中之第一所
+5 [T~] 圣堂武士 (Knights Templars) 在伦敦之住所
+6 (在人们心目中的) 殿堂
+a ~ of art [music]
+艺术 [音乐] 的殿堂
+tem.ple
+(`tZmpl; 5templ)
+<<可数名词>>
+1 太阳穴
+2 ((美))眼镜两侧的支架之一
+在线英汉－汉英词典
+n. 庙宇；寺院；神殿；太阳穴
+===
+contemplation
+英 /ˌkɒntem'pleɪʃ(ə)n/
+美 /ˌkɑntəm'pleʃən/
+21世纪英汉汉英双向词典
+con.tem.pla.tion
+(9kBntEm`pleFEn; 9kCntem5pleiFn, -tEm-)`14`《contemplate 的名词》
+<<不可数名词>>
+1 注视,凝视
+2 默想; 熟虑
+be lost in ~
+陷于沈思中
+3 期待,预期; 企图,计画
+have something in ~
+筹划某事
+An addition to the building is under ~.该建筑物的增建在计画中
+在线英汉－汉英词典
+n. 沉思；注视；意图
+===
+contemplated
+在线英汉－汉英词典
+adj. 预期的
+===
+uncontemplated
+21世纪英汉汉英双向词典
+<<形容词>>
+未经思考的; 未料想到的; 意外的
+在线英汉－汉英词典
+adj. 未经周密考虑的,意想不到的,意外的
+===
+===
+]]
+[[
+radical
+英 /'rædɪk(ə)l/
+美 /'rædɪkl/
+新世纪英汉科技大词典
+基
+21世纪英汉汉英双向词典
+rad.i.cal
+(`rAdIkl; 5rAdikl)`14`《源自拉丁文“根的”的意思》
+<<形容词>>
+(more ~; most ~)
+1 a. <人、思想等> 激进的,极端的,革命性的
+(
+→ progressive 2 b【同义字】)
+a ~ party
+激进党
+b. (无比较级、最高级) [常R~] 激进党的
+2 a. 根本的,基本的
+a ~ principle
+基本原理
+b. <改革、治疗等> 根治的; 根本的,彻底的
+a ~ cure
+彻底的治疗,根治
+a ~ reform
+彻底的改革
+3 (无比较级、最高级)‘数学’根的
+the ~ sign
+根号((√))
+a ~ expression
+无理式
+4 (无比较级、最高级)‘化学’基的
+5(无比较级、最高级)‘语言’语根的
+a ~ word
+语根字
+<<可数名词>>
+1 a. 偏激论者,激进分子
+b. [常 R~]激进党员
+the ~s [Radicals]
+激进派
+2‘数学’根数; 根号; 根式
+3‘化学’基
+4‘语言’
+a. 语根
+b. (中国字的) 偏旁; 部首
+<<副词>>
+~.ly[-kl; -kli]
+在线英汉－汉英词典
+]]
+[[
+tailored 定制专用型的
+===
+tailored
+21世纪英汉汉英双向词典
+<<形容词>>
+= tailor-made
+在线英汉－汉英词典
+adj. 裁缝做的；剪裁讲究的；定做的 v. 裁制；调整使适应（tailor的过去式和过去分词）
+===
+tailored version
+新世纪英汉科技大词典
+专用型
+===
+tailor
+英 /'teɪlə/
+美 /'telɚ/
+21世纪英汉汉英双向词典
+(`telL; 5teilE)`14`《源自拉丁文“剪,裁”的意思》
+<<可数名词>>
+裁缝师,成衣匠; 西服店,西装
+The ~ makes the man. ((
+谚))人靠衣装佛靠金装
+<<及物动词>>
+1 a. 缝制<衣服>
+b. <为人> 缝制<衣服>
+He ~ed me a tweed suit.
+他为我缝制了一套苏格兰粗呢的衣服
+c. 缝制<人>的衣服
+He is well ~ed.
+他的衣服做得好
+2 a. 使…适合[…],使配合,使适应,调整[to, for]
+He ~ed his lecture to [for] his audience.
+他使自己的演讲适合听众
+b. 使…适合 [配合,适应] <…>,调整…<以…>
+We can ~ our design to meet your request.
+我们能调整我们的设计以满足你的要求
+<<不及物动词>>
+缝制衣服; 做裁缝,开服装店
+计算机词汇
+裁缝师
+===
+]]
+[[
+===
+hypothetical
+英 /ˌhaɪpə'θetɪk(ə)l/
+美 /ˌhaɪpə'θɛtɪkl/
+新世纪英汉科技大词典
+假想
+21世纪英汉汉英双向词典
+hy.po.thet.i.cal
+(9haIpE`WZtIkl; 9haipE5Wetikl)
+<<形容词>>
+1 假设 [假想] 的
+2‘逻辑’假定的; 假说的
+<<副词>>
+~.ly[-k; -kli]
+===
+]]
+[[
+===
+cross assembler
+新世纪英汉科技大词典
+交叉汇编程序
+===
+新世纪英汉科技大词典
+cross compile
+交叉编译
+===
+在线英汉－汉英词典
+crossable
+adj. (异种)可交配的
+===
+]]
+[[
+===
+vs:donor,donee
+donor:供体,授体,施主
+donee:受体,受赠者
+===
+donee
+新世纪英汉科技大词典
+受体
+受血者
+21世纪英汉汉英双向词典
+<<可数名词>>
+受赠者
+(←→ donor)
+在线英汉－汉英词典
+n. 受赠者，受赠人
+===
+donor
+新世纪英汉科技大词典
+捐款人
+捐款人
+给予体
+供体
+授体
+施主
+施主物质
+21世纪英汉汉英双向词典
+<<可数名词>>
+1 寄赠者,施主
+(←→ donee)
+2 [常构成复合字]‘医’捐赠 (血液、器官等的) 人
+a blood ~
+捐血者
+计算机词汇
+捐赠人
+===
+
+
+]]
+[[
+]]
+[[
+]]
+[[
+]]
+[[
+]]
+
+
+
+===
+===
+===
+===
+]]]
+

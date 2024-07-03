@@ -1,0 +1,701 @@
+
+e ../lots/NOTE/Haskell/RankNTypes.txt
+
+[[[
+https://gitlab.haskell.org/haskell/prime/-/wikis/RankNTypes
+===
+RankNTypes
+Rank-N Types
+Brief Explanation
+In Haskell 98, all free variables in a type are implicitly universally quantified, e.g.
+
+const :: a -> b -> a
+Thus Haskell 98 permits only rank-1 types. The proposal is to allow explicit universal quantification within types using a forall keyword, so types can have the forms
+
+type -> type
+forall vars. [context =>] type
+monotype
+where monotype is a Haskell 98 type. Note that forall's are not allowed inside type constructors other than ->.
+
+foralls and contexts in the second argument of -> may be floated out, e.g. the following types are equivalent:
+
+succ :: (forall a. a -> a) -> (forall b. b -> b)
+succ :: forall b. (forall a. a -> a) -> b -> b
+It is not possible to infer higher-rank types in general; type annotations must be supplied by the programmer in many cases.
+
+]]]
+
+[[[
+https://wiki.haskell.org/Rank-N_types
+===
+
+Rank-N types
+Jump to navigationJump to search
+
+The GHC Users Guide has an Arbitrary Rank Polymorphism section.
+
+
+Contents
+1	About
+2	Church-encoded Lists
+3	Relation to Existentials
+4	See also
+About
+Normal Haskell '98 types are considered Rank-1 types. A Haskell '98 type signature such as
+
+a -> b -> a
+implies that the type variables are universally quantified like so:
+
+forall a b. a -> b -> a
+forall can be floated out of the right-hand side of -> if it appears there, so:
+
+forall a. a -> (forall b. b -> a)
+is also a Rank-1 type because it is equivalent to the previous signature.
+
+However, a forall appearing within the left-hand side of (->) cannot be moved up, and therefore forms another level or rank. The type is labeled "Rank-N" where N is the number of foralls which are nested and cannot be merged with a previous one. For example:
+
+(forall a. a -> a) -> (forall b. b -> b)
+
+is a Rank-2 type because the latter forall can be moved to the start but the former one cannot. Therefore, there are two levels of universal quantification.
+
+Rank-N type reconstruction is undecidable in general, and some explicit type annotations are required in their presence.
+
+Rank-2 or Rank-N types may be specifically enabled by the language extensions {-# LANGUAGE Rank2Types #-} or {-# LANGUAGE RankNTypes #-}.
+
+Church-encoded Lists
+Church-encoded lists use RankNTypes too, as seen in a StackOverflow answer by sacundim:
+
+ 
+-- | Laws:
+--
+-- > runList (fromList xs) cons nil == xs
+-- > runList (fromList xs) f z == foldr f z xs
+-- > foldr f z (toList xs) == runList xs f z
+newtype ChurchList a = 
+    ChurchList { runList :: forall r. (a -> r -> r) -> r -> r }
+
+-- | Make a 'ChurchList' out of a regular list.
+fromList :: [a] -> ChurchList a
+fromList xs = ChurchList $ \k z -> foldr k z xs
+
+-- | Turn a 'ChurchList' into a regular list.
+toList :: ChurchList a -> [a]
+toList xs = runList xs (:) []
+
+-- | The 'ChurchList' counterpart to '(:)'.  Unlike 'DList', whose
+-- implementation uses the regular list type, 'ChurchList' abstracts
+-- over it as well.
+cons :: a -> ChurchList a -> ChurchList a
+cons x xs = ChurchList $ \k z -> k x (runList xs k z)
+
+-- | Append two 'ChurchList's.  This runs in O(1) time.  Note that
+-- there is no need to materialize the lists as @[a]@.
+append :: ChurchList a -> ChurchList a -> ChurchList a
+append xs ys = ChurchList $ \k z -> runList xs k (runList ys k z)
+
+-- i.e.,
+
+nil = {- fromList [] = ChurchList $ \k z -> foldr k z []
+                  = -} ChurchList $ \k z -> z
+
+singleton x = {- cons x nil = ChurchList $ \k z -> k x (runList nil k z) 
+            = -} ChurchList $ \k z -> k x z
+
+snoc xs x = {- append xs $ singleton x
+          = ChurchList $ \k z -> runList xs k (runList (singleton x) k z) 
+          = -} ChurchList $ \k z -> runList xs k (k x z)
+Relation to Existentials
+In order to unpack an existential type, you need a polymorphic function that works on any type that could be stored in the existential. This leads to a natural relation between higher-rank types and existentials; and an encoding of existentials in terms of higher rank types in continuation-passing style.
+
+In general, you can replace
+
+data T a1 .. ai = forall t1 .. tj. constraints => Constructor e1 .. ek
+(where e1..ek are types in terms of a1..ai and t1..tj)
+
+Constructor exp1 .. expk -- application of the constructor
+case e of (Constructor pat1 .. patk) -> res
+with
+
+data T' a1 .. ai = Constructor' (forall b. (forall t1..tj. constraints => e1 -> e2 -> ... -> ek -> b) -> b)
+Constructor' (\f -> f exp1 .. expk)
+case e of (Constructor' f) -> let k pat1 .. patk = res in f k
+See also
+Rank-N types on the Haskell' website.
+The GHC Users Guide has a section on Arbitrary Rank Polymorphism.
+Category: Language extensions
+This page was last edited on 15 April 2024, at 13:33.
+]]]
+[[[
+http://sleepomeno.github.io/blog/2014/02/12/Explaining-Haskell-RankNTypes-for-all/
+===
+{sleepomeno}while true liveMusings on the fatality of infinite loops and other stuff.
+
+Search
+ 
+» RSS
+Explaining Haskell RankNTypes for All
+FEB 12TH, 2014
+The Glasgow Haskell Compiler supports a language extension called RankNTypes which I’ve had my problems to understand. The moment I understood that it mostly refers to first-order logic universal quantification things became easier, though… but first let’s explore why we need it in a step-by-step example.
+
+length :: forall a. [a] –> Int
+1
+2
+3
+4
+5
+6
+7
+8
+9
+:t length
+-- length :: [a] -> Int
+length [1,2,3]
+-- 3
+let intLength :: [Int] -> Int; intLength = length
+:t intLength
+-- intLength :: [Int] -> Int
+intLength [1,2,3]
+-- 3
+We start with the well-known polymorphic function length in a fresh GHCI session. Above we see how the type checker instantiates a to be Int in the type of intLength. Likewise we could create a function charLength – anyway, length can be instantiated to oblige to a list of any type we want, so it is defined for all possible types a. For the sake of simplicity, I’ll call a function like intLength (which actually corresponds to instantiating the type variable a of length) a version of length.
+
+As a matter of fact, a normal Haskell type signature such as [a] -> Int always implies that the type variable(s) are universally quantified with 1 forall section located at the beginning of the type declaration. length’s type thus corresponds to forall a. [a] -> Int. We call such a type a Rank-1-Type as there is 1 forall in the type annotation. The fact that we can omit the forall usually – and aren’t used to it as a consequence – will make things look complicated when we actually need it, as we’ll see later on. In the end, forall provides a scope just like its first-order logic equivalent.
+
+Apply a length-like function to a list
+1
+2
+3
+4
+5
+let apply :: ([a] -> Int) -> [a] -> Int; apply f x = f x
+apply length "hello world"
+-- 11
+apply intLength [1,2,3]
+-- 3
+The apply function just applies a function that takes a list and returns an Int (like length does) to a value. Nothing fancy nor useful at all, obviously. Still, let’s note that under the hood the type of apply is forall a. ([a] -> Int) -> [a] -> Int. So far, so good, the type checker is happy. Now let’s a write a function applyToTuple that applies a function like length to a tuple of lists so that the lists of the tuple can be of different types.
+
+Apply a length-like function to a tuple of lists
+1
+2
+3
+4
+5
+6
+7
+let applyToTuple f (a@(x:xs),b@(y:ys)) = (f a, f b) :: (Int, Int)
+applyToTuple length ("hallo",[1,2,3])
+--No instance for (Num Char)
+--  arising from the literal `1'
+-- ...
+:t applyToTuple
+-- applyToTuple :: ([t] -> Int) -> ([t], [t]) -> (Int, Int)
+I wrote applyToTuple without a full type signature. :: (Int,Int) just makes sure my wanted result type and by the help of the list destructuring a@(x:xs) I make sure that the type inference algorithm will conclude that I have a tuple of lists in mind. Consequently, the type of the function given to applyToTuple is inferred to correspond to length’s type; at least, that’s what I would expect naively.
+
+However, type inference of applyToTuple does not result in the type I had in mind. As we can see the types of lists in the tuple ([t],[t]) are the same so that calling applyToTuple length with a heterogeneous tuple like ("hallo",[1,2,3]) doesn’t work. Being stubborn I could then try “forcing” the type by providing a type signature:
+
+1
+2
+3
+let applyToTuple :: ([a] -> Int) -> ([b],[c]) -> (Int, Int); applyToTuple f (x,y) = (f x, f y)
+-- Couldn't match type `b' with `a' ...
+-- Couldn't match type `c' with `a' ...
+This attempt also fails as GHCI complains about the fact that the types b and a, c and a respectively, do not match! However, the length-like function ([a] -> Int) should be applicable to a list of whatever type, shouldn’t it?!? That’s the moment you’d start doubting either GHCI or your mental health as you know precisely that it should be possible to write such a function. After all, you know intuitively that it is possible to apply a function like length to both parts of a heterogeneous tuple of lists as in the code below; doing that in a more generic way in a function like applyToTuple should be possible as well!
+
+1
+2
+3
+-- Obviously, that works without a problem:
+(\(a,b) -> (length a, length b)) ("hallo",[1,2,3])
+-- (5,3)
+applyToTuple :: (forall a.[a] –> Int) –> ([b],[c]) –> (Int, Int)
+Well, there is just one explanation: the type ([a] -> Int) ->([b],[c]) -> (Int, Int) is not really what we need for our purpose. In fact, we need RankNTypes! We first enable the extension in GHCI and can then write the correct applyToTuple implementation using the forall keyword in the type of the first parameter function. (If you want to use the RankNTypes extension in a file to compile, you actually need to add {-# LANGUAGE RankNTypes #-} at the top of the file)
+
+1
+2
+3
+4
+:set -XRankNTypes
+let applyToTuple :: (forall a.[a] -> Int) -> ([b],[c]) -> (Int, Int); applyToTuple f (x,y) = (f x, f y)
+applyToTuple length ("hello", [1,2,3])
+-- (5,3)
+This time it works! :–)
+
+Explanation
+We noted earlier that every Haskell type signature’s type variables are implicitly universally quantified by an ‘invisible’ forall section. Thus, under the hood we get the types as follows:
+
+1
+2
+3
+4
+5
+6
+7
+8
+-- just a reminder:
+-- length :: forall a. [a] -> Int 
+let intLength :: [Int] -> Int; intLength = length
+
+--  applyToTuple:
+let applyToTuple :: forall a b c. ([a] -> Int) -> ([b], [c]) -> (Int, Int); applyToTuple f (x,y) = (f x, f y)
+-- correct applyToTuple:
+let applyToTuple :: forall b c. (forall a. [a] -> Int) -> ([b], [c]) -> (Int, Int); applyToTuple f (x,y) = (f x, f y)
+Now things get clearer: The function in the type of the correct applyToTuple has the type (forall a. [a] -> Int) which is exactly the type given for length above, hence it works. On the other hand, the type ([a] -> Int) of the function parameter in the wrong applyToTuple type signature looks like the type of length but it isn’t!
+
+Have a look at what the type checker would “think” confronted with the wrong applyToTuple type signature. When it reads the expression applyToTuple length it would expect the type variables a, b and c to be different concrete types, so ([a] -> Int) might become ([Char] -> Int) or ([Int] -> Int) like our intLength function, shortly, some version of length. In the implementation (f x, f y) seeks to apply that version of length to two lists of different types – however, any version of length expects its list to always be of 1 concrete type only, e.g. Int in the case of our function intLength, consequently, the type checker refuses the lists of the tuple to possibly be of different types!
+
+Why does the correct definition of applyToTuple work then? It expects a length-like function of type (forall a. [a] -> Int), that’s a function which works for all types a, no matter what type you throw at it! Thus, it forces that function to be a polymorphic function just like length and rules out any candidate version of length (like intLength) as a consequence. Since you can throw a list of any type at that function it can deal with the 2 lists of different types and the code compiles!
+
+Conclusion
+Using RankNTypes and the forall keyword you can specify that a function’s argument needs to be a polymorphic function (like length in our example). In spite of the fact that you can omit the top-level forall in the type signature of a polymorphic type, you need to include it when you reference it as a parameter.
+
+In a future blog post I will investigate an important application of RankNTypes in the Haskell standard library. It will be about the ST monad which provides a safe environment for mutation in Haskell with the help of RankNTypes. Mutation and Haskell?! Yes, you can do it thanks to RankNTypes!
+
+PS: There is a nice stackoverflow thread which investigates the use of “forall” in other language extensions as well. Actually, my “applyToTuple” function is based on that answer of the thread.
+
+Posted by Gregor Riegler Feb 12th, 2014  programming
+
+]]]
+
+[[[
+https://namc.in/posts/higher-rank-higher-kinded-types/
+===
+Haskell : Higher-Rank and Higher-Kinded Types
+15 Jun 2020
+@__namc
+Hi! We’re gonna look at higher-rank and higher-kinded types, specifically in Haskell but I will try to cover the concept as generically as possible.
+
+Two types of “Polymorphism” in Haskell
+Parametric Polymorphism
+Ad-hoc Polymorphism (also known as typeclass)
+A function is parametrically polymorphic if it behaves uniformly for all types, in at least one of its type parameters
+
+Couple of examples could be -
+
+a. Simple swap function
+
+swap :: (a, b) -> (b, a)
+swap (x, y) = (y, x)
+b. Not-so-simple len function
+
+-- Maps each element to a 1, then sums up all the elements
+len :: [a] -> Integer
+len = sum . map (\_ -> 1)
+The idea is, you want these functions to work for all values of a or b. The function swap will swap elements regardless of their types, and function len returns the length of a list no matter of what is in that list.
+
+This is also what we call generics in Java or templates in C++ - but it was first introduced in Ocaml, Standard ML and the kinds.
+
+Now what if we need a way to write an unique a function which accepts any type for which a computation/operation is possible and we need to provide a specific implementation for each case. This is ad-hoc polymorphism and we use typelasses in Haskell to implement this.
+
+Everyone loves demonstrating this with area function example so let’s do that. Also, the Show, Ord, Eq typeclasses are inherited by free from parametric polymorphism.
+
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE TypeFamilies #-}
+
+class Area t where
+  area :: t -> Float
+
+instance Area Square where
+  area (Square s) = s * s
+
+instance Area Rectangle where
+  area (Rectangle a b) = a * b
+Conclusively - If your function does not care about input type, or need any context about them, then parametric polymorphism is the way to go, else use ad-hoc polymorphism and add implementation for each type.
+
+For this part, we only need to focus on PARAMETRIC POLYMORPHISM Moving on..
+
+(Not-so) Fun fact time Since Haskell’s type-system is based on Hindley-Milner also commonly known as let-bound polymorphism implies using let or where bound indentifiers are polymorphic, but lambda-bound identifiers are monomorphic. More info here - Haskell - Type Pitfalls
+
+Higher-rank types
+In most languages, polymorphic functions are first-class values ; by defintion, can be stored in variables and passed to functions. But in Haskell, they are not. Higher rank types , or as they’re called RankNTypes in Haskell are used to make polymorphic functions first-class, just like regular (monomorphic) functions.
+
+RankNTypes does this by introducting forall argument to the function type.
+
+--- Illegal Foo!
+foo :: (Int, Char)
+foo = (\f -> (f 1, f 'a')) id
+The above function foo can be fixed by -
+
+binding f with let or where (using let-bound polymorphism)
+
+foo :: (Int, Char)
+foo = let f = id
+     in (f 1, f 'a')
+using RankNTypes extension
+
+{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+
+foo :: (Int, Char)
+foo = (\(f :: forall a. a -> a) -> (f 1, f 'a')) id
+To be honest, this does not usually come up in Haskell, or any statically typed language because supporting higher-rank types make type inference undecidable - Typability and type checking in System F are equivalent and undecidable. Ryan Scott’s blog does a great job at explaining why working with Higher-rank Kinds is a bit tedious, but it is also a great resource for someone wanting to explore this further. The surprising rigidness of higher-rank kinds.
+
+Higher-kinded types
+Also known as type of types or type operators .. but is it really?
+
+Higher-kinded types are really common in Haskell (vs higher-rank types). Commonly known as Functor or Monad - they are popular examples of higher-kinded polymorphism.
+
+As Stephen Diehl mentions - kind of an ordinary type is usually written as *, and type constructors (unary type operators) have kind * -> *
+
+To make it simpler to understand -
+
+The kind * is also known as ground, or 0th order.
+Any kind of the form * -> * -> ... -> * with at least one arrow is first-order.
+A higher-order kind is one that has a “nested arrow on the left”, e.g., (* -> *) -> *.
+We can look at some commonly used defintions -
+
+Maybe
+
+Maybe : Type->Type
+Since, we cannot get a type from type constructor, we can get a kind . Therefore,
+
+λ> :k Maybe
+Maybe :: * -> *
+Shape
+
+data Shape f = Shape (f ())
+[(), (), ()] :: Shape List
+Which you can further divide into Traversables and break it down into further components.
+
+Next, we will look at a basic definition of class Functor
+
+class Functor f where
+    fmap :: (a -> b) -> f a -> f b
+fmap changes the type parameter of an f from a to b but does not change f. If we use fmap over a list, we get a list (etc). These are compile-time guarantees (revisited later).
+
+Two questions here -
+
+Can’t we just use function overloading instead?
+What if we simply convert our types to Seq and do whatever we want with it?
+Well, that’s correct. Additionally if you have a type which supports conversion to and from Seq you get map by reusing Seq.map.
+
+Why do we need a Functor class? First, functor classes allow you to implement fmap for types which do not support conversion to and from Seq like - IO actions, functions, etc. Therefore, making the concept of mapping very sequence-agnostic.
+
+As we have seen previously the two functor laws -
+
+fmap id xs == xs : mapping with an identity/noop function is the same as doing nothing
+fmap f (fmap g xs) = fmap (f . g) xs : any result that you can produce by mapping twice, you can also produce by mapping once
+Which is why, its important for fmap to maintain the static, compile time guarantees of preserving types.
+
+So if we try to define functor class over IO - we get :
+
+instance Functor IO where
+    fmap f action =
+        do x <- action
+           return (f x)
+
+newtype Function a b = Function (a -> b)
+
+instance Functor (Function a) where
+    fmap f (Function g) = Function (f . g)
+Another popular usage is seen in lambda calculus, where Alg has kind (* -> *) -> * -> * enabling us to write recursion schemes on top of datatypes.
+
+data Alg f a = Alg (f a -> a)
+In languages like Java, you cannot write
+
+class ClassExample<T, a> {
+    T<a> function()
+}
+In Haskell T would have kind *->*, but a Java type (i.e. class) cannot have a type parameter of that kind, a higher-kinded type.
+
+Personally, I feel these concepts are better understood from the perspective of lambda calculus, parametric polymorphism with higher-rank types as System F, and higher-kinded types as System Fω using type operators λω. Hopefully we can cover that in future.
+
+Big thanks for Stephan Boyer as I shamelessly adapted his format for Haskell. If you’d like to read his blog - please find it here
+
+Thanks!
+
+Related Posts
+Haskell Lens - Part 1
+What is Currying
+Foldable and Traversable in Haskell
+About
+Posts
+Github
+LinkedIn
+RSS
+]]]
+[[[
+https://downloads.haskell.org/ghc/latest/docs/users_guide/exts/rank_polymorphism.html#
+===
+ Glasgow Haskell Compiler
+9.10.1
+Search docs
+1. Introduction
+2. Release notes
+3. Using GHCi
+4. Using runghc
+5. Using GHC
+6. Language extensions
+6.1. Introduction
+6.2. Syntax
+6.3. Import and export
+6.4. Types
+6.4.1. Data types with no constructors
+6.4.2. Data type contexts
+6.4.3. Infix type constructors, classes, and type variables
+6.4.4. Type operators
+6.4.5. Liberalised type synonyms
+6.4.6. Existentially quantified data constructors
+6.4.7. Declaring data types with explicit constructor signatures
+6.4.8. Generalised Algebraic Data Types (GADTs)
+6.4.9. Type families
+6.4.10. Datatype promotion
+6.4.11. Unique syntax for type-level lists and tuples
+6.4.12. Type-level data declarations
+6.4.13. Kind polymorphism
+6.4.14. Representation polymorphism
+6.4.15. Type-Level Literals
+6.4.16. Visible type application
+6.4.17. Type abstractions
+6.4.18. Required type arguments
+6.4.19. Arbitrary-rank polymorphism
+6.4.19.1. Examples
+6.4.19.2. Subsumption
+6.4.19.3. Type inference
+6.4.19.4. Implicit quantification
+6.4.20. Impredicative polymorphism
+6.4.21. Linear types
+6.4.22. Custom compile-time errors
+6.4.23. Deferring type errors to runtime
+6.4.24. Roles
+6.5. Records
+6.6. Deriving mechanism
+6.7. Patterns
+6.8. Class and instances declarations
+6.9. Literals
+6.10. Constraints
+6.11. Type signatures
+6.12. Bindings and generalisation
+6.13. Template Haskell
+6.14. Bang patterns and Strict Haskell
+6.15. Parallel and Concurrent
+6.16. Unboxed types and primitive operations
+6.17. Foreign function interface (FFI)
+6.18. Safe Haskell
+6.19. Miscellaneous
+6.20. Pragmas
+7. Extending and using GHC as a Library
+8. Profiling
+9. Debugging compiled programs
+10. What to do when something goes wrong
+11. Hints
+12. Other Haskell utility programs
+13. Running GHC on Win32 systems
+14. FFI and the JavaScript Backend
+15. Using the GHC WebAssembly backend
+16. Known bugs and infelicities
+17. Eventlog encodings
+18. Glossary
+19. Care and feeding of your GHC User’s Guide
+Glasgow Haskell Compiler
+ 6. Language extensions 6.4. Types 6.4.19. Arbitrary-rank polymorphism
+6.4.19. Arbitrary-rank polymorphism¶
+RankNTypes¶
+Implies:	ExplicitForAll
+Since:	6.8.1
+Status:	Included in GHC2024, GHC2021
+Allow types of arbitrary rank.
+
+Rank2Types¶
+Since:	6.8.1
+Status:	Deprecated
+A deprecated alias of RankNTypes.
+
+GHC’s type system supports arbitrary-rank explicit universal quantification in types. For example, all the following types are legal:
+
+f1 :: forall a b. a -> b -> a
+g1 :: forall a b. (Ord a, Eq  b) => a -> b -> a
+
+f2 :: (forall a. a->a) -> Int -> Int
+g2 :: (forall a. Eq a => [a] -> a -> Bool) -> Int -> Int
+
+f3 :: ((forall a. a->a) -> Int) -> Bool -> Bool
+Here, f1 and g1 are rank-1 types, and can be written in standard Haskell (e.g. f1 :: a->b->a). The forall makes explicit the universal quantification that is implicitly added by Haskell.
+
+The functions f2 and g2 have rank-2 types; the forall is on the left of a function arrow. As g2 shows, the polymorphic type on the left of the function arrow can be overloaded.
+
+The function f3 has a rank-3 type; it has rank-2 types on the left of a function arrow.
+
+The language option RankNTypes (which implies ExplicitForAll) enables higher-rank types. That is, you can nest foralls arbitrarily deep in function arrows. For example, a forall-type (also called a “type scheme”), including a type-class context, is legal:
+
+On the left or right of a function arrow.
+As the argument of a constructor, or type of a field, in a data type declaration. For example, any of the f1, f2, f3, g1, g2 above would be valid field type signatures.
+As the type of an implicit parameter.
+In a pattern type signature (see Lexically scoped type variables).
+In particular, in data and newtype declarations the constructor arguments may be polymorphic types of any rank; see examples in Examples. Note that the declared types are nevertheless always monomorphic. This is important because by default GHC will not instantiate type variables to a polymorphic type (Impredicative polymorphism).
+
+Note that the RankNTypes option is also required for any type with a forall or context to the right of an arrow. For example:
+
+h1  :: Int -> (forall a. a -> a)
+h1' :: forall a. Int -> (a -> a)
+
+k1  :: Int -> Ord a => a -> a
+k1' :: Ord a => Int -> a -> a
+The function h1 has a rank-1 type; it has the same behaviour as h1', except with a different order of arguments. This matters if one were to specify the type explicitly using a visible type application (using TypeApplications): we would write h1 3 @Bool True but h1' @Bool 3 True. Similarly, k1 has a rank-1 type; it differs from k1' only in the order of arguments. As the types of h1 and k1 are not allowed in Haskell-98, we also require users to enable RankNTypes to write them (which seems more sensible than inventing a separate extension just for this case).
+
+The obsolete language option Rank2Types is a synonym for RankNTypes. They used to specify finer distinctions that GHC no longer makes.
+
+6.4.19.1. Examples¶
+These are examples of data and newtype declarations whose data constructors have polymorphic argument types:
+
+data T a = T1 (forall b. b -> b -> b) a
+
+data MonadT m = MkMonad { return :: forall a. a -> m a,
+                          bind   :: forall a b. m a -> (a -> m b) -> m b
+                        }
+
+newtype Swizzle = MkSwizzle (forall a. Ord a => [a] -> [a])
+The constructors have rank-2 types:
+
+T1 :: forall a. (forall b. b -> b -> b) -> a -> T a
+
+MkMonad :: forall m. (forall a. a -> m a)
+                  -> (forall a b. m a -> (a -> m b) -> m b)
+                  -> MonadT m
+
+MkSwizzle :: (forall a. Ord a => [a] -> [a]) -> Swizzle
+In earlier versions of GHC, it was possible to omit the forall in the type of the constructor if there was an explicit context. For example:
+
+newtype Swizzle' = MkSwizzle' (Ord a => [a] -> [a])
+Since GHC 8.0 declarations such as MkSwizzle' will cause an out-of-scope error.
+
+You construct values of types T1, MonadT, Swizzle by applying the constructor to suitable values, just as usual. For example,
+
+a1 :: T Int
+a1 = T1 (\x y->x) 3
+
+a2, a3 :: Swizzle
+a2 = MkSwizzle sort
+a3 = MkSwizzle reverse
+
+a4 :: MonadT Maybe
+a4 = let r x = Just x
+     b m k = case m of
+           Just y -> k y
+           Nothing -> Nothing
+     in
+     MkMonad r b
+
+mkTs :: (forall b. b -> b -> b) -> a -> a -> [T a]
+mkTs f x y = [T1 f x, T1 f y]
+The type of the argument can, as usual, be more general than the type required, as (MkSwizzle reverse) shows. (reverse does not need the Ord constraint.)
+
+When you use pattern matching, the bound variables may now have polymorphic types. For example:
+
+f :: T a -> a -> (a, Char)
+f (T1 w k) x = (w k x, w 'c' 'd')
+
+g :: (Ord a, Ord b) => Swizzle -> [a] -> (a -> b) -> [b]
+g (MkSwizzle s) xs f = s (map f (s xs))
+
+h :: MonadT m -> [m a] -> m [a]
+h m [] = return m []
+h m (x:xs) = bind m x          $ \y ->
+             bind m (h m xs)   $ \ys ->
+             return m (y:ys)
+In the function h we use the record selectors return and bind to extract the polymorphic bind and return functions from the MonadT data structure, rather than using pattern matching.
+
+6.4.19.2. Subsumption¶
+Suppose:
+
+f1 :: (forall a b. Int -> a -> b -> b) -> Bool
+g1 :: forall x y. Int -> y -> x -> x
+
+f2 :: (forall a. (Eq a, Show a) => a -> a) -> Bool
+g2 :: forall x. (Show x, Eq x) => x -> x
+then f1 g1 and f2 g2 are both well typed, despite the different order of type variables and constraints. What happens is that the argument is instantiated, and then re-generalised to match the type expected by the function.
+
+But this instantiation and re-generalisation happens only at the top level of a type. In particular, none of this happens if the foralls are underneath an arrow. For example:
+
+f3 :: (Int -> forall a b. a -> b -> b) -> Bool
+g3a :: Int -> forall x y. x -> y -> y
+g3b :: forall x. Int -> forall y. x -> y -> y
+g3c :: Int -> forall x y. y -> x -> x
+
+f4 :: (Int -> forall a. (Eq a, Show a) => a -> a) -> Bool
+g4 ::  Int -> forall x. (Show x, Eq x) => x -> x) -> Bool
+Then the application f3 g3a is well-typed, because g3a has a type that matches the type expected by f3. But f3 g3b is not well typed, because the foralls are in different places. Nor is f3 g3c, where the foralls are in the same place but the variables are in a different order. Similarly f4 g4 is not well typed, because the constraints appear in a different order.
+
+These examples can be made to typecheck by eta-expansion. For example f3 (\x -> g3b x) is well typed, and similarly f3 (\x -> g3c x) and f4 (\x -> g4 x).
+
+A similar phenomenon occurs for operator sections. For example, (\`g3a\` "hello") is not well typed, but it can be made to typecheck by eta expanding it to \x -> x \`g3a\` "hello".
+
+DeepSubsumption¶
+Since:	9.2.4
+Relax the simple subsumption rules, implicitly inserting eta-expansions when matching up function types with different quantification structures.
+
+The DeepSubsumption extension relaxes the aforementioned requirement that foralls must appear in the same place. GHC will instead automatically rewrite expressions like f x of type ty1 -> ty2 to become (\ (y :: ty1) -> f x y); this is called eta-expansion. See Section 4.6 of Practical type inference for arbitrary-rank types, where this process is called “deep skolemisation”.
+
+Note that these eta-expansions may silently change the semantics of the user’s program:
+
+h1 :: Int -> forall a. a -> a
+h1 = undefined
+h2 :: forall b. Int -> b -> b
+h2 = h1
+With DeepSubsumption, GHC will accept these definitions, inserting an implicit eta-expansion:
+
+h2 = \ i -> h1 i
+This means that h2 `seq` () will not crash, even though h1 `seq` () does crash.
+
+Historical note: Deep skolemisation was initially removed from the language by GHC Proposal #287, but was re-introduced as part of the DeepSubsumption extension following GHC Proposal #511.
+
+6.4.19.3. Type inference¶
+In general, type inference for arbitrary-rank types is undecidable. GHC uses an algorithm proposed by Odersky and Laufer (“Putting type annotations to work”, POPL‘96) to get a decidable algorithm by requiring some help from the programmer. We do not yet have a formal specification of “some help” but the rule is this:
+
+For a lambda-bound or case-bound variable, x, either the programmer provides an explicit polymorphic type for x, or GHC’s type inference will assume that x’s type has no foralls in it.
+What does it mean to “provide” an explicit type for x? You can do that by giving a type signature for x directly, using a pattern type signature (Lexically scoped type variables), thus:
+
+\ f :: (forall a. a->a) -> (f True, f 'c')
+Alternatively, you can give a type signature to the enclosing context, which GHC can “push down” to find the type for the variable:
+
+(\ f -> (f True, f 'c')) :: (forall a. a->a) -> (Bool,Char)
+Here the type signature on the expression can be pushed inwards to give a type signature for f. Similarly, and more commonly, one can give a type signature for the function itself:
+
+h :: (forall a. a->a) -> (Bool,Char)
+h f = (f True, f 'c')
+You don’t need to give a type signature if the lambda bound variable is a constructor argument. Here is an example we saw earlier:
+
+f :: T a -> a -> (a, Char)
+f (T1 w k) x = (w k x, w 'c' 'd')
+Here we do not need to give a type signature to w, because it is an argument of constructor T1 and that tells GHC all it needs to know.
+
+6.4.19.4. Implicit quantification¶
+GHC performs implicit quantification as follows. At the outermost level (only) of user-written types, if and only if there is no explicit forall, GHC finds all the type variables mentioned in the type that are not already in scope, and universally quantifies them. For example, the following pairs are equivalent:
+
+f :: a -> a
+f :: forall a. a -> a
+
+g (x::a) = let
+              h :: a -> b -> b
+              h x y = y
+           in ...
+g (x::a) = let
+              h :: forall b. a -> b -> b
+              h x y = y
+           in ...
+Notice that GHC always adds implicit quantifiers at the outermost level of a user-written type; it does not find the inner-most possible quantification point. For example:
+
+f :: (a -> a) -> Int
+         -- MEANS
+f :: forall a. (a -> a) -> Int
+         -- NOT
+f :: (forall a. a -> a) -> Int
+
+
+g :: (Ord a => a -> a) -> Int
+         -- MEANS
+g :: forall a. (Ord a => a -> a) -> Int
+         -- NOT
+g :: (forall a. Ord a => a -> a) -> Int
+If you want the latter type, you can write your foralls explicitly. Indeed, doing so is strongly advised for rank-2 types.
+
+Sometimes there is no “outermost level”, in which case no implicit quantification happens:
+
+data PackMap a b s t = PackMap (Monad f => (a -> f b) -> s -> f t)
+This is rejected because there is no “outermost level” for the types on the RHS (it would obviously be terrible to add extra parameters to PackMap), so no implicit quantification happens, and the declaration is rejected (with “f is out of scope”). Solution: use an explicit forall:
+
+data PackMap a b s t = PackMap (forall f. Monad f => (a -> f b) -> s -> f t)
+© Copyright 2023, GHC Team.
+
+Built with Sphinx using a theme provided by Read the Docs.
+]]]
+

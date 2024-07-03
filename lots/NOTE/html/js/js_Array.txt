@@ -1,0 +1,466 @@
+
+e ../lots/NOTE/html/js/js_Array.txt
+goto:
+  :read !grep $'^[\u0100-\U10ffFF]' ../lots/NOTE/html/js/js_Array.txt
+  实现冫迭代器
+    实现冫迭代器牜我牜类
+    实现冫迭代器牜我牜类爫生成器函数:
+  构造冫数组
+  增删冫数组元素
+  枚举冫数组元素
+  数组牜有洞#数组 其实是 Object#只是语言级特意优化
+  显示冫数组:
+  串联冫数组:
+  串联起来的对象必须是:
+  搜索冫数组元素
+  变换冫数组牜逐个元素
+  就地排序冫数组
+  统计冫数组元素
+  确认类型冫数组
+  函数参数变某对象方法
+
+
+[[[
+===
+To add/remove elements:
+push(...items) – adds items to the end,
+pop() – extracts an item from the end,
+shift() – extracts an item from the beginning,
+unshift(...items) – adds items to the beginning.
+splice(pos, deleteCount, ...items) – at index pos delete deleteCount elements and insert items .
+slice(start, end) – creates a new array, copies elements from position start till end (not inclusive) into it.
+concat(...items) – returns a new array: copies all members of the current one and adds items to it. If any of items is an array, then its elements are taken.
+
+===
+To search among elements:
+indexOf/lastIndexOf(item, pos) – look for item starting from position pos , return the index or -1 if not found.
+includes(value) – returns true if the array has value , otherwise false .
+find/filter(func) – filter elements through the function, return first/all values that make it return true .
+findIndex is like find , but returns the index instead of a value.
+
+===
+To iterate over elements:
+forEach(func) – calls func for every element, does not return anything.
+===
+To transform the array:
+map(func) – creates a new array from results of calling func for every element.
+sort(func) – sorts the array in-place, then returns it.
+reverse() – reverses the array in-place, then returns it.
+split/join – convert a string to array and back.
+reduce(func, initial) – calculate a single value over the array by calling func for each element and passing an intermediate result between the calls.
+
+===
+Additionally:
+Array.isArray(arr) checks arr for being an array.
+
+arr.some(fn)/arr.every(fn) checks the array.
+  The function fn is called on each element of the array similar to map . If any/all results are true , returns true , otherwise false
+  py.any()/all()
+
+
+arr.fill(value, start, end) – fills the array with repeating value from index start to end .
+
+arr.copyWithin(target, start, end) – copies its elements from position start till position end into itself, at position target (overwrites existing).
+
+]]]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+构造冫数组
+let arr = [];
+let arr = new Array();
+let arr = new Array("Apple", "Pear", "etc");
+    let arr = new Array(2); // will it create an array of [2] ?
+    alert( arr[0] ); // undefined! no elements.
+    alert( arr.length ); // length 2
+
+
+Array.from(obj[, mapFn, thisArg])
+let arr = Array.from(range, num => num * num);
+
+let arrayLike = { // has indexes and length => array-like
+  0: "Hello",
+  1: "World",
+  length: 2
+  };
+
+for (let item of arrayLike) {}
+    // Error (no Symbol.iterator)
+
+let arr = Array.from(arrayLike); // (*)
+    alert(arr.pop()); // World (method works)
+
+
+
+
+增删冫数组元素
+arr.push/pop
+  py.append/pop
+arr.unshift/shift //slow!!
+  appendLeft/popLeft
+arr.push(...ls)
+arr.unshift(...ls)
+  NOTE:
+    arr.unshift(x, y)
+    <==> arr.unshift(y); arr.unshift(x)
+        [x, y, ...arr]
+
+
+枚举冫数组元素
+for (let i = 0; i < arr.length; i++) {
+  alert( arr[i] );
+}
+
+for (let x of xs) {
+  alert( x );
+}
+
+arr.forEach(function(item, index, array) {
+  // ... do something with item
+});
+
+["Bilbo", "Gandalf", "Nazgul"].forEach((item, index, array) => {
+  alert(`${item} is at index ${index} in ${array}`);
+});
+
+
+
+
+
+
+
+数组牜有洞#数组 其实是 Object#只是语言级特意优化
+let fruits = [];
+fruits[123] = "Apple";
+alert( fruits.length ); // 124
+
+
+
+
+显示冫数组:
+let arr = [1, 2, [3]];
+alert( arr ); // 1,2,3
+alert( String(arr) === '1,2,3' ); // true
+  //应改用:
+alert(JSON.stringify(arr));
+
+; let arr = str.split(sep)
+; let str = arr.join(sep)
+
+
+
+
+串联冫数组:
+let arr = [1, 2];
+alert( arr.concat([3, 4], [5, 6])); // 1,2,3,4,5,6
+// merge arr with [3,4], then add values 5 and 6
+alert( arr.concat([3, 4], 5, 6)); // 1,2,3,4,5,6
+
+
+串联起来的对象必须是:
+  [Symbol.isConcatSpreadable]: true
+let arr = [1, 2];
+let arrayLike = {
+  0: "something",
+  length: 1
+  };
+alert( arr.concat(arrayLike) ); // 1,2,[object Object]
+  //[1, 2, arrayLike]
+
+
+let arr = [1, 2];
+let arrayLike = {
+  0: "something",
+  1: "else",
+  [Symbol.isConcatSpreadable]: true,
+  length: 2
+  };
+alert( arr.concat(arrayLike) ); // 1,2,something,else
+
+
+
+
+
+.indexOf
+.lastIndexOf
+.includes
+
+
+
+搜索冫数组元素
+.filter // 所有
+.find  // 首个
+.findIndex // 索引纟首个匹配元素
+let result = arr.find(function(item, index, array) {
+  // if true is returned, item is returned and iteration is stopped
+  // for falsy scenario returns undefined
+});
+let user = users.find(item => item.id == 1);
+
+let results = arr.filter(function(item, index, array) {
+  // if true item is pushed to results and iteration continues
+  // returns empty array for complete falsy scenario
+});
+
+
+变换冫数组牜逐个元素
+.map
+let result = arr.map(function(item, index, array) {
+  // returns the new value instead of item
+})
+
+
+就地排序冫数组
+.reverse()
+.sort(fn)
+The method arr.sort sorts the array in place.
+let arr = [ 1, 2, 15 ];
+  // the method reorders the content of arr (and returns it)
+arr.sort();
+alert( arr ); // 1, 15, 2
+  //先转换为字符串，再依词典序比较
+
+
+
+
+
+
+
+
+统计冫数组元素
+.reduce
+.reduceRight
+
+let value = arr.reduce(function(previousValue, item, index, array) {
+  // ...
+}, initial);
+
+let arr = [1, 2, 3, 4, 5];
+let result = arr.reduce((sum, current) => sum + current, 0);
+alert(result); // 15
+
+
+
+
+确认类型冫数组
+alert(typeof {}); // object
+alert(typeof []); // object
+alert(Array.isArray({})); // false
+alert(Array.isArray([])); // true
+
+
+
+函数参数变某对象方法
+Most methods support “thisArg”
+  The value of thisArg parameter becomes this for func .
+  arr.find(func, thisArg);
+  arr.filter(func, thisArg);
+  arr.map(func, thisArg);
+  ... ...
+
+
+
+
+
+
+
+
+[[[
+实现冫迭代器
+===
+
+Symbol.iterator
+Iterable objects is a generalization of arrays. That’s a concept that allows to make any object useable in a for..of loop.
+
+To make the range iterable (and thus let for..of work) we need to add a method to the object named Symbol.iterator (a special built-in symbol just for that).
+1. When for..of starts, it calls that method once (or errors if not found). The method must return an iterator – an object with the method next .
+2. Onward, for..of works only with that returned object.
+3. When for..of wants the next value, it calls next() on that object.
+4. The result of next() must have the form {done: Boolean, value: any} , where done=true means that the iteration is finished, otherwise value must be the new value.
+Here’s the full implementation for range
+
+let range = {
+  from: 1,
+  to: 5
+  };
+// 1. call to for..of initially calls this
+range[Symbol.iterator] = function() {
+  // ...it returns the iterator object:
+  // 2. Onward, for..of works only with this iterator, asking it for next values
+  return {
+    current: this.from,
+    last: this.to,
+    // 3. next() is called on each iteration by the for..of loop
+    next() {
+      // 4. it should return the value as an object {done:.., value :...}
+      if (this.current <= this.last) {
+        return { done: false, value: this.current++ };
+      } else {
+        return { done: true };
+      }
+    }
+  };
+};
+// now it works!
+for (let num of range) {
+  alert(num); // 1, then 2, 3, 4, 5
+}
+
+
+
+
+===
+实现冫迭代器牜我牜类
+;class RangeIterator {
+  constructor(rng) {
+    ;this.rng = rng
+    ;this.i = rng.begin
+  ;}
+  next() {
+    ;if (this.i < this.rng.end) {
+      ;return {done:false, value:this.i++}
+    ;}
+    ;return {done:true}
+  ;}
+;}
+;class Range {
+  constructor(begin, end) {
+    ;this.begin = begin
+    ;this.end = end
+  ;}
+  [Symbol.iterator]() {
+    ;return new RangeIterator(this)
+  ;}
+;}
+;function range(n){
+  ;return new Range(0, n)
+;}
+;let js = Array.from(range(3))
+;
+===
+===
+生成器函数:注意『function』之后的『*』
+Generator functions
+function* generateSequence() {
+  yield 1;
+  yield 2;
+  return 3;
+}
+let generator = generateSequence();
+let one = generator.next();
+alert(JSON.stringify(one)); // {value: 1, done: false}
+let two = generator.next();
+alert(JSON.stringify(two)); // {value: 2, done: false}
+let three = generator.next();
+alert(JSON.stringify(three)); // {value: 3, done: true}
+
+let sequence = [0, ...generateSequence()];
+alert(sequence); // 0, 1, 2, 3
+
+===
+===
+
+function* generateSequence(start, end) {
+  for (let i = start; i <= end; i++) {
+    yield i;
+  }
+}
+let sequence = [...generateSequence(1,5)];
+alert(sequence); // 1, 2, 3, 4, 5
+===
+let range = {
+  from: 1,
+  to: 5,
+  *[Symbol.iterator]() {
+    // a shorthand for [Symbol.iterator]: function*()
+    for(let value = this.from; value <= this.to; value++) {
+      yield value;
+    }
+  }
+};
+alert( [...range] ); // 1,2,3,4,5
+===
+===
+实现冫迭代器牜我牜类爫生成器函数:
+;class Range {
+  constructor(begin, end) {
+    ;this.begin = begin
+    ;this.end = end
+  ;}
+  *[Symbol.iterator]() {
+    ;for (let j = this.begin; j < this.end; j++) {
+      yield j;
+    }
+  ;}
+;}
+;function range(n){
+  ;return new Range(0, n)
+;}
+;let js = Array.from(range(3))
+;
+===
+]]]
+
+
+
+
+===
