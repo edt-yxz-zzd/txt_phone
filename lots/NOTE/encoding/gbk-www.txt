@@ -1,0 +1,872 @@
+
+e ../lots/NOTE/encoding/gbk-www.txt
+view ../../python3_src/nn_ns/CJK/iter_gbk_chars.py
+
+
+
+TODO
+gbk each version update chars+time
+
+[[
+摘要:
+
+==:data-table:
+GBK Encoding Ranges
+range	byte 1	byte 2	code points	characters
+GB 18030	GBK 1.0	Codepage 936	GB 2312
+Level GBK/1	A1–A9	A1–FE	846	718 [7] : 8–10 	717	715	682
+Level GBK/2	B0–F7	A1–FE	6,768	6,763	6,763	6,763
+Level GBK/3	81–A0	40–FE except 7F	6,080	6,080	6,080	
+Level GBK/4	AA–FE	40–A0 except 7F	8,160	8,160	8,080
+Level GBK/5	A8–A9	40–A0 except 7F	192	166	153
+user-defined 1 [7]	AA–AF	A1–FE	564	
+user-defined 2	F8–FE	A1–FE	658
+user-defined 3	A1–A7	40–A0 except 7F	672
+total:			23,940	21,887	21,886	21,791	7,445
+
+==:data-py-rng_rngs_pair:
+#Level GBK/1
+gb_lvl_1 = ((0xA1,0xA9+1), [(0xA1,0xFE+1)])
+szs4gb_lvl_1 = (846, 718, 717, 715, 682)
+  #(总数纟编码点/total_code_pts,gb18030,gbk_1_0,cp936,gb2312)
+
+gb_lvl_2 = ((0xB0,0xF7+1), [(0xA1,0xFE+1)])
+szs4gb_lvl_2 = (6768, 6763, 6763, 6763, 6763)
+  # [6763+682==7445]
+
+gb_lvl_3 = ((0x81,0xA0+1), [(0x40,0x7E+1),(0x80,0xFE+1)])
+szs4gb_lvl_3 = (6080, 6080, 6080, 6080, 0)
+
+gb_lvl_4 = ((0xAA,0xFE+1), [(0x40,0x7E+1),(0x80,0xA0+1)])
+szs4gb_lvl_4 = (8160, 8160, 8160, 8080, 0)
+
+gb_lvl_5 = ((0xA8,0xA9+1), [(0x40,0x7E+1),(0x80,0xA0+1)])
+szs4gb_lvl_5 = (192, 166, 166, 153, 0)
+
+#user-defined 1:
+gb_ud_1 = ((0xAA,0xAF+1), [(0xA1,0xFE+1)])
+sz4gb_ud_1 = 564
+
+gb_ud_2 = ((0xF8,0xFE+1), [(0xA1,0xFE+1)])
+sz4gb_ud_2 = 658
+
+gb_ud_3 = ((0xA1,0xA7+1), [(0x40,0x7E+1),(0x80,0xA0+1)])
+sz4gb_ud_3 = 672
+
+total = (23940, 21887, 21886, 21791, 7445)
+  #(总数纟编码点/total_code_pts,gb18030,gbk_1_0,cp936,gb2312)
+  #
+  # [6763+682==7445]#gb2312
+  # [715+6763+6080+8080+153==21791]#cp936
+  # [717+6763+6080+8160+166==21886]#gbk_1_0
+  # [718+6763+6080+8160+166==21887]#gb18030
+  # [846+6768+6080+8160+192 + 564+658+672 == 23940]#编码点:含:未赋值编码点+用户自定义区/?私用区?/?造字区?
+
+==>>:
+[len(2B & cp936) == 21791]
+!! [len(2B & py3_11_9.gbk) == 21791]
+    [py3_11_9.gbk =[def]= cp936]
+
+
+total = (23940, 21887, 21886, 21791, 7445)
+==:vs:
+view ../../python3_src/nn_ns/CJK/iter_gbk_chars.py
+>>> (7445 - 7445, 21791 - 21886, 21887 - 23940, 23940 - 23940)
+(0, -95, -2053, 0)
+
+[95
+== len(2B & gbk_1_0) -len(2B & py3_11_9.gbk)
+== len(2B & gbk_1_0) -len(2B & cp936)
+]
+why "95"??
+
+
+
+
+
+
+{'gb2312':
+[((0xA1, 1), {0xA1: 94})
+,((0xA2, 1), {0xB1: 50, 0xE5: 10, 0xF1: 12})
+,((0xA3, 1), {0xA1: 94})
+,((0xA4, 1), {0xA1: 83})
+,((0xA5, 1), {0xA1: 86})
+,((0xA6, 1), {0xA1: 24, 0xC1: 24})
+,((0xA7, 1), {0xA1: 33, 0xD1: 33})
+,((0xA8, 1), {0xA1: 26, 0xC5: 37})
+,((0xA9, 1), {0xA4: 76})
+,((0xB0, 39), {0xA1: 94})
+,((0xD7, 1), {0xA1: 89})
+,((0xD8, 32), {0xA1: 94})
+]
+,'gbk':
+[((0x81, 32), {0x40: 63, 0x80: 127})
+,((0xA1, 1), {0xA1: 94})
+,((0xA2, 1), {0xA1: 10, 0xB1: 50, 0xE5: 10, 0xF1: 12})
+,((0xA3, 1), {0xA1: 94})
+,((0xA4, 1), {0xA1: 83})
+,((0xA5, 1), {0xA1: 86})
+,((0xA6, 1), {0xA1: 24, 0xC1: 24, 0xE0: 12, 0xEE: 5, 0xF4: 2})
+,((0xA7, 1), {0xA1: 33, 0xD1: 33})
+,((0xA8, 1), {0x40: 63, 0x80: 22, 0xA1: 27, 0xBD: 2, 0xC0: 1, 0xC5: 37})
+,((0xA9, 1), {0x40: 24, 0x59: 2, 0x5C: 1, 0x60: 31, 0x80: 9, 0x96: 1, 0xA4: 76})
+,((0xAA, 6), {0x40: 63, 0x80: 33})
+,((0xB0, 39), {0x40: 63, 0x80: 127})
+,((0xD7, 1), {0x40: 63, 0x80: 122})
+,((0xD8, 32), {0x40: 63, 0x80: 127})
+,((0xF8, 6), {0x40: 63, 0x80: 33})
+,((0xFE, 1), {0x40: 16})
+]
+,'gb18030':
+[((0x81, 126), {0x40: 63, 0x80: 127})
+]
+}
+
+
+    r'''[[[
+    有的『>』有的『<』，到底是啥毛病？
+    gbk 『声明>实际』:<<== [py3_11_9.gbk =[def]= cp936]
+    gb18030 『声明<实际』:<<==???可能是gb_lvl_5之后，使用unicode实心填充的缘故，所有编码点均被赋值...???
+======================
+======================
+('gb2312', [((161, 1), {161: 94}), ((162, 1), {177: 50, 229: 10, 241: 12}), ((163, 1), {161: 94}), ((164, 1), {161: 83}), ((165, 1), {161: 86}), ((166, 1), {161: 24, 193: 24}), ((167, 1), {161: 33, 209: 33}), ((168, 1), {161: 26, 197: 37}), ((169, 1), {164: 76}), ((176, 39), {161: 94}), ((215, 1), {161: 89}), ((216, 32), {161: 94})])
+++++++++++++++++++++++
+('gb2312', 'gb_lvl_1', 682, '==', 682, [((0xA1, 1), {0xA1: 94}), ((0xA2, 1), {0xB1: 50, 0xE5: 10, 0xF1: 12}), ((0xA3, 1), {0xA1: 94}), ((0xA4, 1), {0xA1: 83}), ((0xA5, 1), {0xA1: 86}), ((0xA6, 1), {0xA1: 24, 0xC1: 24}), ((0xA7, 1), {0xA1: 33, 0xD1: 33}), ((0xA8, 1), {0xA1: 26, 0xC5: 37}), ((0xA9, 1), {0xA4: 76})])
+('gb2312', 'gb_lvl_2', 6763, '==', 6763, [((0xB0, 39), {0xA1: 94}), ((0xD7, 1), {0xA1: 89}), ((0xD8, 32), {0xA1: 94})])
+('gb2312', 'gb_lvl_3', 0, '==', 0, [])
+('gb2312', 'gb_lvl_4', 0, '==', 0, [])
+('gb2312', 'gb_lvl_5', 0, '==', 0, [])
+----------------------
+======================
+('gbk', [((129, 32), {64: 63, 128: 127}), ((161, 1), {161: 94}), ((162, 1), {161: 10, 177: 50, 229: 10, 241: 12}), ((163, 1), {161: 94}), ((164, 1), {161: 83}), ((165, 1), {161: 86}), ((166, 1), {161: 24, 193: 24, 224: 12, 238: 5, 244: 2}), ((167, 1), {161: 33, 209: 33}), ((168, 1), {64: 63, 128: 22, 161: 27, 189: 2, 192: 1, 197: 37}), ((169, 1), {64: 24, 89: 2, 92: 1, 96: 31, 128: 9, 150: 1, 164: 76}), ((170, 6), {64: 63, 128: 33}), ((176, 39), {64: 63, 128: 127}), ((215, 1), {64: 63, 128: 122}), ((216, 32), {64: 63, 128: 127}), ((248, 6), {64: 63, 128: 33}), ((254, 1), {64: 16})])
+++++++++++++++++++++++
+('gbk', 'gb_lvl_1', 717, '>', 715, [((0xA1, 1), {0xA1: 94}), ((0xA2, 1), {0xA1: 10, 0xB1: 50, 0xE5: 10, 0xF1: 12}), ((0xA3, 1), {0xA1: 94}), ((0xA4, 1), {0xA1: 83}), ((0xA5, 1), {0xA1: 86}), ((0xA6, 1), {0xA1: 24, 0xC1: 24, 0xE0: 12, 0xEE: 5, 0xF4: 2}), ((0xA7, 1), {0xA1: 33, 0xD1: 33}), ((0xA8, 1), {0xA1: 27, 0xBD: 2, 0xC0: 1, 0xC5: 37}), ((0xA9, 1), {0xA4: 76})])
+('gbk', 'gb_lvl_2', 6763, '==', 6763, [((0xB0, 39), {0xA1: 94}), ((0xD7, 1), {0xA1: 89}), ((0xD8, 32), {0xA1: 94})])
+('gbk', 'gb_lvl_3', 6080, '==', 6080, [((0x81, 32), {0x40: 63, 0x80: 127})])
+('gbk', 'gb_lvl_4', 8160, '>', 8080, [((0xAA, 84), {0x40: 63, 0x80: 33}), ((0xFE, 1), {0x40: 16})])
+('gbk', 'gb_lvl_5', 166, '>', 153, [((0xA8, 1), {0x40: 63, 0x80: 22}), ((0xA9, 1), {0x40: 24, 0x59: 2, 0x5C: 1, 0x60: 31, 0x80: 9, 0x96: 1})])
+----------------------
+======================
+('gb18030', [((129, 126), {64: 63, 128: 127})])
+++++++++++++++++++++++
+('gb18030', 'gb_lvl_1', 718, '<', 846, [((0xA1, 9), {0xA1: 94})])
+('gb18030', 'gb_lvl_2', 6763, '<', 6768, [((0xB0, 72), {0xA1: 94})])
+('gb18030', 'gb_lvl_3', 6080, '==', 6080, [((0x81, 32), {0x40: 63, 0x80: 127})])
+('gb18030', 'gb_lvl_4', 8160, '==', 8160, [((0xAA, 85), {0x40: 63, 0x80: 33})])
+('gb18030', 'gb_lvl_5', 166, '<', 192, [((0xA8, 2), {0x40: 63, 0x80: 33})])
+----------------------
+    ]]]'''#'''
+
+
+==:data:
+
+===
+
+GB2312 - Introduced in 1980 with 7,445 characters.
+GBK 1.0 - Introduced in 1995 with 21,886 characters.
+GB18030 - Introduced in 2005 with 4-byte codes to match with Unicode capacity.
+Here are more detailed descriptions of these standards:
+
+1. What Is GB2312 Character Set? GB2312 Character Set is a set of 7445 commonly used Chinese characters established by the government of China in 1980.
+
+GB2312 Encoding uses the following codepoints:
+
+1-byte codes: {0x00-0x7F}
+   Same as ASCII codes
+
+2-byte codes: {0x81-0xCE}{0x81-0xCE}
+   Derived from GB2312 Native Codes by adding 0x80 to both bytes.
+2. What Is GBK Character Set? GBK (国标扩展码) Character Set is an extension of GB2312 with 21,886 characters. GBK was established by the government of China in 1995 to cover most Chinese characters introduced in Unicode 1.0.1.
+
+GBK Encoding uses the following codepoints:
+
+1-byte codes: {0x00-0x7F}
+   Same as ASCII codes
+
+2-byte codes: {0x81-0xFE}{0x40-0x7E} and {0x81-0xFE}{0x80-0xFE}
+   GB2312 codes plus new characters added
+3. What Is GB18030 Character Set? GB18030 Character Set is an extension of GBK established by the government of China in 2005 GB18030 use a 4-byte encoding to match the capacity of the surrogate character mechanism introduced in Unicode 2.0.
+
+GB18030 Encoding uses the following codepoints:
+
+1-byte codes: {0x00-0x7F}
+   Same as ASCII codes
+
+2-byte codes: {0x81-0xFE}{0x40-0x7E} and {0x81-0xFE}{0x80-0xFE}
+   Same as GBK codes
+
+4-byte codes: {81-FE}{30-39}{81-FE}{30-39}
+   Maps linearly to Unicode codes as:
+      GB+81308130 ... = U+0080 ... U+FFFF
+      GB+90308130 ... = U+10000 ... U+10FFFF
+
+
+===
+Structure
+GB 18030-2000 encodes characters in sequences of one, two, or four bytes. Valid byte sequences are as follows (byte values are hexadecimal):
+
+Single-byte: 00-80 (*)
+Two-byte: 81-fe | 40-7e, 80-fe
+Four-byte: 81-fe | 30-39 | 81-fe | 30-39
+(*) Note: At the time of this writing, it seems that the single byte 0x80 should be treated as valid but unassigned, while the single byte 0xff should be treated as illegal.
+
+===
+GB 18030 was created with GBK as a basis. The Unicode mapping table for GB 18030 starts with the same mappings for single-byte and double-byte sequences as the Unicode mapping table for GBK, except for a few dozen characters. These characters were not assigned in Unicode 2.1 and were mapped in the GBK mapping table to Unicode Private-Use code points. GB 18030 maps them to the newly-assigned code points in Unicode 3.0 for the corresponding characters. This keeps the GBK byte sequences the same for these characters, but the Unicode mapping table yields different results for them.
+
+In addition, all Unicode code points that are not mapped by this updated GBK portion are mapped to four-byte sequences, which are new in GB 18030. They are simply enumerated beginning at the lowest such Unicode code point (U+0080) and at the lowest such four-byte sequence (GB+81308130). One such enumeration fills in the 40,000 or so Unicode BMP code points that were not covered by GBK (GB lead bytes 0x81..0x84). Another such enumeration covers the 1 million supplementary Unicode code points (GB lead bytes 0x90..0xe3).
+
+===
+The current Unicode mapping table contains only round-trip mappings. The original mapping table contained fallback mappings for the GBK characters that were updated according to Unicode 3.0: Their old GBK Private-Use code points were mapped unidirectionally to the GB codes, while the round-trip mappings were changed (compared to GBK) to be from the GB codes to the new (Unicode 3.0) code points. In the new mapping table, the fallback mappings are removed, and the Private-Use code points instead map to new four-byte sequences with round-trip mappings.
+===
+Note: Like some GBK implementations, the original publication of GB 18030-2000 assigned the Euro currency symbol to the single byte 0x80. The updated mapping table from November leaves 0x80 unassigned and instead maps 0xa2e3 U+20ac for the Euro symbol.
+
+GB 18030 has 1.6 million valid byte sequences, but there are only 1.1 million code points in Unicode, so there are about 500,000 byte sequences in GB 18030 that are currently unassigned.
+
+===
+   <range uFirst="10000" uLast="10FFFF"
+           bFirst="90 30 81 30" bLast="E3 32 9A 35"
+           bMin="81 30 81 30" bMax="FE 39 FE 39"/>
+Note that all byte and code point values in the XML file are hexadecimal.
+   int linear(byte bytes[4]) {
+        return ((bytes[0]*10+bytes[1])*126+bytes[2])*10+bytes[3];
+    }
+
+    byte[4] unLinear(int lin) {
+        byte result[4];
+        lin-=linear(0x81, 0x30, 0x81, 0x30); // zero-base the linear value
+        result[3]=0x30+lin%10;  lin/=10;
+        result[2]=0x81+lin%126; lin/=126;
+        result[1]=0x30+lin%10;  lin/=10;
+        result[0]=0x81+lin;
+        return result;
+    }
+For each contiguously enumerated range, the following must be true: uLast-uFirst == linear(bLast)-linear(bFirst)
+
+
+Mapping from a GB 18030 four-byte sequence to a Unicode code point:
+
+
+		
+	
+    int mapToUnicode(byte bytes[4]) {
+        int lin=linear(bytes);
+        for each range {
+            if(linear(bFirst)&lt;=lin&lt=linear(bLast)) {
+                // range found
+                return uFirst+(lin-linear(bFirst));
+            }
+        }
+        // the byte sequence is not in any known range
+        return error;
+    }
+
+Mapping from a Unicode code point to a GB 18030 four-byte sequence:
+
+
+		
+	
+    byte[4] mapFromUnicode(int u) {
+        for each range {
+            if(uFirst&lt;=u&lt;=uLast) {
+                // range found
+                return unLinear(linear(bFirst)+(u-uFirst));
+            }
+        }
+        // code point u is not in any known range
+        return error;
+    }
+
+
+===
+===
+]]
+
+
+[[[
+https://wikimili.com/en/GBK_(character_encoding)
+===
+
+WikiMili 
+GBK (character encoding)
+ADVERTISEMENT
+
+Last updated January 03, 2024 • 5 min readFrom Wikipedia, The Free Encyclopedia
+Guójiā Biāozhǔn Kuòzhǎn (GBK)
+GBK encoding.svg
+Layout of GBK (see below for a larger copy of this diagram)
+MIME / IANA	GBK
+Alias(es)	CP936, MS936, windows-936, csGBK
+Language(s)	Web browsers, decode as GB 18030, supporting all languages, while the encoding (and other software decoders) is primarily used for Simplified Chinese, but also supports Traditional Chinese, Japanese, English, Russian and (partially) Greek.
+Standard	GBK 1.0
+Classification	Extended ASCII, [lower-alpha 1] variable-width encoding, CJK encoding
+Extends	EUC-CN
+Preceded by	GB 2312
+Succeeded by	GB 18030
+↑ Not in the strictest sense of the term, as ASCII bytes can appear as trail bytes.
+v  t  e
+GBK is an extension of the GB 2312 character set for Simplified Chinese characters, used in the People's Republic of China. It includes all unified CJK characters found in GB 13000.1-93, i.e. ISO/IEC 10646:1993, or Unicode 1.1. Since its initial release in 1993, GBK has been extended by Microsoft in Code page 936/1386 , which was then extended into GBK 1.0 . GBK is also the IANA-registered internet name for the Microsoft mapping, [1] which differs from other implementations primarily by the single-byte euro sign at 0x80.
+
+ADVERTISEMENT
+
+Contents
+HistoryEncodingLayout diagramRelationship to other encodingsReferencesNotesExternal links
+ADVERTISEMENT
+
+Learn more
+GB abbreviates Guójiā Biāozhǔn, which means national standard in Chinese, while K stands for Extension (扩展 kuòzhǎn). GBK not only extended the old standard GB 2312 with Traditional Chinese characters, but also with Chinese characters that were simplified after the establishment of GB 2312 in 1981. With the arrival of GBK, certain names with characters formerly unrepresentable, like the 镕 (róng) character in former Chinese Premier Zhu Rongji's name, are now representable. [2]
+
+As of October 2022, GBK is the third-most popular encoding served from China and territories (after UTF-8 and the subset GB 2312 ), with 1.9% of web servers serving a page that declares GBK. [3] However, all major web browsers decode GB2312-marked documents as if they were marked GBK, except for Safari and Edge on the label GB_2312. [4] Together, GBK and GB 2312 encodings have a combined 5.5% presence in China and territories. [3] Globally, GBK accounts for less than 0.07% of all web pages and GBK+GB2312 for 0.2%. [5]
+
+History
+In 1993, the Unicode 1.1 standard was released, including 20,902 characters used in mainland China, Taiwan, Japan and Korea. Following this, China released GB 13000.1-93, the Guobiao standard equivalent of Unicode 1.1.
+
+The GBK character set was defined in 1993 as an extension of GB 2312-80, while also including the characters of GB 13000.1-93 through the unused codepoints available in GB 2312. Hence GBK is backward compatible with GB 2312. GBK was defined in a normative annex to GB 13000.1-93. [6]
+
+Microsoft implemented GBK in Windows 95 and Windows NT 3.51 as Code Page 936 . While GBK was never an official standard, widespread usage of Windows 95 led to GBK becoming the de facto standard. While GBK included all the Chinese characters defined in Unicode 1.1 and GB 13000.1-93, these standards used different code tables. The primary reason for its existence was simply to bridge the gap between GB 2312-80 and GB 13000.1-93.
+
+In 1995, China National Information Technology Standardization Technical Committee set down the Chinese Internal Code Extension Specification (Chinese :汉字内码扩展规范 (GBK); pinyin :Hànzì Nèimǎ Kuòzhǎn Guīfàn (GBK)), Version 1.0, known as GBK 1.0, which is a slight extension of Codepage 936. The newly added 95 characters were not found in GB 13000.1-1993, and were provisionally assigned Unicode PUA code points. [7] : 534 
+
+Microsoft later added the euro sign to Code page 936 and assigned the code 0x80 to it. This is not a valid code point in GBK 1.0.
+
+In 2000, the GB 18030-2000 standard was released, superseding yet maintaining compatibility with GBK 1.0. It increased the number of definitions of Chinese characters and extended the number of possible characters through the implementation of four-byte character spaces. The subset of GB 18030 consisting of one-byte and two-byte characters is sometimes also referred to as GBK. Mapping to Unicode has been slightly changed, though, as some characters are now defined in Unicode. In the most up-to-date form of the standard, GB 18030-2005, only 24 [8] characters are still mapped to Unicode PUA (see GB 18030#PUA.)
+
+In 2002, GBK was registered as an IANA charset; the registration uses code page 936 mapping as well as CP936/MS936 aliases, but refers to GBK 1.0 specification. [1] W3C's technical recommendation published in 2015 [9] defines a GBKencoder as a GB 18030 encoder with a single-byte euro sign and without four-byte sequences (while W3C's GBKdecoder specification has no such limitation, decodes as GB 18030 , i.e. with same range of letters as all of Unicode).
+
+Encoding
+A character is encoded as 1 or 2 bytes. A byte in the range 00–7F is a single byte that means the same thing as it does in ASCII. Strictly speaking, there are 95 characters and 33 control codes in this range.
+
+A byte with the high bit set indicates that it is the first of 2 bytes. Loosely speaking, the first byte is in the range 81–FE (that is, never 80 or FF), and the second byte is 40–A0 except 7F for some areas and A1–FE for others.
+
+More specifically, the following ranges of bytes are defined:
+
+GBK Encoding Ranges
+range	byte 1	byte 2	code points	characters
+GB 18030	GBK 1.0	Codepage 936	GB 2312
+Level GBK/1	A1–A9	A1–FE	846	718 [7] : 8–10 	717	715	682
+Level GBK/2	B0–F7	A1–FE	6,768	6,763	6,763	6,763
+Level GBK/3	81–A0	40–FE except 7F	6,080	6,080	6,080	
+Level GBK/4	AA–FE	40–A0 except 7F	8,160	8,160	8,080
+Level GBK/5	A8–A9	40–A0 except 7F	192	166	153
+user-defined 1 [7]	AA–AF	A1–FE	564	
+user-defined 2	F8–FE	A1–FE	658
+user-defined 3	A1–A7	40–A0 except 7F	672
+total:			23,940	21,887	21,886	21,791	7,445
+Layout diagram
+ADVERTISEMENT
+
+Learn more
+In graphical form, the following figure shows the space of all 64K possible 2-byte codes. Green and yellow areas are assigned GBK codepoints, red are for user-defined characters. The uncolored areas are invalid byte combinations.
+
+GBK encoding.svg
+
+Relationship to other encodings
+The areas indicated in the previous section as GBK/1 and GBK/2, taken by themselves, is simply GB 2312-80 in its usual encoding, GBK/1 being the non-hanzi region and GBK/2 the hanzi region. GB 2312, or more properly the EUC-CN encoding thereof, takes a pair of bytes from the range A1–FE, like any 94² ISO-2022 character set loaded into GR. This corresponds to the lower-right quarter of the illustration above. However, GB 2312 does not assign any code points to the rows located at AA–B0 and F8–FE, even though it had staked out the territory. GBK added extensions to these rows. You can see that the two gaps were filled in with user-defined areas.
+
+More significantly, GBK extended the range of the bytes. Having two-byte characters in the ISO-2022 GR range gives a limit of 94²=8,836 possibilities. Abandoning the ISO-2022 model of strict regions for graphics and control characters, but retaining the feature of low bytes being 1-byte characters and pairs of high bytes denoting a character, you could potentially have 128²=16,384 positions. GBK takes part of that, extending the range from A1–FE (94 choices for each byte) to 81–FE (126 choices) for the first byte and 40–FE (191 choices) for the second byte, for a total of 24,066 positions.
+
+Microsoft's Code Page 936 is generally thought of as being GBK. [1] However, the 95 PUA characters added in GBK 1.0 are not included in Code Page 936. Code Page 936 also has a single-byte euro sign at 0x80 which GBK 1.0 doesn't have. [10]
+
+GBK's successor, GB 18030-2000, uses the remaining range available to the second byte (30–39) to further expand the number of possibilities while retaining GBK as a subset.
+
+Related Research Articles
+ADVERTISEMENT
+
+Learn more
+<span class="mw-page-title-main">Character encoding</span> Using numbers to represent text characters
+Character encoding is the process of assigning numbers to graphical characters, especially the written characters of human language, allowing them to be stored, transmitted, and transformed using digital computers. The numerical values that make up a character encoding are known as "code points" and collectively comprise a "code space", a "code page", or a "character map".
+
+While Hypertext Markup Language (HTML) has been in use since 1991, HTML 4.0 from December 1997 was the first standardized version where international characters were given reasonably complete treatment. When an HTML document includes special characters outside the range of seven-bit ASCII, two goals are worth considering: the information's integrity, and universal browser display.
+
+Big-5 or Big5 is a Chinese character encoding method used in Taiwan, Hong Kong, and Macau for traditional Chinese characters.
+
+In computing, Chinese character encodings can be used to represent text written in the CJK languages—Chinese, Japanese, Korean—and (rarely) obsolete Vietnamese, all of which use Chinese characters. Several general-purpose character encodings accommodate Chinese characters, and some of them were developed specifically for Chinese.
+
+<span class="mw-page-title-main">GB 18030</span> Unicode character encoding mostly used for Simplified Chinese
+GB 18030 is a Chinese government standard, described as Information Technology — Chinese coded character set and defines the required language and character support necessary for software in China. GB18030 is the registered Internet name for the official character set of the People's Republic of China (PRC) superseding GB2312. As a Unicode Transformation Format, GB18030 supports both simplified and traditional Chinese characters. It is also compatible with legacy encodings including GB2312, CP936, and GBK 1.0.
+
+Shift JIS is a character encoding for the Japanese language, originally developed by a Japanese company called ASCII Corporation in conjunction with Microsoft and standardized as JIS X 0208 Appendix 1.
+
+Extended Unix Code (EUC) is a multibyte character encoding system used primarily for Japanese, Korean, and simplified Chinese (characters).
+
+GB/T 2312-1980 is a key official character set of the People's Republic of China, used for Simplified Chinese characters. GB2312 is the registered internet name for EUC-CN, which is its usual encoded form. GB refers to the Guobiao standards (国家标准), whereas the T suffix denotes a non-mandatory standard.
+
+<span class="mw-page-title-main">Chinese Character Code for Information Interchange</span> Character encoding standard
+The Chinese Character Code for Information Interchange or CCCII is a character set developed by the Chinese Character Analysis Group in Taiwan. It was first published in 1980, and significantly expanded in 1982 and 1987.
+
+TRON Code is a multi-byte character encoding used in the TRON project. It is similar to Unicode but does not use Unicode's Han unification process: each character from each CJK character set is encoded separately, including archaic and historical equivalents of modern characters. This means that Chinese, Japanese, and Korean text can be mixed without any ambiguity as to the exact form of the characters; however, it also means that many characters with equivalent semantics will be encoded more than once, complicating some operations.
+
+In Unicode, a Private Use Area (PUA) is a range of code points that, by definition, will not be assigned characters by the Unicode Consortium. Three private use areas are defined: one in the Basic Multilingual Plane, and one each in, and nearly covering, planes 15 and 16. The code points in these areas cannot be considered as standardized characters in Unicode itself. They are intentionally left undefined so that third parties may define their own characters without conflicting with Unicode Consortium assignments. Under the Unicode Stability Policy, the Private Use Areas will remain allocated for that purpose in all future Unicode versions.
+
+Windows code page 936, is Microsoft's legacy (pre-Unicode) character encoding for representing simplified Chinese text on computers. It is one of the four Windows DBCSs for East Asian languages, accompanying code pages 932 (Japanese), 949 (Korean) and 950. It is a variant of the Mainland Chinese Guójiā Biāozhǔn Kuòzhǎn (GBK) encoding, and roughly corresponds to IBM code page 1386.
+
+<span class="mw-page-title-main">Code page 950</span> Windows code page for Traditional Chinese, based on Big5
+Code page 950 is the code page used on Microsoft Windows for Traditional Chinese. It is Microsoft's implementation of the de facto standard Big5 character encoding. The code page is not registered with IANA, and hence, it is not a standard to communicate information over the internet, although it is usually labelled simply as big5, including by Microsoft library functions.
+
+Tianweiban, formerly known as Tianmeidong, is a village in Donglu Town, Wenchang County, Hainan, China with a population of roughly 50 people in 10 households.
+
+The CCITT Chinese Primary Set is a multi-byte graphic character set for Chinese communications created for the Consultative Committee on International Telephone and Telegraph (CCITT) in 1992. It is defined in ITU T.101, annex C, which codifies Data Syntax 2 Videotex. It is registered with the ISO-IR registry for use with ISO/IEC 2022 as ISO-IR-165, and encodable in the ISO-2022-CN-EXT code version.
+
+Microsoft Windows code page 932, also called Windows-31J amongst other names, is the Microsoft Windows code page for the Japanese language, which is an extended variant of the Shift JIS Japanese character encoding. It contains standard 7-bit ASCII codes, and Japanese characters are indicated by the high bit of the first byte being set to 1. Some code points in this page require a second byte, so characters use either 8 or 16 bits for encoding.
+
+<span class="mw-page-title-main">Code page 949 (IBM)</span>
+IBM code page 949 (IBM-949) is a character encoding which has been used by IBM to represent Korean language text on computers. It is a variable-width encoding which represents the characters from the Wansung code defined by the South Korean standard KS X 1001 in a format compatible with EUC-KR, but adds IBM extensions for additional hanja, additional precomposed Hangul syllables, and user-defined characters.
+
+IBM code page 936 is a character encoding for Simplified Chinese including 1880 user-defined characters (UDC), which was superseded in 1993. It is a combination of the single-byte Code page 903 and the double-byte Code page 928. Code page 946 uses the same double-byte component, but an extended single-byte component.
+
+GB 12345, entitled Code of Chinese ideogram set for information interchange supplementary set, is a Traditional Chinese character set standard established by China, and can be thought as the traditional counterpart of GB 2312. It is used as an encoding of traditional Chinese characters, although it is not as commonly used as Big5. It has 6,866 characters, and has no relationship nor compatibility with Big5 and CNS 11643.
+
+GB 13000.1 is a Guobiao standard of the People's Republic of China corresponding to ISO/IEC 10646. "GB 13000" or "GB 13000.1" may refer to:
+
+References
+1 2 3 "Character Sets" . Retrieved 3 October 2016.
+↑ "Code Page 936 - PRC GBK (XGB)". Microsoft . Archived from the original on 2002-10-01. Conversion map between Codepage 936 and Unicode. Need manually selecting GB 18030 or GBK in browser to view it correctly.
+1 2 "Distribution of Character Encodings among websites that use China and territories". w3techs.com. Retrieved 2022-10-25.
+↑ "Encoding: Summarized test results". www.w3.org. Retrieved 2019-11-15.
+↑ "Historical trends in the usage statistics of character encodings for websites, October 2022". w3techs.com. Retrieved 2022-10-25.
+↑ "18.2: Ideographic Description Characters" (PDF). The Unicode Standard. Version 15.0.0. 2022. p. 763. The Ideographic Description characters are found in GBK—an extension to GB 2312-80 that added all 20,902 Unicode Version 1.1 ideographs not already in GB 2312-80. GBK is defined as a normative annex of GB 13000.1-93.
+1 2 3 Standardization Administration of China (SAC) (2005-11-18). GB 18030-2005: Information Technology—Chinese coded character set.
+↑ GB 18030-2005 Standard p.9, 79
+↑ "Encoding Standard # gbk-encoder". W3C. Retrieved 2016-10-02.
+↑ Scherer, Markus (4 January 2002). "Re: Fun with GBK & GB2312". Unicode Mail List Archive. Retrieved 4 March 2020.
+Notes
+ADVERTISEMENT
+Ad
+
+External links
+ICU's Authoritative GBK mapping - part of GB18030 data Archived 2016-10-31 at the Wayback Machine
+Microsoft Reference page for GBK
+Mapping of GBK to Unicode N.B.: this is Microsoft code page 936, which contains entries for 21791 double-byte code points, 96 single-byte graphic characters, and 33 control characters. This is not exactly the same as GBK which has 21886 characters.
+GBK Code Table N.B. This gbk-encoded page shows the available coding space totally populated except for 2 places, for a total of 32256 glyphs (32352 with the implied single-byte ASCII codes not illustrated), which is more than 23940 or 21886. Actual rendering of this table depends on your browser's GBK decoder.
+v  t  e
+Chinese, Japanese and Korean computing
+Encodings	
+Chinese	
+ISO-2022-CN  CNS 11643  Big5  HKSCS  GB 18030  GBK  GB 2312 GB/T 12345 HZ  ISO-IR-165  CCCII
+Japanese	
+ISO-2022-JP  JIS  JIS X 0201  JIS X 0208  JIS X 0212  JIS X 0213  Shift-JIS 
+Korean	
+ISO-2022-KR  KS X 1001  KS X 1002  KPS 9566  GB 12052
+International	
+EUC  ISO/IEC 2022  Unicode  CJK Unified Ideographs  Han unification 
+Input methods	
+Chinese  Japanese  Korean
+Fonts	
+List of CJK fonts
+v  t  e
+Character encodings
+Early telecommunications	
+Telegraph code  Needle  Morse  Non-Latin  Wabun/Kana  Chinese  Cyrillic  Korean  Baudot and Murray  Fieldata  ASCII  ISO/IEC 646  BCDIC  Teletex and Videotex/Teletext  T.51/ISO/IEC 6937  ITU T.61  ITU T.101 World System Teletext  background  sets  Transcode
+ISO/IEC 8859	
+Approved parts  -1 (Western Europe)  -2 (Central Europe)  -3 (Maltese/Esperanto)  -4 (North Europe)  -5 (Cyrillic)  -6 (Arabic)  -7 (Greek)  -8 (Hebrew)  -9 (Turkish)  -10 (Nordic)  -11 (Thai)  -13 (Baltic)  -14 (Celtic)  -15 (New Western Europe)  -16 (Romanian) Abandoned parts  -12 (Devanagari) Proposed but not approved  KOI-8 Cyrillic  Sámi Adaptations  Welsh  Barents Cyrillic  Estonian  Ukrainian Cyrillic 
+Bibliographic use	
+MARC-8  ANSEL  CCCII/EACC  ISO 5426  5426-2  5427  5428  6438  6862
+National standards	
+ArmSCII  Big5  BraSCII  CNS 11643  DIN 66003  ELOT 927  GOST 10859  GB 2312  GB 12345  GB 12052  GB 18030  HKSCS  ISCII  JIS X 0201  JIS X 0208  JIS X 0212  JIS X 0213  KOI-7  KPS 9566  KS X 1001  KS X 1002  LST 1564  LST 1590-4  PASCII  Shift JIS  SI 960  TIS-620  TSCII  VISCII  VSCII  YUSCII
+ISO/IEC 2022	
+ISO/IEC 8859  ISO/IEC 10367  Extended Unix Code / EUC
+Mac OS Code pages
+("scripts")	
+Armenian  Arabic  Barents Cyrillic  Celtic  Central European  Croatian  Cyrillic  Devanagari  Farsi (Persian)  Font X (Kermit)  Gaelic  Georgian  Greek  Gujarati  Gurmukhi  Hebrew  Iceland  Inuit  Keyboard  Latin (Kermit)  Maltese/Esperanto  Ogham  Roman  Romanian  Sámi  Turkish  Turkic Cyrillic  Ukrainian  VT100
+DOS code pages	
+437  668  708  720  737  770  773  775  776  777  778  850  851  852  853  855  856  857  858  859  860  861  862  863  864  865  866  867  868  869  897  899  903  904  932  936  942  949  950  951  1034  1040  1042  1043  1044  1098  1115  1116  1117  1118  1127  3846  ABICOMP  CS Indic  CSX Indic  CSX+ Indic  CWI-2  Iran System  Kamenický  Mazovia  MIK
+IBM AIX code pages	
+895  896  912  915  921  922  1006  1008  1009  1010  1012  1013  1014  1015  1016  1017  1018  1019  1046  1124  1133
+Windows code pages	
+CER-GS  932  936 (GBK) 950  1169  Extended Latin-8  1250  1251  1252  1253  1254  1255  1256  1257  1258  1270  Cyrillic + Finnish  Cyrillic + French  Cyrillic + German  Polytonic Greek
+EBCDIC code pages	
+Japanese language in EBCDIC  DKOI
+DEC terminals (VTx)	
+Multinational (MCS)  National Replacement (NRCS)  French Canadian  Swiss  Spanish  United Kingdom  Dutch  Finnish  French  Norwegian and Danish  Swedish  Norwegian and Danish (alternative)  8-bit Greek  8-bit Turkish  SI 960  Hebrew  Special Graphics  Technical (TCS)
+Platform specific	
+1052  1053  1054  1055  1056  1057  1058  Acorn RISC OS  Amstrad CPC  Apple II  ATASCII  Atari ST  BICS  Casio calculators  CDC  Compucolor 8001  Compucolor II  CP/M+  DEC RADIX 50  DEC MCS/NRCS  DG International  Galaksija  GEM  GSM 03.38  HP Roman  HP FOCAL  HP RPL  SQUOZE  LICS  LMBCS  MSX  NEC APC  NeXT  PETSCII  PostScript Standard  PostScript Latin 1  SAM Coupé  Sega SC-3000  Sharp calculators  Sharp MZ  Sinclair QL  Teletext  TI calculators  TRS-80  Ventura International  WISCII  XCCS  ZX80  ZX81  ZX Spectrum
+Unicode  / ISO/IEC 10646	
+UTF-1  UTF-7  UTF-8  UTF-16  UTF-32  UTF-EBCDIC  GB 18030  DIN 91379  BOCU-1  CESU-8  SCSU  TACE16  Comparison of Unicode encodings
+TeX typesetting system	
+Cork  LY1  OML  OMS  OT1
+Miscellaneous code pages	
+ABICOMP  ASMO 449  Digital encoding of APL symbols  ISO-IR-68  ARIB STD-B24  Fieldata  HZ  IEC-P27-1 INIS  7-bit  8-bit  ISO-IR-169  ISO 2033  KOI  KOI8-R  KOI8-RU  KOI8-U  Mojikyō  SEASCII  Stanford/ITS  Symbol  TRON  Unified Hangul Code
+Control character	
+Morse prosigns  C0 and C1 control codes  ISO/IEC 6429  JIS X 0211  Unicode control, format and separator characters  Whitespace characters
+Related topics	
+CCSID  Character encodings in HTML  Charset detection  Han unification  Hardware code page  MICR code  Mojibake  Variable-length encoding
+Symbol category class.svg Character sets
+This page is based on this Wikipedia article
+Text is available under the CC BY-SA 4.0 license; additional terms may apply.
+Images, videos and audio are available under their respective licenses.
+HomeContact UsAbout UsTerms of ServicePrivacy Policy
+]]]
+
+[[[
+http://everything.explained.today/GBK_(character_encoding)
+===
+
+You are here Everything Explained.Today A-Z Contents G GB GBK (character encoding)
+ 
+ 
+
+
+
+GBK (character encoding) explained
+Guójiā Biāozhǔn Kuòzhǎn (GBK)
+Mime:	GBK
+Alias:	CP936, MS936, windows-936, csGBK
+Standard:	GBK 1.0
+Lang:	Web browsers, decode as GB 18030, supporting all languages, while the encoding (and other software decoders) is primarily used for Simplified Chinese, but also supports Traditional Chinese, Japanese, English, Russian and (partially) Greek.
+Extends:	EUC-CN
+Prev:	GB 2312
+Next:	GB 18030
+Classification:	Extended ASCII, variable-width encoding, CJK encoding
+GBK is an extension of the GB 2312 character set for Simplified Chinese characters, used in the People's Republic of China. It includes all unified CJK characters found in, i.e. ISO/IEC 10646:1993, or Unicode 1.1. Since its initial release in 1993, GBK has been extended by Microsoft in Code page 936/1386, which was then extended into GBK 1.0. GBK is also the IANA-registered internet name for the Microsoft mapping,[1] which differs from other implementations primarily by the single-byte euro sign at 0x80.
+
+GB abbreviates Guójiā Biāozhǔn, which means national standard in Chinese, while K stands for Extension (扩展 kuòzhǎn). GBK not only extended the old standard with Traditional Chinese characters, but also with Chinese characters that were simplified after the establishment of in 1981. With the arrival of GBK, certain names with characters formerly unrepresentable, like the 镕 (róng) character in former Chinese Premier Zhu Rongji's name, are now representable.[2]
+
+, GBK is the third-most popular encoding served from China and territories (after UTF-8 and the subset), with 1.9% of web servers serving a page that declares GBK.[3] However, all major web browsers decode GB2312-marked documents as if they were marked GBK, except for Safari and Edge on the label GB_2312.[4] Together, GBK and encodings have a combined 5.5% presence in China and territories.[3] Globally, GBK accounts for less than 0.07% of all web pages and GBK+GB2312 for 0.2%.[5]
+
+History
+In 1993, the Unicode 1.1 standard was released, including 20,902 characters used in mainland China, Taiwan, Japan and Korea. Following this, China released, the Guobiao standard equivalent of Unicode 1.1.
+
+The GBK character set was defined in 1993 as an extension of, while also including the characters of GB 13000.1-93 through the unused codepoints available in GB 2312. Hence GBK is backward compatible with GB 2312. GBK was defined in a normative annex to GB 13000.1-93.[6]
+
+Microsoft implemented GBK in Windows 95 and Windows NT 3.51 as Code Page 936. While GBK was never an official standard, widespread usage of Windows 95 led to GBK becoming the de facto standard. While GBK included all the Chinese characters defined in Unicode 1.1 and GB 13000.1-93, these standards used different code tables. The primary reason for its existence was simply to bridge the gap between GB 2312-80 and GB 13000.1-93.
+
+In 1995, China National Information Technology Standardization Technical Committee set down the Chinese Internal Code Extension Specification (Chinese: s=汉字内码扩展规范 (GBK)|p=Hànzì Nèimǎ Kuòzhǎn Guīfàn (GBK)), Version 1.0, known as GBK 1.0, which is a slight extension of Codepage 936. The newly added 95 characters were not found in GB 13000.1-1993, and were provisionally assigned Unicode PUA code points.[7]
+
+Microsoft later added the euro sign to Code page 936 and assigned the code 0x80 to it. This is not a valid code point in GBK 1.0.
+
+In 2000, the standard was released, superseding yet maintaining compatibility with GBK 1.0. It increased the number of definitions of Chinese characters and extended the number of possible characters through the implementation of four-byte character spaces. The subset of GB 18030 consisting of one-byte and two-byte characters is sometimes also referred to as GBK. Mapping to Unicode has been slightly changed, though, as some characters are now defined in Unicode. In the most up-to-date form of the standard, GB 18030-2005, only 24[8] characters are still mapped to Unicode PUA (see GB 18030#PUA.)
+
+In 2002, GBK was registered as an IANA charset; the registration uses code page 936 mapping as well as CP936/MS936 aliases, but refers to GBK 1.0 specification.[1] W3C's technical recommendation published in 2015[9] defines a GBK encoder as a GB 18030 encoder with a single-byte euro sign and without four-byte sequences (while W3C's GBK decoder specification has no such limitation, decodes as, i.e. with same range of letters as all of Unicode).
+
+Encoding
+A character is encoded as 1 or 2 bytes. A byte in the range 00–7F is a single byte that means the same thing as it does in ASCII. Strictly speaking, there are 95 characters and 33 control codes in this range.
+
+A byte with the high bit set indicates that it is the first of 2 bytes. Loosely speaking, the first byte is in the range 81–FE (that is, never 80 or FF), and the second byte is 40–A0 except 7F for some areas and A1–FE for others.
+
+More specifically, the following ranges of bytes are defined:
+
+GBK Encoding Ranges
+range	byte 1	byte 2	code points	characters
+GB 18030	GBK 1.0	Codepage 936	GB 2312
+A1–A9	A1–FE	846	718	717	715	682
+B0–F7	A1–FE	6,768	6,763	6,763	6,763
+Level GBK/3	81–A0	40–FE except 7F	6,080	6,080	6,080	
+Level GBK/4	AA–FE	40–A0 except 7F	8,160	8,160	8,080
+A8–A9	40–A0 except 7F	192	166	153
+user-defined 1	AA–AF	A1–FE	564	
+user-defined 2	F8–FE	A1–FE	658
+user-defined 3	A1–A7	40–A0 except 7F	672
+total:			23,940	21,887	21,886	21,791	7,445	
+Layout diagram
+In graphical form, the following figure shows the space of all 64K possible 2-byte codes. Green and yellow areas are assigned GBK codepoints, red are for user-defined characters. The uncolored areas are invalid byte combinations.
+
+Relationship to other encodings
+The areas indicated in the previous section as GBK/1 and GBK/2, taken by themselves, is simply in its usual encoding, GBK/1 being the non-hanzi region and GBK/2 the hanzi region. GB 2312, or more properly the EUC-CN encoding thereof, takes a pair of bytes from the range A1–FE, like any 94² ISO-2022 character set loaded into GR. This corresponds to the lower-right quarter of the illustration above. However, GB 2312 does not assign any code points to the rows located at AA–B0 and F8–FE, even though it had staked out the territory. GBK added extensions to these rows. You can see that the two gaps were filled in with user-defined areas.
+
+More significantly, GBK extended the range of the bytes. Having two-byte characters in the ISO-2022 GR range gives a limit of 94²=8,836 possibilities. Abandoning the ISO-2022 model of strict regions for graphics and control characters, but retaining the feature of low bytes being 1-byte characters and pairs of high bytes denoting a character, you could potentially have 128²=16,384 positions. GBK takes part of that, extending the range from A1–FE (94 choices for each byte) to 81–FE (126 choices) for the first byte and 40–FE (191 choices) for the second byte, for a total of 24,066 positions.
+
+Microsoft's Code Page 936 is generally thought of as being GBK.[1] However, the 95 PUA characters added in GBK 1.0 are not included in Code Page 936. Code Page 936 also has a single-byte euro sign at 0x80 which GBK 1.0 doesn't have.[10]
+
+GBK's successor,, uses the remaining range available to the second byte ( -) to further expand the number of possibilities while retaining GBK as a subset.
+
+External links
+ICU's Authoritative GBK mapping - part of GB18030 data
+Microsoft Reference page for GBK
+Mapping of GBK to Unicode N.B.: this is Microsoft code page 936, which contains entries for 21791 double-byte code points, 96 single-byte graphic characters, and 33 control characters. This is not exactly the same as GBK which has 21886 characters.
+GBK Code Table N.B. This gbk-encoded page shows the available coding space totally populated except for 2 places, for a total of 32256 glyphs (32352 with the implied single-byte ASCII codes not illustrated), which is more than 23940 or 21886. Actual rendering of this table depends on your browser's GBK decoder.
+Notes and References
+Web site: Character Sets. 3 October 2016.
+Web site: Code Page 936 - PRC GBK (XGB) . https://web.archive.org/web/20021001194325/http://www.microsoft.com/typography/unicode/936.txt . . 2002-10-01 . dead. Conversion map between Codepage 936 and Unicode. Need manually selecting GB 18030 or GBK in browser to view it correctly.
+Web site: Distribution of Character Encodings among websites that use China and territories. w3techs.com. 2022-10-25.
+Web site: Encoding: Summarized test results. www.w3.org. 2019-11-15.
+Web site: Historical trends in the usage statistics of character encodings for websites, October 2022. 2022-10-25. w3techs.com.
+Web site: 18.2: Ideographic Description Characters . 763 . The Unicode Standard . Version 15.0.0 . 2022 . The Ideographic Description characters are found in GBK—an extension to GB 2312-80 that added all 20,902 Unicode Version 1.1 ideographs not already in GB 2312-80. GBK is defined as a normative annex of GB 13000.1-93..
+Book: Standardization Administration of China (SAC). GB 18030-2005: Information Technology—Chinese coded character set. 2005-11-18.
+GB 18030-2005 Standard p.9, 79
+Web site: Encoding Standard # gbk-encoder. W3C. 2016-10-02.
+Web site: Scherer . Markus . Re: Fun with GBK & GB2312 . Unicode Mail List Archive . 4 March 2020 . 4 January 2002.
+This article is licensed under the GNU Free Documentation License. It uses material from the Wikipedia article "GBK (character encoding)".
+
+Except where otherwise indicated, Everything.Explained.Today is © Copyright 2009-2024, A B Cryer, All Rights Reserved. Cookie policy.
+]]]
+
+[[[
+http://herongyang.com/GB2312/Introduction-GB2312-GBK-GB18030.html
+===
+GB2312 Tutorials - Herong's Tutorial Examples - v4.04, by Herong Yang
+
+[ TOC - Info - RSS - PDF - eBook - ✉ - 💬 ] [ Site Map - 🔍 -  ]
+
+GB2312 Tutorials - Herong's Tutorial Examples
+
+∟Introduction to GB2312
+
+∟GB2312, GBK and GB18030
+
+GBK Character Set is an extension of GB2312. GB18030 is an extension of GBK.
+
+© 2024 Dr. Herong Yang. All rights reserved.
+
+
+After GB2312 was introduced in 1980, the Chinese Government has extended the character set twice. So today we have 3 Chinese character set standards:
+
+GB2312 - Introduced in 1980 with 7,445 characters.
+GBK 1.0 - Introduced in 1995 with 21,886 characters.
+GB18030 - Introduced in 2005 with 4-byte codes to match with Unicode capacity.
+Here are more detailed descriptions of these standards:
+
+1. What Is GB2312 Character Set? GB2312 Character Set is a set of 7445 commonly used Chinese characters established by the government of China in 1980.
+
+GB2312 Encoding uses the following codepoints:
+
+1-byte codes: {0x00-0x7F}
+   Same as ASCII codes
+
+2-byte codes: {0x81-0xCE}{0x81-0xCE}
+   Derived from GB2312 Native Codes by adding 0x80 to both bytes.
+2. What Is GBK Character Set? GBK (国标扩展码) Character Set is an extension of GB2312 with 21,886 characters. GBK was established by the government of China in 1995 to cover most Chinese characters introduced in Unicode 1.0.1.
+
+GBK Encoding uses the following codepoints:
+
+1-byte codes: {0x00-0x7F}
+   Same as ASCII codes
+
+2-byte codes: {0x81-0xFE}{0x40-0x7E} and {0x81-0xFE}{0x80-0xFE}
+   GB2312 codes plus new characters added
+3. What Is GB18030 Character Set? GB18030 Character Set is an extension of GBK established by the government of China in 2005 GB18030 use a 4-byte encoding to match the capacity of the surrogate character mechanism introduced in Unicode 2.0.
+
+GB18030 Encoding uses the following codepoints:
+
+1-byte codes: {0x00-0x7F}
+   Same as ASCII codes
+
+2-byte codes: {0x81-0xFE}{0x40-0x7E} and {0x81-0xFE}{0x80-0xFE}
+   Same as GBK codes
+
+4-byte codes: {81-FE}{30-39}{81-FE}{30-39}
+   Maps linearly to Unicode codes as:
+      GB+81308130 ... = U+0080 ... U+FFFF
+      GB+90308130 ... = U+10000 ... U+10FFFF
+
+
+Table of Contents
+
+ About This Book
+
+►Introduction to GB2312
+
+ What Is GB2312 Character Set
+
+ GB2312 Location Codes and Native Codes
+
+ GB2312 Encodings
+
+ GB2312 vs. Unicode
+
+►GB2312, GBK and GB18030
+
+ GB2312 Usage Trends
+
+ GB2312Unicode.java - GB2312 to Unicode Mapping
+
+ GB2312 to Unicode Mapping - Non-Chinese Characters
+
+ GB2312 to Unicode Mapping - Level 1 Characters
+
+ GB2312 to Unicode Mapping - Level 2 Characters
+
+ UnicodeGB2312.java - Unicode to GB2312 Mapping
+
+ Unicode to GB2312 Mapping - All 7,445 Characters
+
+ References of This Book - GB2312 Tutorials
+
+ Full Version in PDF/ePUB
+]]]
+
+[[[
+https://icu-project.org/docs/papers/gb18030.html
+2001
+===
+GB 18030: A mega-codepage
+Exploring the history and structure of the new Chinese Unicode standard
+Markus Scherer (markus.scherer@us.ibm.com)
+Software Engineer, IBM Unicode Technology Group, IBM
+February 2001
+
+Originally published on http://www-106.ibm.com/developerworks/unicode/library/u-china.html?dwzone=unicode
+
+This article briefly describes the important Chinese GB 18030-2000 standard and its implications for software for the Chinese market. GB 18030 presents adopters with some unusual challenges. They are explained here, along with suggestions for how to deal with them.
+Contents:
+Introduction
+A brief history of major GB codepages
+Structure
+Challenges for implementations of GB 18030
+Suggestions for dealing with these challenges
+Algorithm for mapping contiguously-enumerated mappings between GB 18030 and Unicode
+Conclusion and outlook
+Resources
+About the author
+Introduction
+GB 18030-2000 is a new Chinese standard that specifies an extended codepage and a mapping table to Unicode. GB 18030 was first published on March 17, 2000. After feedback from the worldwide software industry, the codepage was changed, and a new mapping table was released on November 30, 2000. The text of the standard is expected to be republished in March of 2001.
+
+This codepage standard is important for the software industry because China has mandated that any software application that is released for the Chinese market after a certain date must support GB 18030. Initially, this date was specified as January 1, 2001. It has been changed to September 1, 2001.
+
+A brief history of major GB codepages
+A common base codepage standard for Chinese is GB 2312-1980. It encodes more than 6,000 frequently-used Chinese ideographs.
+
+With the growing importance of Unicode and the parallel standard ISO 10646 (which was adopted by China as GB 13000), an extension of GB 2312-1980 was created. This extension was called GBK and encoded all 20,902 unified ideographs that are assigned in Unicode 2.1. GBK is not a formal standard, but a widely-implemented specification.
+
+Unicode 3.0 added more than 6,000 ideographs, and the upcoming version 3.1 will add about 42,000 on top of that.
+
+GB 18030 was created as an update of GBK for Unicode 3.0 with an extension that covers all of Unicode. It has the following general features:
+
+GB 18030 character assignments are backwards compatible with the GB 2312-1980 standard and the GBK specification.
+The mapping table between GB 18030 and Unicode is backwards compatible with the one between GB 2312-1980 and Unicode, and with some exceptions (with the one between GBK and Unicode), most of the changes compared to the GBK mapping table are due to updates for Unicode 3.0.
+GB 18030 specifies a mapping table that covers all Unicode code points. It is functionally similar to a UTF (Unicode Transformation Format) while maintaining compatibility of GB-encoded text with GBK and GB 2312-1980.
+Structure
+GB 18030-2000 encodes characters in sequences of one, two, or four bytes. Valid byte sequences are as follows (byte values are hexadecimal):
+
+Single-byte: 00-80 (*)
+Two-byte: 81-fe | 40-7e, 80-fe
+Four-byte: 81-fe | 30-39 | 81-fe | 30-39
+(*) Note: At the time of this writing, it seems that the single byte 0x80 should be treated as valid but unassigned, while the single byte 0xff should be treated as illegal.
+
+GB 18030 was created with GBK as a basis. The Unicode mapping table for GB 18030 starts with the same mappings for single-byte and double-byte sequences as the Unicode mapping table for GBK, except for a few dozen characters. These characters were not assigned in Unicode 2.1 and were mapped in the GBK mapping table to Unicode Private-Use code points. GB 18030 maps them to the newly-assigned code points in Unicode 3.0 for the corresponding characters. This keeps the GBK byte sequences the same for these characters, but the Unicode mapping table yields different results for them.
+
+In addition, all Unicode code points that are not mapped by this updated GBK portion are mapped to four-byte sequences, which are new in GB 18030. They are simply enumerated beginning at the lowest such Unicode code point (U+0080) and at the lowest such four-byte sequence (GB+81308130). One such enumeration fills in the 40,000 or so Unicode BMP code points that were not covered by GBK (GB lead bytes 0x81..0x84). Another such enumeration covers the 1 million supplementary Unicode code points (GB lead bytes 0x90..0xe3).
+
+One of the biggest changes with the re-released mapping table from November, compared to the initial one, is that all of the 40,000 mappings to BMP code points were changed. This is mainly (but not only) due to starting the BMP enumeration at U+0080 instead of U+0081.
+
+The current Unicode mapping table in the XML format as described in Unicode Technical Report 22 is available on the ICU Web site (see Resources).
+
+The current Unicode mapping table contains only round-trip mappings. The original mapping table contained fallback mappings for the GBK characters that were updated according to Unicode 3.0: Their old GBK Private-Use code points were mapped unidirectionally to the GB codes, while the round-trip mappings were changed (compared to GBK) to be from the GB codes to the new (Unicode 3.0) code points. In the new mapping table, the fallback mappings are removed, and the Private-Use code points instead map to new four-byte sequences with round-trip mappings.
+
+Note: Like some GBK implementations, the original publication of GB 18030-2000 assigned the Euro currency symbol to the single byte 0x80. The updated mapping table from November leaves 0x80 unassigned and instead maps 0xa2e3 U+20ac for the Euro symbol.
+
+GB 18030 has 1.6 million valid byte sequences, but there are only 1.1 million code points in Unicode, so there are about 500,000 byte sequences in GB 18030 that are currently unassigned.
+
+Challenges for implementations of GB 18030
+GB 18030 has some unusual properties that present challenges for an implementation of a codepage converter as well as for in-process use:
+
+It is huge: With the encoding structure as described above, there are more than 1.6 million valid byte sequences -- probably the largest codepage.
+It is similar to a UTF: All 1.1 million Unicode code points U+0000-U+10ffff except for surrogates U+d800-U+dfff map to and from GB 18030 codes. This includes unassigned and "not-a-character" code points.
+GB 18030 is defined as much with charts of assigned characters as with a mapping table to and from Unicode.
+It is not possible for all codepage byte sequences to determine the length of the sequence from the first byte.
+The four-byte sequences use trail byte values 0x30..0x39, while common, ASCII-based multi-byte encodings are using trail byte values of 0x40 and above. (0x30..0x39 are the ASCII code values for the decimal digits.) This means that there is an even larger overlap between single-byte values and trail-byte values, which makes random access in GB 18030 text even more difficult than in other multi-byte codepages.
+Suggestions for dealing with these challenges
+An implementation of GB 18030 needs to be able to determine the length of a byte sequence by examining not only the lead byte, but at least the second byte of a multi-byte sequence as well. This could be hard-coded for GB 18030, or could be done in a more general way with a state machine that represents the entire validity structure of this codepage. Such a state machine could be purely data-driven and would be useful for all multi-byte encodings. It provides a general approach for checking that any byte sequence is valid in a given codepage.
+
+For full support of GB 18030, there are basically only two options because it is specified with a Unicode mapping table for all code points:
+
+GB 18030 could be used directly as an in-process encoding. An application needs to be aware of the complex multi-byte structure that includes four-byte sequences. Almost all of the single-byte values are also valid for trail bytes.
+It can be converted to and from Unicode without loss due to its Unicode-based specification. An application only needs a converter for this and can process text in Unicode. Converting GB 18030 into any non-Unicode encoding can result in losing some of the text.
+The number of valid byte sequences -- of Unicode code points covered and of mappings defined between them -- makes it impractical to directly use a normal, purely mapping-table-based codepage converter. With about 1.1 million mappings, a simple mapping table would be several megabytes in size. Most likely, some initial implementations will not support GB 18030 fully, but only some subset of it.
+
+A simple and effective way to handle the large number of defined mappings is to handle most of the four-byte sequences algorithmically. This is possible because the mappings between four-byte GB 18030 sequences and Unicode code points are a result of an enumeration process (see the Structure description above). Large portions of the mapping table contain entries that differ by exactly one position in both Unicode code points and byte sequences. It is possible to extract a small number of such contiguously-enumerated ranges mechanically (for details about how to do this, see this page). The result is that only the remaining mappings need to be stored in an actual mapping table, while the ranges are mapped by special code in a converter.
+
+The XML mapping file mentioned above contains 13 such ranges to cover all but 31,000 mappings. This number is not unusual for mapping tables between Unicode and East Asian codepages. A converter using such a mapping table would first use the explicit mappings; when a result is "unassigned", then it would need to find a range that contains the input, and map algorithmically if such a range exists or otherwise treat the input as unassigned. (Of course, illegal sequences must be handled, as usual, according to the application.)
+
+Handling the one range for the supplementary Unicode code points algorithmically eliminates all non-BMP Unicode code point mappings from the actual mapping table.
+
+In principle, it is possible to handle all mappings involving four-byte sequences algorithmically by extracting all of them as contiguous ranges. Some of these will only contain a single mapping. Doing this would slow down the conversion for four-byte sequences but would allow the remaining mapping table to contain only mappings between single-byte and double-byte GB 18030 sequences and Unicode BMP code points. The remaining mapping table would contain only about 24,000 entries.
+
+Algorithm for mapping contiguously-enumerated mappings between GB 18030 and Unicode
+The following is an example of an algorithm for mapping between GB 18030 and Unicode within a contiguously-enumerated range of the mapping specification. Code snippets are pseudo-code. It is possible to implement this algorithm in a general way, storing the range information alongside the mapping table. Currently, however, GB 18030 is the only codepage where this algorithm is really useful, if not necessary.
+
+Consider the following example for a range of enumerated mappings from the XML file (this range covers all supplementary Unicode code points):
+
+
+		
+	
+   <range uFirst="10000" uLast="10FFFF"
+           bFirst="90 30 81 30" bLast="E3 32 9A 35"
+           bMin="81 30 81 30" bMax="FE 39 FE 39"/>
+Note that all byte and code point values in the XML file are hexadecimal.
+
+In order to handle GB 18030 four-byte sequences algorithmically, one needs to linearize them, i.e., generate a number for each four-byte sequence so that the difference between two such numbers is the same as the lexical difference between the byte sequences:
+
+
+		
+	
+   int linear(byte bytes[4]) {
+        return ((bytes[0]*10+bytes[1])*126+bytes[2])*10+bytes[3];
+    }
+
+The factors 10 and 126 are the numbers of byte values in the byte positions according to bMin and bMax: 10 values 0x30..0x39 and 126 values 0x81..0xfe. The result of this function is an ordinal number that follows the lexical order of four-byte sequences.
+
+Given a linear value for a byte sequence, the byte sequence itself can be calculated:
+
+
+		
+	
+
+    byte[4] unLinear(int lin) {
+        byte result[4];
+        lin-=linear(0x81, 0x30, 0x81, 0x30); // zero-base the linear value
+        result[3]=0x30+lin%10;  lin/=10;
+        result[2]=0x81+lin%126; lin/=126;
+        result[1]=0x30+lin%10;  lin/=10;
+        result[0]=0x81+lin;
+        return result;
+    }
+For each contiguously enumerated range, the following must be true: uLast-uFirst == linear(bLast)-linear(bFirst)
+
+Mapping from a GB 18030 four-byte sequence to a Unicode code point:
+
+
+		
+	
+    int mapToUnicode(byte bytes[4]) {
+        int lin=linear(bytes);
+        for each range {
+            if(linear(bFirst)&lt;=lin&lt=linear(bLast)) {
+                // range found
+                return uFirst+(lin-linear(bFirst));
+            }
+        }
+        // the byte sequence is not in any known range
+        return error;
+    }
+
+Mapping from a Unicode code point to a GB 18030 four-byte sequence:
+
+
+		
+	
+    byte[4] mapFromUnicode(int u) {
+        for each range {
+            if(uFirst&lt;=u&lt;=uLast) {
+                // range found
+                return unLinear(linear(bFirst)+(u-uFirst));
+            }
+        }
+        // code point u is not in any known range
+        return error;
+    }
+
+An example implementation of the techniques and algorithms discussed here can be found in ICU's ucnvmbcs.c. (See the license.)
+
+Conclusion and outlook
+This article has explained the history and the structure of the new Chinese codepage standard GB 18030-2000, which must be implemented in future applications that are marketed for China. Unusual features and challenges are discussed, and suggestions for solutions presented.
+
+With the release of a mapping table by the Chinese standards agency and the adoption of this mapping table by the software industry, there is a rare chance for a consistent industry-wide implementation of a codepage standard.
+
+The standard has been modified since its publication. A new mapping table was released in November of 2000, and the text of the standard is expected to be republished in March of 2001. The date after which newly-released software must support GB 18030 has been moved to September 1, 2001.
+
+Resources
+
+Special thanks for help with translating and understanding the GB 18030 standard goes to Dirk Meyer who published his findings about the standard on the Web site that accompanies Ken Lunde's excellent book about CJKV Information Processing.
+The XML mapping table for GB 18030-2000 with the data from November 30, 2000 is available on the ICU Web site.
+The XML format is described in Unicode Technical Report 22.
+There is a more technical early description of GB 18030 on the ICU Web site.
+ICU implements GB 18030 as a variant of its multi-byte codepage converter (see the license).
+See the Unicode Web site for details about the standard.
+There are many articles about related topics on the developerWorks Unicode special topic.
+See A brief explanation of codepages and Unicode here on developerWorks.
+About the author
+Markus Scherer is a Software Engineer and Unicode expert and works in IBM's Unicode Technology Group in Cupertino, California. He is currently leading the development of the C/C++ library of the International Components for Unicode (ICU), an open source Unicode library. Before that, he worked on IBM projects for Wireless and Mobile Computing, including GUIs, Translation, and Internationalization, in his native Germany and in North Carolina. Markus can be reached at markus.scherer@us.ibm.com
+
+ 
+]]]
+
+

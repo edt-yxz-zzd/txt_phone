@@ -1,0 +1,2060 @@
+
+e others/数学/编程/设计/极简虚拟机.txt
+see:
+    <<Compilers and Compiler Generators(1996-2000)(Terry).pdf>>
+    /sdcard/0my_files/book/lang/编译/Compilers and Compiler Generators/pdfvers.pdf
+view others/数学/编程/变址寻址-2.txt
+    view others/数学/编程/变址寻址.txt
+
+TODO:goto
+
+[[
+虚拟机牜面向栈:here
+[虚拟机牜面向栈===虚拟机牜不使用数据用寄存器]
+  vs:虚拟机牜使用数据用寄存器
+
+stack-oriented computer(没有:数据用寄存器，仍有:寄存器SP+BP+PC+IR...，所有操作数在栈顶浅层或指令附带立即数，计算结果回栈)
+  TOS ("top of stack")
+  SOS ("second on stack")
+  STK stack
+  STKMC stack machine
+
+内存模型:
+  [RAM := ROM+static_section+stack_section+heap+io_section]
+      ==>> [栈向上生长] #vs [栈向下生长]
+
+  [stack_section := words[max_num_words4stack] == stack+未初始化保留区]
+  [io_section :: volatile bytes]
+    #不同进程共享内存交换区
+  [ROM := CODE+LITERALS]
+    ptr4bottom4CODE == 0
+    ptr4bottom4LITERALS #==ptr4top4CODE
+    ptr4bottom4static_section #==ptr4top4LITERALS
+    ptr4bottom4stack_section #==ptr4top4static_section==ptr4bottom4stack
+    ptr4bottom4heap #==ptr4top4stack_section
+    ptr4bottom4io_section #==ptr4top4heap
+    ptr4top4io_section #==num_bytes4RAM
+    #dynamic:ptr4bottom4frame==BP
+    #dynamic:ptr4top4stack==SP
+
+  [RAM :: [byte]]
+    #指针访问最小单元
+    #一致平坦模型
+  [stack :: [word]]
+    #不论是 超小整型(byte/bool/bit) 还是 超大整型(超过word)，入栈 都是 以word为单位 保存
+    #   即 byte 填充成 word
+    #   但是 heap 保存 多种类型对象; RAM读取数据 需标明类型
+    #       stack也属于RAM，栈上对象指针 也是 同等对待
+    #       假设指针指向对象低端地址，则byte变word时的填充字节必须在高端，即:整型于内存的字节次序必须是『小端序』
+    #
+  [using:little_endian]
+  [SP,BP :: PTR<word>]
+  [PC :: PTR<byte>]
+  ??[IR :: byte]?? 可以更大
+保留:变量区/栈帧: [BP..<SP]
+  <==>自定义冫一组数据用寄存器
+  拓展栈帧:变量未初始化:
+    cite:『"DSP" =[def]= {SP--;}』@[栈向下生长]
+      即:OP_NPUSH{DR:=SZ4WORD}@我的 虚拟机牜使用数据用寄存器
+
+载入数据乊代码<数据类型@{num_bytes,is_signed}>:
+  <==> pushi/立即数(immediate)
+  #有:is_signed --> 填充乊不足
+  # 没有 泛化版 # 全静态数据@单指令
+  #
+  #num_bytes==>>num_words/几个机器字
+  #is_signed==>>高位填充(0|1)
+  #[num_words := ceil_div(num_bytes,SZ4WORD)]
+  {; address := PC ; push{num_bytes,is_signed}(*address) ; PC += num_bytes ;}
+  其余指令:都是单字节(除了:OP_VM_SYS_CALL,OP_MINOR_OPS)
+  编码方案:
+    0b1xxx_xxxx:pushi
+      0b10xx_xxxx:pushi6ROM_IR sint6_t@ROM_IR
+        [data <- [-32..<32]]
+      0b11sx_xxxx:pushi6ROM_PC {is_signed,uint5_t}@ROM_IR ???@ROM_PC
+        0b11s0_0000:pushi6ROM_PC {is_signed}@ROM_IR {动态字节@num_bytes4data, bytes[num_bytes4data]}@ROM_PC
+        0b11sx_xxxx:pushi6ROM_PC {is_signed,pint5_t@num_bytes4data}@ROM_IR bytes[num_bytes4data]@ROM_PC
+          [num_bytes4data <- [1..<32]]
+
+载入数据乊地址<数据类型@{num_bytes,is_signed}>(address):
+  #有:is_signed --> 填充乊不足
+  -->泛化:载入字节串乊地址(signed_num_bytes,address)
+  #解引用dereference
+  {; address := pop{num_words:=1}() ; push{num_bytes,is_signed}(*address) ;}
+保存数据乊地址<数据类型@{num_bytes}>(address):
+  #无:is_signed --> 截断乊溢出
+  -->泛化:保存字节串乊地址(num_bytes,address)
+  {; address := pop{num_words:=1}() ; (*address) := pop{num_words:=ceil_div(num_bytes,SZ4WORD)}()[:num_bytes] ;}
+
+载入帧内地址(offset):
+  {; offset := pop{num_words:=1}() ; assert 0 <= offset*SZ4ADDRESS < SP-BP ; push{SZ4ADDRESS,is_signed:=0}(BP+SZ4WORD*offset) ;}
+      !! @[栈向上生长]
+  xxx???xxx ==>> 当 指令 需要 多个参数，则 数量型参数 先入栈，地址型参数 后入栈
+
+
+赋值:
+  BBB := AAA
+    载入数据@BBB; 保存数据@BBB
+  ==>>:
+  push &AAA
+  载入数据乊地址<type_of(AAA)>
+  pop 多余机器字 if size_of(AAA) > size_of(BBB)
+  push 填充机器字(0|0xff...) if size_of(AAA) < size_of(BBB)
+  push &BBB
+  保存数据乊地址<type_of(BBB)>
+  ===
+  其中:『push &AAA』
+  if AAA 是 静态变量:
+      则 指令序列 为 {; 载入数据乊代码<类型:=地址> &AAA/地址常量 ;}
+  if AAA 是 栈帧变量:
+      则 指令序列 为 {; 载入数据乊代码<类型:=sint> 偏移量/有符号整数常量 ; 载入帧内地址 ;}
+复制牜字节串+交换牜字节串
+  <==>复制牜同类型+交换牜同类型:
+  前提:源靶不交叠
+  复制牜字节串(num_bytes,靶地址,源地址)
+  交换牜字节串(num_bytes,靶地址,源地址)
+
+调用协议:
+  ？清理参数乊调用结束？
+  ?BP自动更新?
+  OP_CALL___RICH__INNER_ARGS
+    调用前:[..., [#BP==old_BP==here#], ..., *results[#未初始化#], [#older_SP==here#], *(old_PC,old_BP)[#未初始化#], [#new_BP==here#], *args, [#new_SP==here#], num_words4args, [#SP==old_SP==here#]]
+    调用后:[..., [#old_BP==here#], ..., *results[#未初始化#], [#older_SP==here#], *(old_PC,old_BP)[#已初始化#], [#BP==new_BP==here#], *args, [#SP==new_SP==here#]]
+    ... ...
+    返回前:[..., [#old_BP==here#], ..., *results[#已初始化#], [#older_SP==here#], *(old_PC,old_BP)[#已初始化#], [#BP==new_BP==here#], *args, [#new_SP==here#], *vars, [#SP==newer_SP==here#]]
+    返回后:[..., [#BP==old_BP==here#], ..., *results[#已初始化#], [#SP==older_SP==here#]]
+
+]]
+
+
+
+[[[[[[[
+极简虚拟机:
+虚拟机牜使用数据用寄存器:
+  或许该改用:stack-oriented computer
+    虚拟机牜面向栈:goto
+
+
+=======
+[[
+目录:
+  极简假设
+  虚拟机的基础数据类型
+  虚拟机的内存与寄存器
+  数据流动方向
+  字长限制与相关参数设置
+  汇总纟总指令数纟赋值乊不考虑运算结果赋值
+  常量纟虚拟机
+  多种调用协议
+  助记码设计
+  编码方案纟助记码
+
+]]
+
+
+=======
+[[[
+极简假设:
+
+完整指令:动态长度
+  指令头opcode:单字节
+  指令宏头:多字节
+    用于 罕用指令
+    指令宏头 = 指令头 扩展部纟指令宏头
+    扩展部纟指令宏头 = 动态字节
+    动态字节 = [0x80..<0x100]* [0..<0x80]
+    例子:虚拟机罕用指令头/OP_MINOR_OPS
+    例子:虚拟机系统调用/OP_VM_SYS_CALL
+    例子:存取操作乊罕见目标字长#见:扩展冫指令头纟许可目标字长纟存取@集合纟况态纟许可目标字长纟存取
+
+整型内存编码:采用『小端序』:因为『降级赋值时小端截断』『取数据时小端载入』
+
+[[极简] => [最小化:存取操作]]
+  [[极简] => [存取操作:正交化+星形中转]]
+  [[极简] => [指令头纟非存取操作(包括流程控制，即便导致寄存器值极不稳定):尽量使用寄存器的值(ROM_IR显然)，尽量避免读取(ROM_NR/stack/heap)(显著例外:系统调用OP_VM_SYS_CALL,大量参数只能通过栈)]]
+
+  见下面:数据流动方向
+[[极简] => [指令头长==1]]
+[[极简] => [[址长 <= 字长][文件偏移量长 <= 字长]]]
+  #通过强行增大字长！
+  #但 字长上限 受 指令头长/SZ4OPCODE 限制
+  # [8已是 最大字长] <<== [MAX_SZ4NONE_ZPOW_UINT==SZ4WORD]
+  # 指令集:增加约束:[超限整型字长必须是二幂除非是机器字]
+  #     ==>> 见下面:初版配置冫上限纟字长:[SZ4WORD<=128]#上限纟字长
+  #         相当够用！
+  #     ==>> 见下面:试拓展冫上限纟字长:[SZ4WORD<=32768]#上限纟字长
+  #         绝对够用！
+[超限整型字长必须是二幂除非是机器字]
+  上限纟非二幂字长#MAX_SZ4NONE_ZPOW_UINT
+  [0 <= 上限纟非二幂字长 <= 字长]
+  [0 <= MAX_SZ4NONE_ZPOW_UINT <= SZ4WORD]
+      # 其实可以: [MAX_SZ4NONE_ZPOW_UINT >= 0] 取消上限
+      # 甚至可以: [MAX_SZ4NONE_ZPOW_UINT :: sint] 取消上下限
+      #
+      # {0,1,2}等效
+      # {3,4}等效
+      # {2**n-1,2**n}等效
+      #
+[集合纟许可目标字长纟存取 := {byte_sz | [[byte_sz :<- [1..=SZ4WORD]][[byte_sz > MAX_SZ4NONE_ZPOW_UINT] -> [[byte_sz是二幂]or[byte_sz==SZ4WORD]]]]}]
+  !! 新增约束:[超限整型字长必须是二幂除非是机器字]
+[字长 >= {址长, 文件偏移量长, 宽字符长} >= 1字节==8比特]
+
+[[#过气:
+[{址长, 文件偏移量长, 字长 >= 宽字符长} >= 1字节==8比特]
+    #大整数 怎么搞？再来一个:寄存器+运算单元？
+    #？强行增大 字长，使 机器字 成为 最大整型？
+      ???[址长 <= 字长]
+      ???[文件偏移量长 <= 字长]
+[文件偏移量长 >?< {字长, 宽字符长}]
+    # fpos_t 是 对象 不是 整型
+    # "C" => [文件偏移量 :: long int]
+    # "C" => [文件偏移量长 >= 字长]
+    <<==:
+    #include <stdio.h>
+    int fgetpos(FILE * restrict stream, fpos_t * restrict pos);
+    int fsetpos(FILE *stream, const fpos_t *pos);
+    int fseek(FILE *stream, long int offset, int whence);
+    long int ftell(FILE *stream);
+
+[址长 >?< {字长, 宽字符长}]
+  [段页小端长度 := min{址长,字长}]
+    or [1 <= 段页小端长度 <= min{址长,字长}]
+    # ~= size_t     #无符号
+    # ~= ptrdiff_t  #带符号
+  [址长 < 字长] ==>> 小内存
+    [地址 := 段页小端地址]
+  [址长 > 字长] ==>> 超大内存
+    [地址 := 段页大端地址++段页小端地址]
+]]
+]]]
+
+=======
+[[
+虚拟机的基础数据类型:
+基础数据类型:
+  bool
+    真值运算结果
+  address/ptr#无符号
+    地址 不区分 类型(不同整型指针，函数指针)，均为 字节地址#无:比特地址
+  word/uint
+    不同字长只用于存取时区分:
+      [byte_sz <- 集合纟许可目标字长纟存取]
+      uint<byte_sz>
+      sint<byte_sz>
+        byte===uint<1>  #uint8_t
+        sbyte===sint<1> #sint8_t
+        file_position===uint<SZ4FILE_POSITION>
+        file_offset===sint<SZ4FILE_POSITION>
+  char===wchar===uint<SZ4WCHAR>#?unicode_char_pt
+
+]]
+
+=======
+[[
+虚拟机的内存与寄存器:
+
+=====
+目录:
+  内存
+  寄存器
+  必要性纟各寄存器
+  类比冫外部寄存器命名
+
+
+=====
+内存RAM:
+  ROM#NR
+  heap#RR<<==(FR|ER|NR)+DR@offset
+    #转化为heap访问<<==frame#stack8heap#FR+DR@offset
+    stack#TR(push/pop)
+      [调用栈帧 := [*args, NR,FR, {#new-FR point to here#}sz4args{#push by user, pop by "return"#}, *vars]]
+      [sz4args 的 单位 是 字节 而非 word/ptr/...，即 视 参数 为 字节]
+
+=====
+寄存器registers:
+  #total:9
+  [IR :: byte]
+  [NR,FR,TR,RR,ER :: address]
+  [CR,DR :: word]
+  [BR :: bool]
+名纟寄存器 - 值纟寄存器:
+  IR - 当前指令头字节
+  NR - 下一条指令地址
+  FR - 起址纟调用栈帧变量区(实参偏移量为负数)
+  TR - 讫址纟调用栈帧变量区(end_ptr for push,pop)
+  RR - 地址纟解引用
+  ER - 地址纟缓存中转
+  CR - 整数纟运算结果
+  DR - 整数纟缓存中转
+  BR - 真值纟运算结果
+
+
+=====
+必要性纟各寄存器:
+  #证明: BR,CR,DR,RR,ER,NR,FR,TR必要性;但IR不必要
+
+  [[累加牜寄存器:[CR += DR]] -> [DR is not CR]]
+      #作为:隐含操作数 节省 数据载入次数
+      #CR必要性
+      #DR必要性
+
+  xxx [[累加牜内存变量:[CR += *RR]分解成([[读入机器字:[DR := *RR]],[累加牜寄存器:[CR += DR]])]] -> [RR is not CR]]
+      ???[RR is DR]???
+        [DR := *RR]
+        等价-->:
+        [RR := *RR]
+          允许连续解引用
+        ===
+        数组:
+        [RR += offset/DR]
+        改用-->:
+        [RR += offset/CR]
+        似乎 逻辑上 并非不可能，区分 只是源于 类型区分 以及 执行效率
+
+  xxx [[写出机器字:[*RR := DR]] -> [RR is not DR]]
+      不对！若[RR is DR]则改用[*RR := CR]
+
+  [[写出机器字:[*RR := DR]] -> [区分类型:{地址,机器字}] -> [[RR is not CR][RR is not DR]]]
+      #RR必要性
+
+  [[写出地址:[*RR := ER]] -> [ER is not RR]]
+      #ER必要性
+  #=> CR,DR,RR,ER必要性
+
+  #IR不必要，只是模拟实体机
+  [[流程控制:指令读取]-> [NR必要性:作为:指针纟指令头]]
+  [[流程控制:栈上调用]-> [TR必要性:作为:栈顶指针]]
+  [[构造:指针纟栈帧变量]-> [FR必要性:作为:基址]]
+  #=> NR,FR,TR必要性;但IR不必要
+
+  [[真值操作不影响:{数据寄存器,地址寄存器}] -> [BR必要性:保存真值结果]]
+      #？地址比较？不存在
+      # 或者:用户自行先将地址转化为数据再比较
+
+
+
+=====
+类比冫外部寄存器命名:
+  IR:
+    instruction register(IR)
+    [value{IR} === 当前指令]
+  NR:
+    [program counter(PC) === instruction pointer(IP)]
+    [value{PC} === 下一条指令地址]
+  TR:
+    stack pointer(SP)
+  DR:
+    #used as offset
+    "X" - the index register
+  FR:
+    base pointer (BP)
+
+  CR:
+    "A" - register as accumulator for arithmetic logic unit(ALU)
+  BR:
+    "Z", "P", "C" are single bit condition flags or status registers, which are set "true" when an operation causes a register to change to a zero value, or to a positive value, or to propagate a carry, respectively.
+     [Z := (CR==0)]
+     [P := (CR>0)]
+     [C := carry from OP_ADD,OP_SUB]
+  RR:
+    "EAR" - the effective address register
+  ER:
+    <none>
+=====
+ref:
+SP is the 16-bit stack pointer, a register that points to the area in memory utilized as the main stack. 
+BP is the 16-bit base pointer, a register that points to the base of an area of memory within the stack, known as a stack frame, which is used to store variables.
+MP is the 16-bit mark stack pointer, a register used in handling procedure calls, whose use will become apparent only in later chapters. 
+IR is the 16-bit instruction register, in which is held the instruction currently being executed. 
+PC is the 16-bit program counter, which contains the address in memory of the instruction that is the next to be executed. 
+EAR is the effective address register, which contains the address in memory of the data that is being manipulated by the current instruction.
+=====
+]]
+
+=======
+[[
+数据流动方向:
+  !! [[极简] => [存取操作:正交化+星形中转]]
+  => ER,DR为两个星形中心
+  #隐式使用:调用相关
+  IR,(NR,FR,TR)
+    #?初始化指令？
+    #   IR无需初始化
+    #   NR显然必须在任何指令运行前被初始化
+    #   ？假设(FR,TR,ROM)与NR一起被初始化？
+    #   NR赋值:jump/goto ...
+    #   #xxx:不太行:可通过特定指令序列给(FR,TR)赋值:(push _NR,push _FR){#vivi call#},push (sz4args:=?FR?-_TR),return{#并行赋值:[[TR:=FR-sz4args==_TR][FR:=_FR][NR:=_NR]]#}
+    #   显化隐地址初始化指令:
+  #单向赋值:
+  (FR,TR) <- ER
+      #隐地址初始化-指令数纟单向赋值乊不考虑运算结果赋值:2
+  NR <- ER,RR(无条件跳转),有条件跳转运算结果(有条件跳转)
+      #NR-指令数纟单向赋值乊不考虑运算结果赋值:2
+  RR <- ER,地址运算结果#地址偏移
+      #RR-指令数纟单向赋值乊不考虑运算结果赋值:1
+  CR <- DR,整数运算结果#包括:地址减法:转化为:段页小端减法
+      #CR-指令数纟单向赋值乊不考虑运算结果赋值:1
+  BR <- ROM@IR,真值运算结果(主要是CR)#包括:地址比较:转化为:段页小端比较
+      #BR-指令数纟单向赋值乊不考虑运算结果赋值:2
+  ER <- ROM@IR{必带符号,固定比特数}{#用于清零/特殊值#},ROM@NR{无符号&&尺寸无效},heap,stack,(NR,FR,TR),RR,DR{无符号截断-DR段页小端,不填充-ER大端不变}
+      #ER-指令数纟单向赋值乊不考虑运算结果赋值:??num_ops4ER5IR + 8
+      #
+      #只载入 绝对地址<<==相对寻址:使用:DR作为 偏移量offset
+      #相对地址:转化为:绝对地址:
+      #     RR := ER+DR #OFFSET4ARRAY
+      #     RR := FR+DR #OFFSET4FRAME
+      #     RR := NR+DR #OFFSET4CODE
+      #     RR := TR+DR #OFFSET4STACK
+      #     RR += DR    #OFFSET4ITER
+  DR <- ROM@IR{必带符号,固定比特数}{#用于清零/特殊值#},(ROM@NR,heap,stack){is_signed,集合纟许可目标字长纟存取},BR,CR,ER{无符号截断-ER段页小端,无符号填充-DR大端}
+      #DR-指令数纟单向赋值乊不考虑运算结果赋值:??num_ops4DR5IR + 3*2*2**??num_bits4case4repr4sz_le_sz4word + 3
+  (heap,stack) <- ER{无符号&&尺寸无效},DR{is_signed,集合纟许可目标字长纟存取}
+      #(heap,stack)-指令数纟单向赋值乊不考虑运算结果赋值:2*(1 + 1*2*2**??num_bits4case4repr4sz_le_sz4word) == 2 + 4*2**??num_bits4case4repr4sz_le_sz4word
+  #交换赋值swap:
+  DR <-> CR,ER{段页小端}{无符号截断-ER段页小端,无符号填充-DR大端}{无符号截断-DR段页小端,不填充-ER大端不变}
+  ER <-> RR
+      #总指令数纟交换赋值乊不考虑运算结果赋值:2+1==3
+#见下面:汇总纟总指令数纟赋值乊不考虑运算结果赋值
+]]
+
+=======
+[[[
+#见下面:汇总纟总指令数纟赋值乊不考虑运算结果赋值
+字长限制与相关参数设置:
+  *初版配置冫上限纟字长
+  *试拓展冫上限纟字长
+
+[num_ops4ER5IR <- {1..16}*2]
+[num_ops4DR5IR <- {1..16}*2]
+[num_bits4sz4word := (SZ4WORD-1).bit_length()]
+  num_bits4sz4word@草稿
+  紧致/实心表达,偏移1(因为0无效)
+[num_bits4repr4sz_le_sz4word := (len(集合纟许可目标字长纟存取)-1).bit_length()]
+  num_bits4repr4sz_le_sz4word@二稿
+      <-- num_bits4sz4word@草稿
+  允许空洞(二幂 间隙):使用了MAX_SZ4NONE_ZPOW_UINT
+[num_bits4case4repr4sz_le_sz4word := (len(集合纟况态纟许可目标字长纟存取)-1).bit_length() == 3]
+  num_bits4case4repr4sz_le_sz4word@三稿
+      <-- num_bits4repr4sz_le_sz4word@二稿
+  [len(集合纟况态纟许可目标字长纟存取) == 8]
+  [集合纟况态纟许可目标字长纟存取 =[def]= {
+    ,扩展冫指令头纟许可目标字长纟存取
+            # [0..=SZ4WORD]-bytes
+    ,字长1  #1bytes           #byte
+    ,字长2  #2-bytes
+    ,字长3  #3-bytes
+    ,字长4  #4-bytes
+    ,宽字符 #SZ4WCHAR-bytes   #wchar #虽然极有可能与上面重复
+    ,地址   #SZ4ADDRESS-bytes #address
+    ,机器字 #SZ4WORD-bytes    #word #没有file_position,直接使用word
+    }]
+  扩展冫指令头纟许可目标字长纟存取:
+    [罕用指令]本指令 = (本指令头 动态字节冃目标字长/扩展部纟指令宏头)@本指令宏头 目标数据?
+      @ROM_NR <-> 目标数据 存在
+      动态字节冃目标字长 用于 表达 [0..=SZ4WORD]
+        但是有两种编码方案:
+          case 首比特纟负载纟动态字节 of:
+            0 => [目标字长 == 负载牜除首比特纟动态字节]#实心表达
+            1 => [目标字长 == 2**负载牜除首比特纟动态字节]#二幂表达
+
+[[
+以下是二稿:
+[num_ops4ER5IR:=32][num_ops4DR5IR:=32]:
+  [SZ4WORD:=16][MAX_SZ4NONE_ZPOW_UINT == SZ4WORD]:
+    [num_bits4repr4sz_le_sz4word == 4]
+    [总指令数纟赋值乊不考虑运算结果赋值 == 24+32+32+10*2**4 == 88+160 == 248]
+    [256-248 == 8] #不够用
+  [SZ4WORD:=8][MAX_SZ4NONE_ZPOW_UINT == SZ4WORD]:
+    [num_bits4repr4sz_le_sz4word == 3]
+    [总指令数纟赋值乊不考虑运算结果赋值 == 24+32+32+10*2**3 == 88+80 == 168]
+    [256-168 == 88] #够用了
+  [SZ4WORD:=2**k*2**n][MAX_SZ4NONE_ZPOW_UINT:=2**k]:
+    [len(集合纟许可目标字长纟存取) == 2**k+n]
+    [n := 2**k*2**m-2**k]:
+      [len(集合纟许可目标字长纟存取) == 2**k*2**m]
+      [num_bits4repr4sz_le_sz4word == k+m]
+      [总指令数纟赋值乊不考虑运算结果赋值 == 24+32+32+10*2**(k+m) == 88+10**(k+m)]
+      * [k+m == 4]:
+        同:[SZ4WORD:=16][MAX_SZ4NONE_ZPOW_UINT == SZ4WORD]
+        _L #不够用
+        假设够用:见下面:试拓展冫上限纟字长
+          * [k==4][m==0]:
+            [n==0]
+            [SZ4WORD==16][MAX_SZ4NONE_ZPOW_UINT==16]
+          * [k==3][m==1]:
+            [n==8]
+            [SZ4WORD==2048][MAX_SZ4NONE_ZPOW_UINT==8]
+          * [k==2][m==2]:
+            [n==12]
+            [SZ4WORD==16384][MAX_SZ4NONE_ZPOW_UINT==4]
+          * [k==1][m==3]:
+            [n==14]
+            [SZ4WORD==32768][MAX_SZ4NONE_ZPOW_UINT==2]
+          * [k==0][m==4]:
+            [n==15]
+            [SZ4WORD==32768][MAX_SZ4NONE_ZPOW_UINT==1]
+      * [k+m <= 3]:
+        * [k+m == 0]:
+          [k==m==0]
+          [n==0]
+          [SZ4WORD==1][MAX_SZ4NONE_ZPOW_UINT==1]
+        * [k+m == 1]:
+          * [k==1][m==0]:
+            [n==0]
+            [SZ4WORD==2][MAX_SZ4NONE_ZPOW_UINT==2]
+          * [k==0][m==1]:
+            [n==1]
+            [SZ4WORD==2][MAX_SZ4NONE_ZPOW_UINT==1]
+        * [k+m == 2]:
+          * [k==2][m==0]:
+            [n==0]
+            [SZ4WORD==4][MAX_SZ4NONE_ZPOW_UINT==4]
+          * [k==1][m==1]:
+            [n==2]
+            [SZ4WORD==8][MAX_SZ4NONE_ZPOW_UINT==2]
+          * [k==0][m==2]:
+            [n==3]
+            [SZ4WORD==8][MAX_SZ4NONE_ZPOW_UINT==1]
+        * [k+m == 3]:
+          * [k==3][m==0]:
+            [n==0]
+            [SZ4WORD==8][MAX_SZ4NONE_ZPOW_UINT==8]
+          * [k==2][m==1]:
+            [n==4]
+            [SZ4WORD==64][MAX_SZ4NONE_ZPOW_UINT==4]
+          * [k==1][m==2]:
+            [n==6]
+            [SZ4WORD==128][MAX_SZ4NONE_ZPOW_UINT==2]
+          * [k==0][m==3]:
+            [n==7]
+            [SZ4WORD==128][MAX_SZ4NONE_ZPOW_UINT==1]
+==>>:
+初版配置冫上限纟字长:
+[num_ops4ER5IR:=32][num_ops4DR5IR:=32]:
+  !! [指令头长==1]
+  [SZ4WORD<=128]#上限纟字长
+  !! [unicode wchar]
+  [SZ4WORD>=3]
+  可选配置:
+    [num_bits4repr4sz_le_sz4word == 3]:
+      [num_ops4ER5IR:=32][num_ops4DR5IR:=32]
+      ***
+      [SZ4WORD<-[65..=128]][MAX_SZ4NONE_ZPOW_UINT<-[0..=1]]
+      [SZ4WORD<-[9..=64]][MAX_SZ4NONE_ZPOW_UINT<-[0..=4]]
+      [SZ4WORD<-[3..=8]][MAX_SZ4NONE_ZPOW_UINT<-[0..=SZ4WORD]]
+
+      [总指令数纟赋值乊不考虑运算结果赋值 == 24+32+32+10*2**3 == 88+80 == 168]
+      [256-168 == 88] #够用了
+
+    [num_bits4repr4sz_le_sz4word == 2]:
+      [num_ops4ER5IR:=32][num_ops4DR5IR:=32]
+      ***
+      [SZ4WORD<-[5..=8]][MAX_SZ4NONE_ZPOW_UINT<-[0..=1]]
+      [SZ4WORD<-[3..=4]][MAX_SZ4NONE_ZPOW_UINT<-[0..=SZ4WORD]]
+
+      [总指令数纟赋值乊不考虑运算结果赋值 == 24+32+32+10*2**2 == 88+40 == 128]
+      [256-128 == 128] #够用了
+
+试拓展冫上限纟字长:
+[num_bits4repr4sz_le_sz4word == 4]:
+  [总指令数纟赋值乊不考虑运算结果赋值 == 24+(num_ops4ER5IR+num_ops4DR5IR)+10*2**4 == n_n + 24+160 == n_n + 184]
+    [256-184-n_n == 72-n_n] #?够用?
+    #草稿:[位操作6+算术操作7+真值操作8+流程控制操作4+地址偏移运算3+杂项操作4==6+7+8+4+3+4==32]
+    #二稿:[运算操作35+流程控制操作6+杂项操作7==35+6+7==48]
+    #三稿:[运算操作37+流程控制操作19+杂项操作6==37+19+6==62]
+  [num_ops4ER5IR:=2][num_ops4DR5IR:=32]:
+    [n_n == 2+32 == 34]
+    [72-n_n == 72-34 == 38] #?够用?
+    #草稿:
+      [72-n_n == 38 > 32] #?够用?有点紧张...
+      #不够用的话，罕用指令 可以 追加指令头
+    #二稿:
+      [72-n_n == 38 < 48] #不够用！
+
+  [num_ops4ER5IR:=4][num_ops4DR5IR:=16]:
+    [n_n == 4+16 == 20]
+    [72-n_n == 72-20 == 52] #?够用?
+    #草稿:
+      [72-n_n == 52 > 32] #够用
+    #二稿:
+      [72-n_n == 52 > 48] #?够用?有点紧张...
+
+
+  !! [指令头长==1]
+  [SZ4WORD<=32768]#上限纟字长
+  !! [unicode wchar]
+  [SZ4WORD>=3]
+  可选配置:
+    [num_bits4repr4sz_le_sz4word == 4]:
+      xxx [num_ops4ER5IR:=2][num_ops4DR5IR:=32] #不够用@二稿
+      [num_ops4ER5IR:=4][num_ops4DR5IR:=16]
+      ***
+      [SZ4WORD<-[16385..=32768]][MAX_SZ4NONE_ZPOW_UINT<-[0..=1]]
+      [SZ4WORD<-[2049..=16384]][MAX_SZ4NONE_ZPOW_UINT<-[0..=4]]
+      [SZ4WORD<-[17..=2048]][MAX_SZ4NONE_ZPOW_UINT<-[0..=8]]
+      [SZ4WORD<-[3..=16]][MAX_SZ4NONE_ZPOW_UINT<-[0..=SZ4WORD]]
+
+]]
+
+
+#以上是二稿:
+以下是三稿:
+[num_bits4case4repr4sz_le_sz4word == 3]#固化
+
+]]]
+
+=======
+[[
+#见上面:数据流动方向
+汇总纟总指令数纟赋值乊不考虑运算结果赋值:
+汇总:总指令数纟赋值乊不考虑运算结果赋值:
+  [总指令数纟赋值乊不考虑运算结果赋值 == 24+??num_ops4ER5IR+??num_ops4DR5IR+10*2**??num_bits4case4repr4sz_le_sz4word]
+    <<==:
+      #隐地址初始化-指令数纟单向赋值乊不考虑运算结果赋值:2
+      #NR-指令数纟单向赋值乊不考虑运算结果赋值:2
+      #RR-指令数纟单向赋值乊不考虑运算结果赋值:1
+      #CR-指令数纟单向赋值乊不考虑运算结果赋值:1
+      #BR-指令数纟单向赋值乊不考虑运算结果赋值:2
+      #ER-指令数纟单向赋值乊不考虑运算结果赋值:??num_ops4ER5IR + 8
+      #DR-指令数纟单向赋值乊不考虑运算结果赋值:??num_ops4DR5IR + 3*2*2**??num_bits4case4repr4sz_le_sz4word + 3
+      #(heap,stack)-指令数纟单向赋值乊不考虑运算结果赋值:2*(1 + 1*2*2**??num_bits4case4repr4sz_le_sz4word) == 2 + 4*2**??num_bits4case4repr4sz_le_sz4word
+      #总指令数纟交换赋值乊不考虑运算结果赋值:2+1==3
+]]
+
+
+
+
+=======
+[[
+常量纟虚拟机:
+
+.集合纟许可目标字长纟存取
+.MAX_SZ4NONE_ZPOW_UINT
+  [0 <= MAX_SZ4NONE_ZPOW_UINT <= SZ4WORD]
+  上限纟非二幂字长#MAX_SZ4NONE_ZPOW_UINT
+  [超限整型字长必须是二幂除非是机器字]
+
+.SZ4OPCODE#指令头长
+    [SZ4OPCODE == 1]#单字节:指令头
+.SZ4WORD#字长
+    [[指令头为单字节码] -> [正交化:带符号尺寸相关存取指令] -> [unicode@wchar] -> [实用要求:3 <= SZ4WORD <= 8]]
+      『3』<<==unicode
+      『16』<<==正交存取
+      『8』<<==正交存取&&实用{否则剩余可用指令数量太少}
+    [[指令头为单字节码] -> [正交化:带符号尺寸相关存取指令] -> [unicode@wchar] -> [二幂:SZ4WORD] -> [实用要求:SZ4WORD <- {4,8}]]
+      #!!!刚好与当下主流相同:32bit,64bit!!!
+.SZ4FILE_POSITION#文件偏移量长
+    .SZ4FILE_OFFSET#文件偏移量长
+    [SZ4FILE_OFFSET == SZ4FILE_POSITION <= SZ4WORD]
+.SZ4ADDRESS#址长
+    [SZ4ADDRESS <= SZ4WORD]
+.SZ4WCHAR#宽字符长
+    [SZ4WCHAR <= SZ4WORD]
+]]
+
+=======
+[[[
+多种调用协议:
+
+[[
+call:
+  push:(NR,?FR?):NR vs (NR,FR)
+  sz4args@DR => args inside frame or not
+  4==2*2==(贫调用/旧实帧/虚帧=!=实帧push:(NR)only|富调用/新实帧/虚帧==实帧push:(NR,FR))2*2(常规调用:虚帧外参数|填空调用:虚帧内参数)
+  4种情形:
+    [内外]参[贫富]调用
+    ==>>:
+    内参贫调用
+    内参富调用
+    外参贫调用
+    外参富调用
+    ==>>:
+    #lean_call
+    #rich_call
+    OP_CALL___(LEAN|RICH)__(INNER|OUTER)_ARGS
+    ==>>:
+    OP_CALL___LEAN__INNER_ARGS
+    OP_CALL___LEAN__OUTER_ARGS
+    OP_CALL___RICH__INNER_ARGS
+    OP_CALL___RICH__OUTER_ARGS
+
+  贫调用:用于:函数内部子函数调用:
+    FR 不变:变量透明(父子使用同一帧/变量区)
+      类似goto/jump，但能返回(甚至直接使父函数返回:自动返回)
+  富调用:用于:自动返回#内懒风格
+    富调用入栈次序:先NR再FR
+      !! 用 贫调用 实现 富调用时 采用 外懒风格
+      => 函数入口处{push FR; FR:=TR;}
+      => 入栈次序:先NR再FR
+
+  push:(NR,?FR?):NR vs (NR,FR)
+    push:(NR,FR)#富调用
+      调用前:stack:[..., [#FR==old_FR==here#], ..., [#TR==old_TR==here#]]
+      调用后:stack:[..., [#old_FR==here#], ..., [#old_TR==here#], *(old_NR,old_FR), [#new_FR==FR==new_TR==TR==here#]]
+
+    push:(NR)only#贫调用
+      调用前:stack:[..., [#FR==old_FR==here#], ..., [#TR==old_TR==here#]]
+      调用后:stack:[..., [#FR==old_FR==here#], ..., [#old_TR==here#], old_NR, [#new_TR==TR==here#]]
+
+  sz4args@DR => args inside frame or not
+    [has:sz4args@DR][args inside frame]
+      push:(NR,FR)
+        调用前:stack:[..., [#FR==old_FR==here#], ..., *(?,?), *args{len==DR}, [#TR==old_TR==here#]]
+        调用后:stack:[..., [#old_FR==here#], ..., *(old_NR,old_FR), [#new_FR==FR==here#], *args{len==DR}, [#TR==old_TR==here#]]
+          允许:自动返回
+          now:[sz4args:=TR-FR]
+          [sz4frame:=TR-FR]
+
+      push:(NR)only
+        调用前:stack:[..., [#FR==old_FR==here#], ..., (?), *args{len==DR}, [#TR==old_TR==here#]]
+        调用后:stack:[..., [#FR==old_FR==here#], ..., (old_NR), *args{len==DR}, [#TR==old_TR==here#]]
+          不允许:自动返回:人工OP_NPOP
+          但允许:父函数自动返回
+]]
+
+
+[[
+return:
+  pop:NR触底返回 vs (NR,FR)自动返回 vs (NR,FR)触底返回
+  has:sz4args@stack or not
+  xxx:(sz4args@stack|pushed old_FR) => args inside frame or not
+  (sz4args@stack) => args outside frame #常规返回+返回后续乊帧外参数
+  12==3*4==常规返回3 * 4(返回无后续1|返回后续乊帧外参数3(参数顶端自含字节数|过气帧底内赋参数字节数|sz4args@DR))
+  12种情形:
+    (触底贫返回|触底富返回|自动富返回)牜(如同无参|参顶参目|帧底参目|在线参目)
+    # (触底贫返回|触底富返回|自动富返回)牜(无|顶|底|简)
+    ==>>
+    触底贫返回牜如同无参
+    触底贫返回牜参顶参目
+    触底贫返回牜帧底参目
+    触底贫返回牜在线参目
+
+    触底富返回牜如同无参
+    触底富返回牜参顶参目
+    触底富返回牜帧底参目
+    触底富返回牜在线参目
+
+    自动富返回牜如同无参
+    自动富返回牜参顶参目
+    自动富返回牜帧底参目
+    自动富返回牜在线参目
+    ==>>:
+    #lean_return
+    #rich_return
+    OP_RETURN___(LEAN7TOUCH|RICH7TOUCH|RICH7AUTO)__(ASIF_NO_ARGS|SZ4ARGS6FRAME|SZ4ARGS6ARGS|SZ4ARGS6DR)
+    ==>>:
+    OP_RETURN___LEAN7TOUCH__ASIF_NO_ARGS
+    OP_RETURN___LEAN7TOUCH__SZ4ARGS6FRAME
+    OP_RETURN___LEAN7TOUCH__SZ4ARGS6ARGS
+    OP_RETURN___LEAN7TOUCH__SZ4ARGS6DR
+
+    OP_RETURN___RICH7TOUCH__ASIF_NO_ARGS
+    OP_RETURN___RICH7TOUCH__SZ4ARGS6FRAME
+    OP_RETURN___RICH7TOUCH__SZ4ARGS6ARGS
+    OP_RETURN___RICH7TOUCH__SZ4ARGS6DR
+
+    OP_RETURN___RICH7AUTO__ASIF_NO_ARGS
+    OP_RETURN___RICH7AUTO__SZ4ARGS6FRAME
+    OP_RETURN___RICH7AUTO__SZ4ARGS6ARGS
+    OP_RETURN___RICH7AUTO__SZ4ARGS6DR
+
+  pop:NR触底返回@贫返回 vs (NR,FR)自动返回@富返回 vs (NR,FR)触底返回@富返回
+    pop:(NR,FR)自动返回
+      返回前:stack:[..., [#old_FR==here#], ..., [#old_TR==here#], *(old_NR,old_FR), [#new_FR==FR==here#], *vars, [#new_TR==TR==here#]]
+      返回后:stack:[..., [#FR==old_FR==here#], ..., [#TR==old_TR==here#]]
+
+    pop:(NR,FR)触底返回
+      返回前:stack:[..., [#old_FR==here#], ..., [#old_TR==here#], *(old_NR,old_FR), [#new_TR==TR==here#][#new_FR==FR==anywhere#]]
+      返回后:stack:[..., [#FR==old_FR==here#], ..., [#TR==old_TR==here#]]
+
+    pop:(NR)only # 只能:触底返回 #不允许:自动返回
+      返回前:stack:[..., [#FR==old_FR==here#], ..., [#old_TR==here#], old_NR, [#new_TR==TR==here#]]
+      返回后:stack:[..., [#FR==old_FR==here#], ..., [#TR==old_TR==here#]]
+
+  返回后续乊帧外参数:略过参数@(参数顶端自含字节数|过气帧底内赋参数字节数|sz4args@DR)
+    即:返回后续乊帧外参数of(pop:NR触底返回 vs (NR,FR)自动返回 vs (NR,FR)触底返回)
+    *参数顶端自含字节数
+      返回后暨后续前:stack:[..., [#FR==old_FR==here#], ..., [#older_TR==here#], *args@(args_,sz4args), [#TR==old_TR==here#]]
+      返回后续后:stack:[..., [#FR==old_FR==here#], ..., [#TR==older_TR==here#]]
+    *过气帧底内赋参数字节数
+      返回后暨后续前:stack:[..., [#FR==old_FR==here#], ..., [#older_TR==here#], *args, [#TR==old_TR==here#]] ++ 过气部:[*(NR,?FR?),sz4args,...]
+      返回后续后:stack:[..., [#FR==old_FR==here#], ..., [#TR==older_TR==here#]]
+]]
+
+
+FREE
+  *自由风格:不考虑 参数+变量
+    返回无后续+触底返回@(贫返回|富返回)
+EASE/EASY/LAZY
+  # 内懒 组合 外懒
+  +内懒风格:不考虑 参数, 只考虑 变量
+    自动返回@富返回#vs:触底返回@(贫返回|富返回)
+  +外懒风格:只考虑 参数, 不考虑 变量
+    *全外懒风格#被调用者需入栈或载入冫参数字节数
+      帧底参目#返回后续乊帧外参数.过气帧底内赋参数字节数
+        #被调用者需最先入栈冫参数字节数
+      在线参目#返回后续乊帧外参数.sz4args@DR
+        #被调用者需于返回前载入冫参数字节数
+    *半外懒风格#调用者需入栈冫参数字节数
+      参顶参目#返回后续乊帧外参数.参数顶端自含字节数
+]]]
+
+=======
+[[[
+助记码设计:
+  OP_\w*
+
+[[
+目录:
+  集合纟指令头纟存取操作
+  集合纟指令头纟运算操作
+  集合纟指令头纟流程控制操作
+  集合纟指令头纟杂项操作
+  总数纟指令头牜三稿
+  详解冫流程控制操作
+  详解冫杂项操作
+]]
+
+
+
+=====
+存取操作:
+集合纟指令头纟存取操作:
+  *交换赋值:
+    +OP_(DAT|PTR)25(registers)
+      ==>>:
+      OP_DAT25CR
+      OP_PTR25RR
+      OP_DAT25ER==OP_PTR25DR#or:OP_DAT25PTR?
+        重复1对
+      total:3
+  *单向赋值:
+    +OP_JUMP#已存在@流程控制操作
+      total:1
+
+    +OP_BOOL5ROM_IR__[01]
+      total:2
+      ==>>:
+      OP_BOOL5ROM_IR__0
+      OP_BOOL5ROM_IR__1
+        #old-alias:{OP_LOAD_FALSE,OP_LOAD_TRUE}
+        #new-alias:{OP_BOOL5FALSE,OP_BOOL5TRUE}
+
+    #以下 byte_sz/repr4sz_le_sz4word@二稿 --> case8byte_sz/case4repr4sz_le_sz4word@三稿
+    +OP_(DAT|PTR)[25](HEAP|STACK|ROM_IR|ROM_NR|registers)(__[pn](num|case8byte_sz@byte_sz))?
+      [registers = (NR|FR|TR|RR|ER|CR|DR|BR)] #no:IR
+      @三稿:[case8byte_sz/case4repr4sz_le_sz4word <- 集合纟况态纟许可目标字长纟存取]
+        <-- @二稿:[byte_sz <- 集合纟许可目标字长纟存取]
+      #STACK:push/pop
+      #ROM_IR:指令头内立即数
+      #ROM_NR:指令头外立即数
+    ==>>:
+    OP_DAT2(HEAP|STACK)__[pn](case8byte_sz)
+    OP_DAT5(HEAP|STACK)__[pn](case8byte_sz)
+    OP_DAT5ROM_NR__[pn](case8byte_sz) [+-]num
+      #part==10*2**num_bits4case4repr4sz_le_sz4word
+    OP_DAT5ROM_IR__[pn](num)
+      #part==num_ops4DR5IR
+    OP_DAT[25](registers)
+      『2』:CR,ER?
+      『5』:CR,ER?,BR
+      #part==5
+
+    OP_PTR5ROM_IR__[pn](num)
+      #part==num_ops4ER5IR
+    OP_PTR5ROM_NR [+-]num
+      #part==1
+    OP_PTR[25](HEAP|STACK)
+      #part==4
+    OP_PTR[25](registers)
+      『2』『5』:(NR,FR,TR),RR,DR?
+      #part==10
+    ==>>:
+    重复2对:
+      [OP_PTR2DR == OP_DAT5ER]
+      [OP_PTR5DR == OP_DAT2ER]
+      #part==-2
+      #or:OP_DAT[25]PTR?
+      #     +OP_DAT2PTR?
+      #     +OP_DAT5PTR?
+
+  ==>>:
+  total:
+  !! [数量纟指令头纟存取操作==3+1+2+ (10*2**num_bits4case4repr4sz_le_sz4word + num_ops4DR5IR +5+ num_ops4ER5IR +1+4+10+ -2)==(24 + 10*2**num_bits4case4repr4sz_le_sz4word + num_ops4DR5IR + num_ops4ER5IR)]
+  [数量纟指令头纟存取操作==(24 + num_ops4DR5IR + num_ops4ER5IR + 10*2**num_bits4case4repr4sz_le_sz4word)]
+
+=====
+#草稿:[位操作6+算术操作7+真值操作8+流程控制操作4+地址偏移运算3+杂项操作4==6+7+8+4+3+4==32]
+=====
+#二稿:[运算操作35+流程控制操作6+杂项操作7==35+6+7==48]
+=====
+#三稿:[运算操作37+流程控制操作19+杂项操作6==37+19+6==62]
+=====
+=====
+运算操作:
+集合纟指令头纟运算操作:
+  #真值操作+位操作+算术操作+地址偏移运算
+OP_(BOOL|BITS|UINT|ADDR)5(ops)
+  [ops = (NOT|...|XOR|...|ADD|...|OFFSET4ARRAY|...)]
+  ==>>:
+  OP_BOOL5(ops)
+    [ops = (BIT_INDEX|LSB|MSB|NOT|NE0|EQ0|SINT_LT0|SINT_GT0|NE|EQ|UINT_LT|UINT_GT|SINT_LT|SINT_GT)]
+    14 #可减2:{NE0,NE}
+  OP_BITS5(ops)
+    [ops = (AND|OR|XOR|FLIP|UINT_SHIFT_LEFT|UINT_SHIFT_RIGHT|SINT_SHIFT_RIGHT)] #no:SINT_SHIFT_LEFT
+    7
+  OP_UINT5(ops)
+    [ops = (UINT_FLOOR_DIV_IF_NE0|UINT_MOD_IF_NE0|UINT_DIV_MOD_IF_NE0|SINT_FLOOR_DIV_IF_NE0|SINT_MOD_IF_NE0|SINT_DIV_MOD_IF_NE0|SUB|RSUB|MUL|ADD|NEG)]
+    11
+  OP_ADDR5(ops)
+    [ops = (OFFSET4ARRAY|OFFSET4FRAME|OFFSET4CODE|OFFSET4STACK|OFFSET4ITER)]
+    3#@二稿
+    5#@三稿
+      {OFFSET4STACK,OFFSET4ITER}#new@三稿
+  ==>>:
+  total:
+  [数量纟指令头纟运算操作==14+7+11+3==35]#@二稿
+  [数量纟指令头纟运算操作==14+7+11+5==37]#@三稿
+
+
+=====
+流程控制操作:
+集合纟指令头纟流程控制操作:
+#OP_PUSH#已存在@存取操作
+#OP_POP#已存在@存取操作
+OP_NPUSH    #npush/npop 可模拟 虚帧内参数
+OP_NPOP     #?可省?(<<== OP_NPUSH) #即便可省也很麻烦:(求-DR)影响寄存器CR，若push/pop则影响栈数据(可能希望平移无副作用)
+
+?OP_JUMP#也作为/已存在@存取操作
+OP_JUMP_IF
+
+二稿:
+  #OP_CALL @草稿--[rename]->OP_CALL__FREE@二稿
+  OP_CALL__FREE #paired_by:OP_RETURN__FREE or {OP_RETURN__POP_NARGS__NPOP after push sz4args manually@[TR==FR]}
+  OP_CALL__CALL_THEN_PUSH_NARGS #auto push DR@sz4args #{OP_CALL__CALL_THEN_PUSH_NARGS after {push *args ; [DR:=sz4args] }} paired_by:OP_RETURN__POP_NARGS__NPOP #del@三稿
+  #OP_RETURN@草稿--[rename]->OP_RETURN__POP_NARGS__NPOP@二稿
+  OP_RETURN__POP_NARGS__NPOP
+  OP_RETURN__FREE#new@三稿
+total:7-1==6 #OP_JUMP计数@存取操作 #@二稿
+
+#see:多种调用协议
+#@三稿:
+  OP_CALL___(LEAN|RICH)__(INNER|OUTER)_ARGS
+  OP_RETURN___(LEAN7TOUCH|RICH7TOUCH|RICH7AUTO)__(ASIF_NO_ARGS|SZ4ARGS6FRAME|SZ4ARGS6ARGS|SZ4ARGS6DR)
+  ==>>:
+  OP_CALL___LEAN__INNER_ARGS
+  OP_CALL___LEAN__OUTER_ARGS
+  OP_CALL___RICH__INNER_ARGS
+  OP_CALL___RICH__OUTER_ARGS # <--OP_CALL__FREE
+
+  OP_RETURN___LEAN7TOUCH__ASIF_NO_ARGS
+  OP_RETURN___LEAN7TOUCH__SZ4ARGS6FRAME
+  OP_RETURN___LEAN7TOUCH__SZ4ARGS6ARGS
+  OP_RETURN___LEAN7TOUCH__SZ4ARGS6DR
+
+  OP_RETURN___RICH7TOUCH__ASIF_NO_ARGS
+  OP_RETURN___RICH7TOUCH__SZ4ARGS6FRAME
+  OP_RETURN___RICH7TOUCH__SZ4ARGS6ARGS
+  OP_RETURN___RICH7TOUCH__SZ4ARGS6DR
+
+  OP_RETURN___RICH7AUTO__ASIF_NO_ARGS # <--OP_RETURN__FREE
+  OP_RETURN___RICH7AUTO__SZ4ARGS6FRAME # <--OP_RETURN__POP_NARGS__NPOP
+  OP_RETURN___RICH7AUTO__SZ4ARGS6ARGS
+  OP_RETURN___RICH7AUTO__SZ4ARGS6DR
+total:(2+2+4+12)-1==19 #『-1』:OP_JUMP计数@存取操作 #@三稿
+
+
+
+=====
+杂项操作:
+集合纟指令头纟杂项操作:
+OP_NOP
+OP_BAD #OP_BAD(;)对比:OP_HALT(DR;)#零参数:才能确保出错
+OP_HALT
+OP_YIELD
+[罕用指令]OP_MINOR_OPS 扩展部纟指令宏头/动态字节 #for future extension #new@三稿
+  虚拟机罕用指令头
+  罕用/次要:minor
+  罕见地:rarely/seldom/infrequently
+    infrequent
+
+[指令宏头]OP_PRINT # (DR@case4subcmd,(RR@(ptr)|CR@(uint|sint)); fp) #del@三稿 --> {变作 指令宏头}
+[指令宏头]OP_INPUT # (DR@case4subcmd,((CR@(max_size),RR@(ptr))|); fp) # 也作为:存取操作:取巛输入文件 #del@三稿 --> {变作 指令宏头}
+[罕用指令]OP_VM_SYS_CALL id4cmd/扩展部纟指令宏头纟虚拟机系统调用/动态字节 # {OP_PRINT,OP_INPUT} 也等价于 OP_VM_SYS_CALL 的 某个调用... #eg:clean_memory_between/fill_memory_between/copy_memory_between...
+  虚拟机系统调用
+total:7 #可减2:{OP_PRINT,OP_INPUT} #@二稿
+total:6 #del {OP_PRINT,OP_INPUT} && new OP_MINOR_OPS #@三稿
+
+
+
+=====
+
+=====
+[总数纟指令头牜二稿==(72 + num_ops4DR5IR + num_ops4ER5IR + 10*2**num_bits4repr4sz_le_sz4word)]
+  !! [数量纟指令头纟存取操作==(24 + num_ops4DR5IR + num_ops4ER5IR + 10*2**num_bits4repr4sz_le_sz4word)]
+  !! 二稿:[运算操作35+流程控制操作6+杂项操作7==35+6+7==48]
+!! [[极简] => [指令头长==1]]
+[总数纟指令头牜二稿 <= 256]
+[二稿]:
+  [(num_ops4DR5IR + num_ops4ER5IR + 10*2**num_bits4repr4sz_le_sz4word) <= 256-72 == 184]
+  [(10*2**num_bits4repr4sz_le_sz4word) <= 184]
+  [2**num_bits4repr4sz_le_sz4word <= 18.4]
+  [num_bits4repr4sz_le_sz4word <= 4]
+[二稿][num_bits4repr4sz_le_sz4word==4]:
+  !! [(num_ops4DR5IR + num_ops4ER5IR + 10*2**num_bits4repr4sz_le_sz4word) <= 184]
+  [(num_ops4DR5IR + num_ops4ER5IR + 10*2**4) <= 184]
+  [(num_ops4DR5IR + num_ops4ER5IR) <= 184 - 10*2**4 == 184-160 == 24]
+  [24诸下整数 拆分成 两个『二幂』之和:最大是16+8==24]
+[二稿][num_bits4repr4sz_le_sz4word==4][num_ops4ER5IR:=8][num_ops4DR5IR:=16]:
+  !! [总数纟指令头牜二稿==(72 + num_ops4DR5IR + num_ops4ER5IR + 10*2**num_bits4repr4sz_le_sz4word)]
+  [总数纟指令头牜二稿==(72 + 16 + 8 + 10*2**4)==(96 + 160)==256]
+    #刚好占满整个指令头字节编码空间
+
+=====
+[总数纟指令头牜三稿==(166 + num_ops4DR5IR + num_ops4ER5IR)]
+  !! [数量纟指令头纟存取操作==(24 + num_ops4DR5IR + num_ops4ER5IR + 10*2**num_bits4case4repr4sz_le_sz4word)]
+  !! [num_bits4case4repr4sz_le_sz4word==3]
+  !! 三稿:[运算操作37+流程控制操作19+杂项操作6==37+19+6==62]
+  [总数纟指令头牜三稿==(24+62 + num_ops4DR5IR + num_ops4ER5IR + 80)==(166 + num_ops4DR5IR + num_ops4ER5IR)]
+!! [[极简] => [指令头长==1]]
+[总数纟指令头牜三稿 <= 256]
+[三稿]:
+  [(num_ops4DR5IR + num_ops4ER5IR) <= 256-166 == 90]
+  [90诸下整数 拆分成 两个『二幂』之和:极大是:{32+32=64,64+16==80}]
+[三稿][num_ops4ER5IR:=16][num_ops4DR5IR:=64]:
+  !! [总数纟指令头牜三稿==(166 + num_ops4DR5IR + num_ops4ER5IR)]
+  [总数纟指令头牜三稿==(166+64+16)==246]
+  [256-246 == 10]
+    #还有点空闲
+
+=====
+
+
+=====
+
+
+=====
+详解冫流程控制操作:
+OP_NPUSH
+  [TR += DR] ;
+OP_NPOP
+  [TR -= DR] ;
+
+OP_JUMP
+  [NR := RR] ;
+OP_JUMP_IF
+  if BR then [NR := RR] ;
+
+@二稿:
+  OP_CALL__FREE
+    push NR,FR ; [(NR,FR) := (RR,TR)] ;
+    #at beginning of function:parser/user SHOULD:(push sz4args) when [FR==TR] before "return"
+  OP_CALL__CALL_THEN_PUSH_NARGS
+    push NR,FR ; [(NR,FR) := (RR,TR)] ; push (DR@sz4args) ;
+  OP_RETURN__POP_NARGS__NPOP
+    pop (_tmp_word_register@sz4args),FR,NR ; [TR -= sz4args] ;
+   #???howto clean args??? ==>>++sz4args: stack=[..., *args,*(NR,FR),?sz4args?,*vars, ...]
+   #
+  OP_PUSH==OP_DAT2STACK__p(SZ4WORD)
+    [*TR := DR] ; [TR += SZ4WORD] ;
+  OP_POP==OP_DAT5STACK__p(SZ4WORD)
+    [TR -= SZ4WORD] ; [DR := *TR] ;
+
+
+=====
+详解冫杂项操作:
+OP_NOP
+  {};
+OP_BAD
+  exit(-1) ;
+OP_HALT
+  exit(DR) ;
+OP_YIELD
+  yield/interrupt/pause DR ;
+[指令宏头]OP_PRINT # (DR@case4subcmd,(RR@(ptr)|CR@(uint|sint)); fp) #del@三稿 --> {变作 指令宏头}
+  case:subcmd
+  0:OP_PRINT_BYTES__SIZED           # bytes
+  1:OP_PRINT_BYTES__NUL_TERMINATED  # c_string
+  2:OP_PRINT_BYTE__LINEFEED         # b'\n'
+  3:OP_PRINT_UINT__HEX      #hexadecimal
+  4:OP_PRINT_UINT__DECIMAL
+  5:OP_PRINT_UINT__BINARY
+  6:OP_PRINT_SINT__HEX
+  7:OP_PRINT_SINT__DECIMAL
+  8:OP_PRINT_SINT__BINARY
+  9:OP_PRINT_WCHAR #using:terminal.encoding
+  xxx 10:OP_PRINT_UINT__BYTES
+  ===
+  0:OP_PRINT_BYTES__SIZED(DR==0,RR@ptr,CR@sz; fp)
+    pop (DR@fp) ;
+    (DR@FILE).write(RR[:sz:=CR]) ;
+      #fp = sf.DR
+      #ptr = sf.RR
+      #sz = sf.CR
+      #open(fp, 'wb', closefd=False).write(sf.RAM[ptr:ptr+sz])
+      #    #__=open(1, 'wb', closefd=False).write(b'233\n')
+      #    #"closefd=False" <<== avoid:OSError: [Errno 9] Bad file descriptor
+
+  ===
+  1.OP_PRINT_BYTES__NUL_TERMINATED(DR==1,RR@ptr; fp)
+    pop (DR@fp) ;
+    (DR@FILE).write(RR[:(until b'\0')]) ;
+
+  ===
+  2.OP_PRINT_BYTE__LINEFEED(DR==2; fp)
+    pop (DR@fp) ;
+    (DR@FILE).write(b'\n') ;
+
+  ===
+  3:OP_PRINT_UINT__HEX(DR==3,CR@uint; fp)
+    pop (DR@fp) ;
+    u = as_uint_(CR)
+    s = f'0x{u!X}' ;
+    (DR@FILE).write(s.encode('ascii')) ;
+
+  ===
+  4:OP_PRINT_UINT__DECIMAL(DR==4,CR@uint; fp)
+    pop (DR@fp) ;
+    u = as_uint_(CR)
+    s = f'{u}' ;
+    (DR@FILE).write(s.encode('ascii')) ;
+
+  ===
+  5:OP_PRINT_UINT__BINARY(DR==5,CR@uint; fp)
+    pop (DR@fp) ;
+    u = as_uint_(CR)
+    s = f'0b{u!B}' ;
+    (DR@FILE).write(s.encode('ascii')) ;
+
+  ===
+  6:OP_PRINT_SINT__HEX(DR==6,CR@sint; fp)
+    pop (DR@fp) ;
+    i = as_sint_(CR)
+    if i < 0:
+        s = f'-0x{-i!X}' ;
+    else:
+        s = f'0x{i!X}' ;
+    (DR@FILE).write(s.encode('ascii')) ;
+
+  ===
+  7:OP_PRINT_SINT__DECIMAL(DR==7,CR@sint; fp)
+    pop (DR@fp) ;
+    i = as_sint_(CR)
+    s = f'{i}' ;
+    (DR@FILE).write(s.encode('ascii')) ;
+
+  ===
+  8:OP_PRINT_SINT__BINARY(DR==8,CR@sint; fp)
+    pop (DR@fp) ;
+    i = as_sint_(CR)
+    if i < 0:
+        s = f'-0b{-i!B}' ;
+    else:
+        s = f'0b{i!B}' ;
+    (DR@FILE).write(s.encode('ascii')) ;
+
+  ===
+  9:OP_PRINT_WCHAR(DR==9,CR@wchar; fp)
+    pop (DR@fp) ;
+    #w = as_wchar_(CR)
+    w = chr(as_uint_(CR))
+    encoding = GLOBAL.terminal.encoding
+    (DR@FILE).write(w.encode(encoding)) ;
+
+  ===
+
+
+[指令宏头]OP_INPUT # (DR@case4subcmd,((CR@(max_size),RR@(ptr))|); fp) # 也作为:存取操作:取巛输入文件 #del@三稿 --> {变作 指令宏头}
+  case:subcmd
+  0:OP_INPUT_BYTES__SIZED           # bytes
+  1:OP_INPUT_BYTES__NUL_TERMINATED__MAX_SIZED           # c_string
+  2:OP_INPUT_BYTES__LINEFEED_TERMINATED__MAX_SIZED           # c_string
+  3:OP_INPUT_UINT__HEX
+  4:OP_INPUT_UINT__DECIMAL
+  5:OP_INPUT_UINT__BINARY
+  6:OP_INPUT_SINT__HEX
+  7:OP_INPUT_SINT__DECIMAL
+  8:OP_INPUT_SINT__BINARY
+  9:OP_INPUT_WCHAR #using:terminal.encoding
+  TODO:
+
+[罕用指令]OP_VM_SYS_CALL id4cmd/扩展部纟指令宏头纟虚拟机系统调用/动态字节 # {OP_PRINT,OP_INPUT} 也等价于 OP_VM_SYS_CALL 的 某个调用... #eg:clean_memory_between/fill_memory_between/copy_memory_between...
+  TODO:
+
+=====
+]]]
+
+=======
+[[[
+编码方案纟助记码@三稿:
+=====
+#三稿:[运算操作37+流程控制操作19+杂项操作6==37+19+6==62]
+=====
+[[三稿] => [num_bits4case4repr4sz_le_sz4word==3]]
+假设:[三稿][num_ops4ER5IR:=16][num_ops4DR5IR:=64]:
+
+=====
+目录:
+  编码纟指令头纟存取操作
+  编码纟指令头纟运算操作
+  编码纟指令头纟流程控制操作
+  编码纟指令头纟杂项操作
+  编码纟非指令头
+=====
+see:
+  集合纟指令头纟存取操作
+  集合纟指令头纟运算操作
+  集合纟指令头纟流程控制操作
+  集合纟指令头纟杂项操作
+
+
+=====
+编码纟指令头纟杂项操作:
+  #数量相对稳定
+  6
+# [OP_BAD := 0] 方便检测
+
+
+[0..<6]
+[0x00..<0x06]
+
+0x00 OP_BAD
+0x01 OP_NOP
+0x02 OP_HALT
+0x03 OP_YIELD
+0x04 OP_MINOR_OPS
+0x05 OP_VM_SYS_CALL
+
+=====
+编码纟指令头纟流程控制操作:
+  #数量相对稳定
+  19
+
+[6..<25]
+[0x06..<0x19]
+
+0x06 OP_NPUSH
+0x07 OP_NPOP
+[0x08..<0x0C] OP_CALL___(LEAN|RICH)__(INNER|OUTER)_ARGS
+[0x0C..<0x18] OP_RETURN___(LEAN7TOUCH|RICH7TOUCH|RICH7AUTO)__(ASIF_NO_ARGS|SZ4ARGS6FRAME|SZ4ARGS6ARGS|SZ4ARGS6DR)
+0x18 OP_JUMP_IF
+
+=====
+编码纟指令头纟运算操作:
+  #数量可能增长
+  37
+[25..<62]
+[0x19..<0x3E]
+
+[0x19..<0x27] OP_BOOL5(BIT_INDEX|LSB|MSB|NOT|NE0|EQ0|SINT_LT0|SINT_GT0|NE|EQ|UINT_LT|UINT_GT|SINT_LT|SINT_GT)
+    14 #可减2:{NE0,NE}
+[0x27..<0x2E] OP_BITS5(AND|OR|XOR|FLIP|UINT_SHIFT_LEFT|UINT_SHIFT_RIGHT|SINT_SHIFT_RIGHT) #no:SINT_SHIFT_LEFT
+    7
+[0x2E..<0x39] OP_UINT5(UINT_FLOOR_DIV_IF_NE0|UINT_MOD_IF_NE0|UINT_DIV_MOD_IF_NE0|SINT_FLOOR_DIV_IF_NE0|SINT_MOD_IF_NE0|SINT_DIV_MOD_IF_NE0|SUB|RSUB|MUL|ADD|NEG)
+    11
+[0x39..<0x3E] OP_ADDR5(OFFSET4ARRAY|OFFSET4FRAME|OFFSET4CODE|OFFSET4STACK|OFFSET4ITER)
+    5#@三稿
+
+=====
+编码纟非指令头:
+  #数量可能改变
+  空闲编码点:10
+
+[62..<72]
+[0x3E..<0x48]
+
+=====
+编码纟指令头纟存取操作:
+  #数量可能缩减
+  <<==:
+  !! [数量纟指令头纟存取操作==(24 + num_ops4DR5IR + num_ops4ER5IR + 10*2**num_bits4case4repr4sz_le_sz4word)]
++ 散装编码点纟存取操作:24
++ 大数量正交编码点纟存取操作:160==64+16+64+16
+  *数量相对稳定
+    OP_DAT2(HEAP|STACK)__[pn](case8byte_sz)
+    OP_DAT5(HEAP|STACK)__[pn](case8byte_sz)
+    OP_DAT5ROM_NR__[pn](case8byte_sz) [+-]num
+      #part==10*2**num_bits4case4repr4sz_le_sz4word
+      80
+      64+16
+      6bit + 4bit
+    OP_DAT5ROM_IR__[pn](num)
+      #part==num_ops4DR5IR
+      64
+      6bit
+  *数量可能缩减
+    OP_PTR5ROM_IR__[pn](num)
+      #part==num_ops4ER5IR
+      16
+      4bit
+==>>:
+从后往前填充:取大优先(对齐大):
+[0xC0..=0xFF] OP_DAT[25](HEAP|STACK)__[pn](case8byte_sz)
+  6bit
+[0x80..<0xC0] OP_DAT5ROM_IR__[pn](num)
+  6bit
+[0x70..<0x80] OP_DAT5ROM_NR__[pn](case8byte_sz) [+-]num
+  4bit
+[0x60..<0x70] OP_PTR5ROM_IR__[pn](num)
+  4bit #数量可能缩减
+[0x48..<0x60] 散装编码点纟存取操作
+  24
+==>>:
+[72..<256]
+[0x48..=0xFF]
+
+细节: [0x48..<0x60] 散装编码点纟存取操作
+  ==>>:
+    #{0..<8}%8
+0x48 OP_DAT25PTR
+0x49 OP_DAT25CR
+0x4A OP_PTR25RR
+      3
+
+    #{0..<8}%8
+0x4B OP_JUMP
+      1
+
+    #{0,2,4,6}%8
+[0x4C..<0x4E] OP_BOOL5ROM_IR__[01]
+      +OP_BOOL5ROM_IR__0
+      +OP_BOOL5ROM_IR__1
+      2
+
+    #{0..<8}%8
+[0x4E..<0x50] OP_DAT[25]PTR
+      +OP_DAT2PTR
+      +OP_DAT5PTR
+[0x50..<0x52] OP_DAT[25]CR
+0x52 OP_DAT5BR
+      5
+
+    #{0,3,4,7}%8
+0x53 OP_PTR5ROM_NR [+-]num
+[0x54..<0x58] OP_PTR[25](HEAP|STACK)#4
+[0x58..<0x60] OP_PTR[25](NR,FR,TR,RR)#8
+      8+4+1==13
+
+
+
+
+=====
+]]]
+
+=======
+]]]]]]]
+
+ls /data/data/com.termux/files/usr/include/c++/v1/
+cat /data/data/com.termux/files/usr/include/c++/v1/cstddef
+cat /data/data/com.termux/files/usr/include/c++/v1/cstdint
+cat /data/data/com.termux/files/usr/include/c++/v1/stddef.h
+cat /data/data/com.termux/files/usr/include/c++/v1/stdint.h
+#grep '_t\b' /data/data/com.termux/files/usr/include/c++/v1/__config
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+!?[[#obsolete
+!?过气，但仍作为参考:草稿/初稿
+!?
+!?极简虚拟机:
+!?极简机器模型:
+!?数据用存储器#RAM#memory
+!?  调用栈#stack#相对寻址:bp+offset
+!?  堆#heap#绝对寻址
+!?  #random access read/write memory (RAM)
+!?只读存储器#ROM
+!?  指令用存储器#opcodes
+!?  # OP_PRINT ==>> [ROM inside RAM]
+!?必要寄存器:
+!?  #OP_CALL相关:调用函数时必须入栈
+!?  寄存器纟指令地址#NR#下一条指令地址
+!?    # instruction register(IR)
+!?    # [program counter(PC) === instruction pointer(IP)]
+!?    # [value{IR} === 当前指令]
+!?    # [value{PC} === 下一条指令地址]
+!?  寄存器纟帧栈基址#FR#BP#相对寻址#frame
+!?  #OP_CALL相关:但调用函数时无须入栈
+!?  寄存器纟帧栈末址#TR#SP#tail
+!?    #stack pointer(SP)
+!?  #OP_CALL无关:
+!?  寄存器纟累积操作数#CR#ACC#返回值纟函数调用
+!?    #"A" - register as accumulator for arithmetic logic unit(ALU)
+!?    #"Z", "P", "C" are single bit condition flags or status registers, which are set "true" when an operation causes a register to change to a zero value, or to a positive value, or to propagate a carry, respectively.
+!?    #   [Z := (CR==0)]
+!?    #   [P := (CR>0)]
+!?    #   [C := carry from OP_ADD,OP_SUB]
+!?  寄存器纟真值#BR#Z_P_C
+!?    #真值操作 不写入 CR
+!?  寄存器纟额外操作数#DR#DAT#中转站纟数据流通
+!?  寄存器纟地址纟解引用#RR#REF
+!?  寄存器纟地址纟中转#ER#类似DR之于WORD
+!?    # ER必要性 <<== 写出指针:[*RR := ER]
+!?    #
+!?    #RR,ER:
+!?    #"X" - the index register
+!?    #"EAR" - the effective address register
+!?    #xxx:假设 指针与机器字 等大
+!?    #假设 指针的字节数 不大于 机器字的字节数
+!?    #OP_STORE_HEAP8WORD(RR,DR) ==>> [RR is not DR]
+!?    #临时用只写性寄存器:tmp&&sink
+!?
+!?[NR,FR,TR,RR,ER :: address]
+!?[CR,DR :: word]
+!?[BR :: bool]
+!?数据流动方向:
+!?  #隐式使用:调用相关
+!?  (NR,FR,TR)
+!?  #单向赋值:
+!?  RR <- ER,地址运算结果#地址偏移
+!?  CR <- DR,整数运算结果#包括:地址减法:转化为:段页小端减法
+!?  BR <- CR,ROM@IR,真值运算结果#包括:地址比较:转化为:段页小端比较
+!?  ER <- ROM@IR{必带符号,固定比特数},ROM@NR{无符号&&尺寸无效},heap,stack,(NR,FR,TR),RR,DR{段页小端}
+!?      #只载入 绝对地址<<==相对寻址:使用:DR作为 偏移量offset
+!?      #相对地址:转化为:绝对地址:
+!?      #     RR += DR
+!?      #     RR := FR+DR
+!?      #     RR := NR+DR
+!?  DR <- ROM@IR{必带符号,固定比特数},(ROM@NR,heap,stack){is_signed,1..SZ4WORD},CR,ER{段页小端},BR
+!?  heap,stack <- ER{无符号&&尺寸无效},DR{is_signed,1..SZ4WORD}
+!?  #交换swap:
+!?  DR <-> CR,ER{段页小端,is_signed}
+!?  ER <-> RR
+!?
+!?.SZ4WCHAR
+!?  #假设 宽字符的字节数 不大于 机器字的字节数
+!?  #[sizeof(wchar) <= sizeof(word)]
+!?  #[SZ4WCHAR <= SZ4WORD]
+!?.SZ4OPCODE
+!?  默认= 1
+!?  但 可以 更大，或 动态长度
+!?.SZ4ADDRESS
+!?  默认= SZ4WORD
+!?  最好:[SZ4ADDRESS<=SZ4WORD]
+!?  但 除了『指针段页内模运算』『可能导致UB』&&『违背约束:RR临时用只写性寄存器』，[SZ4ADDRESS>SZ4WORD]也行
+!?.SZ4WORD
+!?    [[指令为单字节码] -> [正交化:带符号尺寸相关存取指令] -> [unicode@wchar] -> [实用要求:3 <= SZ4WORD <= 8]]
+!?      『3』<<==unicode
+!?      『16』<<==正交存取
+!?      『8』<<==正交存取&&实用{否则剩余可用指令数量太少}
+!?    [[指令为单字节码] -> [正交化:带符号尺寸相关存取指令] -> [unicode@wchar] -> [二幂:SZ4WORD] -> [实用要求:SZ4WORD <- {4,8}]]
+!?      #!!!刚好与当下主流相同:32bit,64bit!!!
+!?  xxx.SZ4WORD = SZ4ADDRESS
+!?    #why?假设 指针与机器字 等大:
+!?    #   xxx:[SZ4WORD==SZ4ADDRESS]
+!?    #       假设[SZ4ADDRESS<=SZ4WORD]再强行加大指针尺寸
+!?    #
+!?    #假设 指针的字节数 不大于 机器字的字节数
+!?    #   否则 两段式载入/分区分页？太麻烦
+!?    #[SZ4ADDRESS<=SZ4WORD]
+!?    #   push/pop word?统一 或 区分 基础数据类型 但 word最大
+!?    #   DR 中转,CR同一处理
+!?    #   若『>』则 指针变量自增、指针保存、指针载入、指针减法、指针比较、指针偏移 都麻烦
+!?    #   若『>』则 指针变量自增(段页小端->DR->CR,修改再写回)、指针保存(多word多次 或 直接从RR读出:小毛病:『违背约束:RR临时用只写性寄存器』)、指针载入(多word多次 或 直接载入到RR没毛病)、指针减法(word不能保存结果:数组限长&&数组元素同段页&&不同段页指针比较未定义:类似C.size_t&&UB未定义行为:还行)、指针比较(不同段页则UB)、指针偏移(加word，不能遍及 整个地址空间:(相对寻址 限制同段页:函数不能太长:毛病不大)(没毛病:绝对跳转+调用)) 都麻烦
+!?    #xxx:假设 指针的字节数 小于 机器字的字节数
+!?    #   这么看，除了『指针段页内模运算』『可能导致UB』&&『违背约束:RR临时用只写性寄存器』，[SZ4ADDRESS>SZ4WORD]也行
+!?    #xxx:[SZ4ADDRESS<SZ4WORD]
+!?    #   xxx:这样一来，跳转相对寻址 才能遍及 整个地址空间(符号位 不导致 寻址空间减半)
+!?    #   没必要:(符号位 不可能导致 寻址空间减半)
+!?.BIT_SZ4WORD = 8*SZ4WORD
+!?  # !! [BIT_SZ4BYTE === 8]
+!?.RADIX4WORD = (1<<sf.BIT_SZ4WORD)
+!?.MAX4WORD = (sf.RADIX4WORD -1)
+!?.MSB4WORD = (1 << (sf.BIT_SZ4WORD-1))
+!?.MAX4ADDRESS
+!?基础数据类型:
+!?  word/uint
+!?    sword/int?
+!?  address/ptr#无符号
+!?    #alignment???
+!?    #   读写时区分指针类型？『+1』操作 隐含单位 alignment
+!?    #   但是 字节码 立即数(补助字节:ancillary bytes) 不可能 对齐#除非填充nop
+!?    #       只需 对齐 字节边界
+!?    address=???:
+!?    address4void=???:byte vs bit???
+!?      address4word
+!?        <<==字码，『+1』
+!?      address4byte
+!?        <<==字节码，『+1』
+!?      address4bool#??? +3bit
+!?        ==>>alignment<address4byte>:必要:最后3bit全零
+!?      address4wchar
+!?  不同字长只用于存取时区分:
+!?    uint<byte_sz>
+!?      sint<byte_sz>
+!?      [1 <= byte_sz <= SZ4WORD]
+!?  byte/uint8_t
+!?    sbyte#relative
+!?    [0 < u < RADIX4WORD] -> [-u == (-u)%RADIX4WORD == RADIX4WORD-u == 1 + ~u]
+!?    [0 <= u < RADIX4WORD] -> [-u == (-u)%RADIX4WORD == (RADIX4WORD-u)%RADIX4WORD == (1 + ~u)%RADIX4WORD]
+!?      [-u == u] <-> [u ]
+!?  char===wchar#?unicode_char_pt
+!?  bool
+!?
+!?存取:
+!?  #暂不考虑:取指令内立即数:CLR
+!?  #     只考虑:指令外数据#vs:指令内立即数
+!?  #暂不考虑:交换:OP_SWAP_CR
+!?  #     只考虑:单向赋值
+!?  is_signed:正交化:浪费四分之一编码空间
+!?    (+, uint%16) [0..<16]
+!?    (-, sint%16) [-8..<8]
+!?      ==>> [-8..<16] / (16+16)
+!?      ==>> 24/32 #部分重复
+!?    [必要浪费<==>正负不可预料]
+!?    [必要浪费]:
+!?      RAM(heap,stack)
+!?        xxx:但是，必带符号 编码空间更大
+!?          不对！指令外数数据 编码空间固定！
+!?    [非必要浪费]:
+!?      指令外立即数/ROM@NR
+!?      指令内立即数/ROM@IR
+!?      (-, sint%32)
+!?      ==>> [-16..<16] / 32
+!?      ==>> 32/32 #无浪费
+!?    !! [『必带符号』比『(is_signed)』 编码空间更大]
+!?    xxx => 现:固化[is_signed:=True]
+!?          不对！指令外数数据 编码空间固定！
+!?    => 现:固化[指令内立即数.is_signed:=True]
+!?  取/读取/载入:
+!?    xxx目标:DR,RR
+!?    xxx源自:heap,stack(<->DR),ROM@NR
+!?    目标:DR,RR{无符号&&尺寸无效:除非<-ROM@NR}
+!?    源自:heap,stack,ROM@NR
+!?    欤带符号:is_signed/bool
+!?    尺寸:byte_sz
+!?      #暂不考虑:『源自:registers(尺寸无效)』
+!?  存/写出/存储:
+!?    xxx目标:heap,stack(<->DR)
+!?    xxx源自:DR #?RR?
+!?    目标:heap,stack
+!?    源自:DR,RR{无符号&&尺寸无效}
+!?        现允许:[SZ4ADDRESS>SZ4WORD]==>>『指针段页内模运算』『可能导致UB』&&『违背约束:RR临时用只写性寄存器
+!?    欤带符号:is_signed/bool
+!?    尺寸:byte_sz
+!?      #暂不考虑:目标:registers(尺寸无效)
+!?  存取stack(<->DR):
+!?    OP_PUSH
+!?    OP_POP
+!?    {push,pop}<is_signed,byte_sz> (<->DR)
+!?      #集成一字节码:占用256之2**(2+(SZ4WORD-1).bit_length())
+!?      # [4*SZ4WORD <= 占用数量==2**? < 8*SZ4WORD]
+!?      #SZ4WORD为 二幂 时，编码效率最高
+!?  ++存取stack(<->RR){无符号&&尺寸无效}:
+!?    OP_PUSH8ADDRESS
+!?    OP_POP8ADDRESS
+!?    #集成一字节码:占用256之2
+!?
+!?  存heap(<-DR):
+!?    OP_STORE_HEAP8WORD
+!?    OP_STORE_HEAP8SBYTE
+!?    store_heap<is_signed,byte_sz> (<-DR)
+!?      #集成一字节码:占用256之2**(1+(SZ4WORD-1).bit_length())
+!?  ++存heap(<-RR):
+!?    OP_STORE_HEAP8ADDRESS
+!?
+!?  取(heap,ROM@NR)(->DR,RR):
+!?    OP_LOAD_ROM8ADDRESS
+!?    OP_LOAD_HEAP8WORD
+!?    load_{heap,rom}2{DR,RR}<is_signed,byte_sz>
+!?      #集成一字节码:占用256之2**(3+(SZ4WORD-1).bit_length())
+!?
+!?  汇总:带符号尺寸相关存取指令:
+!?      #暂不考虑:目标:registers(尺寸无效)
+!?      集成一字节码:占用256之2**({2,1,3}+(SZ4WORD-1).bit_length())
+!?        == 14*2**((SZ4WORD-1).bit_length())
+!?      [[指令为单字节码] -> [1 <= SZ4WORD <= 16]]
+!?      # 过气:[数量纟带符号尺寸相关存取指令纟当前指令集=41-9=32]
+!?      #     而且可预见数量必然增长:更多中断指令OP_HALT.../更多系统调用OP_PRINT.../更多算术运算OP_ADD,rsub,rdiv,rmod.../更多存取指令:取指令内立即数:CLR.../...
+!?      [[指令为单字节码] -> [9 <= SZ4WORD <= 16] -> [数量纟带符号尺寸相关存取指令==224][剩余数量纟非冫带符号尺寸相关存取指令==256-224==32]]
+!?      ==>>:
+!?      [[指令为单字节码] -> [正交化:带符号尺寸相关存取指令] -> [实用要求:1 <= SZ4WORD <= 8]]
+!?      !! [bit_size_of(unicode_char_pt) == 21] # [0..<0x11_00_00]
+!?      [byte_size_of(unicode_char_pt) == 3]
+!?      !! [SZ4WCHAR <= SZ4WORD]
+!?      [SZ4WORD >= SZ4WCHAR >= byte_size_of(unicode_char_pt) == 3]
+!?      ==>>:
+!?      [[指令为单字节码] -> [正交化:带符号尺寸相关存取指令] -> [unicode@wchar] -> [实用要求:3 <= SZ4WORD <= 8]]
+!?        『3』<<==unicode
+!?        『16』<<==正交存取
+!?        『8』<<==正交存取&&实用{否则剩余可用指令数量太少}
+!?    [[指令为单字节码] -> [正交化:带符号尺寸相关存取指令] -> [unicode@wchar] -> [二幂:SZ4WORD] -> [实用要求:SZ4WORD <- {4,8}]]
+!?      #!!!刚好与当下主流相同:32bit,64bit!!!
+!?>>> for SZ4WORD in range(18):
+!?...     (SZ4WORD,14*2**((SZ4WORD-1).bit_length()))
+!?...
+!?(1, 14)
+!?(2, 28)
+!?(3, 56)
+!?(4, 56)
+!?(5, 112)
+!?(6, 112)
+!?(7, 112)
+!?(8, 112)
+!?(9, 224)
+!?(10, 224)
+!?(11, 224)
+!?(12, 224)
+!?(13, 224)
+!?(14, 224)
+!?(15, 224)
+!?(16, 224)
+!?(17, 448)
+!?>>> 256-224
+!?32
+!?
+!?
+!?===opcode:
+!?  TODO:++BR
+!?  TODO:++OP_LOAD_INSIDE_INSTRUCTION8WORD{sint%32}:CLR/CLEAR
+!?    is_signed:正交化:浪费四分之一编码空间
+!?  ???COPY/LOAD==="MOV"
+!?#位操作6
+!?.OP_BITWISE_AND # CR &= DR
+!?.OP_BITWISE_OR # CR |= DR
+!?.OP_BITWISE_XOR # CR ^= DR
+!?.OP_BITWISE_NOT # CR = (~CR) & MAX4WORD
+!?.OP_SHIFT_LEFT # CR <<= DR
+!?.OP_SHIFT_RIGHT # CR >>= DR
+!?xxx .OP_ROTATE_LEFT
+!?xxx .OP_ROTATE_RIGHT
+!?
+!?#算术操作7
+!?.OP_FLOOR_DIV_IF_NE0 # if not 0==DR then CR //= DR
+!?.OP_MOD_IF_NE0 # if not 0==DR then CR %= DR
+!?.OP_DIV_MOD_IF_NE0 # if not 0==DR then (CR,DR) = divmod(CR,DR)
+!?.OP_SUB # CR -= DR
+!?
+!?.OP_MUL # CR *= DR
+!?.OP_ADD # CR += DR
+!?.OP_NEG # CR = -CR
+!?
+!?#真值操作8
+!?.OP_GET_LSB # BR = bool(CR & 1)
+!?.OP_GET_MSB # BR = bool(CR & MSB4WORD)
+!?    # ==>> OP_LT0/OP_SINT_LT0
+!?.OP_NOT # BR = NOT BR
+!?# compare4unsigned_integer
+!?.OP_NE0 # BR = not (CR==0)
+!?.OP_EQ0 # BR = (CR==0)
+!?  ==>> BR = NOT CR
+!?.OP_UINT_LT # BR = (CR < DR)
+!?.OP_UINT_GT # BR = (CR > DR)
+!?.OP_UINT_EQ # BR = (CR == DR)
+!?
+!?#流程控制操作4
+!?.OP_JUMP # NR = RR
+!?#.OP_JUMP_IF_NE0 # if not 0==CR then NR = RR
+!?.OP_JUMP_IF # if BR then NR = RR
+!?.OP_CALL # push NR,FR ; NR,FR = RR,TR
+!?.OP_RETURN # TR = FR ; pop NR,FR ;
+!?  #???howto clean args??? ==>>++sz4args: stack=[..., *args,*(NR,FR),?sz4args?,*vars, ...]
+!?  #
+!?#存取操作*流程控制操作:2??many more...
+!?.OP_PUSH # *TR = DR ; TR += 1
+!?.OP_POP # TR -= 1 ; DR = *TR
+!?#存取操作:取指令内立即数34??many more...
+!?.OP_LOAD_INSIDE_INSTRUCTION8WORD{sint%32} # DR := 指令内立即数#带符号
+!?  .OP_LOAD_INSIDE_INSTRUCTION8WORD_00
+!?  ...
+!?  .OP_LOAD_INSIDE_INSTRUCTION8WORD_31
+!?xxx .OP_LOAD_INSIDE_INSTRUCTION8BOOL{uint%2} # BR := 指令内立即数#真值
+!?.OP_LOAD_TRUE
+!?.OP_LOAD_FALSE
+!?#存取操作15??many more...
+!?#byteorder='little' since "trunc"
+!?.OP_LOAD_ROM8ADDRESS address #ROM->RR#立即寻址
+!?    # <<== OP_CALL,OP_JUMP
+!?    #   # leave CR,DR unchanged
+!?.OP_LOAD_ROM8WORD word #ROM->DR#立即寻址
+!?.OP_LOAD_HEAP8ADDRESS #RR@(HAEP/address)->DR
+!?.OP_STORE_HEAP8ADDRESS #DR->RR@(HAEP/address)
+!?    # <<== maybe:[SZ4ADDRESS < SZ4WORD]
+!?    要么 DR 能保存完整地址
+!?    要么 增加 新的地址寄存器:ER
+!?    # <<== maybe:[SZ4ADDRESS > SZ4WORD]
+!?.OP_LOAD_HEAP8WORD #RR@(HAEP/address)->DR
+!?.OP_STORE_HEAP8WORD #DR->RR@(HAEP/address)
+!?    # ==>> [RR is not DR]
+!?.OP_LOAD_ROM8SBYTE byte #ROM->DR
+!?    # <<== OP_JUMP.relative
+!?    # <<== get arg/var (DR <=-3 or DR >= 1)
+!?.OP_LOAD_HEAP8SBYTE #RR@(HAEP/address)->DR
+!?.OP_STORE_HEAP8SBYTE #DR->RR@(HAEP/address)
+!?.OP_LOAD_BR #BR->DR
+!?xxx .OP_STORE_BR #DR->BR #类型降级有风险
+!?.OP_LOAD_CR #CR->DR#寄存器寻址
+!?.OP_STORE_CR #DR->CR
+!?.OP_SWAP_CR #DR<->CR
+!?.OP_STORE_RR_LOW #DR->RR #仅:段页小端
+!?  ###xxx .OP_LOAD_RR #RR->DR #临时用只写性寄存器
+!?.OP_LOAD_RR_LOW #RR->DR #仅:段页小端
+!?  现允许:[SZ4ADDRESS>SZ4WORD]==>>『指针段页内模运算』『可能导致UB』&&『违背约束:RR临时用只写性寄存器
+!?#地址偏移运算3
+!?.OP_OFFSET4ARRAY # RR = ER+DR #????RR += DR?
+!?.OP_OFFSET4FRAME # RR = FR+DR
+!?    # <<== get arg/var (DR <=-3 or DR >= 1)
+!?    #   (-2,-1,0)==>>(NR,FR,?sz4args?)
+!?.OP_OFFSET4CODE # RR = NR+DR
+!?    # <<== OP_JUMP.relative
+!?
+!?#杂项操作4
+!?#空操作，中断指令，系统调用指令
+!?.OP_NOP #no op
+!?.OP_HALT #stop #return DR
+!?.OP_YIELD #yield DR
+!?.OP_PRINT # (DR@FILE).write(RR[:sz:=CR])
+!?    # ==>> [ROM inside RAM]
+!?#xxx .OP_READ_WCHAR # (DR@FILE).write(RR[:sz:=CR])
+!?
+!?xxx .OP_LT0
+!?xxx .OP_LOAD_STACK #STACK/FR+DR@offset->DR
+!?xxx .OP_STORE_STACK #CR->STACK/FR+offset
+!?
+!?
+!?def _push(sf, u, /):
+!?    uint2bytes_(sf.RAM, sf.TR, sf.SZ4WORD, u)
+!?      #_push@TR vs:store_word_@RR
+!?    #sf.RAM[sf.TR] = sf.DR
+!?    sf.TR += 1
+!?def _pop(sf, /):
+!?    sf.TR -= 1
+!?    #sf.DR = sf.RAM[sf.TR]
+!?    u = uint5bytes_(sf.RAM, sf.TR, sf.SZ4WORD)
+!?      #_pop@TR vs:load_word_@RR
+!?    return u
+!?def byte2sword_(sf, u, /):
+!?    return u if u < 0x80 else (u-0x100)&sf.MAX4WORD
+!?def uint2bytes_(bytes, begin, sz, u, /):
+!?    bs = u.to_bytes(sz, byteorder='little', signed=False)
+!?        #^OverflowError
+!?    bytes[begin:begin+sz] = bs
+!?def uint5bytes_(bytes, begin, sz, /):
+!?    u = int.from_bytes(bytes[begin:begin+sz], byteorder='little', signed=False)
+!?    return u
+!?def fetch_sz_(sf, sz, /):
+!?    u = uint5bytes_(sf.ROM, sf.NR, sz)
+!?    sf.NR += sz
+!?    return u
+!?def fetch_opcode_(sf, /):
+!?    return (opcode := sf.fetch_sz_(sf.sz4opcode))
+!?def fetch_address_(sf, /):
+!?    return (address := sf.fetch_sz_(sf.SZ4ADDRESS))
+!?def fetch_word_(sf, /):
+!?    return (word := sf.fetch_sz_(sf.SZ4WORD))
+!?
+!?def load_sz_(sf, sz, /):
+!?    u = uint5bytes_(sf.RAM, sf.RR, sz)
+!?    return u
+!?def load_address_(sf, /):
+!?    return (address := sf.load_sz_(sf.SZ4ADDRESS))
+!?def load_word_(sf, /):
+!?    return (word := sf.load_sz_(sf.SZ4WORD))
+!?def load_byte_(sf, /):
+!?    return (byte := sf.load_sz_(1))
+!?
+!?def store_sz_(sf, sz, u, /):
+!?    uint2bytes_(sf.RAM, sf.RR, sz, u)
+!?    return
+!?def store_address_(sf, u, /):
+!?    sf.store_sz_(sf.SZ4ADDRESS, u)
+!?def store_word_(sf, u, /):
+!?    sf.store_sz_(sf.SZ4WORD, u)
+!?def store_byte_(sf, u, /):
+!?    sf.store_sz_(1, u)
+!?class Halt(BaseException):pass
+!?#BaseExceptionGroup(msg, exceptions)
+!?#ExceptionGroup(msg, exceptions)
+!?def execute_opcode_(sf, opcode, /):
+!?    '-> (return-None|yield-word/DR|raise-Halt)'
+!?    if 0:
+!?        pass
+!?    ######################
+!?    #算术操作
+!?    elif opcode is sf.OP_FLOOR_DIV_IF_NE0:
+!?        if not 0==sf.DR:
+!?            sf.CR //= sf.DR
+!?    elif opcode is sf.OP_MOD_IF_NE0:
+!?        if not 0==sf.DR:
+!?            sf.CR %= sf.DR
+!?    elif opcode is sf.OP_DIV_MOD_IF_NE0:
+!?        if not 0==sf.DR:
+!?            (sf.CR, sf.DR) = divmod(sf.CR, sf.DR)
+!?    elif opcode is sf.OP_MUL:
+!?        sf.CR *= sf.DR
+!?        sf.CR &= sf.MAX4WORD
+!?    elif opcode is sf.OP_ADD:
+!?        sf.CR += sf.DR
+!?        sf.CR &= sf.MAX4WORD
+!?    elif opcode is sf.OP_SUB:
+!?        sf.CR -= sf.DR
+!?        sf.CR &= sf.MAX4WORD
+!?    elif opcode is sf.OP_NEG:
+!?        sf.CR = sf.RADIX4WORD -sf.CR
+!?        sf.CR &= sf.MAX4WORD
+!?    ######################
+!?    #真值操作
+!?    elif opcode is sf.OP_GET_MSB:
+!?        sf.BR = bool(sf.CR & sf.MSB4WORD)
+!?    elif opcode is sf.OP_NOT:
+!?        sf.BR = not sf.BR
+!?    # compare4unsigned_integer
+!?    elif opcode is sf.OP_EQ0:
+!?        # ==>> (not sf.CR)
+!?        sf.BR = (0 == sf.CR)
+!?    elif opcode is sf.OP_UINT_LT:
+!?        sf.BR = (sf.CR < sf.DR)
+!?    elif opcode is sf.OP_UINT_GT:
+!?        sf.BR = (sf.CR > sf.DR)
+!?    elif opcode is sf.OP_UINT_EQ:
+!?        sf.BR = (sf.CR == sf.DR)
+!?    ######################
+!?    #位操作
+!?    elif opcode is sf.OP_BITWISE_AND:
+!?        sf.CR &= sf.DR
+!?    elif opcode is sf.OP_BITWISE_OR:
+!?        sf.CR |= sf.DR
+!?    elif opcode is sf.OP_BITWISE_XOR:
+!?        sf.CR ^= sf.DR
+!?    elif opcode is sf.OP_BITWISE_NOT:
+!?        sf.CR = (~sf.CR) & sf.MAX4WORD
+!?    elif opcode is sf.OP_SHIFT_LEFT:
+!?        if sf.DR < BIT_SZ4WORD:
+!?          sf.CR <<= sf.DR
+!?          sf.CR &= sf.MAX4WORD
+!?        else:
+!?          sf.CR = 0
+!?    elif opcode is sf.OP_SHIFT_RIGHT:
+!?        sf.CR >>= sf.DR
+!?        sf.CR &= sf.MAX4WORD
+!?    ######################
+!?    #流程控制操作
+!?    elif opcode is sf.OP_JUMP:
+!?        sf.NR = sf.RR
+!?    #lif opcode is sf.OP_JUMP_IF_NE0:
+!?    #   if not 0==sf.CR:
+!?    #       sf.NR = sf.RR
+!?    elif opcode is sf.OP_JUMP_IF:
+!?        if sf.BR:
+!?            sf.NR = sf.RR
+!?    elif opcode is sf.OP_CALL:
+!?        _push(sf, sf.NR)
+!?        _push(sf, sf.FR)
+!?        sf.NR = sf.RR
+!?        sf.FR = sf.TR
+!?        #at beginning of function:parser/user SHOULD:_push(sf, sz4args)#sz4args maybe constant or passby DR/stack/args[-1]
+!?    elif opcode is sf.OP_RETURN:
+!?        #assert sf.FR == sf.TR, 'not match: OP_PUSH,OP_POP'
+!?        sf.TR = sf.FR + 1
+!?        sz4args = _pop(sf)
+!?        sf.FR = _pop(sf)
+!?        sf.NR = _pop(sf)
+!?        sf.TR -= sz4args #clean args
+!?    ######################
+!?    #存取操作*流程控制操作
+!?    elif opcode is sf.OP_PUSH:
+!?        _push(sf, sf.DR)
+!?    elif opcode is sf.OP_POP:
+!?        sf.DR = _pop(sf)
+!?    ######################
+!?    #存取操作:取指令内立即数
+!?    elif 0 <= (u:=opcode-sf.OP_LOAD_INSIDE_INSTRUCTION8WORD_00) < 32:
+!?        sf.DR = u if u < 16 else (sf.RADIX4WORD-u)
+!?xxx .OP_LOAD_INSIDE_INSTRUCTION8BOOL{uint%2} # BR := 指令内立即数#真值
+!?    elif opcode is sf.OP_LOAD_TRUE:
+!?        sf.BR = True
+!?    elif opcode is sf.OP_LOAD_FALSE:
+!?        sf.BR = False
+!?    ######################
+!?    #存取操作
+!?    elif opcode is sf.OP_LOAD_ROM8ADDRESS:
+!?        address = sf.fetch_address_()
+!?        sf.RR = address
+!?    elif opcode is sf.OP_LOAD_ROM8WORD:
+!?        word = sf.fetch_word_()
+!?        sf.DR = word
+!?    elif opcode is sf.OP_LOAD_HEAP8ADDRESS:
+!?        address = sf.load_address_()
+!?        sf.DR = address
+!?    elif opcode is sf.OP_STORE_HEAP8ADDRESS:
+!?        address = sf.DR
+!?        store_address_(address)
+!?    elif opcode is sf.OP_LOAD_HEAP8WORD:
+!?        word = sf.load_word_()
+!?        sf.DR = word
+!?    elif opcode is sf.OP_STORE_HEAP8WORD:
+!?        word = sf.DR
+!?        store_word_(word)
+!?    elif opcode is sf.OP_LOAD_ROM8SBYTE:
+!?        byte = sf.fetch_byte_()
+!?        sf.DR = byte2sword_(sf, byte)
+!?    elif opcode is sf.OP_LOAD_HEAP8SBYTE:
+!?        #sf.DR = sf.RAM[sf.RR]
+!?        byte = sf.load_byte_()
+!?        sf.DR = byte2sword_(sf, byte)
+!?    elif opcode is sf.OP_STORE_HEAP8SBYTE:
+!?        #sf.RAM[sf.RR] = sf.DR
+!?        byte = sf.DR & 0xff
+!?        store_byte_(byte)
+!?    elif opcode is sf.OP_LOAD_BR:
+!?        sf.DR = int(sf.BR)
+!?    elif opcode is sf.OP_LOAD_CR:
+!?        sf.DR = sf.CR
+!?    elif opcode is sf.OP_STORE_CR:
+!?        sf.CR = sf.DR
+!?    elif opcode is sf.OP_SWAP_CR:
+!?        sf.CR, sf.DR = sf.DR, sf.CR
+!?    elif opcode is sf.OP_STORE_RR_LOW:
+!?        r = sf.SZ4ADDRESS-sf.SZ4WORD
+!?        if r == 0:
+!?            sf.RR = sf.DR
+!?        elif r < 0:
+!?            sf.RR = sf.DR&sf.MAX4ADDRESS
+!?        else:
+!?            sf.RR &= ~sf.MAX4WORD
+!?              #段页小端清零
+!?            sf.RR ^= sf.DR
+!?    elif opcode is sf.OP_LOAD_RR_LOW:
+!?        r = sf.SZ4ADDRESS-sf.SZ4WORD
+!?        if r <= 0:
+!?            sf.DR = sf.RR
+!?        else:
+!?            sf.DR = sf.RR&sf.MAX4WORD
+!?    ######################
+!?    #地址偏移运算
+!?    elif opcode is sf.OP_OFFSET4FRAME:
+!?        sf.RR = sf.FR + sf.DR
+!?        sf.RR &= sf.MAX4WORD
+!?    elif opcode is sf.OP_OFFSET4CODE:
+!?        sf.RR = sf.NR + sf.DR
+!?        sf.RR &= sf.MAX4WORD
+!?    ######################
+!?    #杂项操作
+!?    #空操作，中断指令，系统调用指令
+!?    elif opcode is sf.OP_NOP:
+!?        pass
+!?    elif opcode is sf.OP_HALT:
+!?        raise Halt(sf.DR)#SystemExit(BaseException)
+!?    elif opcode is sf.OP_YIELD:
+!?        yield sf.DR
+!?    elif opcode is sf.OP_PRINT:
+!?        fp = sf.DR
+!?        sz = sf.CR
+!?        ptr = sf.RR
+!?        open(fp, 'wb', closefd=False).write(sf.RAM[ptr:ptr+sz])
+!?            #__=open(1, 'wb', closefd=False).write(b'233\n')
+!?            #"closefd=False" <<== avoid:OSError: [Errno 9] Bad file descriptor
+!?    else:
+!?        raise Exception(fr'unknown opcode: {opcode!r}')
+!?    return None
+!?]]
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,71 @@
+e ../lots/NOTE/Python/python-bug/numeric-inf-bug.txt
+
+[[[
+come from: seed.tiny_.oo8inf
+  view ../../python3_src/seed/tiny_/oo8inf.py
+
+===
+>>> fpp = float('inf')
+>>> fnn = float('-inf')
+>>> fpp
+inf
+>>> fnn
+-inf
+
+>>> fpp // 999 #py-bug!!!
+nan
+>>> fpp // -999 #py-bug!!!
+nan
+>>> divmod(fpp, 999) #py-bug!!!
+(nan, nan)
+>>> divmod(fpp, -999) #py-bug!!!
+(nan, nan)
+>>> fnn // 999 #py-bug!!!
+nan
+>>> fnn // -999 #py-bug!!!
+nan
+>>> divmod(fnn, 999) #py-bug!!!
+(nan, nan)
+>>> divmod(fnn, -999) #py-bug!!!
+(nan, nan)
+
+
+
+>>> (-999) ** fpp #py-bug!!!
+inf
+>>> fnn ** fpp #py-bug!!!
+inf
+>>> 0 ** fnn #py-bug!!!
+inf
+>>> (-0.5) ** fnn #py-bug!!!
+inf
+>>> (-1) ** fpp #py-bug!!!
+1.0
+>>> (-1) ** fnn #py-bug!!!
+1.0
+>>> fpp ** 0.5
+inf
+>>> fnn ** 0.5 #py-bug!!!
+inf
+
+
+>>> 0 ** 0
+1
+>>> 0 ** -1
+Traceback (most recent call last):
+    ...
+ZeroDivisionError: 0.0 cannot be raised to a negative power
+
+
+
+===
+def __rfloordiv__(sf, ot, /):
+    [limit{a//b | [b-->+oo]} = [a>=0]0 + [a<0](-1)]
+    [limit{a//b | [b-->-oo]} = [a<=0]0 + [a>0](-1)]
+def __floordiv__(sf, ot, /):
+    [limit{a//b | [a-->+oo]} = [b==0]error + [b>0](+oo) + [b<0](-oo)]
+    [limit{a//b | [a-->-oo]} = [b==0]error + [b>0](-oo) + [b<0](+oo)]
+]]]
+
+
+

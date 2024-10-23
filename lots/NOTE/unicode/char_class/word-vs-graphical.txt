@@ -1,0 +1,864 @@
+
+e ../lots/NOTE/unicode/char_class/word-vs-graphical.txt
+  view script/unicode/unicode_char_class4word.py
+  view script/unicode/unicode_char_class4word.py.out.txt
+  view others/app/termux/help/perluniprops.man.txt
+
+
+[:统合码标识用字符相关辻语言推荐度分级]:goto
+  view ../lots/NOTE/unicode/统合码冫汉化.txt
+[:统合码表情符号相关]:goto
+
+
+源起意图:
+  identifier/word vs graphical
+    \w vs [[:graph:]]
+    [[:print:]]
+
+
+[[
+两个半来源:
+  ===
+  .* py.re
+    #已确认:???(只检查了各gc值的首个字符的匹配)可能是: py.re.\w===(gc.L | gc.N | '_')
+      #见下面『实操确认』:[(ucd_ver14_0_0:gc.L/131756+gc.N/1791+'_'/1)==(py3_11_9__re2_2_1:\w/133548)]
+    但无[[:graph:]]
+      >>> re.compile(r'[[:graph:]]')
+      <stdin>:1: FutureWarning: Possible nested set at position 1
+  ===
+  * posix-->perl.xposix
+    posix 只考虑 ascii-range
+  ===
+    perl 推广到 unicode-range
+  * unicode
+    ...但也很繁多
+    vs: gc.L vs Alphabetic vs Ideographic vs Emoji vs Emoji_Presentation vs Extended_Pictographic vs Grapheme_Base vs Grapheme_Extend vs Unicode_Graphic_character vs Unicode_Base_character vs XID_Start vs XID_Continue vs ID_Start vs ID_Continue
+  ===
+]]
+
+
+
+
+[[[
+#NOTE:below counts are from (Unicode_ver15@perl(v5.38.2)  |  py3_11_9__re2_2_1)
+  #vs:ucd_ver14_0_0:view script/unicode/unicode_char_class4word.py.out.txt
+===
+py.\w (133_548)
+perl.\w (139_612)
+\p{Graph} (286_635)
+    (\p{Graph}-\p{Co}-\p{Cf}) (148_997)
+\p{Print} (286_652)
+    \p{Print}-\p{Co}-\p{Cf} (149_014)
+Letter (136_104)
+Alphabetic (137_765)
+Ideographic (105_854)
+  Unified_Ideograph (97_058)
+Emoji (1424)
+Emoji_Presentation (1205)
+Extended_Pictographic (3537)
+Grapheme_Base (146_986)
+Grapheme_Extend (2125)
+Unicode_Graphic_character+Co (286_482)
+Unicode_Base_character+Co (284_032)
+Unicode_Graphic_character-Co (149_014)
+Unicode_Base_character-Co (146_564)
+XID_Start (136_322)
+XID_Continue (139_463)
+ID_Start (136_345)
+ID_Continue (139_482)
+===
+]]]
+
+
+[[[
+===
+ascii:
+  \w===[[:word:]]===[_[:alnum:]]
+  [[:graph:]]===[[:alnum:][:punct:]]
+  [[:alnum:]]===[[:alpha:][:digit:]]
+===
+===
+perl --version
+This is perl 5, version 38, subversion 2 (v5.38.2) built for aarch64-android
+
+view others/app/termux/help/perluniprops.man.txt
+perluniprops - Index of Unicode Version 15.0.0 character properties in Perl
+
+===
+\p{Graph}===\p{XPosixGraph} (286_635) === \pL+\pN+\pP+\pS+\pM+\p{Co}+\p{Cf}
+    (\p{Graph}-\p{Co}-\p{Cf}) (148_997)
+        148_997 == (286_635) - (137_468) - (170)
+\w===\p{Word}===\p{XPosixWord} (139_612)===\p{Alnum} + \pM + \p{Pc} + \p{Join_Control}
+===
+\w (139_612)===\p{Alphabetic=Y} (137_765)+ \p{General_Category=Decimal_Number} (680) + \p{General_Category=Mark} (2450) + \p{General_Category=Connector_Punctuation} (10) + \p{Join_Control=Y} (2)  -(?1295?)(count of [\p{Alphabetic=Y}&\p{General_Category=Mark}])
+===
+\p{Graph}===\p{XPosixGraph} (286_635)
+  === \pL+\pN+\pP+\pS+\pM+\p{Co}+\p{Cf}
+  === \p{General_Category=Letter} (136_104) +\p{General_Category=Number} (1831) +\p{General_Category=Punctuation} (842) +\p{General_Category=Symbol} (7770) +\p{General_Category=Mark} (2450) +\p{General_Category=Private_Use} (137_468) +\p{General_Category=Format} (170)
+<<==:
+\p{Alnum}===\p{XPosixAlnum} (138_445)===\p{XPosixAlpha} (137_765)+ \p{XPosixDigit} (680)===\p{Alphabetic=Y} (137_765)+ \p{General_Category=Decimal_Number} (680)
+    (138_445) == (137_765) + (680)
+\p{XPosixAlpha}===\p{Alphabetic=Y} (Short: \p{Alpha}) (137_765)
+\p{XPosixDigit}===\p{General_Category=Decimal_Number} [0-9] + all other decimal digits (Short: \p{Nd}) (680)
+===
+\p{L} \pL \p{Letter} (= \p{General_Category=Letter}) (136_104)
+\p{N} \pN \p{Number} (= \p{General_Category=Number}) (1831)
+\p{P} \pP \p{Punct} (= \p{General_Category=Punctuation}) (NOT \p{General_Punctuation}) (842)
+\p{S} \pS \p{Symbol} (= \p{General_Category=Symbol}) (7770)
+(136_104)+(1831)+(842)+(7770) == 146_547
+\p{M} \pM \p{Mark} (= \p{General_Category=Mark}) (2450)
+(136_104)+(1831)+(842)+(7770)+(2450) == 148_997
+(286_635) - 148_997 == 137_638
+\p{Private_Use} \p{General_Category=Private_Use} (Short: \p{Co}; NOT \p{Private_Use_Area}) (137_468)
+(136_104)+(1831)+(842)+(7770)+(2450)+(137_468)-(286_635) == -170
+\p{Cf} \p{Format} (= \p{General_Category=Format}) (170)
+(136_104)+(1831)+(842)+(7770)+(2450)+(137_468)+(170) == (286_635)
+===
+===
+校验:Cf,Co:
+echo $'\uE000' | grep -P '\p{XPosixGraph}'
+  grep: unknown property after \P or \p
+perl -e 'use strict; use warnings; my $a = "\N{U+00AD}\N{U+E000}"; print length($a),"\n"; $a =~ s/\p{XPosixGraph}/x/g; print "${a}\n";'
+  2
+  xx
+果然XPosixGraph包含Cf,Co，这合理吗？
+===
+]]]
+
+[[[
+[Unicode_Graphic_character =[def]= gc.L|N|P|S|Zs|M|?Co? === -(gc.Zl|Zp|Cn|Cs|Cc|Cf|?Co?)]
+  『isolated combining character => as if it were a base character』
+  ~= [[:print:]] == [[:graph:][:space:]]
+[Unicode_Base_character =[def]= Unicode_Graphic_character-gc.M === gc.L|N|P|S|Zs|?Co? === -(gc.M|Zl|Zp|Cn|Cs|Cc|Cf|?Co?)]
+
+
+===
+Unicode_Graphic_character+Co (286_482) === \p{General_Category=Letter} (136_104) +\p{General_Category=Number} (1831) +\p{General_Category=Punctuation} (842) +\p{General_Category=Symbol} (7770) +\p{General_Category=Space_Separator} (17) +\p{General_Category=Mark} (2450) +\p{General_Category=Private_Use} (137_468)
+  286_482 === (136_104) + (1831) + (842) + (7770) + (17) + (2450) + (137_468)
+Unicode_Graphic_character-Co (149_014) === \p{General_Category=Letter} (136_104) +\p{General_Category=Number} (1831) +\p{General_Category=Punctuation} (842) +\p{General_Category=Symbol} (7770) +\p{General_Category=Space_Separator} (17) +\p{General_Category=Mark} (2450)
+  149_014 === (136_104) + (1831) + (842) + (7770) + (17) + (2450)
+===
+Unicode_Base_character+Co (284_032) === \p{General_Category=Letter} (136_104) +\p{General_Category=Number} (1831) +\p{General_Category=Punctuation} (842) +\p{General_Category=Symbol} (7770) +\p{General_Category=Space_Separator} (17) +\p{General_Category=Private_Use} (137_468)
+  284_032 === (136_104) + (1831) + (842) + (7770) + (17) + (137_468)
+Unicode_Base_character-Co (146_564) === \p{General_Category=Letter} (136_104) +\p{General_Category=Number} (1831) +\p{General_Category=Punctuation} (842) +\p{General_Category=Symbol} (7770) +\p{General_Category=Space_Separator} (17)
+  146_564 === (136_104) + (1831) + (842) + (7770) + (17)
+===
+===
+\p{General_Category=Space_Separator} (Short=\p{Gc=Zs}, \p{Zs}) (17: [\x20\xa0], U+1680, U+2000..200A, U+202F, U+205F, U+3000)
+===
+\p{Print}===\p{XPosixPrint} (286_652)===\p{XPosixGraph} (286_635) +\p{General_Category=Space_Separator} (17)
+\p{Print}-\p{Co}-\p{Cf}===(\p{XPosixPrint}-\p{Co}-\p{Cf}) (149_014)===(\p{XPosixGraph}-\p{Co}-\p{Cf}) (148_997) +\p{General_Category=Space_Separator} (17)
+===
+]]]
+[[[
+===
+\p{Gr_Base}===\p{Grapheme_Base} (= \p{Grapheme_Base=Y}) (146_986)
+\p{Gr_Ext}===\p{Grapheme_Extend} (= \p{Grapheme_Extend=Y}) (2125)
+===
+\p{Gr_Base}===\p{Grapheme_Base} (= \p{Grapheme_Base=Y}) (146_986) ~= Unicode_Base_character-Co (146_564) -{U+FF9E,U+FF9F} +\p{General_Category=Spacing_Mark} (452) -??? (?28?)
+    (146_986) === (146_564) -2 + (452) -(?28?)
+===
+===
+\p{Mc}===\p{Spacing_Mark} (= \p{General_Category=Spacing_Mark}) (452)
+===
+]]]
+
+[[[
+===
+\p{Emoji}===\p{Emoji=Y} (1424)
+\p{Emoji_Presentation}===\p{Emoji_Presentation=Y} (Short: \p{EPres}) (1205)
+\p{Extended_Pictographic} \p{Extended_Pictographic=Y} (Short: \p{ExtPict}) (3537)
+===
+]]]
+
+[[[
+===
+\p{L} \pL \p{Letter} (= \p{General_Category=Letter}) (136_104)
+\p{XPosixAlpha}===\p{Alphabetic=Y} (Short: \p{Alpha}) (137_765)
+\p{Ideo}===\p{Ideographic} (= \p{Ideographic=Y}) (105_854)
+===
+\p{UIdeo}===\p{Unified_Ideograph} (=\p{Unified_Ideograph=Y}) (97_058)
+===
+]]]
+
+[[[
+===
+\p{XIDS}===\p{XID_Start} (= \p{XID_Start=Y}) (136_322)
+\p{XIDC}===\p{XID_Continue} (= \p{XID_Continue=Y}) (139_463)
+\p{IDS}===\p{ID_Start} (= \p{ID_Start=Y}) (136_345)
+\p{IDC}===\p{ID_Continue} (= \p{ID_Continue=Y}) (NOT \p{Ideographic_Description_Characters}) (139_482)
+===
+]]]
+
+[[[
+#已确认:???(只检查了各gc值的首个字符的匹配)可能是: py.re.\w===(gc.L | gc.N | '_')
+===
+py.re: In string patterns without the ASCII flag, it will match the range of Unicode alphanumeric characters (letters plus digits plus underscore).
+==>>:
+py.re.\w===(gc.L | gc.N | '_')
+  <<==: #实操确认
+  [131756+1791+1==133548]
+  [(ucd_ver14_0_0:gc.L/131756+gc.N/1791+'_'/1)==(py3_11_9__re2_2_1:\w/133548)]
+    view script/unicode/unicode_char_class4word.py.out.txt
+<<==:
+from script.unicode.unicode_common import pa2vas, pa_va2Ranges, chars5Ranges, print_names5chars, print_repr, list_gc_vas, gc2Ranges, show_info_of_chars5pa_va
+for gc in list_gc_vas():
+    ranges = gc2Ranges(gc)
+    for u in ranges.iter_ints_(reverse=False):
+        ch = chr(u)
+        break
+    else:
+        print(f'{gc}:___')
+        continue
+    m = re.fullmatch(r'\w', ch)
+    if m:
+        print(f'{gc}:yyy')
+    else:
+        print(f'{gc}:nnn')
+    assert (m is None) is not (gc[0] in 'L N')
+
+for gc in list_gc_vas():
+    if not (gc[0] in 'L N'):
+        continue
+    cs = chars5Ranges(gc2Ranges(gc))
+    m = re.fullmatch('^\w+$', cs)
+    if m is None:
+        print(gc)
+
+
+
+]]]
+
+[[[
+[:统合码标识用字符相关辻语言推荐度分级]:here
+  view ../lots/NOTE/unicode/统合码冫汉化.txt
+===
+/sdcard/0my_files/unicode/unicode14_0/www.unicode.org/reports/tr31/tr31-35.html
+UAX31
+Unicode® Standard Annex #31 Unicode Identifier and Pattern Syntax
+
+This annex describes specifications for recommended defaults for the use of Unicode in the definitions of general-purpose identifiers, immutable identifiers, hashtag identifiers, and in pattern-based syntax. It also supplies guidelines for use of normalization with identifiers.
+
+
+
+Identifier characters, Pattern_Syntax characters, and Pattern_White_Space are disjoint: they will never overlap.
+By definition, the Identifier characters are always a superset of the ID_Start characters.
+The Pattern_Syntax characters and Pattern_White_Space characters are immutable and will not change over successive versions of Unicode.
+The ID_Start and ID_Nonstart characters may grow over time, either by the addition of new characters provided in a future version of Unicode or (in rare cases) by the addition of characters that were in Other.
+In successive versions of Unicode, the only allowed changes of characters from one of the above classes to another are those listed with a plus sign (+) in Table 1.
+
+Table 1. Permitted Changes in Future Versions
+  变更:Unassigned-->Other Assigned-->ID_Nonstart-->ID_Start
+
+The Unicode Consortium has formally adopted a stability policy on identifiers. For more information, see [Stability].
+
+
+
+UAX31-R2. Immutable Identifiers: To meet this requirement, an implementation shall define identifiers to be any non-empty string of characters that contains no character having any of the following property values:
+
+  Pattern_White_Space=True
+  Pattern_Syntax=True
+  General_Category=Private_Use, Surrogate, or Control
+  Noncharacter_Code_Point=True
+
+Pattern_Syntax
+  源自:syntax char vs literal char
+    即:超符 vs 字面文本字符
+    即:仙符 vs 凡符
+
+
+UAX31-R3. Pattern_White_Space and Pattern_Syntax Characters: To meet this requirement, an implementation shall use Pattern_White_Space characters as all and only those characters interpreted as whitespace in parsing, and shall use Pattern_Syntax characters as all and only those characters with syntactic use.
+  超符:语法用字符，当作 字面文本字符时需转义/引述
+    quoted v. 引证（quote的过去式）
+    quoted string 引用串
+    escape sequence换码序列
+    escape character换码符/扩充字符/扩展符/例外符/逸出符
+  shall use YYY as (all and only those characters) interpreted as ZZZ in parsing
+
+Pattern_Syntax
+
+Pattern_White_Space
+: {0x9: 5, 0x20: 1, 0x85: 1, 0x200E: 2, 0x2028: 2}
+Noncharacter_Code_Point
+
+    ,'Cc' : 'Control'
+    ,'Co' : 'Private_Use'
+    ,'Cs' : 'Surrogate'
+Co,Cs,Cc
+,'Cc'
+: {0x0: 32, 0x7F: 33}
+,'Co'
+: {0xE000: 6400, 0xF0000: 65534, 0x100000: 65534}
+,'Cs'
+: {0xD800: 2048}
+
+
+hashtag:
+  Extended_Pictographic
+  Emoji_Component
+Extended_Pictographic
+
+Emoji_Component
+
+
+ID_Start
+  [\p{L}\p{Nl}\p{Other_ID_Start}-\p{Pattern_Syntax}-\p{Pattern_White_Space}]
+  ===
+  ID_Start characters are derived from the Unicode General_Category of uppercase letters, lowercase letters, titlecase letters, modifier letters, other letters, letter numbers, plus Other_ID_Start, minus Pattern_Syntax and Pattern_White_Space code points.
+
+ID_Continue
+  [\p{ID_Start}\p{Mn}\p{Mc}\p{Nd}\p{Pc}\p{Other_ID_Continue}-\p{Pattern_Syntax}-\p{Pattern_White_Space}]
+  ===
+  ID_Continue characters include ID_Start characters, plus characters having the Unicode General_Category of nonspacing marks, spacing combining marks, decimal number, connector punctuation, plus Other_ID_Continue , minus Pattern_Syntax and Pattern_White_Space code points.
+
+
+XID_Start characters are derived from ID_Start as per Section 5.1, NFKC Modifications.
+XID_Continue characters are derived from ID_Continue as per Section 5.1, NFKC Modifications.
+
+
+
+
+UAX31-D1. Default Identifier Syntax:
+  <Identifier> := <Start> <Continue>* (<Medial> <Continue>+)*
+UAX31-R1. Default Identifiers: To meet this requirement, to determine whether a string is an identifier an implementation shall use definition UAX31-D1, setting Start and Continue to the properties XID_Start and XID_Continue, respectively, and leaving Medial empty.
+  # [Default_Identifier =[def]= XID_Start XID_Continue*]
+
+UAX31-R2. Immutable Identifiers: To meet this requirement, an implementation shall define identifiers to be any non-empty string of characters that contains no character having any of the following property values:
+    Pattern_White_Space=True
+    Pattern_Syntax=True
+    General_Category=Private_Use, Surrogate, or Control
+    Noncharacter_Code_Point=True
+Immutable identifiers are intended for those cases (like XML) that cannot update across versions of Unicode, and do not require information about normalization form, or properties such as General_Category and Script. Immutable identifers that allow unassigned characters cannot provide for normalization forms or these properties, which means that they:
+    cannot be compared for NFC, NFKC, or case-insensitive equality
+    are unsuitable for restrictions such as those in UTS #39
+
+
+Hashtag Identifiers
+Hashtag identifiers have become very popular in social media. They consist of a number sign in front of some string of characters, such as #emoji. The actual composition of allowable Unicode hashtag identifiers varies between vendors. It has also become common for hashtags to include emoji characters, without a clear notion of exactly which characters are included.
+
+
+UAX31-D2. Default Hashtag Identifier Syntax:
+    <Hashtag-Identifier> := <Start> <Continue>* (<Medial> <Continue>+)*
+UAX31-R8. Extended Hashtag Identifiers: To meet this requirement, to determine whether a string is a hashtag identifier an implementation shall use definition UAX31-D2, setting:
+    Start := [#﹟＃]
+        U+0023 NUMBER SIGN
+        U+FE5F SMALL NUMBER SIGN
+        U+FF03 FULLWIDTH NUMBER SIGN
+        (These are # and its compatibility equivalents.)
+    Medial is currently empty, but can be used for customization.
+    Continue := XID_Continue, plus Extended_Pictographic, Emoji_Component, and “_”, “-”, “+”, minus Start characters.
+        [\p{XID_Continue}\p{Extended_Pictographic}\p{Emoji_Component}[-+_]-[#﹟＃]]
+
+
+
+
+
+
+/sdcard/0my_files/unicode/unicode14_0/www.unicode.org/reports/tr31/tr31-35.html
+UAX31
+Table 4. Excluded Scripts
+Table 5. Recommended Scripts
+Table 7. Limited Use Scripts
+===
+%s/^\\p{script=\(.*\)}\t/\1:
+===
+Table 4. Excluded Scripts
+#95
+Property Notation:Description
+===
+Aghb:Caucasian Albanian
+Ahom:Ahom
+Armi:Imperial Aramaic
+Avst:Avestan
+Bass:Bassa Vah
+Bhks:Bhaiksuki
+Brah:Brahmi
+Bugi:Buginese
+Buhd:Buhid
+Cari:Carian
+Chrs:Chorasmian
+Copt:Coptic
+Cpmn:Cypro-Minoan
+Cprt:Cypriot
+Diak:Dives Akuru
+Dogr:Dogra
+Dsrt:Deseret
+Dupl:Duployan
+Egyp:Egyptian Hieroglyphs
+Elba:Elbasan
+Elym:Elymaic
+Glag:Glagolitic
+Gong:Gunjala Gondi
+Gonm:Masaram Gondi
+Goth:Gothic
+Gran:Grantha
+Hano:Hanunoo
+Hatr:Hatran
+Hluw:Anatolian Hieroglyphs
+Hmng:Pahawh Hmong
+Hung:Old Hungarian
+Ital:Old Italic
+Khar:Kharoshthi
+Khoj:Khojki
+Kits:Khitan Small Script
+Kthi:Kaithi
+Lina:Linear A
+Linb:Linear B
+Lyci:Lycian
+Lydi:Lydian
+Maka:Makasar
+Mahj:Mahajani
+Mani:Manichaean
+Marc:Marchen
+Medf:Medefaidrin
+Mend:Mende Kikakui
+Merc:Meroitic Cursive
+Mero:Meroitic Hieroglyphs
+Modi:Modi
+Mong:Mongolian
+Mroo:Mro
+Mult:Multani
+Narb:Old North Arabian
+Nand:Nandinagari
+Nbat:Nabataean
+Nshu:Nushu
+Ogam:Ogham
+Orkh:Old Turkic
+Osma:Osmanya
+Ougr:Old Uyghur
+Palm:Palmyrene
+Pauc:Pau Cin Hau
+Perm:Old Permic
+Phag:Phags-pa
+Phli:Inscriptional Pahlavi
+Phlp:Psalter Pahlavi
+Phnx:Phoenician
+Prti:Inscriptional Parthian
+Rjng:Rejang
+Runr:Runic
+Samr:Samaritan
+Sarb:Old South Arabian
+Sgnw:SignWriting
+Shaw:Shavian
+Shrd:Sharada
+Sidd:Siddham
+Sind:Khudawadi
+Sora:Sora Sompeng
+Sogd:Sogdian
+Sogo:Old Sogdian
+Soyo:Soyombo
+Tagb:Tagbanwa
+Takr:Takri
+Tang:Tangut
+Tglg:Tagalog
+Tirh:Tirhuta
+Tnsa:Tangsa
+Toto:Toto
+Ugar:Ugaritic
+Vith:Vithkuqi
+Wara:Warang Citi
+Xpeo:Old Persian
+Xsux:Cuneiform
+Yezi:Yezidi
+Zanb:Zanabazar Square
+===
+
+===
+Table 5. Recommended Scripts
+#31
+Property Notation:Description
+===
+Zyyy:Common
+Zinh:Inherited
+Arab:Arabic
+Armn:Armenian
+Beng:Bengali
+Bopo:Bopomofo
+Cyrl:Cyrillic
+Deva:Devanagari
+Ethi:Ethiopic
+Geor:Georgian
+Grek:Greek
+Gujr:Gujarati
+Guru:Gurmukhi
+Hang:Hangul
+Hani:Han
+Hebr:Hebrew
+Hira:Hiragana
+Kana:Katakana
+Knda:Kannada
+Khmr:Khmer
+Laoo:Lao
+Latn:Latin
+Mlym:Malayalam
+Mymr:Myanmar
+Orya:Oriya
+Sinh:Sinhala
+Taml:Tamil
+Telu:Telugu
+Thaa:Thaana
+Thai:Thai
+Tibt:Tibetan
+===
+
+===
+Table 7. Limited Use Scripts
+#34
+Property Notation:Description
+===
+Adlm:Adlam
+Bali:Balinese
+Bamu:Bamum
+Batk:Batak
+Cakm:Chakma
+Cans:Canadian Aboriginal Syllabics
+Cham:Cham
+Cher:Cherokee
+Hmnp:Nyiakeng Puachue Hmong
+Java:Javanese
+Kali:Kayah Li
+Lana:Tai Tham
+Lepc:Lepcha
+Limb:Limbu
+Lisu:Lisu
+Mand:Mandaic
+Mtei:Meetei Mayek
+Newa:Newa
+Nkoo:Nko
+Olck:Ol Chiki
+Osge:Osage
+Plrd:Miao
+Rohg:Hanifi Rohingya
+Saur:Saurashtra
+Sund:Sundanese
+Sylo:Syloti Nagri
+Syrc:Syriac
+Tale:Tai Le
+Talu:New Tai Lue
+Tavt:Tai Viet
+Tfng:Tifinagh
+Vaii:Vai
+Wcho:Wancho
+Yiii:Yi
+===
+]]]
+[[[
+[:统合码表情符号相关]:here
+===
+/sdcard/0my_files/unicode/unicode14_0/www.unicode.org/reports/tr51/tr51-21.html
+UTS51
+Unicode® Technical Standard #51 Unicode Emoji
+
+This document defines the structure of Unicode emoji characters and sequences, and provides data to support that structure, such as which characters are considered to be emoji, which emoji should be displayed by default with a text style versus an emoji style, and which can be displayed with a variety of skin tones. It also provides design guidelines for improving the interoperability of emoji characters across platforms and implementations.
+
+
+
+The word emoji comes from Japanese:
+  絵 (e ≅ picture) 文字 (moji ≅ written character).
+
+emoticon颜文字
+  = facial expression or gesture (sometimes when viewed sideways)
+emoji表情符号
+  = A colorful pictograph that can be used inline in text.
+
+data indicating:
+    which characters normally can be considered to be emoji
+    which emoji characters should be displayed by default in text style versus emoji style
+    which emoji characters may be displayed using a variety of skin tones, with implementation details
+pointers to [CLDR] data for
+    sorting emoji characters more naturally
+    annotations for searching and grouping emoji characters
+
+emoji character — A character that has the Emoji property.
+  emoji_character := \p{Emoji}
+  These characters are recommended for use as emoji.
+extended pictographic character — a character that has the Extended_Pictographic property.
+  These characters are pictographic, or otherwise similar in kind to characters with the Emoji property.
+
+emoji component — A character that has the Emoji_Component property.
+  These characters are used in emoji sequences but normally do not appear on emoji keyboards as separate choices, such as keycap base characters or Regional_Indicator characters.
+  Some emoji components are emoji characters, and others (such as tag characters and ZWJ) are not.
+
+
+
+
+1.4.2 Emoji Presentation
+ED-6. default emoji presentation character — A character that, by default, should appear with an emoji presentation, rather than a text presentation.
+    default_emoji_presentation_character := \p{Emoji_Presentation}
+      『p』vs『P』
+    These characters have the Emoji_Presentation property. See Annex A: Emoji Properties and Data Files.
+ED-7. default text presentation character — A character that, by default, should appear with a text presentation, rather than an emoji presentation.
+    default_text_presentation_character := \P{Emoji_Presentation}
+      『P』vs『p』
+    These characters do not have the Emoji_Presentation property; that is, their Emoji_Presentation property value is No. See Annex A: Emoji Properties and Data Files.
+Emoji_Presentation
+
+
+emoji-default: those expected to have an emoji presentation by default, but can also have a text presentation
+  [Emoji=Yes][Emoji_Presentation=Yes]
+text-default: those expected to have a text presentation by default, but could also have an emoji presentation
+  [Emoji=Yes][Emoji_Presentation=No]
+text-only: those that should only have a text presentation
+  [Emoji=No]
+
+
+
+5 Ordering and Grouping
+Neither the Unicode code point order, nor the default collation provided by the Unicode Collation Algorithm (DUCET), are currently well suited for emoji, because they separate conceptually-related characters. From the user's perspective, the ordering in the following selection of characters sorted by DUCET appears quite random, as illustrated by the following example:
+
+↪ ⌚ ⌛⏩ ⏰ ⏲ ⏳ ▶ ☀ ☝ ☺ 🌞 👇 🕐 😀
+
+The Emoji Ordering, v14.0 chart shows an ordering for emoji characters that groups them together in a more natural fashion. This data has been incorporated into [CLDR].
+######################
+Unicode Collation Algorithm (DUCET)
+[CLDR]	CLDR - Unicode Common Locale Data Repository
+http://cldr.unicode.org/
+For the latest version of the associated specification (LDML), see:
+https://www.unicode.org/reports/tr35/
+
+
+???Unicode Collation Algorithm (DUCET)
+  the Default Unicode Collation Element Table (DUCET)
+
+grep -F DUCET -r /sdcard/0my_files/unicode/unicode14_0/www.unicode.org/reports/ -l
+10,24,35,51
+
+/sdcard/0my_files/unicode/unicode14_0/www.unicode.org/reports/tr24/tr24-32.html
+Unicode® Standard Annex #24 Unicode Script Property
+UAX24
+This annex describes two related Unicode code point properties. Both properties share the use of Script property values. The Script property itself assigns single script values to all Unicode code points, identifying a primary script association, where possible. The Script_Extensions property assigns sets of Script property values, providing more detail for cases where characters are commonly used with multiple scripts. This information is useful in mechanisms such as regular expressions and other text processing tasks, as explained in implementation notes for these properties.
+
+
+
+/sdcard/0my_files/unicode/unicode14_0/www.unicode.org/reports/tr35/tr35-collation.html
+Unicode Technical Standard #35 Unicode Locale Data Markup Language (LDML) Part 5: Collation
+UTS35
+This document describes parts of an XML format (vocabulary) for the exchange of structured locale data. This format is used in the Unicode Common Locale Data Repository.
+This is a partial document, describing only those parts of the LDML that are relevant for collation (sorting, searching & grouping). For the other parts of the LDML see the main LDML document and the links above.
+Note: Some links may lead to in-development or older versions of the data files. See https://cldr.unicode.org for up-to-date CLDR release data.
+
+
+The CLDR collation algorithm is an extension of the Unicode Collation Algorithm.
+
+
+
+
+/sdcard/0my_files/unicode/unicode14_0/www.unicode.org/reports/tr10/tr10-45.html
+Unicode® Technical Standard #10 Unicode Collation Algorithm
+UTS10
+This report is the specification of the Unicode Collation Algorithm (UCA), which details how to compare two Unicode strings while remaining conformant to the requirements of the Unicode Standard. The UCA also supplies the Default Unicode Collation Element Table (DUCET) as the data specifying the default collation order for all Unicode characters.
+
+
+===
+]]]
+[[[
+#基本无用:人工推导与一些临时用代码
+===
+
+# Binary Properties
+字母: ???\w???
+  Alphabetic.
+  Ideographic.
+   ,'Alpha'
+   : 'Alphabetic'
+   ,'Ideo'
+   : 'Ideographic'
+  vs: gc.L vs Alphabetic vs Ideographic vs Emoji vs Emoji_Presentation vs Extended_Pictographic vs Grapheme_Base vs Grapheme_Extend vs Unicode_Graphic_character vs Unicode_Base_character
+  [:graph:]对应啥？
+      grep:
+        [:graph:]===[[:alnum:][:punct:]]
+        [:alnum:]===[[:alpha:][:digit:]]
+        \w===[_[:alnum:]]
+      echo 一 | grep '[[:graph:]]'
+      echo ♠ | grep '[[:graph:]]'
+      ===[♠.gc==So]
+      ===[㊣.gc==So]
+      echo ♠ | grep '[[:punct:]]'
+      echo ㊣ | grep '[[:punct:]]'
+
+      ===[Ⅰ.gc==Nl]
+      echo Ⅰ | grep '[[:punct:]]'
+          fail
+      echo Ⅰ | grep '[[:digit:]]'
+          fail
+      echo Ⅰ | grep '[[:alpha:]]'
+          ok
+          why??
+          看来并非与gc对应
+          ???LC_CTYPE,LC_ALL,LANG,???
+  \w对应啥？
+    grep:
+      \w===[_[:alnum:]]
+    perl:perlre
+      \w - Match a "word" character (alphanumeric plus "_", plus other connector punctuation chars plus Unicode marks)
+    perl:perlrecharclass
+      \w - \p{Word}
+          然而，并无属性名或属性值是『Word』
+          A "\w" matches a single alphanumeric character(an alphabetic character, or a decimal digit); or a connecting punctuation character, such as an underscore ("_"); or a "mark" character (like some sort of accent) that attaches to one of those.
+          ???gc.L|N|P|M|S???
+      \d - \p{Digit}
+           \p{General_Category=Digit}
+              #???并无Digit?
+           \p{General_Category=Decimal_Number}
+            #??? \p{General_Category=Nd}
+            #'Decimal_Number' : ['Nd' ,'digit']
+           \p{Numeric_Type=Decimal}#大端序十进制数字，刚好十个
+           =!=\p{Numeric_Type=Digit} #非十进制数字，或不足十个
+    perl:perluniprops
+      ===
+      man__save_to_file perluniprops
+      view others/app/termux/help/perluniprops.man.txt
+      ===
+       perluniprops - Index of Unicode Version 15.0.0 character properties in Perl
+
+      ===
+      \p{Graph}===\p{XPosixGraph} (286_635) === \pL+\pN+\pP+\pS+\pM+\p{Co}+\p{Cf}
+      \w===\p{Word}===\p{XPosixWord} (139_612)===\p{Alnum} + \pM + \p{Pc} + \p{Join_Control}===\p{Alphabetic=Y} (137_765)+ \p{General_Category=Decimal_Number} (680) + \p{General_Category=Mark} (2450) + \p{General_Category=Connector_Punctuation} (10) + \p{Join_Control=Y} (2)  -(?1295?)(count of [\p{Alphabetic=Y}&\p{General_Category=Mark}])
+      ===
+      ===
+      ===
+      ===
+      \w===\p{Word}===\p{XPosixWord} (139_612)===\p{Alnum} + \pM + \p{Pc} + \p{Join_Control}
+          \p{Alnum}===\p{XPosixAlnum} (138_445)===\p{Alpha} + \p{Decimal_Number}
+          \p{Alpha}===\p{XPosixAlpha}=== \p{Alphabetic=Y} (137_765)
+          \p{Decimal_Number}===\p{XPosixDigit}=== \p{General_Category=Decimal_Number} (680)
+          \p{M}===\pM===\p{Mark}=== \p{General_Category=Mark} (2450)
+          \p{Pc}===\p{Connector_Punctuation}====\p{General_Category=Connector_Punctuation} (10)
+          \p{Join_C}===\p{Join_Control}=== \p{Join_Control=Y} (2)
+      \w===\p{Word}===\p{XPosixWord} (139_612)
+        ===\p{Alphabetic=Y} (137_765)+ \p{General_Category=Decimal_Number} (680) + \p{General_Category=Mark} (2450) + \p{General_Category=Connector_Punctuation} (10) + \p{Join_Control=Y} (2)  -(?1295?)(count of [\p{Alphabetic=Y}&\p{General_Category=Mark}])
+        (139_612) == (138_445) + (2450) + (10) + (2) - 1295
+        (137_765)+(680) + (2450) + (10) + (2) -(139_612) == 1295
+        why 1295?
+          #perl.unicode.ver15 ==>>1295
+          #my.unicode.ver14 ==>>1274
+from script.unicode.unicode_common import pa2vas, pa__Z__ichr2va, pa_va2Ranges, chars5Ranges, print_names5chars, print_repr, list_gc_vas, gc2Ranges, show_info_of_chars5pa_va
+from seed.data_funcs.rngs import StackStyleSimpleIntMapping
+alpha = pa_va2Ranges('Alpha','Y')
+ichr2gc = pa__Z__ichr2va('gc')
+alpha_ichr2gc = StackStyleSimpleIntMapping()
+for _ in (alpha_ichr2gc.push(ichr, ichr2gc[ichr]) for ichr in alpha.iter_ints_(reverse=False)):pass
+
+alpha_ichr2gc = alpha_ichr2gc.to_TouchRangeBasedIntMapping()
+gc2hx2sz4alpha = alpha_ichr2gc.to_value2begin2sz()
+assert sorted(gc2hx2sz4alpha) == ['Ll', 'Lm', 'Lo', 'Lt', 'Lu', 'Mc', 'Mn', 'Nl', 'So']
+#ver14
+assert 1274 == sum(sz for gc, hx2sz in gc2hx2sz4alpha.items() if gc[0] == 'M' for sz in hx2sz.values())
+join_c = pa_va2Ranges('Join_C','Y')
+cs4Join_C = chars5Ranges(join_c)
+assert cs4Join_C == '\u200c\u200d'
+assert [ichr2gc[ichr] for ichr in map(ord, cs4Join_C)] == ['Cf', 'Cf']
+
+
+      ===
+      ===
+      ===
+   ,'Gr_Base'
+   : 'Grapheme_Base'
+   ,'Gr_Ext'
+   : 'Grapheme_Extend'
+   ,'Gr_Link'
+   : 'Grapheme_Link'
+
+          \p{Gr_Base}             \p{Grapheme_Base} (= \p{Grapheme_Base=Y}) (146_986)
+          \p{Gr_Ext}              \p{Grapheme_Extend} (= \p{Grapheme_Extend=Y}) (2125)
+          \p{PosixGraph}          (94: [!\"#\$\%&\'\(\)*+,\-.\/0-9:;<=>?\@A-Z\[\\\]\^_`a-z\{\|\}~])
+          \p{Graph}               \p{XPosixGraph} (286_635)
+          \p{XPosixGraph}         Characters that are graphical (Short: \p{Graph}) (286_635: [!\"#\$\%&\'\(\)*+,\-.\/0-9:;<=>?\@A-Z\[\\\]\^_`a-z\{\|\}~\xa1-\xff], U+0100..0377, U+037A..037F, U+0384..038A, U+038C, U+038E..03A1 ...)
+
+          \p{L} \pL               \p{Letter} (= \p{General_Category=Letter}) (136_104)
+          \p{N} \pN               \p{Number} (= \p{General_Category=Number}) (1831)
+          \p{P} \pP               \p{Punct} (= \p{General_Category=Punctuation}) (NOT \p{General_Punctuation}) (842)
+          \p{S} \pS               \p{Symbol} (= \p{General_Category=Symbol}) (7770)
+          (136_104)+(1831)+(842)+(7770) == 146_547
+          \p{M} \pM               \p{Mark} (= \p{General_Category=Mark}) (2450)
+          (136_104)+(1831)+(842)+(7770)+(2450) == 148_997
+          (286_635) - 148_997 == 137_638
+          \p{Private_Use}         \p{General_Category=Private_Use} (Short: \p{Co}; NOT \p{Private_Use_Area}) (137_468)
+          (136_104)+(1831)+(842)+(7770)+(2450)+(137_468)-(286_635) == -170
+          \p{Cf}                  \p{Format} (= \p{General_Category=Format}) (170)
+          (136_104)+(1831)+(842)+(7770)+(2450)+(137_468)+(170) == (286_635)
+          \p{General_Category: Space_Separator} (Short: \p{Gc=Zs}, \p{Zs}) (17: [\x20\xa0], U+1680, U+2000..200A, U+202F, U+205F, U+3000)
+          ==>>:
+          \p{Graph}===\p{XPosixGraph} (286_635) === \pL+\pN+\pP+\pS+\pM+\p{Co}+\p{Cf}
+          <<==:
+view ../../python3_src/nn_ns/CJK/unicode/ucd_unihan/xml/ver14_0_0/gc.General_Category.ver14_0_0.xml.out.txt
+,'Cf'
+: {0xAD: 1, 0x600: 6, 0x61C: 1, 0x6DD: 1, 0x70F: 1, 0x890: 2, 0x8E2: 1, 0x180E: 1, 0x200B: 5, 0x202A: 5, 0x2060: 5, 0x2066: 10, 0xFEFF: 1, 0xFFF9: 3, 0x110BD: 1, 0x110CD: 1, 0x13430: 9, 0x1BCA0: 4, 0x1D173: 8, 0xE0001: 1, 0xE0020: 96}
+,'Co'
+: {0xE000: 6400, 0xF0000: 65534, 0x100000: 65534}
+,'Zs'
+: {0x20: 1, 0xA0: 1, 0x1680: 1, 0x2000: 11, 0x202F: 1, 0x205F: 1, 0x3000: 1}
+
+echo $'\uE000' | grep -P '\p{Graph}'
+echo $'\uE000' | grep -P '\p{XPosixGraph}'
+  grep: unknown property after \P or \p
+
+perl -e 'use strict; use warnings; print "Hello, world";'
+perl -e 'use strict; use warnings; my $a = "\N{U+00AD}\N{U+E000}"; print length($a),"\n"; $a =~ s/\p{XPosixGraph}/x/g; print "${a}\n";'
+  2
+  xx
+果然XPosixGraph包含Cf,Co，这合理吗？
+[[
+[Unicode_Graphic_character =[def]= gc.L|N|P|S|Zs|M|?Co? === -(gc.Zl|Zp|Cn|Cs|Cc|Cf|?Co?)]
+  『isolated combining character => as if it were a base character』
+  ~= [[:print:]] == [[:graph:][:space:]]
+[Unicode_Base_character =[def]= Unicode_Graphic_character-gc.M === gc.L|N|P|S|Zs|?Co? === -(gc.M|Zl|Zp|Cn|Cs|Cc|Cf|?Co?)]
+
+<<==:
+ver14:
+pg104[130/1048]
+3.6 Combination 
+Combining Character Sequences 
+D50 Graphic character: A character with the General Category of Letter (L), Combining Mark (M), Number (N), Punctuation (P), Symbol (S), or Space Separator (Zs). 
+    • Graphic characters specifically exclude the line and paragraph separators (Zl, Zp), as well as the characters with the General Category of Other (Cn, Cs, Cc, Cf). 
+    • The interpretation of private-use characters (Co) as graphic characters or not is determined by the implementation. 
+    • For more information, see Chapter 2, General Structure, especially Section 2.4, Code Points and Characters, and Table 2-3. 
+
+D51 Base character: Any graphic character except for those with the General Category of Combining Mark (M). 
+    • Most Unicode characters are base characters. In terms of General Category values, a base character is any code point that has one of the following categories: 
+        Letter (L), Number (N), Punctuation (P), Symbol (S), or Space Separator (Zs). 
+    • Base characters do not include control characters or format controls. 
+    • Base characters are independent graphic characters, but this does not preclude the presentation of base characters from adopting different contextual forms or participating in ligatures. 
+    • The interpretation of private-use characters (Co) as base characters or not is determined by the implementation. However, the default interpretation of private-use characters should be as base characters, in the absence of other information. 
+
+D51a Extended base: Any base character, or any standard Korean syllable block. 
+    • This term is defined to take into account the fact that sequences of Korean conjoining jamo characters behave as if they were a single Hangul syllable character, so that the entire sequence of jamos constitutes a base. 
+    • For the definition of standard Korean syllable block, see D134 in Section 3.12, Conjoining Jamo Behavior. 
+
+===
+D52 Combining character: A character with the General Category of Combining Mark (M).
+    • All characters with non-zero canonical combining class are combining characters, but the reverse is not the case: there are combining characters with a zero canonical combining class. 
+    • The interpretation of private-use characters (Co) as combining characters or not is determined by the implementation. 
+    • These characters are not normally used in isolation unless they are being described. They include such characters as accents, diacritics, Hebrew points, Arabic vowel signs, and Indic matras. 
+    • The graphic positioning of a combining character depends on the last preceding base character, unless they are separated by a character that is neither a combining character nor either zero width joiner or zero width nonjoiner. The combining character is said to apply to that base character. 
+    • There may be no such base character, such as when a combining character is at the start of text or follows a control or format character—for example, a carriage return, tab, or right-left mark. In such cases, the combining characters are called isolated combining characters. 
+    • With isolated combining characters or when a process is unable to perform graphical combination, a process may present a combining character without graphical combination; that is, it may present it as if it were a base character. 
+        『isolated combining character => as if it were a base character』
+    • The representative images of combining characters are depicted with a dotted circle in the code charts. When presented in graphical combination with a preceding base character, that base character is intended to appear in the position occupied by the dotted circle.
+===
+===
+===
+===
+\p{Gr_Base}===\p{Grapheme_Base} (= \p{Grapheme_Base=Y}) (146_986) ~= Unicode_Base_character -{U+FF9E,U+FF9F} +\p{General_Category=Spacing_Mark} (452) -???
+\p{Mc}===\p{Spacing_Mark} (= \p{General_Category=Spacing_Mark}) (452)
+===
+pg107
+Grapheme Clusters 
+D58 Grapheme base: A character with the property Grapheme_Base, or any standard Korean syllable block. 
+    • Characters with the property Grapheme_Base include all base characters (with the exception of U+FF9E..U+FF9F) plus most spacing marks. 
+    • The concept of a grapheme base is introduced to simplify discussion of the graphical application of nonspacing marks to other elements of text. A grapheme base may consist of a spacing (combining) mark, which distinguishes it from a base character per se. A grapheme base may also itself consist of a sequence of characters, in the case of the standard Korean syllable block. 
+    • For the definition of standard Korean syllable block, see D134 in Section 3.12, Conjoining Jamo Behavior.
+
+D59 Grapheme extender: A character with the property Grapheme_Extend. 
+    • Grapheme extender characters consist of all nonspacing marks, zero width joiner, zero width non-joiner, U+FF9E halfwidth katakana voiced sound mark, U+FF9F halfwidth katakana semi-voiced sound mark, and a small number of spacing marks. 
+    • A grapheme extender can be conceived of primarily as the kind of nonspacing graphical mark that is applied above or below another spacing character. 
+    • zero width joiner and zero width non-joiner are formally defined to be grapheme extenders so that their presence does not break up a sequence of other grapheme extenders. 
+    • The small number of spacing marks that have the property Grapheme_Extend are all the second parts of a two-part combining mark. 
+    • The set of characters with the Grapheme_Extend property and the set of characters with the Grapheme_Base property are disjoint, by definition. 
+    • The Grapheme_Extend property is used in the derivation of the set of characters with the value Grapheme_Cluster_Break = Extend, but is not identical to it. See Section 3, “Grapheme Cluster Boundaries” in UAX #29 for details. 
+
+===
+===
+]]
+]]]

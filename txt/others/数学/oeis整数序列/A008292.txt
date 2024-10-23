@@ -1,0 +1,468 @@
+
+e others/数学/oeis整数序列/A008292.txt
+[[摘要:
+https://oeis.org/A008292
+Eulerian_1st(n,k) = Eulerian<n,k> = Eulerian numbers of first order
+Eulerian_1st(n,k):[0..<n]刚好有k个『升序对』的排列数量
+
+[n >= 0][k >= 0]:
+    [Eulerian_1st(n,k)
+    == [0 == k <= n]
+    +  [1 <= k <= n-1]*((k+1)*Eulerian_1st(n-1,k) +(n-k)*Eulerian_1st(n-1,k-1))
+    ]
+
+
+注意:
+  [Eulerian_1st(n,k) == A008292(n,k+1) == T(n,k+1)]
+    [A008292===T]
+vs:
+  [Eulerian_2nd(n,k)==A008517(n,k)==T'(n,k+1)]
+    [A008517=!=T']
+
+===
+===
+[n >= 0][k >= 0]:
+  [Eulerian_1st(n,0) == 1]
+  [Eulerian_1st(0,k) == [k==0]]
+  [k >= n >= 1]:
+    [Eulerian_1st(n,k) == 0]
+  [1 <= k <= n-1]:
+    [n-1 > 0] # 子串非空=>最后插入最小值:末位 与 升序对之间 共(k+1)处:保持升序对数量仍为k
+    [Eulerian_1st(n,k)
+    == (k+1)*Eulerian_1st(n-1,k)
+    +  (((n-1)+1)-((k-1)+1))*Eulerian_1st(n-1,k-1)
+    == (k+1)*Eulerian_1st(n-1,k)
+    +  (n-k)*Eulerian_1st(n-1,k-1)
+    ]
+===
+[n >= 0][k >= 0]:
+    [Eulerian_1st(n,k)
+    == [0 == k <= n]
+    +  [1 <= k <= n-1]*((k+1)*Eulerian_1st(n-1,k) +(n-k)*Eulerian_1st(n-1,k-1))
+    ]
+
+      ##################
+      # ??? [(k+1) + (n-k) == (n+1)] 可有毛病 ???
+      ##################
+      # 子串(n-1)个元素，共((n-1)+1)==n个位置
+      # 假设 子串升序对的数量 为 y{n-1}:
+      # 则 由于 [n-1>0]，所有位置分为两类:
+      #     * (y{n-1}+1)处[y{n}:=y{n-1}]
+      #     * (n-y{n-1}-1)处[y{n}:=y{n-1}+1]
+      # !! [y{n} == k]
+      #     * (y{n-1}+1)处[y{n}:=y{n-1}]
+      #         [y{n-1}==y{n}==k]
+      #         (y{n-1}+1)处==(k+1)处
+      #     * (n-y{n-1}-1)处[y{n}:=y{n-1}+1]
+      #         [y{n-1}==y{n}-1==k-1]
+      #         (n-y{n-1}-1)处==(n-k)处
+      # => [(k+1) + (n-k) == (n+1)] 并没毛病
+===
+!! T(n, k) = k * T(n-1, k) + (n-k+1) * T(n-1, k-1), T(1, 1) = 1.
+===
+===
+A008292:T(n,k) (n >= 1, 1 <= k <= n)
+===
+Coefficients of Eulerian polynomials. Number of permutations of n objects with k-1 rises. Number of increasing rooted trees with n+1 nodes and k leaves.
+T(n,k) = number of permutations of [n] with k runs. T(n,k) = number of permutations of [n] requiring k readings (see the Knuth reference). T(n,k) = number of permutations of [n] having k distinct entries in its inversion table. - Emeric Deutsch, Jun 09 2004
+===
+T(n, k) = k * T(n-1, k) + (n-k+1) * T(n-1, k-1), T(1, 1) = 1.
+T(n, k) = Sum_{j=0..k} (-1)^j * (k-j)^n * binomial(n+1, j).
+Row sums = n! = A000142(n) unless n=0. - Michael Somos, Mar 17 2011
+
+===
+MAPLE	
+A008292 := proc(n, k) option remember; if k < 1 or k > n then 0; elif k = 1 or k = n then 1; else k*procname(n-1, k)+(n-k+1)*procname(n-1, k-1) ; end if; end proc:
+===
+MATHEMATICA	
+t[n_, k_] = Sum[(-1)^j*(k-j)^n*Binomial[n+1, j], {j, 0, k}];
+Flatten[Table[t[n, k], {n, 1, 10}, {k, 1, n}]] (* Jean-François Alcover, May 31 2011, after Michael Somos *)
+
+===
+(Haskell)
+import Data.List (genericLength)
+a008292 n k = a008292_tabl !! (n-1) !! (k-1)
+a008292_row n = a008292_tabl !! (n-1)
+a008292_tabl = iterate f [1] where
+   f xs = zipWith (+)
+     (zipWith (*) ([0] ++ xs) (reverse ks)) (zipWith (*) (xs ++ [0]) ks)
+     where ks = [1 .. 1 + genericLength xs]
+-- Reinhard Zumkeller, May 07 2013
+===
+(Python)
+from sympy import binomial
+def T(n, k): return sum([(-1)**j*(k - j)**n*binomial(n + 1, j) for j in range(k + 1)])
+for n in range(1, 11): print([T(n, k) for k in range(1, n + 1)]) # Indranil Ghosh, Nov 08 2017
+===
+from math import comb as binomial
+def T(n, k): return sum([(-1)**j*(k - j)**n*binomial(n + 1, j) for j in range(k + 1)])
+
+for n in range(1, 11): print([T(n, k) for k in range(1, n + 1)]) # Indranil Ghosh, Nov 08 2017
+
+[1]
+[1, 1]
+[1, 4, 1]
+[1, 11, 11, 1]
+[1, 26, 66, 26, 1]
+[1, 57, 302, 302, 57, 1]
+[1, 120, 1191, 2416, 1191, 120, 1]
+[1, 247, 4293, 15619, 15619, 4293, 247, 1]
+[1, 502, 14608, 88234, 156190, 88234, 14608, 502, 1]
+[1, 1013, 47840, 455192, 1310354, 1310354, 455192, 47840, 1013, 1]
+===
+from functools import cache
+@cache
+def A008292(n, k):
+    return (0 if k < 1 or k > n else (
+    1 if k == 1 or k == n else
+    k*A008292(n-1, k)+(n-k+1)*A008292(n-1, k-1)
+    ))
+
+for n in range(1, 8): print([A008292(n, k) for k in range(1, n + 1)])
+[1]
+[1, 1]
+[1, 4, 1]
+[1, 11, 11, 1]
+[1, 26, 66, 26, 1]
+[1, 57, 302, 302, 57, 1]
+[1, 120, 1191, 2416, 1191, 120, 1]
+
+
+===
+
+[n >= 0][k >= 0]:
+    [Eulerian_1st(n,k)
+    == [0 == k <= n]
+    +  [1 <= k <= n-1]*((k+1)*Eulerian_1st(n-1,k) +(n-k)*Eulerian_1st(n-1,k-1))
+    ]
+
+from functools import cache
+@cache
+def Eulerian_1st(n, k):
+    return ((0 == k <= n)
+      + ((1 <= k <= n-1) and ((k+1)*Eulerian_1st(n-1,k) +(n-k)*Eulerian_1st(n-1,k-1)))
+      )
+
+for n in range(8): print([Eulerian_1st(n, k) for k in range(n+1)])
+
+[1]
+[1, 0]
+[1, 1, 0]
+[1, 4, 1, 0]
+[1, 11, 11, 1, 0]
+[1, 26, 66, 26, 1, 0]
+[1, 57, 302, 302, 57, 1, 0]
+[1, 120, 1191, 2416, 1191, 120, 1, 0]
+
+===
+]]
+
+[[[
+https://oeis.org/A008292
+Eulerian_1st(n,k) = Eulerian<n,k> = Eulerian numbers of first order
+===
+
+A008292		Triangle of Eulerian numbers T(n,k) (n >= 1, 1 <= k <= n) read by rows.		402
+1, 1, 1, 1, 4, 1, 1, 11, 11, 1, 1, 26, 66, 26, 1, 1, 57, 302, 302, 57, 1, 1, 120, 1191, 2416, 1191, 120, 1, 1, 247, 4293, 15619, 15619, 4293, 247, 1, 1, 502, 14608, 88234, 156190, 88234, 14608, 502, 1, 1, 1013, 47840, 455192, 1310354, 1310354, 455192, 47840, 1013, 1 (list; table; graph; refs; listen; history; text; internal format)
+OFFSET	
+1,5
+COMMENTS	
+The indexing used here follows that given in the classic books by Riordan and Comtet. For two other versions see A173018 and A123125. - N. J. A. Sloane, Nov 21 2010
+Coefficients of Eulerian polynomials. Number of permutations of n objects with k-1 rises. Number of increasing rooted trees with n+1 nodes and k leaves.
+T(n,k) = number of permutations of [n] with k runs. T(n,k) = number of permutations of [n] requiring k readings (see the Knuth reference). T(n,k) = number of permutations of [n] having k distinct entries in its inversion table. - Emeric Deutsch, Jun 09 2004
+T(n,k) = number of ways to write the Coxeter element s_{e1}s_{e1-e2}s_{e2-e3}s_{e3-e4}...s_{e_{n-1}-e_n} of the reflection group of type B_n, using s_{e_k} and as few reflections of the form s_{e_i+e_j}, where i = 1, 2, ..., n and j is not equal to i, as possible. - Pramook Khungurn (pramook(AT)mit.edu), Jul 07 2004
+Subtriangle for k>=1 and n>=1 of triangle A123125. - Philippe Deléham, Oct 22 2006
+T(n,k)/n! also represents the n-dimensional volume of the portion of the n-dimensional hypercube cut by the (n-1)-dimensional hyperplanes x_1 + x_2 + ... x_n = k, x_1 + x_2 + ... x_n = k-1; or, equivalently, it represents the probability that the sum of n independent random variables with uniform distribution between 0 and 1 is between k-1 and k. - Stefano Zunino, Oct 25 2006
+[E(.,t)/(1-t)]^n = n!*Lag[n,-P(.,t)/(1-t)] and [-P(.,t)/(1-t)]^n = n!*Lag[n, E(.,t)/(1-t)] umbrally comprise a combinatorial Laguerre transform pair, where E(n,t) are the Eulerian polynomials and P(n,t) are the polynomials in A131758. - Tom Copeland, Sep 30 2007
+From Tom Copeland, Oct 07 2008: (Start)
+G(x,t) = 1/(1 + (1-exp(x*t))/t) = 1 + 1*x + (2+t)*x^2/2! + (6+6*t+t^2)*x^3/3! + ... gives row polynomials for A090582, the reverse f-polynomials for the permutohedra (see A019538).
+G(x,t-1) = 1 + 1*x + (1+t)*x^2/2! + (1+4*t+t^2)*x^3/3! + ... gives row polynomials for A008292, the h-polynomials for permutohedra (Postnikov et al.).
+G((t+1)*x, -1/(t+1)) = 1 + (1+t)*x + (1+3*t+2*t^2)*x^2/2! + ... gives row polynomials for A028246.
+(End)
+A subexceedant function f on [n] is a map f:[n] -> [n] such that 1 <= f(i) <= i for all i, 1 <= i <= n. T(n,k) equals the number of subexceedant functions f of [n] such that the image of f has cardinality k [Mantaci & Rakotondrajao]. Example T(3,2) = 4: if we identify a subexceedant function f with the word f(1)f(2)...f(n) then the subexceedant functions on [3] are 111, 112, 113, 121, 122 and 123 and four of these functions have an image set of cardinality 2. - Peter Bala, Oct 21 2008
+Further to the comments of Tom Copeland above, the n-th row of this triangle is the h-vector of the simplicial complex dual to a permutohedron of type A_(n-1). The corresponding f-vectors are the rows of A019538. For example, 1 + 4*x + x^2 = y^2 + 6*y + 6 and 1 + 11*x + 11*x^2 + x^3 = y^3 + 14*y^2 + 36*y + 24, where x = y + 1, give [1,6,6] and [1,14,36,24] as the third and fourth rows of A019538. The Hilbert transform of this triangle (see A145905 for the definition) is A047969. See A060187 for the triangle of Eulerian numbers of type B (the h-vectors of the simplicial complexes dual to permutohedra of type B). See A066094 for the array of h-vectors of type D. For tables of restricted Eulerian numbers see A144696 - A144699. - Peter Bala, Oct 26 2008
+For a natural refinement of A008292 with connections to compositional inversion and iterated derivatives, see A145271. - Tom Copeland, Nov 06 2008
+The polynomials E(z,n) = numerator(Sum_{k>=1} (-1)^(n+1)*k^n*z^(k-1)) for n >=1 lead directly to the triangle of Eulerian numbers. - Johannes W. Meijer, May 24 2009
+From Walther Janous (walther.janous(AT)tirol.com), Nov 01 2009: (Start)
+The (Eulerian) polynomials e(n,x) = Sum_{k=0..n-1} T(n,k+1)*x^k turn out to be also the numerators of the closed-form expressions of the infinite sums:
+S(p,x) = Sum_{j>=0} (j+1)^p*x^j, that is
+S(p,x) = e(p,x)/(1-x)^(p+1), whenever |x| < 1 and p is a positive integer.
+(Note the inconsistent use of T(n,k) in the section listing the formula section. I adhere tacitly to the first one.) (End)
+If n is an odd prime, then all numbers of the (n-2)-th and (n-1)-th rows are in the progression k*n+1. - Vladimir Shevelev, Jul 01 2011
+The Eulerian triangle is an element of the formula for the r-th successive summation of Sum_{k=1..n} k^j which appears to be Sum_{k=1..n} T(j,k-1) * binomial(j-k+n+r, j+r). - Gary Detlefs, Nov 11 2011
+Li and Wong show that T(n,k) counts the combinatorially inequivalent star polygons with n+1 vertices and sum of angles (2*k-n-1)*Pi. An equivalent formulation is: define the total sign change S(p) of a permutation p in the symmetric group S_n to be equal to Sum_{i=1..n} sign(p(i)-p(i+1)), where we take p(n+1) = p(1). T(n,k) gives the number of permutations q in S_(n+1) with q(1) = 1 and S(q) = 2*k-n-1. For example, T(3,2) = 4 since in S_4 the permutations (1243), (1324), (1342) and (1423) have total sign change 0. - Peter Bala, Dec 27 2011
+Xiong, Hall and Tsao refer to Riordan and mention that a traditional Eulerian number A(n,k) is the number of permutations of (1,2...n) with k weak exceedances. - Susanne Wienand, Aug 25 2014
+Connections to algebraic geometry/topology and characteristic classes are discussed in the Buchstaber and Bunkova, the Copeland, the Hirzebruch, the Lenart and Zainoulline, the Losev and Manin, and the Sheppeard links; to the Grassmannian, in the Copeland, the Farber and Postnikov, the Sheppeard, and the Williams links; and to compositional inversion and differential operators, in the Copeland and the Parker links. - Tom Copeland, Oct 20 2015
+The bivariate e.g.f. noted in the formulas is related to multiplying edges in certain graphs discussed in the Aluffi-Marcolli link. See p. 42. - Tom Copeland, Dec 18 2016
+Distribution of left children in treeshelves is given by a shift of the Eulerian numbers. Treeshelves are ordered binary (0-1-2) increasing trees where every child is connected to its parent by a left or a right link. See A278677, A278678 or A278679 for more definitions and examples. - Sergey Kirgizov, Dec 24 2016
+The row polynomial P(n, x) = Sum_{k=1..n} T(n, k)*x^k appears in the numerator of the o.g.f. G(n, x) = Sum_{m>=0} S(n, m)*x^m with S(n, m) = Sum_{j=0..m} j^n for n >= 1 as G(n, x) = Sum_{k=1..n} P(n, x)/(1 - x)^(n+2) for n >= 0 (with 0^0=1). See also triangle A131689 with a Mar 31 2017 comment for a rewritten form. For the e.g.f see A028246 with a Mar 13 2017 comment. - Wolfdieter Lang, Mar 31 2017
+For relations to Ehrhart polynomials, volumes of polytopes, polylogarithms, the Todd operator, and other special functions, polynomials, and sequences, see A131758 and the references therein. - Tom Copeland, Jun 20 2017
+For relations to values of the Riemann zeta function at integral arguments, see A131758 and the Dupont reference. - Tom Copeland, Mar 19 2018
+Normalized volumes of the hypersimplices, attributed to Laplace. (Cf. the De Loera et al. reference, p. 327.) - Tom Copeland, Jun 25 2018
+REFERENCES	
+Mohammad K. Azarian, Geometric Series, Problem 329, Mathematics and Computer Education, Vol. 30, No. 1, Winter 1996, p. 101. Solution published in Vol. 31, No. 2, Spring 1997, pp. 196-197.
+Miklos Bona, editor, Handbook of Enumerative Combinatorics, CRC Press, 2015, page 106.
+L. Comtet, Advanced Combinatorics, Reidel, 1974, p. 243.
+F. N. David, M. G. Kendall and D. E. Barton, Symmetric Function and Allied Tables, Cambridge, 1966, p. 260.
+R. L. Graham, D. E. Knuth and O. Patashnik, Concrete Mathematics. Addison-Wesley, Reading, MA, 1990, p. 254; 2nd. ed., p. 268.[Worpitzky's identity (6.37)]
+D. E. Knuth, The Art of Computer Programming. Addison-Wesley, Reading, MA, 1998, Vol. 3, p. 47 (exercise 5.1.4 Nr. 20) and p. 605 (solution).
+Meng Li and Ron Goldman. "Limits of sums for binomial and Eulerian numbers and their associated distributions." Discrete Mathematics 343.7 (2020): 111870.
+Anthony Mendes and Jeffrey Remmel, Generating functions from symmetric functions, Preliminary version of book, available from Jeffrey Remmel's home page http://math.ucsd.edu/~remmel/
+K. Mittelstaedt, A stochastic approach to Eulerian numbers, Amer. Math. Mnthly, 127:7 (2020), 618-628.
+T. K. Petersen, Eulerian Numbers, Birkhauser, 2015.
+J. Riordan, An Introduction to Combinatorial Analysis, Wiley, 1958, p. 215.
+R. Sedgewick and P. Flajolet, An Introduction to the Analysis of Algorithms, Addison-Wesley, Reading, MA, 1996.
+N. J. A. Sloane and Simon Plouffe, The Encyclopedia of Integer Sequences, Figure M3416, Academic Press, 1995.
+H. S. Wall, Analytic Theory of Continued Fractions, Chelsea, 1973, see p. 208.
+D. B. West, Combinatorial Mathematics, Cambridge, 2021, p. 101.
+LINKS	
+T. D. Noe, Rows 1 to 100 of triangle, flattened.
+V. E. Adler, Set partitions and integrable hierarchies, arXiv:1510.02900 [nlin.SI], 2015.
+Takashi Agoh, On Generalized Euler Numbers and Polynomials Related to Values of the Lerch Zeta Function, Integers (2020) Vol. 20, Article A5.
+P. Aluffi and M. Marcolli, Feynman motives and deletion-contraction, arXiv:0907.3225 [math-ph], 2009.
+E. Banaian, S. Butler, C. Cox, J. Davis, J. Landgraf and S. Ponce, A generalization of Eulerian numbers via rook placements, arXiv:1508.03673 [math.CO], 2015.
+J. Fernando Barbero G., Jesús Salas, and Eduardo J. S. Villaseñor, Bivariate Generating Functions for a Class of Linear Recurrences. I. General Structure, arXiv:1307.2010 [math.CO], 2013.
+J. F. Barbero G., J. Salas and E. J. S. Villaseñor, Bivariate Generating Functions for a Class of Linear Recurrences. II. Applications, arXiv:1307.5624 [math.CO], 2013.
+Jean-Luc Baril, Sergey Kirgizov, and Vincent Vajnovszki, Patterns in treeshelves, arXiv:1611.07793 [cs.DM], 2016.
+Paul Barry, Eulerian polynomials as moments, via exponential Riordan arrays, arXiv preprint arXiv:1105.3043 [math.CO], 2011, J. Int. Seq. 14 (2011) # 11.9.5.
+Paul Barry, Combinatorial polynomials as moments, Hankel transforms and exponential Riordan arrays, arXiv:1105.3044 [math.CO], 2011.
+Paul Barry, On a transformation of Riordan moment sequences, arXiv:1802.03443 [math.CO], 2018.
+Paul Barry, Three Études on a sequence transformation pipeline, arXiv:1803.06408 [math.CO], 2018.
+Paul Barry, Generalized Eulerian Triangles and Some Special Production Matrices, arXiv:1803.10297 [math.CO], 2018.
+Paul Barry, The Gamma-Vectors of Pascal-like Triangles Defined by Riordan Arrays, arXiv:1804.05027 [math.CO], 2018.
+D. Barsky, Analyse p-adique et suites classiques de nombres, Sem. Loth. Comb. B05b (1981) 1-21.
+H. Belbachir, M. Rahmani, and B. Sury, Sums Involving Moments of Reciprocals of Binomial Coefficients, J. Int. Seq. 14 (2011) #11.6.6.
+Hacene Belbachir, Mourad Rahmani and B. Sury, Alternating Sums of the Reciprocals of Binomial Coefficients, Journal of Integer Sequences, Vol. 15 (2012), #12.2.8.
+Edward A. Bender, Central and local limit theorems applied to asymptotic enumeration Journal of Combinatorial Theory, Series A, 15(1) (1973), 91-111. See Example 5.3.
+F. Bergeron, Ph. Flajolet and B. Salvy, Varieties of Increasing Trees, Lecture Notes in Computer Science vol. 581, ed. J.-C. Raoult, Springer 1992, pp. 24-48.
+V. Buchstaber and E. Bunkova, Elliptic formal group laws, integral Hirzebruch genera and Krichever genera, arXiv:1010.0944 [math-ph], 2010, p. 35.
+Michael Bukata, Ryan Kulwicki, Nicholas Lewandowski, Lara Pudwell, Jacob Roth, and Teresa Wheeland, Distributions of Statistics over Pattern-Avoiding Permutations, arXiv:1812.07112 [math.CO], 2018.
+F. Cachazo, S. He, and E. Y. Yuan, Scattering in Three Dimensions from Rational Maps, arXiv:1306.2962 [hep-th], 2013.
+F. Cachazo, S. Mizera, and G. Zhang, Scattering equations: Real solutions and particles on a line, arXiv:1609.00008 [hep-th], 2016.
+David Callan, Problem 498, The College Mathematics Journal, Vol. 24, No. 2 (Mar., 1993), pp. 183-190 (8 pages).
+David Callan, Shi-Mei Ma, and Toufik Mansour, Some Combinatorial Arrays Related to the Lotka-Volterra System, Electronic Journal of Combinatorics, Volume 22, Issue 2 (2015), Paper #P2.22.
+Naiomi Cameron and J. E. McLeod, Returns and Hills on Generalized Dyck Paths, Journal of Integer Sequences, Vol. 19, 2016, #16.6.1.
+L. Carlitz, Eulerian numbers and operators, Collectanea Mathematica 24:2 (1973), pp. 175-200.
+Leonard Carlitz, Permutations, sequences and special functions, SIAM Review 17, no. 2 (1975): 298-322.
+L. Carlitz et al., Permutations and sequences with repetitions by number of increases, J. Combin. Theory, 1 (1966), 350-374, p. 351.
+L. Carlitz, D. C. Kurtz, R. Scoville and O. P. Stackelberg, Asymptotic properties of Eulerian numbers, Zeitschrift für Wahrscheinlichkeitstheorie und verwandte Gebiete, 23(1), 47-54 (1972).
+Raphaël Cerf and Joseba Dalmau, The quasispecies distribution, arXiv:1609.05738 [q-bio.PE], 2016.
+Mircea I. Cirnu, Determinantal formulas for sum of generalized arithmetic-geometric series, Boletin de la Asociacion Matematica Venezolana, Vol. XVIII, No. 1 (2011), p. 13.
+Tom Copeland, The Elliptic Lie Triad: Riccati and KdV Equations, Infinigens, and Elliptic Genera, 2015.
+Tom Copeland, Reciprocity and Umbral Witchcraft: An Eve with Stirling, Bernoulli, Archimedes, Euler, Laguerre, and Worpitzky, 2020.
+J. A. De Loera, J. Rambau, and F. Santos, Triangulations: Structures for Algorithms and Applications,  Algorithms and Computation in Mathematics, Vol. 25, Springer-Verlag, 2010.
+Colin Defant, Troupes, Cumulants, and Stack-Sorting, arXiv:2004.11367 [math.CO], 2020.
+J. Desarmenien and D. Foata, The signed Eulerian Numbers
+J. Desarmenien and D. Foata, The signed Eulerian numbers, Discrete Math. 99 (1992), no. 1-3, 49-58.
+E. Deutsch and B. E. Sagan, Congruences for Catalan and Motzkin numbers and related sequences, arXiv:math/0407326 [math.CO], 2004; J. Num. Theory 117 (2006), 191-215.
+D. Dominici, Nested derivatives: A simple method for computing series expansions of inverse functions. arXiv:math/0501052v2 [math.CA], 2005.
+B. Drake, An inversion theorem for labeled trees and some limits of areas under lattice paths Thesis, Brandeis Univ., Aug. 2008.
+C. Dupont, Odd zeta motive and linear forms in odd zeta values, arXiv:1601.00950 [math.AG], 2016.
+A. Dzhumadil'daev and D. Yeliussizov, Power sums of binomial coefficients, Journal of Integer Sequences, 16 (2013), Article 13.1.6.
+R. Ehrenborg, M. Readdy, and E. Steingrímsson, Mixed Volumes and Slices of the Cube, J Comb. Theory, Series A 81, Issue 1, Jan. 1998, 121-126.
+M. Farber and A. Postnikov, Arrangements of equal minors in the positive Grassmannian, arXiv preprint arXiv:1502.01434 [math.CO], 2015.
+Joseph A. Farrow, A Monte Carlo Approach to the 4D Scattering Equations, arXiv:1806.02732 [hep-th], 2018.
+FindStat - Combinatorial Statistic Finder, The number of descents of a permutation, The number of exceedances (also excedences) of a permutation, and The number of weak exceedances (also weak excedences) of a permutation
+D. Foata, Distributions eulériennes et mahoniennes sur le groupe des permutations, pp. 27-49 of M. Aigner, editor, Higher Combinatorics, Reidel, Dordrecht, Holland, 1977.
+D. Foata and M. Schutzenberger, Théorie Géométrique des Polynômes Eulériens, Lecture Notes in Math., no.138, Springer Verlag 1970; arXiv:math/0508232 [math.CO], 2005.
+Dominique Foata and Guo-Niu Han, Doubloons and new q-tangent numbers, Quart. J. Math. 62 (2) (2011) 417-432.
+E. T. Frankel,  A calculus of figurate numbers and finite differences, American Mathematical Monthly, 57 (1950), 14-25. [Annotated scanned copy]
+Ghislain R. Franssens, On a Number Pyramid Related to the Binomial, Deleham, Eulerian, MacMahon and Stirling number triangles, Journal of Integer Sequences, Vol. 9 (2006), Article 06.4.1.
+Jason Fulman, Gene B. Kim, Sangchul Lee, and T. Kyle Petersen, On the joint distribution of descents and signs of permutations, arXiv:1910.04258 [math.CO], 2019.
+D. Galvin, G. Wesley and B. Zacovic, Enumerating threshold graphs and some related graph classes, arXiv:2110.08953 [math.CO], 2021.
+S. Garoufalidis and R. Kashaev, From state integrals to q-series, arXiv:1304.2705 [math.GT], 2013.
+Ira Gessel, The Smith College diploma problem.
+Alexander Gnedin and Grigori Olshanski, The boundary of the Eulerian number triangle, arXiv:math/0602610 [math.PR], 2006.
+Mats Granvik, Do these ratios of the Eulerian numbers converge to the logarithm of x?, Mathematics Stack Exchange, Dec 30 2014.
+Jim Haglund and Mirko Visontai, Stable multivariate Eulerian polynomials and generalized Stirling permutations.
+Thomas Hameister, Sujit Rao, and Connor Simpson, Chow rings of matroids and atomistic lattices, research paper, University of Minnesota, 2017, also  arXiv:1802.04241 [math.CO], 2018.
+A. J. J. Heidrich, On the factorization of Eulerian polynomials, Journal of Number Theory, 18(2):157-168, 1984.
+Herwig Hauser and Christoph Koutschan, Multivariate linear recurrences and power series division, Discrete Math. 312 (2012), no. 24, 3553--3560. MR2979485.
+F. Hirzebruch, Eulerian polynomials, Münster J. of Math. 1 (2008), pp. 9-12.
+P. Hitczenko and S. Janson, Weighted random staircase tableaux, arXiv:1212.5498 [math.CO], 2012.
+Matthew Hubbard and Tom Roby, Pascal's Triangle From Top to Bottom
+Hsien-Kuei Hwang, Hua-Huai Chern, and Guan-Huei Duh, An asymptotic distribution theory for Eulerian recurrences with applications, arXiv:1807.01412 [math.CO], 2018.
+Svante Janson, Euler-Frobenius numbers and rounding, arXiv:1305.3512 [math.PR], 2013.
+Lucas Kang, Investigation of Rule 73 as Case Study of Class 4 Long-Distance Cellular Automata, arXiv:1310.3311 [nlin.CG], 2013.
+A. Kerber and K.-J. Thuerlings, Eulerian numbers, Foulkes characters and Lefschetz characters of S_n, Séminaire Lotharingien, Vol. 8 (1984), 31-36.
+Takao Komatsu and Yuan Zhang, Weighted Sylvester sums on the Frobenius set in more variables, arXiv:2101.04298 [math.NT], 2021. Mentions this sequence.
+A. R. Kräuter, Über die Permanente gewisser zirkulärer Matrizen..., Séminaire Lotharingien de Combinatoire, B11b (1984), 11 pp.
+H. K. Krishnapriyan, Eulerian Polynomials and Faulhaber's Result on Sums of Powers of Integers, he College Mathematics Journal, Vol. 26, No. 2 (Mar., 1995), pp. 118-123 (6 pages).
+D. H. Lehmer, Generalized Eulerian numbers, J. Combin. Theory Ser.A 32 (1982), no. 2, 195--215. MR0654621 (83k:10026).
+C. Lenart and K. Zainoulline, Towards generalized cohomology Schubert calculus via formal root polynomials, arXiv:1408.5952 [math.AG], 2014.
+Nan Li, Ehrhart h*-vectors of hypersimplices, Discr. Comp. Geom. 48 (2012) 847-878, Theorem 1.1
+M-H. Li and N-C. Wong, Sums of angles of star polygons and the Eulerian Numbers, Southeast Asian Bulletin of Mathematics 2004.
+A. Losev and Y. Manin, New moduli spaces of pointed curves and pencils of flat connections, arXiv:0001003 [math.AG], 2000 (p. 8)
+Shi-Mei Ma, Some combinatorial sequences associated with context-free grammars, arXiv:1208.3104v2 [math.CO], 2012.
+Shi-Mei Ma, On gamma-vectors and the derivatives of the tangent and secant functions, arXiv:1304.6654 [math.CO], 2013.
+Shi-Mei Ma, A family of two-variable derivative polynomials for tangent and secant, El J. Combinat. 20 (1) (2013) P11.
+Shi-Mei Ma, Qi Fang, Toufik Mansour, and Yeong-Nan Yeh, Alternating Eulerian polynomials and left peak polynomials, arXiv:2104.09374, 2021
+Shi-Mei Ma, Jun Ma, and Yeong-Nan Yeh, On certain combinatorial expansions of descent polynomials and the change of grammars, arXiv:1802.02861 [math.CO], 2018.
+S.-M. Ma, T. Mansour, and M. Schork, Normal ordering problem and the extensions of the Stirling grammar, arXiv:1308.0169 [math.CO], 2013.
+Shi-Mei Ma, T. Mansour, and D. Callan, Some combinatorial arrays related to the Lotka-Volterra system, arXiv:1404.0731 [math.CO], 2014.
+Shi-Mei Ma and Hai-Na Wang, Enumeration of a dual set of Stirling permutations by their alternating runs, arXiv:1506.08716 [math.CO], 2015.
+P. A. MacMahon, The divisors of numbers, Proc. London Math. Soc., (2) 19 (1920), 305-340; Coll. Papers II, pp. 267-302.
+R. Mantaci and F. Rakotondrajao, A permutation representation that knows what "Eulerian" means, Discrete Mathematics and Theoretical Computer Science, 4 101-108, (2001) [another version]
+O. J. Munch, Om potensproduktsummer [Norwegian, English summary], Nordisk Matematisk Tidskrift, 7 (1959), 5-19. [Annotated scanned copy]
+O. J. Munch, Om potensproduktsummer [ Norwegian, English summary ], Nordisk Matematisk Tidskrift, 7 (1959), 5-19.
+Nagatomo Nakamura, Pseudo-Normal Random Number Generation via the Eulerian Numbers, Josai Mathematical Monographs, vol 8, p 85-95, 2015.
+David Neal, The series Sum k=1 to oo n^m*x^n and a Pascal-Like Triangle, The College Mathematics Journal, Vol. 25, No. 2 (Mar., 1994), pp. 99-101 (3 pages).
+S. Parker, The Combinatorics of Functional Composition and Inversion, Dissertation, Brandeis Univ. (1993).
+Vincent Pilaud and V. Pons, Permutrees, arXiv preprint arXiv:1606.09643 [math.CO], 2016-2017.
+C. de Jesús Pita Ruiz Velasco, Convolution and Sulanke Numbers, JIS 13 (2010) 10.1.8.
+P. A. Piza, Kummer numbers, Mathematics Magazine, 21 (1947/1948), 257-260.
+P. A. Piza, Kummer numbers, Mathematics Magazine, 21 (1947/1948), 257-260. [Annotated scanned copy]
+A. Postnikov, V. Reiner, and L. Williams, Faces of generalized permutohedra, arXiv:0609184 [math.CO], 2007.
+A. Randrianarivony and J. Zeng, Une famille de polynomes qui interpole plusieurs suites..., Adv. Appl. Math. 17 (1996), 1-26.
+J. Riordan, Review of Frankel (1950) [Annotated scanned copy]
+J. Riordan, Triangular permutation numbers, Proc. Amer. Math. Soc. 2 (1951) 429-432, r(x,t).
+D. P. Roselle,  Permutations by number of rises and successions, Proc. Amer. Math. Soc., 19 (1968), 8-16. [Annotated scanned copy]
+G. Rzadkowski, Two formulas for Successive Derivatives and Their Applications, JIS 12 (2009) 09.8.2.
+G. Rzadkowski, An Analytic Approach to Special Numbers and Polynomials, J. Int. Seq. 18 (2015) 15.8.8.
+Grzegorz Rzadkowski and M. Urlinska, A Generalization of the Eulerian Numbers, arXiv preprint arXiv:1612.06635 [math.CO], 2016-2017.
+J. Sack and H. Ulfarsson, Refined inversion statistics on permutations, arXiv:1106.1995 [math.CO], 2011.
+M. Sheppeard, Constructive motives and scattering 2013 (p. 41).
+D. Singh, The numbers L(m,n) and their relations with prepared Bernoulli and Eulerian numbers, Math. Student, 20 (1952), 66-70. [Annotated scanned copy]
+M. Z. Spivey, On Solutions to a General Combinatorial Recurrence, J. Int. Seq. 14 (2011) # 11.9.7.
+R. Sprugnoli, Alternating Weighted Sums of Inverses of Binomial Coefficients, J. Integer Sequences, 15 (2012), #12.6.3.
+Yidong Sun and Liting Zhai, Some properties of a class of refined Eulerian polynomials, arXiv:1810.07956 [math.CO], 2018.
+S. Tanimoto, A study of Eulerian numbers by means of an operator on permutations, Europ. J. Combin., 24 (2003), 33-43.
+Eric Weisstein's World of Mathematics, Eulerian Number and Euler's Number Triangle
+Susanne Wienand, plots of exceedances for permutations of [4]
+L. K. Williams, Enumeration of totally positive Grassmann cells, arXiv:math/0307271 [math.CO], 2003-2004.
+Anthony James Wood, Nonequilibrium steady states from a random-walk perspective, Ph. D. Thesis, The University of Edinburgh (Scotland, UK 2019).
+Anthony J. Wood, Richard A. Blythe, and Martin R. Evans, Combinatorial mappings of exclusion processes, arXiv:1908.00942 [cond-mat.stat-mech], 2019.
+Tingyao Xiong, Jonathan I. Hall, and Hung-Ping Tsao, Combinatorial Interpretation of General Eulerian Numbers, Journal of Discrete Mathematics, (2014), Article ID 870596, 6 pages.
+D. Yeliussizov, Permutation Statistics on Multisets, Ph.D. Dissertation, Computer Science, Kazakh-British Technical University, 2012.
+Yifan Zhang and George Grossman, A Combinatorial Proof for the Generating Function of Powers of a Second-Order Recurrence Sequence, J. Int. Seq. 21 (2018), #18.3.3.
+Index entries for sequences related to rooted trees
+Index entries for "core" sequences
+FORMULA	
+T(n, k) = k * T(n-1, k) + (n-k+1) * T(n-1, k-1), T(1, 1) = 1.
+T(n, k) = Sum_{j=0..k} (-1)^j * (k-j)^n * binomial(n+1, j).
+Row sums = n! = A000142(n) unless n=0. - Michael Somos, Mar 17 2011
+E.g.f. A(x, q) = Sum_{n>0} (Sum_{k=1..n} T(n, k) * q^k) * x^n / n! = q * ( e^(q*x) - e^x ) / ( q*e^x - e^(q*x) ) satisfies dA / dx = (A + 1) * (A + q). - Michael Somos, Mar 17 2011
+For a column listing, n-th term: T(c, n) = c^(n+c-1) + Sum_{i=1..c-1} (-1)^i/i!*(c-i)^(n+c-1)*Product_{j=1..i} (n+c+1-j). - Randall L Rathbun, Jan 23 2002
+From John Robertson (jpr2718(AT)aol.com), Sep 02 2002: (Start)
+Four characterizations of Eulerian numbers T(i, n):
+1. T(0, n)=1 for n>=1, T(i, 1)=0 for i>=1, T(i, n) = (n-i)T(i-1, n-1) + (i+1)T(i, n-1).
+2. T(i, n) = Sum_{j=0..i} (-1)^j*binomial(n+1,j)*(i-j+1)^n for n>=1, i>=0.
+3. Let C_n be the unit cube in R^n with vertices (e_1, e_2, ..., e_n) where each e_i is 0 or 1 and all 2^n combinations are used. Then T(i, n)/n! is the volume of C_n between the hyperplanes x_1 + x_2 + ... + x_n = i and x_1 + x_2 + ... + x_n = i+1. Hence T(i, n)/n! is the probability that i <= X_1 + X_2 + ... + X_n < i+1 where the X_j are independent uniform [0, 1] distributions. - See Ehrenborg & Readdy reference.
+4. Let f(i, n) = T(i, n)/n!. The f(i, n) are the unique coefficients so that (1/(r-1)^(n+1)) Sum_{i=0..n-1} f(i, n) r^{i+1} = Sum_{j>=0} (j^n)/(r^j) whenever n>=1 and abs(r)>1. (End)
+O.g.f. for n-th row: (1-x)^(n+1)*polylog(-n, x)/x. - Vladeta Jovovic, Sep 02 2002
+Triangle T(n, k), n>0 and k>0, read by rows; given by [0, 1, 0, 2, 0, 3, 0, 4, 0, 5, 0, 6, ...] DELTA [1, 0, 2, 0, 3, 0, 4, 0, 5, 0, 6, ...] (positive integers interspersed with 0's) where DELTA is Deléham's operator defined in A084938.
+Sum_{k=1..n} T(n, k)*2^k = A000629(n). - Philippe Deléham, Jun 05 2004
+From Tom Copeland, Oct 10 2007: (Start)
+Bell_n(x) = Sum_{j=0..n} S2(n,j) * x^j = Sum_{j=0..n} E(n,j) * Lag(n,-x, j-n) = Sum_{j=0..n} (E(n,j)/n!) * (n!*Lag(n,-x, j-n)) = Sum_{j=0..n} E(n,j) * binomial(Bell.(x)+j, n) umbrally where Bell_n(x) are the Bell / Touchard / exponential polynomials; S2(n,j), the Stirling numbers of the second kind; E(n,j), the Eulerian numbers; and Lag(n,x,m), the associated Laguerre polynomials of order m.
+For x = 0, the equation gives Sum_{j=0..n} E(n,j) * binomial(j,n) = 1 for n=0 and 0 for all other n. By substituting the umbral compositional inverse of the Bell polynomials, the lower factorial n!*binomial(y,n), for x in the equation, the Worpitzky identity is obtained; y^n = Sum_{j=0..n} E(n,j) * binomial(y+j,n).
+Note that E(n,j)/n! = E(n,j)/(Sum_{k=0..n} E(n,k)). Also (n!*Lag(n, -1, j-n)) is A086885 with a simple combinatorial interpretation in terms of seating arrangements, giving a combinatorial interpretation to the equation for x=1; n!*Bell_n(1) = n!*Sum_{j=0..n} S2(n,j) = Sum_{j=0..n} E(n,j) * (n!*Lag(n, -1, j-n)).
+(Appended Sep 16 2020) For connections to the Bernoulli numbers, extensions, proofs, and a clear presentation of the number arrays involved in the identities above, see my post Reciprocity and Umbral Witchcraft. (End)
+From the relations between the h- and f-polynomials of permutohedra and reciprocals of e.g.f.s described in A049019: (t-1)((t-1)d/dx)^n 1/(t-exp(x)) evaluated at x=0 gives the n-th Eulerian row polynomial in t and the n-th row polynomial in (t-1) of A019538 and A090582. From the Comtet and Copeland references in A139605: ((t+exp(x)-1)d/dx)^(n+1) x gives pairs of the Eulerian polynomials in t as the coefficients of x^0 and x^1 in its Taylor series expansion in x. - Tom Copeland, Oct 05 2008
+G.f: 1/(1-x/(1-x*y/1-2*x/(1-2*x*y/(1-3*x/(1-3*x*y/(1-... (continued fraction). - Paul Barry, Mar 24 2010
+If n is odd prime, then the following consecutive 2*n+1 terms are 1 modulo n: a((n-1)*(n-2)/2+i), i=0..2*n. This chain of terms is maximal in the sense that neither the previous term nor the following one are 1 modulo n. - _Vladimir Shevelev, Jul 01 2011
+From Peter Bala, Sep 29 2011: (Start)
+For k = 0,1,2,... put G(k,x,t) := x -(1+2^k*t)*x^2/2 +(1+2^k*t+3^k*t^2)*x^3/3-(1+2^k*t+3^k*t^2+4^k*t^3)*x^4/4+.... Then the series reversion of G(k,x,t) with respect to x gives an e.g.f. for the present table when k = 0 and for A008517 when k = 1.
+The e.g.f. B(x,t) := compositional inverse with respect to x of G(0,x,t) = (exp(x)-exp(x*t))/(exp(x*t)-t*exp(x)) = x + (1+t)*x^2/2! + (1+4*t+t^2)*x^3/3! + ... satisfies the autonomous differential equation dB/dx = (1+B)*(1+t*B) = 1 + (1+t)*B + t*B^2.
+Applying [Bergeron et al., Theorem 1] gives a combinatorial interpretation for the Eulerian polynomials: A(n,t) counts plane increasing trees on n vertices where each vertex has outdegree <= 2, the vertices of outdegree 1 come in 1+t colors and the vertices of outdegree 2 come in t colors. An example is given below. Cf. A008517. Applying [Dominici, Theorem 4.1] gives the following method for calculating the Eulerian polynomials: Let f(x,t) = (1+x)*(1+t*x) and let D be the operator f(x,t)*d/dx. Then A(n+1,t) = D^n(f(x,t)) evaluated at x = 0.
+(End)
+With e.g.f. A(x,t) = G[x,(t-1)]-1 in Copeland's 2008 comment, the compositional inverse is Ainv(x,t) = log(t-(t-1)/(1+x))/(t-1). - Tom Copeland, Oct 11 2011
+T(2*n+1,n+1) = (2*n+2)*T(2*n,n). (E.g., 66 = 6*11, 2416 = 8*302, ...) - Gary Detlefs, Nov 11 2011
+E.g.f.: (1-y) / (1 - y*exp( (1-y)*x )). - Geoffrey Critzer, Nov 10 2012
+From Peter Bala, Mar 12 2013: (Start)
+Let {A(n,x)} n>=1 denote the sequence of Eulerian polynomials beginning [1, 1 + x, 1 + 4*x + x^2, ...]. Given two complex numbers a and b, the polynomial sequence defined by R(n,x) := (x+b)^n*A(n+1,(x+a)/(x+b)), n >= 0, satisfies the recurrence equation R(n+1,x) = d/dx((x+a)*(x+b)*R(n,x)). These polynomials give the row generating polynomials for several triangles in the database including A019538 (a = 0, b = 1), A156992 (a = 1, b = 1), A185421 (a = (1+i)/2, b = (1-i)/2), A185423 (a = exp(i*Pi/3), b = exp(-i*Pi/3)) and A185896 (a = i, b = -i).
+(End)
+E.g.f.: 1 + x/(T(0) - x*y), where T(k) = 1 + x*(y-1)/(1 + (k+1)/T(k+1) ); (continued fraction). - Sergei N. Gladkovskii, Nov 07 2013
+From Tom Copeland, Sep 18 2014: (Start)
+A) Bivariate e.g.f. A(x,a,b)= (e^(ax)-e^(bx))/(a*e^(bx)-b*e^(ax)) = x + (a+b)*x^2/2! + (a^2+4ab+b^2)*x^3/3! + (a^3+11a^2b+11ab^2+b^3)x^4/4! + ...
+B) B(x,a,b)= log((1+ax)/(1+bx))/(a-b) = x - (a+b)x^2/2 + (a^2+ab+b^2)x^3/3 - (a^3+a^2b+ab^2+b^3)x^4/4 + ... = log(1+u.*x), with (u.)^n = u_n = h_(n-1)(a,b) a complete homogeneous polynomial, is the compositional inverse of A(x,a,b) in x (see Drake, p. 56).
+C) A(x) satisfies dA/dx = (1+a*A)(1+b*A) and can be written in terms of a Weierstrass elliptic function (see Buchstaber & Bunkova).
+D) The bivariate Eulerian row polynomials are generated by the iterated derivative ((1+ax)(1+bx)d/dx)^n x evaluated at x=0 (see A145271).
+E) A(x,a,b)= -(e^(-ax)-e^(-bx))/(a*e^(-ax)-b*e^(-bx)), A(x,-1,-1) = x/(1+x), and B(x,-1,-1) = x/(1-x).
+F) FGL(x,y) = A(B(x,a,b) + B(y,a,b),a,b) = (x+y+(a+b)xy)/(1-ab*xy) is called the hyperbolic formal group law and related to a generalized cohomology theory by Lenart and Zainoulline. (End)
+For x > 1, the n-th Eulerian polynomial A(n,x) = (x - 1)^n * log(x) * Integral_{u>=0} (ceiling(u))^n * x^(-u) du. - Peter Bala, Feb 06 2015
+Sum_{j>=0} j^n/e^j, for n>=0, equals Sum_{k=1..n} T(n,k)e^k/(e-1)^(n+1), a rational function in the variable "e" which evaluates, approximately, to n! when e = A001113 = 2.71828... - Richard R. Forberg, Feb 15 2015
+For a fixed k, T(n,k) ~ k^n, proved by induction. - Ran Pan, Oct 12 2015
+From A145271, multiply the n-th diagonal (with n=0 the main diagonal) of the lower triangular Pascal matrix by g_n = (d/dx)^n (1+a*x)*(1+b*x) evaluated at x= 0, i.e., g_0 = 1, g_1 = (a+b), g_2 = 2ab, and g_n = 0 otherwise, to obtain the tridiagonal matrix VP with VP(n,k) = binomial(n,k) g_(n-k). Then the m-th bivariate row polynomial of this entry is P(m,a,b) = (1, 0, 0, 0, ...) [VP * S]^(m-1) (1, a+b, 2ab, 0, ...)^T, where S is the shift matrix A129185, representing differentiation in the divided powers basis x^n/n!. Also, P(m,a,b) = (1, 0, 0, 0, ...) [VP * S]^m (0, 1, 0, ...)^T. - Tom Copeland, Aug 02 2016
+Cumulatively summing a row generates the n starting terms of the n-th differences of the n-th powers. Applying the finite difference method to x^n, these terms correspond to those before constant n! in the lowest difference row. E.g., T(4,k) is summed as 0+1=1, 1+11=12, 12+11=23, 23+1=4!. See A101101, A101104, A101100, A179457. - Andy Nicol, May 25 2024
+EXAMPLE	
+The triangle T(n, k) begins:
+n\k 1    2     3      4       5       6      7     8    9 10 ...
+1:  1
+2:  1    1
+3:  1    4     1
+4:  1   11    11      1
+5:  1   26    66     26       1
+6:  1   57   302    302      57       1
+7:  1  120  1191   2416    1191     120      1
+8:  1  247  4293  15619   15619    4293    247     1
+9:  1  502 14608  88234  156190   88234  14608   502    1
+10: 1 1013 47840 455192 1310354 1310354 455192 47840 1013  1
+... Reformatted. - Wolfdieter Lang, Feb 14 2015
+-----------------------------------------------------------------
+E.g.f. = (y) * x^1 / 1! + (y + y^2) * x^2 / 2! + (y + 4*y^2 + y^3) * x^3 / 3! + ... - Michael Somos, Mar 17 2011
+Let n=7. Then the following 2*7+1=15 consecutive terms are 1(mod 7): a(15+i), i=0..14. - Vladimir Shevelev, Jul 01 2011
+Row 3: The plane increasing 0-1-2 trees on 3 vertices (with the number of colored vertices shown to the right of a vertex) are
+.
+.   1o (1+t)         1o t         1o t
+.   |                / \          / \
+.   |               /   \        /   \
+.   2o (1+t)      2o     3o    3o    2o
+.   |
+.   |
+.   3o
+.
+The total number of trees is (1+t)^2 + t + t = 1 + 4*t + t^2.
+MAPLE	
+A008292 := proc(n, k) option remember; if k < 1 or k > n then 0; elif k = 1 or k = n then 1; else k*procname(n-1, k)+(n-k+1)*procname(n-1, k-1) ; end if; end proc:
+MATHEMATICA	
+t[n_, k_] = Sum[(-1)^j*(k-j)^n*Binomial[n+1, j], {j, 0, k}];
+Flatten[Table[t[n, k], {n, 1, 10}, {k, 1, n}]] (* Jean-François Alcover, May 31 2011, after Michael Somos *)
+Flatten[Table[CoefficientList[(1-x)^(k+1)*PolyLog[-k, x]/x, x], {k, 1, 10}]] (* Vaclav Kotesovec, Aug 27 2015 *)
+Table[Tally[
+   Count[#, x_ /; x > 0] & /@ (Differences /@
+      Permutations[Range[n]])][[;; , 2]], {n, 10}] (* Li Han, Oct 11 2020 *)
+PROG	
+(PARI) {T(n, k) = if( k<1 || k>n, 0, if( n==1, 1, k * T(n-1, k) + (n-k+1) * T(n-1, k-1)))}; /* Michael Somos, Jul 19 1999 */
+(PARI) {T(n, k) = sum( j=0, k, (-1)^j * (k-j)^n * binomial( n+1, j))}; /* Michael Somos, Jul 19 1999 */
+{A008292(c, n)=c^(n+c-1)+sum(i=1, c-1, (-1)^i/i!*(c-i)^(n+c-1)*prod(j=1, i, n+c+1-j))}
+(Haskell)
+import Data.List (genericLength)
+a008292 n k = a008292_tabl !! (n-1) !! (k-1)
+a008292_row n = a008292_tabl !! (n-1)
+a008292_tabl = iterate f [1] where
+   f xs = zipWith (+)
+     (zipWith (*) ([0] ++ xs) (reverse ks)) (zipWith (*) (xs ++ [0]) ks)
+     where ks = [1 .. 1 + genericLength xs]
+-- Reinhard Zumkeller, May 07 2013
+(Python)
+from sympy import binomial
+def T(n, k): return sum([(-1)**j*(k - j)**n*binomial(n + 1, j) for j in range(k + 1)])
+for n in range(1, 11): print([T(n, k) for k in range(1, n + 1)]) # Indranil Ghosh, Nov 08 2017
+(R)
+T <- function(n, k) {
+  S <- numeric()
+  for (j in 0:k) S <- c(S, (-1)^j*(k-j)^n*choose(n+1, j))
+  return(sum(S))
+}
+for (n in 1:10){
+  for (k in 1:n) print(T(n, k))
+} # Indranil Ghosh, Nov 08 2017
+(GAP) Flat(List([1..10], n->List([1..n], k->Sum([0..k], j->(-1)^j*(k-j)^n*Binomial(n+1, j))))); # Muniru A Asiru, Jun 29 2018
+(Sage) [[sum((-1)^j*binomial(n+1, j)*(k-j)^n for j in (0..k)) for k in (1..n)] for n in (1..12)] # G. C. Greubel, Feb 23 2019
+(Magma) Eulerian:= func< n, k | (&+[(-1)^j*Binomial(n+1, j)*(k-j+1)^n: j in [0..k+1]]) >; [[Eulerian(n, k): k in [0..n-1]]: n in [1..10]]; // G. C. Greubel, Apr 15 2019
+CROSSREFS	
+Columns k=2..8 are A000295, A000460, A000498, A000505, A000514, A001243, A001244.
+Cf. A019538, A028246, A048993, A048994, A049019, A086885, A090582, A129185, A131758, A139605, A173018.
+Sequence in context: A221987 A285357 A174526 * A174036 A157221 A146967
+Adjacent sequences:  A008289 A008290 A008291 * A008293 A008294 A008295
+KEYWORD	
+nonn,tabl,nice,eigen,core,look
+AUTHOR	
+N. J. A. Sloane, Mar 15 1996
+EXTENSIONS	
+Thanks to Michael Somos for additional comments.
+Further comments from Christian G. Bower, May 12 2000
+STATUS	
+approved
+Last modified July 9 09:00 EDT 2024. Contains 374173 sequences. (Running on oeis4.)
+]]]

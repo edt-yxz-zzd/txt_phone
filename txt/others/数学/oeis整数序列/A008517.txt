@@ -1,0 +1,258 @@
+
+e others/数学/oeis整数序列/A008517.txt
+
+[[摘要:
+https://oeis.org/A008517
+Eulerian_2nd(n,k) = Eulerian<<n,k>> = Eulerian numbers of second order
+序列([0..<n]*2)的满足凹坑光滑约束(嵌套无错乱)的刚好有k个『升序对』的排列数量
+[n>=0][k>=0]:
+  [Eulerian_2nd(n,k)
+  == [0==k<=n]
+  +  [1<=k<=n-1]*((k+1)*Eulerian_2nd(n-1,k) +(2*n-k-1)*Eulerian_2nd(n-1,k-1))
+  ]
+[Eulerian_2nd(n,k)==A008517(n,k)==T(n,k+1)]
+
+依照定义:
+[row_sum(n+1) == row_sum(n)*(n*2+1) == (n*2+1)!! == (n*2+1)! / (n*2)!! == (n*2+1)! / n! / 2**n == P(n*2+1;n+1)/2**n]
+  # 『*(n*2+1)』旧行的插入位置的数目
+[Eulerian_2nd(0,k) := [k==0]]
+  []:0
+  [row_sum(0) == 1]
+[Eulerian_2nd(1,k) := [k==0]]
+  #xxx:假设 序列 [0,0] 不算 增长序列
+  假设 序列 [0,0] 不算 升序对
+  #以下格式:『排列:升序对数量k』
+  [99]:0
+  [row_sum(1) == row_sum(0)*(0*2+1) == 1]
+[Eulerian_2nd(2,k) := [k==0]*1 + [k==1]*2]
+  [row_sum(2) == row_sum(1)*(1*2+1) == 3 == 1+2]
+  [8899]:1
+  [9889]:1
+  [9988]:0
+[Eulerian_2nd(3,k) := [k==0]*1 + [k==1]*8 + [k==2]*6]
+  [row_sum(3) == row_sum(2)*(2*2+1) == 3*15 == 15 == 1+8+6]
+  [778899]:2
+  [877899]:2
+  [887799]:1
+  [889779]:2
+  [889977]:1
+  [779889]:2
+  [977889]:2
+  [987789]:2
+  [988779]:1
+  [988977]:1
+  [779988]:1
+  [977988]:1
+  [997788]:1
+  [998778]:1
+  [998877]:0
+  ######################
+  !! [Eulerian_2nd(n,k)==k*Eulerian_2nd(n-1,k) +(2*n-k)*Eulerian_2nd(n-1,k-1)]
+  [Eulerian_2nd(3,1)==1*Eulerian_2nd(3-1,1) +(2*3-1)*Eulerian_2nd(3-1,1-1)
+  ==1*Eulerian_2nd(2,1) +5*Eulerian_2nd(2,0)
+  ]
+  [Eulerian_2nd(3,2)==2*Eulerian_2nd(3-1,2) +(2*3-2)*Eulerian_2nd(3-1,2-1)]
+  ######################
+
+[n>=0][k>=0]:
+  [Eulerian_2nd(0,k)==[k==0]]
+  [Eulerian_2nd(n,0)==1]
+  [k >= n >= 1]:
+    [Eulerian_2nd(n,k)==0]
+  [1 <= k <= n-1]:
+    [Eulerian_2nd(n,k)
+    ==(k+[n>=2])*Eulerian_2nd(n-1,k) +(2*n-k-[n>=2])*Eulerian_2nd(n-1,k-1)
+    ==(k+1)*Eulerian_2nd(n-1,k) +(2*n-k-1)*Eulerian_2nd(n-1,k-1)
+    ]
+[n>=0][k>=0]:
+  [Eulerian_2nd(n,k)
+  == [n>=0][k==0]
+  +  [n>=2][1<=k<=n-1]*((k+1)*Eulerian_2nd(n-1,k) +(2*n-k-1)*Eulerian_2nd(n-1,k-1))
+  == [0==k<=n]
+  +  [1<=k<=n-1]*((k+1)*Eulerian_2nd(n-1,k) +(2*n-k-1)*Eulerian_2nd(n-1,k-1))
+  ]
+[n>=0][k>=0]:
+  [Eulerian_2nd(n,k)
+  == [0==k<=n]
+  +  [1<=k<=n-1]*((k+1)*Eulerian_2nd(n-1,k) +(2*n-k-1)*Eulerian_2nd(n-1,k-1))
+  ]
+
+  解释:先排其余，最后插入最小值(两个):
+    若是 出现在 升序对之间+首位纟非空旧行，则 升序对数量不变。
+      =>插入前旧行数量:T(n-1,k)
+      k个升序对 + [n-1>0]#首位纟非空旧行
+      =>插入位置数:k+[n>=2]
+      =>插入后新行数量:T(n-1,k)*(k+[n>=2])
+    若是 不出现在 升序对之间+首位纟非空旧行，则 升序对数量增一。
+      =>插入前旧行数量:T(n-1,k-1)
+      (k-1)个升序对 + [n-1>0]#首位纟非空旧行
+      =>插入位置数:(n-1)*2 +1 -(k-1) -[n>=2] == 2*n-k-[n>=2]
+      =>插入后新行数量:T(n-1,k-1)*(2*n-k-[n>=2])
+定义:
+Second-order Eulerian numbers <<n,k>> = T(n,k+1)
+  count the permutations of the multiset {1,1,2,2,...,n,n} with k ascents with the restriction that for all m, all integers between the two copies of m are less than m. In particular, the two 1s are always next to each other.
+公式:
+T(n,k) = 0 if n < k, T(1,1) = 1, T(n,-1) = 0, T(n,k) = k*T(n-1,k) + (2*n-k)*T(n-1,k-1).
+  #感觉不太对: [Eulerian_2nd(n,k)==T(n,k+1)] 『k+1』是怎么回事？
+  # 还得考虑:『插入于首位』，所以有『+1』
+
+a(n,m) = Sum_{k=0..n-m} (-1)^(n+k)*binomial(2*n+1, k)*Stirling1(2*n-m-k+1, n-m-k+1). - Johannes W. Meijer, Oct 16 2009
+===
+from functools import cache
+@cache
+def A008517(n, k):
+    if n==1: return 1 if k==0 else 0
+    return A008517(n-1, k)*(k+1)+A008517(n-1, k-1)*(2*n-k-1)
+
+for n in range(1,9): [A008517(n, k) for k in range(n)] # Peter Luschny, Oct 31 2012
+
+[1]
+[1, 2]
+[1, 8, 6]
+[1, 22, 58, 24]
+[1, 52, 328, 444, 120]
+[1, 114, 1452, 4400, 3708, 720]
+[1, 240, 5610, 32120, 58140, 33984, 5040]
+[1, 494, 19950, 195800, 644020, 785304, 341136, 40320]
+
+]]
+
+[[[
+https://oeis.org/A008517
+Eulerian_2nd(n,k) = Eulerian<<n,k>> = Eulerian numbers of second order
+===
+
+A008517		Second-order Eulerian triangle T(n,k), 1 <= k <= n.		63
+1, 1, 2, 1, 8, 6, 1, 22, 58, 24, 1, 52, 328, 444, 120, 1, 114, 1452, 4400, 3708, 720, 1, 240, 5610, 32120, 58140, 33984, 5040, 1, 494, 19950, 195800, 644020, 785304, 341136, 40320, 1, 1004, 67260, 1062500, 5765500, 12440064, 11026296, 3733920, 362880 (list; table; graph; refs; listen; history; text; internal format)
+OFFSET	
+1,3
+COMMENTS	
+Second-order Eulerian numbers <<n,k>> = T(n,k+1) count the permutations of the multiset {1,1,2,2,...,n,n} with k ascents with the restriction that for all m, all integers between the two copies of m are less than m. In particular, the two 1s are always next to each other.
+When seen as coefficients of polynomials with descending exponents, evaluations are in A000311 (x=2) and A001662 (x=-1).
+The row reversed triangle is A112007. There one can find comments on the o.g.f.s for the diagonals of the unsigned Stirling1 triangle |A008275|.
+Stirling2(n,n-k) = Sum_{m=0..k-1} T(k,m+1)*binomial(n+k-1+m, 2*k), k>=1. See the Graham et al. reference p. 271 eq. (6.43).
+This triangle is the coefficient triangle of the numerator polynomials appearing in the o.g.f. for the k-th diagonal (k >= 1) of the Stirling2 triangle A048993.
+The o.g.f. for column k satisfies the recurrence G(k,x) = x*(2*x*(d/dx)G(k-1,x) + (2-k)*G(k-1,x))/(1-k*x), k >= 2, with G(1,x) = 1/(1-x). - Wolfdieter Lang, Oct 14 2005
+This triangle is in some sense generated by the differential equation y' = 1 - 2/(1+x+y). (This is the differential equation satisfied by the function defined implicitly as x+y=exp(x-y).) If we take y = a(0) + a(1)x + a(2)x^2 + a(3)x^3 + ... and assume a(0)=c then all the a's may be calculated formally in terms of c and we have a(1) = (c-1)/(c+1) and, for n > 1, a(n) = 2^n/n! (1+c)^(1-2n)( T(n,1)c - T(n,2)c^2 + T(n,3)c^3 - ... + (-1)^(n-1) T(n,n)c^n ). - Moshe Shmuel Newman, Aug 08 2007
+From the recurrence relation, the generating function F(x,y) := 1 + Sum_{n>=1, 1<=k<=n} [T(n,k)x^n/n!*y^k] satisfies the partial differential equation F = (1/y-2x)F_x + (y-1)F_y, with (non-elementary) solution F(x,y) = (1-y)/(1-Phi(w)) where w = y*exp(x(y-1)^2-y) and Phi(x) is defined by Phi(x) = x*exp(Phi(x)). By Lagrange inversion (see Wilf's book "generatingfunctionology", page 168, Example 1), Phi(x) = Sum_{n>=1} n^(n-1)*x^n/n!. Thus Phi(x) can alternatively be described as the e.g.f. for rooted labeled trees on n vertices A000169. - David Callan, Jul 25 2008
+A method for solving PDEs such as the one above for F(x,y) is described in the Klazar reference (see pages 207-208). In his case, the auxiliary ODE dy/dx = b(x,y)/a(x,y) is exact; in this case it is not exact but has an integrating factor depending on y alone, namely y-1. The e.g.f. for the row sums A001147 is 1/sqrt(1-2*x) and the demonstration that F(x,1) = 1/sqrt(1-2*x) is interesting: two applications of l'Hopital's rule to lim_{y->1}F(x,y) yield F(x,1) = 1/(1-2x)*1/F(x,1). So l'Hopital's rule doesn't directly yield F(x,1) but rather an equation to be solved for F(x,1)!. - David Callan, Jul 25 2008
+From Tom Copeland, Oct 12 2008; May 19 2010: (Start)
+Let P(0,t)= 0, P(1,t)= 1, P(2,t)= t, P(3,t)= t + 2 t^2, P(4,t)= t + 8 t^2 + 6 t^3, ... be the row polynomials of the present array, then
+exp(x*P(.,t)) = ( u + Tree(t*exp(u)) ) / (1-t) = WD(x*(1-t), t/(1-t)) / (1-t)
+where u = x*(1-t)^2 - t, Tree(x) is the e.g.f. of A000169 and WD(x,t) is the e.g.f. for A134991, relating the Ward and 2-Eulerian polynomials by a simple transformation.
+Note also apparently P(4,t) / (1-t)^3 = Ward Poly(4, t/(1-t)) = essentially an e.g.f. for A093500.
+The compositional inverse of f(x,t) = exp(P(.,t)*x) about x=0 is
+g(x,t) = ( x - (t/(1-t)^2)*(exp(x*(1-t))-x*(1-t)-1) )
+= x - t*x^2/2! - t*(1-t)*x^3/3! - t*(1-t)^2*x^4/4! - t*(1-t)^3*x^5/5! - ... .
+Can apply A134685 to these coefficients to generate f(x,t). (End)
+Triangle A163936 is similar to the one given above except for an extra right hand column [1, 0, 0, 0, ... ] and that its row order is reversed. - Johannes W. Meijer, Oct 16 2009
+From Tom Copeland, Sep 04 2011: (Start)
+Let h(x,t) = 1/(1-(t/(1-t))*(exp(x*(1-t))-1)), an e.g.f. in x for row polynomials in t of A008292, then the n-th row polynomial in t of the table A008517 is given by ((h(x,t)*D_x)^(n+1))x with the derivative evaluated at x=0.
+Also, df(x,t)/dx = h(f(x,t),t) where f(x,t) is an e.g.f. in x of the row polynomials in t of A008517, i.e., exp(x*P(.,t)) in Copeland's 2008 comment. (End)
+The rows are the h-vectors of A134991. - Tom Copeland, Oct 03 2011
+Hilbert series of the pre-WDVV ring, thus h-vectors of the Whitehouse simplicial complex (cf. Readdy, Table 1). - Tom Copeland, Sep 20 2014
+Arises in Buckholtz's analysis of the error term in the series for exp(nz). - N. J. A. Sloane, Jul 05 2016
+REFERENCES	
+R. L. Graham, D. E. Knuth and O. Patashnik, Concrete Mathematics, 2nd ed. Addison-Wesley, Reading, MA, 1994, p. 270. [with offsets [0,0]: see A201637]
+LINKS	
+Vincenzo Librandi, Rows n = 1..50, flattened
+Peter Bala, Diagonals of triangles with generating function exp(t*F(x)).
+J. Fernando Barbero G., Jesús Salas, and Eduardo J. S. Villaseñor, Bivariate Generating Functions for a Class of Linear Recurrences. I. General Structure, arXiv:1307.2010 [math.CO], 2013.
+J. F. Barbero G., J. Salas and E. J. S. Villaseñor, Bivariate Generating Functions for a Class of Linear Recurrences. II. Applications, arXiv preprint arXiv:1307.5624 [math.CO], 2013.
+J. Fernando Barbero G., Jesús Salas, and Eduardo J. S. Villaseñor, Generalized Stirling permutations and forests: Higher-order Eulerian and Ward numbers, Electronic Journal of Combinatorics 22(3) (2015), #P3.37.
+F. Bergeron, Ph. Flajolet and B. Salvy, Varieties of Increasing Trees, Lecture Notes in Computer Science vol. 581, ed. J.-C. Raoult, Springer (1992), pp. 24-48.
+J. D. Buckholtz, Concerning an approximation of Copson, Proc. Amer. Math. Soc., 14 (1963), 564-568.
+Naiomi T. Cameron and Kendra Killpatrick, Statistics on Linear Chord Diagrams, arXiv:1902.09021 [math.CO], 2019.
+L. Carlitz, The coefficients in an asymptotic expansion, Proc. Amer. Math. Soc. 16 (1965) 248-252.
+L. Carlitz, Some numbers related to the Stirling numbers of the first and second kind, Univ. Beograd Publ. Elektrotehn. Fak. Ser. Mat. Fiz., Numbers 544-576 (1976): 49-55. [Annotated scanned copy. The triangle is A008517.]
+T. Copeland, Generators, Inversion, and Matrix, Binomial, and Integral Transforms
+Ming-Jian Ding and Jiang Zeng, Proof of an explicit formula for a series from Ramanujan's Notebooks via tree functions, arXiv:2307.00566 [math.CO], 2023.
+D. Dominici, Nested derivatives: A simple method for computing series expansions of inverse functions. arXiv:math/0501052v2 [math.CA], 2005.
+Sen-Peng Eu, Tung-Shan Fu, and Yeh-Jong Pan, A refined sign-balance of simsun permutations, Eur. J. Comb. 36 (2014) 97-109
+W. Gautschi, Exponential integral ... for large values of n, Jrn. of Rsch. of the National Bureau of Standards, Vol. 62, No. 3, March 1959, Rsch. paper 2941. - Tom Copeland, Jan 02 2016
+I. Gessel and R. P. Stanley, Stirling polynomials, J. Combin. Theory, A 24 (1978), 24-33.
+J. Ginsburg, Note on Stirling's Numbers, Amer. Math. Monthly 35 (1928), no. 2, 77-80. - David Callan, Aug 27 2009
+Jim Haglund and Mirko Visontai, Stable multivariate Eulerian polynomials and generalized Stirling permutations, European Journal of Combinatorics, Volume 33, Issue 4, May 2012, pp. 477-487.
+M. Klazar, Twelve countings with rooted plane trees, European Journal of Combinatorics 18 (1997), 195-210; Addendum, 18 (1997), 739-740.
+Dmitry V. Kruchinin and Vladimir V. Kruchinin, A generating function for the Euler numbers of the second kind and its application, arXiv:1802.09003 [math.CO], 2018.
+Paul Levande, Two New Interpretations of the Fishburn Numbers and their Refined Generating Functions, arXiv:1006.3013 [math.CO], 2010.
+Peter Luschny, Second-order Eulerian numbers, A companion to A340556, Feb 2021.
+Shi-Mei Ma, Some combinatorial sequences associated with context-free grammars, arXiv:1208.3104v2 [math.CO], 2012. - From N. J. A. Sloane, Aug 21 2012
+S.-M. Ma, T. Mansour, and M. Schork. Normal ordering problem and the extensions of the Stirling grammar, arXiv preprint arXiv:1308.0169 [math.CO], 2013.
+S.-M. Ma, T. Mansour, The 1/k-Eulerian polynomials and k-Stirling permutations, arXiv preprint arXiv:1409.6525 [math.CO], 2014.
+O. J. Munch, Om potensproduktsummer [Norwegian, English summary], Nordisk Matematisk Tidskrift, 7 (1959), 5-19. [Annotated scanned copy]
+O. J. Munch, Om potensproduktsummer [ Norwegian, English summary ], Nordisk Matematisk Tidskrift, 7 (1959), 5-19.
+Andrew Elvey Price and Alan D. Sokal, Phylogenetic trees, augmented perfect matchings, and a Thron-type continued fraction (T-fraction) for the Ward polynomials, arXiv:2001.01468 [math.CO], 2020.
+M. A. Readdy, The pre-WDVV ring of physics and its topology, preprint 2002, The Ramanujan Journal, October 2005, Volume 10, Issue 2, pp 269-281.
+Grzegorz Rzadkowski and M Urlinska, A Generalization of the Eulerian Numbers, arXiv preprint arXiv:1612.06635, 2016
+C. D. Savage and G. Viswanathan, The 1/k-Eulerian polynomials, Elec. J. of Comb., Vol. 19, Issue 1, #P9 (2012). - From N. J. A. Sloane, Feb 06 2013
+M. D. Schmidt, Generalized j-Factorial Functions, Polynomials, and Applications , J. Int. Seq. 13 (2010), 10.6.7, Section 5.1.
+L. M. Smiley, Completion of a rational function sequence of Carlitz, arXiv:0006106 [math.CO], 2000.
+M. Z. Spivey, On Solutions to a General Combinatorial Recurrence, J. Int. Seq. 14 (2011) # 11.9.7.
+Eric Weisstein's World of Mathematics, Second-Order Eulerian Triangle
+Wikipedia, Eulerian numbers of the second kind
+FORMULA	
+T(n,k) = 0 if n < k, T(1,1) = 1, T(n,-1) = 0, T(n,k) = k*T(n-1,k) + (2*n-k)*T(n-1,k-1).
+a(n,m) = Sum_{k=0..n-m} (-1)^(n+k)*binomial(2*n+1, k)*Stirling1(2*n-m-k+1, n-m-k+1). - Johannes W. Meijer, Oct 16 2009
+From Peter Bala, Sep 29 2011: (Start)
+For k = 0,1,2,... put G(k,x,t) := x-(1+2^k*t)*x^2/2+(1+2^k*t+3^k*t^2)*x^3/3-(1+2^k*t+3^k*t^2+4^k*t^3)*x^4/4+.... Then the series reversion of G(k,x,t) with respect to x gives an e.g.f. for the present table when k = 1 and for the Eulerian numbers A008292 when k = 0.
+Let v = -t*exp((1-t)^2*x-t) and let B(x,t) = -(1+1/t*LambertW(v))/(1+LambertW(v)). From the e.g.f. given by Copeland above we find B(x,t) = compositional inverse with respect to x of G(1,x,t) = Sum_{n>=1} R(n,t)*x^n/n! = x+(1+2*t)*x^2/2!+(1+8*t+6*t^2)*x^3/3!+.... The function B(x,t) satisfies the differential equation dB/dx = (1+B)*(1+t*B)^2 = 1 + (2*t+1)*B + t*(t+2)*B^2 + t^2*B^3.
+Applying [Bergeron et al., Theorem 1] gives a combinatorial interpretation for the row generating polynomials R(n,t): R(n,t) counts plane increasing trees where each vertex has outdegree <= 3, the vertices of outdegree 1 come in 2*t+1 colors, the vertices of outdegree 2 come in t*(t+2) colors and the vertices of outdegree 3 come in t^2 colors. An example is given below. Cf. A008292. Applying [Dominici, Theorem 4.1] gives the following method for calculating the row polynomials R(n,t): Let f(x,t) = (1+x)*(1+t*x)^2 and let D be the operator f(x,t)*d/dx. Then R(n+1,t) = D^n(f(x,t)) evaluated at x = 0. (End)
+From Tom Copeland, Oct 03 2011: (Start)
+a(n,k) = Sum_{i=0..k} (-1)^(k-i) binomial(n-i,k-i) A134991(n,i), offsets 0.
+  P(n+1,t) = (1-t)^(2n+1) Sum_{k>=1} k^(n+k) [t*exp(-t)]^k / k! for n>0; consequently, Sum(k>=1} (-1)^k k^(n+k) x^k/k!= [1+LW(x)]^(-(2n+1))P[n+1,-LW(x)] where LW(x) is the Lambert W-Function and P(n,t), for n > 0, are the row polynomials as given in Copeland's 2008 comment. (End)
+The e.g.f. A(x,t) = -v * { Sum_{j>=1} D(j-1,u) (-z)^j / j! } where u=x*(1-t)^2-t, v=(1+u)/(1-t), z=(t+u)/[(1+u)^2] and D(j-1,u) are the polynomials of A042977. dA(x,t)/dx=(1-t)/[1+u-(1-t)A(x,t)]=(1-t)/{1+LW[-t exp(u)]}, (Copeland's e.g.f. in 2008 comment). - Tom Copeland, Oct 06 2011
+A133314 applied to the derivative of A(x,t) implies (a.+b.)^n = 0^n, for (b_n)=P(n+1,t) and (a_0)=1, (a_1)=-t, and (a_n)=-P(n,t) otherwise. E.g., umbrally, (a.+b.)^2 = a_2*b_0 + 2 a_1*b_1 + a_0*b_2 = 0. - Tom Copeland, Oct 08 2011
+The compositional inverse (with respect to x) of y = y(t;x) = (x-t*(exp(x)-1)) is  1/(1-t)*y + t/(1-t)^3*y^2/2! + (t+2*t^2)/(1-t)^5*y^3/3! + (t+8*t^2+6*t^3)/(1-t)^7*y^4/4! + .... The numerator polynomials of the rational functions in t are the row polynomials of this triangle. As observed in the Comments section, the rational functions in t are the generating functions for the diagonals of the triangle of Stirling numbers of the second kind (A048993). See the Bala link for a proof. Cf. A112007 and A134991. - Peter Bala, Dec 04 2011
+O.g.f. of row n: (1-x)^(2*n+1) * Sum_{k>=0} k^(n+k) * exp(-k*x) * x^k/k!. - Paul D. Hanna, Oct 31 2012
+EXAMPLE	
+Triangle begins:
+  1;
+  1,   2;
+  1,   8,   6;
+  1,  22,  58,  24;
+  1,  52, 328, 444, 120; ...
+Row 3: There are three plane increasing 0-1-2-3 trees on 3 vertices. The number of colors are shown to the right of a vertex.
+.
+    1o (2*t+1)         1o t*(t+2)      1o t*(t+2)
+     |                 / \             / \
+     |                /   \           /   \
+    2o (2*t+1)      2o    3o        3o    2o
+     |
+     |
+    3o
+.
+The total number of trees is (2*t+1)^2 + t*(t+2) + t*(t+2) = 1 + 8*t + 6*t^2.
+MAPLE	
+with(combinat): A008517 := proc(n, m) local k: add((-1)^(n+k)* binomial(2*n+1, k)* stirling1(2*n-m-k+1, n-m-k+1), k=0..n-m) end: seq(seq(A008517(n, m), m=1..n), n=1..8);
+# Johannes W. Meijer, Oct 16 2009, revised Nov 22 2012
+A008517 := proc(n, k) option remember; `if`(n=1, `if`(k=0, 1, 0), A008517(n-1, k)* (k+1) + A008517(n-1, k-1)*(2*n-k-1)) end: seq(print(seq(A008517(n, k), k=0..n-1)), n=1..9);
+# Peter Luschny, Apr 20 2011
+MATHEMATICA	
+a[n_, m_] = Sum[(-1)^(n + k)*Binomial[2 n + 1, k]*StirlingS1[2n-m-k+1, n-m-k+1], {k, 0, n-m}]; Flatten[Table[a[n, m], {n, 1, 9}, {m, 1, n}]][[1 ;; 44]] (* Jean-François Alcover, May 18 2011, after Johannes W. Meijer *)
+PROG	
+(PARI) {T(n, k) = my(z); if( n<1, 0, z = 1 + O(x); for( k=1, n, z = 1 + intformal( z^2 * (z+y-1))); n! * polcoeff( polcoeff(z, n), k))}; /* Michael Somos, Oct 13 2002 */
+(PARI) {T(n, k)=polcoeff((1-x)^(2*n+1)*sum(j=0, 2*n+1, j^(n+j)*x^j/j!*exp(-j*x +x*O(x^k))), k)} \\ Paul D. Hanna, Oct 31 2012
+for(n=1, 10, for(k=1, n, print1(T(n, k), ", ")); print(""))
+(PARI) T(n, m) = sum(k=0, n-m, (-1)^(n+k)*binomial(2*n+1, k)*stirling(2*n-m-k+1, n-m-k+1, 1)); \\ Michel Marcus, Dec 07 2021
+(Sage)
+@CachedFunction
+def A008517(n, k):
+    if n==1: return 1 if k==0 else 0
+    return A008517(n-1, k)*(k+1)+A008517(n-1, k-1)*(2*n-k-1)
+for n in (1..9): [A008517(n, k) for k in(0..n-1)] # Peter Luschny, Oct 31 2012
+CROSSREFS	
+Columns include A005803, A004301, A006260.
+Right-hand columns include A000142, A002538, A002539.
+Row sums are A001147.
+For a (0,0) based version as used in 'Concrete Mathematics' and by Maple see A201637. For a (0,0) based version which has this triangle as a subtriangle see A340556.
+Sequence in context: A011244 A189966 A367177 * A142336 A193735 A114193
+Adjacent sequences:  A008514 A008515 A008516 * A008518 A008519 A008520
+KEYWORD	
+nonn,tabl,nice,easy
+AUTHOR	
+N. J. A. Sloane
+STATUS	
+approved
+Last modified July 9 09:02 EDT 2024. Contains 374174 sequences. (Running on oeis4.)
+]]]

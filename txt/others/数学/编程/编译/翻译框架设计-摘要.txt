@@ -1,0 +1,847 @@
+
+e others/数学/编程/编译/翻译框架设计-摘要.txt
+  翻译框架=前三章of:
+    <<Compilers and Compiler Generators(1996-2000)(Terry).pdf>>
+    /sdcard/0my_files/book/lang/编译/Compilers and Compiler Generators/pdfvers.pdf
+  未整理:
+    view ../lots/NOTE/compiler/Compilers and Compiler Generators(1996-2000)(Terry).txt
+    view others/数学/编程/编译/翻译框架设计.txt
+
+[[
+目录:
+  附类型/typing
+  缩写释义
+  ######################
+  #抽象
+  对象分类
+  构建方案:
+    *终极目标:tr_X5Y_6X:内向翻译诀
+    *重要目标:tr_X5Y_6Y:自助翻译诀
+  枚举纟组合构造型纟对象
+  模拟器优缺点
+  相关定义冫便携式解释型编译用工具包
+    ...使用情景...
+  ######################
+  #具象:直接对应电子书
+  使用已有高层语言构建翻译诀#繁琐
+  后端底层翻译诀辻中间层内向翻译诀构成两阶段组合式翻译器===移植高层翻译诀为两阶段组合式翻译器
+  移植高层翻译诀牜自助
+  自举串联翻译牜运行态
+  优点纟自助翻译诀
+  用例纟自助翻译诀
+  辅助半自举乊施主机
+  ######################
+]]
+
+
+X5Y9Z --> tr_X5Y_9Z
+X5Y6Z --> tr_X5Y_6Z
+.+1,$s/\<\(\u\)5\(\u\)\([69]\)\(\u\)\>/tr_\15\2_\3\4/g
+
+runZ --> vm_Z_9R
+runZ_9R --> vm_Z_9R
+.+1,$s/\<run\(\u\)_\([69]\)\(\u\)\>/vm_\1_\2\3/g
+.+1,$s/\<run\(\u\)\>/vm_\1_9R/g
+
+[[
+缩写释义
+===
+tr-translator
+vm-virtual machine
+6-regular file
+9-loaded program/running script
+vm_<fmt4vm>_[69]<fmt4host>
+tr_<fmt4target>5<fmt4source>_[69]<fmt4host>
+fmt-language/code/format
+===
+translator:tr_T5S_6H
+  H-host language
+  S-source language
+  T-target language
+  ===
+  #tr_V5P_6R
+  R-real machine code
+  P-portable high_level language
+  V-virtual machine code
+  ===
+  #tr_M5E_6W
+  W-www-donor machine code
+  M-reverse"W"-machine code-target machine code
+  E-existed{(tr_M5E_9R/tr_M5E_9W|tr_M5E_6W|vm_V_6E)}-high_level language
+  ===
+  cross-compilation
+  bootstrapping
+  ===
+  cross-translator #交叉翻译器/杂交翻译器
+  interpretive compiler
+  interpretive simulation
+  virtual machine
+  interpreter/emulator
+  ===
+  abstract syntax tree (AST)
+  self-resident translator:tr_X5Y_6X:内向翻译诀
+  self-translating translator:tr_X5Y_6Y:自助翻译诀
+    <<==self-compiling compiler
+  ===
+  porting
+  scenario
+  two-stage compilation process
+  adaptation
+  ===
+  convert mnemonic opcodes into binary form
+  mnemonic opcode:助记操作码#助记码
+  ===
+  viability可行性，存活能力/生机，耐久性
+  exhaustive self-consistency check
+  ===
+  identical
+  ===
+  preliminary work
+  ===
+  instruction register(IR)
+  [program counter(PC) === instruction pointer(IP)]
+    is used to keep track of the address in memory of the next instruction to be fed to the processor’s instruction register (IR).
+  ===
+]]
+
+[[
+附类型/typing:
+
+type File fmt dat
+type VirtualMachine language dat
+
+[tr_X5Y_6Z :: File Z (@dat. File Y dat -> File X dat)]
+    翻译诀(本文件格式:=Z,输入文件格式:=Y,输出文件格式:=X)
+
+[tr_X5Y_9Z :: VirtualMachine Z (@dat. File Y dat -> File X dat)]
+    翻译器(本程序所处运行平台语言:=Z,输入文件格式:=Y,输出文件格式:=X)
+
+
+
+]]
+
+[[
+对象分类
+===
+虚拟机:vm_Z_9R #虚拟机器语言Z
+  #vm_Z_9R=runZ_9R:虚拟机运行态
+    #vm_Z_999=runZ_999=runZ
+  #vm_Z_6R=vm_Z_6R:虚拟机源代码
+翻译器tr_X5Y_9Z:
+  tr_X5Y_9Z:=vm_Z_9R tr_X5Y_6Z
+  #tr_X5Y_9Z:程序运行态
+翻译诀tr_X5Y_6Z:
+  #tr_X5Y_6Z:程序源代码
+  #3格式=>5种情形
+  #恒等{X==Y}
+  #内向{X==Z}
+  #自助{Y==Z}
+  * tr_X5Y_6Z:交叉翻译诀/他助翻译诀:非恒外向他助翻译诀
+    临时用于启动初始化
+  * tr_X5Y_6Y:自助翻译诀:非恒外向自助翻译诀:导出型翻译诀:间接用翻译诀(移植)
+    #((tr_X5Y_6Y,tr_Z5Y_6Z,vm_Z_9R)=>(tr_X5Y_6X:=vm_Z_9R (tr_X5Y_6Z:=vm_Z_9R tr_Z5Y_6Z tr_X5Y_6Y) tr_X5Y_6Y))
+    #自助翻译诀 tr_X5Y_6Y 只能用于 生成 {tr_X5Y_6X,tr_X5Y_9R,tr_X5Y_6Z}
+    #移植:tr_Z5Y_6Z=>tr_X5Y_6X
+  * tr_X5Y_6X:内向翻译诀:非恒内向他助翻译诀:导入型翻译诀:直接用翻译诀(自举链)
+  * tr_X5X_6Y,tr_X5X_6X:恒等翻译诀:恒等外向他助翻译诀+恒等内向自助翻译诀
+    仅用于理论表达式参数
+]]
+
+
+[[
+构建方案:终极目标:tr_X5Y_6X:内向翻译诀
+  * [tr_X5Y_6X := 移植乊实机(tr_X5Y_6Y,tr_Z5Y_6Z,vm_Z_9R) = (tr_X5Y_6X:=vm_Z_9R (tr_X5Y_6Z:=vm_Z_9R tr_Z5Y_6Z tr_X5Y_6Y) tr_X5Y_6Y)]
+      #移植:自助+内向=>内向
+
+  * [is_similar_dialect_of(Y;A)] => [tr_X5Y_6X := 换肤牜人工辅助(tr_X5A_6A,tr_X5A_6X,vm_X_9R,manually_adapt_input_Y5A) = (tr_X5Y_6X:=vm_X_9R tr_X5A_6X (tr_X5Y_6A:=manually_adapt_input_Y5A tr_X5A_6A))]
+
+  * [tr_X5Y_6X := 中转牜人工辅助(tr_P5Y_6P,tr_X5P_6X,vm_X_9R,manually_catX) = (tr_X5Y_6X:=manually_catX tr_X5P_6X (tr_P5Y_6X:=vm_X_9R tr_X5P_6X tr_P5Y_6P))]
+      #中转:人工+内向+内向=>内向
+
+      + [tr_X5Y_9R{cached:tr_P5Y_6X} := 中转牜运行态(tr_P5Y_6P,tr_X5P_6X,vm_X_9R) = 中转巛运行态牜运行态(tr_P5Y_6P,(tr_X5P_9R:=vm_X_9R tr_X5P_6X),vm_X_9R)]
+
+      + [tr_X5Y_9R{cached:tr_P5Y_6X} := 中转巛运行态牜运行态(tr_P5Y_6P,tr_X5P_9R,vm_X_9R) = (tr_X5Y_9R:=tr_X5P_9R <<< (tr_P5Y_9R:=vm_X_9R (tr_P5Y_6X:=tr_X5P_9R tr_P5Y_6P)))]
+
+  * [tr_X5Y_6X := 中转牜自助(tr_X5Y_6Y,tr_P5Y_6P,tr_X5P_6X,vm_X_9R) = (tr_X5Y_6X:=(tr_X5Y_9R:=中转牜运行态(tr_P5Y_6P,tr_X5P_6X,vm_X_9R)) tr_X5Y_6Y)]
+      #中转:自助+内向+内向=>内向
+
+      + [tr_X5Y_6X := 中转巛运行态牜自助(tr_X5Y_6Y,tr_P5Y_6P,tr_X5P_9R,vm_X_9R) = (tr_X5Y_6X:=(tr_X5Y_9R:=中转巛运行态牜运行态(tr_P5Y_6P,tr_X5P_9R,vm_X_9R)) tr_X5Y_6Y)]
+
+  # [自举 <: 中转]
+  * [is_subset_of(Y;K)] => [tr_X5Y_6X := 递降牜人工辅助(tr_K5Y_6K,tr_X5K_6X,vm_X_9R,manually_catX) = 中转牜人工辅助(tr_K5Y_6K,tr_X5K_6X,vm_X_9R,manually_catX)]
+      #自举:人工+内向+内向=>内向
+
+  * [is_subset_of(Y;K)] => [tr_X5Y_6X := 递降牜自助(tr_X5Y_6Y,tr_K5Y_6K,tr_X5K_6X,vm_X_9R) = 中转牜自助(tr_X5Y_6Y,tr_K5Y_6K,tr_X5K_6X,vm_X_9R)]
+      #自举:自助+内向+内向=>内向
+
+  * [tr_X5Y_6X := 启动牜直达(tr_X5Y_6P,tr_X5P_6X,vm_X_9R) = (tr_X5Y_6X:=vm_X_9R tr_X5P_6X tr_X5Y_6P)]
+      #起始:他助+内向=>内向
+
+  * [tr_X5Y_6X := 启动牜中转(tr_X5Y_6Y,tr_P5Y_6P,tr_X5P_6X,vm_X_9R) = 中转牜自助(tr_X5Y_6Y,tr_P5Y_6P,tr_X5P_6X,vm_X_9R)]
+      #起始:自助+内向+内向=>内向
+]]
+
+
+[[
+构建方案:重要目标:tr_X5Y_6Y:自助翻译诀
+  * [is_similar_dialect_of(X;V)] => [tr_X5Y_6Y := 适配牜人工辅助(tr_V5Y_6Y,manually_adapt_output_X5V) = (tr_X5Y_6Y:=manually_adapt_output_X5V tr_V5Y_6Y)]
+  * [is_subset_of(Y;K)] => [tr_X5Y_6Y := 拓展牜人工辅助(tr_X5K_6K,manually_extend_input_Y5K) = (tr_X5Y_6Y:=upgrade_cast4format<Y>(tr_X5Y_6K:=manually_extend_input_Y5K tr_X5K_6K)]
+]]
+
+
+[[
+枚举纟组合构造型纟对象:
+[[A <: B] =[def]= [is_subset_of(B;A)]]
+[[A ~= B] =[def]= [is_similar_dialect_of(B;A)]]
+
+#only two "inf" node
+#   others are basic leaves
+有且只有两个无限制大节点
+  (vm_A_9R vm_B_6A vm_C_6B vm_D_6C ...)
+  (tr_A5B_9R <<< tr_B5C_9R <<< tr_C5D_9R <<< tr_D5E_9R <<< ...)
+===
+vm_Y_9R
+  | vm_A_9R vm_Y_6A
+    # inf: (vm_A_9R vm_B_6A vm_C_6B vm_D_6C ...)
+  | [Y <: A]degrade_cast4input<Y>(vm_A_9R)
+===
+tr_X5Y_9R
+  | vm_A_9R tr_X5Y_6A
+  | (<<<) tr_X5A_9R tr_A5Y_9R
+    # inf: (tr_A5B_9R <<< tr_B5C_9R <<< tr_C5D_9R <<< tr_D5E_9R <<< ...)
+  | [Y <: X]echo
+  | [A <: X]upgrade_cast4output<X>(tr_A5Y_9R)
+  | [Y <: A]degrade_cast4input<Y>(tr_X5A_9R)
+===
+vm_Y_6Z
+  | tr_Z5A_9R vm_Y_6A
+  | [Y <: A]degrade_cast4input<Y>(vm_A_6Z)
+  | [A <: Z]upgrade_cast4format<Z>(vm_Y_6A)
+  | [足够简单Y](manually_handcraft__vm_Y_6Z())
+  | [A <: Y](manually_extend_input_Y5A vm_A_6Z)
+  | [Y ~= A](manually_adapt_input_Y5A vm_A_6Z)
+===
+tr_X5Y_6Z
+  | tr_Z5A_9R tr_X5Y_6A
+  | [Y <: X]echo#echo_6Z
+  | [A <: X]upgrade_cast4output<X>(tr_A5Y_6Z)
+  | [Y <: A]degrade_cast4input<Y>(tr_X5A_6Z)
+  | [A <: Z]upgrade_cast4format<Z>(tr_X5Y_6A)
+  | (manually_catZ tr_X5A_6Z tr_A5Y_6Z)
+  | [A <: Y](manually_extend_input_Y5A tr_X5A_6Z)
+  | [X ~= A](manually_adapt_output_X5A tr_A5Y_6Z)
+  | [Y ~= A](manually_adapt_input_Y5A tr_X5A_6Z)
+  | [足够简单Y][X ~= Y](manually_handcraft__tr_X5Y_6Z())
+
+===
+]]
+
+grep '\w*manually\w*' others/数学/编程/编译/翻译框架设计-摘要.txt -o | sort -u
+manually_adapt_input_Y5A
+manually_adapt_output_M5V
+manually_adapt_output_M5W
+manually_adapt_output_X5V
+manually_catM
+manually_catR
+manually_catX
+manually_extend_input_Y5K
+manually_handcraft__tr_M5V_6P
+manually_handcraft__vm_V_6E
+
+
+
+[[
+模拟器优缺点:
+  #仿真器/模拟器/解释器
+  ===
+  缺点:运行期开销大/耗时
+  ===
+  优点牜略:
+    * 伪机器码更易于生成
+    * 生成伪机器码的编译器具有更高可移植性
+    * 模拟器调试除错更加用户友好
+    * 多语对多机插入中间层可更快速具现
+    * 使用模拟器可更快测试交叉编译器
+    * 大型程序使用脚本更节省空间
+  ===
+  优点牜详:
+    *****
+    * 伪机器码更易于生成
+      虚拟机机器语言/伪机器码 作为 目标语言，比 真实机器语言/真机器码 更易于被生成#设计时，更倾向于源代码
+      quirks
+      pseudo-machine code/hypothetical machine code/intermediate language
+      native code/real machine code
+
+    *****
+    * 生成伪机器码的编译器具有更高可移植性
+      编译器<伪机器码>
+      portable
+      * vm_V_6R:虚拟机<伪机器码,真机器码> 于多个不同机器R
+      * tr_V5S_6P:翻译器<伪机器码,源代码,高可移植性宿主语言> #eg:[P := "ANSI_C"]
+      <<==:
+      * tr_V5S_6V:翻译器<伪机器码,源代码,伪机器码>
+      * vm_V_6P:虚拟机<伪机器码,高可移植性宿主语言>
+
+    *****
+    * 模拟器调试除错更加用户友好
+      "user friendly"
+      error messages and other debugging aids
+    *****
+    * 多语对多机插入中间层可更快速具现
+      多种源语言 运行于/实现于 多种真实机器:
+      * 一一翻译:O(m*n)
+        # 有向图有向边:(S-->R)
+        (S,R) => tr_R5S_6R
+        (S,R) => tr_R5S_6S
+      * 星形翻译:O(m+n)
+        # 有向图有向边:(S-->V),(V-->R)
+        S => tr_V5S_6S
+        S => tr_V5S_6V
+        R => vm_V_6R
+        ######################
+        R => tr_R5V_6R
+        R => manually_catR
+        ######################
+        [tr_V5S_9R := 虚拟翻译牜运行态(tr_V5S_6V,vm_V_6R,vm_R_9R) = (tr_V5S_9R:=(vm_V_9R:=vm_R_9R vm_V_6R) tr_V5S_6V)]
+        [tr_X5Y_6V := 翻译乊虚拟(tr_X5Y_6S,tr_V5S_6V,vm_V_6R,vm_R_9R) = (tr_X5Y_6V:=(tr_V5S_9R:=虚拟翻译牜运行态(tr_V5S_6V,vm_V_6R,vm_R_9R)) tr_X5Y_6S)]
+        [tr_X5Y_9R := 虚拟运行牜运行态(tr_X5Y_6S,tr_V5S_6V,vm_V_6R,vm_R_9R) = (tr_X5Y_9R:=(vm_V_9R:=vm_R_9R vm_V_6R) (tr_X5Y_6V:=翻译乊虚拟(tr_X5Y_6S,tr_V5S_6V,vm_V_6R,vm_R_9R)))]
+        ######################
+        # 一一翻译:O(m*n)
+        (S,R) => tr_R5S_6S
+        ==>>:
+        [tr_R5S_6R := 移植乊虚拟(tr_R5S_6S,tr_V5S_6V,vm_V_6R,vm_R_9R) = 移植乊实机(tr_R5S_6S,tr_V5S_6V,(vm_V_9R:=vm_R_9R vm_V_6R))]
+          #移植:自助+内向=>内向
+          <==> [tr_R5S_6R := 移植乊虚拟(tr_R5S_6S,tr_V5S_6V,vm_V_6R,vm_R_9R) = (tr_R5S_6R:=(tr_R5S_9R:=虚拟运行牜运行态(tr_R5S_6S,tr_V5S_6V,vm_V_6R,vm_R_9R)) tr_R5S_6S)]
+        ######################
+        R => tr_R5V_6R
+        R => manually_catR
+        ==>>:
+        [(tr_R5S_6R:=中转牜人工辅助(tr_V5S_6V,tr_R5V_6R,vm_R_9R,manually_catR))]
+        ######################
+        R => tr_R5V_6R
+        ==>>:
+        [(tr_R5S_9R := 中转牜运行态(tr_V5S_6V,tr_R5V_6R,vm_R_9R))]
+        ######################
+    *****
+    * 使用模拟器可更快测试交叉编译器
+      于 施主机上仿真测试 优于 先传输到 目标机器 再测试
+      交叉编译/他助翻译诀
+      cross-translators can sometimes be tested more effectively by simulated execution on the donor machine, rather than after transfer to the target machine
+    *****
+    * 大型程序使用脚本更节省空间
+      ？伪机器码 作为 中间层语言 更加紧凑，大型程序 更节省空间(对小型机更友好)？
+      intermediate language
+      [占用存储空间(脚本解释器) + 占用存储空间(脚本文件{大型程序}) < 占用存储空间(实机代码{大型程序})]
+    *****
+  ===
+#end-模拟器优缺点:
+]]
+
+
+
+
+
+
+
+
+
+runV_6P-->vm_V_6P
+runV_9P-->vm_V_9P
+.+1,$s/\<run\(._[69].\)\>/vm_\1/g
+
+解释诀-->虚拟机诀
+.+1,$s/\<解释诀\>/虚拟机诀/g
+
+#xxx: M-->R
+  但是 目标机M<->W施主机
+  #xxx: .+1,$s/M/R/g
+[[
+相关定义冫便携式解释型编译用工具包
+=====================
+[:def__portable_interpretive_compiler_kit]:here
+=====================
+#package:
+[portable_interpretive_compiler_kit(V,P) =[def]= (tr_V5P_6P,tr_V5P_6V,vm_V_6P)]
+#package4specific_machine:
+#用于:实机执行
+[installer4portable_interpretive_compiler_kit(V,P,M) =[def]= (portable_interpretive_compiler_kit(V,P),vm_V_6M,tr_M5P_6P)]
+  #安装时生成:tr_M5P_6M
+  # !! [tr_M5P_6M占用空间远大于tr_M5P_6P]
+#用于:实机执行
+[native_kit4portable_interpretive_compiler_kit(V,P,M) =[def]= (portable_interpretive_compiler_kit(V,P),vm_V_6M,tr_M5P_6M,tr_V5P_6M,tr_M5P_6V)]
+  #目标机实际运行时使用的工具包
+  #见下面:使用情景:编译并运行冫实机代码
+  news:++tr_V5P_6M
+  news:++tr_M5P_6V
+  ===
+  推导:
+  (V,P,M)
+    P --> V --> M
+  --
+  #cancelled <<== vm_P_9R:emulator for high_level language is hard to implement
+  vm_P_6P # xxx
+  vm_P_6V # xxx
+  vm_P_6M # xxx
+  --
+  vm_V_6P # <- portable_interpretive_compiler_kit(V,P)
+  vm_V_6V # cancelled <<== useless
+  vm_V_6M # <- installer4portable_interpretive_compiler_kit(V,P,M)/-\native_kit4portable_interpretive_compiler_kit(V,P,M)
+  --
+  #cancelled <<== vm_M_9R:emulator for real machine is hard to implement
+  vm_M_6P # xxx
+  vm_M_6V # xxx
+  vm_M_6M # xxx
+  --
+  tr_V5P_6P # <- portable_interpretive_compiler_kit(V,P)
+  tr_V5P_6V # <- portable_interpretive_compiler_kit(V,P)
+  tr_V5P_6M # ??? # <- native_kit4portable_interpretive_compiler_kit(V,P,M)
+  --
+  #tr_M5P_9R:
+  tr_M5P_6P # <- installer4portable_interpretive_compiler_kit(V,P,M)
+  tr_M5P_6V # ??? # cross-translator but override by tr_M5P_6P # <- native_kit4portable_interpretive_compiler_kit(V,P,M)
+  tr_M5P_6M # <- native_kit4portable_interpretive_compiler_kit(V,P,M)
+  --
+  #cancelled <<== tr_M5V_9R:translator to adapt low_level language directly is not as effective as tr_M5P_9R
+  #     #但可用作 中间层语言V的后端，可以考虑 生成之
+  tr_M5V_6P # xxx
+  tr_M5V_6V # xxx
+  tr_M5V_6M # xxx #用于:后端底层翻译诀辻中间层内向翻译诀构成两阶段组合式翻译器
+  --
+  ===
+#仅用于:解释执行
+[interpreter_kit4portable_interpretive_compiler_kit(V,P,M) =[def]= (portable_interpretive_compiler_kit(V,P),vm_V_6M)]
+  #目标机实际运行时使用的工具包
+  #见下面:使用情景:编译并运行冫伪代码
+=====================
+汉化:
+!! [portable_interpretive_compiler_kit(V,P) === (tr_V5P_6P,tr_V5P_6V,vm_V_6P)]
+[便携式解释型编译用工具包(V,P) === (自助翻译诀(P;V),内向翻译诀(V;P),虚拟机诀(P;V))]
+    # (自助翻译诀(P;V)/tr_V5P_6P,内向翻译诀(V;P)/tr_V5P_6V,虚拟机诀(P;V)/vm_V_6P)
+
+!! [installer4portable_interpretive_compiler_kit(V,P,M) === (portable_interpretive_compiler_kit(V,P),vm_V_6M,tr_M5P_6P)]
+[安装包纟便携式解释型编译用工具包(V,P,M) === (便携式解释型编译用工具包(V,P),虚拟机诀(M;V),自助翻译诀(P;M))]
+    # (虚拟机诀(M;V)/vm_V_6M,自助翻译诀(P;M)/tr_M5P_6P)
+
+!! [native_kit4portable_interpretive_compiler_kit(V,P,M) === (portable_interpretive_compiler_kit(V,P),vm_V_6M,tr_M5P_6M,tr_V5P_6M,tr_M5P_6V)]
+[本地包纟便携式解释型编译用工具包(V,P,M) === (便携式解释型编译用工具包(V,P),虚拟机诀(M;V),内向翻译诀(M;P)),他助翻译诀(M;P,V),他助翻译诀(V;P,M)]
+    # (虚拟机诀(M;V)/vm_V_6M,内向翻译诀(M;P)/tr_M5P_6M,他助翻译诀(M;P,V)/tr_V5P_6M,他助翻译诀(V;P,M)/tr_M5P_6V)
+
+!! [interpreter_kit4portable_interpretive_compiler_kit(V,P,M) =[def]= (portable_interpretive_compiler_kit(V,P),vm_V_6M)]
+[解释包纟便携式解释型编译用工具包(V,P,M) === (便携式解释型编译用工具包(V,P),虚拟机诀(M;V))]
+    # (虚拟机诀(M;V)/vm_V_6M)
+
+vs:
+#展开后:
+[便携式解释型编译用工具包(V,P) === (自助翻译诀(P;V),内向翻译诀(V;P),虚拟机诀(P;V))]
+[安装包纟便携式解释型编译用工具包(V,P,M) === (自助翻译诀(P;V),内向翻译诀(V;P),虚拟机诀(P;V),虚拟机诀(M;V),自助翻译诀(P;M))]
+[本地包纟便携式解释型编译用工具包(V,P,M) === (自助翻译诀(P;V),内向翻译诀(V;P),虚拟机诀(P;V),虚拟机诀(M;V),内向翻译诀(M;P),他助翻译诀(M;P,V),他助翻译诀(V;P,M))]
+[解释包纟便携式解释型编译用工具包(V,P,M) === (自助翻译诀(P;V),内向翻译诀(V;P),虚拟机诀(P;V),虚拟机诀(M;V))]
+=====================
+vs:
+  安装包-本地包:多了:自助翻译诀(P;M)
+  本地包-安装包:多了:内向翻译诀(M;P),他助翻译诀(M;P,V),他助翻译诀(V;P,M)
+  安装包===解释包+自助翻译诀(P;M)
+  [工具包 < 解释包 == 安装包/-\ 本地包]
+
+=====================
+使用情景:7个:
+  *辅助起草冫便携式灬 #几近全程人工参与
+  *辅助适配冫安装包灬 #人工辅助半自动
+  *安装生成冫本地包灬 #全自动
+  *从施主机上下载预编译二进制文件以安装生成冫本地包灬 #全自动
+  *人工构建冫解释包灬 #全程人工参与<<==[足够简单V]
+  *编译并运行冫伪代码 #全自动
+  *编译并运行冫实机代码 #全自动
+
+=====================
+*使用情景:辅助起草冫便携式灬
+  于施主机上起草portable_interpretive_compiler_kit
+  于施主机上使用早已存在的P-虚拟机诀vm_P_6W或P-内向翻译诀tr_W5P_6W:生成P-内向翻译诀tr_V5P_6V
+  #vm_W_9R强调:施主机_6W 与 目标机_6M之间的区分
+  已有:(tr_V5P_6P,vm_V_6P),(vm_P_6W|tr_W5P_6W)
+  生成:tr_V5P_6V
+
+  [portable_interpretive_compiler_kit(V,P) := 辅助起草冫便携式灬(tr_V5P_6P,vm_V_6P,(((vm_P_6W|tr_W5P_6W),vm_W_9R)|vm_P_9R)]
+      * vm_P_6W,vm_W_9R:
+        [vm_P_9R := vm_W_9R vm_P_6W]
+        ...vm_P_9R
+      * tr_W5P_6W,vm_W_9R:
+        [tr_W5P_9R := vm_W_9R tr_W5P_6W]
+        [vm_P_9R := vm_W_9R <<< tr_W5P_9R]
+        ...vm_P_9R
+      * vm_P_9R:
+        ...核心纟辅助起草冫便携式灬
+
+  !! [portable_interpretive_compiler_kit(V,P) === (tr_V5P_6P,tr_V5P_6V,vm_V_6P)]
+  [tr_V5P_6V := 核心纟辅助起草冫便携式灬(tr_V5P_6P,vm_P_9R)]
+      [tr_V5P_9R := vm_P_9R tr_V5P_6P]
+      [tr_V5P_6V := tr_V5P_9R tr_V5P_6P]
+
+
+=====================
+*使用情景:辅助适配冫安装包灬
+  于施主机上打包installer4portable_interpretive_compiler_kit(V,P,M)
+  已有:portable_interpretive_compiler_kit(V,P)
+  已有:(vm_V_6W|tr_W5P_6W) #(V-虚拟机|P-编译器)
+  需要前置条件:[is_similar_dialect_of(M;V)]
+  需要人工参与:manually_adapt_output_M5V
+  生成: (vm_V_6M,tr_M5P_6P)
+
+  [is_similar_dialect_of(M;V)] => [installer4portable_interpretive_compiler_kit(V,P,M) := 辅助适配冫安装包灬(portable_interpretive_compiler_kit(V,P), (((tr_W5P_6W|vm_V_6W), vm_W_9R)|vm_P_9R|vm_V_9R), manually_adapt_output_M5V)]
+    !! [portable_interpretive_compiler_kit(V,P) === (tr_V5P_6P,tr_V5P_6V,vm_V_6P)]
+    * tr_W5P_6W,vm_W_9R:
+        [tr_W5P_9R := vm_W_9R tr_W5P_6W]
+        [vm_V_6W := tr_W5P_9R vm_V_6P]
+        ...vm_V_6W,vm_W_9R
+    * vm_V_6W,vm_W_9R:
+        [vm_V_9R := vm_W_9R vm_V_6W]
+        ...vm_V_9R
+    * vm_P_9R:
+        [vm_V_9R := vm_P_9R vm_V_6P]
+        ...vm_V_9R
+    * vm_V_9R:
+        ...核心纟辅助适配冫安装包灬
+
+  !! [installer4portable_interpretive_compiler_kit(V,P,M) === (portable_interpretive_compiler_kit(V,P),vm_V_6M,tr_M5P_6P)]
+  [is_similar_dialect_of(M;V)] => [(vm_V_6M,tr_M5P_6P) := 核心纟辅助适配冫安装包灬(portable_interpretive_compiler_kit(V,P), vm_V_9R, manually_adapt_output_M5V)]
+    ######################
+    !! [portable_interpretive_compiler_kit(V,P) === (tr_V5P_6P,tr_V5P_6V,vm_V_6P)]
+        #全都用上！！
+    #适配
+    [is_similar_dialect_of(M;V)] => [tr_M5P_6P := 适配牜人工辅助(tr_V5P_6P,manually_adapt_output_M5V)]
+
+    [tr_V5P_9R := vm_V_9R tr_V5P_6V]
+    [tr_M5P_6V := tr_V5P_9R tr_M5P_6P]
+    [tr_M5P_9R := vm_V_9R tr_M5P_6V]
+    [vm_V_6M := tr_M5P_9R vm_V_6P]
+
+    #implies:tr_M5P_6M
+    ## [tr_M5P_6M := tr_M5P_9R tr_M5P_6P]
+        #以上过程(包括 最后注释掉的tr_M5P_6M)其实就是:半自举@施主机.虚拟机
+        #辅助半自举乊施主机vs核心纟辅助适配冫安装包灬
+        #
+        #但是:『3.6 Bootstrapping from a portable interpretive compiler』:[(vm_V_9R,tr_M5P_6P)->(tr_M5P_6V,tr_M5P_6M)]:又称之为『变体纟全自举』(a variation on the full bootstrap method)
+
+=====================
+*使用情景:安装生成冫本地包灬
+  于目标机上安装native_kit4portable_interpretive_compiler_kit(V,P,M)
+  已从施主机下载:installer4portable_interpretive_compiler_kit(V,P,M)
+  生成:tr_M5P_6M
+  [native_kit4portable_interpretive_compiler_kit(V,P,M) := 安装生成冫本地包灬(installer4portable_interpretive_compiler_kit(V,P,M),vm_M_9R)]
+    ...核心纟安装生成冫本地包灬
+
+  !! [native_kit4portable_interpretive_compiler_kit(V,P,M) === (portable_interpretive_compiler_kit(V,P),vm_V_6M,tr_M5P_6M,tr_V5P_6M,tr_M5P_6V)]
+  !! [installer4portable_interpretive_compiler_kit(V,P,M) === (portable_interpretive_compiler_kit(V,P),vm_V_6M,tr_M5P_6P)]
+  !! [portable_interpretive_compiler_kit(V,P) === (tr_V5P_6P,tr_V5P_6V,vm_V_6P)]
+      #xxx:useless: (tr_V5P_6P,vm_V_6P)
+      #useless: (vm_V_6P)
+  [(tr_M5P_6M,tr_V5P_6M,tr_M5P_6V) := 核心纟安装生成冫本地包灬(tr_V5P_6P,tr_V5P_6V,vm_V_6M,tr_M5P_6P,vm_M_9R)]
+    [vm_V_9R := vm_M_9R vm_V_6M]
+    [tr_V5P_9R := vm_V_9R tr_V5P_6V]
+    [tr_M5P_6V := tr_V5P_9R tr_M5P_6P]
+    [tr_M5P_9R := vm_V_9R tr_M5P_6V]
+    [tr_M5P_6M := tr_M5P_9R tr_M5P_6P]
+    #news:
+    [tr_V5P_6M := tr_M5P_9R tr_V5P_6P]
+    #tr_M5P_6V
+
+    ######################
+    #optional:tr_M5V_6M
+    #   but:required:tr_M5V_6P
+    ## [tr_M5V_6P := ???[足够简单V][M ~= V]manually_handcraft__tr_M5V_6P()]
+    ## [tr_M5V_6M := tr_M5P_9R tr_M5V_6P]
+
+=====================
+*使用情景:从施主机上下载预编译二进制文件以安装生成冫本地包灬
+  已有:(tr_V5P_6P,vm_V_6P,tr_M5P_6M)
+  目标:native_kit4portable_interpretive_compiler_kit(V,P,M)
+  生成:(tr_V5P_6V,tr_V5P_6M,tr_M5P_6V,vm_V_6M)
+  [native_kit4portable_interpretive_compiler_kit(V,P,M) := 从施主机上下载预编译二进制文件以安装生成冫本地包灬(tr_V5P_6P,vm_V_6P,tr_M5P_6M,vm_M_9R)]
+    ...核心纟从施主机上下载预编译二进制文件以安装生成冫本地包灬
+
+  !! [native_kit4portable_interpretive_compiler_kit(V,P,M) === (portable_interpretive_compiler_kit(V,P),vm_V_6M,tr_M5P_6M,tr_V5P_6M,tr_M5P_6V)]
+  !! [portable_interpretive_compiler_kit(V,P) === (tr_V5P_6P,tr_V5P_6V,vm_V_6P)]
+  [(tr_V5P_6V,tr_V5P_6M,tr_M5P_6V,vm_V_6M) := 核心纟从施主机上下载预编译二进制文件以安装生成冫本地包灬(tr_V5P_6P,vm_V_6P,tr_M5P_6M,vm_M_9R)]
+    [tr_M5P_9R := vm_M_9R tr_M5P_6M]
+    [vm_V_6M := tr_M5P_9R vm_V_6P]
+    [tr_V5P_6M := tr_M5P_9R tr_V5P_6P]
+    [tr_V5P_9R := vm_M_9R tr_V5P_6M]
+    [tr_V5P_6V := tr_V5P_9R tr_V5P_6P]
+    #news:
+    [tr_M5P_6V := tr_V5P_9R tr_M5P_6P]
+    #tr_V5P_6M
+=====================
+*使用情景:人工构建冫解释包灬 #全程人工参与<<==[足够简单V]
+  目标:interpreter_kit4portable_interpretive_compiler_kit(V,P,M)
+  生成:vm_V_6M
+  # [[[足够简单V]or[E==P]] -> [已有tr_M5E_9R] -> [vm_V_6E := vm_V_6P if E==P else 纯手写{[足够简单V]=>vm_V_6E}] -> [vm_V_6M:=(tr_M5E_9R vm_V_6E)]]
+
+  [[[E==P]or[[足够简单V]manually_handcraft__vm_V_6E]] => [interpreter_kit4portable_interpretive_compiler_kit(V,P,M) := 人工构建冫解释包灬(portable_interpretive_compiler_kit(V,P), tr_M5E_9R, [E=!=P][足够简单V]manually_handcraft__vm_V_6E)]]
+    * [E==P]:
+      [vm_V_6E := vm_V_6P]
+    * [E=!=P][足够简单V]manually_handcraft__vm_V_6E:
+      [vm_V_6E := manually_handcraft__vm_V_6E()]
+    vm_V_6E
+    ...核心纟人工构建冫解释包灬
+
+  !! [interpreter_kit4portable_interpretive_compiler_kit(V,P,M) =[def]= (portable_interpretive_compiler_kit(V,P),vm_V_6M)]
+  !! [portable_interpretive_compiler_kit(V,P) === (tr_V5P_6P,tr_V5P_6V,vm_V_6P)]
+  [vm_V_6M := 核心纟人工构建冫解释包灬(tr_M5E_9R, vm_V_6E)]
+    [vm_V_6M := (tr_M5E_9R vm_V_6E)]
+
+=====================
+使用情景:编译并运行冫伪代码
+  编译生成冫伪代码+解释运行冫伪代码
+  使用:interpreter_kit4portable_interpretive_compiler_kit(V,P,M)
+    只用到:tr_V5P_6V,vm_V_6M
+
+  !! [interpreter_kit4portable_interpretive_compiler_kit(V,P,M) =[def]= (portable_interpretive_compiler_kit(V,P),vm_V_6M)]
+  !! [portable_interpretive_compiler_kit(V,P) === (tr_V5P_6P,tr_V5P_6V,vm_V_6P)]
+
+  #compilation:tr_X5Y_6P->tr_X5Y_6V
+  [tr_X5Y_6V := 编译生成冫伪代码{vm_M_9R;tr_V5P_6V,vm_V_6M}(tr_X5Y_6P) = (tr_X5Y_6V:=(tr_V5P_9R:=(vm_V_9R:=vm_M_9R vm_V_6M) tr_V5P_6V) tr_X5Y_6P)]
+
+  #execution:tr_X5Y_6V->var_A_6Y->var_A_6X
+  [var_A_6X := 解释运行冫伪代码{vm_M_9R;vm_V_6M}(tr_X5Y_6V;var_A_6Y) = (var_A_6X:=(tr_X5Y_9R:=(vm_V_9R:=vm_M_9R vm_V_6M) tr_X5Y_6V) var_A_6Y)]
+
+=====================
+使用情景:编译并运行冫实机代码
+  编译生成冫实机代码+直接运行冫实机代码
+  使用:native_kit4portable_interpretive_compiler_kit(V,P,M)
+    只用到:tr_M5P_6M
+
+  !! [native_kit4portable_interpretive_compiler_kit(V,P,M) === (portable_interpretive_compiler_kit(V,P),vm_V_6M,tr_M5P_6M,tr_V5P_6M,tr_M5P_6V)]
+  !! [portable_interpretive_compiler_kit(V,P) === (tr_V5P_6P,tr_V5P_6V,vm_V_6P)]
+  #compilation:tr_X5Y_6P->tr_X5Y_6M
+  [tr_X5Y_6M := 编译生成冫实机代码{vm_M_9R;tr_M5P_6M}(tr_X5Y_6P) = (tr_X5Y_6M:=(tr_M5P_9R:=vm_M_9R tr_M5P_6M) tr_X5Y_6P)]
+
+  #execution:tr_X5Y_6M->var_A_6Y->var_A_6X
+  [var_A_6X := 直接运行冫实机代码{vm_M_9R;}(tr_X5Y_6M;var_A_6Y) = (var_A_6X:=(tr_X5Y_9R:=vm_M_9R tr_X5Y_6M) var_A_6Y)]
+
+
+=====================
+#end-def__portable_interpretive_compiler_kit
+]]
+
+
+
+[[
+使用已有高层语言构建翻译诀#繁琐
+
+前置条件:
+  施主机:W
+  目标机:M
+  源语言:S
+  存在高层语言E :=> 已有翻译诀:tr_M5E_6W
+  已构建:tr_M5S_6E#他助翻译诀
+目标:tr_M5S_6M
+
+[tr_M5S_6M := 使用已有高层语言构建翻译诀(tr_M5S_6E,tr_M5E_6W,vm_W_9R) = (tr_M5S_6M:=((tr_M5E_9R:=vm_W_9R tr_M5E_6W) tr_M5S_6E))]
+  #前端通用:应分离
+  #后端麻烦:应转包
+
+
+]]
+
+[[
+后端底层翻译诀辻中间层内向翻译诀构成两阶段组合式翻译器:
+  #插叙以对照:移植高层翻译诀为两阶段组合式翻译器
+  #     完全相同！！
+前置条件:
+  施主机:W==M
+  目标机:M
+  源语言:P
+  中间隔离层:V
+  已有:(tr_M5V_6M,tr_V5P_6V)
+    #tr_M5V_6M:容易实现
+    #tr_V5P_6V:中转-隔离后端
+生成:tr_M5P_9R(器)
+  缓存:tr_V5P_6M
+
+
+[tr_X5Y_9R{cached:tr_P5Y_6X} := 中转牜运行态(tr_P5Y_6P,tr_X5P_6X,vm_X_9R)]
+[X:=M][Y:=P][P:=V]:
+  [tr_M5P_9R{cached:tr_V5P_6M} := 中转牜运行态(tr_V5P_6V,tr_M5V_6M,vm_M_9R)]
+
+[tr_M5P_9R{cached:tr_V5P_6M} := 后端底层翻译诀辻中间层内向翻译诀构成两阶段组合式翻译器(tr_V5P_6V,tr_M5V_6M,vm_M_9R) = 中转牜运行态(tr_V5P_6V,tr_M5V_6M,vm_M_9R)]
+]]
+
+[[
+移植高层翻译诀为两阶段组合式翻译器:
+
+前置条件:
+  施主机:W==M
+  目标机:M
+  源语言:S
+  存在高层语言E :=> 已有翻译诀:tr_M5E_6M
+  已构建:tr_E5S_6E#内向翻译诀
+目标:tr_M5S_9R(器)#xxx:tr_M5S_6M(诀)
+  缓存:tr_E5S_6M
+
+
+
+[tr_X5Y_9R{cached:tr_P5Y_6X} := 中转牜运行态(tr_P5Y_6P,tr_X5P_6X,vm_X_9R)]
+[X:=M][Y:=S][P:=E]:
+  [tr_M5S_9R{cached:tr_E5S_6M} := 中转牜运行态(tr_E5S_6E,tr_M5E_6M,vm_M_9R)]
+
+[tr_M5S_9R{cached:tr_E5S_6M} := 移植高层翻译诀为两阶段组合式翻译器(tr_E5S_6E,tr_M5E_6M,vm_M_9R) = 中转牜运行态(tr_E5S_6E,tr_M5E_6M,vm_M_9R) = (tr_M5S_9R:=((tr_M5E_9R:=vm_M_9R tr_M5E_6M) <<< (tr_E5S_9R:=vm_M_9R (tr_E5S_6M:=((tr_M5E_9R:=vm_M_9R tr_M5E_6M) tr_E5S_6E)))))]
+  # (<<<):『两阶段组合式』
+  #tr_M5E_6M:使用了两次:首次翻译，再次后端
+
+cancelled:[tr_M5S_6M := manually_catM tr_M5E_6M tr_E5S_6M]
+  #底层机器语言 manually_catM 有点难
+]]
+
+[[
+#####
+useless:移植高层翻译诀牜失败:
+继承:移植高层翻译诀为两阶段组合式翻译器:
+  已有翻译诀:tr_M5E_6M
+  已构建:tr_E5S_6E#内向翻译诀
+  已构建:tr_M5S_9R{cached:tr_E5S_6M}
+新增假设:
+  useless:++已构建:tr_E5S_6S#自助翻译诀
+      #需要的是:tr_M5S_6S@中转牜自助
+目标:tr_M5S_6M
+
+#完全穷举所有组合==>>[tr_E5S_6S useless]
+#   !! {tr_E5S_6E,tr_E5S_6M}均已存在
+#   自助翻译诀.目标语言 必须是 全局翻译的最终目标语言
+#   自助翻译诀 tr_X5Y_6Y 只能用于 生成 {tr_X5Y_6X,tr_X5Y_9R,tr_X5Y_6Z}
+#
+tr_M5E_6M
+tr_E5S_6M
+tr_E5S_6E
+tr_E5S_6S#useless
+
+tr_M5S_9R
+vm_M_9R
+
+[tr_E5S_9R := vm_M_9R tr_E5S_6M]
+[tr_M5E_9R := vm_M_9R tr_M5E_6M]
+
+#已有:[tr_E5S_6M := tr_M5S_9R tr_E5S_6S]
+#已有:[tr_E5S_6E := tr_E5S_9R tr_E5S_6S]
+#已有:[tr_E5S_6M := tr_M5E_9R tr_E5S_6E]
+
+cancelled:[tr_M5S_6M := manually_catM tr_M5E_6M tr_E5S_6M]
+#####
+
+]]
+[[
+#####
+移植高层翻译诀牜自助:
+继承:移植高层翻译诀为两阶段组合式翻译器:
+  已有翻译诀:tr_M5E_6M
+  已构建:tr_E5S_6E#内向翻译诀
+  #已构建:tr_M5S_9R{cached:tr_E5S_6M}
+新增假设:
+  ++已构建:tr_M5S_6S#自助翻译诀
+目标:tr_M5S_6M
+
+[tr_X5Y_6X := 中转牜自助(tr_X5Y_6Y,tr_P5Y_6P,tr_X5P_6X,vm_X_9R)]
+[X:=M][Y:=S][P:=E]:
+  [tr_M5S_6M := 中转牜自助(tr_M5S_6S,tr_E5S_6E,tr_M5E_6M,vm_M_9R)]
+
+[tr_M5S_6M := 移植高层翻译诀牜自助(tr_M5S_6S,tr_E5S_6E,tr_M5E_6M,vm_M_9R) = 中转牜自助(tr_M5S_6S,tr_E5S_6E,tr_M5E_6M,vm_M_9R)]
+
+#####
+
+]]
+
+
+
+[[
+自举串联翻译牜运行态
+
+bootstrapping
+
+This process, by which a simple language is used to translate a more complicated program, which in turn may handle an even more complicated program and so on, is known as bootstrapping, by analogy with the idea that it might be possible to lift oneself off the ground by tugging at one’s boot-straps.
+
+
+[自举 <: 中转]
+[tr_X5Y_9R{cached:tr_P5Y_6X} := 中转巛运行态牜运行态(tr_P5Y_6P,tr_X5P_9R,vm_X_9R)]
+[X:=M][Y:=S][P:=K]:
+  [tr_M5S_9R{cached:tr_K5S_6M} := 中转巛运行态牜运行态(tr_K5S_6K,tr_M5K_9R,vm_M_9R)]
+
+自举链:
+[B <: K <: S]:
+  #内向翻译诀
+  tr_M5B_6M-->tr_M5B_9R
+  tr_B5K_6B
+  tr_K5S_6K
+    #初始化:tr_M5B_6M-->tr_M5B_9R
+    #连续应用:中转巛运行态牜运行态
+    #得:tr_M5S_9R
+  [tr_M5S_9R := 自举串联翻译牜运行态([tr_K5S_6K,tr_B5K_6B,tr_M5B_6M],vm_M_9R)]
+      [tr_M5B_9R := vm_M_9R tr_M5B_6M]
+      [tr_B5K_6M := tr_M5B_9R tr_B5K_6B]
+      [tr_B5K_9R := vm_M_9R tr_B5K_6M]
+      [tr_M5K_9R := tr_M5B_9R <<< tr_B5K_9R]
+      [tr_K5S_6M := tr_M5K_9R tr_K5S_6K]
+      [tr_K5S_9R := vm_M_9R tr_K5S_6M]
+      [tr_M5S_9R := tr_M5K_9R <<< tr_K5S_9R]
+
+]]
+
+
+
+[[
+self-compiling compiler
+  self-translating translator:tr_X5Y_6Y:自助翻译诀
+
+===
+优点纟自助翻译诀:
+  * 自身就是对自身语言可行性的测试
+  * 斩断翻译系统深度依赖(比如:自举串联翻译牜运行态):初始需要『他助翻译器/内向翻译器』翻译，但之后不再依赖其他翻译器
+  * 后端代码更新更快响应:后端代码更新将作用于{自身相应的内向翻译诀tr_X5Y_6X,翻译生成的实机代码}
+  * 孙曾二进制一致性测试:迭代编译自身，孙与曾孙必须产生相同结果(二进制一致)
+      #(孫曾,孙曾)孫子和曾孫，泛指後代。
+  * 方便换肤以翻译方言
+
+
+===
+用例纟自助翻译诀:
+* 启动:他助+深度依赖
+  ++tr_M5E_6M#其他翻译系统-内向#深度依赖
+  ++tr_M5S_6E#他助
+  [tr_M5S_6M := 启动牜直达(tr_M5S_6E,tr_M5E_6M,vm_M_9R)]
+* 启动:他助-运行态+自助
+  ++tr_M5S_9R#他助-运行态
+  ++tr_M5S_6S#自助
+  [tr_M5S_6M := tr_M5S_9R tr_M5S_6S]
+* 后续:自助+内向#斩断依赖
+  ++tr_M5S_6S-new#自助
+  ++tr_M5S_6M-old#内向
+  [tr_M5S_6M-new6old := 移植乊实机(tr_M5S_6S-new,tr_M5S_6M-old,vm_M_9R)]
+    #子:『tr_M5S_6M-new6old』自身代码 仍旧属于 旧的后端格式，但 生成的代码 属于 新的后端格式
+  [tr_M5S_6M-new6new := 移植乊实机(tr_M5S_6S-new,tr_M5S_6M-new6old,vm_M_9R)]
+    #孙:『tr_M5S_6M-new6new』自身代码 以及 生成的代码 均属于 新的后端格式
+
+  一致性测试:
+    assert [tr_M5S_6M-new6new === 移植乊实机(tr_M5S_6S-new,tr_M5S_6M-new6new,vm_M_9R)]
+      #[孙===曾孙]
+===
+
+]]
+
+
+[[
+half bootstrap
+半自举@施主机
+  #无需 目标机
+已有:(tr_W5P_6P,tr_W5P_6W)
++ 适配-后端:tr_W5P_6P->tr_M5P_6P
++ 生成-交叉翻译诀:tr_M5P_6P--[tr_W5P_6W]->tr_M5P_6W
++ 交叉翻译:tr_M5P_6P--[tr_M5P_6W]->tr_M5P_6M
+
+[[is_similar_dialect_of(M;W)] => [tr_M5P_6M := 辅助半自举乊施主机(tr_W5P_6P,tr_W5P_6W,vm_W_9R,manually_adapt_output_M5W)]]
+  [tr_M5P_6P := manually_adapt_output_M5W(tr_W5P_6P)]
+  [tr_W5P_9R := vm_W_9R tr_W5P_6W]
+  [tr_M5P_6W := tr_W5P_9R tr_M5P_6P]
+  [tr_M5P_9R := vm_W_9R tr_M5P_6W]
+  [tr_M5P_6M := tr_M5P_9R tr_M5P_6P]
+#辅助半自举乊施主机vs核心纟辅助适配冫安装包灬
+]]
+
+

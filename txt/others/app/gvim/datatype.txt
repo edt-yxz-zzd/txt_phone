@@ -1,0 +1,342 @@
+
+e others/app/gvim/datatype.txt
+
+
+blob == bytes
+string == null-terminated bytes
+  string is not chars
+
+Blob:0z00112233.44556677.8899
+
+:h functions
+  char2nr()
+  nr2char()
+
+:echo '我'[0]
+:echo char2nr('我')
+25105
+:echo char2nr('我'[0])
+230
+:echo printf('%04x', char2nr('我'))
+6211
+:echo printf('%04x', char2nr('我'[0]))
+00e6
+:echo '我'[0] == "\xe6"
+1
+:let x = 0z
+:echo len(x)
+0
+:for c in str2list('abc')
+:   call add(x, c)
+:endfor
+:echo len(x)
+3
+:echo x
+0z616263
+
+
+:h String
+-->:
+:h eval
+-->:
+[[
+*eval.txt*	For Vim version 8.2.  Last change: 2020 Jan 02
+
+
+		  VIM REFERENCE MANUAL	  by Bram Moolenaar
+
+
+Expression evaluation			*expression* *expr* *E15* *eval*
+
+Using expressions is introduced in chapter 41 of the user manual |usr_41.txt|.
+
+Note: Expression evaluation can be disabled at compile time.  If this has been
+done, the features in this document are not available.  See |+eval| and
+|no-eval-feature|.
+
+1.  Variables			|variables|
+    1.1 Variable types
+    1.2 Function references		|Funcref|
+    1.3 Lists				|Lists|
+    1.4 Dictionaries			|Dictionaries|
+    1.5 Blobs				|Blobs|
+    1.6 More about variables		|more-variables|
+2.  Expression syntax		|expression-syntax|
+3.  Internal variable		|internal-variables|
+4.  Builtin Functions		|functions|
+5.  Defining functions		|user-functions|
+6.  Curly braces names		|curly-braces-names|
+7.  Commands			|expression-commands|
+8.  Exception handling		|exception-handling|
+9.  Examples			|eval-examples|
+10. Vim script version		|vimscript-version|
+11. No +eval feature		|no-eval-feature|
+12. The sandbox			|eval-sandbox|
+13. Textlock			|textlock|
+
+Testing support is documented in |testing.txt|.
+Profiling is documented at |profiling|.
+
+
+]]
+[[
+1.1 Variable types ~
+						*E712* *E896* *E897* *E899*
+There are ten types of variables:
+
+							*Number* *Integer*
+Number		A 32 or 64 bit signed number.  |expr-number|
+		64-bit Numbers are available only when compiled with the
+		|+num64| feature.
+		Examples:  -123  0x10  0177  0b1011
+
+Float		A floating point number. |floating-point-format| *Float*
+		{only when compiled with the |+float| feature}
+		Examples: 123.456  1.15e-6  -1.1e3
+
+							*E928*
+String		A NUL terminated string of 8-bit unsigned characters (bytes).
+		|expr-string| Examples: "ab\txx\"--"  'x-z''a,c'
+
+List		An ordered sequence of items, see |List| for details.
+		Example: [1, 2, ['a', 'b']]
+
+Dictionary	An associative, unordered array: Each entry has a key and a
+		value. |Dictionary|
+		Examples:
+			{'blue': "#0000ff", 'red': "#ff0000"}
+			#{blue: "#0000ff", red: "#ff0000"}
+
+Funcref		A reference to a function |Funcref|.
+		Example: function("strlen")
+		It can be bound to a dictionary and arguments, it then works
+		like a Partial.
+		Example: function("Callback", [arg], myDict)
+
+Special		|v:false|, |v:true|, |v:none| and |v:null|.  *Special*
+
+Job		Used for a job, see |job_start()|. *Job* *Jobs*
+
+Channel		Used for a channel, see |ch_open()|. *Channel* *Channels*
+
+Blob		Binary Large Object. Stores any sequence of bytes.  See |Blob|
+		for details
+		Example: 0zFF00ED015DAF
+		0z is an empty Blob.
+
+
+]]
+[[
+:h string
+
+"string"		string constant		*expr-quote*
+
+Note that double quotes are used.
+
+A string constant accepts these special characters:
+\...	three-digit octal number (e.g., "\316")
+\..	two-digit octal number (must be followed by non-digit)
+\.	one-digit octal number (must be followed by non-digit)
+\x..	byte specified with two hex numbers (e.g., "\x1f")
+\x.	byte specified with one hex number (must be followed by non-hex char)
+\X..	same as \x..
+\X.	same as \x.
+\u....	character specified with up to 4 hex numbers, stored according to the
+	current value of 'encoding' (e.g., "\u02a4")
+\U....	same as \u but allows up to 8 hex numbers.
+\b	backspace <BS>
+\e	escape <Esc>
+\f	formfeed <FF>
+\n	newline <NL>
+\r	return <CR>
+\t	tab <Tab>
+\\	backslash
+\"	double quote
+\<xxx>	Special key named "xxx".  e.g. "\<C-W>" for CTRL-W.  This is for use
+	in mappings, the 0x80 byte is escaped.
+	To use the double quote character it must be escaped: "<M-\">".
+	Don't use <Char-xxxx> to get a utf-8 character, use \uxxxx as
+	mentioned above.
+
+Note that "\xff" is stored as the byte 255, which may be invalid in some
+encodings.  Use "\u00ff" to store character 255 according to the current value
+of 'encoding'.
+
+Note that "\000" and "\x00" force the end of the string.
+
+]]
+[[
+			Blob		0z00112233.44556677.8899
+]]
+
+
+[[
+:h functions
+
+nr2char({expr} [, {utf8}])  String  single char with ASCII/UTF8 value {expr}
+char2nr({expr} [, {utf8}])  Number  ASCII/UTF8 value of first char in {expr}
+escape({string}, {chars})   String  escape {chars} in {string} with '\'
+fnameescape({fname})        String  escape special characters in {fname}
+str2float({expr})		Float	convert String to Float
+str2list({expr} [, {utf8}])	List	convert each character of {expr} to
+					ASCII/UTF8 value
+str2nr({expr} [, {base} [, {quoted}]])
+				Number	convert String to Number
+strchars({expr} [, {skipcc}])	Number	character length of the String {expr}
+string({expr})			String	String representation of {expr} value
+strlen({expr})			Number	length of the String {expr}
+strtrans({expr})		String	translate string to make it printable
+
+line2byte({lnum})       Number  byte count of line {lnum}
+byte2line({byte})		Number	line number at byte count {byte}
+
+byteidx({expr}, {nr})		Number	byte index of {nr}'th char in {expr}
+byteidxcomp({expr}, {nr})	Number	byte index of {nr}'th char in {expr}
+
+call({func}, {arglist} [, {dict}])
+				any	call {func} with arguments {arglist}
+getftime({fname})       Number  last modification time of file
+getfsize({fname})       Number  size in bytes of file {fname}
+getftype({fname})       String  description of type of file {fname}
+
+
+add({object}, {item})       List/Blob   append {item} to {object}
+ch_readblob({handle} [, {options}])
+				Blob	read Blob from {handle}
+ch_readraw({handle} [, {options}])
+				String	read raw from {handle}
+remove({blob}, {idx} [, {end}])	Number/Blob
+					remove bytes {idx}-{end} from {blob}
+test_null_blob()		Blob	null value for testing
+writefile({object}, {fname} [, {flags}])
+				Number	write |Blob| or |List| of lines to file
+x
+]]
+
+[[
+
+byteidx({expr}, {nr})					*byteidx()*
+		Return byte index of the {nr}'th character in the string
+		{expr}.  Use zero for the first character, it returns zero.
+		This function is only useful when there are multibyte
+		characters, otherwise the returned value is equal to {nr}.
+		Composing characters are not counted separately, their byte
+		length is added to the preceding base character.  See
+		|byteidxcomp()| below for counting composing characters
+		separately.
+		Example : >
+			echo matchstr(str, ".", byteidx(str, 3))
+<		will display the fourth character.  Another way to do the
+		same: >
+			let s = strpart(str, byteidx(str, 3))
+			echo strpart(s, 0, byteidx(s, 1))
+<		Also see |strgetchar()| and |strcharpart()|.
+
+		If there are less than {nr} characters -1 is returned.
+		If there are exactly {nr} characters the length of the string
+		in bytes is returned.
+
+		Can also be used as a |method|: >
+			GetName()->byteidx(idx)
+
+byteidxcomp({expr}, {nr})					*byteidxcomp()*
+		Like byteidx(), except that a composing character is counted
+		as a separate character.  Example: >
+			let s = 'e' . nr2char(0x301)
+			echo byteidx(s, 1)
+			echo byteidxcomp(s, 1)
+			echo byteidxcomp(s, 2)
+<		The first and third echo result in 3 ('e' plus composing
+		character is 3 bytes), the second echo results in 1 ('e' is
+		one byte).
+		Only works different from byteidx() when 'encoding' is set to
+		a Unicode encoding.
+
+		Can also be used as a |method|: >
+			GetName()->byteidxcomp(idx)
+
+]]
+[[
+:h strpart()
+  str as bytes
+:h strcharpart()
+  str as chars
+
+strpart({src}, {start} [, {len}])			*strpart()*
+		The result is a String, which is part of {src}, starting from
+		byte {start}, with the byte length {len}.
+		To count characters instead of bytes use |strcharpart()|.
+
+		When bytes are selected which do not exist, this doesn't
+		result in an error, the bytes are simply omitted.
+		If {len} is missing, the copy continues from {start} till the
+		end of the {src}. >
+			strpart("abcdefg", 3, 2)    == "de"
+			strpart("abcdefg", -2, 4)   == "ab"
+			strpart("abcdefg", 5, 4)    == "fg"
+			strpart("abcdefg", 3)	    == "defg"
+
+<		Note: To get the first character, {start} must be 0.  For
+		example, to get three bytes under and after the cursor: >
+			strpart(getline("."), col(".") - 1, 3)
+<
+		Can also be used as a |method|: >
+			GetText()->strpart(5)
+
+strcharpart({src}, {start} [, {len}])			*strcharpart()*
+		Like |strpart()| but using character index and length instead
+		of byte index and length.
+		When a character index is used where a character does not
+		exist it is assumed to be one character.  For example: >
+			strcharpart('abc', -1, 2)
+<		results in 'a'.
+
+		Can also be used as a |method|: >
+			GetText()->strcharpart(5)
+
+strchars({expr} [, {skipcc}])					*strchars()*
+		The result is a Number, which is the number of characters
+		in String {expr}.
+		When {skipcc} is omitted or zero, composing characters are
+		counted separately.
+		When {skipcc} set to 1, Composing characters are ignored.
+		Also see |strlen()|, |strdisplaywidth()| and |strwidth()|.
+
+		{skipcc} is only available after 7.4.755.  For backward
+		compatibility, you can define a wrapper function: >
+		    if has("patch-7.4.755")
+		      function s:strchars(str, skipcc)
+			return strchars(a:str, a:skipcc)
+		      endfunction
+		    else
+		      function s:strchars(str, skipcc)
+			if a:skipcc
+			  return strlen(substitute(a:str, ".", "x", "g"))
+			else
+			  return strchars(a:str)
+			endif
+		      endfunction
+		    endif
+<
+		Can also be used as a |method|: >
+			GetText()->strchars()
+
+strdisplaywidth({expr} [, {col}])			*strdisplaywidth()*
+		The result is a Number, which is the number of display cells
+		String {expr} occupies on the screen when it starts at {col}
+		(first column is zero).  When {col} is omitted zero is used.
+		Otherwise it is the screen column where to start.  This
+		matters for Tab characters.
+		The option settings of the current window are used.  This
+		matters for anything that's displayed differently, such as
+		'tabstop' and 'display'.
+		When {expr} contains characters with East Asian Width Class
+		Ambiguous, this function's return value depends on 'ambiwidth'.
+		Also see |strlen()|, |strwidth()| and |strchars()|.
+
+		Can also be used as a |method|: >
+			GetText()->strdisplaywidth()
+
+
+]]
+

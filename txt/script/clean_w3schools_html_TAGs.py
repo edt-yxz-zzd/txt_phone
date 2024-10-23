@@ -8,7 +8,7 @@
 #[:section2__step4]:goto
 r"""[[[
 e script/clean_w3schools_html_TAGs.py
-    view  /sdcard/0my_files/book/lang/html/w3schools_TAGs.tgz
+    view  /sdcard/0my_files/book/lang/html/w3schools_TAGs.txz
     view others/app/termux/web_server.txt
     view ../lots/NOTE/html/tag/README-show-html.txt
 

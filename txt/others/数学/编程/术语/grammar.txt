@@ -1,0 +1,657 @@
+
+e others/数学/编程/术语/grammar.txt
+  view others/数学/编程/术语/regex.txt
+  view others/数学/编程/术语/语法术语冫汉化.txt
+    定稿:[母符,种符,料符,词符,代符,词料,段址,起址,讫址]
+  view others/数学/编程/设计/语法升级序列.txt
+  '/sdcard/0my_files/book//lang/编译/Modern Compiler Implementation in C (rev+ex)(2004).djvu'
+      better than:
+  '/sdcard/0my_files/book/lang/编译/Compilers and Compiler Generators/pdfvers.pdf'
+    view ../lots/NOTE/compiler/Compilers and Compiler Generators(1996-2000)(Terry).txt
+
+bug-fixed:vocabulary-->vocabulary_symbol
+  ===
+  term:术语
+  word:单词
+  symbol:符号，记号
+  phrase:词组 #短语/成语/习语
+  vocable 单音；不问字义,只作为语音单位的) 字,辞。#n. [语]词外壳；词 adj. 可发音的
+  ===
+  diction:n. 用语；措词 #?集体名词
+  vocabulary 词汇表 #集体名词
+  ===
+  词汇: vocabulary,glossary,lexicon
+  词素:morpheme:语言中最小的有意义的单位，词根、前缀、后缀、词尾都是词素。
+  ===
+
+[token == (terminal, semantic_value, ?position_info4span?) == (tkey,tdat,?position_info4span?)]
+  [tdat == semantic_value<terminal>]
+  [oresult<vocabulary_symbol> == semantic_value<vocabulary_symbol>]
+
+
+
+language specification
+syntax- directed translation
+
+metalanguage:
+  a formal programming language has to be described by using another language. This language of description is called the metalanguage.
+  a precise specification requires that the metalanguage be completely unambiguous.
+
+syntax,semantics,pragmatics:
+  + syntax Rules:
+    describe the form of the sentences in the language.
+  + semantic Rules:
+    define the meaning of syntactically correct sentences in a language.
+  + pragmatics:
+    Besides being aware of syntax and semantics, the user of a programming language cannot avoid coming to terms with some of the pragmatic issues involved with implementation techniques, programming methodology, and so on.
+    These factors govern subtle aspects of the design of almost every practical language, often in a most irritating way.
+    For example, in Fortran 66 and Fortran 77 the length of an identifier was restricted to a maximum of six characters- a legacy of the word size on the IBM computer for which the first Fortran compiler was written.
+
+
+
+
+formal language theory
+  symbol == token
+  alphabet :: {symbol}
+    A
+  phrase == word == string :: alphabet => [symbol<alphabet>]
+  null_string == empty_word :: string{len==0}
+  closure == Kleene_closure :: alphabet -> {string<alphabet>}
+    A*
+    [string_set_of_len_ sz alphabet =[def]= {s :: string<alphabet> | [len(s) == sz]}]
+    [Kleene_closure alphabet =[def]= \-/~ string_set_of_len_ sz alphabet {sz :<- [0..]}]
+  positive_closure :: alphabet -> {string<alphabet>}
+    A+
+    [positive_closure alphabet =[def]= \-/~ string_set_of_len_ sz alphabet {sz :<- [1..]}]
+
+
+  language<alphabet> :: {string<alphabet>}
+  language<alphabet> |<=| Kleene_closure<alphabet>
+
+
+
+
+
+Grammars and productions
+grammar
+sentence
+regular expressions are not powerful enough to describe languages that manifest self-embedding in their descriptions.
+
+conceptually:grammar :: alphabet -> {string<alphabet>}
+conceptually:grammar :: alphabet -> string<alphabet> -> Bool
+
+grammar = (N,T,S,P)
+    = quadruple(N/nonterminal_symbols/{nonterminal_symbol},T/terminal_symbols/{terminal_symbol},S/start_symbol,P/{production_rule})
+
+
+S/start_symbol:
+  start_symbol == goal_symbol == distinguished_symbol
+  start_symbol <- nonterminal_symbols
+  S <- N
+
+T/terminal_symbols:
+  [sentence :: string<T/terminal_symbols>]
+  [sentential_form :: string<V/vocabulary>]
+    #sentential:adj. 句子的；命题的；判决的
+    #sentential form:句型
+    #sentential calculus:句子演算
+N/nonterminal_symbols:
+  the set N denotes the syntactic classes of the grammar, that is, general components or concepts used in describing sentence construction.
+  [{} == N /-\ T]
+  N,T :: finite_set
+
+V/vocabulary/symbols:
+  [V =[def]= N \-/ T]
+  ？词汇 必须是 有限大集合？
+
+P/production_rule:
+  production_rule==production==rewrite_rule==syntax_equation
+
+命名规范/命名约定:
+  #单字符@抽象语法:
+  [小写希腊字母 :: string<vocabulary>] #sentential_form
+  [小写罗马字母 :: terminal_symbol]
+  [大写罗马字母 :: nonterminal_symbol]
+  #单词@编程语言/具象语法:刚好相反:
+  [大写罗马单词 :: terminal_symbol]
+  [小写罗马单词 :: nonterminal_symbol]
+
+
+
+
+
+
+
+[G :: grammar][x,y :: string<vocabulary<G>>]:
+  [[x==>y] =[def]= [?[z :<- nonterminal_symbols<G>] -> ?[u,v,w :: string<vocabulary<G>>] -> [[x==u++z++v][y==u++w++v][[z-->w] <- production_rules<G>]]]]
+  [x==>y] == [x directly produces y] == [y is directly derived from x]
+
+[G :: grammar][x,y :: string<vocabulary<G>>]:
+  [[x =+> y] =[def]= [?[zs :: [string<vocabulary<G>>]{len>=2}] -> [[zs[0] == x][zs[-1] == y][@[i:<-[1..<len(zs)]] -> [zs[i-1] ==> zs[i]]]]]]
+  [x =+> y] == [x produces y in a non-trivial way] == [y is derived from x in a non-trivial way]
+
+[G :: grammar][x,y :: string<vocabulary<G>>]:
+  [[x =*> y] =[def]= [?[zs :: [string<vocabulary<G>>]{len>=1}] -> [[zs[0] == x][zs[-1] == y][@[i:<-[1..<len(zs)]] -> [zs[i-1] ==> zs[i]]]]]]
+  [x =*> y] == [x produces y] == [y is derived from x]
+
+[G :: grammar]:
+  [sentential_forms<G> =[def]= {x | [[x :: string<vocabulary<G>>][goal_symbol<G> =*> x]]}]
+  [language<G> =[def]= {s | [[s :: string<terminal_symbols<G>>][goal_symbol<G> =+> s]]}]
+
+[G :: grammar]:
+  #recursive
+  [is_grammar_recursive(G) =[def]= [?[z :<- nonterminal_symbols<G>] -> ?[u,v :: string<vocabulary<G>>] -> [z =+> (u++z++v)]]]
+  #left recursive
+  [is_grammar_left_recursive(G) =[def]= [?[z :<- nonterminal_symbols<G>] -> ?[u,v :: string<vocabulary<G>>] -> [z =+> (z++v)]]]
+  #right recursive
+  [is_grammar_right_recursive(G) =[def]= [?[z :<- nonterminal_symbols<G>] -> ?[u,v :: string<vocabulary<G>>] -> [z =+> (u++z)]]]
+  #self-embedding:含 止符
+  [is_grammar_self_embedding(G) =[def]= [?[z :<- nonterminal_symbols<G>] -> ?[u,v :: string<vocabulary<G>>] -> [[z =+> (u++z++v)][{} =!= set(u++v)/-\terminal_symbols<G>]]]]
+
+
+
+
+
+
+
+
+classic BNF notation
+  nonterminal_symbol: f'<[^<>\n]+>'
+  terminal_symbol: f'{nm}'
+  eq:『-->』or『::=』
+  no:『*/+/?』
+  no: grouping 『(expr)』
+  has:null production:『pass』
+    nullable nonterminal_symbol
+EBNF notation
+  (Extended BNF)
+  ++:『*/+/?』
+  ++: grouping 『(expr)』
+  a language that can be expressed as a regular expression can always be expressed in a single EBNF expression.
+
+Wirth’s EBNF notation (1977)
+  nonterminal_symbol: f'{nm}'
+  terminal_symbol: f'"[^"\n\\]+"'
+  alternative | alternative
+    # bar
+  ( grouping )
+    # (parentheses)
+  [ optional ]
+    # (brackets)
+    『pass』-->『[]』
+  { repetition }
+    # (braces)
+  (* comment *)
+  eq:『=』
+  end of each production:『.』
+  spaces:insignificant.
+
+  example:
+    Integer = Sign UnsignedInteger .
+    UnsignedInteger = digit { digit } .
+    Sign = [ "+" | "-" ] .
+    digit = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" .
+  意图纟该版本:
+    The effect is that non-terminals are less "noisy" than in the earlier forms of BNF, while terminals are "noisier".
+    Many grammars used to define programming language employ far more non-terminals than terminals, so this is often advantageous.
+
+    ********
+    EBNF = { Production } .
+    Production = nonterminal "=" Expression "." .
+    Expression = Term { "|" Term } .
+    Term = Factor { Factor } .
+    Factor = nonterminal | terminal | "[" Expression "]"
+    | "(" Expression ")" | "{" Expression "}" .
+    nonterminal = letter { letter } .
+    terminal = "’" character { character } "’" | ’"’ character { character } ’"’ .
+    character = (* implementation defined *) .
+    ********
+
+
+
+[[[[[[[
+'/sdcard/0my_files/book//lang/编译/Modern Compiler Implementation in C (rev+ex)(2004).djvu'
+===
+grep LL(1):
+  grep -e 'LL([[:digit:]])' -i -r ../lots/NOTE/
+  view ++enc=gbk ../lots/NOTE/Formal_Languages_and_Compilation(2ed)/best snippet.txt
+  view ++enc=gbk ../lots/NOTE/Formal_Languages_and_Compilation(2ed)/grammar Im interested.txt
+
+grep LL1:
+  grep LL1 -r ../../../book/lang/
+  '/sdcard/0my_files/book//lang/编译/Modern Compiler Implementation in C (rev+ex)(2004).djvu'
+
+forward reference
+    前瞻性引用 vs 回顾性引用
+context-free grammar
+    语境无关语法
+    上下文无关语法
+    上下文不敏感语法
+ambiguous grammar
+    歧义性语法
+"*" binds tighter than "+", or has higher precedence.
+
+end-of-file marker
+
+predictive parsing
+recursive-descent parser
+  ？递归-下降？#？下降:~步进？
+FIRST sets, and then derive conflict-free recursive-descent parsers
+
+[LL1 == LL(1) =[def]= stands for『Left-to-right parse, Leftmost-derivation, 1-symbol lookahead.』]
+  LL1==分路单前瞻左起左展识别器
+    从左到右 输入 词符流
+    从左到右 展开 规则句型
+        #生成规则 最左母符 率先识别(率先展开)
+    单前瞻-预读/前瞻单词符
+[LR1 == LR(1) =[def]= stands for 『Left-to-right parse, Rightmost-derivation, k-token lookahead.』]
+  LR1==折合单前瞻左起右展识别器
+  LR0==折合零前瞻左起右展识别器
+    所谓『零前瞻』其实是指:reduce无需前瞻
+        前瞻 必然导致(shift/accept/error) 而不可能是 (reduce-goto)
+        ++st2should_reduce
+          状态转换表:可以移除这些 必须立即折合的状态(因为任何继符都必然导致折合)
+        要求所有state4DFA4LR0可约态 必然是 单item
+            即:不存在分歧(shift-reduce-conflict,reduce-reduce-conflict)
+              ???这些冲突需要前瞻以解决
+                ???也未必:比如LALR1==LA1LR0==LA(1)LR(0):使用静态前瞻(类似LL1.FOLLOW_set)，试图解决这类分歧
+    xxx:所谓『零前瞻』其实是指:状态转换表 不含:状态转换表纟前瞻全文讫+状态转换表纟前瞻止符
+    xxx:状态转换表{LR1}==(状态转换表纟前瞻全文讫+状态转换表纟前瞻止符+状态转换表纟新造展符)
+    xxx:状态转换表{LR0}==(状态转换表纟新造展符)
+
+  SLR==Simple LR==加强版LR0
+    使用FOLLOW_set解决分歧(shift-reduce-conflict,reduce-reduce-conflict)
+    大体一致:状态集
+        状态集{SLR}==状态集{LR0}
+    稍有不同:状态转换表
+        LR0:『状态是否折合』静态可知:(任何继符都必然导致折合)
+            即:不存在静态有分歧的状态
+        SLR:『状态是否折合』{若有分歧}需前瞻:继符集
+            即:可能存在静态有分歧的状态
+  LALR1==LALR(1) parser==Look-Ahead LR(1)
+      ???LALR1==LA(1)LR(0)
+      ???融合状态==>>:[状态集{LALR1}==状态集{LR0}==状态集{SLR}]
+      ???使用继符集==>>:[LALR1==SLR]
+
+lhs==left-hand-side
+rhs==right-hand side
+reduce简化/折合
+shift转移/移位
+
+a hierarchy of grammar classes:
+  [ambiguous_grammar < grammar]
+  [unambiguous_grammar < grammar]
+  [LL(k) < LR(k) < unambiguous_grammar]
+  [LR(k) < LR(k+1)]
+  [LL(k) < LL(k+1)]
+  [LR(0) < SLR < LALR(1) < LR(1)]
+  #不相互包含:
+  [LL1 - LALR1 > {}]
+  [LALR1 - LL1 > {}]
+  [LL2 - LR1 > {}]
+  [LR1 - LL2 > {}]
+  ##等等:LL0是啥？
+  #     难道是 『规范型:规则右侧句型非空且最左代符必是止符』
+  #         每次分路 不是『前瞻』而『消耗』
+  #     Real-Time Normal Form ::= every rule starts with a terminal
+Real-Time Normal Form:
+  view ++enc=gbk ../lots/NOTE/Formal_Languages_and_Compilation(2ed)/chapter 2 Syntax.txt
+
+
+[[
+predictive parsing table:
+  #唯一优点:手写:recursive-descent parser
+  All the information we need can be encoded as a two-dimensional table of productions, indexed by nonterminals X and terminals T. This is called a predictive parsing table.
+  To construct this table, enter production X --> y in row X, column T of the table for each T <- FIRST(y). Also, if y is nullable, enter the production in row X, column T for each T <- FOLLOW[X].
+  An ambiguous grammar will always lead to duplicate entries in a predictive parsing table.
+
+#这里是原版算法{使用:FIRST_set,FOLLOW_set}:
+predictive_parsing_table = {}
+for production in productions:
+    #(nonterminal8lhs, sentential_form8rhs) = production
+    (nonterminal, sentential_form) = production
+    for terminal in FIRST_set_of(nonterminal):
+        dict_add__new(predictive_parsing_table, (nonterminal,terminal), production)
+            #predictive_parsing_table[(nonterminal,terminal)] = production
+    if nullable(sentential_form):
+        for terminal in FOLLOW_set_of(nonterminal):
+            dict_add__new(predictive_parsing_table, (nonterminal,terminal), production)
+
+===
+FIRST set
+头符集
+  nullable symbol
+  允空母符
+FOLLOW set
+  继符集
+  @LL1
+  @SLR
+刍议:继符集@LL1:改为:尾前瞻符集+唯一允空分支纟允空母符
+  最后:运行期数据:
+    +头符集纟分支纟母符
+    +唯一允空分支纟允空母符 # -> +欤允空纟母符
+    #无需:+尾前瞻符集纟母符{仅用于编译期断言语法无歧义}
+  若是『前瞻找不到匹配分支{使用:头符集纟分支纟母符}』而『母符允空』，则 路由到允空分支
+      vs:原版:前瞻匹配分支{使用:头符集纟分支纟母符+继符集纟允空母符{唯一允空分支纟允空母符}}
+===
+]]
+
+[[[
+LR1==折合单前瞻左起右展识别器
+===
+LR(k) stands for Left-to-right parse, Rightmost-derivation, k-token lookahead.
+LR(k) augmented with a new start production 『S' --> S <eof>』.
+The parser has a stack and an input. The first k tokens of the input are the lookahead. Based on the contents of the stack and the lookahead, the parser performs two kinds of actions:
+    * Shift: move the first input token to the top of the stack.
+    * Reduce: Choose a grammar rule 『X --> A B C』; pop C, B, A from the top of the stack; push X onto the stack.
+    ===
+    Initially, the stack is empty and the parser is at the beginning of the input.
+    The action of shifting the end-of-file marker <eof> is called accepting and causes the parser to stop successfully.
+    ===
+    DFA==deterministic finite automaton
+    ===
+===
+ps_vocabulary_symbol:artificial symbol
+input :: [ps_token]
+    类型纟词符流灬牜简并版
+input :: [((<eof>,None,?position_info4span?)|token@(tkey,tdat,?position_info4span?))]
+    类型纟词符流灬牜详析版
+stack :: [(?may vocabulary_symbol?,?may position_info4span?,may oresult,state4DFA4LR)]
+    [stack <==> (?may vocabulary_symbol_stack?,?may span_position_stack?,may semantic_value_stack,state_stack)]
+    #may vocabulary_symbol 并非必需，仅用作辅助逻辑思考
+    #may span_position_stack 并非必需，仅用于报错定位
+    #may oresult 并非必需<<==若是仅需判断是否解释accept或者生成AST(不含语义值)
+    类型纟栈灬牜简并版
+stack :: [(?None?,None,state0), (?vocabulary_symbol?,oresult,state4DFA4LR) ...]
+    类型纟栈灬牜详析版
+    内设规则:『S' --> @st0 S @st1 <eof> @st2』
+      st2 无必要
+action:
+  * shift into DFA state <n>
+  * goto DFA state <n>
+  * reduce by Grammar rule <k>
+  * accept
+  * error #missing
+
+LR parsing table:状态转换表
+transition_table4DFA4LR :: {(st,ps_vocabulary_symbol):action}
+    类型纟状态转换表灬牜简并版
+transition_table4DFA4LR :: ({(st,<eof>):(accept|error)} | {(st,terminal):(shift|reduce|error)} | {(st,nonterminal):goto|error})
+    类型纟状态转换表灬牜详析版
+    状态转换表{LR1}==(状态转换表纟前瞻全文讫+状态转换表纟前瞻止符+状态转换表纟新造展符)
+
+===
+[LR语法树遍历 == 末父左起语法树遍历 == 后序树遍历]
+[postorder_traversal@virtual_parse_tree@LR_parser]:However, an LR parser does perform reductions, and associated semantic actions, in a deterministic and predictable order: a bottom-up, left-to-right traversal of the parse tree. In other words, the (virtual) parse tree is traversed in postorder. Thus, one can write semantic actions with global side effects, and be able to predict the order of their occurrence.
+
+===
+单步算法乊运行期纟折合单前瞻左起右展识别器
+  LR1
+(next_ps_terminal,oresult) := input.peek1();
+new_ps_vocabulary_symbol := next_ps_terminal
+while 1:
+  curr_st := stack[-1][-1]
+  case transition_table4DFA4LR[(curr_st,new_ps_vocabulary_symbol)] of:
+    * shift<new_st>:
+      # new_ps_vocabulary_symbol is terminal
+      {(new_terminal,oresult) := input.read1(); stack.push((new_terminal,oresult,new_st));break;}
+    * reduce<rule>:
+      # new_ps_vocabulary_symbol is terminal
+      {args := stack.popN(len(rule.sentential_form8rhs)); new_ps_vocabulary_symbol := rule.nonterminal8lhs; oresult := mk_oresult(rule,args); continue;} #next MUSTBE "goto"
+          #注意:(new_ps_vocabulary_symbol,oresult) 显式改变
+          #注意:stack popped 导致 curr_st 将会改变/隐式改变
+    * goto<new_st>:
+      # new_ps_vocabulary_symbol is nonterminal
+      {stack.push((new_ps_vocabulary_symbol,oresult,new_st)); break;}
+          #reduce-goto:两者捆绑在一起:但是需要转换两次状态
+    * accept:
+      # new_ps_vocabulary_symbol is <eof>
+      return ...
+    default: #* error:
+      #missing
+      raise ...
+===
+预备算法乊编译期纟折合零前瞻左起右展识别器
+  LR0
+raw_state4LR0 :: {item4LR0}
+state4LR0 :: closure{item4LR0}
+item4LR0 :: (rule4LR0,dot4item4LR0/position4sentential_form4rule4LR0)
+  dot4item4LR0{rule4LR0} <- [0..=len(rule4LR0.sentential_form8rhs)]
+
+start_state4LR0 := 『S' --> .S <eof>』
+basic operations for state4LR0:
+  closure4state4LR0 :: raw_state4LR0 -> state4LR0
+    while unprocessed『? --> * .X *』in state4LR0:
+        add all 『X --> . *』
+  goto4state4LR0 :: state4LR0 -> vocabulary_symbol -> state4LR0
+  goto4state4LR0 state4LR0 V = closure4state4LR0({『? --> * V . *』for 『? --> * .V *』in state4LR0})
+
+状态集{LR0}
+折合动作@状态转换表{LR0}:
+    for state4LR0 in 状态集{LR0}:
+        for item4LR0@『A --> w .』 in state4LR0:
+            assert len(state4LR0)==1
+            #状态转换表[state4LR0, :] = reduce<rule『A --> w』>
+              # 『:』即 <any> #terminal|<eof>
+            for ps_terminal in {<eof>,...all-terminals}:
+                状态转换表[state4LR0, ps_terminal] = reduce<rule『A --> w』>
+===
+预备算法乊编译期纟简单左起右展识别器
+  SLR
+Parser construction for SLR is almost identical to that for LR(O), except that we put reduce actions into the table only where indicated by the FOLLOW set.
+状态集{SLR}==状态集{LR0}
+折合动作@状态转换表{SLR}:
+    for state4SLR in 状态集{SLR}:
+        for item4SLR@『A --> w .』 in state4SLR:
+            assert len(state4SLR)==1
+            状态转换表[state4SLR, FOLLOW_set_of(A)] = reduce<rule『A --> w』>
+            for ps_terminal in FOLLOW_set_of(A):
+                状态转换表[state4SLR, ps_terminal] = reduce<rule『A --> w』>
+
+
+===
+预备算法乊编译期纟折合单前瞻左起右展识别器
+  LR1
+raw_state4LR1 :: {item4LR1}
+state4LR1 :: closure{item4LR1}
+  {item4LR1} <==> {rule4LR1:{ps_lookahead_symbol}}
+item4LR1 :: (rule4LR1,dot4item4LR1/position4sentential_form4rule4LR1,ps_lookahead_symbol)
+  dot4item4LR1{rule4LR1} <- [0..=len(rule4LR1.sentential_form8rhs)]
+  ps_lookahead_symbol == (<eof>|vocabulary_symbol)
+
+start_state4LR1 := 『S' --> .S <eof>; <eof>』
+或:start_state4LR1 := 『S' --> .S <eof>; <arbitrary>』
+
+basic operations for state4LR1:
+  closure4state4LR1 :: raw_state4LR1 -> state4LR1
+    while unprocessed『? --> a .X b; c』in state4LR1:
+      for d in FIRST_set_of(b++c)
+        add all 『X --> . *; d』
+  goto4state4LR1 :: state4LR1 -> vocabulary_symbol -> state4LR1
+  goto4state4LR1 state4LR1 V = closure4state4LR1({『? --> * V . *; ?』for 『? --> * .V *; ?』in state4LR1})
+
+折合@状态转换表::
+reduce@transition_table4DFA4LR1:
+for state4LR1 in all-states:
+    for (rule,ps_lookahead_symbol)@『X --> a .; z』 in state4LR1:
+        dict_add__new(transition_table4DFA4LR1, (X,z), rule)
+===
+LALR(1) PARSING TABLES
+LR(1) parsing tables can be very large, with many states. A smaller table can be made by merging any two states whose items are identical except for lookahead sets. The result parser is called an LALR(1) parser, for Look-Ahead LR(1).
+    merge
+      <==>set_union<state4LR1>
+      <==>fmap set_union<state4LR1.lookahead_set>
+    type_of(state4LR1)
+        <==> {item4LR1}
+        <==> {rule4LR1:{ps_lookahead_symbol}}
+        <==> {rule4LR1:ps_lookahead_symbol_set}
+    ???融合状态==>>:[状态集{LALR1}{除去ps_lookahead_symbol_set}==状态集{LR0}==状态集{SLR}]
+      ???LALR1==LA(1)LR(0)
+      应该是一样的，但是附加上ps_lookahead_symbol_set就不一样了
+    ???使用继符集==>>:[LALR1==SLR]
+      但是 [SLR < LALR1]
+      ???经过LR1生成，或许:[ps_lookahead_symbol_set@rule4LR1@state4LR1 <= FOLLOW_set_of(rule4LR1.nonterminal8lhs)]
+        应该确实会更细致一些，closure4state4LR1时:
+          『A --> a .B b ; *ps_lookahead_symbol_set』
+          -->
+          『B --> . c ; *FIRST_set_of(b ++ *ps_lookahead_symbol_set)』
+          vs:
+          『B --> . c ; *FOLLOW_set_of(B)』
+    ???是否可行:[状态集{LALR1}<<==状态集{LR0}附加ps_lookahead_symbol_set]
+        只计算LR0,避开计算LR1:状态集{LR1}
+        closure运算，循环，有点麻烦
+
+For some grammars, the LALR(1) table contains reduce-reduce conflicts where the LR(1) table has none, but in practice the difference matters little.
+What does matter is that the LALR(1) parsing table requires less memory to represent than the LR(1) table, since there can be many fewer states.
+Any reasonable programming language has a LALR(1) grammar, and there are many parser-generator tools available for LALR(1) grammars. For this reason, LALR(1) has become a standard for programming languages and for automatic parser generators.
+
+===
+消除冫歧义性
+消除冫歧义性纟折合单前瞻左起右展识别器
+有歧义语法:
+  S --> if E then S else S
+  S --> if E then S
+  S --> other
+which allow programs such as:
+    if a then if b then s1 else s2
+Such a program could be understood in two ways:
+    (1) if a then { if b then s1 else s2 }
+    (2) if a then { if b then s1 } else s2
+
+
+In the LR parsing table there will be a shift-reduce conflict:
+  state4LR1:
+    S --> if E then S .         ; else
+    S --> if E then S . else S  ; <any>
+  Shifting corresponds to interpretation (1) and reducing to interpretation (2).
+
+The ambiguity can be eliminated by introducing auxiliary nonterminals M (for matched statement) and U (for unmatched statement):
+  # then..else 之间 必须使用 内敛式/自截型/M 以防错配
+  S --> M
+  S --> U
+  M --> if E then M else M
+  M --> other
+  U --> if E then S
+  U --> if E then M else U
+    ???无歧义???
+    无歧义 只是针对于 LR1 而言，(对LL1而言显然歧义)
+      U的生成规则里i(S | M) 的 区分(reduce-reduce conflict) 就靠后面的『else』
+===
+]]]
+[[
+抽象语法树丷具象语法树
+AST==abstract_parse_tree==abstract_syntax_tree
+CST==concrete_parse_tree==concrete_syntax_tree
+
+CST:
+  具象语法本身是为了适配抽象语法于所用翻译器而作大量窜改:增加辅助用关键词，增加辅助用母符，调整树状结构
+  缺点=>不能用作对外接口类型:
+  * 毛病一: 含冗余信息(解析期辅助用词符)
+  * 毛病二: 树状结构依赖于具象语法
+AST:
+  #用作对外接口类型
+  * 不含关键词辻标点符号
+  * 树状结构清楚体现语义(不考虑编译器实现)
+  * 不含语义值纟母符，可能含语义值纟料符，但含源文件内位置信息
+      除此之外，AST类似ADT/GADT
+        #抽象数据类型？代数数据类型？
+        ADT==abstract_data_type?algebraic_data_type?
+        GADT==Generalised_Algebraic_Data_Type
+        #ADT:abbr. 抽象数据类型（Abstract Data Type）；自动数据变换（Automatic Data Translator）；平均日交通量（Aaverage Daily Traffic）
+        #ADTS:abbr. 自动数据远程通信服务（Automated Data and Telecommunications Service）
+        #ADTAC:abbr. Automatic Data Tracking Analyzer Computer
+
+parser4inner :: concrete_syntax_grammar -> src -> concrete_syntax_tree
+parser4outer concrete_syntax_grammar -> src -> abstract_syntax_tree
+
+lexical_analysis >>> parsing >>> semantic_analysis(type_checking)
+
+<<==:
+Such a parse tree, which we will call a concrete parse tree representing the concrete syntax of the source language, is inconvenient to use directly. Many of the punctuation tokens are redundant and convey no information - they are useful in the input string, but once the parse tree is built, the structure of the tree conveys the structuring information more conveniently. 
+Furthermore, the structure of the parse tree depends too much on the grammar! The grammar transformations shown in Chapter 3 - factoring, elimination of left recursion, elimination of ambiguity - involve the introduction of extra nonterminal symbols and extra grammar productions for technical purposes. These details should be confined to the parsing phase and should not clutter the semantic analysis. 
+An abstract syntax makes a clean interface between the parser and the later phases of a compiler (or, in fact, for the later phases of other kinds of program-analysis tools such as dependency analyzers). The abstract syntax tree conveys the phrase structure of the source program, with all parsing issues resolved but without any semantic interpretation. 
+Many early compilers did not use an abstract syntax data structure because early computers did not have enough memory to represent an entire compilation unit's syntax tree. Modern computers rarely have this problem. And many modern programming languages (ML, Modula-3, Java) allow forward reference to identifiers defined later in the same module; using an abstract syntax tree makes compilation easier for these languages. It may be that Pascal and C require clumsy forward declarations because their designers wanted to avoid an extra compiler pass on the machines of the 1970s.
+
+
+the source-file position of each node of the abstract syntax tree must be remembered, in case that node turns out to contain a semantic error.
+
+]]
+[[
+TODO:LR0状态集并行态歧义森林
+state_stack --> 并行帧
+并行帧 = {shared_ref<前一帧>, WeakValueDict{词符:(句型辻位置,weak_ref<下一帧>)}}
+并行:
+  reduce-reduce-conflict
+  shift-reduce-conflict
+]]
+
+[[
+The grammar transformations shown in Chapter 3 - factoring, elimination of left recursion, elimination of ambiguity - involve the introduction of extra nonterminal symbols and extra grammar productions for technical purposes.
+===
+eliminating left recursion
+Grammars with left recursion cannot be LL(1).
+  E --> E "+" T
+  E --> T
+  即:
+  E --> (T "+")* T
+To eliminate left recursion, we will rewrite using right recursion. We introduce a new nonterminal and write:
+  E --> T E'
+  E' --> "+" T E'
+  E' --> []
+  即:
+  E --> T ("+" T)*
+
+语法变换:左递归讠右递归
+  X --> X a
+  X --> X b
+  X --> y
+  X --> z
+  <==>:
+  X --> (y | z) (a | b)*
+  <==>:
+  X --> (y | z) X'
+  X' --> (a | b)*
+  <==>:
+  X --> (y | z) X'
+  X' --> (a | b) X'
+  X' --> []
+  <==>:
+  X --> y X'
+  X --> z X'
+  X' --> a X'
+  X' --> b X'
+  X' --> []
+证明:[语法变换:左递归讠右递归:必然可以实现]
+  [[
+  #eliminating left recursion
+  [每一个母符 可以 展开成 爆头拟树，展开 过程中 遇到 首符 是 左递归母符 的 则 该首母符 展开成 带祖宗耂爆头拟子树]
+      view others/数学/编程/设计/语法升级序列.txt
+  左递归处 不再是 入口，而成为 后退分支之一
+    后退:即:句型中的识别点右移:即:子节点指向父节点
+    后退发生分叉，则新增母符用于原地断尾暨新增分流
+  ]]
+
+===
+left factoring
+  提取共同前缀
+We have seen that left recursion interferes with predictive parsing, and that it can be eliminated. A similar problem occurs when two productions for the same nonterminal start with the same symbols. For example:
+  S --> A B
+  S --> A C
+  S --> A
+In such a case, we can left factor the grammar - that is, take the allowable endings ("B" and "C" and "") and make a new nonterminal X to stand for them:
+  S --> A X
+  X --> B
+  X --> C
+  X --> []
+The resulting productions will not pose a problem for a predictive parser.
+
+===
+LR parsing of ambiguous grammars
+  ==见上面:消除冫歧义性纟折合单前瞻左起右展识别器
+
+===
+]]
+
+]]]]]]]
+
+

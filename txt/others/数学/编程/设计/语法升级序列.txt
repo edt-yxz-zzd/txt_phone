@@ -1,0 +1,3540 @@
+
+e others/数学/编程/设计/语法升级序列.txt
+view others/数学/编程/设计/词符串化框架.txt
+view ../../python3_src/seed/recognize/regex/RegexLiteral.py
+TODO:goto
+
+
+[[
+目录:
+  导入
+  语法书:
+    #SBNF:极简语法
+    *tr_AST5TOKENS4SBNF_6SBNF
+    *[fail:]tr_TOKENS5TEXT4SBNF_6SBNF
+
+    #UBNF:词符串化专用语法牜拆包忽略牜用户自定义止符串紧凑表达牜用户自定义止符查询集合牜句子构造器纟原貌止符串
+    *tr_AST5TOKENS4UBNF_6UBNF
+    *tr_TOKENS5TEXT4UBNF_6UBNF
+
+    #SLL1:极简左起内敛语法
+    *[dirty]tr_AST5TOKENS4SLL1_6SLL1__ver1
+    *[clean]tr_AST5TOKENS4SLL1_6SLL1__ver2:tr_AST5TOKENS4SLL1_6SLL1
+    #LVCE_LL1:LVHT4B_NTCE_LL1:深度路由头符集局部可见耂单前瞻左起识别语法/表达式局部可控耂全母符内敛耂单前瞻左起识别语法
+    *tr__AST5TOKENS4LVCE_LL1__6LVCE_LL1
+    #LDLV_LL1:深度路由丮欤允空丶头符集丶尾前瞻符集厈局部声明局部可见耂单前瞻左起识别语法
+    *tr__AST5TOKENS4LDLV_LL1__6LDLV_LL1__ver1
+    #TODO:*tr__AST5TOKENS4LDLV_LL1__6LDLV_LL1__ver2
+
+    #DRL:数据表达用语言
+    *[fail:]tr_TOKENS5TEXT4DRL_6SLL1__ver1
+    *独立耂内嵌式注释格式
+    *独立耂内嵌式字符串格式
+    *专用语牜保存词符串
+    *超符串牜保存词符串
+    *超文本牜抽象型格+扩展:超文本树牜抽象型格
+    *超文本牜极简模式
+    *TSRL:文本串表达用语言
+    *TSSRL:文本串串表达用语言
+    *DSSRL:数据串串表达用语言
+    *框架冫基础数据类型表达用语言
+    *框架冫行前缀文件格式
+      *框架冫行前缀文件格式牜版本一
+      *框架冫行前缀文件格式牜版本二
+    *ADTRL:抽象数据类型表达用语言
+    #*TODO:零前瞻状态集并行态歧义森林
+    #*TODO:模拟正则表达式的句子合法性判定器:完整剩余后缀句型尾汇拟树(允许:左递归,但麻烦)
+
+    #RLL1:半人工单前瞻左起识别语法
+    *tr_AST5TOKENS4RLL1_6RLL1
+
+    #LMFP_LL1:标签耂复式耂腹叉耂点选耂山语法
+    *tr__AST5TOKENS4LMFP_LL1__6LMFP_LL1
+
+    #LMP_LL1:标签耂复式耂点选耂山语法
+    *tr__AST5TOKENS4LMP_LL1__6LMP_LL1
+
+]]
+[[
+导入:
+view others/数学/编程/术语/语法术语冫汉化.txt
+  [代符 == 配符 := (terminal_symbol|nonterminal_symbol)]
+  [词符 == 员符 == 儿符 := (terminal_symbol|token)]
+  [展符 == 母符 := nonterminal_symbol]
+  [止符 == 种符 := terminal_symbol]
+  [重符 == 料符 := token]
+  ===
+  定稿:[母符,种符,料符,词符,代符,词料,段址,起址,讫址]
+  ===
+
+view others/数学/编程/术语/grammar.txt
+  V/vocabulary/symbols:
+    [V =[def]= N \-/ T]
+  ？词汇 必须是 有限大集合？
+
+view others/数学/编程/编译/翻译框架设计-摘要.txt
+  type File fmt dat
+  type VirtualMachine language dat
+  [tr_X5Y_6Z :: File Z (@dat. File Y dat -> File X dat)]
+      翻译诀(本文件格式:=Z,输入文件格式:=Y,输出文件格式:=X)
+  [tr_X5Y_9Z :: VirtualMachine Z (@dat. File Y dat -> File X dat)]
+      翻译器(本程序所处运行平台语言:=Z,输入文件格式:=Y,输出文件格式:=X)
+
+]]
+
+
+
+
+？词汇 必须是 有限大集合？
+  也许:可以是 无限大集合:整数
+  或者:伪无限大:unicode_char_pt
+
+  也许:可以有:
+    +紧凑表达纟止符串常量
+      #[terminal_symbol:=char]
+      # "abc012"
+    +紧凑表达纟止符集
+      #[terminal_symbol:=int]
+      # [0..<16]
+      # [0..]
+    +紧凑表达纟展符集
+      #[nonterminal_symbol:=str]
+      # glob: "prefix_*_suffix"
+      # regex: "prefix_.*"
+      用于:批量选择
+
+我的命名规范:
+  名纟展符: regex"[a-z艹]\w*"
+    变量 end
+  名纟止符: regex"[A-Z灬]\w*" 或者 字面量纟字符串
+    常量 END
+
+token/tkn:
+  .tkey #terminal_symbol
+  .tdat #oresult4token
+
+允空:nullable
+非空:non_nullable
+
+TODO:内敛-翻译:
+  内敛识别器:inextensible,closed-end
+    vs:非内敛识别器/前瞻贪婪识别器:extensible,open-ended
+
+LL1错位表达:
+  (C A)* (C B)
+  <==>
+  C (A C)* B
+
+
+[[
+不同用途语法对比:
+  grammar4tokenization
+    #符串化用语法
+    #?料符串化用语法
+    #词符==(种符|料符)
+    #   抽象一点:词符串化
+    #   具象一点:料符串化
+    词符串化用语法
+  grammar4recognization
+    #解析识别用语法
+    树状化用语法
+===
+词符串化用语法 不太可能是 LL1, 甚至 不是 CFG(back_reference)
+  正则表达式 使用 非确定型有限状态机 类比于 LL1
+  正则表达式{扩展:后方引用/回顾性引用} 不是 CFG，使用 回溯算法
+  词符串化用语法 不能融入 解析识别用语法
+  还得另外设计一种语法？
+    不过，解析识别用语法 的 抽象结果 是 树状/抽象语法树
+    而 词符串化用语法 的 抽象结果 是 线性/(种名,字符串)
+    所以 词符串化用语法 也可能不会特别复杂:
+      +任何中间母符都无需考虑后处理:匿名==>>可以使用括号表达式(嵌套)
+      +？正则表达式？:禁止嵌套自身(循环引用){但允许尾递归/尾循环引用:但尾递归前非空}:禁止引用母符或只能引用低级母符{允许同级母符尾递归}
+      +不用考虑生成路径歧义性:允许歧义==>>选中最长匹配
+      +全局统一处理冫噪声:自动跳过词符之间的噪声
+        全局假设:噪声vs料符:
+          [{} == 头符集纟噪声/-\头符集纟料符]
+          甚至:直接假设 噪声是单字符
+            但一般噪声包括:注释
+      +全局统一处理冫杀青:遭遇『杀青符/收尾符/告成符』则停止算法
+          杀青时是否发送词符EOF?
+      +内建专用后处理纟大量常量字符串:使用tdat作为tkey
+===
+]]
+[[
+内敛式与尾限式
+[欤内敛式扌(句型表达式) =[def]= [{} == 尾前瞻符集纟(句型表达式)]]
+  #句型表达式 = 代符@(种符 | 母符) | 串联式 | 并联式 | 重复式 | 尾限式 | 断言式/空式牜断言 | 载入常量耂空式/空式牜常量 | 匹配常量符串式 | ...
+  #     #具名式@母符|引用式|裹式牜外赋成果后处理
+  #sentential_form:句型
+  [{种符,母符} <: 代符 <: 句型 <: 句型表达式]
+复式:
+  重复式==(庸复式|诡复式)==(定长复式|变长复式)
+  庸母符==(母符|庸复式纟母符)
+  庸种符==(种符|庸复式纟种符)
+  庸空式==(空式|庸复式纟空式)
+  定理: [LL1无歧义->不得使用冫诡复式纟允空式]
+  定理: [LL1无歧义->不存在冫诡空式]
+  [{并联牜允空,串联牜等效尾为诡复式} 导致 尾前瞻符集 非空]
+串联:
+  定理: [LL1无歧义->[前提{串联扌(A,B)}]->[{} == 尾前瞻符集纟(A)/-\头符集纟(B)]]
+  定理: [LL1无歧义->[max>1]->[前提{复式{min,max}(A)}]->[{} == 尾前瞻符集纟(A)/-\头符集纟(A)]]
+局部可控性<<==局部声明<<==命名区分:
+  比如:代符的命名，若不区分 种符,母符，则有些语义无法体现在语法中，局部可控性下降。
+  可考虑:通过给标识名附加标签继续细分母符
+  #以下假设:CFG
+  #以下假设:为简化表达，句型表达式 只使用 (空式|代符|复式纟代符|庸空式)
+  #
+  #以下假设:所有空式都内敛(<<==CFG假设)(前瞻型断言式-不是这类空式)
+  #     空式:用于加载常量语义值/或者报错
+  #     死式:用于报错
+  #以下假设:空式 即 必空 即 内敛且必空
+  命名标签:
+    欤母符
+    欤母符牜允空
+    欤母符牜非空
+    欤母符牜内敛
+    欤母符牜必空==欤母符牜允空&&欤母符牜内敛
+      允空+内敛 <==> 空式
+  头符集局部可见
+  母符牜头符集局部可见
+    非空分支前缀 ::= (庸空式|允空庸种符)* 非空庸种符
+    允空分支 ::= (庸空式|允空庸种符)*
+  尾前瞻符集局部可见
+  母符牜尾前瞻符集局部可见
+    允空 ==>> 头符集局部可见
+    非空分支后缀 ::= (非空庸母符牜内敛|非空庸种符) (庸空式|允空庸种符)*
+    允空分支 ::= (允空庸母符牜内敛)? (庸空式|允空庸种符)*
+  母符牜内敛==母符牜无尾前瞻符集
+    !! 允空+内敛 <==> 空式
+    允空 ==>> 空式
+    唯一分支牜必空 ::= 庸空式*
+    非空分支后缀 ::= 非空庸母符牜内敛 庸空式*
+      泛化:非空分支后缀 ::= 句型表达式纟非空内敛 庸空式*
+[任何一个非内敛式均可通过后附一个尾前瞻符集之外的词符来转化为内敛式]
+  # 如:虚拟符 <eof>
+  =>这就是『尾限式/end_by_』的由来
+若所有母符的展开式都是非空内敛式，则可简化LL1，去除『继符集』『尾前瞻符集』:
+  [SLL1==极简左起内敛识别器==极简内敛LL1{--:只保留"*+?"}<:左起内敛识别器==内敛LL1{++:全母符非空内敛}<:LL1==单前瞻左起识别器==分路单前瞻左起左展识别器]
+    #前瞻单员符-->单前瞻
+  并联分支/串联:(扩展版尾限式):『"|" (母符 后缀算子纟重复式?)* 母符 非零定长重复?』
+    只需确认串联式内部成分 头符集 没有冲突就行
+===
+[LL1 == LL(1) =[def]= stands for『Left-to-right parse, Leftmost-derivation, 1-symbol lookahead.』]
+  LL1==分路单前瞻左起左展识别器
+    从左到右 输入 词符流
+    从左到右 展开 规则句型
+        #生成规则 最左母符 率先识别(率先展开)
+    单前瞻-预读/前瞻单词符
+[LR1 == LR(1) =[def]= stands for 『Left-to-right parse, Rightmost-derivation, k-token lookahead.』]
+  LR1==折合单前瞻左起右展识别器
+  LR0==折合零前瞻左起右展识别器
+  LALR1==LA1LR0==LA(1)LR(0)
+
+a hierarchy of grammar classes:
+  [ambiguous_grammar < grammar]
+  [unambiguous_grammar < grammar]
+  [LL(k) < LR(k) < unambiguous_grammar]
+  [LR(k) < LR(k+1)]
+  [LL(k) < LL(k+1)]
+  [LR(0) < SLR < LALR(1) < LR(1)]
+  #不相互包含:
+  [LL1 - LALR1 > {}]
+  [LALR1 - LL1 > {}]
+  [LL2 - LR1 > {}]
+  [LR1 - LL2 > {}]
+  ##等等:LL0是啥？
+  #     难道是 『规范型:规则右侧句型非空且最左代符必是止符』
+  #         每次分路 不是『前瞻』而『消耗』
+  #     Real-Time Normal Form ::= every rule starts with a terminal
+==>>:
+应该实现的有:
+#要不要:包含『*+?』感觉会很麻烦
+#SLL1==我的:全母符非空内敛LL1
+#LVCE_LL1==LVHT4B_NTCE_LL1==我的:深度路由头符集局部可见耂单前瞻左起识别语法/表达式局部可控耂全母符内敛耂单前瞻左起识别语法
+#   (LV:深度路由头符集局部可见:locally-visible-headfirst-terminal_symbols-for-branching)#?visibility?visual
+#   (CE-全母符内敛:all-nonterminal_symbols-closed-end)
+#   应该相当于SLL1
+#   不同之处在于，由SLL1翻译成LVCE_LL1:使用 诡复式 时 需得 展开SLL1母符 直至爆头(局部可控性)
+#       因此，允许 复杂表达式，故而 不是『极简』
+#   相比于SLL1，看似无需计算母符的 头符集，实则 局部可见的就地计算头符集
+#LDLV_LL1:深度路由丮欤允空丶头符集丶尾前瞻符集厈局部声明局部可见耂单前瞻左起识别语法
+#   (LDLV:深度路由丮欤允空丶头符集丶尾前瞻符集厈局部声明局部可见:locally-declared-locally-visible-(nullable-nonterminal_symbols&&headfirst-terminal_symbols&&tail-lookahead-terminal_symbols)-for-branching)
+#RLL1==我的:半人工单前瞻左起识别语法==冗述割集信息耂腹叉式后处理耂分路单前瞻左起左展识别器
+#RTNF_LL1==Real_Time_Normal_Form_LL1
+#   RTNF:母符非空:没有『*?』『nonterminal+』，但可以有复式『terminal+』(但这样一来就不是LL1)
+#   ==>> RTNF_LL1 『没有:复式』『母符非空』
+#   ==>> RTNF_LL1 < SLL1
+#   ==>> RTNF_LL1 == NoR_RTNF_SLL1
+#RTNF_SLL1==Real_Time_Normal_Form_SLL1
+#NoR_RTNF_SLL1==Real_Time_Normal_Form_SLL1__without_Repetition/?LL0? ==LL1{所有分支==函数名+固定数量参数列表}#极弱乃至无法表达自身语法 #句型==(止符 代符*)
+#RTER_SLL1==Real_Time_Extened_with_Repetition_SLL1==局域分路内敛LL1{串联内部复式需要前瞻} #句型==(止符|止符 复式* 代符)
+#??_LL1==???==LL1{所有母符-头符集局部可见&&尾前瞻符集局部可见;不必内敛，但{欤内敛,欤允空}(=>欤必空)必须体现在母符名中}
+new:RTNF_LL1 < RTNF_SLL1 < LVCE_LL1 ~= SLL1 < LL1 ~= RLL1
+  ???bug@old:NoR_RTNF_SLL1 < RTNF_SLL1 < {RTNF_LL1,SLL1} < LL1 ~= RLL1
+  * 稍微麻烦:LL1,RLL1 使用 继符集 或 尾前瞻符集; 需要确认串联内部复式无歧义,需要确认复式自身无歧义
+  * 简单:SLL1 只使用 头符集，头符集 计算 需递归; 需要确认串联内部复式无歧义,无需要确认复式自身无歧义
+  * 更简单:RTER_SLL1 只使用 头符集，头符集 计算 无需递归; 需要确认串联内部复式无歧义,无需要确认复式自身无歧义
+  * 极简单:RTNF_LL1==RTNF_SLL1==NoR_RTNF_SLL1 只使用 头符集，头符集 计算 无需递归; 无复式=>无歧义
+
+LR0 < SLR < LALR1
+  稍微麻烦:SLR,LALR1 使用 FOLLOW_set
+  更简单:LR0 #状态的闭合运算==>>隐式 FIRST_set
+
+]]
+[[
+？歧义与回溯？
+？后方引用与回溯？
+歧义的由来:
+  *并联分支 生成的子句 是另一分支的前缀
+    比如: 重复式:(a*)
+歧义的避免:
+  基础:LL1:
+    非空并联:A|B =
+      | A (?=[^尾前瞻符集纟(A)])
+      | B (?=[^尾前瞻符集纟(B)])
+    贪婪允空并联:A? =
+      | A (?=[^尾前瞻符集纟(A)])
+      | (?=[^头符集纟(A)])
+    #
+    前置条件纟非空并联纟(A,B)==『A|B』前置条件:
+      [A非空]
+      [B非空]
+      [{} == 头符集纟(A)/-\头符集纟(B)]
+    [尾前瞻符集纟非空并联(A,B) == 尾前瞻符集纟(A)\-/尾前瞻符集纟(B)]
+    [头符集纟非空并联(A,B) == 头符集纟(A)\-/头符集纟(B)]
+    #
+    前置条件纟贪婪允空并联纟(A)==『A?』前置条件:
+      [A非空]
+    [尾前瞻符集纟贪婪允空并联纟(A) == 尾前瞻符集纟(A)\-/头符集纟(A)]
+    [头符集纟贪婪允空并联纟(A) == 头符集纟(A)]
+    #
+母符非空，但表达式允空:『A*』『A?』
+  SLL1似乎不能表达『A{0..=n}』
+    ???需得内建支持
+    * 0:非法@SLL1
+      『A? A?』歧义@LL1
+    * 1:非法@SLL1
+      A_le_(n) = (A A_le_(n-1))?
+      A_le_(1) = A?
+      SLL1要求串联以标识名(代符)结尾
+        缺:『"&$" nm4vocabulary_symbol』
+    * 2:非法@SLL1
+      A{0..=3} = (A (A (A )?)?)?
+      SLL1不含嵌套表达式
+buggy:TODO:fix it:
+??  复杂牜通用:
+??    A B
+??    前置条件纟通用串联纟(A,B)==『A B』前置条件:
+??      [A允空]
+??      [B非空]
+??      [{} == 尾前瞻符集纟(A)/-\头符集纟(B)]
+??    [头符集纟(A B) == 头符集纟(A)\-/[A允空]:头符集纟(B)]
+??    [尾前瞻符集纟(A B) == 尾前瞻符集纟(B)\-/[B允空]:尾前瞻符集纟(A)]
+??      #[B允空]:适用于:专用情形
+??
+??    A? =
+??      | A
+??      | (?=[^头符集纟(A)])
+??    前置条件纟通用窢选纟(A)==『A?』前置条件:
+??      [A非空]
+??    [头符集纟(A?) == 头符集纟(A)]
+??    [尾前瞻符集纟(A?) == 尾前瞻符集纟(A)]
+??
+??    A* = A* (?=[^尾前瞻符集纟(A)]) =
+??      | A A* (?=[^尾前瞻符集纟(A)])
+??      | (?=[^头符集纟(A)]) (?=[^尾前瞻符集纟(A)])
+??    前置条件纟通用重复纟(A)==『A*』前置条件:
+??      [前置条件纟通用串联纟(A,A)]
+??      <==>
+??      [A非空]
+??      [{} == 尾前瞻符集纟(A)/-\头符集纟(A)]
+??    [头符集纟(A*) == 头符集纟(A)]
+??    [尾前瞻符集纟(A*) == 尾前瞻符集纟(A)\-/头符集纟(A)]
+??
+??    A* B =
+??      | A A* B
+??      | B
+??    前置条件纟通用尾限纟(A,B)==『A* B』前置条件==『A? B』前置条件:
+??        [A非空]
+??        [B非空]
+??        [{} == 头符集纟(A)/-\头符集纟(B)]
+??        [{} == 尾前瞻符集纟(A)/-\头符集纟(B)]
+??          !! [前置条件纟通用串联纟(A,B)]
+??    [头符集纟(A* B) == 头符集纟(A)\-/头符集纟(B)]
+??    [尾前瞻符集纟(A* B) == 尾前瞻符集纟(B)\-/[B允空]:尾前瞻符集纟(A*)]
+??      #[B允空]:适用于:专用情形
+??  复杂牜专用:
+??    (... A*)* B
+??    #####
+??    命名约定:
+??      X: 通用式: 尾部禁用非定长重复式
+??      X_: 专用式: 尾部允许非定长重复式
+??    #####
+??    A_* B #使用:顶层专用式A_
+??    A_ B_ #专用串联式
+??
+??歧义的避免:
+??  *显式并联分支:有限前缀确认分支
+??    如:LL1
+??    显式并联分支:非空
+??  *隐式并联分支:要求反前缀:
+??    比如:重复式 改用 重复式带结束式(或:不回溯贪婪重复式)
+??    比如:重复式 改用 重复式带结束式带分隔式(或:不回溯贪婪重复式带分隔式)
+??    通用串联式不以重复式结尾
+??      但 串联式冃体式纟重复式可以重复式结尾
+??      允许冫重复式耂体式耂专用串联式以重复式结尾
+??      重复式耂体式耂专用串联式vs通用串联式
+??      重复式耂体式耂允空专用式 =
+??        | 重复式耂体式耂专用串联式
+??        | 允空表达式
+??        #重复式耂体式耂专用串联式 虽然也允空，但是 特定场合专用 而 允空表达式 通用于各处，非只用于 重复式耂体式
+??      重复式耂体式耂专用串联式 =
+??        # 允空
+??        允空表达式*
+??        <==>
+??        | pass
+??        | 允空表达式 重复式耂体式耂专用串联式
+??        # A* B* C*
+??        # A B C
+??      通用串联式 =
+??        # 非空
+??        允空表达式* 非空表达式
+??        <==>
+??        # A* B* T
+??        # A B T
+??      允空表达式 =
+??        | 非空表达式
+??        | 非空表达式 "*"
+??        | 非空表达式 "?"
+??      非空表达式 =
+??        | 非空母符
+??        | 允空表达式+ 非空表达式
+??          #| 通用串联式
+??        | 通用并联式
+??        | 内建非空构成式
+??            #end_by_...
+??
+??    #####
+??    尾限式/重复式带结束式:
+??    end_by_(tail;body)
+??    end_by_(A; B)
+??      B* A
+??      <==>
+??      | A
+??      | B end_by_(A; B)
+??
+??    end_by_(end_by_(A; B); C)
+??      C* B* A
+??      <==>
+??      | end_by_(A; B)
+??      | C end_by_(end_by_(A; B); C)
+??      <==>
+??      | A
+??      | B end_by_(A; B)
+??      | C end_by_(end_by_(A; B); C)
+??
+??    end_by_(A; B C*)
+??      #<<== sep_end_by0_(A,B;C)
+??      (B C*)* A
+??      <==>
+??      | A
+??      | (B C*) end_by_(A; B C*)
+??      <==>
+??      | A
+??      | B end_by_(end_by_(A; B C*);C)
+??      <==>
+??      | A
+??      | B end_by_(A; B C*)
+??      | B C end_by_(end_by_(A; B C*);C)
+??      <==>
+??      | A
+??      | B A
+??      | B B end_by_(end_by_(A; B C*);C)
+??      | B C end_by_(end_by_(A; B C*);C)
+??    如:LL1:要求:
+??      B* A
+??      [{} == (头符集纟(B)/-\尾前瞻符集纟(B))/-\头符集纟(A)][A非空][B允空]
+??      B A
+??      [{} == (尾前瞻符集纟(B))/-\头符集纟(A)][A非空][B允空]
+??      ######obsolete:
+??      B* A
+??      [{} == 头符集纟(B)/-\头符集纟(A)][A非空][B允空]
+??      C* B* A
+??      [{} == 头符集纟(C)/-\头符集纟(B)/-\头符集纟(A)][A非空]
+??      (B C*)* A
+??      [{} == 头符集纟(C)/-\头符集纟(B)/-\头符集纟(A)][A非空]
+??    #####
+??    无需概念:继符集
+??    #####
+??    需概念:头符集
+??    [头符集纟(end_by_(A;B))==头符集纟(B)\-/头符集纟(A)]
+??    [头符集纟(end_by_(A; B C*))==([B允空]:头符集纟(C))\-/头符集纟(B)\-/头符集纟(A)]
+??      串联式牜以重复式结尾冃体式纟重复式
+??      特化之，以强调:通用串联式不以重复式结尾vs允许冫重复式耂体式耂专用串联式以重复式结尾
+??    #####
+??    需概念:尾前瞻符集
+??    #这里:重复式:非静态确定重复数的重复式
+??    #   尾:去除任意多允空子式后的尾式
+??    #重命名:尾非定长重复式耂头符集-->尾前瞻符集
+??    #   尾:全句可结束处(后部/弟部全部允空):贪婪前瞻失败则局部正常结束(后部允空但非必然空)
+??    #
+??    [尾前瞻符集纟(A B* C*) ==
+??      尾前瞻符集纟(A)
+??      \-/尾前瞻符集纟(B)
+??      \-/头符集纟(B)
+??      \-/尾前瞻符集纟(C)
+??      \-/头符集纟(C)
+??    ]
+??    [尾前瞻符集纟(B*) ==尾前瞻符集纟(B)\-/头符集纟(B)]
+??    ???要求:[[(B*)前置条件] -> [[{} == 尾前瞻符集纟(B)/-\头符集纟(B)][B非空]]]
+??      ???到头来:还是与使用:继符集 等价:没新意???
+??      但:
+??        构造难度不同，稳定性不同
+??        *稳定性不同:尾前瞻符集更稳定:
+??          *继符集 是 外赋性/父用全局性
+??          *尾前瞻符集 是 内禀性/自省局域性
+??        *???构造难度不同:尾前瞻符集更容易计算:
+??          由于 要求 通用串联式不以重复式结尾，所以 尾前瞻符集 无需考虑 递归，只在 当前串联表达式的子重复式 中计算
+??            ???但同等条件下，继符集也一样???
+??    #####
+??    核心语法:尾限式/重复式带结束式
+??    有用的简化语法(内建重载特定后处理):
+??      *贪复式/不回溯贪婪重复式
+??      *隔限式/重复式带结束式带分隔式
+??      *贪隔式/不回溯贪婪重复式带分隔式
+??    #####
+??    不回溯贪婪重复式
+??    greedy_multi(body)
+??    greedy_multi(A)
+??    <==>
+??    A* (?=[^头符集纟(A)])
+??      [A非空]
+??      使用:断言式:反性断言式
+??    <==>
+??    end_by_((?=[^头符集纟(A)]); A)
+??    [不回溯贪婪重复式 <: 重复式带结束式]
+??
+??    #####
+??    重复式带结束式带分隔式
+??    sep_end_by1_(sep,tail;body)
+??    sep_end_by1_(A,B;C)
+??    <==>
+??    C (A C)* B
+??      [{} == 头符集纟(B)/-\头符集纟(A C)][B非空]
+??      <==>
+??      [[[A非空] -> [[{} == 头符集纟(B)/-\头符集纟(A)][B非空]]
+??      ][[A允空] -> [[{} == 头符集纟(B)/-\(头符集纟(A)\-/头符集纟(C))][B非空]]]
+??      ]
+??
+??    sep_end_by0_(sep,tail;body)
+??    sep_end_by0_(A,B;C)
+??    <==>
+??    (C (A C)*)? B
+??      [{} == 头符集纟(B)/-\(头符集纟(A)\-/头符集纟(C))][B非空]
+??
+??    #####
+??    不回溯贪婪重复式带分隔式
+??    greedy_multi_sep_by1_(sep;body)
+??    greedy_multi_sep_by1_(A;B)
+??    <==>
+??    B (A B)* (?=[^头符集纟(A B)])
+??      [(A B)非空]
+??    <==>
+??    sep_end_by1_(A,(?=[^头符集纟(A B)]);B)
+??
+??    greedy_multi_sep_by0_(sep;body)
+??    greedy_multi_sep_by0_(A;B)
+??    <==>
+??    (B (A B)*)? (?=[^头符集纟(B)\-/头符集纟(A)])
+??      [B非空][A允空]
+??    <==>
+??    sep_end_by0_(A,(?=[^头符集纟(B)\-/头符集纟(A)]);B)
+??
+??    #####
+??    内建非空构成式:
+??      end_by_(非空表达式;重复式耂体式耂允空专用式)
+??      greedy_multi(非空表达式)
+??      sep_end_by1_(重复式耂体式耂允空专用式,非空表达式;重复式耂体式耂允空专用式)
+??      sep_end_by0_(重复式耂体式耂允空专用式,非空表达式;重复式耂体式耂允空专用式)
+??    #####
+
+  #####
+  [LL1无歧义=>[greedy<==>nongreedy]]
+    greedy更佳:
+      先检测 表达式冃体 #不特定数量
+      再检测 表达式冃尾 #反正 有且只有一个
+  #####
+结论纟歧义的避免:
+  *并联式牜有限前缀确认分支(==>>非空)
+  *串联式牜不以重复式结尾(==>>允空但不能是并联分支)
+  #####
+  基本上各式非空#极少量允空
+    空串基本只能用作靶符唯一生成规则
+      也许可以是 断言式+载入常量耂空式+匹配常量符串式@子式@构造参数纟父式
+  #####
+用作:词符串化用语法:
+  *greedy_multi:
+    标识名
+    数字
+  *end_by_:
+
+
+]]
+
+
+[靶符 := goal_symbol]
+
+[[
+单前瞻左起识别器:
+  [LL1 := 分路单前瞻左起左展识别器]
+  [RLL1 := 半人工单前瞻左起识别语法==冗述割集信息耂腹叉式后处理耂分路单前瞻左起左展识别器 == Redundant/Awkward/Foolish-LL1 == 冗长/难看/呆笨LL1]
+    [redundant-列出所有母符的(或者仅:割集纟自嵌套母符):头符集、尾前瞻符集、欤允空、最小句长]
+  腹叉式后处理/腹部分叉式后处理
+    | a b c d g
+    | a b e f g
+    -->
+    | a b (:
+      | c d >>- postprocess1
+      | e f >>- postprocess2
+      ) g
+    postprocess1(a,b,c,d,g)
+    postprocess2(a,b,e,f,g)
+    甚至可以考虑:分层识别:(显化LR1)
+    | X A
+    | Y B
+    X,Y distingusihed by prefix sentential_form: (W V | W U)
+    -->
+    | ?(W) => (:
+      | ?(V) => X A
+      | ?(U) => Y B
+      )
+      识别X于W,V,后续词符... 而非直接 词符流
+
+内敛识别器:
+  [内敛识别器 =[def]= [识别器 :=> 告成则不多读员符，失败则最多多读一员符]]
+  !! [LL1 ==>> 并联必然是平行并联]
+  !! [LL1 ==>> 不论成败最多多读一员符]
+  [左起内敛识别器 <: LL1]
+左起内敛识别器-内敛LL1:
+  头符集纟允空母符 含 继符纟允空母符
+  假设 唯一继符纟靶符 为 <eof>
+  [继符集纟靶符 == { <eof> }]:
+    『goal_symbol <eof>』
+    <eof>实际上 可能代表 任意 种符
+    任何情况下，头符集纟允空母符 不得出现 <eof>
+    ==>> 靶符非空
+    ==>> 靶符递降尾符非空
+  靶符内敛vs全内敛(所有具名母符内敛)
+    匿名表达式: 比如: 复式: x* , x? , x{0..=666}
+  [继符集纟靶符 == { <eof> }][全内敛(所有具名母符内敛)]:
+    end_by_(tail;body) = body*? tail
+    <==>
+    end_by_(tail;body) =
+      | tail
+      | body end_by_(tail;body)
+    <==>
+    !! [LL1 ==>> 并联必然是平行并联]
+    end_by_(tail;body) =
+      | body end_by_(tail;body)
+      | tail
+
+    ==>>
+    允许生成规则有如下形式:
+      『母符 --> ( nullable_expr* , nonnullable_expr )』
+      比如:
+        (x{0..} , y{0..=666} , z{1..})
+  [继符集纟靶符 == { <eof> }][靶符内敛]:
+    任一并联分支纟生成规则纟靶符有如下形式:
+      * (expr* , nonnullable_expr{内敛})
+      * [靶符只有唯一并联分支] => ()
+
+]]
+[[
+泛化LL1:三种方案:
+  * 不定长前导符串:前导符-->非定长前导符串，只是 这种 不定长前瞻 会 增加耗时
+  * 种符的属性函数辻关系表达式:种符集-->(属性值集合|真值判定谓语纟属性值|真值关系纟属性值):但是 要求 使用 同一属性函数 于 整个 路由关联领域 ，非空内敛式 将突显其重要性
+  * 种符集参数化母符:LL1前导符 可以看作 状态(类似 正则表达式 的 尾递归母符)，编码了长程后续宏观词组况态的状态，既然是编码，自然有极大可能是 正交化编码，参数化母符(以种符集为参数:任意 或者 标明)是合理自然的设计方案。
+      母符冃状态冃尾递归 --> 并联式
+      母符冃状态冃尾递归耂并联分支 --> 前导符冃补况态纟状态冃丮后续深入况态丶后续延续况态厈 后续受控深入部分冃树状递归 后续受控延续部分冃母符冃状态冃尾递归
+      ==>>:
+      起状态 --> 前导路由区分 负载 讫状态
+      ==>>:
+      状态 --> 补语 深入 延续
+        信息流动:[(状态+补语) => (深入+延续)]
+        所以:
+          * 补语 导出 信息:带输出型参数耂种符集#种符集型母符
+          * 深入/延续 导入 信息:参数化模板母符
+        参数是:种符/种符集/字符串/字符串冃种符/字符串冃种符集
+      ==>>:
+        + 串联宏观尾递归/FS/正则表达式
+        + 局部深入树递归/CFG/语境无关语法
+        其实，词符串化(tokenization)带状态栈也可以这样搞，即:宏观相态变化为正则表达式...
+      ==>>:
+        『子况态』？不太对，应当是『补况态』
+
+      ===
+      母符牜参数化{外部输入/模板参数::[变量名@种符集]}(内部引用/消耗的前导符串::[变量名@种符])
+    一元约束前导符 后续原子表达式
+    二元约束前导符 后续原子表达式甲 后续原子表达式乙
+    二元后续前导符牜一符方案一符传导{}(x) 后续原子表达式甲{x} 后续原子表达式乙{x}
+
+]]
+
+
+
+[[
+极简语法:SBNF:simplified_BNF
+  『:=』: 并联/别名#别名:用于:附加后处理
+  『.=』: 串联/Concatenation
+  没有:嵌套表达式#括号/Grouping
+    no: 『(a)』
+  没有:串联乊并联分支
+    no: 『a b | c』
+      产出:(a,b) (c,)
+    别名:因为 串联 产出 tuple，并联 并不希望如此
+  没有:拆包、忽略
+    假设无噪声(已删除:空格、注释)
+    用于:parser/recognizer
+  没有:输出类型
+  有:复式-循环标记:『*』『+』『?』
+    没有:复式-数组型后缀
+
+极简语法牜用户自定义止符串紧凑表达:
+  比如:表达 语法纟符串化 时，使用 字符串常量 匹配 字符串
+  语法形式: @tkey_seq=[<tag:raw_string:tag>]
+    seq4tkey = scene.mk_token_key_seq(raw_string)
+    [seq4tkey :: [tkey]]
+    [tkn.tkey :: terminal_symbol]
+极简语法牜用户自定义止符查询集合:
+  #tokenization:符串化/词符串化
+  比如:表达 语法纟符串化 时，使用 正则表达式 匹配 字符集
+  语法形式: @tkey_qset=[<tag:raw_string:tag>]
+    qset4tkey = scene.mk_token_key_query_set(raw_string)
+    query: (tkn.tkey in qset4tkey)
+    or: query: qset4tkey.is_good_tkey(tkn.tkey)
+极简语法牜句子构造器纟原貌止符串:
+  意图:语法纟符串化 符串化 自身语言
+
+词符串化专用语法牜拆包忽略牜用户自定义止符串紧凑表达牜用户自定义止符查询集合牜句子构造器纟原貌止符串:UBNF:simplified_BNF__extended_unpacking__extended_userdefined_tkey_qset__extended_userdefined_tkey_seq__extended_raw_string_rule
+  [UBNF <: 极简语法牜用户自定义止符串紧凑表达]
+  [UBNF <: 极简语法牜用户自定义止符查询集合]
+  因为上面两种特性使用了『原貌止符串』&& 要求不假外力(除了:用户自定义止符查询集合) 符串化 自身语言==>>:
+    [UBNF <: 极简语法牜句子构造器纟原貌止符串]
+  ===
+  假设含噪声(未删除:空格、注释)
+  用于:tokenizer
+  串联:
+    -噪声*  ...子元组  元素
+  并联分支:
+    #有且只有一个串联元素: 不被忽略:
+    -噪声*  元素  -噪声*
+  偏右链表:
+    ; xs := ...-> lnkls
+    # xs --> Array<x>
+    #   『...->』拆包冫偏右链表讠数组
+    #xxx: ; lnkls0 := lnkls1?
+    ; lnkls0 := | lnkls1 | ()
+    # lnkls0 --> RLnkLs<x>
+    # () --> 定长数组
+    #     [定长数组 <: 数组]
+    #     [定长数组 <: 元组]
+    ; lnkls1 .= x sep_lnkls1*
+    ; sep_lnkls1 := -"," lnkls1
+  ===
+  TODO:++集合运算纟止符查询集合
+  TODO:++Token.cache4external_app
+    缓存集合查询结果
+    dynamic_private_symbol as key
+      val :: {qset:bool}
+  TODO:++Position4Gap.cache4external_app
+    缓存该地址作为起地址时的匹配结果
+    dynamic_private_symbol as key
+      val :: {vocabulary_symbol:reply{end,eresult}}
+  ===
+
+极简语法牜带输出类型:TBNF:simplified_BNF__extended_typed_oresult
+  用于:自动识别哪些展符的后处理是必要的
+    后处理纟展符-scene.get_may_postprocess5symbol(symbol:vocabulary)
+      有的必须非None <<== 类型 不匹配:
+        类型纟输出纟展符纟处理前
+        类型纟输出纟展符纟处理后
+    别名纟类型纟输出纟展符==名纟展符
+    类型纟输出纟展符纟串联牜处理前==tuple<len>=???(后处理+拆包:导致不确定),...>
+        拆包牜不定长:只能用于数组:父数组-子数组/子偏右链表
+        拆包牜定长:能用于:
+          数组:父数组-子数组
+          元组:父元组-子元组
+            元组静态定长
+          [定长数组 <: 数组]
+          [定长数组 <: 元组]
+            扩展:复式-数组型后缀
+        声明:可拆包牜作为元组:
+          要求:类型纟输出纟展符牜处理后==元组
+        声明:可拆包牜作为数组巛子数组:
+          要求:类型纟输出纟展符牜处理后==数组
+        声明:可拆包牜作为数组巛子偏右链表:
+          要求:类型纟输出纟展符牜处理后==偏右链表
+极简语法牜带数组型复式:
+  x{n,m}
+  x[n:m+1]
+  x[n..<m+1]
+  x[n..=m]
+  x[n:m+1:%y] #类似 分隔符 插入...
+
+极简语法牜带动态额外参数:
+  动态额外参数:输入+输出
+  见:分类冫后处理.内禀型后处理
+  识别器纟产生数据纟后方引用
+    back_reference 逆向引用/追溯引用/后方引用/后顾引用/回顾性引用
+    nonterminal_symbol4mk_data4back_reference
+    nonterminal_symbol
+      --> !nonterminal_symbol(&output,...; input,...)
+      xxx: --> !<mkr4nonterminal_symbol(input...)>(&output,...; input,...)
+    串联分支:
+      『, ...』
+      -->
+      『, ... -> oresult4intrinsic...』
+    并联分支:
+      『| ...』
+      -->
+      『| ... -> oresult4intrinsic...』
+
+极简语法牜带静态模板展开:
+  ; x(a) = ... where a <- ...
+
+]]
+
+
+
+
+
+[[
+SBNF:
+SBNF_6SBNF ::=
+tr_AST5TOKENS4SBNF_6SBNF ::=
+  ^^^ grammar_6SBNF
+  ; grammar_6SBNF .= marker4goal nm4goal_symbol sentence_6SBNF* sep4stmt*
+  ; nm4goal_symbol := nm4nonterminal_symbol
+  ; sentence_6SBNF .= sep4stmt+ nm4nonterminal_symbol op4eq term*
+  ; term .= nm4vocabulary_symbol op4repetition?
+  ; nm4vocabulary_symbol :=
+      nm4nonterminal_symbol
+      nm4terminal_symbol
+  ; nm4nonterminal_symbol := "NONTERMINAL_SYMBOL"
+  ; nm4terminal_symbol := "TERMINAL_SYMBOL"
+  ; marker4goal := "^^^"
+  ; sep4stmt := ";"
+  ; op4eq :=
+      ":=" #alternation
+      ".=" #concatenation
+  ; op4repetition :=
+      "*"
+      "+"
+      "?"
+  ; #END
+RAW_TOKENIZATION4SBNF_6SBNF :=
+[fail:]tr_TOKENS5TEXT4SBNF_6SBNF ::=
+  #SBNF不适宜用作表达词符串化器:很难匹配 常量字符串{前缀相同}
+  #与上面不匹配:
+  # *未除噪声
+  # *名纟展符 不是 字符串常量, 也不是 名牜首字母大写
+  ^^^tokens4SBNF
+  ; tokens4SBNF := token4SBNF*
+  ; token4SBNF :=
+      noise
+      nm4vocabulary_symbol
+      punctuation
+  ; noise :=
+      space+
+      tail_comment
+  ; nm4vocabulary_symbol :=
+      nm4nonterminal_symbol
+  ; punctuation :=
+      marker4goal
+      sep4stmt
+      op4eq
+      op4repetition
+  ; marker4goal := "^^^"
+  ; sep4stmt := ";"
+  ; op4eq :=
+      ":=" #alternation
+      ".=" #concatenation
+  ; op4repetition :=
+      "*"
+      "+"
+      "?"
+  ; nm4nonterminal_symbol .= initial_char4nonterminal_symbol body_char4vocabulary_symbol*
+      # regex"[a-z艹]\w*"
+  ; nm4terminal_symbol :=
+      identifier4terminal_symbol
+      string_literal8nm4terminal_symbol
+  ; identifier4terminal_symbol .= initial_char4terminal_symbol body_char4vocabulary_symbol*
+      # regex"[A-Z灬]\w*"
+  ; string_literal8nm4terminal_symbol .= "\"" term_in_str* "\""
+  fail:???不太行:必须换成 词符串化用语法 UBNF
+    initial_char4nonterminal_symbol
+    initial_char4terminal_symbol
+    body_char4vocabulary_symbol
+    term_in_str
+  ; #END
+
+]]
+[[
+UBNF:
+UBNF_6UBNF ::=
+tr_AST5TOKENS4UBNF_6UBNF ::=
+  #假设已除噪
+  ^^^grammar_6UBNF
+  ##nonterminal_symbol:
+  ; grammar_6UBNF .=
+      , -marker4goal
+      , +nm4goal_symbol
+      , +sentence_6UBNF*
+      , -sep4stmt*
+  ; marker4goal :=
+      | ="^^^"
+  ; nm4goal_symbol :=
+      | =nm4nonterminal_symbol
+  ; sentence_6UBNF .=
+      , -sep4stmt+
+      , +nm4nonterminal_symbol
+      , +body4rule
+  ; body4rule :=
+      | =body4rule4concatenation
+      | =body4rule4alternation
+      | =body4rule4raw_string
+  ; body4rule4concatenation :=
+      | -op4eq4concatenation =term4concatenation*
+  ; body4rule4alternation :=
+      | -op4eq4alternation =term4alternation*
+  ; body4rule4raw_string .=
+      , -op4eq4raw_string
+      , -op4more_arg
+      , +psnm4terminal_symbol* #open
+      , -op4more_arg
+      , +psnm4terminal_symbol* #close
+      , -op4more_arg
+      , +psnm4terminal_symbol #end marker of tag@header
+      , -op4more_arg
+      , +psnm4terminal_symbol #start marker of tag@footer
+      , -op4more_arg
+      , +psnm4terminal_symbol #charset for char of tag
+      , -op4more_arg
+      , +psnm4terminal_symbol #charset for char of raw_string
+      # eg: rule4raw_string("[<", ">]", ":", ":", regex"\w", regex".")
+  ; term4concatenation .=
+      , -op4concatenation
+      , +op4unpack_ex
+      , +term
+  ; term4alternation .=
+      , -op4alternation
+      , +ignored_term*
+      , +selected_term
+      , +ignored_term*
+  ; selected_term :=
+      | -op4eq =term
+  ; ignored_term :=
+      | -op4ignore =term
+  ; term .=
+      , +psnm4vocabulary_symbol
+      , +op4repetition?
+  ; op4unpack_ex :=
+      | =op4unpack
+      | =op4ignore
+      | =op4echo
+  ; psnm4vocabulary_symbol :=
+      | =nm4nonterminal_symbol
+      | =psnm4terminal_symbol
+  ; psnm4terminal_symbol :=
+      | =nm4terminal_symbol
+      | =userdefined_tkey_qset5raw_string_literal
+      | =userdefined_tkey_seq5raw_string_literal
+  ; userdefined_tkey_qset5raw_string_literal :=
+      | -header4userdefined_tkey_qset =raw_string_literal
+  ; userdefined_tkey_seq5raw_string_literal :=
+      | -header4userdefined_tkey_seq =raw_string_literal
+  ##terminal_symbol:
+  ; op4unpack :=
+      | ="*" #unpack
+  ; op4ignore :=
+      | ="-" #skip#ignore
+  ; op4echo :=
+      | ="+" #echo
+  ; op4eq :=
+      | ="=" #eq
+  ; op4repetition :=
+      | ="*"
+      | ="+"
+      | ="?"
+  ; sep4stmt :=
+      | =";"
+  ; op4more_arg :=
+      | ="%"
+  ; op4eq4raw_string :=
+      | ="@="
+  ; op4eq4alternation :=
+      | =":="
+  ; op4eq4concatenation :=
+      | =".="
+  ; op4concatenation :=
+      | =","
+  ; op4alternation :=
+      | ="|"
+  ; nm4nonterminal_symbol :=
+      | ="NONTERMINAL_SYMBOL"
+  ; nm4terminal_symbol :=
+      | ="TERMINAL_SYMBOL"
+  ; header4userdefined_tkey_qset :=
+      | ="@tkey_qset="
+  ; header4userdefined_tkey_seq :=
+      | ="@tkey_seq="
+  ; raw_string_literal
+      # [<tag:raw_string:tag>]
+      | ="RAW_STRING_LITERAL"
+  ; #END
+
+UBNF:
+TOKENIZATION4UBNF_6UBNF :=
+tr_TOKENS5TEXT4UBNF_6UBNF ::=
+  #需要:后处理:以封装成tkn/token/重符
+  ^^^tokens4UBNF
+  ; tokens4UBNF :=
+      | -noise* =token4UBNF_ex*
+  ; token4UBNF_ex :=
+      | =token4UBNF -noise*
+  ; token4UBNF :=
+      | =punctuation
+      | =nm4vocabulary_symbol
+      | =header4userdefined_tkey_qset
+      | =header4userdefined_tkey_seq
+      | =raw_string_literal
+  ; noise :=
+      | =space+
+      | =tail_comment
+
+  ; punctuation :=
+      | =";"
+      | ="%"
+      | ="@="
+      | =":="
+      | =".="
+      | =","
+      | ="|"
+      | ="=" #eq
+      | ="-" #skip#ignore
+      | ="+" #echo
+      | ="*" #unpack or closure
+      | ="+"
+      | ="?"
+  ; nm4vocabulary_symbol :=
+      | =nm4nonterminal_symbol
+      | =nm4terminal_symbol
+  ; tail_comment .=
+      , -op4comment
+      , +any_char_but_newline*
+      , -newline? #eof:ok
+  ; op4comment :=
+      | ="#"
+  ; newline :=
+      | ="\n"
+  ; any_char_but_newline :=
+      | =@tkey_qset=[<:regex:[^\n]:>]
+  ; space
+      | =@tkey_qset=[<:regex:\s:>]
+  ; nm4nonterminal_symbol :=
+      | =@tkey_qset=[<:regex:[a-z艹]\w*:>]
+  ; nm4terminal_symbol :=
+      | =identifier4terminal_symbol
+      | =string_literal8nm4terminal_symbol
+  ; identifier4terminal_symbol :=
+      | =@tkey_qset=[<:regex:[A-Z灬]\w*:>]
+  ; string_literal8nm4terminal_symbol .=
+      , +"\""
+      , +term_in_str*
+      , +"\""
+  ; term_in_str :=
+      | =any_char_but_backslash_quotation_mark #newline:ok
+      | =header4escape_seq
+      #backslash:reverse solidus \
+      #quotation mark "
+  ; any_char_but_backslash_quotation_mark :=
+      | =@tkey_qset=[<:regex:[^\\"]:>]
+  ; header4escape_seq .=
+      , +backslash
+      , +any_char
+  ; any_char :=
+      | =@tkey_qset=[<:regex:[\n.]:>]
+  ; backslash :=
+      | ="\\"
+
+  ; header4userdefined_tkey_qset :=
+      | =@tkey_seq=[<:chars:@tkey_qset=:>]
+  ; header4userdefined_tkey_seq :=
+      | =@tkey_seq=[<:chars:@tkey_seq=:>]
+  ; raw_string_literal @=
+      % "[" "<"
+      % ">" "]"
+      % ":"
+      % ":"
+      % @tkey_qset=[<:regex:\w:>]
+      % @tkey_qset=[<:regex:[\n.]:>]
+      # using:rule4raw_string:see:body4rule4raw_string
+      # [<tag:raw_string:tag>]
+      # whole=regex"\[<(\w*):([\n.]*?):\1>\]*"
+      , +
+  ; #END
+
+
+]]
+######################
+######################
+######################
+######################
+######################
+######################
+[[
+SLL1:极简左起内敛语法
+  表达能力有限:连 tr_AST5TOKENS4SBNF_6SLL1 都无法表达
+    既需要前缀以分支，又需要后缀以内敛
+    主要是无法表达:『(nm4vocabulary_symbol op4repetition?)*』
+      也不行{歧义}:错位表达之:『nm4vocabulary_symbol (op4repetition? nm4vocabulary_symbol)* op4repetition?』
+    *修改语法才行:
+      *或者倒过来:『(op4repetition? nm4vocabulary_symbol)*』
+      *或者使用括号:『( "[" nm4vocabulary_symbol "]" )*』
+      *或者使用『.』表示 不重复，并且强制使用之:
+        new-op4repetition = old-op4repetition | "."
+        『(nm4vocabulary_symbol new-op4repetition)*』
+    *扩展SLL1:匿名嵌套非内敛表达式:但很麻烦，不如直接LL1
+    *反转词符流:SLL1实际变成SRR1:但是『^^^goal_symbol』又成麻烦...感觉不太行
+    #
+    [language(SLL1) |<| language(SBNF)]
+      可生成的/可接受的 句集
+      而非 语法格式本身:
+        not [SLL1 <: SBNF]
+  see below:
+    *why_add_marker4tail?
+      ++『&$』
+    *why_preposition_op4repetition?
+      『X?』 --> 『?X』
+      『X+』 --> 『+X』
+      『X*』 --> 『*X』
+  both:unnecessary:
+    why_add_marker4tail?
+    why_preposition_op4repetition?
+    实现如下:
+    错位表达之:
+      『(nm4vocabulary_symbol op4repetition?)* nm4vocabulary_symbol』
+      -->
+      『nm4vocabulary_symbol(op4repetition? nm4vocabulary_symbol)*』
+      see:tr_AST5TOKENS4SLL1_6SLL1__ver2
+
+SLL1_6SLL1 ::=
+[dirty]tr_AST5TOKENS4SLL1_6SLL1__ver1 ::=
+  ^^^ grammar_6SLL1
+  ; grammar_6SLL1 .= marker4goal nm4goal_symbol *sentence_6SLL1 *sep4stmt &$marker4end
+  ; nm4goal_symbol := nm4nonterminal_symbol
+  ; sentence_6SLL1 .= *sep4stmt nm4nonterminal_symbol &$body4rule
+  ; body4rule :=
+      body4rule4concatenation
+      body4rule4alternation
+  ; body4rule4alternation .= op4eq4alternation *nm4vocabulary_symbol &$sep4stmt
+  ; body4rule4concatenation .= op4eq4concatenation *term4concatenation marker4tail nm4vocabulary_symbol &$sep4stmt
+      #why_add_marker4tail?
+      #<<== ambiguous(forbid by LL1): 『term4concatenation* nm4vocabulary_symbol』
+  ; term4concatenation .= ?op4repetition &$nm4vocabulary_symbol
+      #why_preposition_op4repetition?
+      #<<== bad-fmt: ; term4concatenation .= nm4vocabulary_symbol op4repetition?
+      #both:unnecessary:
+      #     why_add_marker4tail?
+      #     why_preposition_op4repetition?
+      #错位表达之:
+      # 『(nm4vocabulary_symbol op4repetition?)* nm4vocabulary_symbol』
+      # -->
+      # 『nm4vocabulary_symbol(op4repetition? nm4vocabulary_symbol)*』
+      # see:tr_AST5TOKENS4SLL1_6SLL1__ver2
+  ; nm4vocabulary_symbol :=
+      nm4nonterminal_symbol
+      nm4terminal_symbol
+  ; nm4nonterminal_symbol := "NONTERMINAL_SYMBOL"
+  ; nm4terminal_symbol := "TERMINAL_SYMBOL"
+  ; marker4goal := "^^^"
+  ; marker4end := "$$$"
+  ; marker4tail := "&$"
+  ; sep4stmt := ";"
+  ; op4eq4alternation :=
+      | =":="
+  ; op4eq4concatenation :=
+      | =".="
+  ; op4repetition :=
+      "*"
+      "+"
+      "?"
+  ; $$$ #END
+#end-tr_AST5TOKENS4SLL1_6SLL1__ver1
+
+
+SLL1_6SLL1 ::=
+tr_AST5TOKENS4SLL1_6SLL1 ::=
+[clean]tr_AST5TOKENS4SLL1_6SLL1__ver2 ::=
+  ^^^ grammar_6SLL1
+  ; grammar_6SLL1 .= marker4goal nm4goal_symbol sep4stmt+ sentence_6SLL1* sep4stmt* marker4end
+  ; nm4goal_symbol := nm4nonterminal_symbol
+  ; sentence_6SLL1 .= sep4stmt* nm4nonterminal_symbol body4rule
+  ; body4rule :=
+      body4rule4concatenation
+      body4rule4alternation
+  ; body4rule4alternation .= op4eq4alternation nm4vocabulary_symbol* sep4stmt
+  ; body4rule4concatenation .= op4eq4concatenation nm4vocabulary_symbol misaligned_term4concatenation* sep4stmt
+      #错位表达之:
+      # 『(nm4vocabulary_symbol op4repetition?)* nm4vocabulary_symbol』
+      # -->
+      # 『nm4vocabulary_symbol(op4repetition? nm4vocabulary_symbol)*』
+  ; misaligned_term4concatenation .= op4repetition? nm4vocabulary_symbol
+  ; nm4vocabulary_symbol :=
+      nm4nonterminal_symbol
+      nm4terminal_symbol
+  ; nm4nonterminal_symbol := "NONTERMINAL_SYMBOL"
+  ; nm4terminal_symbol := "TERMINAL_SYMBOL"
+  ; marker4goal := "^^^"
+  ; marker4end := "$$$"
+  ; sep4stmt := ";"
+  ; op4eq4alternation :=
+      | =":="
+  ; op4eq4concatenation :=
+      | =".="
+  ; op4repetition :=
+      "*"
+      "+"
+      "?"
+  ; $$$ #END
+#end-tr_AST5TOKENS4SLL1_6SLL1__ver2
+#end-tr_AST5TOKENS4SLL1_6SLL1
+
+]]
+[[
+LVCE_LL1:LVHT4B_NTCE_LL1:深度路由头符集局部可见耂单前瞻左起识别语法/表达式局部可控耂全母符内敛耂单前瞻左起识别语法
+LVCE_LL1
+LVHT4B_NTCE_LL1
+深度路由头符集局部可见耂单前瞻左起识别语法/表达式局部可控耂全母符内敛耂单前瞻左起识别语法
+毛病/缺陷:
+  并联式 难用:要么 新增前缀 要么 展开 并联分支 以爆头之
+  这使得 别名、封装 成为困难，后处理也麻烦
+  DONE:语法升级:++母符长名牜欤允空辻头符集随行辻尾前瞻符集随行
+    LVCE_LL1-->LDLV_LL1
+全局假设:所有母符内敛
+    即:母符为(内敛非空|必空)
+      !! [内敛允空 <==> 必空]
+    实际运行的识别器:
+      * 内敛式
+      * 诡复式 则 贪婪
+语义限制:深度路由头符集互斥
+语法限制:深度路由头符集局部可见,串联前后约束
+  串联前后约束:
+    #爆头式 即 当场爆头的表达式(无需 查询 母符 定义)
+    ###
+    * [诡复式 之 循环体/体式 必须 是 内敛爆头式]
+      ==>> [诡复式 是 爆头式]
+      [诡复式 不是 内敛式]
+      在各种约束下有:[表达式 == (诡复式|内敛式)][非爆头式 是 串联式]
+        !! [并联式 是 内敛爆头式][内敛爆头式 是 非空式]
+        !! [诡复式"?*" 是 允空式]
+        !! [串联式 是 内敛式(不一定爆头:母符打头)(可能必空)]
+      !! [表达式 == (诡复式|内敛式)]
+      [爆头式 == (诡复式|内敛爆头式)]
+      [表达式 == (诡复式|内敛爆头式|非爆头串联式)]
+      !! [内敛爆头式 == (并联式|爆头串联式)]
+      [表达式 == (诡复式|并联式|爆头串联式|非爆头串联式)]
+    ###
+    * [诡复式 之后 必须 是 爆头式]
+      # 序列:(诡复式* ,  内敛爆头式)
+      [种符 是 爆头式]
+      [母符 不是 爆头式]
+      [必空式 不是 爆头式]
+          !! [爆头式 是 非空式]
+          # 比如: 『(, ,)』/『@pass@』
+    ###
+    * [内敛式 之后 可以是 任意表达式]
+      [必空式 是 内敛式]
+      即使 内敛式 是 必空式:
+        !! 由于 诡复式 被其后的 爆头式 隔离，所以 『必空式 后接 任意式』 没毛病
+    ###
+
+[表达式 == (诡复式|并联式|爆头串联式|非爆头串联式)]
+  表达式:四种基本分类
+  [必空式 是 非爆头串联式]
+    [常量装载式 是 必空式]
+  [母符 是 非爆头串联式]
+  [种符 是 爆头串联式]
+  [内敛式 == (并联式|爆头串联式|非爆头串联式)]
+  [爆头式 == (诡复式|并联式|爆头串联式)]
+  [内敛爆头式 == (并联式|爆头串联式)]
+  [非空式 == (并联式|爆头串联式|非空非爆头串联式)]
+  [串联式 == (爆头串联式|非爆头串联式)]
+
+
+#xxx:tr_AST5TOKENS4LVCE_LL1_6LVCE_LL1 ::=
+tr__AST5TOKENS4LVCE_LL1__6LVCE_LL1 ::=
+  #69-匕刁
+  #tr_...6...-翻译诀
+翻译诀纟深度路由头符集局部可见耂单前瞻左起识别语法 ::=
+  ^^^合法整句
+  ; 合法整句 = (, ,"^^^" ,整句母符 *(, ,";" ,母符定义 ,) ,"$$$" ,)
+  ; 整句母符 = "母符"
+  ; 母符定义 = (, ,"母符" ,"=" ,内敛式 ,)
+  ; 内敛式 = {|
+      | (, %[<'内敛式牜并联式'>] ,"{|" ,尾部纟并联式 # "|}"
+        ,)
+        #并联式
+      | (, %[<'内敛式牜串联式牜种符型'>] ,"种符" ,)
+        #内敛#非空
+        #爆头串联式牜种符型
+      | (, %[<'内敛式牜串联式牜母符型'>] ,"母符" ,)
+        #内敛#惑空
+        #非爆头串联式牜母符型
+      | (, %[<'内敛式牜串联式牜必空式牜标签型'>] ,"标签" ,)
+        #必空式:载入冫标签冃况态:属于后处理的一种
+        #   主要用于 单一赋值，因为 并联式分支非空 而 串联式 里 一般 统一 用 『%[<'标签'>]』
+      | (, %[<'内敛式牜串联式牜括号型'>] ,"(," ,尾部纟串联式 #",)"
+        ,)
+        #串联式牜括号型
+          # (内敛式 | (诡复式+ , 内敛爆头式))*
+          #     自嵌套...需冠以前缀区分，不能直接就地展开
+          #     ==>> (("," , 内敛式) | (([?*+] 内敛爆头式)+ , ",", 内敛爆头式))*
+      |}
+
+  ; 必空式 = {|
+      | (, %[<'必空式牜标签型'>] ,"标签" ,)
+      | (, %[<'必空式牜括号型'>] ,"(," *必空式 ,",)" ,)
+      |}
+  ; 尾部纟并联式 = (,
+        #"{|"
+        *(, ,"|" ,内敛爆头式 ,) ,"|}" ,)
+  ; 尾部纟串联式 = (,
+        #"(,"
+        *{|
+          | (, %[<'串联体内序列牜单个内敛式牜标签'>] ,"%" ,必空式 ,)
+            #这里只为兼容 内敛爆头式
+          | (, %[<'串联体内序列牜单个内敛式牜无印'>] ,"," ,内敛式 ,)
+            #这里也可使用 标签#等价
+          | (, %[<'串联体内序列牜尾限诡复式'>] +(, ,{| |"?" |"*" |"+" |} ,内敛爆头式 ,) ,"," ,内敛爆头式 ,)
+          |}
+        ,",)" ,)
+
+  ; 内敛爆头式 = {|
+      | (, %[<'内敛爆头式牜并联式'>] ,"{|" ,尾部纟并联式 # "|}"
+        ,)
+        #并联式
+      | (, %[<'内敛爆头式牜爆头串联式牜种符型'>] ,"种符" ,)
+        #爆头串联式牜种符型
+      | (, %[<'内敛爆头式牜爆头串联式牜括号型'>] ,"(,"
+        *{|
+          | (, %[<'内敛爆头式耂前导牜必空式牜标签'>] ,"%" ,必空式 ,)
+            # 这里 不得不 新增 "%"
+            #   虽然 可以 直接 删掉 分隔符『%』，但 为一致计，还是 加上
+          | (, %[<'内敛爆头式耂前导牜诡复式'>] ,{| |"?" |"*" |"+" |} ,内敛爆头式 ,)
+          |}
+        ,"," ,内敛爆头式
+        ,尾部纟串联式 #",)"
+        ,)
+        #爆头串联式牜括号型
+          #     ==>> (("," , 内敛爆头式) | (([?*+] 内敛爆头式)+ , ",", 内敛爆头式))*
+          #     ==>> (([?*+] 内敛爆头式)* , ",", 内敛爆头式)*
+      |}
+  $$$
+
+nonterminal_symbols:8:
+  #顶层语句/母符定义:
+  合法整句
+  整句母符
+  母符定义
+
+  #表达式
+  内敛式
+  内敛爆头式
+  必空式
+  尾部纟并联式
+  尾部纟串联式
+
+terminal_symbols:17:
+  #顶层语句/母符定义:
+  "^^^"
+  ";"
+  "="
+  "$$$"
+
+  #并联式
+  "{|"
+  "|"
+  "|}"
+
+  #串联式
+  "(,"
+  ","
+  "%"
+  ",)"
+
+  #诡复式
+  "?"
+  "*"
+  "+"
+
+  #词符/庸串式
+  "母符" #regex'\w+'
+  "种符" #regex'"[^"]+"'
+
+  #况态/备注/装载常量/立即数
+  "标签" #regex"[[]<'[^']+'>[]]"
+
+]]
+[[
+LDLV_LL1
+深度路由丮欤允空丶头符集丶尾前瞻符集厈局部声明局部可见耂单前瞻左起识别语法
+    升级源自:LVCE_LL1-->LDLV_LL1
+    意图:方便母符封装
+毛病/缺陷:
+  有时不得不使用『LL1错位表达』
+    打乱了 语法结构
+  解决方式: 强行合并 种符串
+    "," "%" --> ",%"
+    "," "&" --> ",&"
+  也许该进行升级:
+    头符集-->头符串集
+    尾前瞻符集-->尾前瞻符串集
+      #只是可能增加 动态耗时
+
+语义限制:深度路由相关头符集尾前瞻符集互斥
+语法限制:深度路由相关头符集尾前瞻符集可见,串联前后约束
+  串联前后约束:
+    ###
+    * [表达式 的 尾前瞻符集 必须可见]
+      特化:[母符 的 尾前瞻符集 必须可见]
+        => [母符 的 欤允空 必须可见]
+      => [诡复式 之 循环体/体式 必须 是 非空爆头式]
+          !! 头符集 将成为 尾前瞻符集
+    ###
+    * [诡复式 之 循环体/体式 必须 是 非空爆头式]
+    ###
+    * [非内敛式 之后 是 (非空爆头式|允空爆头式|必空式)]
+      ==>>:
+      泛化:[(@尾前瞻符集非空,允空式*) 之后 是 (非空爆头式|允空爆头式|必空式)]
+    ###
+    * [非空内敛式 之后 可以是 任意表达式]
+      泛化:[(非空内敛式,必空式*) 之后 可以是 任意表达式]
+      泛化:[(@串联式起始,必空式*) 之后 可以是 任意表达式]
+      ==>>:
+      泛化:[(@尾前瞻符集为空,必空式*) 之后 可以是 任意表达式]
+        => [表达式 的 头符集 特定场合下 不必可见]
+          #(特定场合:即:其前的入口处的尾前瞻符集为空)
+          非爆头式 出现的特定场合
+    ###
+
+
+[[[[[[[
+{{{{{{{
+(((((((
+tr__AST5TOKENS4LDLV_LL1__6LDLV_LL1__ver1 ::=
+翻译诀纟深度路由丮欤允空丶头符集丶尾前瞻符集厈局部声明局部可见耂单前瞻左起识别语法 ::=
+  # 不严格语法:未体现 串联前后约束
+  #     TODO:严格语法:『@尾前瞻符集为空』
+  ^^^合法整句
+  ; &合法整句 ^={: :"^^^" :} $. = (, ,&"^^^" ,&整句母符 ^? $. ,%[* (, ,&";" ,&母符定义 ^? $. ,) *] ,&"$$$" ,)
+  ; &整句母符 ^={: :"母符" :} $. = "母符"
+  ; &母符定义 ^={: :"%" :"&" :} $. = (, ,&欤允空 ^={: :"%" :"&" :} $. ,&"母符" ,&窢声明乊母符后 ^? $. ,&"=" ,&表达式 ^? $. ,)
+
+  ; &窢声明乊母符后 ^={: :"^?" :"^=" :"^." :"$!" :"$." :} $. = (, ,%窢声明冫头符集 ^={: :"^?" :"^=" :"^." :} $. ,&声明冫尾前瞻符集 ^={: :"$!" :"$." :} $. ,)
+  ; &声明乊母符后 ^={: :"^=" :"^." :} $. = (, ,&声明冫头符集 ^={: :"^=" :"^." :} $. ,&声明冫尾前瞻符集 ^? $. ,)
+  ; %窢声明冫头符集 ^={: :"^?" :"^=" :"^." :} $. = {|
+      |& "^?" # <==> "" #缺省
+      |% [? &声明冫头符集 ^={: :"^=" :"^." :} $. ?]
+      |}
+  ; &声明冫头符集 ^={: :"^=" :"^." :} $. = {|
+      |& (, ,&"^=" ,&种符集合 ^? $. ,)
+      |& "^." # <==> "^= {: :}" #必空式
+      |}
+  ; &声明冫尾前瞻符集 ^={: :"$!" :"$." :} $. = {|
+      |& (, ,&"$!" ,&种符集合 ^? $. ,)
+      |& "$." # <==> "$! {: :}" #内敛式
+      |}
+  ; &欤允空 ^={: :"%" :"&" :} $. = {|
+      |& "%" #允空式
+      |& "&" #非空式
+      |}
+
+  ; &表达式 ^={: :"种符" :"%" :"&" :"标签" :"(," :"{|" :"[?" :"[*" :"[+" :} $. [#",)|}?]*]+]"#] = {|
+      |& "种符"
+      |& (, ,&欤允空 ^={: :"%" :"&" :} $. ,&"母符" ,&窢声明乊母符后 ^? $. ,)
+          #窢选:声明冫头符集
+      |& "标签"
+      |& 串联式
+      |& 并联式
+      |& 诡复式
+      |}
+  ; &允空式 ^={: :"%" :"标签" :"(," :"{|" :"[?" :"[*" :} $. [#",)|}?]*]"#] = {|
+      |& (, ,&"%" ,&"母符" ,&窢声明乊母符后 ^? $. ,)
+          #窢选:声明冫头符集
+      |& "标签"
+      |& 允空串联式
+      |& 允空并联式
+      |& 允空诡复式
+      |}
+  ; &非空式 ^={: :"种符" :"&" :"(," :"{|" :"[+" :} $. [#",)|}+]"#] = {|
+      |& "种符"
+      |& (, ,&"&" ,&"母符" ,&窢声明乊母符后 ^? $. ,)
+          #窢选:声明冫头符集
+      |& 非空串联式
+      |& 非空并联式
+      |& 非空诡复式
+      |}
+  ; &爆头式 ^={: :"种符" :"%" :"&" :"标签" :"(," :"{|" :"[?" :"[*" :"[+" :} $. [#",)|}?]*]+]"#] = {| #允空|非空
+      |& "种符"
+      |& (, ,&欤允空 ^={: :"%" :"&" :} $. ,&"母符" ,&声明乊母符后 ^? $. ,)
+          #爆头=>必需:声明冫头符集
+      |& "标签"
+      |& 爆头串联式 #允空|非空
+      |& 并联式 # <: 爆头式
+      |& 诡复式 # <: 爆头式
+      |}
+  ; &非空爆头式 ^={: :"种符" :"&" :"(," :"{|" :"[+" :} $. [#",)|}+]"#] = {| #非空
+      |& "种符"
+      |& (, ,&"&" ,&"母符" ,&声明乊母符后 ^? $. ,)
+          #爆头=>必需:声明冫头符集
+          #非空=>必需:欤允空="&"
+      |& 非空爆头串联式
+      |& 非空并联式
+      |& 非空诡复式
+      |}
+  ; &允空爆头式 ^={: :"%" :"标签" :"(," :"{|" :"[?" :"[*" :} $. [#",)|}?]*]"#] = {| #允空
+      |& (, ,&"%" ,&"母符" ,&声明乊母符后 ^? $. ,)
+          #爆头=>必需:声明冫头符集
+      |& "标签"
+      |& 允空爆头串联式 #允空
+      |& 允空并联式
+      |& 允空诡复式
+      |}
+
+  ####
+  ##; &分隔符纟串联 ^={: :",%" :",&" :} $. = {|
+  ##    |& ",%"
+  ##    |& ",&"
+  ##    |}
+  ##; &分隔符纟并联 ^={: :"|%" :"|&" :} $. = {|
+  ##    |& "|%"
+  ##    |& "|&"
+  ##    |}
+  ####
+  ##; &开重复符 ^={: :"[?" :"[*" :"[+" :} $. [#"?]*]+]"#] = {|
+  ##    |& "[?"
+  ##    |& "[*"
+  ##    |& "[+"
+  ##    |} [#"?]*]+]"#]
+  ##; &开重复符纟允空 ^={: :"[?" :"[*" :} $. [#"?]*]"#] = {|
+  ##    |& "[?"
+  ##    |& "[*"
+  ##    |} [#"?]*]"#]
+  ##; &开重复符纟非空 ^={: :"[+" :} $. = "[+" [#"+]+]"#]
+  ##; &闭重复符 [#"[?[*[+"#] ^={: :"?]" :"*]" :"+]" :} $. = {|
+  ##    [#"[?[*[+"#]
+  ##    |& "?]"
+  ##    |& "*]"
+  ##    |& "+]"
+  ##    |}
+  ##; &闭重复符纟允空 [#"[?[*"#] ^={: :"?]" :"*]" :} $. = {|
+  ##    [#"[?[*"#]
+  ##    |& "?]"
+  ##    |& "*]"
+  ##    |}
+  ##; &闭重复符纟非空 [#"[+[+"#] ^={: :"+]" :} $. = "+]"
+  ####
+  ; &种符集合 ^={: :"{:" :} $. [#":}"#] = (, ,&"{:" ,%[* (, ,&":" ,&"种符" ,) *] ,&":}" ,)
+  ; &条目纟串联式 ^={: :",%" :",&" :} $. = {| |&(, ,&",%" ,&允空式 ^? $. ,) |&(, ,&",&" ,&非空式 ^? $. ,) |}
+  ; &串联式 ^={: :"(," :} $. [#",)"#] = (, ,&"(," ,%[* &条目纟串联式 ^={: :",%" :",&" :} $. *] ,&",)" ,)
+  ; &并联式 ^={: :"{|" :} $. [#"|}"#] = (, ,&"{|" ,%[* (, ,&"|&" ,&非空爆头式 ^? $. ,) *] ,%[? (, ,&"|%" ,&允空爆头式 ^? $. ,%[* (, ,&"|&" ,&非空爆头式 ^? $. ,) *] ,) ?] ,&"|}" ,)
+  ; &诡复式 ^={: :"[?" :"[*" :"[+" :} $. [#"?]*]+]"#] = {|
+      |& (, ,"[?" ,&非空爆头式 ^? $. ,"?]" ,)
+      |& (, ,"[*" ,&非空爆头式 ^? $. ,"*]" ,)
+      |& (, ,"[+" ,&非空爆头式 ^? $. ,"+]" ,)
+      |}
+      # bug: (, ,&开重复符 ^={: :"[?" :"[*" :"[+" :} $. ,&非空爆头式 ^? $. ,&闭重复符 ^={: :"?]" :"*]" :"+]" :} $. ,)
+
+  ; &爆头串联式 ^={: :"(," :} $. [#".)"#] = (, ,&"(," ,%[* (, ,&",%" ,&允空爆头式 ^? $. ,) *] ,%[? (, ,&(, ,&",&" ,&非空爆头式 ^? $. ,) ,%[* &条目纟串联式 ^={: :",%" :",&" :} $. *] ,) ?] ,&",)" ,) #允空|非空
+  ; &非空爆头串联式 ^={: :"(," :} $. [#".)"#] = (, ,&"(," ,%[* (, ,&",%" ,&允空爆头式 ^? $. ,) *] ,&(, ,&(, ,&",&" ,&非空爆头式 ^? $. ,) ,%[* &条目纟串联式 ^={: :",%" :",&" :} $. *] ,) ,&",)" ,) #非空
+      # 仅去掉外括号『[?...?]』@对比:爆头串联式
+  ; &允空爆头串联式 ^={: :"(," :} $. [#".)"#] = (, ,&"(," ,%[* (, ,&",%" ,&允空爆头式 ^? $. ,) *] ,&",)" ,) #允空
+      # 整个去掉『[?...?]』@对比:爆头串联式
+
+  ; &非空并联式 ^={: :"{|" :} $. [#"|}"#] = (, ,&"{|"  ,%[* (, ,&"|&" ,&非空爆头式 ^? $. ,) *] ,&"|}" ,)
+  ; &非空诡复式 ^={: :"[+" :} $. [#"+]"#] =
+      (, ,"[+" ,&非空爆头式 ^? $. ,"+]" ,)
+      # (, ,&开重复符纟非空 ^={: :"[+" :} $. ,&非空爆头式 ^? $. ,&闭重复符纟非空 ^={: :"+]" :} $. ,)
+  ; &非空串联式 ^={: :"(," :} $. [#".)"#] = (, ,&"(," ,%[* (, ,&",%" ,&允空式 ^? $. ,) *]  ,&(, ,&(, ,&",&" ,&非空式 ^? $. ,) ,%[* &条目纟串联式 ^={: :",%" :",&" :} $. *] ,) ,&",)" ,) #非空
+
+  ; &允空并联式 ^={: :"{|" :} $. [#"|}"#] = (, ,&"{|" ,%[* (, ,&"|&" ,&非空爆头式 ^? $. ,) *] ,&(, ,&"|%" ,&允空爆头式 ^? $. ,%[* (, ,&"|&" ,&非空爆头式 ^? $. ,) *] ,) ,&"|}" ,)
+      # 仅去掉外括号『[?...?]』@对比:并联式
+  ; &允空诡复式 ^={: :"[?" :"[*" :} $. [#"?]*]"#] = {|
+      |& (, ,"[?" ,&非空爆头式 ^? $. ,"?]" ,)
+      |& (, ,"[*" ,&非空爆头式 ^? $. ,"*]" ,)
+      |}
+      #bug: (, ,&开重复符纟允空 ^={: :"[?" :"[*" :} $. ,&非空爆头式 ^? $. ,&闭重复符纟允空 ^={: :"?]" :"*]" :} $. ,)
+  ; &允空串联式 ^={: :"(," :} $. [#".)"#] = (, ,&"(," ,%[* (, ,&",%" ,&允空式 ^? $. ,) *] ,&",)" ,) #允空
+  $$$
+注释:
+  行尾注释: 『 # 』
+  行内嵌入式注释: 『 [#...#] 』
+标签:同:LVCE_LL1
+)))))))
+}}}}}}}
+]]]]]]]
+[[[[[[[
+语法更正:","/"|" --> ",%"/",&"/"|%"/"|&"
+  #(
+  :1388,1500s/ ,[^ )%&]\@=/ ,\&/g
+  #{
+  :1388,1500s/ |[^}%&]\@=/ |\&/g
+
+  #
+  :1388,1500s/^  ; [^^]\@=\(\S*\) /  ; \&\1 ^={: :"" :} $. /g
+      <<==:
+      :1388,1500s/^  ; [^^]\@=\(\S*\) /  ; ^={: :"" :} \&\1 $. /g
+      :1388,1500s/^  ; \(\^={[^{}]*}\) \([&%]\S\+\) /  ; \2 \1 /g
+
+补插:『&』于『?母符』得『?&母符』
+  [?*+][^"({』]
+    )}
+  [?*+][^\x00-\x7f』]
+  :1388,1500s/\([?*+]\)\([^\x00-\x7f』]\)/\1\&\2/g
+语法更正:"&?"/"&*" --> "%?"/"%*"
+  :1388,1500s/[&][?*]\@=/%/g
+
+DONE:语法更正:加入"^="/"$!"
+  定义头:DONE
+  定义体:DONE:
+    ???真的很难看...???
+    只有 必要的地方才 需要 ^= 其余都是 省略
+    没有 $! 都是 $.
+
+  \(; \)\@<!&[^"?*+ ]
+  \(; \)\@<!&[^\x00-\x7f』]
+  :1388,1500s/\(; \)\@<!&\([^\x00-\x7f』]\+\)/\0 ^=xxx $./g
+
+诡复式<母符> 必须有: [?*+]&母符 ^=... 即 必需:头符集<母符>
+  [^^"][?*+]&
+  [^^"][?*+]&\S\+ [^^]
+
+修改 诡复式:
+  ?xxx -> [? xxx ?]
+  *xxx -> [* xxx *]
+  +xxx -> [+ xxx +]
+  :1388,1506s/[^^"[『]\@<=[?*+]/[\0 /g
+    ]]
+  \[[?*+] 
+    \]
+  :1388,1515s/\[#\([^"#]*\)#\]/[#"\1"#]/g
+      双引号/单引号 影响 vim『%』括号匹配
+
+]]]]]]]
+
+语法大改动:种符:非空内敛爆头式:三真值 但只有 七况态:
+  串联用逗号:
+  ,%!< 窢空--> ,?!<
+  ,%!> 窢空--> ,?!>
+  ,%.< 必空--> ,%.? #合并
+  ,%.> 必空--> ,%.? #合并
+  ,&!<
+  ,&!>
+  ,&.<
+  ,&.>
+表达式{欤非空,欤内敛,欤爆头}
+  窢允空"?",允空"%",非空"&"
+    #允空==必有一空
+    #主要是为了导出『必空』:[允空+内敛==必空]
+    #二来，并联分支 也看重 允空分支
+  窢露尾"?"=露尾"!",内敛"."
+    #露尾==可能内敛也可能不内敛
+  窢藏头"?"=藏头"<",爆头">"
+    #藏头==可能爆头也可能不爆头
+并联式{欤非空,欤内敛,">"}
+  [并联式 <: 爆头式]
+DONE:++并联分支.前置条件,串联部件.前置条件
+  "[&" "&]=>"
+  DONE:添加条例:++并联分支.前置条件,串联部件.前置条件
+    表达式-->窢表达式
+    ++前置条件
+    ++真值表达式
+
+
+tr__AST5TOKENS4LDLV_LL1__6LDLV_LL1__ver2 ::=
+定义体 = 表达式{"?","?",">"}
+冫表达式{欤非空,欤内敛,欤爆头} = (,
+  ,& 前置条件
+  ,& 表达式{欤非空,欤内敛,欤爆头}
+  ,)
+窢表达式{欤非空,欤内敛,欤爆头} = {|
+  |& 冫表达式{欤非空,欤内敛,欤爆头}
+  |& 表达式{欤非空,欤内敛,欤爆头}
+  |}
+前置条件 = (, ,真值表达式 ,"=>" ,)
+真值表达式 = [+ (, ,"[&" , 内部纟真值表达式,"&]" ,) +]
+内部纟真值表达式 = {|
+  |& (, ,"not" ,真值表达式 ,)
+  |& [+ (, ,"or" ,真值表达式 ,) +]
+  |& 真值表达式
+  |& (, ,"参数" ,"==" ,字符串 ,)
+  |& (, ,"参数" ,"=!=" ,字符串 ,)
+  |}
+表达式{欤非空,欤内敛,欤爆头} = {|
+  |& 并联式{欤非空,欤内敛,">"}
+  |& 串联式{欤非空,欤内敛,欤爆头}
+  |& 母符{欤非空,欤内敛,欤爆头}
+  |& 文本参数冃种符
+  |& "种符"
+  |& [& 欤非空=!="&" &]=> "标签"
+  |& [& 欤内敛=!="." &]=> 诡复式{欤非空,"?",">"}
+  |}
+
+文本参数冃种符 = (, ,"@$" ,"参数" ,)
+诡复式{欤非空,"?",">"} = {|
+  |& [& 欤非空=!="&" &]=> 诡复式凵凵{"[?", "?]"}
+  |& [& 欤非空=!="&" &]=> 诡复式凵凵{"[*", "*]"}
+  |& [& 欤非空=!="%" &]=> 诡复式凵凵{"[+", "+]"}
+  |}
+诡复式凵凵{起括号, 讫括号} = (,
+  ,& @$起括号
+  ,& 表达式{"&","?",">"}
+  ,& @$讫括号
+  ,)
+母符{欤非空,欤内敛,欤爆头} = (,
+  # ,& @$欤非空
+  ,& {|
+      |& [& 欤非空=="?" &]=> "?"
+      |& [& 欤非空=!="&" &]=> "%"
+      |& [& 欤非空=!="%" &]=> "&"
+      |}
+  ,& "母符"
+  ,& {|
+      |& (, ,"^=" ,种符集合 ,)
+      |& (, ,"^." ,)
+      |& [& 欤爆头=!=">" &]=>
+          (, ,"^?" ,)
+      |}
+  ,& {|
+      |& (, ,"$." ,)
+      |& [& 欤内敛=!="." &]=>
+          (, ,"$!" ,种符集合 ,)
+      |& [& 欤内敛=="." &]=>
+          (, ,"$!" ,种符集合牜空集 ,)
+      |}
+  ,)
+并联式{欤非空,欤内敛,">"} = (,
+  ,& "{|"
+  ,% [* (, ,"|&" ,窢表达式{"&",欤内敛,">"} ,) *]
+  ,% [& 欤非空=="?" &]=>
+    [? 并联体纟允空{欤内敛} ?]
+  ,& [& 欤非空=="%" &]=>
+    并联体纟允空{欤内敛}
+  ,& "|}"
+  ,)
+并联体纟允空{欤内敛} = (,
+   ,& "|%"
+   ,& 表达式{"%",欤内敛,">"}
+      # 不是:窢表达式,但也不太对，毕竟 不同前置条件 可能互斥 出现两个『|%』是完全可以的...
+   ,% [* (, ,"|&" ,窢表达式{"&",欤内敛,">"} ,) *]
+   ,)
+串联式{欤非空,欤内敛,欤爆头} = (,
+  ,& "(,"
+  ,% 串联尾递归{欤非空,欤内敛,欤爆头}
+  ,& ",)"
+  ,)
+串联尾递归{欤非空,欤内敛,欤爆头} = {|
+  # 七况态+空分支==八分支?应该不止
+  #
+  # 空分支
+  |% [& 欤非空=!="&" &]=>
+      (, ,)
+  # ,%.? #必空#透明传递状态
+  |& (, ,",%.?" ,窢表达式{"%",".","?"} ,串联尾递归{欤非空,欤内敛,欤爆头} ,)
+  # ,&.> #最严格
+  |& [& 欤非空=!="%" &]=>
+      #xxx: (, ,",&.>" ,窢表达式{"&",".",">"} ,串联尾递归{"?",欤内敛,"?"} ,)
+      (, ,",&.>" ,{|
+        |& (, ,冫表达式{"&",".",">"} ,串联尾递归{欤非空,欤内敛,欤爆头} ,)
+        |& (, ,表达式{"&",".",">"} ,串联尾递归{"?",欤内敛,"?"} ,)
+        |}
+      ,)
+  # ,?!< #最宽松
+  |& [& 欤爆头=!=">" &][& not [& 欤非空=="%" &][& 欤内敛=="." &] &]=>
+      #非必空:  %!  &!  &.
+      (, ,",?!<" ,窢表达式{"?","?","?"} ,串联尾递归{欤非空,欤内敛,">"} ,)
+          #不论是(冫表达式|表达式)后续尾递归都需要爆头，并且不论中段是否被跳过，尾部都被兼容
+  # ,?!> #爆头
+  |& [& not [& 欤非空=="%" &][& 欤内敛=="." &] &]=>
+      #非必空:  %!  &!  &.
+      (, ,",?!>" ,窢表达式{"?","?",">"} ,串联尾递归{欤非空,欤内敛,">"} ,)
+          #不论是(冫表达式|表达式)后续尾递归都需要爆头，并且不论中段是否被跳过，尾部都被兼容
+  # ,&.< #简洁实用
+  |& [& 欤非空=!="%" &][& 欤爆头=!=">" &]=>
+      #xxx: (, ,",&.<" ,窢表达式{"&",".","?"} ,串联尾递归{"?",欤内敛,"?"} ,)
+      (, ,",&.<" ,{|
+        |& (, ,冫表达式{"&",".","?"} ,串联尾递归{欤非空,欤内敛,"?"} ,)
+        |& (, ,表达式{"&",".","?"} ,串联尾递归{"?",欤内敛,"?"} ,)
+        |}
+      ,)
+  # ,&!< #难用
+  |& [& 欤非空=!="%" &][& 欤爆头=!=">" &]=>
+      #xxx: (, ,",&!<" ,窢表达式{"&","?","?"} , {|
+      #xxx:   |& [& 欤内敛=!="." &]=>
+      #xxx:       串联尾递归{"?","?",">"}
+      #xxx:   |& [& 欤内敛=="." &]=>
+      #xxx:       串联尾递归{"&",".",">"}
+      #xxx:         #必须内敛==>>避免-必空
+      #xxx:   |}
+      #xxx: ,)
+      #
+      #-->:
+      #
+      (, ,",&!<" ,{|
+        |&  (, ,冫表达式{"&","?","?"} , {|
+              |& [& 欤内敛=!="." &]=>
+                  串联尾递归{欤非空,"?",">"}
+                    #与下面『表达式』区别在『欤非空』
+              |& [& 欤内敛=="." &]=>
+                  串联尾递归{"&",".",">"}
+                    #必须内敛==>>避免-必空
+              |}
+            ,)
+        |&  (, ,表达式{"&","?","?"} , {|
+              |& [& 欤内敛=!="." &]=>
+                  串联尾递归{"?","?",">"}
+                    #与上面『冫表达式』区别在『欤非空:="?"』
+              |& [& 欤内敛=="." &]=>
+                  串联尾递归{"&",".",">"}
+                    #必须内敛==>>避免-必空
+              |}
+            ,)
+        |}
+      ,)
+  # ,&!> #超难用
+  |& [& 欤非空=!="%" &][& 欤爆头=!=">" &]=>
+      #xxx: (, ,",&!>" ,窢表达式{"&","?",">"} , {|
+      #xxx:   |& [& 欤内敛=!="." &]=>
+      #xxx:       串联尾递归{"?","?",">"}
+      #xxx:   |& [& 欤内敛=="." &]=>
+      #xxx:       串联尾递归{"&",".",">"}
+      #xxx:         #必须内敛==>>避免-必空
+      #xxx:   |}
+      #xxx: ,)
+      #
+      #-->:
+      #
+      (, ,",&!>" ,{|
+        |&  (, ,冫表达式{"&","?",">"} , {|
+              |& [& 欤内敛=!="." &]=>
+                  串联尾递归{欤非空,"?",">"}
+                    #与下面『表达式』区别在『欤非空』
+              |& [& 欤内敛=="." &]=>
+                  串联尾递归{"&",".",">"}
+                    #必须内敛==>>避免-必空
+              |}
+            ,)
+        |&  (, ,表达式{"&","?",">"} , {|
+              |& [& 欤内敛=!="." &]=>
+                  串联尾递归{"?","?",">"}
+                    #与上面『冫表达式』区别在『欤非空:="?"』
+              |& [& 欤内敛=="." &]=>
+                  串联尾递归{"&",".",">"}
+                    #必须内敛==>>避免-必空
+              |}
+            ,)
+      ,)
+  |}
+TODO:上面只是大纲
+TODO:更新:串联逗号、并联竖号:麻烦...
+TODO:订正:串联:窢表达式 不太对，一旦跳过，只能是 透明传递状态
+  ++冫表达式
+TODO:订正:并联:不同前置条件 可能互斥 出现两个『|%』是完全可以的...
+
+表达式{"?","?","?"}
+表达式{"?","?",">"}
+无用:表达式{"%",欤内敛,">"} #=> 似乎出现不了 %!>
+表达式{"%",".","?"} #必空
+表达式{"&","?","?"}
+表达式{"&","?",">"}
+表达式{"&",".","?"}
+表达式{"&",".",">"}
+
+串联尾递归{欤非空,欤内敛,欤爆头} #=> 7种
+非必空=>串联尾递归{欤非空,欤内敛,">"} #=>  ??  &?  &.
+串联尾递归{"?",欤内敛,"?"} #=>  ??
+串联尾递归{"?","?",">"}
+串联尾递归{"&",".",">"}
+非% =>串联尾递归{欤非空,欤内敛,"?"} #=>  ??  &?  &.
+非% =>串联尾递归{欤非空,"?",">"} #=>  ??  &?
+
+==>>:所有模板参数纟串联尾递归:7种:
+  ???
+  ??>
+  %.?
+  &??
+  &?>
+  &.?
+  &.>
+
+]]
+
+
+
+
+
+
+[[
+TODO:++标签/用户自定义数据类型标签:并不真的构造出用户数据，只是提供一个额外类型 表示 该值并非内置类型，否则 若要区分 则至少一种内置复合类型(tuple,array,dict) 要 贴上标签
+  所有 标签 只贴一个值(若是函数 则是单参数函数)
+  "/" 标签 值
+TODO:++址引/内部用指针，用于 重复对象+循环对象，合法窜改 保持等价
+  内址 "=" 值
+  [内址 <: 值]
+
+TODO:++共同标签提取提前,用于 压缩数据，简化人工类型检查:
+  "/" 标签纟外 "*" "[" 标签纟内 "]" "[" ("," "^" 值 )* "]"
+  "/" 标签纟外 "*" "{:" 标签纟内址 ":" 标签纟内值 ":}"  "{:" ("," "^" 址引 ":" "^" 值 )* ":}"
+  [址引 <: 值]
+  "/" 标签纟外 "*" "[" 标签纟内 "*" "{:" 标签纟内内址 ":" 标签纟内内值 ":}" "]"   "[" ("," "^" "{:" ("," "^" 址引 ":" "^" 值 )* ":}" )* "]"
+  定长容器:"*" 长度 容器类型
+    array,set,dict
+    not:tuple,record,argpack,union,cased
+TODO:++record/记录/具名结构体/具名元组(记录之于映射 类同于 元组之于数组):限长，具名，?次序恒定? (类型提前的话，就要求 次序恒定，机器生成的文件 必需次序恒定)
+  "{<" ("," 址引 ":" 值 )* ">}"
+TODO:++argpack/复杂参数
+  "(<" (("," | ";") ((址引 ":" 具址参数) | 具位参数) )* ">)"
+    ";" - 分组
+    具址参数,具位参数 可任意混杂，但 次序恒定
+TODO:++union/简并体
+  只是 类型上体现 "{|" "|" "|}"
+  值 体现不出来
+TODO:++cased/况化体具名简并体#况化值
+  "%" 况态 值
+  [况态 <: 值]
+
+DRL:数据表达用语言{要求简化:词符串化+解析树状化;用于表达:识别结果{即:词符串,语法树}}
+  DRL - data representation language
+    #DTD: abbr. 文件类型定义（document type definition）
+    #DTLS: abbr. 描述性高级规格说明（descriptive top-level specification）；数据传输安全协议（Datagram Transport Layer Security）
+    #DDL: abbr. 数据定义语言（data definition language）
+    #EDL: abbr. Engineering Development Laboratory 工程发展实验所
+    #SDL: abbr. 系统描述语言（System Descriptive Language）；停炉装料（Shut-down Loading）
+    #WSDL: abbr. Web 服务描述语言（Web Services Description Language）；网页服务描述语言
+    #SDLC: abbr. 同步资料链路控制（Sychronous Data Line Control）；系统开发生命周期（Systems Development Life Cycle）
+tr_AST5TOKENS4DRL_6SLL1 ::=
+  #发现很难看:sep_end_by0_
+  ^^^data_6DRL
+  ; data_6DRL := data "EOF"
+  ; data :=
+      tuple
+      array
+      set
+      dict
+      #tree
+      #ugraph
+      #dgraph
+      #lambda
+      #type
+      #proposition
+      "bytes"
+      "string"
+      #"charset"
+      "int"
+      "char"
+      "byte"
+      "bool"
+  #发现很难看:sep_end_by0_:
+  ##  ; tuple .= "(," body0_tail4tuple
+  ##  ; body0_tail4tuple :=
+  ##      body1_tail4tuple
+  ##      ",)"
+  ##  ; body1_tail4tuple .= data *sep_data &$",)"
+  ##  ; sep_data .= "," &$data
+  #取消逗号:
+  ; tuple .= "(," *data &$")"
+  ; array .= "[," *data &$"]"
+  ; set .= "{," *data &$"}"
+  ; dict .= "{:" *item4dict &$"}"
+  ; item4dict .= data ":" &$data
+  ; $$$ #END
+[fail:]tr_TOKENS5TEXT4DRL_6SLL1__ver1 ::=
+  #SLL1不适宜用作表达词符串化器:很难匹配 常量字符串{两个以上首字符相同}
+  #取消空格:noise-space1s#难实现
+  ######################
+  #######新思路:
+  ######################
+  #也许该使用『超符』切分词符:『?!』毕竟是机器生成而非手写
+  # 见:超符串/超文本
+  ######################
+  ######################
+  ^^^token_6DRL
+  ; tokens_6DRL .= *noise0s_ps_token_6DRL &$eof
+  ; noise0s_ps_token_6DRL .= *noise &$ps_token_6DRL
+  ; ps_token_6DRL :=
+      token_6DRL
+      newline
+  ; token_6DRL :=
+      punctuation
+      bytes
+      string
+      charset
+      int
+      char
+      byte
+  ; noise :=
+      #space1s
+      #tail_space0s
+      tail_comment
+      #tail_space0s_smay_comment
+  #前缀空格导致歧义: ; tail_space0s .= *space &$newline
+  #                  ; tail_comment .= *space op4comment *any_char_but_newline &$newline
+  #; tail_space0s_smay_comment .= *space &$smay_tail_comment
+  ; smay_tail_comment :=
+      tail_comment
+      newline
+  ; tail_comment .= op4comment *any_char_but_newline &$newline
+  ; punctuation :=
+      open4tuple # "(,"
+      ")"
+      open4array # "[,"
+      "]"
+      open4set # "{,"
+      "}"
+      open4dict # "{:"
+      "}"
+      ":"
+  #how? SLL1 cannot distingusih:"{," {:" #??add postprocess6oresult??
+      ; open4tuple .= "(,"
+      ; open4array .= "[,"
+      ; open4set .= "{,"
+      ; open4dict .= "{:"
+      # }}
+      # ])
+      # }}
+  ; bytes .= "':" tail_bytes *middle_bytes &$"'."
+  ; middle_bytes .= op4middle_bytes &$tail_bytes
+  ; tail_bytes .= *any_char_but_newline &$newline
+  ; op4middle_bytes :=
+      "',"
+      "';"
+  ; string .= "':" tail_string *middle_string &$"'."
+  ; middle_string .= op4middle_string &$tail_string
+  ; tail_string .= *any_char_but_newline &$newline
+  ; op4middle_string :=
+      "\"," #续行/续航
+      "\";" #换行/LF/newline
+  ; int :=
+      "0"
+      sint
+  ; sint .= sign digit1_9 *digit0_9_LF &$"i"
+  ; char .= ???
+  ; byte .= ???
+  ; bool :=
+      "1b"
+      "0b"
+  ; sign :=
+      "+"
+      "-"
+  ; digit1_9 := ...[1-9]???
+  ; digit0_9_LF :=
+      digit1_9
+      "0"
+      "_"
+      newline_esc_
+  ; newline_esc_ .= newline "\\" &$"_"
+  ; eof .= "E" "O" &$"F" # "EOF"
+  ; newline := "\n"
+  fail:#how:regex?or charset?
+  ; any_char_but_newline := ...[^\n]???
+  ; $$$ #END
+]]
+[[
+独立耂内嵌式注释格式
+    避免每种语言单独设计一种格式
+vivi:独立耂内嵌式字符串格式
+原貌注释牜内嵌式 = regex"\[-#(<[^<>]*>)((?!\1)(.|\r|\n))*?\1#-\]"
+  允许多行...
+显码注释牜内嵌式 = regex"\[#({转码序列}|(?![?][!])[^\#\r\n])*#]"
+  禁止多行...
+  注释用引号『#』
+    "?!+" --> #
+
+]]
+[[
+独立耂内嵌式字符串格式
+    避免每种语言单独设计一种格式
+
+
+独立耂内嵌式字符串格式 =
+  | 原貌字符串牜内嵌式
+  | 显码字符串牜内嵌式
+
+
+原貌字符串vs显码字符串(==转码字符串)
+  原貌-不再解码
+  显码-再解码
+
+内嵌式vs行尾式
+  内嵌式-带引号
+  行尾式-不带引号
+  原貌字符串牜内嵌式vs原貌字符串牜行尾式
+  显码字符串牜内嵌式vs显码字符串牜行尾式
+
+原貌字符串牜内嵌式 = regex"\[(<[^<>]*>)((?!\1)(.|\r|\n))*?\1\]"
+  允许多行...
+显码字符串牜内嵌式 = regex"{引号}({转码序列}|(?![?][!])[^\'\"\r\n])*{引号}"
+  禁止多行...
+  引号 = regex"[\'\"]"
+  转码序列 =
+    | "?!." --> 『?!』
+    | regex"[?][!][{][ +]*((u\x+|[abfnrtv])[ +]*)*[}]"
+    | regex"[?][!][abfnrtv]"
+        # [:短名列表纟转码序列]:goto
+
+    | "?!%" --> 空串
+    | "?!~" --> 空格
+    | "?!," --> \t
+    | "?!:" --> \r
+    | "?!;" --> \n
+        # <EMPTY><Space><TAB><CR><LF>
+    | "?!+" --> #
+        # 注释用引号『#』:见:独立耂内嵌式注释格式
+    | "?!=" --> "
+    | '?!-' --> '
+        # 引号『'』『"』
+    #xxx: | "?!'" --> "
+    #xxx: | '?!"' --> '
+        # 反转单双引号
+    #xxx: | "?!`" --> 外引号(" or ')
+        # 相对性引号
+
+[[[
+[:短名列表纟转码序列]:here
+短名列表纟转码序列:abfnrtv
+===
+abfnrtv<<==py:help('STRINGS')
+  |"\a"|ASCII Bell (BEL)          |
+  |"\b"|ASCII Backspace (BS)      |
+  |"\f"|ASCII Formfeed (FF)       |
+  |"\n"|ASCII Linefeed (LF)       |
+  |"\r"|ASCII Carriage Return (CR)|
+  |"\t"|ASCII Horizontal Tab (TAB)|
+  |"\v"|ASCII Vertical Tab (VT)   |
+>>> [*b'\a\b\f\n\r\t\v']
+[7, 8, 12, 10, 13, 9, 11]
+>>> [*map(hex,b'\a\b\f\n\r\t\v')]
+['0x7', '0x8', '0xc', '0xa', '0xd', '0x9', '0xb']
+>>> {*b'\a\b\f\n\r\t\v'} == set(range(7,14))
+True
+
+===
+]]]
+
+
+
+]]
+[[
+专用语牜保存词符串
+  应当更加精简完整<<==下面的『超符串牜保存词符串』有点难看、有点复杂，而且 不完整(用户自定义:文档类型声明{字符编码})
+
+完整:
+  只有一种再解码方案:见下面:显码字符串牜行尾式
+精简:
+  只有一种数据:字符串
+  [种符,词料,流址 :: 文本]
+    即:[tkey,tdat,tgbegin,tgend :: str]
+    #流址 ~~~ [imay]
+    #待合成:段址 tspan
+
+正则表达式纟联合串纟行内容类型符纟全文件 =
+    | regex"#*((=#*)|(<#*)(>#*))*"
+        #无段址
+    #xxx: | regex"#*((@#*)(@#*)?)(((=#*)|(<#*)(>#*))((@#*)(@#*)?))*"
+        # (讫址{前一料符} 起址{后一料符}?)
+    | regex"#*(@#*)((@#*)?((=#*)|(<#*)(>#*))(@#*))*(@#*)?"
+        #含段址
+        # (起址? ... 讫址)
+行前缀=={行内容类型符}{行文本再解码符}
+行内容类型符:
+  『#』 注释
+  『<』 种符
+  『>』 词料
+  『=』 料符乊简并态[词料==种符]
+  『@』 流址 #起址/讫址 #部分段址
+  『,』 续行牜无换行
+  『;』 续行牜先换行:行首插入『\n』
+行文本再解码符:
+  『+』 原貌字符串牜行尾式
+  『-』 显码字符串牜行尾式
+
+原貌字符串牜内嵌式vs原貌字符串牜行尾式
+显码字符串牜内嵌式vs显码字符串牜行尾式
+  内嵌式-带引号
+  行尾式-不带引号
+
+原貌字符串牜行尾式 = regex"[^\r\n]*"
+显码字符串牜行尾式 = regex"({转码序列}|(?![?][!])[^\r\n])*"
+  转码序列 =
+    | regex"[?][!]." --> 『?!』
+    | regex"[?][!][{][ ]*(u\x+[ ]*)*[}]"
+    | regex"[?][!][abfnrtv]"
+        # [:短名列表纟转码序列]:goto
+
+
+]]
+==>>:
+[[
+超符串牜保存词符串
+超符串/超文本
+  用以保存数据/词符流@DRL
+===
++1:全局替换:『\n!』-->『?!』:结果仍为超文本，继续 替换+切分
+    『?!』与『\n!』等价
+    ???『?!\n!』???
+    ???『\n!?!』???
+    ???『?!?!』???
+    ???『\n!\n!』???
+  内嵌替换型超符:一般使用『?!』
+  分割型超符:一般使用『\n!』
+  内嵌vs分割:『?!&』vs(『?!=』vs『?!%:』)
++2:结束:『?!$』代表文本『EOF』，结束扫描
++3:内嵌替换型超符{只替换而不进行切分}/负载内部即时替换/文本替换:结果为普通文本，不再切分
+    #下列是:引导串纟换符串:
+『?!.』代表文本『?!』
+『?!`』代表文本『\n!』
+    #下列是:换行/空格/删除(注释)
+『?!;』代表文本『\n』
+『?!\n』代表文本『』
+『?!?』代表文本『』 <<== [『\n!\n!』<->『?!?!』]
+『?!-』代表文本『 』
+『?! 』代表文本『』
+『?!&』+regex"[{]u([0-9A-F]{1..=8})(,[0-9A-F]{1..=8})*[}]":代表Unicode字符串
++4:分割型超符/切分负载:生成料符:
+负载纟无负载码:全文起始文本{ascii} 用作 文档类型声明{字符编码}
+『?!#』其后负载文本代表『噪声/注释』自动忽略#不能是『内嵌替换型超符』，因为 注释部分 可能需要 特殊字符使用『?!&u』
+『?!=』料符乊简并态:其后负载文本代表『关键词』tdat即是tkey:自动解码:
+    字节串{++字符编码@文档类型声明@全文起始文本}-->字符串
+『?!@』『?!%』料符乊解析态:
+  『?!@』其后负载文本代表:料符种类『种符/tkey』必要后续超符(之间:忽略噪声):『?!%』
+  『?!%』其后负载文本代表:料符负载『料符.tdat』
+    不同内建基础数据类型
+      机器:字节串,nullptr/None
+      人:字符串
+      数学:整数
+      逻辑:真值
+    不同内建基础数据类型:自动解码:
+      *空/无/None『?!%<』#无更多负载
+      ???以下两种导致二进制文件，不妥:
+      ?*字节串『?!%>』字节串
+      ?*字符串『?!%^』字节串{++字符编码@文档类型声明@全文起始文本}-->字符串
+      *字节串『?!%%』hex/ascii{[0-9A-F\n_ -]}-->字节串
+      *字符串『?!%:』字符串{已解析}
+      *真值『?!%?』[01]-->真值
+      *整数『?!%#』ascii{[-+0-9ep\n_ -]}-->整数
+      *整数『?!%*』ascii{[-+0-9A-Fep\n_ -]}-->整数
+      *整数『?!%.』ascii{[-+01ep\n_ -]}-->整数
+        eNNN == 10**NNN
+        pNNN == 2**NNN
+]]
+==>>:
+[[
+超文本牜抽象型格:
+++扩展:超文本树牜抽象型格:
+===
+vs:view ../../python3_src/seed/recognize/regex/RegexLiteral.py
+===
+统一:超符负载名=regex"([^(){}]|[(][^(){}]*[)]|[{][^{}]*[}])"
+  单字符名vs多字符名
+  单字符名 vs (多字符名纟内嵌替换型超符) vs {多字符名纟分割型超符}
+  禁止递归嵌套:
+      多字符名纟内嵌替换型超符+多字符名纟分割型超符 可以 内嵌使用 单字符名纟分割型超符『,』『#』用作简单分割
+      多字符名纟内嵌替换型超符+多字符名纟分割型超符 可以 内嵌使用 单字符名纟内嵌替换型超符#比如:『[』『]』『<』『>』用作简单替换:{}()
+
+      多字符名纟分割型超符 可以 内嵌使用 多字符名纟内嵌替换型超符
+      #####
+      #但是:反之不行，自反也不行:
+      多字符名纟内嵌替换型超符 不可以 内嵌使用 多字符名纟分割型超符
+      多字符名纟分割型超符 不可以 内嵌使用 多字符名纟分割型超符
+      多字符名纟内嵌替换型超符 不可以 内嵌使用 多字符名纟内嵌替换型超符
+      #####
+
+  格式:
+      ?!{ 超符负载名纟分割型超符 } 超符负载值
+          ?!{, 尾名 } 超符负载值
+          ?!{# 尾名 } 超符负载值
+      ?!( 超符负载名纟内嵌替换型超符 )      无:超符负载值
+          ?!(! 尾名 )
+            ?!(!$)
+          ?!(& 尾名 )
+            ?!(&u ... )
+      ?! 单字符名/超符负载名 可选冫超符负载值
+          ?!, 超符负载值
+          ?!# 超符负载值
+          ?! [^,#(){}]      无:超符负载值
+
+1.全局统一:
+  唯一抽象超符
+  等价集合<字符串冃超符>
+  比如:『?!』『\n!』
+2.前缀纟分割:『,』『#』『{,尾名}』『{#尾名}』
+  部分单字符名+多字符名
+  多少个 前缀纟分割 ==>> 多少个 超符负载值(除了 噪声/注释)
+  全文起始文本 用作 声明
+  xxx:2.1. 前缀纟分割冃键值对:『{,:尾名纟解码器纟键值对}』
+  xxx:    格式:『?!{,:尾名纟解码器纟键值对}{键名}值』
+  ++扩展:超文本树牜抽象型格:
+  2.2. 前缀纟分割冃标签名纟括号对纟树节点:『{<}』『{>}』
+    ?!{<} 标签名 #起括号
+    ?!{>} 标签名 #讫括号
+
+3.前缀纟内建特殊功能:『(!尾名)』
+  多字符名
+  比如:用作eof:『?!(!$)』
+4.前缀纟内嵌替换:『[^(){}]』『((?!!)超符负载名)』
+  部分单字符名+多字符名
+  替换发生于:
+    超符负载名{内嵌替换型超符,分割型超符}.内部
+    超符负载值{分割型超符}.内部
+  + [必要]替换:字符串冃超符
+    比如:
+      『?!`』-->『\n!』
+      『?!.』-->『?!』
+  + [可选]替换字符『{』『}』『(』『)』
+      #主要是用于:超符负载名 #xxx: ,分割冃键值对.负载值.键名
+      『?![』-->『{』
+      『?!]』-->『}』
+      #???以下特别没必要<<==字符串转义都是固定格式的，可以避免使用『()』
+      #     不对！比如:内嵌式注释#见:转义负载纟内嵌式注释
+      『?!<』-->『(』
+      『?!>』-->『)』
+  + [可选]替换文本:
+      #主要是用于:排版/人工阅读
+      『?!;』-->『\n』
+          #反向即是:取消换行
+      『?!\n』-->『』
+          #反向即是:强行换行
+      『?!-』-->『 』
+          #反向即是:取消留空 # 用于无空格编码
+      『?! 』-->『』
+          #反向即是:强行留空
+      『?!~』 --> 『』
+          #vivi:nbsp:no_break_space # 用于无空格编码
+  + [可选]替换字符串纟大字符集:
+      超符负载名{替换字符串纟大字符集} == regex"[(]&u\s*([0-9A-F]{1..=8}\s*)(,\s*[0-9A-F]{1..=8}\s*)*[)]"
+  + [可选]替换内嵌式注释:
+      『?!(#[^{}()]*)』-->『』
+          #反向即是:强行注释
+          #正向是:删除:内嵌式注释
+          #转义负载纟内嵌式注释: {}()
+
+]]
+==>>:
+[[
+超文本牜极简模式
+  <<== view ../../python3_src/seed/recognize/regex/RegexLiteral.py
+  not 超文本牜抽象型格
+===
+[raw_char]
++可选预处理:忽略空格
+[raw_char]  #or[raw_nonspace_char]
++文本替换=>强制普通字符
+  :: [raw_char] -> [true_char]
+[(raw_char|true_char)]
++识别注释=>自嵌套注释
+  :: [(raw_char|true_char)] -> [comment]
+[(raw_char|true_char|comment)]
++料符串化=>超符
+  xxx :: [(raw_char|true_char)] -> [meta_char]
+  xxx :: [raw_char] -> [(meta_char|true_char)]
+  :: (([(raw_char|true_char)] -> [meta_char]), (raw_char -> true_char))
+  [comment :: 超文本牜极简模式{不忽略空格&&无超符&&允许注释}]
+[(meta_char|true_char|comment)]
+
+===
+唯一前缀纟换码序列:『?!』
+强制普通字符:单字符负载:5:
+  『?!.』->『?!』
+  『?!-』->『 』
+  『?!,』->『\t』
+  『?!:』->『\r』
+  『?!;』->『\n』
+强制普通字符:多字符负载:1
+  『?![』("+" \x+ | "@" \w+ | [.-,:;])* 『]』->:
+      "+" --> unicode_char_pt
+      "@" --> char_name
+      [.-,:;] --> 单字符负载
+注释:多字符负载:1
+  『?![#』(强制普通字符|无法构成超符的源字符|注释)* 『#]』-> ...换码序列只含两种:『?!.』『?![#注释#]』...
+超符:多字符负载:1
+  『?!(』[^()]* 『)』-> 用户自定义meta_char
+
+===
+]]
+==>>:
+[[
+TSRL - text sequence representation language
+  保存文本串:dat_txts_6TSRL
+文本串表达用语言
+  [文本串巛文本 :: 文本->[文本]]
+  只进行 转义+分割 文本 成为 片段序列
+  后续处理:可以将各片段分离出 前缀+负载...
+    ???不如 一步到位？见:文本串串表达用语言
+
+文本串表达用语言 <: 超文本牜抽象型格
+
+配置{超文本牜抽象型格}如下:
+等价集合<字符串冃超符> =『?!』『\n!』
+唯二分割符:『?!,』『?!#』
+    #无{}
+唯一内建特殊功能符:『?!(!$)』
+有限内嵌替换符:
+    『?!`』-->『\n!』
+    『?!.』-->『?!』
+    『?![』-->『{』
+    『?!]』-->『}』
+    『?!<』-->『(』
+    『?!>』-->『)』
+    『?!;』-->『\n』
+    『?!\n』-->『』
+    『?!-』-->『 』
+    『?! 』-->『』
+    regex"?![(]&u\s*([0-9A-F]{1..=8}\s*)(,\s*[0-9A-F]{1..=8}\s*)*[)]"
+    『?![(]#[^{}()]*[)]』-->『』
+
+]]
+==>>:
+[[
+TSSRL - text sequence sequence representation language
+  保存文本串串:dat_txtss_6TSRL
+文本串串表达用语言
+  [文本串串巛文本 :: 文本->[[文本]]]
+  只进行 转义+分割 文本 成为 序列纟序列纟片段
+  后续处理:
+    可以将 序列纟片段 视为:[?函数名?,参数...]
+    特殊对待:序列纟片段<全文起始文本> --> [None,*序列纟片段] => [None,参数...]
+    正常对待:序列纟片段<非起始> --> [*序列纟片段] => [函数名,参数...]
+
+扩展:TSRL文本串表达用语言
+  唯二分割符:『?!,』『?!#』
+  -->
+  唯三分割符:『?!,』『?!#』『?!:』
+    『?!,』行际分割符
+    『?!:』行内分割符
+
+]]
+==>>:
+[[
+DSSRL - data sequence sequence representation language
+  保存数据串串:data_txtss_6TSRL
+    保存料符串
+数据串串表达用语言
+  #asif: [数据串串巛文本 :: 文本->[[数据]]]
+  [裸数据串串巛文本 :: 文本->[(文本,[(欤解码,文本)])]]
+  [况态基础数据串串巛文本 :: 用户基础解码器/(文本->基础数据) -> 文本->[(况态/文本,[基础数据])]]
+  [料符串巛文本 :: 用户高阶解码器/((况态/文本,[基础数据]) -> [料符]) -> 用户基础解码器/(文本->基础数据) -> 文本->[料符]]
+  [语法树巛文本 :: 用户识别器/([料符] -> 语法树) -> 用户高阶解码器/((况态/文本,[基础数据]) -> [料符]) -> 用户基础解码器/(文本->基础数据) -> 文本->语法树]
+
+  先进行 转义+分割 文本 成为 序列纟序列纟片段
+  再根据标志:欤解码:决定是否进行解码(使用:用户基础解码器)
+  后续处理:用户高阶解码器,用户识别器
+
+扩展:TSSRL文本串串表达用语言
+  唯三分割符:『?!,』『?!#』『?!:』
+  -->
+  唯四分割符:『?!,』『?!#』『?!:』『?!=』
+    『?!,』行际分割符,不进一步应用:用户基础解码器-->字符串
+      #首栏总是字符串
+    『?!:』行内分割符,不进一步应用:用户基础解码器-->字符串
+    『?!=』行内分割符,并进一步应用:用户基础解码器-->数据
+
+
+]]
+==>>:
+[[
+框架冫基础数据类型表达用语言
+逻辑上正交化分解:{前缀纟数据类型}{前缀纟高层解码方案冃数据巛字符串}{前缀纟低层解码方案冃字符串巛字符串}{字符串冃负载}
+简并:
+后端简并:
+{前缀纟数据类型}{前缀纟高层解码方案冃数据巛字符串} -->:
+    * {前缀纟数据类型牜唯一高层解码方案}
+    * {前缀纟高层解码方案牜唯一输出数据类型}
+前端简并:
+{前缀纟低层解码方案冃字符串巛字符串}{字符串冃负载} -->:
+    * {字符串冃负载牜唯一低层解码方案}
+        * 原貌字符串
+        * 全局统一默认低层解码方案
+极致简并:
+{前缀纟数据类型}{前缀纟高层解码方案冃数据巛字符串}{前缀纟低层解码方案冃字符串巛字符串}{字符串冃负载} -->:
+    * {字符串冃负载冃无歧义立即数}
+        0b --> False
+        1b --> True
+
+===
+]]
+==>>:
+[[
+框架冫行前缀文件格式牜版本一:
+  版本区分:假设:客户语言/实载语言 本身使用的就是 大字符集(字符不一定可显示、图形字符的区分度不一定足够)
+  多层次解码:意图冫排版层实物换行丶中间层大字符集再编码
+  大字符集vs小字符集:
+    * unicode > ascii > printable_ascii > graphic_ascii
+    * unicode > printable_unicode > graphic_unicode
+===
++文件字符编码方案
+  文件实物字节串
+  文件字符编码方案 :: 文件实物字节串 -> 文件实物字符串
+  文件实物字符串
++逻辑分行方案
+  文件实物字符串
+  [文件实物字符行]
+  文件实物字符行 -> 文件实物字符行前缀
+  逻辑分行方案 :: 文件实物字符行前缀 -> (数目纟前导换行符,筐逻辑分行)/((换行数,(孤行|首行|间行|尾行))|(-1,(注释行|声明行)))
+  多讠一: [文件实物字符行] -> 文件逻辑字符行
+  [文件逻辑字符行]
++逻辑行内编码方案
+  [文件逻辑字符行]
+  文件逻辑字符行 -> 文件逻辑字符行前缀
+  逻辑行内编码方案 :: 文件逻辑字符行前缀 -> 再解码方案牜字符串巛字符串
+  再解码方案牜字符串巛字符串<文件逻辑字符行前缀> :: (字符串 -> 字符串)
+  一讠多: 文件逻辑字符行 -> [文件实载字符行]
+  [文件实载字符行]
+  文件实载文件
+  ###或许可以调整一下以得到更小颗粒度的再解码作用域:再解码方案(逻辑行负载) -->再解码方案(实物行负载)
+  ###   改版:再解码冫逻辑行-->再解码冫实物行
++实载文件解码:
+  文件实载文件@[文件实载字符行]
+  用户自定义解码
+===
+==>>:例如:
++实载文件解码:
+  文件实载文件@[文件实载字符行]
+  +实载字符行内格式
+    文件实载字符行 -> 文件实载字符行前缀
+    实载字符行内格式 :: 文件实载字符行前缀 -> 料符串化
+    料符串化<文件实载字符行前缀> :: (负载字符串->[料符])
+      #词符串化
+  一讠多: 文件实载字符行 -> 料符串/[料符]
+  [料符]
+  ######################
+  ###全局解码 :: 文件实物字节串 -> 料符串
+  ######################
+  ###假设:再解码冫实物行
+  ###全局前缀 == {文件实物字符行前缀}{文件逻辑字符行前缀}[{文件实载字符行前缀}]
+  ###   ###!!!!!!!!!!!!!!!!!!!!!!注意:{实载行前缀}可能缺省(不出现在:尾行/间行)(出现在:孤行/首行)!!!!!!!!!!!!!!!!!!!!!!
+  ###   {实物行前缀}{逻辑行前缀}[{实载行前缀}]
+  ###   {实物行首}{逻辑行首}[{实载行首}]
+  ######################
+  例如:
+    #####
+    <LF> ";%," {孤行冫种符}
+    <LF> ":%+" {首行冫语义值纟料符}
+    <LF> ",%" {间行冫语义值纟料符}
+    <LF> ".%" {尾行冫语义值纟料符}
+        注意:后两行『+』缺省
+    <<==:
+    #####
+    #假设:再解码冫实物行
+    #####
+    * {实物行前缀} ::= (<LF> | <@begin_of_file>)   ("/"*  (";" | "." | ".") | "#" | "!")
+      "/" - 换行/前导换行符
+      ";" - 孤行
+      ":" - 首行
+      "," - 间行
+      "." - 尾行
+      "#" - 注释行
+      "!" - 声明行
+    #####
+    * {逻辑行前缀} ::= (":" | "%")
+      ":" - 不变
+      "%" - 再解码方案牜默认
+        # 输入不含<LF>
+        # 转码序列 ::= ("%" (?=[^{}]) | "%{"..."%}")
+        以下是 负载中的转码序列(不是 行前缀)
+        单字符负载:
+        "%." --> "%"
+        "%/" --> "\n" / <LF>
+        "%-" --> " "
+          #反向即是:取消留空 # 用于无空格编码
+        "% " --> ""
+          #反向即是:强行留空
+        "%~" --> ""
+          #vivi:nbsp:no_break_space # 用于无空格编码
+        多字符负载:
+        "%{"..."%}" --> ...
+    #####
+    * {实载行前缀} ::= ("=" | "," | ":" | "+" | "?" | "." | "#" | "<" | ">")
+      "=" -, 种符暨语义值纟料符/字符串
+      "," -, 种符/字符串
+      ":" -, 语义值纟料符/字符串
+      "+" -, 语义值纟料符/整数(hex|dec|bin)
+      "?" -, 语义值纟料符/真值
+        也许可以直接使用[01]替代『?』:
+        "0" -, False/语义值纟料符/真值
+        "1" -, True/语义值纟料符/真值
+      "." -, 语义值纟料符/字节串(hex_hex)
+      "#" -, 注释
+      "<" -, 括号类型纟树节点/种符/字符串 #其 后继语义值 是 标签名纟树节点
+      ">" -, 括号类型纟树节点/种符/字符串 #其 后继语义值 是 标签名纟树节点
+    #####
+  <<==:
+  [种符 :: 字符串]
+  [语义值纟料符 :: 基础数据类型]
+    没有:元组,数组,...
+  [料符 == (种符,语义值纟料符)]
+    料符 应当尽量 简单
+    更复杂的树状结构，交给更高层
+  ######################
+
+===
+]]
+==>>:
+[[
+框架冫行前缀文件格式牜版本二:
+  版本区分:假设:客户语言/实载语言 本身使用的就是 小字符集/可显示的小字符集/图形小字符集(字符可显示、图形字符的区分度足够)
+  这样一来，再解码方案 就由 实载语言局域自定义(而非由 行前缀文件格式框架 负责)
+  续行 也交给 实载语言
+      但这样的话，要么 行长度无限制，要么 标识名长度受限
+  亦即:实载语言 与 字符编码层 之间 没有中间层
+
+排版/实物行限长 => 大词符 拆分
+  表达牜词符 = 内嵌式行内表达牜词符 | 分离式多行表达牜词符
+  大词符 = (字符串 | 字节串 | 整数 | 注释 | 标识名)
+实物行前缀 = (语句分割 | 语句续行 | 表达式续行 | ((字符串 | 字节串 | 整数 | 注释 | 标识名)++(尾行 | 间行辻再解码)))
+实物语句行后缀牜不算行尾注释 = (正常行尾 | ((字符串 | 字节串 | 真值串 | 整数 | 注释 | 标识名)++首行))
+
+语句分割 = ";"
+语句续行/表达式续行 = ","@= | ":"@= | "\"
+标点纟(字符串 | 字节串 | 整数 | 注释 | 标识名) = / % + # -
+标点纟(尾行 | 间行 | 行首) = . [,;] :
+标点纟(再解码纟字符串间行) = [^:]
+  == 标点纟(再解码纟注释间行)
+  == 标点纟(再解码纟标识名间行)
+标点纟(再解码纟字节串间行) = [^%]
+标点纟(再解码纟整数间行) = [@%&?]
+  == 标点纟(再解码纟真值串间行)
+字符串再解码:
+  ^ 再解码
+  : 原貌 #不含:换行符
+字节串再解码:
+  ^ 拟unicode<0..<0x100>再解码
+  % hex_hex
+整数再解码:
+  # [可能要求某种一致性或对齐]
+  #     dec-一致
+  #     hex/oct/bin-对齐
+  @ dec
+  % hex
+  & oct
+  ? bin
+多行字符串:
+  ...(串外) /:
+  /,: (不换行+原貌)...
+  /;^ (换行+再解码)...
+  /. (串外)...
+===
+真值串(vivi整数):填充？
+???额外:浮点数/定点数:十六进制/八进制:
+  二进制 若 表达为 十六进制/八进制，则 前缀/后缀 可能有填充
+    * {1..=3}比特位填充@{前缀,后缀}@十六进制
+      28==14+14
+      44==28+16
+    * {1..=2}比特位填充@{前缀,后缀}@八进制
+      12==6+6
+      20==12+8
+  太麻烦，还是 各填充 一比特『1』用作隔离其余填充的『0』
+===
+]]
+==>>:
+[[
+ADTRL - abstract data type representation language
+    #抽象数据类型？代数数据类型？
+    #ADT:abbr. 抽象数据类型（Abstract Data Type）；自动数据变换（Automatic Data Translator）；平均日交通量（Aaverage Daily Traffic）
+    ADT==abstract_data_type?algebraic_data_type?
+    GADT==Generalised_Algebraic_Data_Type
+抽象数据类型表达用语言
+===
+data_obj6asif_top_lvl ::=
+    | nm8mkr data_obj8arg*
+        #data_obj4user_defined_type
+    | data_obj7atom7incomplete
+data_obj8arg ::=
+    | nm8mkr
+        #data_obj4user_defined_type7incomplete
+    | data_obj7atom7incomplete
+data_obj7atom7incomplete ::=
+    #miss:『nm8mkr』
+    | "(=" data_obj6asif_top_lvl ")"
+    | data_obj4builtin_type
+data_obj4builtin_type ::=
+    | "(" sep__data_obj6asif_top_lvl* ")"
+    | "[" sep__data_obj6asif_top_lvl* "]"
+    | "{" sep__data_obj6asif_top_lvl* "}"
+    | "{:" sep__key_sep_val6dict* "}"
+    | "[:" sep__row6matrix* "]"
+    | int
+    | bool
+    | str
+    | bytes
+    | None
+sep__data_obj6asif_top_lvl ::= "," data_obj6asif_top_lvl
+sep__key_sep_val6dict ::= "," data_obj6asif_top_lvl ":" data_obj6asif_top_lvl
+sep__row6matrix ::= ";" sep__data_obj6asif_top_lvl*
+#???below:tokens???
+nm8mkr
+int
+bool
+str
+bytes
+None
+===
+]]
+==>>:
+[[
+TODO:零前瞻状态集并行态歧义森林
+LR0状态集并行态歧义森林
+state_stack --> 并行帧
+并行帧 = {shared_ref<前一帧>, WeakValueDict{词符:(句型辻位置,weak_ref<下一帧>)}}
+并行:
+  reduce-reduce-conflict
+  shift-reduce-conflict
+===
+LR0状态集并行态歧义森林
+    ???其实就是:Earley编译器???
+    森林=>禁止等长循环引用:
+      并联分支/串联:当其余组分允空，则有一等长引用有序对，用有向边代表。要求这些有向边构成的有向图无环。
+    就算栈帧中间态有歧义，只要最终标的母符的生成森林是树，就算无歧义(但只是文本实例无歧义，而非语法无歧义)
+    文本实例无歧义
+      <==>标的母符动态无歧义
+      <<==标的母符静态无歧义
+      <<==语法无歧义
+      <<==所有母符静态无歧义
+    母符静态无歧义
+      ==>>是空集冫交集纟句集纟各并联分支纟母符
+      ??串联组分动态定位不变==>>无母符自前缀??
+        但是:诡复式==>>母符自前缀
+        这是全局性约束，有点难搞；降级为局域性约束，则类似LL1
+        继符集-->后继句型集？
+        假设:后继句型{串联式}无歧义{串联组分动态定位不变}
+===
+源语法->源语句->靶语法牜已定位
+[母符{靶语法牜已定位} == (定位乊源语句,零前瞻状态纟源语法) == (fpos,st)]
+[种符{靶语法牜已定位} == 词符{源语法} == vocabulary_symbol]
+生成规则{靶语法牜已定位} =:
+  # xxx:| 『(fpos,st) ::= (fpos,st)』#reduce#折合
+  | 『(fpos,st) ::= <none> [#(fpos,st)#]』#reduce#折合
+  | 『(fpos,st) ::= 种符 (fpos,st)』#shift #移饲冫种符
+  | 『(fpos,st) ::= 母符 (fpos,st)』#goto #折饲冫母符
+  # [长度纟句型纟生成规则纟靶语法牜已定位 <- {0,2}]
+  #     =>似乎是某种规范型？
+<<==:
+[st := state4LR0
+  <=> {len_tail:{nm4rule}}
+  <=> {sentential_form/tail4rule:{nm4rule}}
+  <=> ({nm4rule}[#len_tail==0#], {vocabulary_symbol8head4tail:{len_tail4tail:{nm4rule}}})
+  ~= {dotted_rule}
+  ]
+
+[fpos := position6file]
+  [fpos <=> (idx4byte,info4codec,idx4char,(lineno,columnno),idx4gap4token4low_lvl,idx4gap4token4high_lvl,...)]
+[rules4grammar8output :: {(fpos,st):{((vocabulary_symbol,(fpos,st))|())}}]
+  [goal_symbol4grammar8output := ???]
+===
+TODO:
+e ../../python3_src/seed/recognize/CFG/LR0_Earley_parser__no_same_size_recur/
+]]
+===
+]]
+==>>:
+[[
+TODO:模拟正则表达式的句子合法性判定器:完整剩余后缀句型尾汇拟树(允许:左递归,但麻烦)
+『判定』:判定接受与否，即 句子是否是某语法书的合法句子。不考虑:构造语法树,计算语义值，不考虑:是否有歧义(语法树不唯一)
+    有用？...难说...难以想到十分有用的应用场景
+      大文件里搜索:句子{非正则表达式能表达的语境无关语法}...
+        感觉 还是 不够快，也不够 节省内存空间
+
+为何 正则表达式 可用 有限状态机 判定？
+  因为 正则表达式 语法书 可以规范化为以下形式:
+    正则表达式 语法书
+    <==>
+    所有并联分支 形如:『"母符" "::=" "种符"* "母符"?』
+    <==>
+    所有并联分支 形如:『"母符" "::=" "种符"? "母符"?』
+    <==>
+    所有并联分支 形如:『"母符" "::=" ("种符" "母符")?』
+  非空分支必然:尾递归+尾递归优化
+无左递归耂语境无关耂语法(无左递归CFG) 即使使用『尾递归优化』，并行态中每一个状态依然需要一个『线性后缀句型』补完
+含左递归耂语境无关耂语法(含左递归CFG) 即使使用『尾递归优化』，并行态中每一个状态依然需要一个『含循环拟线性后缀句型』补完
+  [线性后缀句型 <: 含循环拟线性后缀句型]
+  [完整剩余后缀句型 == 含循环拟线性后缀句型]
+  [完整剩余后缀句型尾汇拟树 <==> {含循环拟线性后缀句型}]
+    #只是 数据结构/编码方案/形态:不同，用以:节省空间，也可能 节省运算量
+    #后缀相同(无循环分叉)，则合并，故称『拟树』
+虽然 无左递归耂语境无关耂语法 判定法 更简单，但 下面考虑:含左递归耂语境无关耂语法
+每一个母符 可以 展开成 爆头拟树，展开 过程中 遇到 首符 是 左递归母符 的 则 该首母符 展开成 带祖宗耂爆头拟子树
+    (爆头拟树 不体现空分支，或者说 只表达 母符的非空版)
+    #后缀相同(无循环分叉)，则合并，故称『拟树』:最简单情形的归并等价状态
+    #前缀相同(无循环分叉，无 拟树分叉)，则合并:次简单情形的归并等价状态
+    #   即:left factoring提取共同前缀
+  [[
+  例如:语法书:
+    A ::= a b
+    A ::= B C
+    A ::= C d
+    A ::= #pass
+    B ::= e
+    B ::= C f
+    C ::= A g
+    C ::= B A
+  #以下:『^』代表 种符冒头;『@』代表 左递归母符循环冒头
+  # 注意:A允空，作为 串联头时 可跳过，爆头拟树纟(A)并不体现 空分支
+  爆头拟树纟(A) == 爆头拟树纟(A{}) =:
+    @{P_A_0,P_A_1} <-- root:A{}:
+      <-- b <-- a^
+      <-- C:
+        #@P_BA_0 <-- B{A}^
+        <-- e^
+        <-- f:
+          #<-- C{A>B}^
+          <-- g <-- A@P_A_0  #<-- A{}
+          <-- g^
+          <-- A <-- B@P_BA_0  #<-- B{A}
+      <-- d:
+        #@P_CA_0 <-- C{A}^
+        <-- g <-- A@P_A_1  #<-- A{}
+        <-- g^
+        <-- A:
+          #<-- B{A>C}^
+          <-- e^
+          <-- f <-- C@P_CA_0  #<-- C{A}
+  爆头拟树纟(B) == 爆头拟树纟(B{}) =:
+    @{P_B_0,P_B_1} <-- root:B{}:
+      <-- e^
+      <-- f:
+        #@P_CB_0 <-- C{B}^
+        <-- g:
+          #<-- A{B>C}
+          <-- b <-- a^
+          <-- C <-- B@P_B_0  #<-- B{}
+          <-- d <-- C@P_CB_0  #<-- C{B}
+        <-- g^
+        <-- A <-- B@P_B_1  #<-- B{}
+  爆头拟树纟(C) == 爆头拟树纟(C{}) =:
+    @{P_C_0,P_C_1,P_C_2} <-- root:C{}:
+      <-- g:
+        #<-- A{C}^
+        <-- b <-- a^
+        <-- C:
+          #<-- B{C>A}^
+          <-- e^
+          <-- f <-- C@P_C_0  #<-- C{}
+        <-- d <-- C@P_C_1  #<-- C{}
+      <-- g^
+      <-- A:
+        #<-- B{C}^
+        <-- e^
+        <-- f <-- C@P_C_2  #<-- C{}
+  ]]
+证明:[语法变换:左递归讠右递归:必然可以实现]
+  [[
+  #eliminating left recursion
+  [每一个母符 可以 展开成 爆头拟树，展开 过程中 遇到 首符 是 左递归母符 的 则 该首母符 展开成 带祖宗耂爆头拟子树]
+      view others/数学/编程/设计/语法升级序列.txt
+  左递归处 不再是 入口，而成为 后退分支之一
+    后退:即:句型中的识别点右移:即:子节点指向父节点
+    后退发生分叉，则新增母符用于原地断尾暨新增分流
+  ]]
+
+
+
+假设:已知各母符是否允空#[min_oolen==0]
+假设:已知各母符是否必空#[max_oolen==min_oolen==0]
+假设:已知各母符是否必死#[min_oolen==+oo]
+假设:已将并联分支中的空式消除#(空式:含:母符牜必空)
+假设:已将必死并联分支删除
+假设:目标母符非必空#否则简单另处理
+假设:目标母符非必死#否则简单另处理
+假设:目标母符非空#否则新建一个新目标母符，因为新目标母符不被任何母符引用，所以其空分支可简单另处理，新目标母符的爆头拟树(等价于 原目标母符的爆头拟树)不体现空分支，正好当作 非空母符
+完整剩余后缀句型尾汇拟树
+[后缀栈 <==> 完整剩余后缀句型 === 含循环拟线性后缀句型]
+[后缀栈 == 空栈 | (后缀栈帧,后缀栈)]
+[后缀栈帧 == ???]
+旧版:[后缀栈帧 == (种符 | (母符牜非必空牜非空版,有后耂状态纟爆头拟树纟母符))]
+  !! 『就地展开冫母符』 改为 『投饲』
+  => 『后缀栈帧』改为:
+  新版:[后缀栈帧 == (种符 | 母符牜非必空牜非空版[#初始状态集:初始状态皆有后#] | (母符牜非必空牜非空版,有后耂状态纟爆头拟树纟母符[#有后即后续非空#]))]
+旧版:就地展开冫母符 :: 母符牜非必空牜非空版 -> {(种符[#种符冒头+尾递归优化@无后(其后没有非空式，全是允空式)#]|(种符[#种符冒头#],有后耂状态纟爆头拟树纟母符[#输入母符的后续状态牜有后#]))}
+  『就地展开冫母符』 改为 『投饲』
+  改为:
+    新版:投饲 :: 种符 -> 母符牜非必空牜非空版 -> {(None[#母符已完整:出栈#]|有后耂状态纟爆头拟树纟母符[#输入母符的后续状态牜有后#])}
+      !! 初始状态集 固定 并且 比较大
+      => 更改后，节省运算量
+就地展开冫母符状态 :: (母符牜非必空牜非空版,有后耂状态纟爆头拟树纟母符)[#作为:后缀栈帧#] -> {(词符牜非必空牜非空版[#尾递归优化:栈顶替换/(出栈再入栈)#]|(词符牜非必空牜非空版[#入栈#],有后耂状态纟爆头拟树纟母符[#输入母符更新状态:步进展开#]))}
+
+
+『投饲』+『就地展开冫母符状态』+显然的种符匹配相关处理的栈操作
+  ==>> 完整的栈操作
+
+
+]]
+===
+]]
+==>>:
+[[
+]]
+
+
+
+[[
+#全人工单前瞻左起识别语法:
+半人工单前瞻左起识别语法:
+RLL1:
+  DONE:++全人工部分:即:
+    [redundant-列出所有母符的:头符集、尾前瞻符集、欤允空、最小句长]
+    or:改为:半人工@自嵌套母符
+        #全人工@所有母符-->半人工@割集纟自嵌套母符{仅需:某个横截面母符集}
+    取消:最小句长
+      #非必要
+RLL1_6RLL1 ::=
+tr_AST5TOKENS4RLL1_6RLL1 ::=
+  ^^^ grammar_6RLL1
+  ; / grammar_6RLL1 =
+      -marker4goal.
+      +nm4goal_symbol.
+      +sentence_6RLL1*
+      -sep4stmt*
+  ; / nm4goal_symbol =
+      =nm4nonterminal_symbol.
+  ; / sentence_6RLL1 =
+      -sep4stmt+
+      +op4is_nullable. #欤允空
+      +nm4nonterminal_symbol.
+      -"=".
+      +expr6top_lvl.
+      +handicraft_info4self_embedding8cut_set?
+        #全人工@所有母符-->半人工@割集纟自嵌套母符
+  ; / handicraft_info4self_embedding8cut_set = :
+      -"^=". #头符集
+      +nm4terminal_symbol*
+      -"$!". #尾前瞻符集
+      +nm4terminal_symbol*
+      #取消:
+      # -">=". #最小句长
+      # +uint.
+  ; % expr6top_lvl = :
+      | =expr4branch6top_lvl.
+      | -":". +branch6top_lvl+ >>- $f4or6top_lvl
+  ; / branch6top_lvl = -"|". =expr4branch6top_lvl.
+
+  #; % expr4branch6top_lvl = :
+      ##fwd:forward/assignment
+      #| +term4ignore* +term4forward. +term4ignore* +postprocess6oresult?
+      ##tuple
+      #| +term4ignore* ( +term4neither_ignore_nor_forward. +term4not_forward* )? ( +boxed_expr4main_inner_branches.  +term4not_forward* )? +postprocess6oresult?
+      #==>>:
+  ; % expr4branch6top_lvl = +term4ignore* ( :
+        | +term4forward. +term4ignore* >>- $f4forward
+        | +term1s4tuple? +tailed_main_inner_branches? >>- $f4tuple
+        )
+        +postprocess6oresult?
+        # 『fexpr』"f"-postprocess6oresult
+
+  ; / term1s4tuple =
+      +term4neither_ignore_nor_forward.
+      +term4not_forward*
+  ; / tailed_main_inner_branches =
+      +boxed_expr4main_inner_branches.
+      +term4not_forward*
+  ; / boxed_expr4main_inner_branches = -"(".  -":". =branch6non_top_lvl+ -")". >>- $f4or6non_top_lvl
+      #used to attach postprocess6unpacked_oresult<@whole-top_lvl-tuple>
+      ^= "("
+      $! #<NONE>
+      #唯一割点
+  ; / branch6non_top_lvl = -"|".  =expr4branch6non_top_lvl.
+  ; / expr4branch6non_top_lvl =
+      #vs:expr4branch6top_lvl
+      +term4not_forward* ( :
+        | +postprocess6unpacked_oresult >>- $f4bottom_main_branch
+            #required『postprocess6unpacked_oresult』 #not optional
+        | +tailed_main_inner_branches >>- $f4recur_main_branch
+            #required『tailed_main_inner_branches』 #not optional
+            #no:『+postprocess6oresult?』after『tailed_main_inner_branches』
+        )
+
+  ; / postprocess6oresult = :
+      | =postprocess6unpacked_oresult.
+      | =postprocess6packed_oresult.
+  ; / postprocess6unpacked_oresult =
+      -">>-".
+      =nm4postprocess6unpacked_oresult.
+  ; / postprocess6packed_oresult =
+      -">>=".
+      =nm4postprocess6packed_oresult.
+
+  ; / term4not_forward = +unpack_op4not_forward. *bare_term.
+  ; / term4neither_ignore_nor_forward = +unpack_op4neither_ignore_nor_forward. *bare_term.
+  ; / term4ignore = -unpack_op4ignore. =bare_term.
+  ; / term4forward = -unpack_op4forward. =bare_term.
+
+  ; / bare_term = +nm4vocabulary_symbol +op4repetition_ex
+
+  ######################
+  ; / unpack_op4not_forward = :
+      | =unpack_op4neither_ignore_nor_forward.
+      | =unpack_op4ignore.
+  ; / unpack_op4neither_ignore_nor_forward =
+      | ="+". #selected
+      | ="*". #unpack
+  ; / unpack_op4ignore =
+      ="-". #ignored
+  ; / unpack_op4forward =
+      ="=". #forward
+  ######################
+  ; / nm4vocabulary_symbol = :
+      | =nm4nonterminal_symbol.
+      | =nm4terminal_symbol.
+  ; / nm4nonterminal_symbol = ="NONTERMINAL_SYMBOL".
+  ; / nm4terminal_symbol = ="TERMINAL_SYMBOL".
+  ; / nm4postprocess6packed_oresult = =nm4func.
+  ; / nm4postprocess6unpacked_oresult = =nm4func.
+  ; / nm4func = ="FUNCTION_NAME".
+  ######################
+  ; / marker4goal = ="^^^".
+  ; / sep4stmt = =";".
+  ; / op4is_nullable = :
+      | ="/". #non_nullable
+      | ="%". #nullable
+  ; / op4repetition_ex = :
+      | =".". # 1 # no repeat #not result array #必要性: unpack == "*" == closure
+      | =op4repetition.
+  ; / op4repetition = :
+      | ="*". # 0..=+oo #closure
+      | ="+". # 1..=+oo
+      | ="?". # 0..=1
+  #取消:; / uint = ="UINT".
+  #; / uint = +digit1_9. *digit0_9*
+  #; / digit0_9 = :
+  #    | ="0".
+  #    | =digit1_9.
+  #; / digit1_9 = : ???
+  ; #END
+
+]]
+[[[
+LMFP_LL1
+  label-multi-fork-pick-LL1
+标签耂复式耂腹叉耂点选耂山语法
+    山语法==LL1==分路单前瞻左起左展识别用语法
+    点选==(拆包|忽略|择留)
+    腹叉==腹叉式后处理
+        精简版: 腹叉串联式 = 代符* ( 母符冃后处理名 | ...) 代符*
+        后处理程序 注册于 (母符冃目标+母符冃后处理名)
+        --> 后处理程序 注册于 母符/(母符+础符) #并联式/腹叉型串联式
+          LL1 不可能有两个并联分支使用 相同 母符(即使算上 后缀/复式)
+          [锚定:后处理程序] ==>> [尽量精简表达式]
+    复式==(庸复式|诡复式)
+    标签==必空式牜标签型
+        #必空式:载入冫标签冃况态:属于后处理的一种
+
+===
+===
+===
+[[
+tr__AST5TOKENS4LMFP_LL1__6LMFP_LL1 ::=
+  ^^^ 合法整句
+  ; 合法整句 .=
+    , -"^^^"
+    , +整句母符
+    , +氵窢母符定义*
+    , -"$$$"
+
+  ; 整句母符 @= "母符"
+  ; 氵窢母符定义 @=
+    -";"
+    =母符定义?
+  ; 母符定义 .=
+    , +"母符"
+    , +冫定义体
+  ; 冫定义体 :=
+    | 冫并联体
+    | 冫串联体
+    | 冫别名体
+
+  ; 代符 :=
+    | "母符"
+    | "种符"
+  ; 础符 :=
+    | 代符
+    | "标签" #必空式
+
+  ; 冫并联体 .=
+    , +":="     #保留作为标签
+    , +丨窢标签化复础符*
+  ; 冫串联体 .=
+    , +".="     #保留作为标签
+    , +丿土复础符*
+    , +灬土腹叉辻串联尾?
+    # 串联体 需要 『,』分隔 『*』『+』源自:后缀纟诡复式牜略vs点选符
+    #   而 别名体 则无需『,』，因为只用了『-』『=』
+  ; 冫别名体 .=
+    , +"@="     #保留作为标签
+    . + (:
+      | 复础符
+      | 取一体
+      )
+  ; 取一体 .=
+    , +一冫复础符*
+    , +二冫复础符
+    , +一冫复础符*
+  ; 一冫复础符 .=
+    , -"-"
+    , +复础符
+  ; 二冫复础符 .=
+    , -"="
+    , +复础符
+
+  ; 灬土腹叉辻串联尾 .=
+    , -"."      #vs ","
+    , +点选符
+    , -"(:"
+    , +丨窢标签化复础符*
+    , -")"
+    , +丿土复础符*
+
+  ; 丿土复础符 .=
+    , -","
+    , +点选符
+    , +复础符
+  ; 点选符 :=
+    | "-" #忽略
+    | "+" #择留
+    | "*" #拆包
+
+  ; 丨窢标签化复础符 .=
+    , -"|"
+    , +彑标签*
+    , +复础符   #注意:标签 本身就是 复础符
+    , +彑标签*
+  ; 彑标签 @=
+    -"&"
+    +"标签"
+
+  ; 复础符 :=
+    | 庸标签
+    | 复代符
+  ; 庸标签 .=
+    , +标签
+    , +后缀纟庸复式?
+  ; 复代符 .=
+    , +代符
+    , +后缀纟复式?
+
+  ; 后缀纟复式 :=
+    | &<'庸复式'> 后缀纟庸复式
+    | &<'诡复式'> 后缀纟诡复式
+  ; 后缀纟庸复式 @=
+    -"["
+    ="自然数"
+    -"]"
+  ; 后缀纟诡复式 :=
+    | &<'详'> 后缀纟诡复式牜详
+    | &<'略'> 后缀纟诡复式牜略
+  ; 后缀纟诡复式牜略 :=
+    | "?" # {0..=1}
+    | "*" # {0..<}
+    | "+" # {1..<}
+  ; 后缀纟诡复式牜详 .=
+    , -"{"
+    , +"自然数"
+    , +连数符
+    , +"自然数"?
+    , -"}"
+  ; 连数符 :=
+    | "..<"
+    | "..="
+  $$$ #END
+
+===
+标签:4
+<'庸复式'>
+<'诡复式'>
+  <'详'>
+  <'略'>
+===
+种符:27
+"^^^"
+"$$$"
+";"
+"@="
+".="
+":="
+","
+"."
+"|"
+"&"
+"(:"
+")"
+"?"
+"*"
+"+"
+"-"
+"="
+"["
+"]"
+"{"
+"}"
+"..<"
+"..="
+"自然数"    # regex"\d+"
+"母符"      # regex"\w+"
+"种符"      # 独立耂内嵌式字符串格式
+"标签"      # regex"<{独立耂内嵌式字符串格式}>"
+
+===
+母符:27
+合法整句
+整句母符
+氵窢母符定义
+母符定义
+冫定义体
+冫并联体
+冫串联体
+冫别名体
+代符
+础符
+取一体
+一冫复础符
+二冫复础符
+丨窢标签化复础符
+丿土复础符
+灬土腹叉辻串联尾
+彑标签
+复础符
+庸标签
+复代符
+点选符
+后缀纟复式
+后缀纟庸复式
+后缀纟诡复式
+后缀纟诡复式牜略
+后缀纟诡复式牜详
+连数符
+===
+]]
+
+
+===
+]]]
+[[[
+LMP_LL1
+  label-multi-pick-LL1
+  degrade:LMFP_LL1--
+    label-multi-fork-pick-LL1 -『fork』
+标签耂复式耂点选耂山语法
+    ==降级:标签耂复式耂腹叉耂点选耂山语法 -『腹叉耂』
+    山语法==LL1==分路单前瞻左起左展识别用语法
+    点选==(拆包|忽略|择留)
+    复式==(庸复式|诡复式)
+    标签==必空式牜标签型
+        #必空式:载入冫标签冃况态:属于后处理的一种
+
+===
+后处理程序 注册于 母符/(母符+础符) #并联式
+  LL1 不可能有两个并联分支使用 相同 母符(即使算上 后缀/复式)
+  [锚定:后处理程序] ==>> [尽量精简表达式]
+===
+===
+[[
+tr__AST5TOKENS4LMP_LL1__6LMP_LL1 ::=
+  ^^^ 合法整句
+  ; 合法整句 .=
+    , -"^^^"
+    , +整句母符
+    , +氵窢母符定义*
+    , -"$$$"
+
+  ; 整句母符 @= "母符"
+  ; 氵窢母符定义 @=
+    -";"
+    =母符定义?
+  ; 母符定义 .=
+    , +"母符"
+    , +冫定义体
+  ; 冫定义体 :=
+    | 冫并联体
+    | 冫串联体
+    | 冫别名体
+
+  ; 代符 :=
+    | "母符"
+    | "种符"
+  ; 础符 :=
+    | 代符
+    | "标签" #必空式
+
+  ; 冫并联体 .=
+    , +":="     #保留作为标签
+    , +丨窢标签化复础符*
+  ; 冫串联体 .=
+    , +".="     #保留作为标签
+    , +丿土复础符*
+    # 串联体 需要 『,』分隔 『*』『+』源自:后缀纟诡复式牜略vs点选符
+    #   而 别名体 则无需『,』，因为只用了『-』『=』
+  ; 冫别名体 .=
+    , +"@="     #保留作为标签
+    , + 别名体
+  ; 别名体 := {|
+      | &<'幺'> 复础符
+      | &<'取'> 取一体
+      |}
+  ; 取一体 .=
+    , +一冫复础符*
+    , +二冫复础符
+    , +一冫复础符*
+  ; 一冫复础符 .=
+    , -"-"
+    , +复础符
+  ; 二冫复础符 .=
+    , -"="
+    , +复础符
+
+  ; 丿土复础符 .=
+    , -","
+    , +点选符
+    , +复础符
+  ; 点选符 :=
+    | "-" #忽略
+    | "+" #择留
+    | "*" #拆包
+
+  ; 丨窢标签化复础符 .=
+    , -"|"
+    , +彑标签*
+    , +复础符   #注意:标签 本身就是 复础符
+    , +彑标签*
+  ; 彑标签 @=
+    -"&"
+    +"标签"
+
+  ; 复础符 :=
+    | 庸标签
+    | 复代符
+  ; 庸标签 .=
+    , +标签
+    , +后缀纟庸复式?
+  ; 复代符 .=
+    , +代符
+    , +后缀纟复式?
+
+  ; 后缀纟复式 :=
+    | &<'庸复式'> 后缀纟庸复式
+    | &<'诡复式'> 后缀纟诡复式
+  ; 后缀纟庸复式 @=
+    -"["
+    ="自然数"
+    -"]"
+  ; 后缀纟诡复式 :=
+    | &<'详'> 后缀纟诡复式牜详
+    | &<'略'> 后缀纟诡复式牜略
+  ; 后缀纟诡复式牜略 :=
+    | "?" # {0..=1}
+    | "*" # {0..<}
+    | "+" # {1..<}
+  ; 后缀纟诡复式牜详 .=
+    , -"{"
+    , +"自然数"
+    , +连数符
+    , +"自然数"?
+    , -"}"
+  ; 连数符 :=
+    | "..<"
+    | "..="
+  $$$ #END
+#end-tr__AST5TOKENS4LMP_LL1__6LMP_LL1
+===
+标签:6
+<'幺'>
+<'取'>
+<'庸复式'>
+<'诡复式'>
+  <'详'>
+  <'略'>
+===
+种符:24
+"^^^"
+"$$$"
+";"
+"@="
+".="
+":="
+","
+"|"
+"&"
+"?"
+"*"
+"+"
+"-"
+"="
+"["
+"]"
+"{"
+"}"
+"..<"
+"..="
+"自然数"    # regex"\d+"
+"母符"      # regex"\w+"
+"种符"      # 独立耂内嵌式字符串格式
+"标签"      # regex"<{独立耂内嵌式字符串格式}>"
+
+===
+母符:27
+合法整句
+整句母符
+氵窢母符定义
+母符定义
+冫定义体
+冫并联体
+冫串联体
+冫别名体
+代符
+础符
+别名体
+取一体
+一冫复础符
+二冫复础符
+丨窢标签化复础符
+丿土复础符
+彑标签
+复础符
+庸标签
+复代符
+点选符
+后缀纟复式
+后缀纟庸复式
+后缀纟诡复式
+后缀纟诡复式牜略
+后缀纟诡复式牜详
+连数符
+===
+]]
+
+
+===
+]]]
+
+
+
+
+
+
+######################
+######################
+######################
+######################
+######################
+######################
+######################
+######################
+######################
+######################
+######################
+######################
+######################
+######################
+######################
+######################
+######################
+######################
+######################
+
+
+识别器类框架:
+  由于 循环引用 存在，识别器 的 属性 不能递归依赖于 子识别器
+  使用 引用识别器 运行期 引用 注册的命名识别器
+  ???可选方案:
+    *前期:
+      引用识别器(scene,nm)
+    *后期:
+      引用识别器.set_recognizer(rgnr)
+      引用识别器(nm).set_closure4recognizer(scene)
+    *动态:
+      引用识别器(nm).recognize(scene, inputter)
+  识别器参数在哪里？
+    *动态:
+      识别器(*静态参数).recognize(*动态参数, inputter)
+      语境敏感...
+    *静态+工厂:
+      识别器(*静态参数).recognize(inputter)
+        识别器工厂(*静态参数).mk_recognizer(*动态参数).recognize(inputter)
+        open body close
+          <tag> ... </tag>
+          (...) ... \1
+
+分类冫后处理:
+  * 内禀型后处理
+    影响:分析流程，是 不可更改、不可分离 的 部分
+    比如:逆转成败
+    postprocess4eresult
+    若是有:识别器使用了 动态额外参数(如:switch/dependent_pair)
+      则:要求 识别器纟该参数 以及其所依赖之一切识别器 均:
+        * 或者 不得外赋 外赋型后处理
+        * 或者 被忽略(反正:外赋型后处理 不能 逆转成败)
+        * 或者 eresult 分裂成 两个: eresult4intrinsic(不可外赋更改),eresult4extrinsic(必须与eresult4intrinsic同成败)
+        * 或者 eresult 分别分离: eresult==Either<(errmsg4intrinsic,errmsg4exrinsic),(oresult4intrinsic,oresult4exrinsic)>
+        见:极简语法牜带动态额外参数
+
+  * 外赋型后处理
+    不影响:分析流程，是 可更改、可分离 的 部分
+    禁止:逆转成败#但可以 使用异常 中止分析流程
+    只能是 postprocess6oresult,postprocess6errmsg
+      可更改+可追加
+    可分离:成两阶段:
+      可以先不外赋 外赋型后处理
+      等生成 语法树，再进行处理
+
+
+
+TODO:++特殊词符:<any>  #???<eof> #xxx: <bof> <pass>
+    ???无限量提供<eof> 防止 非全文尾nullable???
+  集合运算:(<any> - ...)
+TODO:++特殊词锚:<@bof> <@eof> <@any> #??? <@pass>
+TODO:++特殊词锚:<!bof> <!eof> #??? <!any> #??? <!pass>
+
+
+[[
+'/sdcard/0my_files/book//lang/编译/Modern Compiler Implementation in C (rev+ex)(2004).djvu'
+===
+predictive parsing table:
+  #唯一优点:手写:recursive-descent parser
+  All the information we need can be encoded as a two-dimensional table of productions, indexed by nonterminals X and terminals T. This is called a predictive parsing table.
+  To construct this table, enter production X --> y in row X, column T of the table for each T <- FIRST(y). Also, if y is nullable, enter the production in row X, column T for each T <- FOLLOW[X].
+  An ambiguous grammar will always lead to duplicate entries in a predictive parsing table.
+
+#这里是原版算法{使用:FIRST_set,FOLLOW_set}:
+predictive_parsing_table = {}
+for production in productions:
+    (nonterminal, sentential_form) = production
+    for terminal in FIRST_set_of(nonterminal):
+        dict_add__new(predictive_parsing_table, (nonterminal,terminal), production)
+            #predictive_parsing_table[(nonterminal,terminal)] = production
+    if nullable(sentential_form):
+        for terminal in FOLLOW_set_of(nonterminal):
+            dict_add__new(predictive_parsing_table, (nonterminal,terminal), production)
+
+===
+FIRST set
+头符集
+  nullable symbol
+  允空母符
+FOLLOW set
+  继符集
+  刍议:改为:尾前瞻符集+唯一允空分支纟允空母符
+    最后:运行期数据:
+      +头符集纟分支纟母符
+      +唯一允空分支纟允空母符 # -> +欤允空纟母符
+      #无需:+尾前瞻符集纟母符{仅用于编译期断言语法无歧义}
+    若是『前瞻找不到匹配分支{使用:头符集纟分支纟母符}』而『母符允空』，则 路由到允空分支
+        vs:原版:前瞻匹配分支{使用:头符集纟分支纟母符+继符集纟允空母符{唯一允空分支纟允空母符}}
+===
+]]

@@ -1,0 +1,207 @@
+
+e others/数学/编程/设计/匿名函数演算器.txt
+lambda-calculus
+
+
+[[[
+===
+中选方案:
+  (勤性求值&&面向机器&&动态全语境只增传入)
+<<==:
+===
+分类纟所有参数:
+  *动态参数:
+    *输入参数:(the_only_input_arg@惰性求值curry|args@勤性求值(也可curry)) #可能变成 vs args_ex
+    *语境参数:nonlocals
+      *父函数的输入参数
+      *父函数的内部动态变量:let/where
+      #类似C++:: [nonlocals](args){...}
+      # class Lambda:__init__(nonlocals),__call__(args)
+  *静态参数:
+    *系统内建变量
+    *模块全局变量
+
+===
+方案纟参数传入与引用:
+  *静态参数:使用 元组<数组>
+  *动态参数:
+    *动态全语境只增传入:
+      *使用finger_tree(双侧展翅树)
+      *使用[简化实现:]单侧展翅树牜只增牜无分裂无合并(二进制计数系统)
+      #传参耗时:最坏log2(语境规模)
+      #引用参数耗时:最坏log2(语境规模)
+    *动态紧致打包成数组传入:
+      nonlocals作为 隐性输入参数/函数对象的构造参数
+      args_ex:=[*nonlocals,the_only_input_arg/*args]
+      or:args_ex:=(nonlocals,the_only_input_arg/*args)
+        curry导致 nonlocals直传(不必 拆包再打包) 多个函数(这些函数:构成一个多参数函数)
+      #传参耗时:sum(depth per arg@args_ex)
+      #引用参数耗时:O(1)
+
+===
+优劣比较冫方案纟动态参数传入与引用:
+  *实现难度:
+    *动态全语境只增传入:
+      先得实现 (双侧展翅树|单侧展翅树牜只增牜无分裂无合并)
+    *动态紧致打包成数组传入:
+      全数组:更容易实现:
+      见:seed.types.FreeLocalBatchRouter4py
+  *动态耗储:
+    *惰性求值:
+      动态全语境只增传入:更费内存:最坏情况不可接受
+    *勤性求值:
+      动态全语境只增传入:更省内存
+  *动态耗时:
+    语境规模==函数嵌套深度+数量纟函数内部变量
+    *人工手写的代码:
+      !! 语境规模 十分有限:
+      => 动态全语境只增传入:不慢
+      !! 函数嵌套深度 远小于 语境规模:
+      => 动态紧致打包成数组传入:很快
+      动态全语境只增传入:较慢
+    *机器翻译生成的代码:
+      !! 函数嵌套深度 不可预测
+      !! 语境规模 不可预测
+      动态紧致打包成数组传入:最坏情况不可接受
+      动态全语境只增传入:可预测性更佳
+
+
+
+(惰性求值&&面向人)==>>动态紧致打包成数组传入
+(勤性求值&&面向机器)==>>动态全语境只增传入
+===
+]]]
+
+
+
+
+
+[[
+calculus
+复数形式:calculi
+===
+calculus
+《源自拉丁文“ (计算用的) 石头”的意思》
+<<名词>>
+(pl. -li [e-la; -lai],~.es)
+1 (C)‘医’结石 (stone)
+2 (U)‘数学’微积分学
+
+→differential calculus,integral calculus.
+]]
+
+
+
+
+[[[[[
+
+闭包:closure
+  __closure__
+  __globals__
+  __code__
+  __defaults__
+  __kwdefaults__
+  __dict__
+
+
+py.inspect.getclosurevars(func)
+  Get the mapping of free variables to their current values.
+
+  Returns a named tuple of dicts mapping the current nonlocal, global and builtin references as seen by the body of the function.
+  A final set of unbound names that could not be resolved is also provided.
+
+
+[[
+def getclosurevars(func):
+def ismethod(object):
+def isfunction(object):
+===
+mkdir  $my_tmp/py_lib_src/
+cp -iv /data/data/com.termux/files/usr/lib/python3.11/inspect.py $my_tmp/py_lib_src/
+view /sdcard/0my_files/tmp//py_lib_src/inspect.py
+===
+ClosureVars = namedtuple('ClosureVars', 'nonlocals globals builtins unbound')
+
+def getclosurevars(func):
+    """
+    Get the mapping of free variables to their current values.
+
+    Returns a named tuple of dicts mapping the current nonlocal, global
+    and builtin references as seen by the body of the function. A final
+    set of unbound names that could not be resolved is also provided.
+    """
+
+    if ismethod(func):
+        func = func.__func__
+
+    if not isfunction(func):
+        raise TypeError("{!r} is not a Python function".format(func))
+
+    code = func.__code__
+    # Nonlocal references are named in co_freevars and resolved
+    # by looking them up in __closure__ by positional index
+    if func.__closure__ is None:
+        nonlocal_vars = {}
+    else:
+        nonlocal_vars = {
+            var : cell.cell_contents
+            for var, cell in zip(code.co_freevars, func.__closure__)
+       }
+
+    # Global and builtin references are named in co_names and resolved
+    # by looking them up in __globals__ or __builtins__
+    global_ns = func.__globals__
+    builtin_ns = global_ns.get("__builtins__", builtins.__dict__)
+    if ismodule(builtin_ns):
+        builtin_ns = builtin_ns.__dict__
+    global_vars = {}
+    builtin_vars = {}
+    unbound_names = set()
+    for name in code.co_names:
+        if name in ("None", "True", "False"):
+            # Because these used to be builtins instead of keywords, they
+            # may still show up as name references. We ignore them.
+            continue
+        try:
+            global_vars[name] = global_ns[name]
+        except KeyError:
+            try:
+                builtin_vars[name] = builtin_ns[name]
+            except KeyError:
+                unbound_names.add(name)
+
+    return ClosureVars(nonlocal_vars, global_vars,
+                       builtin_vars, unbound_names)
+#end-getclosurevars
+
+def ismethod(object):
+    """Return true if the object is an instance method.
+
+    Instance method objects provide these attributes:
+        __doc__         documentation string
+        __name__        name with which this method was defined
+        __func__        function object containing implementation of method
+        __self__        instance to which this method is bound"""
+    return isinstance(object, types.MethodType)
+
+
+def isfunction(object):
+    """Return true if the object is a user-defined function.
+
+    Function objects provide these attributes:
+        __doc__         documentation string
+        __name__        name with which this function was defined
+        __code__        code object containing compiled function bytecode
+        __defaults__    tuple of any default values for arguments
+        __globals__     global namespace in which this function was defined
+        __annotations__ dict of parameter annotations
+        __kwdefaults__  dict of keyword only parameters with defaults"""
+    return isinstance(object, types.FunctionType)
+
+
+
+]]
+
+
+]]]]]
+
