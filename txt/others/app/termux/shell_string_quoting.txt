@@ -1,0 +1,245 @@
+
+e others/app/termux/shell_string_quoting.txt
+view others/app/termux/shell_string_expansion.txt
+
+[[
+"!" --> '!'"" otherwise maybe history expansion
+'\' <==> "\\"
+
+"!..." --> '!'"..."
+$ echo "!..."
+bash: !...: event not found
+$ echo '!'"..."
+!...
+
+<<==:
+源起:
+view ../../python3_src/seed/recognize/recognizer_LLoo__ver2_/grammar4IRecognizerLLoo.py
+
+fail:grep_between -s -u -ptn "(?<!['\"#]|# *\+\+|# *@?)(?!\d)\w+(?=\s*:=)" -begin '#begin-grammar4IRecognizerLLoo' -end '#end-grammar4IRecognizerLLoo' -i ../../python3_src/seed/recognize/recognizer_LLoo__ver2_/grammar4IRecognizerLLoo.py
+    ??? "<![" has special meanings in bash shell ???
+fail:grep_between -s -u -ptn "(?<!# *\+\+|# *@?|['\"#])(?!\d)\w+(?=\s*:=)" -begin '#begin-grammar4IRecognizerLLoo' -end '#end-grammar4IRecognizerLLoo' -i ../../python3_src/seed/recognize/recognizer_LLoo__ver2_/grammar4IRecognizerLLoo.py
+    ??? "<!#" has special meanings in bash shell ???
+]]
+
+[[
+目录:
+  $'...'
+  $"..."
+  '...'
+  "..."
+
+
+===
+$'...'
+  string{ANSI C standard}
+  C语言字符串解码格式
+
+===
+$"..."
+  be translated according to the current locale.
+  本地化翻译
+
+===
+'...'
+单引号:
+  regex"'[^']*'"
+    除了『'』其他字符无特殊含义
+    内部不能含『'』
+      #可以通过字符串黏连以含之
+      #     echo 'xxx'"'"
+    内部『<newline>』无特殊含义
+    内部『\』无特殊含义
+$ echo 'xxx'"'"
+xxx'
+$ echo 'y\
+> x'
+y\
+x
+$ echo "y\
+x"
+yx
+
+===
+"..."
+双引号:
+  regex'"([^"\\]|\\.)*"'
+    内部『<newline>』无特殊含义
+    有特殊含义(可能有):『!』
+    有特殊含义:『$』
+      有不同含义:『"$*"』vs『$*』
+      有不同含义:『"$@"』vs『$@』
+    有特殊含义:『`』
+    有特殊含义:『\』
+      『\<newline>』-->『』
+          #取消换行
+      『\\』-->『\』
+      『\$』-->『$』
+      『\"』-->『"』
+      『\`』-->『`』
+          #原字符(取消特殊含义)++不保留『\』
+      『\其他字符』-->『\其他字符』
+          #原字符(取消特殊含义)++保留『\』
+          『\!』-->『\!』 取消历史注入++保留『\』
+          『\'』-->『\'』 #vs:『\"』-->『"』
+
+"!..." --> '!'"..."
+$ echo "!..."
+bash: !...: event not found
+$ echo '!'"..."
+!...
+
+$ echo "\!"
+\!
+$ echo "\-"
+\-
+$ echo "\n"
+\n
+$ echo "\'"
+\'
+###上面保留『\』
+$ echo "\""
+"
+$ echo "\`"
+`
+$ echo "\$"
+$
+$ echo "\\"
+\
+$ echo "y\
+x"
+yx
+$ echo 'y\
+> x'
+y\
+x
+
+
+]]
+<<==:
+[[
+copy from:view others/app/termux/help/bash.man.txt
+===
+begin-bash_QUOTING
+===
+QUOTING
+       Quoting is used to remove the special meaning of certain characters or
+       words to the shell.  Quoting can be used to disable special treatment
+       for special characters, to prevent reserved words from being recognized
+       as such, and to prevent parameter expansion.
+
+       Each of the metacharacters listed above under DEFINITIONS has special
+       meaning to the shell and must be quoted if it is to represent itself.
+
+       When the command history expansion facilities are being used (see
+       HISTORY EXPANSION below), the history expansion character, usually !,
+       must be quoted to prevent history expansion.
+
+       There are three quoting mechanisms: the escape character, single
+       quotes, and double quotes.
+
+       A non-quoted backslash (\) is the escape character.  It preserves the
+       literal value of the next character that follows, with the exception of
+       <newline>.  If a \<newline> pair appears, and the backslash is not
+       itself quoted, the \<newline> is treated as a line continuation (that
+       is, it is removed from the input stream and effectively ignored).
+
+       Enclosing characters in single quotes preserves the literal value of
+       each character within the quotes.  A single quote may not occur between
+       single quotes, even when preceded by a backslash.
+
+       Enclosing characters in double quotes preserves the literal value of
+       all characters within the quotes, with the exception of $, `, \, and,
+       when history expansion is enabled, !.  When the shell is in posix mode,
+       the ! has no special meaning within double quotes, even when history
+       expansion is enabled.  The characters $ and ` retain their special
+       meaning within double quotes.  The backslash retains its special
+       meaning only when followed by one of the following characters: $, `, ",
+       \, or <newline>.  A double quote may be quoted within double quotes by
+       preceding it with a backslash.  If enabled, history expansion will be
+       performed unless an !  appearing in double quotes is escaped using a
+       backslash.  The backslash preceding the !  is not removed.
+
+       The special parameters * and @ have special meaning when in double
+       quotes (see PARAMETERS below).
+
+       Words of the form $'string' are treated specially.  The word expands to
+       string, with backslash-escaped characters replaced as specified by the
+       ANSI C standard.  Backslash escape sequences, if present, are decoded
+       as follows:
+              \a     alert (bell)
+              \b     backspace
+              \e
+              \E     an escape character
+              \f     form feed
+              \n     new line
+              \r     carriage return
+              \t     horizontal tab
+              \v     vertical tab
+              \\     backslash
+              \'     single quote
+              \"     double quote
+              \?     question mark
+              \nnn   the eight-bit character whose value is the octal value
+                     nnn (one to three octal digits)
+              \xHH   the eight-bit character whose value is the hexadecimal
+                     value HH (one or two hex digits)
+              \uHHHH the Unicode (ISO/IEC 10646) character whose value is the
+                     hexadecimal value HHHH (one to four hex digits)
+              \UHHHHHHHH
+                     the Unicode (ISO/IEC 10646) character whose value is the
+                     hexadecimal value HHHHHHHH (one to eight hex digits)
+              \cx    a control-x character
+
+       The expanded result is single-quoted, as if the dollar sign had not
+       been present.
+
+       A double-quoted string preceded by a dollar sign ($"string") will cause
+       the string to be translated according to the current locale.  The
+       gettext infrastructure performs the message catalog lookup and
+       translation, using the LC_MESSAGES and TEXTDOMAIN shell variables.  If
+       the current locale is C or POSIX, or if there are no translations
+       available, the dollar sign is ignored.  If the string is translated and
+       replaced, the replacement is double-quoted.
+
+===
+end-bash_QUOTING
+]]
+[[
+metacharacter
+===
+copy from:view others/app/termux/help/bash.man.txt
+===
+DEFINITIONS
+       The following definitions are used throughout the rest of this
+       document.
+       blank  A space or tab.
+       word   A sequence of characters considered as a single unit by the
+              shell.  Also known as a token.
+       name   A word consisting only of alphanumeric characters and
+              underscores, and beginning with an alphabetic character or an
+              underscore.  Also referred to as an identifier.
+       metacharacter
+              A character that, when unquoted, separates words.  One of the
+              following:
+              |  & ; ( ) < > space tab newline
+       control operator
+              A token that performs a control function.  It is one of the
+              following symbols:
+              || & && ; ;; ;& ;;& ( ) | |& <newline>
+
+RESERVED WORDS
+       Reserved words are words that have a special meaning to the shell.  The
+       following words are recognized as reserved when unquoted and either the
+       first word of a command (see SHELL GRAMMAR below), the third word of a
+       case or select command (only in is valid), or the third word of a for
+       command (only in and do are valid):
+
+       ! case  coproc  do done elif else esac fi for function if in select
+       then until while { } time [[ ]]
+
+
+===
+]]
+
+

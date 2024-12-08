@@ -1,0 +1,216 @@
+
+e others/数学/编程/永恒代码/多况态真值+输出暨异常归类.txt
+  mv -iv others/数学/编程/设计/多况态真值.txt others/数学/编程/永恒代码/多况态真值+输出暨异常归类.txt
+view others/数学/编程/永恒代码/毛病纟异常bug-try-catch.txt
+  *低层不可靠值%(不可捕获|未被捕获) ==>> 本层冷宫异常@继承抛出
+    *低层冷宫异常%不可捕获 ==>> 本层冷宫异常@继承抛出
+    *低层意图异常@未被捕获 ==>> 本层冷宫异常@继承抛出
+  *低层可靠值%(自动捕获|人工捕获) ==>> (本层可靠值%(显式返回|显式抛出)|本层冷宫异常@人工抛出)
+    *低层意图异常@人工捕获 ==>> (本层正常返回%显式返回|本层意图异常%显式抛出|本层冷宫异常@人工抛出)
+    *低层正常返回%自动捕获 ==>> (本层正常返回%显式返回|本层意图异常%显式抛出|本层冷宫异常@人工抛出)
+
+
+
+
+[[
+输出暨异常归类乂意图异常
+输出暨异常归类x意图异常
+===
+冷宫异常:unreliable_error
+意图异常:intended_exception
+    #reliable_exception/designated_exception
+===
+case4reply:
+  0neg_ok
+  1pseudo_ok
+    10meta_ok
+    11ok
+  2not_implemented
+    20unreliabled_not_implemented_failure
+    21intended_not_implemented_exception
+  3yet
+    30suspend
+    31interrupt
+    32physical_failure
+      320unreliabled_physical_failure
+      321intended_physical_exception
+  4logical_error
+    40unreliabled_logical_error
+    41intended_logical_exception
+冷宫异常:unreliable_error
+    20unreliabled_not_implemented_failure
+    320unreliabled_physical_failure
+    40unreliabled_logical_error
+意图异常:intended_exception
+    21intended_not_implemented_exception
+    321intended_physical_exception
+    41intended_logical_exception
+===
+]]
+<<==:
+[[
+输出暨异常归类
+===
+boolean:
+  0false
+  1true
+  2not_implemented
+  3yet
+  4logical_error
+===
+case4reply:
+  0neg_ok #negative_definition
+  1pseudo_ok
+    10meta_ok #escape_ok #other_ok #out_of_band #extra #side_effect
+    11ok
+  2not_implemented
+  3yet
+    30suspend
+    31interrupt
+    32physical_failure
+  4logical_error
+===
+]]
+<<==:
+[[
+
+计算结果:
+  *正常:
+    有结果
+    任何后续版本保持相同结果
+    *成果
+      可靠输出值
+    *错误
+      确定型错误/意图错误/可靠错误值
+      *负型定义
+        #类似:unicode非字符编码点
+        *输入数据格式错误
+          #ArithmeticError
+          #SyntaxError
+          #TypeError
+          #ValueError
+          #LookupError
+    *例外资讯/额外结果/带外信号/意图异常/意图副作用/可靠副作用
+      #StopIteration
+      #StopAsyncIteration
+  *异常
+    无结果
+    *未实现:待实现:允许不同结果乊不同后续版本
+        #类似:编码空间未定义编码点
+        #类似:unicode未赋值编码点\-\非字符编码点
+        #NotImplementedError
+        #
+    *中止:
+      *待续:允许重启乊运算过程暂停
+        #类似:断点续传
+      *打断:
+        #KeyboardInterrupt # ^C
+        #SystemExit # ^D
+        #GeneratorExit
+        #?TimeoutError:内部步骤时钟超限#比如:分解整数...
+      *外败:外际操作失败:输入输出失败
+          #OSError
+          #     ?TimeoutError:外部设备耗时超限
+          #MemoryError
+          #BufferError
+          #EOFError
+          #ImportError
+    *内错:算法理则错误:
+      *平台算法错误:
+        #SystemError#see below
+      *应用算法错误:本体理则错误
+        #AssertionError
+        #NameError
+        #AttributeError
+        #RecursionError
+        #ReferenceError
+    *???未定义:不确定性异常
+        #???RuntimeError#see below
+          #exclude:NotImplementedError
+          #exclude:RecursionError
+
+]]
+
+
+
+
+[[
+SystemError
+  Raised when the interpreter finds an internal error, but the situation does not look so serious to cause it to abandon all hope. The associated value is a string indicating what went wrong (in low-level terms).
+
+  You should report this to the author or maintainer of your Python interpreter. Be sure to report the version of the Python interpreter (sys.version; it is also printed at the start of an interactive Python session), the exact error message (the exception’s associated value) and if possible the source of the program that triggered the error.
+
+RuntimeError
+  Raised when an error is detected that doesn’t fall in any of the other categories. The associated value is a string indicating what precisely went wrong.
+
+]]
+[[
+BaseException
+ +-- SystemExit
+ +-- KeyboardInterrupt
+ +-- GeneratorExit
+ +-- Exception
+      +-- StopIteration
+      +-- StopAsyncIteration
+      +-- ArithmeticError
+      |    +-- FloatingPointError
+      |    +-- OverflowError
+      |    +-- ZeroDivisionError
+      +-- AssertionError
+      +-- AttributeError
+      +-- BufferError
+      +-- EOFError
+      +-- ImportError
+      |    +-- ModuleNotFoundError
+      +-- LookupError
+      |    +-- IndexError
+      |    +-- KeyError
+      +-- MemoryError
+      +-- NameError
+      |    +-- UnboundLocalError
+      +-- OSError
+      |    +-- BlockingIOError
+      |    +-- ChildProcessError
+      |    +-- ConnectionError
+      |    |    +-- BrokenPipeError
+      |    |    +-- ConnectionAbortedError
+      |    |    +-- ConnectionRefusedError
+      |    |    +-- ConnectionResetError
+      |    +-- FileExistsError
+      |    +-- FileNotFoundError
+      |    +-- InterruptedError
+      |    +-- IsADirectoryError
+      |    +-- NotADirectoryError
+      |    +-- PermissionError
+      |    +-- ProcessLookupError
+      |    +-- TimeoutError
+      +-- ReferenceError
+      +-- RuntimeError
+      |    +-- NotImplementedError
+      |    +-- RecursionError
+      +-- SyntaxError
+      |    +-- IndentationError
+      |         +-- TabError
+      +-- SystemError
+      +-- TypeError
+      +-- ValueError
+      |    +-- UnicodeError
+      |         +-- UnicodeDecodeError
+      |         +-- UnicodeEncodeError
+      |         +-- UnicodeTranslateError
+      +-- Warning
+           +-- DeprecationWarning
+           +-- PendingDeprecationWarning
+           +-- RuntimeWarning
+           +-- SyntaxWarning
+           +-- UserWarning
+           +-- FutureWarning
+           +-- ImportWarning
+           +-- UnicodeWarning
+           +-- BytesWarning
+           +-- ResourceWarning
+
+]]
+
+
+
