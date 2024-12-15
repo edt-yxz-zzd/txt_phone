@@ -8021,6 +8021,14 @@ py_adhoc_call   script.搜索冫无重复十进制位数字型素数乊位数   
 __all__ = r'''
 搜索冫无重复某进制位数字型素数乊位数扌
 搜索冫某进制位数字型素数乊位数扌
+
+
+
+
+intersection_set_of_last_uint_per_line__base10_
+iter_read_last_uint_per_line__base10_
+read_decimal_numeration_as_other_radix_numeration_
+iter_read_last_decimal_digits_per_line__if_isprime_for_all_bases_
 '''.split()#'''
 __all__
 ___begin_mark_of_excluded_global_names__0___ = ...
@@ -8065,7 +8073,7 @@ def 搜索冫某进制位数字型素数乊位数扌(num_digits, /, *, base=10, 
     return it
 
 
-def 搜索冫无重复某进制位数字型素数乊位数扌(num_digits, /, *, base=10, int_vs_str=False, str_with_int=False, str_with_int=False,, iter_vs_list=False, perm_vs_comb=False, may_max_digit=None):
+def 搜索冫无重复某进制位数字型素数乊位数扌(num_digits, /, *, base=10, int_vs_str=False, str_with_int=False, to_swap_fmt4str_with_int=False, iter_vs_list=False, perm_vs_comb=False, may_max_digit=None):
     '# [perm_vs_comb:whether digits are sorted] # [str_with_int takes no effect if not int_vs_str] # [may_max_digit is used to restrict digits in use]'
     ######################
     check_type_is(bool, int_vs_str)
@@ -8246,15 +8254,21 @@ def iter_read_last_uint_per_line__base10_(ipath, /, *, encoding, int_vs_str=Fals
             yield f(s)
 
 def read_decimal_numeration_as_other_radix_numeration_(radix, decimal_digits_str, /, *, mid_radix=10):
+    r'''[[[
+    radix4read = radix
+    radix4show__implictly = mid_radix
+    radix4show__explictly = 10#decimal
+    #]]]'''#'''
     assert decimal_digits_str.isdecimal()
     offset = ord('0')
     digits = map((-offset).__add__, map(ord, decimal_digits_str))
     if not mid_radix == 10:
-        u = radix_repr2uint__big_endian(10, digits)
-        mid_digits = uint2radix_repr__big_endian(mid_radix, u)
+        u10 = radix_repr2uint__big_endian(10, digits)
+        mid_digits = uint2radix_repr__big_endian(mid_radix, u10)
         digits = mid_digits
     digits
     u = radix_repr2uint__big_endian(radix, digits)
+        # [allow:radix4read < mid_radix] i.e. [allow digit overflow]
     return u
 def iter_read_last_decimal_digits_per_line__if_isprime_for_all_bases_(radixes, ipath, /, *, encoding, mid_radix=10):
     radixes = tuple(radixes)
