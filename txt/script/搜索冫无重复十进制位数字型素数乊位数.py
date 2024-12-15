@@ -8039,13 +8039,14 @@ _max1 = is_prime__using_A014233_.upperbound
 ___end_mark_of_excluded_global_names__0___ = ...
 
 
-def 搜索冫某进制位数字型素数乊位数扌(num_digits, /, *, base=10, int_vs_str=False, str_with_int=False, iter_vs_list=False, no_duplicate_digits=False):
+def 搜索冫某进制位数字型素数乊位数扌(num_digits, /, *, base=10, int_vs_str=False, str_with_int=False, to_swap_fmt4str_with_int=False, iter_vs_list=False, no_duplicate_digits=False):
     check_type_is(bool, no_duplicate_digits)
     if no_duplicate_digits:
-        return 搜索冫无重复某进制位数字型素数乊位数扌(num_digits, base=base, int_vs_str=int_vs_str, str_with_int=str_with_int, iter_vs_list=iter_vs_list)
+        return 搜索冫无重复某进制位数字型素数乊位数扌(num_digits, base=base, int_vs_str=int_vs_str, str_with_int=str_with_int, to_swap_fmt4str_with_int=to_swap_fmt4str_with_int, iter_vs_list=iter_vs_list)
     ######################
     check_type_is(bool, int_vs_str)
     check_type_is(bool, str_with_int)
+    check_type_is(bool, to_swap_fmt4str_with_int)
     check_type_is(bool, iter_vs_list)
     check_int_ge(1, num_digits)
     check_int_ge(2, base)
@@ -8058,17 +8059,18 @@ def 搜索冫某进制位数字型素数乊位数扌(num_digits, /, *, base=10, 
         tbl = _get_table4base(base)
     it = filter(is_prime__using_A014233_, range(min0, max1))
     if int_vs_str:
-        it = _us2ss__base_(base, it, str_with_int=str_with_int)
+        it = _us2ss__base_(base, it, str_with_int=str_with_int, to_swap_fmt4str_with_int=to_swap_fmt4str_with_int)
     if iter_vs_list:
         return list(it)
     return it
 
 
-def 搜索冫无重复某进制位数字型素数乊位数扌(num_digits, /, *, base=10, int_vs_str=False, str_with_int=False, iter_vs_list=False, perm_vs_comb=False, may_max_digit=None):
+def 搜索冫无重复某进制位数字型素数乊位数扌(num_digits, /, *, base=10, int_vs_str=False, str_with_int=False, str_with_int=False,, iter_vs_list=False, perm_vs_comb=False, may_max_digit=None):
     '# [perm_vs_comb:whether digits are sorted] # [str_with_int takes no effect if not int_vs_str] # [may_max_digit is used to restrict digits in use]'
     ######################
     check_type_is(bool, int_vs_str)
     check_type_is(bool, str_with_int)
+    check_type_is(bool, to_swap_fmt4str_with_int)
     check_type_is(bool, iter_vs_list)
     check_type_is(bool, perm_vs_comb)
     check_int_ge(1, num_digits)
@@ -8109,7 +8111,7 @@ def 搜索冫无重复某进制位数字型素数乊位数扌(num_digits, /, *, 
             digitss = map(fst, pairs)
             ss = _digitss2ss__table_(tbl, digitss)
         else:
-            ss = _digits_uint_pairs2ss__table_(tbl, pairs)
+            ss = _digits_uint_pairs2ss__table_(tbl, pairs, to_swap_fmt4str_with_int=to_swap_fmt4str_with_int)
         ss
         it = ss
     else:
@@ -8119,12 +8121,17 @@ def 搜索冫无重复某进制位数字型素数乊位数扌(num_digits, /, *, 
     if iter_vs_list:
         return list(it)
     return it
-def _us2ss__base_(base, us, /, *, str_with_int:bool):
+def _us2ss__base_(base, us, /, *, str_with_int:bool, to_swap_fmt4str_with_int:bool):
     u2s_ = _mk_u2s__5base(base)
     if str_with_int:
-        def f(u, /):
-            s = u2s_(u)
-            return f'[{u}]{s}'#fmt4str_with_int
+        if to_swap_fmt4str_with_int:
+            def f(u, /):
+                s = u2s_(u)
+                return f'({s}){u}'#swapped_fmt4str_with_int
+        else:
+            def f(u, /):
+                s = u2s_(u)
+                return f'[{u}]{s}'#fmt4str_with_int
     else:
         f = u2s_
     f
@@ -8199,11 +8206,15 @@ def _mk_digits2s__table_(tbl, /):
 def _digitss2ss__table_(tbl, digitss, /):
     ds2s_ = _mk_digits2s__table_(tbl)
     return map(ds2s_, digitss)
-def _digits_uint_pairs2ss__table_(tbl, pairs, /):
+def _digits_uint_pairs2ss__table_(tbl, pairs, /, *, to_swap_fmt4str_with_int:bool):
+    # [str_with_int=True]
     ds2s_ = _mk_digits2s__table_(tbl)
     for digits, u in pairs:
         s = ds2s_(digits)
-        yield f'[{u}]{s}'#fmt4str_with_int
+        if to_swap_fmt4str_with_int:
+            yield f'({s}){u}'#swapped_fmt4str_with_int
+        else:
+            yield f'[{u}]{s}'#fmt4str_with_int
 
 
 def intersection_set_of_last_uint_per_line__base10_(ipath0, ipath1, /, *, encoding):
@@ -8234,17 +8245,22 @@ def iter_read_last_uint_per_line__base10_(ipath, /, *, encoding, int_vs_str=Fals
             #u = int(s)
             yield f(s)
 
-def read_decimal_numeration_as_other_radix_numeration_(radix, decimal_digits_str, /):
+def read_decimal_numeration_as_other_radix_numeration_(radix, decimal_digits_str, /, *, mid_radix=10):
     assert decimal_digits_str.isdecimal()
     offset = ord('0')
     digits = map((-offset).__add__, map(ord, decimal_digits_str))
+    if not mid_radix == 10:
+        u = radix_repr2uint__big_endian(10, digits)
+        mid_digits = uint2radix_repr__big_endian(mid_radix, u)
+        digits = mid_digits
+    digits
     u = radix_repr2uint__big_endian(radix, digits)
     return u
-def iter_read_last_decimal_digits_per_line__if_isprime_for_all_bases_(radixes, ipath, /, *, encoding):
+def iter_read_last_decimal_digits_per_line__if_isprime_for_all_bases_(radixes, ipath, /, *, encoding, mid_radix=10):
     radixes = tuple(radixes)
     ss = iter_read_last_uint_per_line__base10_(ipath, encoding=encoding, int_vs_str=True)
     for s in ss:
-        if all(is_prime__using_A014233_(read_decimal_numeration_as_other_radix_numeration_(radix, s)) for radix in radixes):
+        if all(is_prime__using_A014233_(read_decimal_numeration_as_other_radix_numeration_(radix, s, mid_radix=mid_radix)) for radix in radixes):
             yield s
     return
 

@@ -2,6 +2,14 @@
 r'''[[[
 e script/搜索冫某进制表达数乊多种进制解读皆为素数.py
 [[
+usage4output:
+cat script/搜索冫某进制表达数乊多种进制解读皆为素数-radixes_17_31-pow_12_8-total_6709.out.txt   |  grep -P '(?<=[(])[0-9A-F]*(?=[)])' -o  | more
+    NOTE:[12==radix4show{tail-decimal}]
+7z e  -so   script/搜索冫某进制表达数乊多种进制解读皆为素数.py.八位十六进制数囗后续五种素进制解读皆为素数.out.7z   |  grep -P '(?<=[(])[0-9A-F]*(?=[)])' -o  | more
+    NOTE:[16==radix4show{tail-decimal}]
+]]
+
+[[
 源起:
     view script/搜索冫无重复十进制位数字型素数乊位数.py
         八位数素数乊丮十进制丨十一进制丨十三进制丨十七进制丨十九进制丨廿三进制丨廿九进制丨卅一进制厈
@@ -17,6 +25,14 @@ e script/搜索冫某进制表达数乊多种进制解读皆为素数.py
 script.搜索冫某进制表达数乊多种进制解读皆为素数
 py -m nn_ns.app.debug_cmd   script.搜索冫某进制表达数乊多种进制解读皆为素数 -x # -off_defs
 py -m nn_ns.app.doctest_cmd script.搜索冫某进制表达数乊多种进制解读皆为素数:__doc__ -ht # -ff -df
+
+
+[[
+grep fmt4str_with_int -r script/
+script/搜索冫某进制表达数乊多种进制解读皆为素数.py
+script/搜索冫无重复十进制位数字型素数乊位数.py
+]]
+
 
 
 py_adhoc_call   script.搜索冫某进制表达数乊多种进制解读皆为素数   @搜索冫某进制表达数乊多种进制解读皆为素数扌 +int_vs_str +str_with_int +iter_vs_list  ='[11,13]' =10 =2 =100
@@ -2086,7 +2102,565 @@ py_adhoc_call   script.搜索冫无重复十进制位数字型素数乊位数   
 ]]
 [2,3,5,7,11,13,17,19,23,29,31,37,41,43,47,53,59,61,67,71]
     <<== view ../../python3_src/nn_ns/math_nn/numbers/prime_number.py
+[17,19,23,29,31,37,41,43]%16 == {1,3..=15}
 
+
+[[
+见上面:08tmp#十进制:10**8
+这里 增加到12进制:12**8
+===
+py -m timeit -n 1 -r 1 'import os; os.system(r"""py_adhoc_call   script.搜索冫某进制表达数乊多种进制解读皆为素数   ,搜索冫某进制表达数乊多种进制解读皆为素数扌 ="[13,17,19]" =12    =13 ="12**3" --imay_radix4beyond=10 +int_vs_str +str_with_int | lineno   >  /sdcard/0my_files/tmp/12_3tmp""");'
+1 loop, best of 1: 1.84 sec per loop
+view /sdcard/0my_files/tmp/12_3tmp
+1:'[118]9A'
+2:'[129]A9'
+3:'[479]33B'
+4:'[573]3B9'
+5:'[1378]96A'
+6:'[1431]9B3'
+7:'[1447]A07'
+8:'[1493]A45'
+9:'[1499]A4B'
+10:'[1521]A69'
+11:'[1612]B24'
+12:'[1651]B57'
+13:'[1703]B9B'
+===
+py -m timeit -n 1 -r 1 'import os; os.system(r"""py_adhoc_call   script.搜索冫某进制表达数乊多种进制解读皆为素数   ,搜索冫某进制表达数乊多种进制解读皆为素数扌 ="[17,19,23,29,31,37,41,43]" =12    =13 ="12**4" --imay_radix4beyond=10 +int_vs_str +str_with_int | lineno   >  /sdcard/0my_files/tmp/12_4tmp""");'
+1 loop, best of 1: 2.09 sec per loop
+view /sdcard/0my_files/tmp/12_4tmp
+1:'[17861]A405'
+    only one
+===
+py -m timeit -n 1 -r 1 'import os; os.system(r"""py_adhoc_call   script.搜索冫某进制表达数乊多种进制解读皆为素数   ,搜索冫某进制表达数乊多种进制解读皆为素数扌 ="[13,17,19]" =12    =13 ="12**5" --imay_radix4beyond=10 | lineno   >  /sdcard/0my_files/tmp/12_5tmp""");'
+1 loop, best of 1: 3.8 sec per loop
+view /sdcard/0my_files/tmp/12_5tmp
+1:118
+... ...
+496:248404
+
+===
+py_adhoc_call   script.搜索冫无重复十进制位数字型素数乊位数   ,str.iter_read_last_decimal_digits_per_line__if_isprime_for_all_bases_ ='[13,17,19]' :'/sdcard/0my_files/tmp/12_5tmp' --encoding:'ascii' --mid_radix=12 | lineno
+1:118
+... ...
+496:248404
+===
+py_adhoc_call   script.搜索冫无重复十进制位数字型素数乊位数   ,str.iter_read_last_decimal_digits_per_line__if_isprime_for_all_bases_ ='[13,17,19,23]' :'/sdcard/0my_files/tmp/12_5tmp' --encoding:'ascii' --mid_radix=12 | lineno
+1:129
+... ...
+155:248404
+===
+py_adhoc_call   script.搜索冫无重复十进制位数字型素数乊位数   ,str.iter_read_last_decimal_digits_per_line__if_isprime_for_all_bases_ ='[13,17,19,23,29]' :'/sdcard/0my_files/tmp/12_5tmp' --encoding:'ascii' --mid_radix=12 | lineno
+1:479
+... ...
+40:245249
+==:
+1:479
+2:1378
+3:1499
+4:1861
+5:2731
+6:3313
+7:4901
+8:5146
+9:5602
+10:6526
+11:13768
+12:17861
+13:20032
+14:27886
+15:62011
+16:101204
+17:107847
+18:110337
+19:110493
+20:110543
+21:118782
+22:123813
+23:126358
+24:135538
+25:165477
+26:174667
+27:182157
+28:186212
+29:189908
+30:191074
+31:209337
+32:223744
+33:228163
+34:229391
+35:230542
+36:233116
+37:239198
+38:239804
+39:239941
+40:245249
+===
+py_adhoc_call   script.搜索冫无重复十进制位数字型素数乊位数   ,str.iter_read_last_decimal_digits_per_line__if_isprime_for_all_bases_ ='[13,17,19,23,29,31]' :'/sdcard/0my_files/tmp/12_5tmp' --encoding:'ascii' --mid_radix=12 | lineno
+1:1861
+2:4901
+3:17861
+4:27886
+5:110493
+6:110543
+7:135538
+8:191074
+9:209337
+===
+xxx:py -m timeit -n 1 -r 1 'import os; os.system(r"""py_adhoc_call   script.搜索冫某进制表达数乊多种进制解读皆为素数   ,搜索冫某进制表达数乊多种进制解读皆为素数扌 ="[13,17,19,23,29]" =12    =13 ="12**8" --imay_radix4beyond=10 | lineno   >  /sdcard/0my_files/tmp/12_8tmp""");'
+===
+[17,19,23,29,31,37,41,43]
+12**4
+-1
+py -m timeit -n 1 -r 1 'import os; os.system(r"""py_adhoc_call   script.搜索冫某进制表达数乊多种进制解读皆为素数   ,str.搜索冫某进制表达数乊多种进制解读皆为素数扌 ="[17,19,23,29,31,37,41,43]" =12    =13 ="12**4" --imay_radix4beyond=-1 +int_vs_str +str_with_int +to_swap_fmt4str_with_int | lineno   >  /sdcard/0my_files/tmp/12_44tmp""");'
+view /sdcard/0my_files/tmp/12_44tmp
+1:(A405)17861
+    only one
+===
+[17,19,23,29,31,37,41,43]
+12**8
+-1
+py -m timeit -n 1 -r 1 'import os; os.system(r"""py_adhoc_call   script.搜索冫某进制表达数乊多种进制解读皆为素数   ,str.搜索冫某进制表达数乊多种进制解读皆为素数扌 ="[17,19,23,29,31,37,41,43]" =12    =13 ="12**8" --imay_radix4beyond=-1 +int_vs_str +str_with_int +to_swap_fmt4str_with_int | lineno   >  /sdcard/0my_files/tmp/12_88tmp""");'
+1 loop, best of 1: 5.84e+03 sec per loop
+view /sdcard/0my_files/tmp/12_88tmp
+1:(A405)17861
+... ...
+23:(A32B0131)368001973
+    2位数:0:0
+    3位数:0:0
+    4位数:1:0
+    5位数:1:1
+    6位数:0:0
+    7位数:4:1
+    8位数:17:5
+==:
+1:(A405)17861
+2:(17401)33409
+3:(135AB94)3855136
+4:(4060102)12068498
+5:(9931A23)29178747
+6:(B34A40B)33693131
+7:(1027371A)36480838
+8:(120742A3)41956251
+9:(1986289A)64825462
+10:(2058AB41)73092577
+11:(21373463)75547083
+12:(226518A3)79235259
+13:(3439A134)120389944
+14:(347468AB)121275779
+15:(40428023)144377883
+16:(40858585)145436213
+17:(484439A1)168299977
+18:(57781814)201971536
+19:(5B5A19B9)213459549
+20:(6869A224)240575932
+21:(82898927)294818863
+22:(8355B542)296980034
+23:(A32B0131)368001973
+===
+grep -P '\(\d*\)' /sdcard/0my_files/tmp/12_88tmp
+2:(17401)33409
+4:(4060102)12068498
+11:(21373463)75547083
+15:(40428023)144377883
+16:(40858585)145436213
+18:(57781814)201971536
+21:(82898927)294818863
+===
+py -m timeit -n 1 -r 1 'import os; os.system(r"""py_adhoc_call   script.搜索冫某进制表达数乊多种进制解读皆为素数   ,str.搜索冫某进制表达数乊多种进制解读皆为素数扌 ="[17,19,23,29,31]" =12    =13 ="12**5" --imay_radix4beyond=-1 +int_vs_str +str_with_int +to_swap_fmt4str_with_int | lineno   >  /sdcard/0my_files/tmp/12_55tmp""");'
+1 loop, best of 1: 4.56 sec per loop
+view /sdcard/0my_files/tmp/12_55tmp
+1:(3A)46
+... ...
+56:(BB77B)248207
+    见下面:12_56tmp前56行
+===
+py -m timeit -n 1 -r 1 'import os; os.system(r"""py_adhoc_call   script.搜索冫某进制表达数乊多种进制解读皆为素数   ,str.搜索冫某进制表达数乊多种进制解读皆为素数扌 ="[17,19,23,29,31]" =12    =13 ="12**6" --imay_radix4beyond=-1 +int_vs_str +str_with_int +to_swap_fmt4str_with_int | lineno   >  /sdcard/0my_files/tmp/12_56tmp""");'
+1 loop, best of 1: 34.4 sec per loop
+view /sdcard/0my_files/tmp/12_56tmp
+1:(3A)46
+... ...
+237:(BB272A)2969746
+==:
+1:(3A)46
+2:(A3)123
+3:(274)376
+4:(737)1051
+5:(10B1)1861
+6:(1727)2767
+7:(2A05)4901
+8:(3079)5277
+9:(3095)5297
+10:(3428)5792
+11:(3A33)6663
+12:(4A5A)8422
+13:(4BBB)8639
+14:(9497)16243
+15:(A405)17861
+16:(10358)21236
+17:(109B2)22166
+18:(11803)23619
+19:(1417A)27886
+20:(17401)33409
+21:(17995)34241
+22:(18176)34794
+23:(1B746)40806
+24:(2B091)60589
+25:(34033)69159
+26:(38677)76987
+27:(38686)76998
+28:(3A396)80034
+29:(3A916)80802
+30:(52097)107251
+31:(53483)109539
+32:(53995)110273
+33:(53B39)110493
+34:(53B7B)110543
+35:(5A251)121309
+36:(6615B)134999
+37:(6652A)135538
+38:(70862)146378
+39:(7989A)161974
+40:(84377)173323
+41:(84746)173862
+42:(8760A)178858
+43:(89B4B)183083
+44:(8B879)186141
+45:(926AA)191074
+46:(96062)197066
+47:(A1189)209337
+48:(A37A7)213679
+49:(A5914)217312
+50:(A8742)222242
+51:(B25B8)232412
+52:(B2A26)233022
+53:(B2B14)233152
+54:(B4428)235616
+55:(B701A)240214
+56:(BB77B)248207
+57:(1026B9)253293
+58:(1043AB)256307
+59:(105128)257648
+60:(107B75)262601
+61:(1167BB)281087
+62:(116975)281321
+63:(121573)292839
+64:(1239A4)296908
+65:(13485A)319174
+66:(136027)321439
+67:(1384B2)325574
+68:(1421A1)335497
+69:(157B7A)366286
+70:(1643A5)380717
+71:(164BBA)381886
+72:(1741B7)401179
+73:(175451)403261
+74:(1773B2)406646
+75:(17901B)409559
+76:(184B58)423284
+77:(186097)425203
+78:(1867B4)426232
+79:(188662)429482
+80:(1901B9)435741
+81:(196786)446934
+82:(19B5BA)455326
+83:(1A5229)465153
+84:(1B8746)491814
+85:(1B8818)491924
+86:(1B8B0A)492346
+87:(1B9859)493701
+88:(1B9958)493844
+89:(1BAA09)495657
+90:(201455)500033
+91:(205622)507194
+92:(226588)550328
+93:(241732)583382
+94:(252743)605859
+95:(26B987)642487
+96:(270325)643277
+97:(2776A5)655901
+98:(27976A)659458
+99:(279982)659762
+100:(28655B)674711
+101:(28B295)682961
+102:(291728)687056
+103:(29488A)692458
+104:(29B564)704092
+105:(2B1698)728468
+106:(304A1B)754871
+107:(309665)762989
+108:(313259)772773
+109:(314599)774981
+110:(316733)778647
+111:(320707)788983
+112:(320B3A)789598
+113:(325B19)798213
+114:(330A12)810158
+115:(363199)876357
+116:(36BA49)891417
+117:(3702B6)892074
+118:(371053)893439
+119:(379471)907861
+120:(382745)916901
+121:(39A979)951789
+122:(3A0682)954818
+123:(3A4912)962078
+124:(3A5A27)963967
+125:(3A6936)965562
+126:(3BABA8)993584
+127:(3BB74B)994667
+128:(4026A9)999777
+129:(404645)1003157
+130:(407521)1008169
+131:(4190B4)1031752
+132:(421084)1038628
+133:(432BBA)1062718
+134:(4570BA)1111246
+135:(47975B)1157111
+136:(47B513)1160223
+137:(4863AA)1172146
+138:(48855B)1175831
+139:(489589)1177593
+140:(49922B)1197827
+141:(4A4913)1210911
+142:(4AB837)1222891
+143:(4B0B0B)1225019
+144:(4B1337)1225627
+145:(4B1456)1225794
+146:(4B4433)1230951
+147:(4B5272)1232438
+148:(4B8A26)1238718
+149:(51A64B)1283099
+150:(51AB73)1283847
+151:(542758)1331636
+152:(55110B)1349723
+153:(559B52)1365038
+154:(575B87)1399639
+155:(585B8A)1420378
+156:(586013)1420431
+157:(58608A)1420522
+158:(5A4A3B)1459919
+159:(5A6497)1462579
+160:(5B0951)1473613
+161:(5B098A)1473658
+162:(602261)1496809
+163:(61281B)1518359
+164:(6259AB)1544531
+165:(631454)1557568
+166:(641659)1578597
+167:(659306)1612662
+168:(678316)1652418
+169:(68B7A5)1679021
+170:(694B85)1688213
+171:(69A4B3)1697607
+172:(6A4887)1708519
+173:(6B357B)1727087
+174:(6BABAB)1740083
+175:(702B74)1746952
+176:(70824A)1755994
+177:(724B85)1791893
+178:(73B037)1823083
+179:(7465B4)1835992
+180:(752621)1849849
+181:(76B973)1886631
+182:(772B37)1892059
+183:(78683B)1919279
+184:(796AB4)1940392
+185:(79A614)1946608
+186:(7A355B)1955159
+187:(7ABA54)1969696
+188:(811171)2013349
+189:(813649)2017497
+190:(815357)2020531
+191:(829112)2047838
+192:(82A467)2050063
+193:(83241B)2056919
+194:(834998)2061188
+195:(845B54)2083888
+196:(865192)2123966
+197:(866254)2125792
+198:(894538)2184956
+199:(8B3B77)2225611
+200:(8B3B9B)2225639
+201:(8B5256)2227746
+202:(8B5328)2227856
+203:(8B8A82)2234114
+204:(914122)2267306
+205:(919273)2276151
+206:(919868)2277008
+207:(92B214)2300272
+208:(92B59B)2300807
+209:(944714)2330368
+210:(94A086)2339814
+211:(976A27)2396479
+212:(990A96)2427666
+213:(9954A4)2435452
+214:(9B1286)2469702
+215:(9B5981)2477617
+216:(A03B61)2495161
+217:(A1181A)2511958
+218:(A30556)2551314
+219:(A3B814)2570704
+220:(A47611)2584237
+221:(A4B048)2590328
+222:(A50A06)2593446
+223:(A55AA3)2602203
+224:(A62148)2616392
+225:(A69864)2629516
+226:(A7B4A1)2653177
+227:(AA5309)2704761
+228:(B12A23)2762811
+229:(B47469)2832849
+230:(B57266)2853294
+231:(B5AA92)2859662
+232:(B64B74)2870152
+233:(B72896)2887026
+234:(B77394)2894944
+235:(B853B3)2912247
+236:(B99B3A)2940958
+237:(BB272A)2969746
+===
+py -m timeit -n 1 -r 1 'import os; os.system(r"""py_adhoc_call   script.搜索冫某进制表达数乊多种进制解读皆为素数   ,str.搜索冫某进制表达数乊多种进制解读皆为素数扌 ="[17,19,23,29,31]" =12    =13 ="12**8" --imay_radix4beyond=-1 +int_vs_str +str_with_int +to_swap_fmt4str_with_int | lineno   >  /sdcard/0my_files/tmp/12_58tmp""");'
+du -h /sdcard/0my_files/tmp/12_58tmp
+    160K
+view /sdcard/0my_files/tmp/12_58tmp
+1:(3A)46
+... ...
+6709:(BB96BB59)429380277
+===
+cp -iv /sdcard/0my_files/tmp/12_58tmp script/搜索冫某进制表达数乊多种进制解读皆为素数-radixes_17_31-pow_12_8-total_6709.out.txt
+grep -P '\(\d*\)' script/搜索冫某进制表达数乊多种进制解读皆为素数-radixes_17_31-pow_12_8-total_6709.out.txt | lineno
+1:3:(274)376
+... ...
+1613:5833:(99867602)351488162
+===
+===
+12**8 # ~= 6000seconds ~= 100minutes
+>>> 16**8/10**8
+42.94967296
+>>> 16**8/12**8
+9.988721231519586
+>>> 16**8/12**8 *100/60 # ~= 16hours
+16.64786871919931
+>>> 16**6/10**8
+0.16777216
+>>> 16**7/10**8
+2.68435456
+>>> 16**7/12**8 *100/60 # ~= 1hours
+1.0404917949499568
+>>> 16**6/12**8 *100/60
+0.0650307371843723
+>>> 16**6/12**8 *100 # ~= 4minutes
+3.9018442310623382
+>>> 10**8/12**8 *100 # ~= 23minutes
+23.256803936137786
+
+
+
+mkdir /sdcard/0my_files/tmp/out多种进制解读皆为素数/
+mkdir /sdcard/0my_files/tmp/out多种进制解读皆为素数/pow16_8
+e ../../python3_src/nn_ns/app/append_eof.py
+e ../../python3_src/seed/io/continue_io__folder.py
+from seed.io.continue_io__folder import IFolderBasedContinueJob__mk_result5idx4task
+py_adhoc_call   script.搜索冫某进制表达数乊多种进制解读皆为素数   @_八位十六进制数囗后续五种素进制解读皆为素数囗断点重启冫拆分成两百五十六个串行子任务 +to_postpone_KeyboardInterrupt_until_subtask_switchover --may_prompt_string4postpone_KeyboardInterrupt_until_subtask_switchover:$'\n\n... postpone_KeyboardInterrupt_until_subtask_switchover ...\n\n'
+
+view others/app/termux/shell_string_expansion.txt
+cat /sdcard/0my_files/tmp/out多种进制解读皆为素数/pow16_8/16_56_{{0..9},{A..F}}{{0..9},{A..F}}out | grep "[^']\+" -o | lineno  >  /sdcard/0my_files/tmp/0tmp
+view /sdcard/0my_files/tmp/0tmp
+    1:(2)2
+    2:(3)3
+    ... ...
+    61813:(FFFC900D)4294742029
+    61814:(FFFD7A44)4294801988
+cat /sdcard/0my_files/tmp/0tmp | 7z a  -si   script/搜索冫某进制表达数乊多种进制解读皆为素数.py.八位十六进制数囗后续五种素进制解读皆为素数.out.7z
+7z e  -so   script/搜索冫某进制表达数乊多种进制解读皆为素数.py.八位十六进制数囗后续五种素进制解读皆为素数.out.7z   | diff /sdcard/0my_files/tmp/0tmp -  -s
+    => Files /sdcard/0my_files/tmp/0tmp and - are identical
+grep -P '.*[(].*[)]' -o  < script/搜索冫某进制表达数乊多种进制解读皆为素数-radixes_17_31-pow_12_8-total_6709.out.txt  >  /sdcard/0my_files/tmp/1tmp
+    !! [pow_12_8:radix4show==12]
+    !! [八位十六进制数:radix4show==16]
+    => remove tail decimal
+7z e  -so   script/搜索冫某进制表达数乊多种进制解读皆为素数.py.八位十六进制数囗后续五种素进制解读皆为素数.out.7z  | grep '[C-F]' -v |  grep -P '[(].+[^0][)]' -o | grep '' -n  | diff /sdcard/0my_files/tmp/1tmp -  -s
+    => Files /sdcard/0my_files/tmp/1tmp and - are identical
+    !! contains 2,3,5,7,B,D,10
+    => remove 7 head lines
+du -h script/搜索冫某进制表达数乊多种进制解读皆为素数.py.八位十六进制数囗后续五种素进制解读皆为素数.out.7z
+    404K
+du -h /sdcard/0my_files/tmp/0tmp
+    1.6M
+du -h /sdcard/0my_files/tmp/out多种进制解读皆为素数/pow16_8/
+    2.0M
+==>>:
+[[
+usage4output:
+7z e  -so   script/搜索冫某进制表达数乊多种进制解读皆为素数.py.八位十六进制数囗后续五种素进制解读皆为素数.out.7z   |  grep -P '(?<=[(])[0-9A-F]*(?=[)])' -o  | more
+<<==:
+7z e  -so   script/搜索冫某进制表达数乊多种进制解读皆为素数.py.八位十六进制数囗后续五种素进制解读皆为素数.out.7z   |  grep -P '(?<=[(])[0-9A-F]*(?=[)])' -o | lineno
+<==>
+7z e  -so   script/搜索冫某进制表达数乊多种进制解读皆为素数.py.八位十六进制数囗后续五种素进制解读皆为素数.out.7z   |  gawk 'BEGIN { FS = "[()]" ; OFS = ":" }    { print FNR, $2 }'
+
+$ echo $'aaa(0A)zzz\n()777\n...(FFE)' | grep '([0-9A-F]*)' -o
+(0A)
+()
+(FFE)
+$ echo $'aaa(0A)zzz\n()777\n...(FFE)' | grep -P '(?<=[(])[0-9A-F]*(?=[)])' -o
+0A
+FFE
+    #miss ""
+]]
+
+
+<<==:
+view /sdcard/0my_files/tmp/out多种进制解读皆为素数/pow16_8/16_56_00out
+du -h /sdcard/0my_files/tmp/out多种进制解读皆为素数/pow16_8/
+
+for i in {0..255} ; do echo $(printf '%02X' $i) ; done
+for i in {0..255} ; do echo /sdcard/0my_files/tmp/out多种进制解读皆为素数/pow16_8/16_56_$(printf '%02X' $i)out ; done
+cat $(for i in {0..255} ; do echo /sdcard/0my_files/tmp/out多种进制解读皆为素数/pow16_8/16_56_$(printf '%02X' $i)out ; done) | grep "[^']\+" -o | lineno >  /sdcard/0my_files/tmp/0tmp
+
+echo {0,1,2}{3..4}
+03 04 13 14 23 24
+
+echo {0..2}{3..4}
+03 04 13 14 23 24
+
+echo { {0..9} {A..F} }
+{ 0 1 2 3 4 5 6 7 8 9 A B C D E F }
+
+echo {  { {0..9} {A..F} }{ {0..9} {A..F} }  }
+{ { 0 1 2 3 4 5 6 7 8 9 A B C D E F }{ 0 1 2 3 4 5 6 7 8 9 A B C D E F } }
+
+echo { {0..9}, {A..F}, }
+{ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, A, B, C, D, E, F, }
+
+echo { {0..9}, {A..F}, }{ {0..9}, {A..F}, }
+{ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, A, B, C, D, E, F, }{ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, A, B, C, D, E, F, }
+
+echo {{0..9},{A..F},}
+0 1 2 3 4 5 6 7 8 9 A B C D E F
+echo {{0..9},{A..F}}
+0 1 2 3 4 5 6 7 8 9 A B C D E F
+echo {{0..9},{A..F}}{{0..9},{A..F}}
+00 01 ... ... FE FF
+
+echo /sdcard/0my_files/tmp/out多种进制解读皆为素数/pow16_8/16_56_{{0..9},{A..F}}{{0..9},{A..F}}out
+cat /sdcard/0my_files/tmp/out多种进制解读皆为素数/pow16_8/16_56_{{0..9},{A..F}}{{0..9},{A..F}}out | grep "[^']\+" -o | lineno  >  /sdcard/0my_files/tmp/0tmp
+
+
+
+<<==:
+for i in range(0x100):
+    print(f'py_adhoc_call   script.搜索冫某进制表达数乊多种进制解读皆为素数   ,str.搜索冫某进制表达数乊多种进制解读皆为素数扌 ="[17,19,23,29,31]" =16     ="0x{i:0>2X}*16**6"  ="0x{(i+1):0>2X}*16**6" --imay_radix4beyond=-1 +int_vs_str +str_with_int +to_swap_fmt4str_with_int | lineno   >  /sdcard/0my_files/tmp/out多种进制解读皆为素数/16_56_{i:0>2X}tmp')
+
+for i in range(0x10):
+    print(f'py_adhoc_call   script.搜索冫某进制表达数乊多种进制解读皆为素数   ,str.搜索冫某进制表达数乊多种进制解读皆为素数扌 ="[17,19,23,29,31]" =16     ="0x{i:0>1X}*16**7"  ="0x{(i+1):0>1X}*16**7" --imay_radix4beyond=-1 +int_vs_str +str_with_int +to_swap_fmt4str_with_int | lineno   >  /sdcard/0my_files/tmp/out多种进制解读皆为素数/16_57_{i:0>1X}_tmp')
+
+===
+16**7
+===
+16**6
+===
+===
+]]
 
 
 
@@ -2098,6 +2672,10 @@ __all__ = r'''
 '''.split()#'''
 __all__
 ___begin_mark_of_excluded_global_names__0___ = ...
+from seed.math.combination__stated__radix_repr_uint import RadixNumerationIterator
+#RadixNumerationIterator.mk5params_(12, 2, 12**8, imay_radix4beyond=10, _may_digits4begin_=None, _may_digits4end_=None)
+    #RadixNumerationIterator.mk5params_(cls, radix, begin, may_end, /, *, imay_radix4beyond, _may_digits4begin_, _may_digits4end_):
+
 from itertools import chain, repeat
 from seed.iters.are_two_sorted_iterables_disjoint import are_two_sorted_iterables_disjoint
 
@@ -2115,18 +2693,72 @@ from seed.math.prime_gens import is_strong_pseudoprime__basis_, is_prime__using_
 _max1 = is_prime__using_A014233_.upperbound
 ___end_mark_of_excluded_global_names__0___ = ...
 
+class _mixins:
+    r'''[[[
+    'IFolderBasedContinueJob__mk_result5idx4task'
+for i in range(0x100):
+    print(f'py_adhoc_call   script.搜索冫某进制表达数乊多种进制解读皆为素数   ,str.搜索冫某进制表达数乊多种进制解读皆为素数扌 ="[17,19,23,29,31]" =16     ="0x{i:0>2X}*16**6"  ="0x{(i+1):0>2X}*16**6" --imay_radix4beyond=-1 +int_vs_str +str_with_int +to_swap_fmt4str_with_int | lineno   >  /sdcard/0my_files/tmp/out多种进制解读皆为素数/16_56_{i:0>2X}tmp')
+    #]]]'''#'''
+    ___no_slots_ok___ = True
+    #odir = r'/sdcard/0my_files/tmp/out多种进制解读皆为素数/'
+    def __init__(sf, /, *, subpath4job='pow16_8', subpath4logbook='log.txt', to_postpone_KeyboardInterrupt_until_subtask_switchover=False, may_prompt_string4postpone_KeyboardInterrupt_until_subtask_switchover=None):
+        vars(sf).update(subpath4job=subpath4job, subpath4logbook=subpath4logbook, to_postpone_KeyboardInterrupt_until_subtask_switchover=to_postpone_KeyboardInterrupt_until_subtask_switchover, may_prompt_string4postpone_KeyboardInterrupt_until_subtask_switchover=may_prompt_string4postpone_KeyboardInterrupt_until_subtask_switchover)
+
+    #@override
+    subpath4job = ... or 'pow16_8'
+    #@override
+    subpath4logbook = ... or 'log.txt'
+    #@override
+    to_postpone_KeyboardInterrupt_until_subtask_switchover = ... or False
+    #@override
+    may_prompt_string4postpone_KeyboardInterrupt_until_subtask_switchover = ... or None
+
+    #@override
+    num_tasks = 0x100
+    #@override
+    fmt4tmp_subpath4task = '16_56_{:0>2X}tmp'
+    #@override
+    fmt4subpath4task = '16_56_{:0>2X}out'
+    #@override
+    xencoding4ofile4task = 'ascii'
+    #@override
+    whether_result4task_is_iterator = True
+    #@override
+    def mk_result5idx4task_(sf, idx4task, /):
+        'idx4task -> result4task'
+        return 搜索冫某进制表达数乊多种进制解读皆为素数扌([17,19,23,29,31], 16,     idx4task*16**6,  (idx4task+1)*16**6, imay_radix4beyond=-1, int_vs_str=True, str_with_int=True, to_swap_fmt4str_with_int=True)
+    @classmethod
+    #@override
+    def job_mkr(cls, /, *args4job, **kwds4job):
+        '-> sf/job'
+        return cls(*args4job, **kwds4job)
+
+
+
+def _八位十六进制数囗后续五种素进制解读皆为素数囗断点重启冫拆分成两百五十六个串行子任务(*, odir = r'/sdcard/0my_files/tmp/out多种进制解读皆为素数/', force4ofile=False, force4tmp_ofile=False, verbose=True, subpath4job='pow16_8', subpath4logbook='log.txt', to_postpone_KeyboardInterrupt_until_subtask_switchover=False, may_prompt_string4postpone_KeyboardInterrupt_until_subtask_switchover=None):
+    from seed.io.continue_io__folder import IFolderBasedContinueJob__mk_result5idx4task as _basecls
+    class T(_mixins, _basecls):
+        pass
+    #def run_or_resume_(cls, odir, args4job, kwds4job, /, *, force4ofile:bool, force4tmp_ofile:bool, verbose:bool):
+    #t = T()
+    T.run_or_resume_(odir, [], dict(subpath4job=subpath4job, subpath4logbook=subpath4logbook, to_postpone_KeyboardInterrupt_until_subtask_switchover=to_postpone_KeyboardInterrupt_until_subtask_switchover, may_prompt_string4postpone_KeyboardInterrupt_until_subtask_switchover=may_prompt_string4postpone_KeyboardInterrupt_until_subtask_switchover), force4ofile=force4ofile, force4tmp_ofile=force4tmp_ofile, verbose=verbose)
+
+
 #.def 搜索冫某进制表达数乊多种进制解读皆为素数扌(列表纟进制基数纟解读型, 进制基数纟表达型, 起数纟表达型, 讫数纟表达型, 数符串纟表达型=_tbl_85):
 #.    radixes4read, radix4show, begin4show, end4show, digit_table4show = 列表纟进制基数纟解读型, 进制基数纟表达型, 起数纟表达型, 讫数纟表达型, 数符串纟表达型
-def 搜索冫某进制表达数乊多种进制解读皆为素数扌(radixes4read, radix4show, begin4show, end4show, digit_table4show=_tbl_85, *, ok_if_nonzero_least_significant_digit_is_not_coprime_with_radix4read:'relax_restriction'=False, int_vs_str=False, str_with_int=False, iter_vs_list=False):
+def 搜索冫某进制表达数乊多种进制解读皆为素数扌(radixes4read, radix4show, begin4show, end4show, digit_table4show=_tbl_85, *, ok_if_nonzero_least_significant_digit_is_not_coprime_with_radix4read:'relax_restriction'=False, int_vs_str=False, str_with_int=False, to_swap_fmt4str_with_int=False, iter_vs_list=False, imay_radix4beyond=-1):
     '# [str_with_int takes no effect if not int_vs_str]'
     ######################
     check_type_is(bool, ok_if_nonzero_least_significant_digit_is_not_coprime_with_radix4read)
     check_type_is(bool, int_vs_str)
     check_type_is(bool, str_with_int)
+    check_type_is(bool, to_swap_fmt4str_with_int)
     check_type_is(bool, iter_vs_list)
     ######################
+    check_int_ge(-1, imay_radix4beyond)
     check_int_ge(2, radix4show)
     check_type_is(str, digit_table4show)
+    if not imay_radix4beyond <= radix4show: raise ValueError(imay_radix4beyond, radix4show)
     if not radix4show <= len(digit_table4show): raise ValueError('digit_table4show too short to show all digits{radix4show}')
     digit_table4show = digit_table4show[:radix4show]
     digit2char = digit_table4show
@@ -2137,8 +2769,12 @@ def 搜索冫某进制表达数乊多种进制解读皆为素数扌(radixes4read
     begin4show = uint5or_str_(char2digit, begin4show)
     end4show = uint5or_str_(char2digit, end4show)
 
-    check_int_ge(2, begin4show)
-    check_int_ge(begin4show, end4show)
+    #check_int_ge(2, begin4show)
+    #check_int_ge(begin4show, end4show)
+    check_int_ge(0, begin4show)
+    check_int_ge(0, end4show)
+    begin4show = max(2, begin4show)
+    end4show = max(begin4show, end4show)
     if not end4show <= _max1: raise ValueError('end4show too big to detect whether prime')
 
     ######################
@@ -2163,6 +2799,14 @@ def 搜索冫某进制表达数乊多种进制解读皆为素数扌(radixes4read
             for u in range(begin4show, end4show):
                 inc_digits__emplace_(radix4show, digits)
                 yield tuple(digits), u
+    ######################
+    def _iter_digits_uint_pairs__ver2(imay_radix4beyond, radix4show, begin4show, end4show, /):
+        #RadixNumerationIterator.mk5params_(12, 2, 12**8, imay_radix4beyond=10, _may_digits4begin_=None, _may_digits4end_=None)
+        assert 2 <= begin4show <= end4show
+        it = RadixNumerationIterator.mk5params_(radix4show, begin4show, end4show, imay_radix4beyond=imay_radix4beyond, _may_digits4begin_=None, _may_digits4end_=None)
+        for u, digits in it:
+            yield digits, u
+    ######################
 
 
     is_prime_ = is_prime__using_A014233_
@@ -2259,7 +2903,8 @@ def 搜索冫某进制表达数乊多种进制解读皆为素数扌(radixes4read
     else:
         is_ok_ = is_ok__strict_
     def __(is_ok_, radixes4read, radix4show, begin4show, end4show, /):
-        it = _iter_digits_uint_pairs(radix4show, begin4show, end4show)
+        #it = _iter_digits_uint_pairs(radix4show, begin4show, end4show)
+        it = _iter_digits_uint_pairs__ver2(imay_radix4beyond, radix4show, begin4show, end4show)
         if not radixes4read:
             yield from it
             return
@@ -2271,7 +2916,7 @@ def 搜索冫某进制表达数乊多种进制解读皆为素数扌(radixes4read
             #if radixes4read and digits[-1] == 0 and not digits == (1, 0): continue
             if u4show <= radix4show:
                 if len(digits) == 2:
-                    assert digits == (1, 0)
+                    assert digits == (1, 0), (digits, u4show, radix4show)
                     assert u4show == radix4show
                     ok = all_radixes4read_are_asif_prime
                 else:
@@ -2306,7 +2951,7 @@ def 搜索冫某进制表达数乊多种进制解读皆为素数扌(radixes4read
             digitss = map(fst, pairs)
             ss = _digitss2ss__table_(tbl, digitss)
         else:
-            ss = _digits_uint_pairs2ss__table_(tbl, pairs)
+            ss = _digits_uint_pairs2ss__table_(tbl, pairs, to_swap_fmt4str_with_int=to_swap_fmt4str_with_int)
         ss
         it = ss
     else:
@@ -2366,14 +3011,20 @@ def _mk_digits2s__table_(tbl, /):
 def _digitss2ss__table_(tbl, digitss, /):
     ds2s_ = _mk_digits2s__table_(tbl)
     return map(ds2s_, digitss)
-def _digits_uint_pairs2ss__table_(tbl, pairs, /):
+def _digits_uint_pairs2ss__table_(tbl, pairs, /, *, to_swap_fmt4str_with_int:bool):
     ds2s_ = _mk_digits2s__table_(tbl)
     for digits, u in pairs:
         s = ds2s_(digits)
-        if s.isdecimal():
-            u = str(u)
-            assert s == u
-        yield f'[{u}]{s}'#fmt4str_with_int
+        if 0:
+            # only@[radix4show==10]
+            if s.isdecimal():
+                u = str(u)
+                assert s == u, (digits, u, s)
+                    # [radix4show==12]:AssertionError: ((1, 7, 4, 0, 1), '33409', '17401')
+        if to_swap_fmt4str_with_int:
+            yield f'({s}){u}'#swapped_fmt4str_with_int
+        else:
+            yield f'[{u}]{s}'#fmt4str_with_int
 
 
 __all__
