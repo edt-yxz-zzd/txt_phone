@@ -1,0 +1,259 @@
+
+e others/数学/continued-fraction/充要条件冫错开囜位纟分子分母序列纟渐近分数纟连分数.txt
+view ../../python3_src/seed/math/continued_fraction/continued_fraction_fold.py
+
+[[
+充要条件冫错开一位纟分子分母序列纟渐近分数纟连分数:
+py_adhoc_call   seed.math.continued_fraction.continued_fraction_fold   ,iter_approximate_fraction_NDs5continued_fraction_  ='[2]*7'
+(2, 1)
+(5, 2)
+(12, 5)
+(29, 12)
+(70, 29)
+(169, 70)
+(408, 169)
+py_adhoc_call   seed.math.continued_fraction.continued_fraction_fold   ,iter_approximate_fraction_NDs5continued_fraction_  ='[3]*7'
+(3, 1)
+(10, 3)
+(33, 10)
+(109, 33)
+(360, 109)
+(1189, 360)
+(3927, 1189)
+==>>:
+充要条件冫错开一位纟分子分母序列纟渐近分数纟连分数:
+    # 错开一位:分母超前一位
+    [[分母纟渐近分数纟连分数{cf}[j] == 分子纟渐近分数纟连分数{cf}[j+1]] <-> [[cf0==0][cf == [0; *[cf1]*+oo]]]]
+    # 错开一位:分子超前一位
+    [[分子纟渐近分数纟连分数{cf}[j] == 分母纟渐近分数纟连分数{cf}[j+1]] <-> [[cf0>=1][cf == [cf0]*+oo]]]
+    # continued_fraction_fold_state0 = ContinuedFractionFoldState(0,1,1,0)
+    #   (prevN, prevD, currN, currD)
+    # (0/1, 1/0, cf0/1, (1+cf0*cf1)/(0+1*cf1), ...)
+    # [cf0==0]:(0/1, 1/0, 0/1, 1/cf1, ...)
+==>>:
+充要条件冫错开囜位纟分子分母序列纟渐近分数纟连分数:
+    ???
+<<==:
+必要条件冫错开囜位纟分子分母序列纟渐近分数纟连分数:
+    连分数排除开头囜位必是囜位循环
+    # 错开囜位:分母超前囜位
+    [[分母纟渐近分数纟连分数{cf}[j] == 分子纟渐近分数纟连分数{cf}[j+k]] -> [?[header,loop4body :: [uint]{len=k}] -> [[cf0==0][cf == header+loop4body*+oo]]]]
+        !! [非0 => 倒推]
+        !! [分子[0]==0不可重现] => 分母必然超前
+    # 错开囜位:分子超前囜位
+    [[分子纟渐近分数纟连分数{cf}[j] == 分母纟渐近分数纟连分数{cf}[j+k]] -> [?[header,loop4body :: [uint]{len=k}] -> [[cf0>=1][cf == header+loop4body*+oo]]]]
+        !! [非0 => 倒推]
+        !! [分母[-1]==0不可重现] => 分子必然超前
+    ===
+    [k >= 1]
+    ===
+    # (0/1, 1/0, cf0/1, (1+cf0*cf1)/(0+1*cf1), ...)
+    # [cf0==0]:(0/1, 1/0, 0/1, 1/cf1, ...)
+    只需考虑[cf0 >= 1] # 错开囜位:分子超前囜位
+    ===
+    [header :: [uint]{len=k}]
+    -->:
+    [header :: [uint]{len=2}]
+        # 更新:k-->2
+        # 注意:[k==1]=>头部变长
+        # 注意:[k>=3]=>头部变短
+    # cf[0:2] 可能不在循环节中
+    # Ns[-2:0] 可能不在循环节中
+    # Ds[-2:k] 可能不在循环节中
+    ===
+    ===
+    [Ns := 分子序列纟渐近分数纟连分数]
+    [Ds := 分母序列纟渐近分数纟连分数]
+    [Nks := Ns{cf}[0:k]]
+    [Dks := Ds{cf}[0:k]]
+    [Dzks := Ds{cf}[0:2*k]]
+
+    (0/1, 1/0, cf0/1, Nks[1]/Dks[1], Nks[2]/Dks[2], ...)
+        [Nks[-2]/Dks[-2] == 0/1]
+        [Nks[-1]/Dks[-1] == 1/0]
+        [Nks[0]/Dks[0] == cf0/1]
+
+    #连分数基本递推关系式
+    [@[j>=0] -> [Ns[j] == cf[j]*Ns[j-1] + Ns[j-2]]]
+    [@[j>=0] -> [Ds[j] == cf[j]*Ds[j-1] + Ds[j-2]]]
+
+    [@[j>=0] -> [Ds[j] >= 1]]
+    !! [@[j>=0] -> [cf[j] >= [j=!=0]]]
+    !! [@[j>=0] -> [Ns[j] >= [j=!=0]]]
+    !! [Ns[0] == cf[0] == cf0]
+    !! [cf0 >= 1]
+    [@[j>=0] -> [cf[j] >= 1]]
+    [@[j>=0] -> [Ns[j] >= 1]]
+
+    !! [Ns[-1] == 1]
+    [@[j>=-1] -> [Ns[j] >= 1]]
+
+    #循环节loop4body:分子超前
+    [@[j>=0] -> [Ns[j] == Ds[j+k]]]
+
+
+    [j >= 0]:
+        !! [@[j>=0] -> [Ns[j] == Ds[j+k]]]
+        [Ns[j] == Ds[j+k]]
+        [Ns[j+1] == Ds[j+k+1]]
+        [Ns[j+2] == Ds[j+k+2]]
+
+        !! [k >= 1]
+        !! [@[j>=0] -> [Ns[j] == cf[j]*Ns[j-1] + Ns[j-2]]]
+        !! [@[j>=0] -> [Ds[j] == cf[j]*Ds[j-1] + Ds[j-2]]]
+        [Ns[j+2] == cf[j+2]*Ns[j+1] + Ns[j]]
+        [Ds[k+j+2] == cf[k+j+2]*Ds[k+j+1] + Ds[k+j]]
+
+        !! [@[j>=-1] -> [Ns[j] >= 1]]
+        [Ns[j+1] >= 1]
+        !! [@[j>=0] -> [Ds[j] >= 1]]
+        [Ds[k+j+1] >= 1]
+
+        [cf[j+2] == (Ns[j+2] - Ns[j])/Ns[j+1] == (Ds[k+j+2] - Ds[k+j])/Ds[k+j+1] == cf[k+j+2]]
+        [cf[j+2] == cf[k+j+2]]
+    [@[j>=0] -> [cf[j+2] == cf[k+j+2]]]
+        # cf[0:2] 可能不在循环节中
+        # Ns[-2:0] 可能不在循环节中
+        # Ds[-2:k] 可能不在循环节中
+
+    [-2 <= j < 0]:
+        [Ns[j+2] == cf[j+2]*Ns[j+1] + Ns[j]]
+        [Ds[k+j+2] == cf[k+j+2]*Ds[k+j+1] + Ds[k+j]]
+
+        [Ns[j+1] >= 1]
+        [Ds[k+j+1] >= 1]
+
+        [Ns[j+2] == Ds[k+j+2]]
+
+        ==>>:
+        [N1 == cf1*N0 + Nn1]
+        [Dk1 == cfk1*Dk0 + Dkn1]
+        [N0 >= 1]
+        [Dk0 >= 1]
+        [N1 == Dk1]
+
+        [N0 == cf0*Nn1 + Nn2]
+        [Dk0 == cfk0*Dkn1 + Dkn2]
+        [Nn1 >= 1]
+        [Dkn1 >= 1]
+        [N0 == Dk0]
+
+
+        !! [Dk0 == N0 == cf0]
+        !! [Nn1 == 1]
+        !! [Nn2 == 0]
+        [N1 == cf1*cf0+1]
+        [Dk1 == cfk1*cf0 + Dkn1]
+        [N0 == cf0]
+        [Dk0 == cfk0*Dkn1 + Dkn2]
+
+        !! [N1 == Dk1]
+        !! [N0 == Dk0]
+        [cf1*cf0+1 == N1 == Dk1 == cfk1*cf0 + Dkn1]
+        [cf0 == N0 == Dk0 == cfk0*Dkn1 + Dkn2]
+
+        [cf1*cf0+1 == cfk1*cf0 + Dkn1]
+        [cf0 == cfk0*Dkn1 + Dkn2]
+
+    前提:[cf0 >= 1][k >= 1][@[j>=0] -> [Ns[j] == Ds[j+k]]]
+    已知:cf[2:k+2] #循环节
+    未知:cf[0:2] #头部
+    约束:[Ns[0:2] == Ds[k:k+2]]
+        即:
+        [cf1*cf0+1 == cfk1*cf0 + Dkn1]
+        [cf0 == (cfk0*Dkn1 + Dkn2)]
+
+    [(cfk1-cf1)*cf0 + Dkn1-1 == 0]
+    [(cfk1-cf1)*(cfk0*Dkn1 + Dkn2) + Dkn1-1 == 0]
+
+    [k==1]:
+        [cf1*cf0+1 == cf2*cf0 + D0]
+        [cf0 == cf1*D0 + Dn1]
+
+        !! [Dn1 == 0]
+        !! [D0 == 1]
+        [cf1*cf0+1 == cf2*cf0 + 1]
+        [cf0 == cf1]
+
+        [cf0*cf0 == cf2*cf0]
+
+        !! [cf0 >= 1]
+        [cf0 == cf2]
+
+        [cf2 == cf1 == cf0]
+        [cf == [cf0]*+oo]
+
+    [k==2]:
+        [cf1*cf0+1 == cf3*cf0 + D1]
+        [cf0 == cf2*D1 + D0]
+
+        !! [D0 == 1]
+        !! [D1 == cf1]
+        [cf1*cf0+1 == cf3*cf0 + cf1]
+        [cf0 == cf2*cf1 + 1]
+
+
+        [cf1*(cf2*cf1 + 1)+1 == cf3*(cf2*cf1 + 1) + cf1]
+        [cf2*cf1**2 - cf3*cf2*cf1 - (cf3-1) == 0]
+        [cf1
+        == (-(cf3*cf2) + [+-]sqrt((cf3*cf2)**2 +4*cf2*(cf3-1)))/(2*cf2)
+        == (-cf3 + [+-]sqrt(cf3**2 +4*(cf3-1)/cf2))/2
+        ]
+        [4*(cf3-1) %cf2 == 0]
+        !! [cf3 >= 1]
+        !! [cf2 >= 1]
+        [0 <= 4*(cf3-1)/cf2 < 4*cf3+4]
+        [cf3 <= sqrt(cf3**2 +4*(cf3-1)/cf2) < cf3+2]
+        !! [sqrt(cf3**2 +4*(cf3-1)/cf2) :: int]
+        * [sqrt(cf3**2 +4*(cf3-1)/cf2) == cf3]:
+            [4*(cf3-1)/cf2 == 0]
+            [cf3 == 1]
+        * [sqrt(cf3**2 +4*(cf3-1)/cf2) == cf3+1]:
+            [4*(cf3-1)/cf2 == 2*cf3+1]
+            [cf2 == 4*(cf3-1)/(2*cf3+1)]
+            [cf2 >= 2]:
+                [4*(cf3-1) >= 2*(2*cf3+1)]:
+                [-4 >= 2]
+                _L
+            [cf2 < 2]
+            !! [cf2 >= 1]
+            [cf2 == 1]
+            [4*(cf3-1) == (2*cf3+1)]
+            [cf3 == 5/2]
+            !! [cf3 :: int]
+            _L
+        [cf3 == 1]
+        [cf1
+        == (-cf3 + [+-]sqrt(cf3**2 +4*(cf3-1)/cf2))/2
+        == (-1 + [+-]1)/2
+        == (0|-1)
+        < 1
+        ]
+        !! [cf1 >= 1]
+        _L
+    [k =!= 2]
+
+
+    [k==3]:
+        [cf1*cf0+1 == cf4*cf0 + D2]
+        [cf0 == cf3*D2 + D1]
+
+        !! [D1 == cf1]
+        !! [D2 == (cf2*cf1+1)]
+        [cf1*cf0+1 == cf4*cf0 + (cf2*cf1+1)]
+        [cf0 == cf3*(cf2*cf1+1) + cf1]
+
+        !! [(cfk1-cf1)*(cfk0*Dkn1 + Dkn2) + Dkn1-1 == 0]
+        [(cf4-cf1)*(cf3*D2 + D1) + D2-1 == 0]
+        [(cf4-cf1)*(cf3*(cf2*cf1+1) + cf1) + cf2*cf1 == 0]
+
+        [0
+        == (cf4-cf1)*(cf3*(cf2*cf1+1) + cf1) + cf2*cf1
+        == (cf4-cf1)*(cf3*cf2*cf1+cf3 + cf1) + cf2*cf1
+        == cf4*cf3 +(cf4*cf3*cf2 +cf4 -cf3 +cf2)*cf1 -(1+cf3*cf2)*cf1**2
+        == -cf4*cf3 -(cf4*cf3*cf2 +cf4 -cf3 +cf2)*cf1 +(1+cf3*cf2)*cf1**2
+        ]
+        [d_k3 == (cf4*cf3*cf2 +cf4 -cf3 +cf2)**2 +4*cf4*cf3*(1+cf3*cf2)]
+        [sqrt(d_k3) :: int]
+        ???
+]]
