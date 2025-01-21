@@ -1,0 +1,580 @@
+
+e others/数学/float/浮点数运算.txt
+e ../../python3_src/seed/math/float/IFloatNumber.py
+
+[[
+源起:
+  e others/数学/编程/generic_base85_encode.txt
+  e ../../python3_src/seed/int_tools/digits/generic_base85__review.py
+    TODO: 根据表达式最终输出的整数来自适应精度的浮点数表达式(含:整数预测)(最终结果:取整:floor/ceil)(表达式运算:log,pow,mul,div,add,sub,floor,ceil)
+===
+view /storage/emulated/0/0my_files/book/math/fxtbook[Matters Computational][Algorithms for Programmers].pdf
+  零除法迭代divisionless iteration
+===
+]]
+
+
+
+[[[
+copy from:view script/开方冫整数.py
+===
+view /storage/emulated/0/0my_files/book/math/fxtbook[Matters Computational][Algorithms for Programmers].pdf
+[[
+[x := sqrt(xx)]
+牛顿迭代 需要 一次长除法每次迭代:
+    [x[k+1] := (x[k] + xx/x[k])/2]
+
+改用 零除法迭代 [x := xx*sqrt_inv(xx)] 无需长除法
+    divisionless iteration
+[z := sqrt_inv(xx)]
+    [z == xx**(-1/2)]
+    [xx*z == xx**(1/2)]
+[x := xx*z]
+
+second order correction:
+[z[k+1] := z[k] + 1/2*z[k]*(1-xx*z[k]**2)]
+    [t:=(1-xx*z[k]**2)][z[k+1] := z[k] + 1/2*z[k]*t]
+[?err :=> [z[k] == z*(1+err)]]:
+    [z[k+1]
+    == z*(1+err) + z*(1+err)*(1-xx*(z*(1+err))**2)/2
+    == z*(1+err) + z*(1+err)*(1-(1+err)**2)/2
+    == z*(1+err)*(1-err-err**2/2)
+    == z*(1-err**2 -(1+err)*err**2/2)
+    == z*(1-3/2*err**2 -1/2*err**3)
+    ]
+    [abs(3/2*err**2) < abs(err)]
+        <<== [abs(3/2*err) < 1]
+        <<== [abs(err) < 2/3]
+
+third order correction:
+[z[k+1] := z[k] + 1/2*z[k]*(1-xx*z[k]**2) + 3/8*z[k]*(1-xx*z[k]**2)**2]
+    [t:=(1-xx*z[k]**2)][z[k+1] := z[k] + 1/2*z[k]*t + 3/8*z[k]*t**2]
+
+general form of the third order divisionless iteration for the e-th root of D is:
+    [d := D*(D**(e-1))**(-1/e)]
+        [d == D**(1/e)]
+    [z := D**(-1/e)]
+    [t:=(1-D*z[k]**e)][z[k+1] := z[k]*(1 + 1/e*t + (1+e)/(2*e**2)*t**2)]
+[e==1]:
+    !! [z := D**(-1/e)]
+    [z == D**(-1) == 1/D]
+    [t:=(1-D*z[k])][z[k+1] := z[k]*(1 + t + t**2)]
+[?err :=> [z[k] == z*(1+err)]]:
+    [t==(1-D*z*(1+err)) == -err]
+    [z[k+1]
+    * second order:
+        == z*(1+err)*(1 + t)
+        == z*(1+err)*(1 - err)
+        == z*(1 - err**2)
+    * third order:
+        == z*(1+err)*(1 + t + t**2)
+        == z*(1+err)*(1 - err + err**2)
+        == z*(1 + err**3)
+    ]
+
+]]
+[[
+(a+2**e4a)*(b+2**e4b)
+== a*b + b*2**e4a + a*2**e4b + 2**(e4a+e4b)
+* [a==2**lbA][b==2**lbB][ez == lbB+e4a == lbA+e4b]:
+    ... == a*b + 2**ez + 2**ez + 2**(e4a+e4b)
+    == a*b + 2**(ez+1) + 2**(e4a+e4b)
+    < a*b + 2**(ez+2)
+[e4ab == 2+ez]
+[e4ab == 2+max(lbB+e4a, lbA+e4b)]
+[e4ab
+== 2+max(ceil_log2(b)+e4a, ceil_log2(a)+e4b)
+== 2 +(e4a+e4b) +max(ceil_log2(b)-e4b, ceil_log2(a)-e4a)
+]
+[ceil_log2(a*b) == (0|-1)+ceil_log2(a)+ceil_log2(b)]
+    [a==b==7]:
+        [6 == ceil_log2(49) == ceil_log2(7)*2 == 3*2 == 6]
+    [a==b==5]:
+        [5 == ceil_log2(25) < ceil_log2(5)*2 == 3*2 == 6]
+[ceil_log2(a*b)-e4ab
+== (0|-1)+ceil_log2(a)+ceil_log2(b)
+    -(2 +(e4a+e4b) +max(ceil_log2(b)-e4b, ceil_log2(a)-e4a))
+== -(2|3)
+    +ceil_log2(a)+ceil_log2(b) -(e4a+e4b)
+    -max(ceil_log2(b)-e4b, ceil_log2(a)-e4a)
+== -(2|3) +min(ceil_log2(b)-e4b, ceil_log2(a)-e4a)
+]
+==>> (a*b)的精度 比 a,b两者最小精度还要小 3爻元
+]]
+
+
+===
+]]]
+
+
+[[
+cp -iv ~/../usr/lib/python3.11/*decimal* /sdcard/0my_files/tmp/py_lib_src/
+ls /sdcard/0my_files/tmp/py_lib_src/*decimal*
+  /sdcard/0my_files/tmp/py_lib_src/_pydecimal.py
+  /sdcard/0my_files/tmp/py_lib_src/decimal.py
+
+===
+view /sdcard/0my_files/tmp/py_lib_src/_pydecimal.py
+x**y
+exp(x)
+M*exp(x/M)
+expm1(x)
+expm1(x/2**R)
+
+
+[abs(x/2**R) < 2**-L]
+[x,M :: int][M > 0][0 <= x/M <= 2.4]
+  => [the absolute error in the result of 『_iexp(x, M, L=8)->(M*exp(x/M))』 <= 60]
+[x**y == exp(y*ln(x))]
+[expm1(x) =[def]= exp(x)-1]
+[expm1(2*x) == expm1(x)*(expm1(x)+2)]
+    !! [expm1(2*x) == e**(2*x) -1 == (e**x-1)*(e**x+1) == expm1(x)*(expm1(x)+2)]
+[expm1(x) = x + x**2/2! + x**3/3! + ...]
+    !! Taylor series
+
+[log1p(y) =[def]= ln(1+y)]
+[log1p(y) == 2*log1p(y/(1+sqrt(1+y)))]
+    [log1p(y) == ln(1+y) == 2*ln(sqrt(1+y)) == 2*log1p(sqrt(1+y)-1) == 2*log1p((sqrt(1+y)-1)*(sqrt(1+y)+1)/(sqrt(1+y)+1)) == 2*log1p(y/(1+sqrt(1+y)))]
+[log1p(y) ~= y - y**2/2 + y**3/3 - ... - (-y)**T/T]
+    !! Taylor series
+
+===
+===
+]]
+
+
+
+
+[f(x) == f(v)+D{1,f}(v)*(x-v)+D{2,f}(v)*(x-v)**2/2!+... == sum[D{k,f}(v)*(x-v)**k/k! | [k :<- [0..]]]]
+[f(v+d) == f(v)+D{1,f}(v)*d+D{2,f}(v)*d**2/2!+... == sum[D{k,f}(v)*d**k/k! | [k :<- [0..]]]]
+!! [D{1,exp} === exp]
+[exp(v+d) == exp(v)+exp(v)*d+exp(v)*d**2/2!+... == sum[exp(v)*d**k/k! | [k :<- [0..]]] == exp(v)*sum[d**k/k! | [k :<- [0..]]] == exp(v)*exp(d)]
+
+[[n >= 0] -> [abs(x) == z < 1] -> [误差纟泰勒展开{x,n} == sum[x**k/k! | [k :<- [n+1..]]] < 1/(1-z/(n+2)) * z**(n+1)/(n+1)!]]
+[[(q4z, r4z) := z/%ln10] -> [exp(z) == 10**q4z * exp(r4z)]]
+
+[[f(x) == x + O(k*x**2)] -> [M*f(x/M) == x + O(k/M*x**2)]]
+  [expm1(x) == exp(x)-1 == x + O(1/2!*x**2)]
+  [logp1(x) == ln(1+x) == x + O(-1/2*x**2)]
+  <<==:
+  [ln(1+x) == sum[(-1)**(k+1)*x**k/k | [k :<- [1..=n]]]]
+  [exp(x) == sum[x**k/k! | [k :<- [0..=n]]]]
+
+[[
+指数函数的误差根本就难以控制:
+    [相对误差{exp(x)} == abs(expm1(绝对误差{x}))]
+    [绝对误差{exp(x)} == exp(v)*绝对误差 + O(exp(v)*绝对误差**2)]
+    ？？？感觉 并没有在意？？？
+
+===
+误差:
+误差纟变量:
+  有限精度的表达 => 误差乊空间
+  [abs(想值-书值) < 绝对误差乊空间]
+  [abs(想值/书值-1) < 相对误差乊空间]
+  x - 想值:抽象概念
+  v - 书值:有限精度近似值，可表达
+  [x == v*(1+err4x5v)]
+  [err4x5v < B**-L]
+误差纟泰勒展开:
+  有限的展开项 => 误差乊时间
+  [exp(x)-1 == sum[x**k/k! | [k :<- [1..=n]]] +误差乊时间{x,n}]
+  [exp(v)-1 == sum[v**k/k! | [k :<- [1..=n]]] +误差乊时间{v,n}]
+  [abs(exp(x)-exp(v)) == ???]
+  [abs(exp(x)/exp(v)-1) == ???]
+
+  * 误差乊空间:???
+    !! [x == v*(1+err4x5v)]
+    [exp(x) == exp(v*(1+err4x5v))]
+    [exp(x)/exp(v) == exp(v*err4x5v)]
+      ???感觉超大... exp(绝对误差)
+    [exp(v+d) == exp(v)*exp(d) == exp(v)*sum[d**k/k! | [k :<- [0..]]]]
+    [exp(v+d) -exp(v) == exp(v)*sum[d**k/k! | [k :<- [1..]]] ~= [d~=0]: exp(v)*d + ...]
+    绝对误差{x} 必须相当小(精度高至盖过exp(v)或者v接近0)
+      精度{x} 或者说 相对误差{x} 不起作用
+      整个计算框架怎么回事？
+
+  * 误差乊时间:
+    [误差纟泰勒展开{x,n} == sum[x**k/k! | [k :<- [n+1..]]]]
+    [n >= 0][abs(x) == z < 1]:
+        [误差纟泰勒展开{x,n}
+        == sum[x**k/k! | [k :<- [n+1..]]]
+        <= sum[z**k/k! | [k :<- [n+1..]]]
+        * (case-0):
+            < sum[z**k | [k :<- [0..]]] * z**(n+1)/(n+1)!
+            !! [0 <= z < 1]
+            == 1/(1-z) * z**(n+1)/(n+1)!
+        * (case-1):
+            == sum[z**k/((n+1+k)!/(n+1)!) | [k :<- [0..]]] * z**(n+1)/(n+1)!
+            < sum[z**k/(n+2)**k | [k :<- [0..]]] * z**(n+1)/(n+1)!
+            !! [0 <= z < 1]
+            == 1/(1-z/(n+2)) * z**(n+1)/(n+1)!
+            !! [n >= 0]
+            < 2 * z**(n+1)/(n+1)!
+        ]
+
+[[n >= 0] -> [abs(x) == z < 1] -> [误差纟泰勒展开{x,n} == sum[x**k/k! | [k :<- [n+1..]]] < 1/(1-z/(n+2)) * z**(n+1)/(n+1)!]]
+
+]]
+
+
+[[[
+view /sdcard/0my_files/tmp/py_lib_src/_pydecimal.py
+===
+i - int: (x, M) # x/M
+d - decimal: (c, e) # c*10**e
+_iexp()
+_dexp()
+_ilog()
+_dlog()
+
+===
+def _iexp(x, M, L=8):
+    '-> (M*exp(x/M)) # [x,M :: int][M > 0][[0 <= x/M <= 2.4] -> [absolute_error <= 60]]'
+      # [2.4 > ln10 ~= 2.302585092994046]
+      # [0 <= r < lnB][exp(q*lnB+r) == B**q * exp(r)] # eg:[B <- {2,10}]
+      # [ln2 ~= 0.6931471805599453]
+      # [ln10 ~= 2.302585092994046]
+      #
+    ?R :=> [x/M/2**R < 2**-L]
+    ?T :=> [(2**L)**T > M]
+    [y[T] := x/T]
+    [MzR := M*2**R]
+    [@[i :<- [1..<T]] -> [y[i] := x*(MzR + y[i+1])/(MzR * i)]]
+        # Taylor
+        # [iMzR := 1/(M*2**R)]
+        # = x/1*(1+iMzR*x/2*(1+iMzR*x/3*(1+iMzR*x/4*(1+(...(x/T)...)))))
+        # = x/1! + iMzR*x**2/2! + iMzR**2*x**3/3! + iMzR**3*x**4/4! + ... + iMzR**(T-2)*x**(T-1)/(T-1)! + iMzR**(T-1)*x**T/T!
+        #
+        # [MzR*exp(x/MzR) - MzR == MzR*expm1(x/MzR) == x + MzR*sum[(x/MzR)**k/k! | [k :<- [2..]]] == x + sum[iMzR**(k-1)x**k/k! | [k :<- [2..]]]]
+        #
+    [yy[R] := y[1]]
+    [@[k :<- [0..<R]] -> [yy[k] := yy[k+1]*(yy[k+1]+M*2**(k+2))/(M*2**(k+2))]]
+        # [expm1(2*x) == expm1(x)*(expm1(x)+2)]
+    return M+yy[0]
+[M*exp(x/M) == M + M*expm1(x/M)]
+[M*expm1(x/M) == M*sum[(x/M)**k/k! | [k :<- [1..]]] == x + M*sum[(x/M)**k/k! | [k :<- [2..]]]]
+[M*exp(x/M) - M == M*2**R*expm1(x/M/2**R) == x + MzR*sum[(x/MzR)**k/k! | [k :<- [2..]]] == x + sum[iMzR**(k-1)x**k/k! | [k :<- [2..]]]]
+
+
+def _dexp(c, e, p):
+    '-> (d, f)/(int,int) # [10**(p-1) <= d <= 10**p][(d-1)*10**f < exp(c*10**e) < (d+1)*10**f]'
+    #xxx:'-> exp(c*10**e)'
+    #xxx:'-> 1/shift * approximation_int(shift * exp(c*10**e)) # [shift :~= 10**(p-int(c*10**e/ln10))]'
+    # [0.1 <= d/10**p <= 1][abs(exp(c*10**e)-d*10**f) < 10**f]
+
+
+    p2 = p + 2
+
+    extra = max(0, floor_log10(c*10**e))
+    q = p2 + extra
+
+    (quot, rem_10q) = c*10**e*10**q /% floor(10**q*ln10)
+      quot = floor(c*10**e/ln10)
+      rem_10q = floor(10**q*(c*10**e -quot*ln10))
+
+    rem_10p2 = rem_10q / 10**extra
+      rem_10p2 = (10**q*(c*10**e -quot*ln10)/10**extra)
+      rem_10p2 = (10**p2*(c*10**e -quot*ln10))
+
+    # error in result of _iexp < 120;  error after division < 0.62
+        # [120/1000 +0.5 == 0.62][1000 come from divisor of "div"][0.5  come from round "nearest"]
+    return _div_nearest(_iexp(rem_10p2, 10**p2), 1000), quot - p2 + 3
+        (d:=10**p2*exp(rem_10p2/10**p2)/10**3
+            # d=10**(p2-3)*exp(rem_original)
+        ,f:=quot - p2 + 3
+        )
+
+
+precision
+
+[(q4z, r4z) := z/%ln10]:
+    [q4z == floor(z/ln10)]
+    [r4z == z -q4z*ln10]
+    [z == (q4z*ln10+r4z)]
+    [exp(z) == exp(q4z*ln10+r4z) == exp(q4z*ln10)*exp(r4z) == 10**q4z * exp(r4z)]
+    [exp(z) == 10**q4z * exp(r4z)]
+[[(q4z, r4z) := z/%ln10] -> [exp(z) == 10**q4z * exp(r4z)]]
+
+
+
+def _dpower(xc, xe, yc, ye, p):
+    '-> (c,e)/(int,int) # [10**(p-1) <= c <= 10**p][(c-1)*10**e < x**y < (c+1)*10**e] #[x**y ~= c*10**e][x == xc*10**xe][y == yc*10**ye]'
+      
+    #xxx:'-> x**y # [x == xc*10**xe][y == yc*10**ye]'
+
+    b = floor_log10(yc) + ye
+    ?b :=> [10**(b-1) <= |y| <= 10**b]
+
+    lxc = _dlog(xc, xe, p+b+1)
+      [log(x) ~= lxc*10**-(p+b+1)]
+        # to p+b+1 places after the decimal point
+
+    # compute product y*log(x) = yc*lxc*10**(-p-b-1+ye) = pc*10**(-p-1)
+    pc = lxc*yc*10**(ye-b)
+      [y*log(x) = yc*lxc*10**(-p-b-1+ye) = pc*10**-(p+1)]
+
+    if pc == 0:
+        # we prefer a result that isn't exactly 1; this makes it
+        # easier to compute a correctly rounded result in __pow__
+        if x**y > 1:
+            coeff, exp = 10**(p-1)+1, 1-p
+        else:
+            coeff, exp = 10**p-1, -p
+    else:
+        # [y*log(x) == pc*10**-(p+1)]
+        # [x**y == exp(y*log(x)) == exp(pc*10**-(p+1))]
+        coeff, exp = _dexp(pc, -(p+1), p+1)
+        coeff = _div_nearest(coeff, 10)
+        exp += 1
+
+    return coeff, exp
+
+##### Integer arithmetic functions used by ln, log10, exp and __pow__ #####
+
+_nbits = int.bit_length
+
+def _decimal_lshift_exact(n, e):
+    """ Given integers n and e, return n * 10**e if it's an integer, else None.
+
+    The computation is designed to avoid computing large powers of 10
+    unnecessarily.
+
+    >>> _decimal_lshift_exact(3, 4)
+    30000
+    >>> _decimal_lshift_exact(300, -999999999)  # returns None
+
+    """
+    if n == 0:
+        return 0
+    elif e >= 0:
+        return n * 10**e
+    else:
+        # val_n = largest power of 10 dividing n.
+        str_n = str(abs(n))
+        val_n = len(str_n) - len(str_n.rstrip('0'))
+        return None if val_n < -e else n // 10**-e
+
+def _sqrt_nearest(n, a):
+    """Closest integer to the square root of the positive integer n.  a is
+    an initial approximation to the square root.  Any positive integer
+    will do for a, but the closer a is to the square root of n the
+    faster convergence will be.
+
+    """
+    if n <= 0 or a <= 0:
+        raise ValueError("Both arguments to _sqrt_nearest should be positive.")
+
+    b=0
+    while a != b:
+        b, a = a, a--n//a>>1
+          # 『a--n//a>>1』<==>『(a-((-n)//a))>>1』 ~= (a+ceil(n/a))/2
+    return a
+
+def _rshift_nearest(x, shift):
+    """Given an integer x and a nonnegative integer shift, return closest
+    integer to x / 2**shift; use round-to-even in case of a tie.
+
+    """
+    b, q = 1 << shift, x >> shift
+    return q + (2*(x & (b-1)) + (q&1) > b)
+
+def _div_nearest(a, b):
+    """Closest integer to a/b, a and b positive integers; rounds to even
+    in the case of a tie.
+
+    """
+    q, r = divmod(a, b)
+    return q + (2*r + (q&1) > b)
+
+def _ilog(x, M, L = 8):
+    '-> (M*log(x/M))/int # [[L==8][0.1 <= x/M <= 10 [#?1.0?#]] -> [abs(绝对误差) <= 22]][[L==8][1.0 <= x/M <= 10] -> [abs(绝对误差) <= 15]]'
+
+    #所有 浮点数z 以 整数形式 表达: round(z*M)
+      # x/M, y0/M, ...
+
+    y0 = x-M
+        [log(x/M) == log1p((x-M)/M) == log1p(y0/M)]
+        [yM0 := y0/M]
+        [log(x/M) == log1p(yM0)]
+    [yM0 := (x-M)/M]
+    [yMs[0] := (x-M)/M]
+    [yMs[0] == yM0 == y0/M]
+    [iR := 0]
+    [log(x/M) == log1p(yMs[iR])]
+    until [abs(yMs[iR]) < 2**-L]:
+      [log(x/M) == log1p(yMs[iR])]
+      !! [log1p(z) == 2*log1p(z/(1+sqrt(1+z)))]
+      [yMs[iR+1] := yMs[iR]/(1+sqrt(1+yMs[iR]))]
+      [log(x/M) == log1p(yMs[iR]) == 2*log1p(yMs[iR+1])]
+      [iR := iR+1]
+      [log(x/M) == log1p(yMs[iR])]
+    ?[yMs, iR] => [abs(yMs[iR]) < 2**-L][log(x/M) == log1p(yMs[iR])]
+
+    # argument reduction; R = number of reductions performed
+    R = 0
+    yzR = 2**R*y0
+    [yzR == 2**R*y0 == 2**R*yMs[0]*M]
+    [yzR/M == 2**R*yMs[R]]
+    while (R <= L and abs(yzR) << L-R >= M or
+           R > L and abs(yzR) >> R-L >= M):
+        [yzR/M == 2**R*yMs[R]]
+        [abs(yzR)*2**(L-R) >= M]
+        _yzR = _div_nearest((M*yzR) << 1,
+                         M + _sqrt_nearest(M*(M+_rshift_nearest(yzR, R)), M))
+          # [_yzR == (2*M*yzR)/(M + sqrt(M*(M+yzR/2**R))) == (2*yzR)/(1 + sqrt(1+yzR/M/2**R))]
+          # [_yzR/M == (2*yzR/M)/(1 + sqrt(1+yzR/M/2**R))]
+          # !! [yzR/M == yMs[R]*2**R]
+          # [_yzR/M == (2*yMs[R]*2**R)/(1 + sqrt(1+yMs[R]*2**R/2**R)) == 2**(R+1) * yMs[R]/(1 + sqrt(1+yMs[R])) == 2**(R+1) * yMs[R+1]]
+        # [_yzR/M == 2**(R+1) * yMs[R+1]]
+        yzR = _yzR
+        R += 1
+        # [yzR/M == 2**R*yMs[R]]
+    [yzR/M == 2**R*yMs[R]]
+    [abs(yzR)*2**(L-R) < M]
+    [abs(yzR*2**-R)/M < 2**-L]
+    [abs(yMs[R]) < 2**-L]
+    [R == iR]
+
+
+    #
+    #    log1p(y) ~ y - y**2/2 + y**3/3 - ... - (-y)**T/T
+    #
+    # truncating at T such that y**T is small enough.
+
+    # Taylor series with T terms
+    T = -int(-10*len(str(M))//(3*L))
+        [T == ceil(10*floor_log10(M)/(3*L))]
+    yshift = round(yzR/2**R)
+        !! [yzR/M == 2**R*yMs[R]]
+        [yzR/2**R == M*yMs[R] == yR]
+    w = round(M/T)
+    for k in range(T-1, 0, -1):
+        w = _div_nearest(M, k) - _div_nearest(yshift*w, M)
+          [_w == M/k - (yR*w)/M == M/k - yMs[R]*w]
+          [_w/M == 1/k - yMs[R]*w/M]
+    [w/M == 1/1 -yMs[R]*(1/2 -yMs[R]*(1/3 -yMs[R]*(...(1/T)...)))]
+
+    return _div_nearest(w*yzR, M)
+      [result == w*yzR/M == w*2**R*yMs[R] == 2**R * (w*yMs[R]) == (reverse:reduction)*(Taylor)]
+
+def _dlog10(c, e, p):
+    """Given integers c, e and p with c > 0, p >= 0, compute an integer
+    approximation to 10**p * log10(c*10**e), with an absolute error of
+    at most 1.  Assumes that c*10**e is not exactly 1."""
+
+    # increase precision by 2; compensate for this by dividing
+    # final result by 100
+    p += 2
+
+    # write c*10**e as d*10**f with either:
+    #   f >= 0 and 1 <= d <= 10, or
+    #   f <= 0 and 0.1 <= d <= 1.
+    # Thus for c*10**e close to 1, f = 0
+    l = len(str(c))
+    f = e+l - (e+l >= 1)
+
+    if p > 0:
+        M = 10**p
+        k = e+p-f
+        if k >= 0:
+            c *= 10**k
+        else:
+            c = _div_nearest(c, 10**-k)
+
+        log_d = _ilog(c, M) # error < 5 + 22 = 27
+        log_10 = _log10_digits(p) # error < 1
+        log_d = _div_nearest(log_d*M, log_10)
+        log_tenpower = f*M # exact
+    else:
+        log_d = 0  # error < 2.31
+        log_tenpower = _div_nearest(f, 10**-p) # error < 0.5
+
+    return _div_nearest(log_tenpower+log_d, 100)
+
+def _dlog(c, e, p):
+    """Given integers c, e and p with c > 0, compute an integer
+    approximation to 10**p * log(c*10**e), with an absolute error of
+    at most 1.  Assumes that c*10**e is not exactly 1."""
+
+    # Increase precision by 2. The precision increase is compensated
+    # for at the end with a division by 100.
+    p += 2
+
+    # rewrite c*10**e as d*10**f with either f >= 0 and 1 <= d <= 10,
+    # or f <= 0 and 0.1 <= d <= 1.  Then we can compute 10**p * log(c*10**e)
+    # as 10**p * log(d) + 10**p*f * log(10).
+    l = len(str(c))
+    f = e+l - (e+l >= 1)
+
+    # compute approximation to 10**p*log(d), with error < 27
+    if p > 0:
+        k = e+p-f
+        if k >= 0:
+            c *= 10**k
+        else:
+            c = _div_nearest(c, 10**-k)  # error of <= 0.5 in c
+
+        # _ilog magnifies existing error in c by a factor of at most 10
+        log_d = _ilog(c, 10**p) # error < 5 + 22 = 27
+    else:
+        # p <= 0: just approximate the whole thing by 0; error < 2.31
+        log_d = 0
+
+    # compute approximation to f*10**p*log(10), with error < 11.
+    if f:
+        extra = len(str(abs(f)))-1
+        if p + extra >= 0:
+            # error in f * _log10_digits(p+extra) < |f| * 1 = |f|
+            # after division, error < |f|/10**extra + 0.5 < 10 + 0.5 < 11
+            f_log_ten = _div_nearest(f*_log10_digits(p+extra), 10**extra)
+        else:
+            f_log_ten = 0
+    else:
+        f_log_ten = 0
+
+    # error in sum < 11+27 = 38; error after division < 0.38 + 0.5 < 1
+    return _div_nearest(f_log_ten + log_d, 100)
+
+class _Log10Memoize(object):
+    """Class to compute, store, and allow retrieval of, digits of the
+    constant log(10) = 2.302585....  This constant is needed by
+    Decimal.ln, Decimal.log10, Decimal.exp and Decimal.__pow__."""
+    def __init__(self):
+        self.digits = "23025850929940456840179914546843642076011014886"
+
+    def getdigits(self, p):
+        """Given an integer p >= 0, return floor(10**p)*log(10).
+
+        For example, self.getdigits(3) returns 2302.
+        """
+        # digits are stored as a string, for quick conversion to
+        # integer in the case that we've already computed enough
+        # digits; the stored digits should always be correct
+        # (truncated, not rounded to nearest).
+        if p < 0:
+            raise ValueError("p should be nonnegative")
+
+        if p >= len(self.digits):
+            # compute p+3, p+6, p+9, ... digits; continue until at
+            # least one of the extra digits is nonzero
+            extra = 3
+            while True:
+                # compute p+extra digits, correct to within 1ulp
+                M = 10**(p+extra+2)
+                digits = str(_div_nearest(_ilog(10*M, M), 100))
+                if digits[-extra:] != '0'*extra:
+                    break
+                extra += 3
+            # keep all reliable digits so far; remove trailing zeros
+            # and next nonzero digit
+            self.digits = digits.rstrip('0')[:-1]
+        return int(self.digits[:p+1])
+
+_log10_digits = _Log10Memoize().getdigits
+
+
+
+]]]
+
+

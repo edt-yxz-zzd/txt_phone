@@ -1,0 +1,38 @@
+
+e others/数学/编程/LFSR/LFSR-review20250119-有限域.txt
+
+简单的说:
+  有限域GF(2**k)中的元素 编码为:多项式
+    [[f(x) <- ZZ[x]%2][deg(f)==k][f是 有限域上的不可约多项式] -> [ZZ[x]%2/f(x) ~=~ GF(2**k)]]
+  k爻位寄存器 对应于 有限域GF(2**k)中的元素 的 多项式register(x) 的 系数
+    xor溢出反馈 相应于 f(x) 的 非零项(除了 首项):
+      [deg register == k-1 < k == deg f]
+      即 [x*old_register(x)%f(x)
+        == x*old_register(x).coeff[k-1]*x**(k-1) + x*(old(x)-old(x).term[k-1])
+        == x*old.LC6kmm*x**(k-1) + x*(old(x)-old.LM6kmm)
+        == old.LC6kmm*f(x).LM + x*(old(x)-old.LM6kmm)
+        # !! %f(x) => [f(x)==0]
+        == old.LC6kmm*(f(x).LM-f(x)) + x*(old(x)-old.LM6kmm)
+        # !! %2
+        == old.LC6kmm*(f(x)-f(x).LM) + x*(old(x)-old.LM6kmm)
+        == 反馈 + 移位
+        ]
+  为什么是 『x』@『x*old%f』?
+    其实 可以是 任意多项式g(x)，只不过 代表 多项式乘法运算(系数序列卷积)+取模运算 的 反馈电路 会很复杂
+  泛化版:『g(x)*old_register(x)%f(x)』
+  但 要使 随机爻元串的周期 最大化，g(x)必须是『有限域:ZZ[x]%2/f(x)』的 本原根:
+      [g(x)**(2**k-1)%f(x) == 1]
+      [@[i :<- [1..=2**k-2]] -> [g(x)**(2**k-1)%f(x) =!= 1]]
+  再加上 要使 反馈电路 简单:
+    * 尽量减少f(x)非零项:最少情形:(x**k+1)
+        但 (x**k+1) 不一定是 有限域ZZ%2上的不可约多项式
+    * 尽量减少g(x)非零项:最少情形:x**i @[1<=x<=k-1]
+      但 (x**i)未必是『有限域:ZZ[x]%2/f(x)』的 本原根
+          当且仅当 [gcd(i,2**k-1)==1][(x)是『有限域:ZZ[x]%2/f(x)』的 本原根]
+      * 尽量减少g(x)非零项的次数:最少情形:x
+          但 (x)未必是『有限域:ZZ[x]%2/f(x)』的 本原根
+          #即 任意根(x)是乘法群生成元(本原根)
+            [(x)是『有限域:ZZ[x]%2/f(x)』的 本原根] <==> [f(x)是有限域ZZ%2上的本原不可约多项式]
+
+view others/数学/不可约多项式/本原多项式.txt
+

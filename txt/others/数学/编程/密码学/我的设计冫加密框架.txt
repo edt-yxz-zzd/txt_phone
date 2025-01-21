@@ -1,0 +1,40 @@
+
+e others/数学/编程/密码学/我的设计冫加密框架.txt
+
+uint%N 双射:类陪集最短非空路径
+[M, N :: uint][0 < N < 2*N <= M][i, o :: uint%N][(K,R) := M/%N][ki, ko :: uint%K][fs :: [(uint%M -> uint%M)]]:
+  [M == R+K*N]
+  def vs:
+    [vs[0] := i+ki*N]
+    [vs[j+1] := fs[j](vs[j])]
+  [t := min {j | [[j :<- [1..]][ko == vs[j] //N ]]}]
+    # [t:不确定大小]
+  [o := vs[t] -ko*N]
+
+
+
+(uint%2)**L 双射:选择性部分就地变换+使用输入密钥与未选中部分作为总密钥
+[L :: uint][L >= 2][eL := floor_log2(L)][I,O :: (uint%2)**L == [(0|1)]{len==L}][encrypt{H,L-H} :: (key{encrypt},(uint%2)**(L-H)) -> ((uint%2)**H -> (uint%2)**H)][permute{L} :: key{permute} -> permutation{L}/((uint%2)**L -> (uint%2)**L)][kf :: [key{encrypt}]][kp :: [key{permute}]]:
+    [eL >= 1]
+    [2**eL <= L < 2**(eL+1)]
+    [2**(eL-1) <= L/2 < 2**eL]
+    [H := 2**(eL-1)]
+    [H <= L/2 < 2*H]
+    [2*H <= L < 4*H]
+    [0 <= L-2*H < 2*H]
+    [T := L-2*H]
+    [0 <= T < 2*H]
+    [Xs[0] := I]
+    [Ys[j] := permute{fwd}(kp[j]; Xs[j])]
+    [Zs[j][:H] := encrypt{fwd}(kf[j],Ys[j][H:L]; Ys[j][:H])]
+    [Zs[j][H:L] := Ys[j][H:L](kf[j],; Ys[j][:H])]
+    [Xs[j+1] := permute{bwd}(kp[j]; Zs[j])]
+    [O := Xs[J]]
+
+
+
+单密钥->多密钥
+internal_key[k] = hash((external_key, k))
+data_key[k] = hash((internal_key[k], unselected_data[k]))
+encrypt(data_key[k]; selected_data[k])
+
