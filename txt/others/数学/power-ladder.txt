@@ -1,0 +1,128 @@
+
+e others/数学/power-ladder.txt
+
+@20250204
+  reading about "power ladders" @'Prime numbers-A Computational Perspective(2ed)(2005)(Pomerance).pdf'
+  9.2.1 Montgomery method
+
+
+view ../../python3_src/seed/math/inv_mod__py_.py
+
+
+power ladders
+modular powers
+
+除了初始化之外，所有 mod+div 使用 乘法+位操作 实现
+  R-进制数的(%M)取模操作
+
+
+计算:(x*R**-1%M)
+  只使用:预先计算的缓存值+乘法+加法+减法+右移位操作+位与操作
+  不使用:取模,除法
+[M,R :<- [1..]][gcd(M,R)==1][x::int]:
+  # M - modulus - 整数运算:mod,div
+  # R - radix   - 位操作:   &, >>
+  [CACHE_neg_invM_modR := ((-M)**-1%R)]
+    #precomputed_value
+    # => [y(x) == x + M*(x*CACHE_neg_invM_modR%R)]
+  [y(x) =[def]= x + M*(x*(-M)**-1%R)]
+  [y(x)%M == x%M]
+    # 表达x于%M，溢出
+  [y(x)%R == 0]
+    # 可除=>移位替代除法
+  [y(x)///R%M == x*R**-1%M]
+    # 移位替代除法
+    # 即: y(x)代表的是x，同时又能极快地整除以R，并且结果范围合理
+
+  [R == 2**lbR][mask4R:=R-1][1-R <= x <= M*R+M-1]:
+    整个计算:使用(>>lbR)模拟(/R)于(%M)之中
+      divR_modM_(R,M; x)
+      divR_modM_(R,M,lbR,mask4R:,CACHE_neg_invM_modR; x)
+    [(y(x)///R) == (((x*CACHE_neg_invM_modR) & mask4R)*M+x) >> lbR]
+    #极简后处理:
+    !! [[1-R <= x <= M*R+M-1] -> [((y(x)///R) - (x*R**-1%M)) <- {0,M}]]
+    [(x*R**-1%M) == (y(x)///R) -[(y(x)///R) >= M]M]
+
+  #极简后处理:输入输出范围推导纟后处理:
+  [diff := ((y(x)///R) - (x*R**-1%M))]
+  !! [y(x)///R%M == x*R**-1%M]
+  [diff%M == 0]
+  [diff///M < 2]
+      <==> [diff < 2*M]
+      !! [y(x) <= x + M*(R-1)]
+      <<== [(x + M*(R-1))/R - [x%M=!=0] < 2*M]
+      <==> [x + M*(R-1) < 2*M*R + [x%M=!=0]R]
+      <==> [x < M*R +M + [x%M=!=0]R]
+      <<== [x < M*R +M]
+  [[x < M*R +M] -> [diff///M < 2]]
+
+  [x == M*R +M]:
+    [y(x) == x +M*(R-1) == 2*M*R]
+    [diff == 2*M*R///R - 0 == 2*M]
+    [diff///M == 2]
+  [[x == M*R +M] -> [diff///M == 2]]
+
+  [diff///M >= 0]
+      <==> [diff///M > -1]
+      <==> [diff > -M]
+      !! [y(x) >= x + [x%R=!=0]M]
+      <<== [(x + [x%R=!=0]M)/R - (M-1) > -M]
+      <==> [(x + [x%R=!=0]M) > -R]
+      <==> [x > -R]
+  [[x > -R] -> [diff///M >= 0]]
+
+  [x == -R]:
+    [y(x) == x +M*0 == -R]
+    [diff == -R///R - (M-1) == -M]
+    [diff///M == -1]
+  [[x == -R] -> [diff///M == -1]]
+
+  ==>>:
+  [[x < M*R +M] -> [diff///M < 2]]
+  [[x == M*R +M] -> [diff///M == 2]]
+  [[x > -R] -> [diff///M >= 0]]
+  [[x == -R] -> [diff///M == -1]]
+  ==>>:
+  [[1-R <= x <= M*R+M-1] -> [diff///1 <- {0,1}]]
+  [[1-R <= x <= M*R+M-1] -> [((y(x)///R) - (x*R**-1%M)) <- {0,M}]]
+    # 每次运算之后，检查是否需要(-M)
+  要求纟极简后处理:[1-R <= x <= M*R+M-1]
+
+  [(M-1)*(M-1) <= M*R+M-1]
+    <==> [(M-1)*(M-1) < M*R+M]
+    <==> [M*M+1 < M*R+3*M]
+    <==> [M+1/M < R+3]
+    !! [M>0]
+    <==> [M+[M==1] < R+3]
+    <==> [M+[M==1] <= R+2]
+    !! [R>0]
+    <==> [[[M==1][R>=1]]or[2<=M<=R+2]]
+    <==> [1<=M<=R+2]
+  [[R,M>=1] -> [[(M-1)*(M-1) <= M*R+M-1] <-> [1<=M<=R+2]]]
+  要求纟嵌套使用:[1<=M<=R+2]
+
+
+  用途:
+    [mulR_modM_(x) := x*R%M][mulR_modM_(a*b) == divR_modM_(mulR_modM_(a)*mulR_modM_(b))]
+    嵌套使用:只有初始化mulR_modM_需要mod:
+      [mulR_modM_(a*b*c) == divR_modM_(divR_modM_(mulR_modM_(a)*mulR_modM_(b))*mulR_modM_(c))]
+      [(a*b*c%M) == divR_modM_(mulR_modM_(a*b*c)) == divR_modM_(divR_modM_(divR_modM_(mulR_modM_(a)*mulR_modM_(b))*mulR_modM_(c)))]
+
+    前提:[[R>=1][M>=1][gcd(M,R)==1]]
+    嵌套使用=>要求:[1<=M<=R+2]
+    极简后处理=>要求:[1-R <= x <= M*R+M-1]
+    高效位操作=>[R==radix**floor_log_(radix;R)] #[R==2**lbR] #或者 其他进制数基数radix
+    总要求{divR_modM_}:[[R>=1][M>=1][gcd(M,R)==1][1-R <= x <= M*R+M-1][1<=M<=R+2][R==radix**floor_log_(radix;R)]]
+
+def divR_modM_(R,M,lbR,mask4R,CACHE_neg_invM_modR; x, /):
+    '[[R>=1][M>=1][gcd(M,R)==1][1-R <= x <= M*R+M-1][R==2**lbR==mask4R+1][CACHE_neg_invM_modR==(-M)**-1%R]] => R -> M, lbR -> mask4R -> CACHE_neg_invM_modR -> x -> x*R**-1%M # [嵌套使用=>要求:[1<=M<=R+2]]'
+    #
+    y = (((x*CACHE_neg_invM_modR) & mask4R)*M+x) >> lbR
+    #要求纟极简后处理:[1-R <= x <= M*R+M-1]
+    #极简后处理:
+    if y >= M:
+        y -= M
+    return y
+
+
+

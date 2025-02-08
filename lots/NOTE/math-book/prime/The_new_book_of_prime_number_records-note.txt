@@ -1,0 +1,280 @@
+
+e ../lots/NOTE/math-book/prime/The_new_book_of_prime_number_records-note.txt
+/storage/emulated/0/0my_files/book/math/factorint/snd/The new book of prime number records(3ed)(1996)(Ribenboim).djvu
+
+[[
+素模本原根的范围:here
+'/sdcard/0my_files/book/math/factorint/snd/The new book of prime number records(3ed)(1996)(Ribenboim).djvu'
+chaper2. How to Recognize Whether a Natural Number Is a Prime
+page24
+
+[欤素数扌(p)][欤最小素模本原根扌(p;g[p])]
+[g[p] =[def]= the_smallest_positive_primitive_root_modulo_(p)]
+[?[C > 0] -> [+oo == len{p | @[p>0][is_prime(p)][the_smallest_positive_primitive_root_modulo_(p) > C*ln(p)]}]]
+  其上限增长快>=线性纟对数
+  更弱版:[?[C > 0] -> [+oo == len{p | @[p>0][is_prime(p)][the_smallest_positive_primitive_root_modulo_(p) > C*lnln(p)]}]]
+    其上限增长快>=线性纟对数对数
+  更更弱版:[@[cc > 0] -> [+oo == len{p | @[p>0][is_prime(p)][p-cc > the_smallest_positive_primitive_root_modulo_(p) > cc]}]]
+    其上限增长快>=任意常量#??基础知识证明
+[@[err>0] -> ?[C,P > 0] -> @[p>P] -> [is_prime(p)] -> [the_smallest_positive_primitive_root_modulo_(p) < C*p**(err+1/4)]]
+  其上限增长不太快<=四次方根
+[@[p>e**e**24] -> [is_prime(p)] -> [the_smallest_positive_primitive_root_modulo_(p) < p**0.499]]
+  其上限增长不太快<=平方根
+  相比上面，消除了未知常量:[lnln(p)>24]
+
+]]
+
+
+[[
+move some to:
+  view others/数学/primality_test/proof_primality_via_Nmm_test.txt
+素性检测:here
+]]
+
+
+因为书中公式错太多，转移到:
+  view others/数学/primality_test/proof_primality_via_GFsqN_test.txt
+[[
+Lucas sequence
+
+polynomial: (x**2-P*x+Q)
+discriminant: D:=(P**2-4*Q)
+roots:
+  a := (P+sqrtD)/2
+  b := (P-sqrtD)/2
+
+[P, Q :: int][D := (P**2-4*Q)][D =!= 0][a := (P+sqrtD)/2][b := (P-sqrtD)/2]:
+  # [D =!= 0] due to (...)/(a-b) #but it can be erased by factor polynomial!!!
+  !! [P**2 %4 <- {0,1}]
+  [D%4 <- {0,1}]
+  [a+b == P]
+  [a*b == Q]
+  [D == (a-b)**2]
+  [n :: int]:
+    # negative n ok
+    #   实际上，任意复数都行...
+    #Lucas sequences associated to the pair (P, Q): U()&V()
+    #companion Lucas sequence:V()
+    [U(P,Q;n) =[def]= (a**n-b**n)/(a-b)]
+    [V(P,Q;n) =[def]= (a**n+b**n)]
+    #
+    or:
+    [U(a+b,a*b;n) =[def]= (a**n-b**n)/(a-b)]
+    [V(a+b,a*b;n) =[def]= (a**n+b**n)]
+    这可以看作:二元对称二项式的次数提升过程
+      给定一个『二元对称多项式』，如何将它用『一次二元对称二项式』表达出来？
+      1. 用『任意高次二元对称二项式』表达
+      2. 再将『任意高次二元对称二项式』用『一次二元对称二项式』表达
+        这里就用到 Lucas...
+      ？可否推广到三元？
+          V:n -> (n,m)
+          (a**n*b**m+b**n*c**m+c**n*a**m)
+          #???-1 -> w # [w**3==1]
+  ... ...
+  [U(P,Q;-2) == -P/Q**2]
+  [U(P,Q;-1) == -1/Q]
+  [U(P,Q;0) == 0]
+  [U(P,Q;1) == 1]
+  [U(P,Q;2) == P]
+  [U(P,Q;3) == P**2-Q]
+  ... ...
+  ... ...
+  [V(P,Q;-2) == (P**2-2*Q)/Q**2]
+  [V(P,Q;-1) == P/Q]
+  [V(P,Q;0) == 2]
+  [V(P,Q;1) == P]
+  [V(P,Q;2) == P**2-2*Q]
+  [V(P,Q;3) == P**3-3*P*Q]
+  ... ...
+  这起始双值...，从矩阵的角度看，起始双值分别取[1,0],[0,1]更好
+
+  [U(P,Q;-n) == -U(P,Q;n)/Q**n]
+  [V(P,Q;-n) == +V(P,Q;n)/Q**n]
+===
+单步关系牜自反:
+[U(P,Q;n) == P*U(P,Q;n-1) - Q*U(P,Q;n-2)]
+[V(P,Q;n) == P*V(P,Q;n-1) - Q*V(P,Q;n-2)]
+单步关系牜交叉:
+[U(P,Q;n) == (P*V(P,Q;n) - 2*Q*V(P,Q;n-1))/D]
+[V(P,Q;n) == P*U(P,Q;n) - 2*Q*U(P,Q;n-1)]
+正负关系牜自反:
+[U(P,Q;-n) == -U(P,Q;n)/Q**n]
+[V(P,Q;-n) == +V(P,Q;n)/Q**n]
+<<==:
+===
+(x**2-P*x+Q)
+递推关系:       [f(n) == P*f(n-1) -Q*f(n-2)]
+递推函数通解:   [f(n) == A*a**n + B*b**n]
+由于 U(),V() 匹配该通解形式，故:
+[U(P,Q;n) == P*U(P,Q;n-1) - Q*U(P,Q;n-2)]
+[V(P,Q;n) == P*V(P,Q;n-1) - Q*V(P,Q;n-2)]
+  启发自:/sdcard/0my_files/book/math/factorint/202308/Prime numbers-A Computational Perspective(2ed)(2005)(Pomerance)/Prime numbers-A Computational Perspective(2ed)(2005)(Pomerance).pdf
+===
+对比:上面(递推函数通解)vs下面(我的推导)
+=> [V(P,Q;n-1) + Q*U(P,Q;n-2) == P*U(P,Q;n-1) - Q*U(P,Q;n-2)]
+=> [V(P,Q;n-1) == P*U(P,Q;n-1) - 2*Q*U(P,Q;n-2)]
+=> [V(P,Q;n) == P*U(P,Q;n) - 2*Q*U(P,Q;n-1)]
+  经证明此关系正确
+对称待定系数，得:
+  [U(P,Q;n) == (P*V(P,Q;n) - 2*Q*V(P,Q;n-1))/D]
+===
+递推关系牜单步:
+[U(P,Q;n) ==   V(P,Q;n-1) + Q*U(P,Q;n-2)]
+[V(P,Q;n) == P*V(P,Q;n-1) - Q*V(P,Q;n-2)]
+let UUVV(n) := transpose[[U(P,Q;n),U(P,Q;n-1),V(P,Q;n),V(P,Q;n-1)]]
+  [T == (T1|T2)]
+    因为 T2 可分解为对角线上两个相同的方阵
+    T1相当于从T2复制信息
+[UUVV(n) == T*UUVV(n-1)]
+[T1 :=
+  [[0, Q, 1, 0]
+  ,[1, 0, 0, 0]
+  ,[0, 0, P, -Q]
+  ,[0, 0, 1, 0]
+  ]
+]
+根据相同递归式:
+[T2 :=
+  [[P, -Q, 0, 0]
+  ,[1, 0, 0, 0]
+  ,[0, 0, P, -Q]
+  ,[0, 0, 1, 0]
+  ]
+  == I *< [P,-Q;1,0;]
+]
+<<==:
+推导冫递推关系牜单步巛定义:我的推导
+  [U(P,Q;n) == (a**n-b**n)/(a-b)
+  * [n >= 0]:
+    == sum [a**i * b**j | [i,j>=0][i+j==n-1]]
+    * [n >= 2]:
+      == sum [a**i * b**j | [i,j>=1][i+j==n-1]] + (a**(n-1) + b**(n-1))
+      == sum [a**i * b**j | [i,j>=1][i+j==n-1]] + V(P,Q;n-1)
+      * [n >= 3]:
+        == (a*b)*sum [a**i * b**j | [i,j>=0][i+j==n-3]] + V(P,Q;n-1)
+        == Q*sum [a**i * b**j | [i,j>=0][i+j==n-3]] + V(P,Q;n-1)
+        == Q*U(P,Q;n-2) + V(P,Q;n-1)
+        == V(P,Q;n-1) + Q*U(P,Q;n-2)
+  ]
+  [U(P,Q;n) == V(P,Q;n-1) + Q*U(P,Q;n-2)]
+  [V(P,Q;n) == (a**n+b**n)
+  == (a**n+b**n) - (a+b)*(a**(n-1)+b**(n-1)) + P*V(P,Q;n-1)
+  == -(b*a**(n-1)+a*b**(n-1)) + P*V(P,Q;n-1)
+  == -(a*b)*(a**(n-2)+b**(n-2)) + P*V(P,Q;n-1)
+  == -Q*V(P,Q;n-2) + P*V(P,Q;n-1)
+  == P*V(P,Q;n-1) -Q*V(P,Q;n-2)
+  ]
+  [V(P,Q;n) == P*V(P,Q;n-1) - Q*V(P,Q;n-2)]
+  ##发现新关系，再推导:
+  [U(P,Q;n)*(a-b) == (a**n-b**n)
+  == (a**n-b**n) -(a+b)*(a**(n-1)-b**n**(n-1)) +P*U(P,Q;n-1)*(a-b)
+  == -(b*a**(n-1)-a*b**n**(n-1)) +P*U(P,Q;n-1)*(a-b)
+  == -(a*b)*(a**(n-2)-b**n**(n-2)) +P*U(P,Q;n-1)*(a-b)
+  == -Q*U(P,Q;n-2)*(a-b) +P*U(P,Q;n-1)*(a-b)
+  == +P*U(P,Q;n-1)*(a-b) -Q*U(P,Q;n-2)*(a-b)
+  ]
+  [U(P,Q;n)*(a-b) == P*U(P,Q;n-1)*(a-b) - Q*U(P,Q;n-2)*(a-b)]
+  [U(P,Q;n) == P*U(P,Q;n-1) - Q*U(P,Q;n-2)]
+  差量推导:[V(P,Q;n) == P*U(P,Q;n) - 2*Q*U(P,Q;n-1)]
+  由于满足相同递推关系，归纳法自动满足，只差检查任意相邻2值:
+  [V(P,Q;1) == P == P*1 -2*Q*0 == P*U(P,Q;1) - 2*Q*U(P,Q;0)]
+  [V(P,Q;2) == P**2-2*Q == P*P -2*Q*1 == P*U(P,Q;2) - 2*Q*U(P,Q;1)]
+    <<==:
+      [U(P,Q;0) == 0]
+      [U(P,Q;1) == 1]
+      [U(P,Q;2) == P]
+      [V(P,Q;0) == 2]
+      [V(P,Q;1) == P]
+      [V(P,Q;2) == P**2-2*Q]
+  [(P*U(P,Q;n) - 2*Q*U(P,Q;n-1))*(a-b)
+  == (a+b)*(a**n-b**n) -2*(a*b)*(a**(n-1)-b**(n-1))
+  == (a**(n+1)-b**(n+1))+(b*a**n-a*b**n) -2*(b*a**n-a*b**n)
+  == (a**(n+1)-b**(n+1)) -(b*a**n-a*b**n)
+  == (a-b)*(a**n+b**n)
+  == (a-b)*V(P,Q;n)
+  ]
+  [V(P,Q;n) == P*U(P,Q;n) - 2*Q*U(P,Q;n-1)]
+  ##对称待定系数:
+  [U(P,Q;n)*(a-b) == (a**n-b**n)
+  == AA*V(P,Q;n) + BB*Q*V(P,Q;n-1)
+  == AA*(a**n+b**n) + BB*(b*a**n+a*b**n)
+  == (AA+BB*b)*a**n + (AA+BB*a)*b**n
+  ]
+  [(AA+BB*b) == 1][(AA+BB*a) == -1]
+  [BB*(a-b) == -2][2*AA+BB*(a+b)==0]
+  [BB == -2/(a-b)][AA==-BB*P/2==P/(a-b)]
+  [U(P,Q;n)
+  == (AA*V(P,Q;n) + BB*Q*V(P,Q;n-1))/(a-b)
+  == (P*V(P,Q;n) + -2*Q*V(P,Q;n-1))/(a-b)**2
+  == (P*V(P,Q;n) + -2*Q*V(P,Q;n-1))/D
+  ]
+  [U(P,Q;n) == (P*V(P,Q;n) - 2*Q*V(P,Q;n-1))/D]
+  实例验证:
+  [U(P,Q;1) == 1 == (P*P - 2*Q*2)/D == (P*V(P,Q;1) - 2*Q*V(P,Q;0))/D]
+  [U(P,Q;2) == P == (P*(P**2-2*Q) - 2*Q*P)/D == (P*V(P,Q;2) - 2*Q*V(P,Q;1))/D]
+    <<==:
+      [U(P,Q;0) == 0]
+      [U(P,Q;1) == 1]
+      [U(P,Q;2) == P]
+      [V(P,Q;0) == 2]
+      [V(P,Q;1) == P]
+      [V(P,Q;2) == P**2-2*Q]
+===
+[Un   := U(P,Q;n)]
+[Unpp := U(P,Q;n+1)]
+[Unmm := U(P,Q;n-1)]
+
+[Vn   := V(P,Q;n)]
+[Vnpp := V(P,Q;n+1)]
+[Vnmm := V(P,Q;n-1)]
+
+(IV. 1) Quadratic relations:
+[Vn**2 - D*Un**2 == 4*Q**n]
+[Un**2 -Unmm*Unpp == Q**(n-1)]
+
+(IV.2) Conversion formulas:
+???[D*Un == Vnpp - Q*Vnmm] #bug?!
+[  Vn == Unpp - Q*Unmm]
+<==>:
+???[Vnpp == D*Un - Q*Vnmm]
+[Unpp ==   Vn - Q*Unmm]
+
+???[D*Un == P*Vn]???
+  见上面:递推关系牜单步#我的推导
+  对比上式就有了:[D*Un == P*Vn]
+  [(P**2-4*Q)*Un == P*Vn]
+  [(P**2-4*Q)*(a**n-b**n)/(a-b) == P*(a**n+b**n)]
+  !! [D == (a-b)**2]
+  [(a-b)*(a**n-b**n) == (a+b)*(a**n+b**n)]
+  不太行
+
+(IV.3) Addition of indices:
+[U(m+n) == Um*Un - Q**n*U(m-n)]#bug?!
+  => [Q**n*U(m-n) == Q**m*U(n-m)]
+  => [U(m-n) == Q**(m-n)*U(n-m)]
+  !! [U(P,Q;-n) == -U(P,Q;n)/Q**n]
+  _L
+瞎改:[U(m+n) == Um*Un - (-Q)**n*U(m-n)]
+[V(m+n) == Vm*Vn - Q*V(m-n) == D*Um*Un - Q**n*V(m-n)]#bug?!
+[V(m+n) == Vm*Vn - Q*V(m-n)]#bug?!
+  => [V(m-n) == V(n-m)]
+  !! [V(P,Q;-n) == +V(P,Q;n)/Q**n]
+  _L
+瞎改:[V(m+n) == Vm*Vn - Q**n*V(m-n)]
+  => [Q**n*V(m-n) == Q**m*V(n-m)]
+  => [V(m-n) == Q**(m-n)*V(n-m)]
+  !! [V(P,Q;-n) == +V(P,Q;n)/Q**n]
+  改对了!
+[V(m+n) == Vm*Vn - Q**n*V(m-n)]
+  特例:[V(2*n) == Vn**2 - Q**n*2]
+  特例:[V(2*n+1) == Vnpp*Vn - Q**n*P]
+  特例:[V(2*(n+1)) == Vnpp**2 - Q**(n+1)*2]
+  (n,n+1) --> (2*n,2*n+1)
+  (n,n+1) --> (2*n+1,2*n+2)
+  最好是[Q==+/-1]
+===
+===
+]]
+
+
+

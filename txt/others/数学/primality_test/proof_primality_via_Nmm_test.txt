@@ -1,0 +1,317 @@
+
+[[
+已订正:警告:见view others/数学/primality_test/proof_primality_via_GFsqN_test.txt
+  看来我确实搞错了:应该是[pseudoprime =!= PRP][pseudoprime <: odd_composite <: composite][odd_prime <: SPRP <: PRP][SPRP == strong_probable_prime =!= strong_pseudoprime]
+      #而非一直以为的『odd_prime <: SPRP == strong_pseudoprime』
+]]
+
+
+
+e others/数学/primality_test/proof_primality_via_Nmm_test.txt
+素性证明牜减一牜完全分解:goto
+素性证明牜减一牜部分分解牜平方根:goto
+
+
+[[[
+/sdcard/0my_files/book/math/factorint/202308/Prime numbers-A Computational Perspective(2ed)(2005)(Pomerance)/Prime numbers-A Computational Perspective(2ed)(2005)(Pomerance).pdf
+
+===
+least witness for n
+[n <- [2..]][n%2==1]:
+    [is_strong_probable_prime__base_(b;n) =[def]= [gcd(b,n)== 1][(ez,odd) :=> [2**ez*(2*hf+1) == n-1]][[b**(1+2*hf)%n==1]or[?[e :<- [0..<ez]] -> [b**(2**e*(1+2*hf)%n == n-1]]]]
+      # 『is N a strong probable prime base B?』
+    [is_strong_pseudoprime__base_(b;n) =[def]= [not is_prime(n)][is_strong_probable_prime__base_(b;n)]]
+[n <- [2..]][n%2==1][not is_prime(n)]:
+    [is_witness4SPRP_test__ge_le_(n;w) =[def]= [not is_strong_probable_prime__base_(w;n)]]
+    [num_witnesses4SPRP_test__ge_le_(minB,maxB;n) =[def]= len{w | [w:<-[minB..=maxB]][is_witness4SPRP_test__ge_le_(n;w)]}]
+    [the_least_witness_(n) =[def]= min{w | [w:<-[1..=n-1]][is_witness4SPRP_test__ge_le_(n;w)]}]
+[[n <- [2..]] -> [n%2==1] -> [not is_prime(n)] -> [num_witnesses4SPRP_test__ge_le_(1,n-1;n) >= 3/4*n]]
+  #random compositeness test
+  #probabilistic algorithm
+  #“industrial-grade prime”
+[[n <- [2..]] -> [n%2==1] -> [not is_prime(n)] -> [the_least_witness_(n) >= 2]]
+  # [2..=n-2]
+  # [2..=sqrt(n)]
+[[p <- [6..]] -> [is_prime(p)] -> [n := (4**p+1)/5] -> [[is_strong_probable_prime__base_(2;n)][the_least_witness_(n) >= 3]]]
+  # 无穷多 2-SPRP
+  !! [(2*A**2 +2*A +1)*(2*A**2 -2*A +1) == (2*A**2+1)**2 -4*A**2 == (4*A**4+1)]
+  [4**p+1 == (2**p + 2**((p+1)///2) + 1)*(2**p - 2**((p+1)///2) + 1)]
+  [2**(2*p)%(5*n) == 1]
+  [2**(2*p)%n == -1]
+  [(2*p+1)%order_mod_(n;2) == 0]
+  [n == sum [(-4)**e | [e:<-[0..<p]]]]
+  [n-1 == 4*sum [-(-4)**e | [e:<-[0..<=p-2]]] == 2**2 * odd]
+  [(n-1)%5 == 4**p%5 == (-1)**p%5 == (-1)%5]
+  [n%5 == 0]
+  !! [p > 5]
+  [(n-1)%p == 4**p%p == 4]
+  [(n-1)%4 == 4**p%4 == 0]
+  [(n-1)%(4*p) == 4]
+  [(n-1)%8 == 4**p%8 == 4]
+  [(n-1)%(8*p) == 4]
+  [n-1 == 2**2 * (p*_odd)]
+  !! [2**(2*p)%n == -1]
+  [2**(2*p*_odd)%n == -1]
+  [is_strong_probable_prime__base_(2;n)]
+  DONE!
+
+[?[C > 0] -> @[x > C] -> [len{n | [[n <- [2..<x]][n%2==1][not is_prime(n)][the_least_witness_(n) >= ln(n)**1/(3*lnlnln(n))]]} >= x**1/(35*lnlnln(x))]]
+  #证据无上限
+  #failing a universal bound B
+  Miller primality test witness_bound => [max_witness := min{n-1, isqrt(n), floor(2*ln(n)**2}]
+
+[ERH => [@[n :<- [2..]] -> [n%2==1] -> [not is_prime(n)] -> [the_least_witness_(n) < 2*ln(n)**2]]]
+  Theorem 3.5.12.On the ERH, W(n) < 2ln^2(n) for all odd composite numbers n.
+  Under the assumption of the extended Riemann hypothesis
+
+
+[[n --> +oo] => [@[n :<- [2..]] -> [n%2==1] -> [not is_prime(n)] -> [the_least_witness_(n) < n**(1/10.82+O(1))]]]
+
+
+]]]
+
+
+move some from:
+  view ../lots/NOTE/math-book/prime/The_new_book_of_prime_number_records-note.txt
+[[
+素性检测:here
+素性证明牜减一牜完全分解:goto
+素性证明牜减一牜部分分解牜平方根:goto
+===
+[gde_(p;N) =[def]= max{e | [e :<- [0..][N%p**e == 0]]}]
+[gcd(N,x)==1]:
+  [order_mod_(N;x) =[def]= min{e | [e :<- [1..][x**e%N == 1]]}]
+
+===
+素性证明牜减一牜完全分解:here
+1.完全分解(N-1),无需gcd
+  需要预备:[p2g :: {p:g[p]}]
+  [@[N :<- [2..]] -> [@[p :<- all_prime_factors_of(N-1)] -> ?[g[p] :<- [2..=N-1]] -> [[g[p]**(N-1)%N==1][g[p]**((N-1)///p)%N=!=1]]] -> [is_prime(N)]]
+  证明:
+  [p :<- all_prime_factors_of(N-1)]:
+    [e[g[p]] := order_mod_(N;g[p])]
+    [phi(N)%e[g[p]] == 0]
+    !! [g[p]**(N-1)%N==1]
+    [(N-1)%e[g[p]] == 0]
+    !! [g[p]**((N-1)///p)%N=!=1]
+    [(N-1)///p%e[g[p]] =!= 0]
+    [gde_(p;e[g[p]]) == gde_(p;N-1)]
+    !! [phi(N)%e[g[p]] == 0]
+    [gde_(p;phi(N)) >= gde_(p;N-1)]
+  [@[p...] -> [gde_(p;phi(N)) >= gde_(p;N-1)]]
+  [phi(N) % (N-1) == 0]
+  !! [N >= 2]
+  [0 < phi(N) <= N-1]
+  [phi(N) == N-1]
+  [is_prime(N)]
+  DONE!
+
+===
+见下面:ver2.泛化版
+这里注释掉，避免维护2个版本
+#.2. 部分分解(N-1)需得gcd
+#.  需要预备:[p2g :: {p:g[p]}][(B,gR) :: ...]
+#.  试除法:得到部分完全分解F,以及未分解部分R的素因子下限B
+#.  [@[N :<- [2..]] -> @[F :<- [1..=N-1]] -> [(N-1)%F==0] -> [R:=(N-1)///F] -> [gcd(F,R)==1] -> [@[p :<- all_prime_factors_of(F)] -> ?[g[p] :<- [2..=N-1]] -> [[g[p]**(N-1)%N==1][gcd(N,-1+g[p]**((N-1)///p)%N)==1]]] -> [[@[q :<- all_prime_factors_of(N)] -> [q%F==1]][[N < (F+1)**2] -> [is_prime(N)]][@[B :<- [2..<=floor_sqrt(R)]] -> [@[d :<- all_prime_factors_of(R)] -> [d>=B]] -> @[gR :<- [1..=N-1]] -> [[gR**(N-1)%N==1][gcd(N,-1+gR**F%N)==1]] -> [[@[q :<- all_prime_factors_of(N)] -> [(q-1)///F>=B]][[N < (B*F+1)**2] -> [is_prime(N)]]]]]]
+#.  证明:
+#.  [q :<- all_prime_factors_of(N)]:
+#.    [p :<- all_prime_factors_of(F)]:
+#.      [ee[q,g[p]] := order_mod_(q;g[p])]
+#.      [phi(q)%ee[q,g[p]] == 0]
+#.      !! [g[p]**(N-1)%N==1]
+#.      [g[p]**(N-1)%q==1]
+#.      [(N-1)%ee[q,g[p]] == 0]
+#.      !! [gcd(N,-1+g[p]**((N-1)///p)%N)==1]
+#.      [gcd(q,-1+g[p]**((N-1)///p)%q)==1]
+#.      [g[p]**((N-1)///p)%q=!=1]
+#.      [(N-1)///p%ee[q,g[p]] =!= 0]
+#.      [gde_(p;ee[q,g[p]]) == gde_(p;N-1)]
+#.      !! [phi(q)%ee[q,g[p]] == 0]
+#.      [gde_(p;phi(q)) >= gde_(p;N-1)]
+#.    [@[p...] -> [gde_(p;phi(q)) >= gde_(p;N-1)]]
+#.    [phi(q)%F == 0]
+#.    [(q-1)%F == 0]
+#.    [q%F == 1]
+#.  [@[q :<- all_prime_factors_of(N)] -> [q%F == 1]]
+#.  [@[q...] -> [q >= F+1]]
+#.  [N < (F+1)**2]:
+#.    !! [N >= 2]
+#.    [is_prime(N)]
+#.  [B,gR...]:
+#.    [q :<- all_prime_factors_of(N)]:
+#.      [eee[q,gR] := order_mod_(q;gR)]
+#.      [phi(q)%eee[q,gR] == 0]
+#.      !! [gR**(N-1)%N==1]
+#.      [gR**(N-1)%q==1]
+#.      [(N-1)%eee[q,gR] == 0]
+#.      !! [gcd(N,-1+gR**F%N)==1]
+#.      [gcd(q,-1+gR**F%q)==1]
+#.      [gR**F%q=!=1]
+#.      [F%eee[q,gR] =!= 0]
+#.      !! [N-1 == F*R]
+#.      [(N-1)///R%eee[q,gR] =!= 0]
+#.      #bug: [gde_(R;eee[q,gR]) == gde_(R;N-1)]
+#.      [gcd(R, eee[q,gR]) > 1]
+#.      ?[dd[q] :<- all_prime_factors_of(R)] :=> [gde_(dd[q];N-1) -gde_(dd[q];R) < gde_(dd[q];eee[q,gR])]
+#.      [gde_(dd[q];N-1) -gde_(dd[q];R) < gde_(dd[q];eee[q,gR])]
+#.
+#.      !! [N-1 == F*R]
+#.      !! [phi(q)%eee[q,gR] == 0]
+#.      [gde_(dd[q];phi(q)) >= gde_(dd[q];eee[q,gR]) > gde_(dd[q];N-1) -gde_(dd[q];R) >= (gde_(R;N-1) - 1)*gde_(dd[q];R) >= 0]
+#.      [gde_(dd[q];phi(q)) > 0]
+#.      [gde_(dd[q];q-1) >= 1]
+#.      [(q-1)%dd[q] == 0]
+#.      !! [(q-1)%F == 0]
+#.      !! [gcd(F,R)==1]
+#.      [(q-1)%(dd[q]*F) == 0]
+#.      [(q-1)///F >= dd[q]]
+#.      !! [@[d :<- all_prime_factors_of(R)] -> [d>=B]]
+#.      [dd[q] >= B]
+#.      [(q-1)///F >= dd[q] >= B]
+#.      [q >= B*F + 1]
+#.    [@[q :<- all_prime_factors_of(N)] -> [(q-1)///F >= B]]
+#.    [@[q...] -> [q >= B*F + 1]]
+#.    [N < (B*F+1)**2]:
+#.      !! [N >= 2]
+#.      [is_prime(N)]
+#.  DONE!
+===
+gde_
+order_mod_
+is_partial_factorization_
+calc_F_R_p2e_d2e_d2B_BBB__5partial_factorization_
+ptest4Nmm__with_gcd_
+
+===
+素性证明牜减一牜部分分解牜平方根:here
+
+===
+[Nmm :: int][ft2e,ft2lowP :: {int:int}]:
+  [is_partial_factorization_(Nmm; ft2e,ft2lowP) =[def]= [[Nmm >= 1][Nmm==II__p2e_(ft2e)][@[(ft,e):<-ft2e.items()] -> [[e>0][ft>1]]][are_pairwise_coprimes_(ft2e.keys())][ft2e.keys()==ft2lowP.keys()][@[(ft,lowP):<-ft2lowP.items()] -> [[2 <= lowP <= ft][@[q :<- all_prime_factors_of(ft)] -> [q>=lowP]]]]]]
+  #怎么得来的？
+  # * 构造特定形式的素数:
+  #     (1+odd*2**e) #e 超大 #[2**e>odd]
+  # * 整数分解:
+  #     lowP即ft的素因子的下限
+  #     采用试除法，得到 素因子p => [ft:=p][lowP:=p]
+  #     采用试除法，直到整数max_tried，得到 未分解部分R => [ft:=R][lowP:=max_tried+1]
+  #     接着，采用 (最大公约数分解,完美幂方根分解)*(尸方法,平方差,椭圆曲线) 之类 分解算法，可能得到 一些 未能进一步分解的 因子 ft**e
+  #
+===
+[Nmm :: int][ft2e,ft2lowP :: {int:int}][is_partial_factorization_(Nmm; ft2e,ft2lowP)]:
+  [calc_F_R_p2e_d2e_d2B_BBB__5partial_factorization_(Nmm; ft2e,ft2lowP) =[def]= let [[p2e := {ft:e for ft,e in ft2e.items() if [ft2lowP[ft]==ft]}][d2e := {ft:e for ft,e in ft2e.items() if not [ft2lowP[ft]==ft]}][F := II__p2e_(p2e)][R := II__p2e_(d2e)][d2B := {ft:ft2lowP[ft] for ft,e in ft2e.items() if not [ft2lowP[ft]==ft]}][BBB := II(d2B[d]**d2e[d] for d in d2e)]] in (F,R,p2e,d2e,d2B,BBB)]
+    # !! [[ft2lowP[ft]==ft] -> is_prime(ft)]
+===
+[N,ft :<- [2..]][(N-1)%ft==0][g :<- [2..=N-1]]:
+  [ptest4Nmm__with_gcd_(N;ft, g) =[def]= [[g**(N-1)%N==1][gcd(N,-1+g**((N-1)///ft)%N)==1]]]
+===
+2-ver2. 泛化版:部分分解(N-1)需得gcd
+  需要预备:[ft2g :: {ft:g[ft]}][ft2lowP :: {ft:lowP[ft]}]
+  或者说:需要预备:[p2g :: {p:g[p]}][d2g :: {d:g[d]}][d2B :: {d:B[d]}]
+  试除法:得到部分完全分解F,以及未分解部分R的素因子下限B
+定理:
+[@[N :<- [2..]]
+-> [ft2e,ft2lowP :: {int:int}]
+-> [is_partial_factorization_(N-1; ft2e,ft2lowP)]
+-> [(F,R,p2e,d2e,d2B,BBB) := calc_F_R_p2e_d2e_d2B_BBB__5partial_factorization_(N-1; ft2e,ft2lowP)]
+  # 未完全分解部分的综合贡献下限:[BBB := II(d2B[d]**d2e[d] for d in d2e)]
+  # 未完全分解因子的素因子下限:[d2B := {ft:ft2lowP[ft] for ft,e in ft2e.items() if not [ft2lowP[ft]==ft]}]
+  # 未完全分解部分:[R := II__p2e_(d2e)]
+  # 完全分解部分:[F := II__p2e_(p2e)]
+  # [N-1 == F*R]
+
+# [p :<- all_prime_factors_of(F)]
+-> [@[p :<- p2e] -> ?[g[p] :<- [2..=N-1]] -> [ptest4Nmm__with_gcd_(N;p, g[p])]]
+  # [@[p :<- p2e] -> ?[g[p] :<- [2..=N-1]] -> [[g[p]**(N-1)%N==1][gcd(N,-1+g[p]**((N-1)///p)%N)==1]]]
+  # 之所以不直接使用ft2e替代p2e，是因为下面部分结论[q%F==1]并不需要用到d2e
+-> [
+  [@[q :<- all_prime_factors_of(N)] -> [q%F==1]]
+  [[N < (F+1)**2] -> [is_prime(N)]]
+  [
+    # [d :<- all_prime_factors_of(R)]
+    [@[d :<- d2e] -> ?[g[d] :<- [2..=N-1]] -> [ptest4Nmm__with_gcd_(N;d, g[d])]]
+      # 测试同上
+      # [@[d :<- d2e] -> ?[g[d] :<- [2..=N-1]] -> [[g[d]**(N-1)%N==1][gcd(N,-1+g[d]**((N-1)///d)%N)==1]]]
+
+    # 居前所有前提条件<==>[@[ft :<- ft2e] -> ?[g[ft] :<- [2..=N-1]] -> [ptest4Nmm__with_gcd_(N;ft, g[ft])]]
+    -> [
+      [@[q :<- all_prime_factors_of(N)] -> [(q-1)///F>=BBB]]
+      [[N < (BBB*F+1)**2] -> [is_prime(N)]]
+    ]
+  ]
+]]
+证明:
+  [@[ft :<- ft2e] -> ?[g[ft] :<- [2..=N-1]] -> [ptest4Nmm__with_gcd_(N;ft, g[ft])]]:
+    # 任意测试:(F|R)
+    [q :<- all_prime_factors_of(N)][ft :<- ft2e]:
+      [eee[q,g[ft]] := order_mod_(q;g[ft])]
+      [phi(q)%eee[q,g[ft]] == 0]
+      !! [ptest4Nmm__with_gcd_(N;ft, g) =[def]= [[g**(N-1)%N==1][gcd(N,-1+g**((N-1)///ft)%N)==1]]]
+      !! [g[ft]**(N-1)%N==1] #@ptest4Nmm__with_gcd_
+      [g[ft]**(N-1)%q==1]
+      [(N-1)%eee[q,g[ft]] == 0]
+      !! [gcd(N,-1+g[ft]**((N-1)///ft)%N)==1] #@ptest4Nmm__with_gcd_
+      [gcd(q,-1+g[ft]**((N-1)///ft)%q)==1]
+      [g[ft]**((N-1)///ft)%q=!=1]
+      [(N-1)///ft%eee[q,g[ft]] =!= 0]
+      #bug:[gde_(ft;eee[q,g[ft]]) > -1+gde_(ft;N-1)]
+      [gcd(ft, eee[q,g[ft]]) > 1]
+      ?[ddd[ft,q] :<- all_prime_factors_of(ft)] :=> [gde_(ddd[ft,q];N-1) -gde_(ddd[ft,q];ft) < gde_(ddd[ft,q];eee[q,g[ft]])]
+      [gde_(ddd[ft,q];N-1) -gde_(ddd[ft,q];ft) < gde_(ddd[ft,q];eee[q,g[ft]])]
+
+      !! [(N-1)%ft == 0]
+      !! [phi(q)%eee[q,g[ft]] == 0]
+      [gde_(ddd[ft,q];phi(q)) >= gde_(ddd[ft,q];eee[q,g[ft]]) > gde_(ddd[ft,q];N-1) -gde_(ddd[ft,q];ft) >= (gde_(ft;N-1) - 1)*gde_(ddd[ft,q];ft) >= (ft2e[ft] - 1)*1]
+      [gde_(ddd[ft,q];phi(q)) > (ft2e[ft] - 1)]
+      [gde_(ddd[ft,q];(q-1)) >= ft2e[ft] >= 1]
+      [(q-1)%ddd[ft,q]**ft2e[ft] == 0]
+      [(q-1)%(ddd[ft,q]**ft2e[ft]) == 0]
+    [@[q...] -> @[ft...] -> ?[ddd[ft,q]...] -> [(q-1)%(ddd[ft,q]**ft2e[ft]) == 0]]
+    #########
+    @[q...]:
+      [@[ft...] -> ?[ddd[ft,q]...] -> [(q-1)%(ddd[ft,q]**ft2e[ft]) == 0]]
+      !! [are_pairwise_coprimes_(ft2e.keys())]
+      [are_pairwise_coprimes_([ddd[ft,q] | @[ft...]])]
+      [@[ft...] -> ?[ddd[ft,q]...] -> ]
+      [(q-1)%(II[ddd[ft,q]**ft2e[ft] | @[ft...]]) == 0]
+      [(q-1)%F >= II[ddd[ft,q]**ft2e[ft] | @[ft <- d2e]]]
+        # split F,R here
+      !! [BBB := II(d2B[d]**d2e[d] for d in d2e)]
+      [(q-1)///F >= BBB]
+    [@[q :<- all_prime_factors_of(N)] -> [(q-1)///F >= BBB]]
+    #########
+    [@[q...] -> [q >= BBB*F + 1]]
+    [N < (BBB*F+1)**2]:
+      !! [N >= 2]
+      [is_prime(N)]
+    #########
+  [@[p :<- p2e] -> ?[g[p] :<- [2..=N-1]] -> [ptest4Nmm__with_gcd_(N;p, g[p])]]:
+    # 只考虑测试:(F)
+    [q :<- all_prime_factors_of(N)][p :<- p2e]:
+      !! [[@[ft :<- ft2e] -> ?[g[ft] :<- [2..=N-1]] -> [ptest4Nmm__with_gcd_(N;ft, g[ft])]] ==>> [@[q...] -> @[ft...] -> ?[ddd[ft,q]...] -> [(q-1)%(ddd[ft,q]**ft2e[ft]) == 0]]]
+      !! [@[p :<- p2e] -> ?[g[p] :<- [2..=N-1]] -> [ptest4Nmm__with_gcd_(N;p, g[p])]]
+      [ft := p]:
+        [?[ddd[ft,q]...] -> [(q-1)%(ddd[ft,q]**ft2e[ft]) == 0]]
+        !! [is_prime(p)]
+        [is_prime(ft)]
+        [ddd[ft,q] == ft]
+        [(q-1)%(ft**ft2e[ft]) == 0]
+        !! [ft := p]
+        [(q-1)%(p**p2e[p]) == 0]
+      [(q-1)%(p**p2e[p]) == 0]
+    [@[q...] -> @[p...] -> [(q-1)%(p**p2e[p]) == 0]]
+    [@[q...] -> [(q-1)%F == 0]]
+    [@[q...] -> [q%F == 1]]
+    [@[q :<- all_prime_factors_of(N)] -> [q%F==1]]
+    #########
+    [@[q...] -> [q >= F + 1]]
+    [N < (F+1)**2]:
+      !! [N >= 2]
+      [is_prime(N)]
+  DONE!
+
+===
+
+===
+===
+]]

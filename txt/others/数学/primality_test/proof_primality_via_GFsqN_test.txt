@@ -1,0 +1,621 @@
+
+[[
+已订正:警告:见下面:is_Fibonacci_pseudoprime_@Fibonacci_number
+  看来我确实搞错了:应该是[pseudoprime =!= PRP][pseudoprime <: odd_composite <: composite][odd_prime <: SPRP <: PRP][SPRP == strong_probable_prime =!= strong_pseudoprime]
+      #而非一直以为的『odd_prime <: SPRP == strong_pseudoprime』
+]]
+
+e others/数学/primality_test/proof_primality_via_GFsqN_test.txt
+  Lucas_probable_prime_test:goto
+  quadratic_Frobenius_probable_prime_test:goto
+  strong_quadratic_Frobenius_probable_prime_test:goto
+  转化为序列计算冫二次有限域根置换素性检测牜弱版:goto
+
+
+
+[[
+更佳:/sdcard/0my_files/book/math/factorint/202308/Prime numbers-A Computational Perspective(2ed)(2005)(Pomerance)/Prime numbers-A Computational Perspective(2ed)(2005)(Pomerance).pdf
+  避开数列，直接考虑 有限域
+  GF(p**2)
+  ZZ[%N,x]%(x**2-P*x+Q)
+
+错误多:'/sdcard/0my_files/book/math/factorint/snd/The new book of prime number records(3ed)(1996)(Ribenboim).djvu'
+  #view ../lots/NOTE/math-book/prime/The_new_book_of_prime_number_records-note.txt
+
+view script/辅助冫构造非平方判别式.py
+]]
+
+
+
+
+
+
+[[[
+===
+费马小定理:
+  [@[p,x :: int] -> [is_prime(p)] -> [x**p%p == x%p]]
+  即: 多项式 (x**p) 作用于 GF(p)，是 恒等映射
+考虑构造GF(p**2):
+  [f(x) := (x**2-P*x+Q)]
+  [R(x) := (x**p)]
+    #Frobenius automorphism)
+  [D:=P**2-4*Q]
+    #discriminant
+  ZZ[%p][x]%f(x)
+  要求:f(x)不可约简
+    #nonsquare_discriminant
+    #irreducible
+    即: [D不是平方数%p] # [D不是平方剩余%p]
+    即: [Jacobi_symbol(p;D)==-1]
+    若 [Jacobi_symbol(p;D)==+1] 则成为 交换环 ZZ[%p]*ZZ[%p]
+  假设f(x)的根是{z,P-z}
+  要求:[z =!= P-z]
+    即:[p%2==1]
+  !! [not z <- GF(p) == roots_of(R)]
+  [R(z)=!=z]
+  !! f(x)的根被R将变换成另一个根
+  [R(z) == P-z]
+  [R(P-z) == z]
+  [(P-z)**p == P**p-z**p == P -z**p]
+
+  !! [z**p**2 == z]
+  [z**(p**2-1) == 1]
+  !! [z**p =!= z]
+  [z**(p-1) =!= 1]
+  [z**(p+1) =?= 1]
+
+  !! [z**2 -P*z +Q == 0]
+  [z**2 == (P*z-Q)]
+  !! [R(z) == P-z]
+  [z**p == P-z]
+  [z**(p+1) == z**p * z == (P-z)*z == P*z -(P*z-Q) == Q]
+    ==>> 检测 [z**(p+1) == Q] 对比:费马小定理
+    另外 核心算法纟序列构造 总可以将Q变换成1
+
+  #. [(P-z)*z == Q]
+  #. [z**-1 == (P-z)*Q**-1]
+  #. [z**(p-1) == z**p * z**-1
+  #. == (P-z)*(P-z)*Q**-1
+  #. == (P**2-2*P*z-z**2)/Q
+  #. == (P**2-2*P*z-(P*z-Q))/Q
+  #. == (P**2+Q-3*P*z)/Q
+  #. ]
+
+===
+考虑另一种情形:
+[D不是平方数][Jacobi_symbol(p;D)==+1]:
+  ?交换环 ZZ[%p]*ZZ[%p]
+  感觉没用:退化到 费马小定理
+  素性检测 还是得靠 [Legendre_symbol(p;D)==-1]
+===
+]]]
+
+[[[
+Fibonacci number
+Fibonacci pseudoprime
+Legendre symbol
+===
+[n :<- [0..]]:
+  [Fibonacci_number[n] =[def]= if n < 2 then n else Fibonacci_number[n-1]+[n-2]]
+
+[p :<- [3..]][is_prime(p)][n :: int]:
+  [Legendre_symbol(p;n) =[def]= if n%p==0 then 0 elif is_square_nonresidual(p;n) then -1 else +1]
+  [Legendre_symbol(p;n) == n**((p-1)///2)]
+  [Legendre_symbol(p;n) == [is_prime(p)]:Jacobi_symbol(p;n)]
+
+[[p :<- [3..]] -> [is_prime(p)] -> [Fibonacci_number[n-Legendre_symbol(5;n)]%n == 0]]
+    # [is_prime(p)][p%2==1] => [Legendre_symbol(p;5) == Legendre_symbol(5;p)]
+
+[n <- [2..]][n%2==1]:
+    [is_strong_probable_prime__base_(b;n) =[def]= [gcd(b,n)== 1][(ez,odd) :=> [2**ez*(2*hf+1) == n-1]][[b**(1+2*hf)%n==1]or[?[e :<- [0..<ez]] -> [b**(2**e*(1+2*hf)%n == n-1]]]]
+    [is_Fibonacci_probable_prime_(n) =[def]= [gcd(10,n)== 1][Fibonacci_number[n-Legendre_symbol(5;n)]%n == 0]]
+
+    [is_strong_pseudoprime__base_(b;n) =[def]= [not is_prime(n)][is_strong_probable_prime__base_(b;n)]]
+
+    [is_Fibonacci_pseudoprime_(n) =[def]= [not is_prime(n)][is_Fibonacci_probable_prime_(n)]]
+
+  #In fact, we know no number n ≡ ±2 (mod 5) that is simultaneously a base-2 pseudoprime and a Fibonacci pseudoprime.
+    # [[[n%5 <- {2,3}][is_strong_probable_prime__base_(2;n)][is_Fibonacci_probable_prime_(n)]] -> [[is_prime(n)]or[??unknown_pseudoprime_(n)??]]]
+  看来我确实搞错了:应该是[pseudoprime =!= PRP][pseudoprime <: odd_composite <: composite][odd_prime <: SPRP <: PRP][SPRP == strong_probable_prime =!= strong_pseudoprime]
+      #而非一直以为的『odd_prime <: SPRP == pseudoprime』
+
+===
+]]]
+
+
+[[[
+===
+[P,Q :: int][D := P**2-4*Q][not is_square_(D)][f(x) := (x**2-P*x+Q)][U(P,Q;j) := (x**j-(P-x)**j)/(x-(P-x)) %f(x)][V(P,Q;j) := (x**j+(P-x)**j) %f(x)]:
+  # {x,P-x} 是f(x)的根
+  # U(),V()是整数序列Lucas sequence
+  #     为何是它们？
+  #         + 满足f(x)这一递推关系
+  #         + 整数
+  #         + 尽量简单=>二项式(非平凡单项式不可能是整数)
+  #         + 包含两个通解=>需要两个序列
+  #
+  [U(P,Q;0) == 0]
+  [U(P,Q;1) == 1]
+  [V(P,Q;0) == 2]
+  [V(P,Q;1) == P]
+  # 满足f(x)这一递推关系
+  [U(P,Q;n) == P*U(P,Q;n-1) - Q*U(P,Q;n-2)]
+  [V(P,Q;n) == P*V(P,Q;n-1) - Q*V(P,Q;n-2)]
+
+  # vs:quadratic_Frobenius_probable_prime_test:goto
+  # Lucas_probable_prime_test:here
+  [[p :<- [3..]] -> [is_prime(p)] -> [gcd(2*Q*D,p) == 1] -> [U(P,Q;p-Legendre_symbol(p;D))%p == 0]]
+    # [is_prime(p)][p%2==1] => [Legendre_symbol(p;5) == Legendre_symbol(5;p)]
+    证明:
+    * [Legendre_symbol(p;D) == -1]:
+        [ZZ[%p,x]%f(x) 是 有限域GF(p**2)]
+        [U(P,Q;p-Legendre_symbol(p;D))
+        == U(P,Q;p+1)
+        == [%{p,f(x)}]:(x**(p+1)-(P-x)**(p+1))/(x-(P-x))
+        !! [%f(x) => [x**p == (P-x)]]
+        !! [%f(x) => [x == (P-x)**p]]
+        # 即:(**p)是 根置换映射
+        == [%{p,f(x)}]:(x*(P-x)-x*(P-x))/(x-(P-x))
+        == 0
+        ]
+        [U(P,Q;p-Legendre_symbol(p;D)) == 0]
+    * [Legendre_symbol(p;D) == +1]:
+        [x <- ZZ[%p]]
+        [x**p == x]
+        [(P-x)**p == P-x]
+        !! [x*(P-x)==Q]
+        !! [gcd(Q,p) == 1]
+        [x**-1 == (P-x)*Q**-1]
+        [(P-x)**-1 == x*Q**-1]
+            #invertible
+        [U(P,Q;p-Legendre_symbol(p;D))
+        == U(P,Q;p-1)
+        == (x**(p-1)-(P-x)**(p-1))/(x-(P-x))
+        == (x**p*x**-1-(P-x)**p*(P-x)**-1)/(x-(P-x))
+        == (x*(P-x)*Q**-1-(P-x)*x*Q**-1)/(x-(P-x))
+        == 0
+        ]
+        [U(P,Q;p-Legendre_symbol(p;D)) == 0]
+    [U(P,Q;p-Legendre_symbol(p;D)) == 0]
+    DONE!
+
+
+
+
+
+  # 新增:[abs(x/(P-x))=!=1]
+  #     <==> [[P =!= 0][D>0]]
+  #     不过 [%n]有意义吗？
+  # 排除:唯二:分圆多项式:(x**2+/-x+1) 因为 对于 素性检测 几乎无效
+  #     [D==1-4==3]
+  #
+  #原版前提:[n <- [2..]][n%2==1][gcd(2*Q*D,n) == 1]:
+  #改进:[n <- [2..]][n%2==1][gcd(2*Q*D,n) == 1][[P =!= 0][D>0]]:
+  [n <- [2..]][n%2==1][gcd(2*Q*D,n) == 1]:
+      [is_Lucas_probable_prime__with_respect_to_(P,Q;n) =[def]= [U(P,Q;n-Jacobi_symbol(n;D))%n == 0]]
+        #注意改为:Jacobi_symbol 因为n不一定是素数
+        #泛化版{is_Fibonacci_probable_prime_}
+      [is_Lucas_pseudoprime__with_respect_to_(P,Q;n) =[def]= [not is_prime(n)][is_Lucas_probable_prime__with_respect_to_(P,Q;n)]]
+
+===
+  # vs:Lucas_probable_prime_test:goto
+  # vs:strong_quadratic_Frobenius_probable_prime_test:here
+  # quadratic_Frobenius_probable_prime_test:here
+  [[p :<- [3..]] -> [is_prime(p)] -> [gcd(2*Q*D,p) == 1] -> [_1:=Legendre_symbol(p;D)] -> [x**p%{p,f(x)} == [_1==-1](P-x) + [_1==+1]x]]
+    证明:
+      -1 => GF(p**2) => 根置换
+      +1 => (GF(p)*GF(p)) => 全不变
+
+  # Frobenius_pseudoprime
+  [n <- [2..]][n%2==1][gcd(2*Q*D,n) == 1]:
+      [is_quadratic_Frobenius_probable_prime__with_respect_to_(P,Q;n) =[def]= [[_1:=Jacobi_symbol(n;D)][x**n%{n,f(x)} == [_1==-1](P-x) + [_1==+1]x]]]
+        #注意改为:Jacobi_symbol 因为n不一定是素数
+      [is_quadratic_Frobenius_pseudoprime__with_respect_to_(P,Q;n) =[def]= [not is_prime(n)][is_quadratic_Frobenius_probable_prime__with_respect_to_(P,Q;n)]]
+
+      [is_quadratic_Frobenius_probable_prime__with_respect_to_(P,Q;n) <-> [[_1:=Jacobi_symbol(n;D)][U(P,Q;n-_1)%n == 0][V(P,Q;n-_1)%n == [_1==-1]2*Q + [_1==+1]2]]]
+          # 转化为序列
+          证明:
+          !! U(),V()定义#即二项式
+          [U(P,Q;j)*(2*x-P) == x**j -(P-x)**j]
+          [V(P,Q;j) == x**j +(P-x)**j]
+          # 上两式相加
+          [U(P,Q;j)*(2*x-P) + V(P,Q;j) == 2*x**j]
+          *『==>>』[is_quadratic_Frobenius_probable_prime__with_respect_to_(P,Q;n)]:
+            [x**n%{n,f(x)} == [_1==-1](P-x) + [_1==+1]x]
+            !! [U(P,Q;j)*(2*x-P) + V(P,Q;j) == 2*x**j]
+            # [j:=n-_1]
+            [U(P,Q;n-_1)*(2*x-P) + V(P,Q;n-_1) == 2*x**(n-_1) == x**-_1*([_1==-1]2*(P-x) + [_1==+1]2*x)]
+            * [_1==-1]:
+              [U(P,Q;n+1)*(2*x-P) + V(P,Q;n+1) == x**+1*2*(P-x) == 2*Q]
+              [U(P,Q;n+1) == 0]
+              [V(P,Q;n+1) == 2*Q]
+            * [_1==+1]:
+            [U(P,Q;n-1)*(2*x-P) + V(P,Q;n-1) == x**-1*2*x == 2]
+              [U(P,Q;n+1) == 0]
+              [V(P,Q;n+1) == 2]
+            [[U(P,Q;n-_1)%n == 0][V(P,Q;n-_1)%n == [_1==-1]2*Q + [_1==+1]2]]
+          *『<<==』[[U(P,Q;n-_1)%n == 0][V(P,Q;n-_1)%n == [_1==-1]2*Q + [_1==+1]2]]:
+            !! [U(P,Q;j)*(2*x-P) + V(P,Q;j) == 2*x**j]
+            # [j:=n-_1]
+            [2*x**(n-_1) == U(P,Q;n-_1)*(2*x-P) + V(P,Q;n-_1) == 0 + [_1==-1]2*Q + [_1==+1]2]
+            !! [gcd(2,n) == 1]]
+            [x**(n-_1) == [_1==-1]Q + [_1==+1]1]
+            * [_1==-1]:
+              [x**(n+1) == Q]
+              !! [x*(P-x)==Q]
+              !! [gcd(Q,p) == 1]
+              [x**-1 == (P-x)*Q**-1]
+                  #invertible
+              [x**n == x**(n+1)*x**-1 == Q*(P-x)*Q**-1 == (P-x)]
+            * [_1==+1]:
+              [x**(n-1) == 1]
+              [x**n == x]
+            [x**n%{n,f(x)} == [_1==-1](P-x) + [_1==+1]x]
+            [is_quadratic_Frobenius_probable_prime__with_respect_to_(P,Q;n)]
+          DONE!
+
+  # vs:Lucas_probable_prime_test:goto
+  # vs:quadratic_Frobenius_probable_prime_test:here
+  # strong_quadratic_Frobenius_probable_prime_test:here
+  # strong_quadratic_Frobenius_pseudoprime
+  [n <- [2..]][n%2==1][gcd(2*Q*D,n) == 1][-1==Jacobi_symbol(n;D)]:
+      # 注意:只考虑[D为n的非平方剩余]
+      #耗时3倍于is_strong_probable_prime__base_
+      [is_strong_quadratic_Frobenius_probable_prime__with_respect_to_(P,Q;n) =[def]= [[is_quadratic_Frobenius_probable_prime__with_respect_to_(P,Q;n)][assert -1==Jacobi_symbol(n;D)][(ez,odd) :=> [2**ez*(2*hf+1) == n**2-1]][[x**(1+2*hf)%{n,f(x)}==1]or[?[e :<- [0..<ez]] -> [x**(2**e*(1+2*hf)%{n,f(x)} == n-1]]]]]
+        # 由于后面的条件并不包含前一条件，所以两者并列
+        # 后面条件 就是 GF(p)SPRP条件 在GF(p**2)的版本: [x**p**2 == x]
+        # 泛化版{is_strong_probable_prime__base_}
+
+
+      [is_strong_quadratic_Frobenius_pseudoprime__with_respect_to_(P,Q;n) =[def]= [not is_prime(n)][is_strong_quadratic_Frobenius_probable_prime__with_respect_to_(P,Q;n)]]
+
+===
+转化为序列计算冫二次有限域根置换素性检测牜弱版:here
+  #暂无:强版
+转化为序列计算:[is_quadratic_Frobenius_probable_prime__with_respect_to_(P,Q;n)]
+主要公式:
+
+#只计算一个序列V()
+[U(P,Q;j) == (P*V(P,Q;j) - 2*Q*V(P,Q;j-1))/D]
+  我的
+[U(P,Q;j) == (2*V(P,Q;j+1) - P*V(P,Q;j))/D]
+  书中
+  # !! 发现新式！
+  # 依binary_Lucas_chain:(2*a,2*a+1)而言，显然更佳
+  <==> [P*V(P,Q;j) == V(P,Q;j+1) + Q*V(P,Q;j-1)]
+  <==> [(a+b)*(aj+bj) == ajpp+bjpp + (a*b)*(ajmm+bjmm)]
+
+#翻倍计算
+[V(i+j) == Vi*Vj - Q**j*V(i-j)]
+  特例:[V(2*j) == Vj**2 - Q**j*2]
+  特例:[V(2*j+1) == Vjpp*Vj - Q**j*P]
+  特例:[V(2*(j+1)) == Vjpp**2 - Q**(j+1)*2]
+  binary_Lucas_chain
+    (j,j+1) --> (2*j,2*j+1)
+    (j,j+1) --> (2*j+1,2*j+2)
+  最好是[Q==+/-1]
+  可转化为[Q==1]
+[Q==1]:
+  特例:[V(2*j) == Vj**2 - 2]
+  特例:[V(2*j+1) == Vjpp*Vj - P]
+  特例:[V(2*(j+1)) == Vjpp**2 - 2]
+
+#规范化[Q==1]
+#公约数+整数平方
+[V(P*g,g*g;j) == g**j*V(P,1;j)]
+    !! V()定义+二次函数根表达
+#整数平方&互素
+[gcd(g,N)==1] => [V(P,g*g;j) =[%N]= g**j*V(P*g**-1%N,1;j)]
+#并步=>整数平方
+[V(P,Q;2*j) == V(P**2-2*Q,Q**2;j)]
+    !! [V(P,Q;2*j) == V((x0**2+x1**2==V(P,Q;2)),Q**2) == V(P**2-2*Q,Q**2)]
+综上:
+[gcd(Q,N)==1][PPP:=(-2+P**2*Q**-1%N)][DDD:=PPP**2-4]:
+    [V(P,Q;2*j)
+    == V(P**2-2*Q,Q**2;j)
+    =[%N]= Q**j*V((P**2-2*Q)*Q**-1%N,1;j)
+    =[%N]= Q**j*V((-2+P**2*Q**-1%N),1;j)
+    =[%N]= Q**j*V(PPP,1;j)
+    ]
+    [V(P,Q;2*j) =[%N]= Q**j*V(PPP,1;j)]
+    # !! [U(P,Q;j) == (P*V(P,Q;j) - 2*Q*V(P,Q;j-1))/D]
+    # [U(PPP,1;j) == (PPP*V(PPP,1;j) - 2*V(PPP,1;j-1))/DDD]
+    !! [U(P,Q;j) == (2*V(P,Q;j+1) - P*V(P,Q;j))/D]
+    [U(PPP,1;j) == (2*V(PPP,1;j+1) - PPP*V(PPP,1;j))/DDD]
+    [U(P,Q;2*j)
+    == (x0**(2*j)-x1**(2*j))/(x0-x1)
+    == (x0**(2*j)-x1**(2*j))/(x0**2-x1**2)*(x0+x1)
+    == U(P**2-2*Q,Q**2;j)*P
+    =[%N]= P*Q**(j-1)*U(PPP,1;j)
+    =[%N]= P*Q**(j-1)*(2*V(PPP,1;j+1) - PPP*V(PPP,1;j))/DDD
+    ]
+    [U(P,Q;2*j) =[%N]= P*Q**(j-1)*U(PPP,1;j)]
+    [U(P,Q;2*j) =[%N]= P*Q**(j-1)*(2*V(PPP,1;j+1) - PPP*V(PPP,1;j))/DDD]
+
+    !! [V(2*j) == Vj**2 - 2]
+    !! [V(2*j+1) == Vjpp*Vj - P]
+    !! [V(2*(j+1)) == Vjpp**2 - 2]
+    [V(PPP,1;2*j) == V(PPP,1;j)**2 - 2]
+    [V(PPP,1;2*j+1) == V(PPP,1;j+1)*V(PPP,1;j) - P]
+    [V(PPP,1;2*(j+1)) == V(PPP,1;j+1)**2 - 2]
+    #########
+    !! [is_quadratic_Frobenius_probable_prime__with_respect_to_(P,Q;n) <-> [[_1:=Jacobi_symbol(n;D)][U(P,Q;n-_1)%n == 0][V(P,Q;n-_1)%n == [_1==-1]2*Q + [_1==+1]2]]]
+    [_1:=Jacobi_symbol(N;D)]:
+      [is_quadratic_Frobenius_probable_prime__with_respect_to_(P,Q;N)
+      <-> [[U(P,Q;N-_1)%N == 0][V(P,Q;N-_1)%N == [_1==-1]2*Q + [_1==+1]2]]
+      <-> [[j:=(N-_1)///2][U(P,Q;2*j)%N == 0][V(P,Q;2*j)%N == [_1==-1]2*Q + [_1==+1]2]]
+      !! [U(P,Q;2*j) =[%N]= P*Q**(j-1)*(2*V(PPP,1;j+1) - PPP*V(PPP,1;j))/DDD]
+      !! [V(P,Q;2*j) =[%N]= Q**j*V(PPP,1;j)]
+      <-> [[j:=(N-_1)///2][(2*V(PPP,1;j+1) - PPP*V(PPP,1;j))%N == 0][Q**j*V(PPP,1;j)%N == [_1==-1]2*Q + [_1==+1]2]]
+      <-> [[j:=(N-_1)///2][2*V(PPP,1;j+1) =[%N]= PPP*V(PPP,1;j)][Q**(j-[_1==-1])*V(PPP,1;j)%N == 2]]
+      <-> [[j:=(N-_1)///2][2*V(PPP,1;j+1) =[%N]= PPP*V(PPP,1;j)][Q**((N-1)///2)*V(PPP,1;j)%N == 2]]
+          #注意:『Q**((N-1)///2)』而非『Q**j』#『-1』而非『-_1』
+      <-> [[j:=(N-_1)///2][eQ:=(N-1)///2][2*V(PPP,1;j+1) =[%N]= PPP*V(PPP,1;j)][Q**eQ*V(PPP,1;j)%N == 2]]
+      ]
+    [is_quadratic_Frobenius_probable_prime__with_respect_to_(P,Q;N) <-> [[_1:=Jacobi_symbol(N;D)][j:=(N-_1)///2][eQ:=(N-1)///2][2*V(PPP,1;j+1) =[%N]= PPP*V(PPP,1;j)][Q**eQ*V(PPP,1;j)%N == 2]]]
+综上:
+[gcd(Q,N)==1][PPP:=(-2+P**2*Q**-1%N)][DDD:=PPP**2-4]:
+    ##### => V PPP
+    [V(PPP,1;2*j) == V(PPP,1;j)**2 - 2]
+    [V(PPP,1;2*j+1) == V(PPP,1;j+1)*V(PPP,1;j) - P]
+    [V(PPP,1;2*(j+1)) == V(PPP,1;j+1)**2 - 2]
+    ##### => U PPP
+    [U(PPP,1;j) == (2*V(PPP,1;j+1) - PPP*V(PPP,1;j))/DDD]
+    ##### 无需:=> V,U P,Q
+    [V(P,Q;2*j) =[%N]= Q**j*V(PPP,1;j)]
+    [U(P,Q;2*j) =[%N]= P*Q**(j-1)*U(PPP,1;j)]
+
+    ##### 直达:素性检测
+    [is_quadratic_Frobenius_probable_prime__with_respect_to_(P,Q;N) <-> [[_1:=Jacobi_symbol(N;D)][j:=(N-_1)///2][eQ:=(N-1)///2][2*V(PPP,1;j+1) =[%N]= PPP*V(PPP,1;j)][Q**eQ*V(PPP,1;j)%N == 2]]]
+
+    ##### 完成:素性检测
+===
+
+
+
+]]]
+
+
+
+
+[[
+Lucas sequence
+
+polynomial: (x**2-P*x+Q)
+discriminant: D:=(P**2-4*Q)
+roots:
+  a := (P+sqrtD)/2
+  b := (P-sqrtD)/2
+
+[P, Q :: int][D := (P**2-4*Q)][D =!= 0][a := (P+sqrtD)/2][b := (P-sqrtD)/2]:
+  # [D =!= 0] due to (...)/(a-b) #but it can be erased by factor polynomial!!!
+  !! [P**2 %4 <- {0,1}]
+  [D%4 <- {0,1}]
+  [a+b == P]
+  [a*b == Q]
+  [D == (a-b)**2]
+  [n :: int]:
+    # negative n ok
+    #   实际上，任意复数都行...
+    #Lucas sequences associated to the pair (P, Q): U()&V()
+    #companion Lucas sequence:V()
+    [U(P,Q;n) =[def]= (a**n-b**n)/(a-b)]
+    [V(P,Q;n) =[def]= (a**n+b**n)]
+    #
+    or:
+    [U(a+b,a*b;n) =[def]= (a**n-b**n)/(a-b)]
+    [V(a+b,a*b;n) =[def]= (a**n+b**n)]
+    这可以看作:二元对称二项式的次数提升过程
+      给定一个『二元对称多项式』，如何将它用『一次二元对称二项式』表达出来？
+      1. 用『任意高次二元对称二项式』表达
+      2. 再将『任意高次二元对称二项式』用『一次二元对称二项式』表达
+        这里就用到 Lucas...
+      ？可否推广到三元？
+          V:n -> (n,m)
+          (a**n*b**m+b**n*c**m+c**n*a**m)
+          #???-1 -> w # [w**3==1]
+  ... ...
+  [U(P,Q;-2) == -P/Q**2]
+  [U(P,Q;-1) == -1/Q]
+  [U(P,Q;0) == 0]
+  [U(P,Q;1) == 1]
+  [U(P,Q;2) == P]
+  [U(P,Q;3) == P**2-Q]
+  ... ...
+  ... ...
+  [V(P,Q;-2) == (P**2-2*Q)/Q**2]
+  [V(P,Q;-1) == P/Q]
+  [V(P,Q;0) == 2]
+  [V(P,Q;1) == P]
+  [V(P,Q;2) == P**2-2*Q]
+  [V(P,Q;3) == P**3-3*P*Q]
+  ... ...
+  这起始双值...，从矩阵的角度看，起始双值分别取[1,0],[0,1]更好
+
+  [U(P,Q;-n) == -U(P,Q;n)/Q**n]
+  [V(P,Q;-n) == +V(P,Q;n)/Q**n]
+===
+单步关系牜自反:
+[U(P,Q;n) == P*U(P,Q;n-1) - Q*U(P,Q;n-2)]
+[V(P,Q;n) == P*V(P,Q;n-1) - Q*V(P,Q;n-2)]
+单步关系牜交叉:
+[U(P,Q;n) == (P*V(P,Q;n) - 2*Q*V(P,Q;n-1))/D]
+[V(P,Q;n) == P*U(P,Q;n) - 2*Q*U(P,Q;n-1)]
+正负关系牜自反:
+[U(P,Q;-n) == -U(P,Q;n)/Q**n]
+[V(P,Q;-n) == +V(P,Q;n)/Q**n]
+<<==:
+===
+(x**2-P*x+Q)
+递推关系:       [f(n) == P*f(n-1) -Q*f(n-2)]
+递推函数通解:   [f(n) == A*a**n + B*b**n]
+由于 U(),V() 匹配该通解形式，故:
+[U(P,Q;n) == P*U(P,Q;n-1) - Q*U(P,Q;n-2)]
+[V(P,Q;n) == P*V(P,Q;n-1) - Q*V(P,Q;n-2)]
+  启发自:/sdcard/0my_files/book/math/factorint/202308/Prime numbers-A Computational Perspective(2ed)(2005)(Pomerance)/Prime numbers-A Computational Perspective(2ed)(2005)(Pomerance).pdf
+===
+对比:上面(递推函数通解)vs下面(我的推导)
+=> [V(P,Q;n-1) + Q*U(P,Q;n-2) == P*U(P,Q;n-1) - Q*U(P,Q;n-2)]
+=> [V(P,Q;n-1) == P*U(P,Q;n-1) - 2*Q*U(P,Q;n-2)]
+=> [V(P,Q;n) == P*U(P,Q;n) - 2*Q*U(P,Q;n-1)]
+  经证明此关系正确
+对称待定系数，得:
+  [U(P,Q;n) == (P*V(P,Q;n) - 2*Q*V(P,Q;n-1))/D]
+===
+递推关系牜单步:
+[U(P,Q;n) ==   V(P,Q;n-1) + Q*U(P,Q;n-2)]
+[V(P,Q;n) == P*V(P,Q;n-1) - Q*V(P,Q;n-2)]
+let UUVV(n) := transpose[[U(P,Q;n),U(P,Q;n-1),V(P,Q;n),V(P,Q;n-1)]]
+  [T == (T1|T2)]
+    因为 T2 可分解为对角线上两个相同的方阵
+    T1相当于从T2复制信息
+[UUVV(n) == T*UUVV(n-1)]
+[T1 :=
+  [[0, Q, 1, 0]
+  ,[1, 0, 0, 0]
+  ,[0, 0, P, -Q]
+  ,[0, 0, 1, 0]
+  ]
+]
+根据相同递归式:
+[T2 :=
+  [[P, -Q, 0, 0]
+  ,[1, 0, 0, 0]
+  ,[0, 0, P, -Q]
+  ,[0, 0, 1, 0]
+  ]
+  == I *< [P,-Q;1,0;]
+]
+<<==:
+推导冫递推关系牜单步巛定义:我的推导
+  [U(P,Q;n) == (a**n-b**n)/(a-b)
+  * [n >= 0]:
+    == sum [a**i * b**j | [i,j>=0][i+j==n-1]]
+    * [n >= 2]:
+      == sum [a**i * b**j | [i,j>=1][i+j==n-1]] + (a**(n-1) + b**(n-1))
+      == sum [a**i * b**j | [i,j>=1][i+j==n-1]] + V(P,Q;n-1)
+      * [n >= 3]:
+        == (a*b)*sum [a**i * b**j | [i,j>=0][i+j==n-3]] + V(P,Q;n-1)
+        == Q*sum [a**i * b**j | [i,j>=0][i+j==n-3]] + V(P,Q;n-1)
+        == Q*U(P,Q;n-2) + V(P,Q;n-1)
+        == V(P,Q;n-1) + Q*U(P,Q;n-2)
+  ]
+  [U(P,Q;n) == V(P,Q;n-1) + Q*U(P,Q;n-2)]
+  [V(P,Q;n) == (a**n+b**n)
+  == (a**n+b**n) - (a+b)*(a**(n-1)+b**(n-1)) + P*V(P,Q;n-1)
+  == -(b*a**(n-1)+a*b**(n-1)) + P*V(P,Q;n-1)
+  == -(a*b)*(a**(n-2)+b**(n-2)) + P*V(P,Q;n-1)
+  == -Q*V(P,Q;n-2) + P*V(P,Q;n-1)
+  == P*V(P,Q;n-1) -Q*V(P,Q;n-2)
+  ]
+  [V(P,Q;n) == P*V(P,Q;n-1) - Q*V(P,Q;n-2)]
+  ##发现新关系，再推导:
+  [U(P,Q;n)*(a-b) == (a**n-b**n)
+  == (a**n-b**n) -(a+b)*(a**(n-1)-b**n**(n-1)) +P*U(P,Q;n-1)*(a-b)
+  == -(b*a**(n-1)-a*b**n**(n-1)) +P*U(P,Q;n-1)*(a-b)
+  == -(a*b)*(a**(n-2)-b**n**(n-2)) +P*U(P,Q;n-1)*(a-b)
+  == -Q*U(P,Q;n-2)*(a-b) +P*U(P,Q;n-1)*(a-b)
+  == +P*U(P,Q;n-1)*(a-b) -Q*U(P,Q;n-2)*(a-b)
+  ]
+  [U(P,Q;n)*(a-b) == P*U(P,Q;n-1)*(a-b) - Q*U(P,Q;n-2)*(a-b)]
+  [U(P,Q;n) == P*U(P,Q;n-1) - Q*U(P,Q;n-2)]
+  差量推导:[V(P,Q;n) == P*U(P,Q;n) - 2*Q*U(P,Q;n-1)]
+  由于满足相同递推关系，归纳法自动满足，只差检查任意相邻2值:
+  [V(P,Q;1) == P == P*1 -2*Q*0 == P*U(P,Q;1) - 2*Q*U(P,Q;0)]
+  [V(P,Q;2) == P**2-2*Q == P*P -2*Q*1 == P*U(P,Q;2) - 2*Q*U(P,Q;1)]
+    <<==:
+      [U(P,Q;0) == 0]
+      [U(P,Q;1) == 1]
+      [U(P,Q;2) == P]
+      [V(P,Q;0) == 2]
+      [V(P,Q;1) == P]
+      [V(P,Q;2) == P**2-2*Q]
+  [(P*U(P,Q;n) - 2*Q*U(P,Q;n-1))*(a-b)
+  == (a+b)*(a**n-b**n) -2*(a*b)*(a**(n-1)-b**(n-1))
+  == (a**(n+1)-b**(n+1))+(b*a**n-a*b**n) -2*(b*a**n-a*b**n)
+  == (a**(n+1)-b**(n+1)) -(b*a**n-a*b**n)
+  == (a-b)*(a**n+b**n)
+  == (a-b)*V(P,Q;n)
+  ]
+  [V(P,Q;n) == P*U(P,Q;n) - 2*Q*U(P,Q;n-1)]
+  ##对称待定系数:
+  [U(P,Q;n)*(a-b) == (a**n-b**n)
+  == AA*V(P,Q;n) + BB*Q*V(P,Q;n-1)
+  == AA*(a**n+b**n) + BB*(b*a**n+a*b**n)
+  == (AA+BB*b)*a**n + (AA+BB*a)*b**n
+  ]
+  [(AA+BB*b) == 1][(AA+BB*a) == -1]
+  [BB*(a-b) == -2][2*AA+BB*(a+b)==0]
+  [BB == -2/(a-b)][AA==-BB*P/2==P/(a-b)]
+  [U(P,Q;n)
+  == (AA*V(P,Q;n) + BB*Q*V(P,Q;n-1))/(a-b)
+  == (P*V(P,Q;n) + -2*Q*V(P,Q;n-1))/(a-b)**2
+  == (P*V(P,Q;n) + -2*Q*V(P,Q;n-1))/D
+  ]
+  [U(P,Q;n) == (P*V(P,Q;n) - 2*Q*V(P,Q;n-1))/D]
+  实例验证:
+  [U(P,Q;1) == 1 == (P*P - 2*Q*2)/D == (P*V(P,Q;1) - 2*Q*V(P,Q;0))/D]
+  [U(P,Q;2) == P == (P*(P**2-2*Q) - 2*Q*P)/D == (P*V(P,Q;2) - 2*Q*V(P,Q;1))/D]
+    <<==:
+      [U(P,Q;0) == 0]
+      [U(P,Q;1) == 1]
+      [U(P,Q;2) == P]
+      [V(P,Q;0) == 2]
+      [V(P,Q;1) == P]
+      [V(P,Q;2) == P**2-2*Q]
+===
+[Un   := U(P,Q;n)]
+[Unpp := U(P,Q;n+1)]
+[Unmm := U(P,Q;n-1)]
+
+[Vn   := V(P,Q;n)]
+[Vnpp := V(P,Q;n+1)]
+[Vnmm := V(P,Q;n-1)]
+
+(IV. 1) Quadratic relations:
+[Vn**2 - D*Un**2 == 4*Q**n]
+[Un**2 -Unmm*Unpp == Q**(n-1)]
+
+(IV.2) Conversion formulas:
+???[D*Un == Vnpp - Q*Vnmm] #bug?!
+[  Vn == Unpp - Q*Unmm]
+<==>:
+???[Vnpp == D*Un - Q*Vnmm]
+[Unpp ==   Vn - Q*Unmm]
+
+???[D*Un == P*Vn]???
+  见上面:递推关系牜单步#我的推导
+  对比上式就有了:[D*Un == P*Vn]
+  [(P**2-4*Q)*Un == P*Vn]
+  [(P**2-4*Q)*(a**n-b**n)/(a-b) == P*(a**n+b**n)]
+  !! [D == (a-b)**2]
+  [(a-b)*(a**n-b**n) == (a+b)*(a**n+b**n)]
+  不太行
+
+(IV.3) Addition of indices:
+[U(m+n) == Um*Un - Q**n*U(m-n)]#bug?!
+  => [Q**n*U(m-n) == Q**m*U(n-m)]
+  => [U(m-n) == Q**(m-n)*U(n-m)]
+  !! [U(P,Q;-n) == -U(P,Q;n)/Q**n]
+  _L
+瞎改:[U(m+n) == Um*Un - (-Q)**n*U(m-n)]
+[V(m+n) == Vm*Vn - Q*V(m-n) == D*Um*Un - Q**n*V(m-n)]#bug?!
+[V(m+n) == Vm*Vn - Q*V(m-n)]#bug?!
+  => [V(m-n) == V(n-m)]
+  !! [V(P,Q;-n) == +V(P,Q;n)/Q**n]
+  _L
+瞎改:[V(m+n) == Vm*Vn - Q**n*V(m-n)]
+  => [Q**n*V(m-n) == Q**m*V(n-m)]
+  => [V(m-n) == Q**(m-n)*V(n-m)]
+  !! [V(P,Q;-n) == +V(P,Q;n)/Q**n]
+  改对了!
+[V(m+n) == Vm*Vn - Q**n*V(m-n)]
+  特例:[V(2*n) == Vn**2 - Q**n*2]
+  特例:[V(2*n+1) == Vnpp*Vn - Q**n*P]
+  特例:[V(2*(n+1)) == Vnpp**2 - Q**(n+1)*2]
+  (n,n+1) --> (2*n,2*n+1)
+  (n,n+1) --> (2*n+1,2*n+2)
+  最好是[Q==+/-1]
+===
+===
+]]

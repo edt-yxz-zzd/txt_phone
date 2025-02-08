@@ -133,6 +133,16 @@ old:
 断点续搜耂命令行集中处:here
 new:
 py_adhoc_call { +to_postpone_KeyboardInterrupt_until_yield +to_show_timedelta --may_args4PeriodicToilLeisureTime='(60,60)' --may_prompt_string6resting:$'\n\n    resting...\n\n' }  script.搜索冫伪素数牜临近幂方   ,main  =2  =1 =3000+1   =2 =4  --may_prime_basis='[2,3,5,7]' --path:script/搜索冫伪素数牜临近幂方.py..header.2.1-_.sz4.2_3_5_7-SPRP.out.txt
+    done@20250208
+    du -h script/搜索冫伪素数牜临近幂方.py..header.2.1-_.sz4.2_3_5_7-SPRP.out.txt
+        236K
+    view script/搜索冫伪素数牜临近幂方.py..header.2.1-_.sz4.2_3_5_7-SPRP.out.txt
+        (2, 2999, -4, (2, 3, 5, 7), [-1417, -5325, -5881, -7947], [233, 4613, 5565, 6171])
+        (2, 3000, -4, (2, 3, 5, 7), [-2699, -3533, -3645, -5415], [3993, 4785, 9741, 11191])
+    view ../../python3_src/seed/for_libs/for_tarfile.py
+    tar -cvf script/搜索冫伪素数牜临近幂方.py..header.2.1-_.sz4.2_3_5_7-SPRP.out.txt.tar.lzma  --lzma script/搜索冫伪素数牜临近幂方.py..header.2.1-_.sz4.2_3_5_7-SPRP.out.txt
+    du -h script/搜索冫伪素数牜临近幂方.py..header.2.1-_.sz4.2_3_5_7-SPRP.out.txt.tar.lzma
+        56K
 py_adhoc_call { +to_postpone_KeyboardInterrupt_until_yield +to_show_timedelta --may_args4PeriodicToilLeisureTime='(60,60)' --may_prompt_string6resting:$'\n\n    resting...\n\n' }  script.搜索冫伪素数牜临近幂方   ,main  =24  =1 =3000+1   =2 =4  --may_prime_basis='[2,3,5,7]' --path:script/搜索冫伪素数牜临近幂方.py..header.24.1-_.sz4.2_3_5_7-SPRP.out.txt
 <<==:
 old:

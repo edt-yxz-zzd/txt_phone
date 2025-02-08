@@ -1,0 +1,88 @@
+
+e others/数学/FFT-Walsh_transform.txt
+
+/sdcard/0my_files/book/math/fxtbook[Matters Computational][Algorithms for Programmers].pdf
+
+(right) Kronecker product (or tensor product)
+decimation in time (DIT)
+decimation in frequency (DIF)
+Walsh_transform
+
+
+
+
+Walsh_transform 长度固定为二幂，只使用加减法
+FFT ==>> cyclic convolution
+Walsh_transform ==>> XOR (dyadic) convolution
+
+[len(X)==len(Y)==L][Z := IFFT(FFT(X) .* FFT(Y))]:
+    [Z[k] == sum [X[i]*Y[j] | [i+j=[%L]=k]]] # +%L
+[len(X)==len(Y)==L==2**ez][Z := IW(W(X) .* W(Y))]:
+    [Z[k] == sum [X[i]*Y[j] | [i^j==k]]] # xor
+
+[Walsh_transform[L][i,j] == (-1)**(i&j).bit_count()]
+  验证于:view ../../python3_src/seed/algo/FFT/Walsh_transform.py
+  #我推导出来的
+  <<==:
+(right) Kronecker product (or tensor product)
+[A :: matrix{m,n}][B :: matrix{s,t}]:
+    #bug: [A *< B =[def]= matrix(m*s,n*t; \i,j->A[i//m,j//n]*B[i%s,j%t])]
+    [A *< B =[def]= matrix(m*s,n*t; \i,j->A[i//s,j//t]*B[i%s,j%t])]
+      right_Kronecker_product(A,B)
+      tensor_product(A,B)
+      B注入到A
+不满足交换律
+结合律:
+[(A*<B)*<C == A*<(B*<C)]
+分配律:
+[(A+B)*<C == (A*<C)+(B*<C)]
+[A*<(B+C) == (A*<B)+(A*<C)]
+
+交互:(*)(*<)
+[(A*B)*<(C*D) == (A*<C)*(B*<D)]
+    rA_cB*<rC_cD --> rArC_cAcC*rBrD_cBcD
+    !! [cA==rB][cC==rD]
+    [cA*cC == rB*rD]
+  ==>>:
+  [A*<C == (A*In)*<(Is*D) == (A*<Is)*(In*<D)]
+  [A*<C == (Im*A)*<(D*It) == (Im*<D)*(A*<It)]
+  [(Im*<D)*(A*<It) == A*<C == (A*<Is)*(Im*<D)]
+==>>:
+[@[n :: int] -> [(A**n)*<(B**n) == (A*<B)**n]]
+  !! [(A*B)*<(C*D) == (A*<C)*(B*<D)]
+  !! [(A**-1)*<(B**-1) == (A*<B)**-1]
+<<==:
+倒数:
+[(A**-1)*<(B**-1) == (A*<B)**-1]
+
+转置:
+[(A.transpose)*<(B.transpose) == (A*<B).transpose]
+
+[det(Amm*<Bnn) == det(Amm)**n*det(Bnn)**m]
+
+
+
+
+[ez <- [0..]]:
+  [Walsh_transform[1] =[def]= [+1;]]
+  [Walsh_transform[2] =[def]= [+1,+1;+1,-1;]]
+  [Walsh_transform[2**(1+ez)] =[def]= Walsh_transform[2] *< Walsh_transform[2**ez]]
+  [Walsh_transform[2**ez] =[def]= foldl (*<) Walsh_transform[1] [Walsh_transform[2]]*ez]
+      ==>> 类似FFT算法:
+        [X == [$X0;$X1;]]
+        [W[2*L]*X == [$(W[L]*(X0+X1));$(W[L]*(X0-X1));]]
+            That is, a length-n transform can be computed by two length-n/2 transforms of the sum and difference of the first and second half of x.
+        <<==:
+        [W[2*L]*X
+        == (W[2]*<W[L])*[$X0;$X1;]
+        == [$+W[L],$+W[L];$+W[L],$-W[L];]*[$X0;$X1;]
+        == [$(W[L]*X0+W[L]*X1);$(W[L]*X0-W[L]*X1);]
+        == [$(W[L]*(X0+X1));$(W[L]*(X0-X1));]
+        ]
+[ez <- [0..]]:
+  !! [@[n :: int] -> [(A**n)*<(B**n) == (A*<B)**n]]
+  !! [IW[2] == W[2]/2]
+  [IW[2**ez] == W[2**ez]/2**ez]
+  [W[2**ez]**2 == 2**ez*IdentityMatrix{2**ez}]
+
+
