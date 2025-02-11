@@ -2,7 +2,7 @@
 r'''[[[
 e script/min_add_ver4__pseudo_addition_chain.py
 view others/数学/最短加链牜简并态.txt
-view ../../python3_src/nn_ns/math_nn/numbers/shortest_addition_chain__the_min_and_max_if_revered.py
+view ../../python3_src/nn_ns/math_nn/numbers/shortest_recursive_addition_chain__the_min_and_max_if_revered.py
     le12021
 view ../../python3_src/nn_ns/math_nn/numbers/shortest_addition_chain_length.py
 view ../../python3_src/nn_ns/math_nn/numbers/shortest_addition_chain__the_max_one.py
@@ -14,14 +14,14 @@ view script/搜索冫最短加链长度.py
 只能有=>『伪最短加链牜简并态算法/最短短程加链牜简并态算法』@20250208
 
 
-script.min_add_ver4__pseudo_addition_chain
+py -m script.min_add_ver4__pseudo_addition_chain
 py -m nn_ns.app.debug_cmd   script.min_add_ver4__pseudo_addition_chain -x # -off_defs
 py -m nn_ns.app.doctest_cmd script.min_add_ver4__pseudo_addition_chain:__doc__ -ht # -ff -df
 
 [[
 定义:短程加链
     短程:相邻=>差存在链中
-    短程加链的所有前缀都是短程加链
+    短程加链的递归性:短程加链的所有前缀都是短程加链
     最短短程加链的所有前缀都是最短短程加链
         即:允许递归搜索
 <<==:
@@ -874,8 +874,11 @@ rm -iv script/min_add_ver4__pseudo_addition_chain.py..枚举冫相关信息纟�
 ls_sSh_1F script/
 
 使用于:
-cp -iv script/min_add_ver4__pseudo_addition_chain.py.._提取另档冫加链扌.无缺.le12021.out.txt.tar.lzma   ../../python3_src/nn_ns/math_nn/numbers/shortest_addition_chain__the_min_and_max_if_revered.py..data.le12021.tar.lzma
-view ../../python3_src/nn_ns/math_nn/numbers/shortest_addition_chain__the_min_and_max_if_revered.py
+old:cp -iv script/min_add_ver4__pseudo_addition_chain.py.._提取另档冫加链扌.无缺.le12021.out.txt.tar.lzma   ../../python3_src/nn_ns/math_nn/numbers/shortest_addition_chain__the_min_and_max_if_revered.py..data.le12021.tar.lzma
+old:view ../../python3_src/nn_ns/math_nn/numbers/shortest_addition_chain__the_min_and_max_if_revered.py
+mv -iv ../../python3_src/nn_ns/math_nn/numbers/shortest_addition_chain__the_min_and_max_if_revered.py..data.le12021.tar.lzma ../../python3_src/nn_ns/math_nn/numbers/shortest_recursive_addition_chain__the_min_and_max_if_revered.py..data.le12021.tar.lzma
+mv -iv ../../python3_src/nn_ns/math_nn/numbers/shortest_addition_chain__the_min_and_max_if_revered.py ../../python3_src/nn_ns/math_nn/numbers/shortest_recursive_addition_chain__the_min_and_max_if_revered.py
+view ../../python3_src/nn_ns/math_nn/numbers/shortest_recursive_addition_chain__the_min_and_max_if_revered.py
 
 
 ===
@@ -947,6 +950,7 @@ e ../.gitignore
     /txt/script/min_add_ver4__pseudo_addition_chain.py..枚举冫相关信息纟最短短程加链牜简并态算法扌.RT.无缺精深.out.txt
 
 
+
 尝试:精确版:goto
 ]]
 [[
@@ -954,6 +958,24 @@ e ../.gitignore
 ++精确简并态@20250209
 
 py_adhoc_call   script.min_add_ver4__pseudo_addition_chain   ,100:枚举冫相关信息纟最短短程加链牜简并态算法扌 +rename_NonTouchRanges +尝试补充缺失 +精确简并态 > /sdcard/0my_files/tmp/0tmp3
+py_adhoc_call   script.min_add_ver4__pseudo_addition_chain   ,100:枚举冫相关信息纟最短短程加链牜简并态算法扌 +rename_NonTouchRanges +尝试补充缺失 +精确简并态 +要点生成 > /sdcard/0my_files/tmp/0tmp5
+diff  /sdcard/0my_files/tmp/0tmp3 /sdcard/0my_files/tmp/0tmp5
+    fixed:bug:@要点生成
+    ===
+< (17, 6, 2, 7, [9, 16], RT({1: 2, 4: 1, 8: 2, 16: 2}), [1, 2, 4, 8, 9, 17], [1, 2, 4, 8, 16, 17])
+> (17, 6, 2, 8, [9, 16], RT({1: 2, 4: 2, 8: 2, 16: 2}), [1, 2, 4, 8, 9, 17], [1, 2, 4, 8, 16, 17])
+    『4:1』-->『4:2』
+    bug:为何多了个『5』？
+    fixed: bug17_5: @_exact():[ls是次大数的加链，不是m的加链]
+< (31, 8, 8, 27, [19, 21, 22, 25, 26, 27, 28, 30], RT({1: 15, 18: 5, 24: 5, 30: 2}), [1, 2, 3, 6, 12, 13, 19, 31], [1, 2, 4, 6, 12, 24, 30, 31])
+> (31, 8, 8, 28, [19, 21, 22, 25, 26, 27, 28, 30], RT({1: 15, 17: 6, 24: 5, 30: 2}), [1, 2, 3, 6, 12, 13, 19, 31], [1, 2, 4, 6, 12, 24, 30, 31])
+    bug:为何多了个『17』？
+    fixed:bug31_17: @_exact():++要点删除
+        为何不该有17？
+        # 由于都是6 [sz4chain{17}==6==sz4chain{14}]，[1, 2, 3, 6, 12, 14, 17, 31]并不满足:短程加链的递归性
+        # 真正的毛病是误以为『要点生成的数集是精确简并态的子集』
+        # fixed by:++要点删除
+
 ####py_adhoc_call   script.min_add_ver4__pseudo_addition_chain   ,100:枚举冫相关信息纟最短短程加链牜简并态算法扌 +rename_NonTouchRanges +尝试补充缺失 +深度单点过滤 > /sdcard/0my_files/tmp/0tmp4
 ####py_adhoc_call   script.min_add_ver4__pseudo_addition_chain   ,100:枚举冫相关信息纟最短短程加链牜简并态算法扌 +rename_NonTouchRanges +尝试补充缺失 -深度单点过滤 > /sdcard/0my_files/tmp/0tmp2
 diff  /sdcard/0my_files/tmp/0tmp3 /sdcard/0my_files/tmp/0tmp2 | grep '>' | lineno1
@@ -964,7 +986,7 @@ diff  /sdcard/0my_files/tmp/0tmp3 /sdcard/0my_files/tmp/0tmp4 | grep '>' | linen
 > (95, 10, 18, 74, [53, 55, 57, 58, 59, 69, 70, 74, 75, 76, 77, 78, 84, 85, 86, 88, 90, 92], RT({1: 28, 30: 1, 32: 15, 48: 1, 50: 11, 64: 1, 68: 3, 72: 1, 74: 5, 80: 1, 84: 3, 88: 1, 90: 1, 92: 1, 95: 1}), [1, 2, 3, 5, 10, 11, 21, 42, 53, 95], [1, 2, 3, 5, 10, 20, 23, 46, 92, 95])
 
 
-py_adhoc_call { +to_postpone_KeyboardInterrupt_until_yield +to_show_timedelta --may_args4PeriodicToilLeisureTime='(30,30)' --may_prompt_string6resting:$'\n\n    resting...\n\n' }  script.min_add_ver4__pseudo_addition_chain   ,12345:枚举冫相关信息纟最短短程加链牜简并态算法扌  +rename_NonTouchRanges +尝试补充缺失 +精确简并态 --le=12345 --path:script/min_add_ver4__pseudo_addition_chain.py..枚举冫相关信息纟最短短程加链牜简并态算法扌.RT.无缺精深.out.txt
+py_adhoc_call { +to_postpone_KeyboardInterrupt_until_yield +to_show_timedelta --may_args4PeriodicToilLeisureTime='(30,30)' --may_prompt_string6resting:$'\n\n    resting...\n\n' }  script.min_add_ver4__pseudo_addition_chain   ,12345:枚举冫相关信息纟最短短程加链牜简并态算法扌  +rename_NonTouchRanges +尝试补充缺失 +精确简并态 --le=12345 +要点生成 +要点生成牜精确 --path:script/min_add_ver4__pseudo_addition_chain.py..枚举冫相关信息纟最短短程加链牜简并态算法扌.RT.无缺精深.out.txt
     『无缺精深版』比『无缺深一版』慢很多
     确实慢:1000以下都慢
     2047:duration: 22.5秒
@@ -974,6 +996,20 @@ py_adhoc_call { +to_postpone_KeyboardInterrupt_until_yield +to_show_timedelta --
 view script/min_add_ver4__pseudo_addition_chain.py..枚举冫相关信息纟最短短程加链牜简并态算法扌.RT.无缺精深.out.txt
 du -h script/min_add_ver4__pseudo_addition_chain.py..枚举冫相关信息纟最短短程加链牜简并态算法扌.RT.无缺精深.out.txt
     [2..=2233] 2.1M
+    [2..=2843] 3M
+    此后:++尝试反转测试次序
+    感觉快了点？
+    [2..=5555] 8.2M
+    此后:++要点生成(要点删除)#要点分解冫短程加链扌,简并冫短程加链扌
+        @20250210
+        6875:duration: 82.2秒
+        7481:duration: 78.7秒
+    [2..=8315] 15M
+    此后:++排斥区分级@求冫魊最短短程加链牜水平反转后词典序最大扌
+        @20250210
+    [2..=12095] 26M
+    此后:++要点生成牜精确@20250211
+    [2..=12345] 27M @20250211
 ###py_adhoc_call { +to_postpone_KeyboardInterrupt_until_yield +to_show_timedelta --may_args4PeriodicToilLeisureTime='(30,30)' --may_prompt_string6resting:$'\n\n    resting...\n\n' }  script.min_add_ver4__pseudo_addition_chain   ,12321:枚举冫相关信息纟最短短程加链牜简并态算法扌  +rename_NonTouchRanges +尝试补充缺失 +深度单点过滤 --le=1050 > /sdcard/0my_files/tmp/0tmp
 file_startswith_  /sdcard/0my_files/tmp/0tmp script/min_add_ver4__pseudo_addition_chain.py..枚举冫相关信息纟最短短程加链牜简并态算法扌.RT.无缺深一.out.txt
     => same
@@ -983,6 +1019,22 @@ file_startswith_  /sdcard/0my_files/tmp/0tmp script/min_add_ver4__pseudo_additio
 tar -cvf script/min_add_ver4__pseudo_addition_chain.py..枚举冫相关信息纟最短短程加链牜简并态算法扌.RT.无缺精深.le2233.out.txt.tar.lzma  --lzma script/min_add_ver4__pseudo_addition_chain.py..枚举冫相关信息纟最短短程加链牜简并态算法扌.RT.无缺精深.out.txt
 du -h script/min_add_ver4__pseudo_addition_chain.py..枚举冫相关信息纟最短短程加链牜简并态算法扌.RT.无缺精深.le2233.out.txt.tar.lzma
     268K
+tar -cvf script/min_add_ver4__pseudo_addition_chain.py..枚举冫相关信息纟最短短程加链牜简并态算法扌.RT.无缺精深.le5555.out.txt.tar.lzma  --lzma script/min_add_ver4__pseudo_addition_chain.py..枚举冫相关信息纟最短短程加链牜简并态算法扌.RT.无缺精深.out.txt
+du -h script/min_add_ver4__pseudo_addition_chain.py..枚举冫相关信息纟最短短程加链牜简并态算法扌.RT.无缺精深.le5555.out.txt.tar.lzma
+    1.1M
+
+
+py_adhoc_call   script.min_add_ver4__pseudo_addition_chain   ,100:枚举冫相关信息纟最短短程加链牜简并态算法扌 +rename_NonTouchRanges +尝试补充缺失 +精确简并态 > /sdcard/0my_files/tmp/0tmp3
+py_adhoc_call   script.min_add_ver4__pseudo_addition_chain   ,100:枚举冫相关信息纟最短短程加链牜简并态算法扌 +rename_NonTouchRanges +尝试补充缺失 +精确简并态 +要点生成 +要点生成牜精确 > /sdcard/0my_files/tmp/0tmp6
+diff  /sdcard/0my_files/tmp/0tmp3 /sdcard/0my_files/tmp/0tmp6
+    => same
+py_adhoc_call   script.min_add_ver4__pseudo_addition_chain   ,1003:枚举冫相关信息纟最短短程加链牜简并态算法扌 +rename_NonTouchRanges +尝试补充缺失 +精确简并态 +要点生成 +要点生成牜精确 --le=1000 --path:/sdcard/0my_files/tmp/0tmp666
+file_startswith_ /sdcard/0my_files/tmp/0tmp666   script/min_add_ver4__pseudo_addition_chain.py..枚举冫相关信息纟最短短程加链牜简并态算法扌.RT.无缺精深.out.txt
+    => same
+
+tar -cvf script/min_add_ver4__pseudo_addition_chain.py..枚举冫相关信息纟最短短程加链牜简并态算法扌.RT.无缺精深.le12345.out.txt.tar.lzma  --lzma script/min_add_ver4__pseudo_addition_chain.py..枚举冫相关信息纟最短短程加链牜简并态算法扌.RT.无缺精深.out.txt
+du -h script/min_add_ver4__pseudo_addition_chain.py..枚举冫相关信息纟最短短程加链牜简并态算法扌.RT.无缺精深.le12345.out.txt.tar.lzma
+    3.6M
 
 
 ]]
@@ -993,6 +1045,8 @@ from script.min_add_ver4__pseudo_addition_chain import 枚举冫长度下限估�
 __all__ = r'''
 枚举冫长度下限估计相关信息纟最短加链牜简并态算法扌
 校验冫短程加链扌
+要点分解冫短程加链扌
+简并冫短程加链扌
 求冫魊最短短程加链牜水平反转后词典序最小扌
 求冫魊最短短程加链牜水平反转后词典序最大扌
 枚举冫相关信息纟最短短程加链牜简并态算法扌
@@ -1000,6 +1054,7 @@ __all__ = r'''
 __all__
 ___begin_mark_of_excluded_global_names__0___ = ...
 from bisect import bisect_left, bisect_right
+from functools import cache
 
 
 #.from itertools import islice
@@ -1132,23 +1187,225 @@ def _n2sz_():
     new = _n2sz_
     assert not new is old
     return _n2sz_()
-def 校验冫短程加链扌(短程加链, 尝试校验最短):
+
+
+def 校验冫短程加链扌(短程加链, 尝试校验最短, *, n2info=None):
     ls = 短程加链
     sz = len(ls)
     if sz == 0: return
     assert ls[0] == 1
     if sz == 1: return
+    ######################
     if 尝试校验最短:
         n = ls[-1]
         _n2sz = _n2sz_()
         if n < len(_n2sz):
             assert sz-1 == _n2sz[n], (_n2sz[n], sz, ls)
+            for _sz, _n in enumerate(ls, 1):
+                assert _sz-1 == _n2sz[_n], (_n2sz[_n], _sz, ls, _n)
+    ######################
     s = set(ls)
-    for i in range(1, sz):
-        m = ls[i]
-        n = ls[i-1]
+    for j in range(1, sz):
+        m = ls[j]
+        n = ls[j-1]
         #短程:相邻=>差存在链中
         assert (m-n) in s
+    ######################
+    if n2info:
+        for _sz, _n in enumerate(ls, 1):
+            assert _sz == (__:=n2info[_n][1]) or __ is None, (n2info[_n][1], _sz, ls, _n)
+    ######################
+
+校验冫短程加链扌([1, 2, 3, 6, 12, 14, 17, 31], False)
+    #不是bug:bug31_17
+    #也不是bug:『?发现之前代码的bug: 缺少17@31.nodes』
+    # 由于都是6 [sz4chain{17}==6==sz4chain{14}]，[1, 2, 3, 6, 12, 14, 17, 31]并不满足:短程加链的递归性
+if __name__ == '__main__':
+    try:
+        校验冫短程加链扌([1, 2, 3, 6, 12, 14, 17, 31], True)
+    except AssertionError as eee:
+        #AssertionError: (5, 7, [1, 2, 3, 6, 12, 14, 17, 31], 17)
+        assert eee.args == ((5, 7, [1, 2, 3, 6, 12, 14, 17, 31], 17),)
+    else:
+        raise 000
+
+
+
+
+def 要点分解冫短程加链扌(短程加链, /):
+    ls = 短程加链
+    sz = len(ls)
+    if sz == 0: return []
+    assert ls[0] == 1
+    if sz == 1: return [(1, {1:1})]
+    #s = set(ls)
+    #u2c = dict.fromkeys(ls, 1)
+    ds = set()
+    j2d = [None]
+    for j in range(1, sz):
+        m = ls[j]
+        n = ls[j-1]
+        #短程:相邻=>差存在链中
+        diff = (m-n)
+        #assert diff in s
+        #u2c[diff] += 1
+        ds.add(diff)
+        j2d.append(diff)
+    #u2c = {u:c for u,c in u2c.items() if c > 1}
+    ds
+    j2d
+    #u2j = {u:j for j,u in enumerate(ls)}
+    assert 1 in ds
+    ds.add(ls[-1])
+    u_d2c_pairs = []
+    for j in range(1, sz):
+        m = ls[j]
+        if not m in ds:continue
+        i = j-1
+        n = ls[i]
+        diff = (m-n)
+        ds4m = [diff]
+        while not n in ds:
+            #assert i > 0
+            ds4m.append(j2d[i])
+            i -= 1
+            n = ls[i]
+        ds4m.append(n)
+        assert m == sum(ds4m)
+        d2c = {}
+        for diff in ds4m:
+            d2c[diff] = 1+d2c.get(diff,0)
+        d2c
+        assert m == sum(u*c for u,c in d2c.items())
+        u_d2c_pairs.append((m, d2c))
+    u_d2c_pairs
+    return u_d2c_pairs
+def 简并冫短程加链扌(短程加链, /, *, n2info=None):
+    # n2info for 要点生成牜精确
+    要点生成牜精确 = not n2info is None
+    u_d2c_pairs = 要点分解冫短程加链扌(短程加链)
+    all_us = set()
+    for n, d2c in u_d2c_pairs:
+        assert n == sum(u*c for u,c in d2c.items())
+        us = {0}
+        total = 1
+        for d, c in d2c.items():
+            total *= (1+c)
+            _vs = set()
+            for dx in range(d, d*(c+1), d):
+                _vs.update(dx+u for u in us)
+            _vs
+            us |= _vs
+        #assert total == len(us), (短程加链, n, d2c)#may fail, just a guess
+        us.remove(0)
+        assert n in us
+        #if 0b0001:print((n, d2c, sorted(us), u_d2c_pairs, 短程加链))
+        all_us.update(us)
+    all_us
+    assert set(短程加链) <= all_us
+    assert not 0 in all_us
+    #if 0b0001:print(短程加链, sorted(all_us))
+    if not 要点生成牜精确:
+        return all_us
+    ######################
+    ######################
+    ######################
+    ######################
+    ######################
+    all_us # upper-bound/superset
+    # to calc lower-bound/subset
+    #   between [max_d..=n]
+    def iter_prev_css_(cs, /):
+        _cs = list(cs)
+        for j in range(L):
+            if cs[j] == cs0[j]:
+                continue
+            assert cs0[j] < cs[j] <= csE[j]
+            _cs[j] -= 1
+            yield tuple(_cs)
+            _cs[j] += 1
+        assert tuple(_cs) == cs
+    def iter_next_css_(cs, /):
+        _cs = list(cs)
+        for j in range(L):
+            if cs[j] == csE[j]:
+                continue
+            assert cs0[j] <= cs[j] < csE[j]
+            _cs[j] += 1
+            yield tuple(_cs)
+            _cs[j] -= 1
+        assert tuple(_cs) == cs
+    @cache
+    def cs2u_(cs, /):
+        u = sum(map(int.__mul__, j2d, cs))
+        return u
+    assert len(n2info) == 短程加链[-1]
+    assert 短程加链[-1] == u_d2c_pairs[-1][0]
+    def n2height_(n, /, *, m=短程加链[-1], sz4chain4m=len(短程加链)):
+        if n == m:
+            return sz4chain4m
+        sz4chain4n = n2info[n][1]
+        return sz4chain4n
+    @cache
+    def on_path_(sz4chain4cs, cs, /):
+        u = cs2u_(cs)
+        sz4chain4u = n2height_(u)
+        assert sz4chain4u <= sz4chain4cs
+        return sz4chain4u == sz4chain4cs
+    @cache
+    def is_fwd_ok(sz4chain4cs, cs, /):
+        if not on_path_(sz4chain4cs, cs):
+            ok = False
+        elif sz4chain4cs == sz4chain4cs0 and cs == cs0:
+            ok = True
+        else:
+            sz4chain4cs_ = sz4chain4cs - 1
+            assert sz4chain4cs_ >= sz4chain4cs0
+            bs = [is_fwd_ok(sz4chain4cs_, cs_) for cs_ in iter_prev_css_(cs)]
+            ok = any(bs)
+        ok
+        if ok:
+            sure_us.add(cs2u_(cs))
+        return ok
+    n2info
+    sure_us = set()
+    _ls = 短程加链
+    #_us = set(ls)
+    _i = 0
+    for n, d2c in u_d2c_pairs:
+        #######
+        #######
+        #once bug:memory old env...
+        is_fwd_ok.cache_clear()
+        on_path_.cache_clear()
+        cs2u_.cache_clear()
+        #######
+        #######
+        L = len(d2c)
+        j2d = sorted(d2c)
+        j2max_c = tuple(d2c[d] for d in j2d)
+        assert _ls[_i] == j2d[-1]
+        _j = _ls.index(n, _i)
+        dI = _j - _i
+        _i = _j
+        assert dI
+        assert 1+dI == sum(j2max_c), (_ls, n, d2c)
+        cs0 = [0]*L
+        cs0[-1] = 1
+        cs0 = tuple(cs0)
+        csE = tuple(j2max_c)
+        sz4chain4csE = n2height_(n)
+        sz4chain4cs0 = n2height_(j2d[-1])
+        is_fwd_ok(sz4chain4csE, csE)
+            #updating:sure_us
+    #end-for n, d2c in u_d2c_pairs:
+    sure_us
+    assert set(_ls) <= sure_us, (u_d2c_pairs, _ls, sure_us, set(_ls) - sure_us)
+    return (sure_us, all_us) #(lower, upper)
+    ######################
+    ######################
+#无误:assert 0, (简并冫短程加链扌([1, 2, 4, 8, 9, 17]), 简并冫短程加链扌([1, 2, 4, 8, 16, 17]))
+    #bug:bug17_5: (17, 6, 2, 8, [9, 16], RT({1: 2, 4: 2, 8: 2, 16: 2}), [1, 2, 4, 8, 9, 17], [1, 2, 4, 8, 16, 17])
 
 def 求冫魊最短短程加链牜水平反转后词典序最小扌(n2info, n, xs=(), /, *, excludes=()):
     '-> tmay 最短短程加链牜水平反转后词典序最小 # [唯一的毛病是，由于中间数据缺失，所谓『水平反转后词典序最小/水平反转后词典序最大』可能有误]'
@@ -1184,13 +1441,32 @@ def 求冫魊最短短程加链牜水平反转后词典序最大扌(n2info, n, x
         return ()
     # [xs /-\ excludes == {}]
 
+    sz2x = {}
+    def _add_x(x, /, *, sz2x=sz2x):
+        '-> ok'
+        # ++排斥区分级@20250210
+        sz4chain4x = n2info[x][1]
+        a = len(sz2x)
+        sz2x.setdefault(sz4chain4x, x)
+        b = len(sz2x)
+        ok = not a==b
+        if not ok:
+            assert not x == sz2x[sz4chain4x]
+        return ok
+    def _del_x(x, /, *, sz2x=sz2x):
+        sz4chain4x = n2info[x][1]
+        assert x == sz2x[sz4chain4x]
+        del sz2x[sz4chain4x]
+    if not all(map(_add_x, xs)):
+        return ()
+    assert len(xs) == len(sz2x)
     ######################
     # [n !<- xs]
     # [len(xs)==0]or[max(xs) < n]
     # [n !<- excludes]
     # [xs /-\ excludes == {}]
     ######################
-    def recur(n, xs, /, *, _xs=xs, n2info=n2info, f=f):
+    def recur(n, xs, /, *, _xs=xs, n2info=n2info, f=f, sz2x=sz2x):
         '-> tmay copy(ls)'
         ######################
         # [n !<- xs]
@@ -1198,6 +1474,7 @@ def 求冫魊最短短程加链牜水平反转后词典序最大扌(n2info, n, x
         # [n !<- excludes]
         # [xs /-\ excludes == {}]
         ######################
+        assert len(xs) == len(sz2x)
 
         #if 0b0001:print_err(n, xs)
         assert xs is _xs
@@ -1234,31 +1511,46 @@ def 求冫魊最短短程加链牜水平反转后词典序最大扌(n2info, n, x
             #if t < max_x:break
             if t < max_x:raise 000
             #if 0b0001:print_err(n, t, xs)
+            # !! [len(xs)==0]or[max(xs) < n]
+            # [len(xs)==0]or[max(xs) <= t]
             diff = n-t
-            assert diff > 0
+            assert 0 < diff <= t
             if diff in excludes:continue
             # [diff !<- excludes == {}]
             del4t = t in xs
             add4d = not (diff == t or diff in xs)
             # [xs /-\ excludes == {}]
             if add4d:
+                assert 0 < diff < t
                 # !! [xs /-\ excludes == {}]
                 # !! [diff !<- excludes == {}]
+                if not _add_x(diff):
+                    #排斥区分级:here
+                    continue
                 xs.add(diff)
                 # [xs /-\ excludes == {}]
             # [xs /-\ excludes == {}]
             assert len(xs) == sz4xs+add4d
+            # [len(xs)==0]or[max(xs) <= t]
             if del4t:
+                # [len(xs)==0]or[max(xs) <= t]
+                _del_x(t)
                 xs.remove(t)
+                # [len(xs)==0]or[max(xs) < t]
+            # [len(xs)==0]or[max(xs) < t]
             assert len(xs) == sz4xs+add4d-del4t
             #if 0b0001:print_err(n, t, diff, del4t, add4d, xs)
+            # [len(xs)==0]or[max(xs) < t]
             tmay_ls = [*recur(t, xs)]
             #if 0b0001:print_err(n, t, xs)
+            assert len(xs) == len(sz2x)
             assert len(xs) == sz4xs+add4d-del4t
             if del4t:
+                if not _add_x(t):raise Exception(xs, t)
                 xs.add(t)
             assert len(xs) == sz4xs+add4d
             if add4d:
+                _del_x(diff)
                 xs.remove(diff)
             assert len(xs) == sz4xs
             if tmay_ls:
@@ -1364,7 +1656,7 @@ def _rename_NonTouchRanges(*, ipath, opath):
             oprint(new)
             #yield new
 
-def 枚举冫相关信息纟最短短程加链牜简并态算法扌(*, path=None, 尝试校验最短=True, 尝试补充缺失=False, rename_NonTouchRanges=False, 深度单点过滤=False, le=None, 精确简并态=False):
+def 枚举冫相关信息纟最短短程加链牜简并态算法扌(*, path=None, 尝试校验最短=True, 尝试补充缺失=False, rename_NonTouchRanges=False, 深度单点过滤=False, le=None, 精确简并态=False, 要点生成=False, 要点生成牜精确=False):
     r'''[[[
     简并态:最短短程加链
     ===
@@ -1386,7 +1678,7 @@ def 枚举冫相关信息纟最短短程加链牜简并态算法扌(*, path=None
     ===
     定义:短程加链
         短程:相邻=>差存在链中
-        短程加链的所有前缀都是短程加链
+        短程加链的递归性:短程加链的所有前缀都是短程加链
         最短短程加链的所有前缀都是最短短程加链
             即:允许递归搜索
     ===
@@ -1399,7 +1691,14 @@ def 枚举冫相关信息纟最短短程加链牜简并态算法扌(*, path=None
     check_type_is(bool, 尝试校验最短)
     check_type_is(bool, 深度单点过滤)
     check_type_is(bool, 精确简并态)
+    check_type_is(bool, 要点生成)
+    check_type_is(bool, 要点生成牜精确)
     #深度单点过滤 = 深度单点过滤 and not 精确简并态
+    assert not 要点生成 or 精确简并态
+    assert 要点生成 <= 精确简并态
+    # [要点生成 -> 精确简并态]
+    assert 要点生成牜精确 <= 要点生成
+    # [要点生成牜精确 -> 要点生成]
 
     if not le is None:
         check_type_is(int, le)
@@ -1430,7 +1729,7 @@ def 枚举冫相关信息纟最短短程加链牜简并态算法扌(*, path=None
     nm4mkr4NonTouchRanges
     apply_shower4NonTouchRanges
     work_ = _罓枚举冫相关信息纟最短短程加链牜简并态算法扌# if not 深度单点过滤 else _罓枚举冫相关信息纟最短短程加链牜简并态算法牜深度单点过滤扌
-    run_ = lambda rows:apply_shower4NonTouchRanges(work_(is_le_, rows, 尝试校验最短=尝试校验最短, 尝试补充缺失=尝试补充缺失, 深度单点过滤=深度单点过滤, 精确简并态=精确简并态))
+    run_ = lambda rows:apply_shower4NonTouchRanges(work_(is_le_, rows, 尝试校验最短=尝试校验最短, 尝试补充缺失=尝试补充缺失, 深度单点过滤=深度单点过滤, 精确简并态=精确简并态, 要点生成=要点生成, 要点生成牜精确=要点生成牜精确))
 
     rows = []
     if not path:
@@ -1457,24 +1756,76 @@ def 枚举冫相关信息纟最短短程加链牜简并态算法扌(*, path=None
                 return x
             yield from map(oprint, run_(rows))
 枚举冫相关信息纟最短短程加链牜简并态算法扌
-def _exact(Mk, n2info, m, lss, submaxs4m, nodes4m, /, *, f=求冫魊最短短程加链牜水平反转后词典序最大扌):
-    #kw:精确简并态
+def _exact(Mk, n2info, m, lss, submaxs4m, nodes4m, /, *, 要点生成:bool, 要点生成牜精确:bool, f=求冫魊最短短程加链牜水平反转后词典序最大扌):
+    #kw:精确简并态,要点生成,要点生成牜精确
     #def 求冫魊最短短程加链牜水平反转后词典序最大扌(n2info, n, xs=(), /, *, min_vs_max=True, excludes=()):
     assert lss
     known_us = {u for ls in lss for u in ls}
+        #注意:[ls是次大数的加链，不是m的加链]
     #assert known_us
     #assert not m in known_us
     known_us.add(m)
+        # !! [ls是次大数的加链，不是m的加链]
     #assert m in known_us
     num_nodes4m = nodes4m.len_ints()
     if num_nodes4m == len(known_us):
         return nodes4m
     assert num_nodes4m > len(known_us)
     # [num_nodes4m > len(known_us)]
+    if 要点生成:
+        known_us0 = set(known_us)
+        #if 0b0001:print(known_us)
+        for ls in lss:
+            #bug:bug17_5:known_us |= 简并冫短程加链扌(ls)
+            #if 0b0001:print(ls, 简并冫短程加链扌(ls))
+            assert ls[-1] < m
+            ls4m = ls+[m]
+                # !! [ls是次大数的加链，不是m的加链]
+            #if 0b0001:校验冫短程加链扌(ls4m, True)
+            if 要点生成牜精确:
+                lower, upper = 简并冫短程加链扌(ls4m, n2info=n2info)
+                known_us0 |= lower
+                known_us |= upper
+            else:
+                known_us |= 简并冫短程加链扌(ls4m)
+            known_us
+            #if 0b0001:print(ls4m, 简并冫短程加链扌(ls4m))
+                #?bug:bug31_17: [1, 2, 3, 6, 12, 14, 28, 31] {1, 2, 3, 6, 8, 12, 14, 17, 28, 31}
+                #不是bug?!:bug31_17
+                # => [1, 2, 3, 6, 12, 14, 17, 31]
+                #也不是bug:『?发现之前代码的bug: 缺少17@31.nodes』
+                #   为何没有17？
+                #   nodes4m{31}为何没有17？
+                # 看看:(31, 8, 8, 28, [19, 21, 22, 25, 26, 27, 28, 30], RT({1: 15, 17: 6, 24: 5, 30: 2}), [1, 2, 3, 6, 12, 13, 19, 31], [1, 2, 4, 6, 12, 24, 30, 31])
+                #   [min(submaxs4m{31}) == 19 > 17]
+                #   [虽然17是31的某最短加链的次大数，但17并不是31的某短程加链的次大数]
+                #   虽然通过测试:校验冫短程加链扌([1, 2, 3, 6, 12, 14, 17, 31], False)
+                #   但不能证明 [17是31的某短程加链的次大数]，因为14,17的链长都是6
+                #submaxs4m{31}为何没有17？
+                # 看看 (17, 6, 2, 7, [9, 16], RT({1: 2, 4: 1, 8: 2, 16: 2}), [1, 2, 4, 8, 9, 17], [1, 2, 4, 8, 16, 17])
+                #   (14, 6, 4, 12, [7, 9, 10, 12], RT({1: 10, 12: 1, 14: 1}), [1, 2, 3, 5, 7, 14], [1, 2, 4, 8, 12, 14])
+                #   [31-17==14 !<- submaxs4m{17} == [9, 16]]
+                # 由于都是6 [sz4chain{17}==6==sz4chain{14}]，[1, 2, 3, 6, 12, 14, 17, 31]并不满足:短程加链的递归性
+                # 真正的毛病是误以为『要点生成的数集是精确简并态的子集』
+        known_us0
+        known_us
+        #if m == 17:raise Exception(lss, known_us)
+        #if m == 31:raise Exception(lss, known_us)
+        if num_nodes4m == len(known_us):
+            return nodes4m
+        assert num_nodes4m > len(known_us)
+        # [num_nodes4m > len(known_us)]
+        known_us0   # lower_bound
+        known_us    # upper_bound
+    known_us
+    # [num_nodes4m > len(known_us)]
     #assert m in nodes4m
-    super_us = nodes4m.iter_ints()
+    #super_us = nodes4m.iter_ints()
+    super_us = nodes4m.iter_ints_(reverse=True)
+        #尝试反转测试次序
     excludes = set()
-    for u in super_us:
+    for _ in range(1+要点生成):
+     for u in super_us:
         if u in known_us:
             continue
         ok = False
@@ -1485,7 +1836,24 @@ def _exact(Mk, n2info, m, lss, submaxs4m, nodes4m, /, *, f=求冫魊最短短程
                 #求冫魊最短短程加链牜水平反转后词典序最大扌
             if not tmay_ls:continue
             [ls] = tmay_ls
-            known_us.update(ls)
+            ls4m = ls+[m]
+            #known_us.update(ls4m)
+            if 要点生成:
+                if 要点生成牜精确:
+                    lower, upper = 简并冫短程加链扌(ls4m, n2info=n2info)
+                    known_us0 |= lower
+                    known_us |= upper
+                else:
+                    #lower_bound
+                    known_us0.update(ls4m)
+
+                    #upper_bound
+                    known_us |= 简并冫短程加链扌(ls4m)
+                known_us
+            else:
+                #lower_bound
+                known_us.update(ls4m)
+
             #assert u in known_us
             ok = True
             break
@@ -1494,7 +1862,35 @@ def _exact(Mk, n2info, m, lss, submaxs4m, nodes4m, /, *, f=求冫魊最短短程
         if not ok:
             excludes.add(u)
         #known_us
+     #for u in super_us:
+     else:
+        if 要点生成:
+            要点生成 = False
+            known_us0   # lower_bound
+            known_us    # upper_bound
+            super_us = sorted(known_us - known_us0)
+            super_us.reverse()
+                #尝试反转测试次序
+            known_us = known_us0
+            del known_us0
+            excludes
+            continue#下一轮:要点删除
+        break
+        pass
+    #for _ in range(1+要点生成):
+    else:
+        pass
+    known_us
+        #[not要点生成] -> [known_us == 精确值]
+        #[要点生成] -> [known_us <= 精确值]
+    if 要点生成:
+        raise '还是得靠搜索:改用循环『for _ in range(1+要点生成):』'
+        #要点删除:to fixed bug31_17
+        #   一度误以为『要点生成的数集是精确简并态的子集』
+        sz4chain4m = len(lss[0])
+        known_us = _old要点删除(n2info, m, sz4chain4m, submaxs4m, known_us0, known_us, excludes)
     known_us #精确值
+
     # [num_nodes4m >= len(known_us)]
     if not num_nodes4m == len(known_us):
         assert num_nodes4m > len(known_us)
@@ -1502,6 +1898,29 @@ def _exact(Mk, n2info, m, lss, submaxs4m, nodes4m, /, *, f=求冫魊最短短程
     nodes4m
     #assert m in nodes4m
     return nodes4m
+def _old要点删除(n2info, m, sz4chain4m, submaxs4m, known_us0, known_us, excludes, /):
+    known_us0   # lower_bound
+    known_us    # upper_bound
+    if len(known_us0) == len(known_us):
+        return known_us
+    n2info
+    _sz2ns = [set() for _ in range(1+sz4chain4m)]
+    for n in known_us:
+        if n == m:
+            _sz2ns[-1].add(m)
+            continue
+        sz4chain4n = n2info[n][1]
+        _sz2ns[sz4chain4n].add(n)
+    ...
+    _sz2ns[0].add(None)
+    assert all(_sz2ns)
+    assert _sz2ns[0] == {None}
+    assert _sz2ns[sz4chain4n] == {m}
+    assert _sz2ns[-1] == {m}
+    known_us0
+    ...
+    raise '未实现:还是得靠搜索:改用循环『for _ in range(1+要点生成):』'
+    return known_us
 def _deep1(Mk, n2info, n, diff, submaxs4n, nodes4n):
     #kw:深度单点过滤
     #ks = []
@@ -1529,12 +1948,15 @@ def _iter_sz4chain_ns_pairs(n2info, sz4chain2ns, m, /):
     #get = n2info.__getitem__
     #iter_half_n2info_ = lambda:map(get, range((m+1)//2, m))
     #sz4chain2ns = []
+    _min4submax4m = (m+1)>>1
     lbM = m.bit_length()-1 #floor_log2(m)
     low = lbM+1
         # !! [sz4chain4m == 1+min_sz]
     _low = low-1
         # 短程假设=>[sz4chain{submax4m} == sz4chain4m-1]
-    up = min(low<<1, len(sz4chain2ns))
+    assert _low <= _min4submax4m.bit_length(), (m, _min4submax4m, _low)
+    #up = min(low<<1, len(sz4chain2ns))
+    up = len(sz4chain2ns)
     for _sz4chain in range(_low, up):
         ns = sz4chain2ns[_sz4chain]
         _ns = []
@@ -1549,7 +1971,7 @@ def _iter_sz4chain_ns_pairs(n2info, sz4chain2ns, m, /):
         if _ns:
             yield (_sz4chain, _ns)
 
-def _罓枚举冫相关信息纟最短短程加链牜简并态算法扌(is_le_, saved_rows, /, *, 尝试校验最短, 尝试补充缺失, 深度单点过滤, 精确简并态):
+def _罓枚举冫相关信息纟最短短程加链牜简并态算法扌(is_le_, saved_rows, /, *, 尝试校验最短, 尝试补充缺失, 深度单点过滤, 精确简并态, 要点生成, 要点生成牜精确):
     '简并态:最短短程加链'
     # ++ rename_NonTouchRanges@20250207 => RT.缺失版[2..=10025]-缺失1756
     # ++尝试补充缺失@20250208 => 无缺版[2..=12021]
@@ -1558,6 +1980,9 @@ def _罓枚举冫相关信息纟最短短程加链牜简并态算法扌(is_le_, 
     # 启用NonTouchRanges.from_sorted_rngs#=> merge_()
     # ++le#=> is_le_
     # ++精确简并态 => 精深版/无缺精深版
+    # ++要点生成@20250210
+    # ++排斥区分级@20250210
+    # ++要点生成牜精确@20250211
     ######################
     if 尝试补充缺失:_n2sz = _n2sz_()
     from seed.tiny import print_err
@@ -1683,7 +2108,7 @@ def _罓枚举冫相关信息纟最短短程加链牜简并态算法扌(is_le_, 
             #精深版
             assert not 深度单点过滤
             #if 0b0001:print_err(m, submaxs4m, nodes4m)
-            nodes4m = _exact(Mk, n2info, m, lss, submaxs4m, nodes4m)
+            nodes4m = _exact(Mk, n2info, m, lss, submaxs4m, nodes4m, 要点生成=要点生成, 要点生成牜精确=要点生成牜精确)
             #if 0b0001:print_err(m, submaxs4m, nodes4m)
             #excludes = NonTouchRanges(((0,m+1),)) - nodes4m
         else:
