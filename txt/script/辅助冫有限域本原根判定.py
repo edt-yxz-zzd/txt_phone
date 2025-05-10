@@ -7,6 +7,7 @@ view ../../python3_src/nn_ns/math_nn/factor_Mersenne_number_into_prime2exp.py
     (2**n-1) [1..=3000]之间缺失815个
 view ../../fxt/_ignore__unzip/fxt/data/mersenne-factors.txt
     (2**n-1) [1..=1200]
+Cunningham numbers (k**n+(+/-1))
 
 ++kw:timeout
 

@@ -1,0 +1,121 @@
+
+e others/数学/polynomial/拆分冫对称多项式讠基础.txt
+
+
+view script/symmetric_poly2basic.py
+
+对称多项式:symmetric polynomial
+???如何用『基础对称多项式』表达『任意对称多项式』???
+
+基础对称多项式:
+[n,k::uint][n >= k][xs::[symbol]{len==n}]:
+  #basic-symmetric-polynomial
+  [bspoly(n,k;xs) =[def]= sum[II[xs[j] | [j:<-js]] | [js:<-combinations(range(n),k)]]]
+  [bspoly(3,2;xs) == (x0*x1+x1*x2+x2*x0)]
+  [bspoly(n,0;xs) == 1]
+  [[0<=n<k] -> [bspoly(n,k;xs) == 0]]
+简单对称多项式牜加型:
+[n::uint][exp2repeat::{pint:pint}][k := sum(exp2repeat.values())][n >= k][xs::[symbol]{len==n}]:
+  # [_exp2repeat:={0:n-k,**exp2repeat} if n>k else exp2repeat]
+  [_es:=[0]*(n-k)++[exp for exp,repeat in exp2repeat.items() for _ in range(repeat)]]
+  #sum-symmetric-polynomial
+  [sspoly(n,exp2repeat;xs) =[def]= sum[II(xs[j]**e for j, e in enumerate(es) if e) | [es:<-{*permutations(_es)}]]]
+  [sspoly(4,{1:2,3:1};xs) == (x0*x1*x2**3+x0*x1*x3**3 + x1*x2*x0**3+x1*x2*x3**3 + ...)]
+  [sspoly(n,{};xs) == 1]
+  [[0<=n<k] -> [sspoly(n,k;xs) == 0]]
+  [m := sum(exp*repeat for exp,repeat in exp2repeat.items())]
+  [[[n>=m] -> [sspoly(n,exp2repeat;xs) 以 {bspoly(n,k;xs) | [k:<-[0..]]} 表达 形式不变]]]
+    #定理:对称简并单项式以对称简并基础单项式表达则形式不变
+  ==>>:
+[xs::[symbol]{len==+oo}]:
+  # [f(xs;z) := II[(1+xs[j]*(-z**-1)) | [j:<-[0..]]]]
+  # [f(xs;z) == II[(1-xs[j]/z) | [j:<-[0..]]] == sum[bspoly(+oo,k;xs)/z**k | [k:<-[0..]]] == sum[bs[k]/z**k | [k:<-[0..]]]] where [bs[k] == bspoly(+oo,k;xs)][bs[1] == bspoly(+oo,1;xs) == 1]
+  # SUM_IIgbspK = (...+K[?]*(...*bs[k]**e4bs[k]*...)+...) ~ [(K, {k:e4bs[k]})]
+  #     [(int{=!=0}, {uint:pint})]
+  # SUM_gsspK = (...+K[?]*(...*(II(xs[...:...+e2ns[e]]))**e*...)+...) ~ [(K, {e:e2ns[e]})]
+  #     [(int{=!=0}, {pint:pint})]
+  #
+  #单项式对称化==>>:
+  对称简并单项式
+  #symmetric-degenerate-monomial
+  [gsspoly(exp2repeat;xs) =[def]= sspoly(+oo,exp2repeat;xs)]
+    #regex"gssp\._(\d+[a-j]+)*"
+    #   exp-数字
+    #   repeat-字母
+    #带系数:regex"gsspK\._(\d+[a-j]+)*\d*K[np]"
+    # [np] <=> [-+]
+    #和纟带系数:regex"SUM_gsspK\._((\d+[a-j]+)*\d*K[np])*"
+
+  对称简并基础单项式
+  #symmetric-degenerate-basic-monomial
+  [gbspoly(k;xs) =[def]= bspoly(+oo,k;xs)]
+    #regex"gbsp\._\d+"
+    #   k-数字
+    #乘积:regex"IIgbsp\._(\d+[a-j]+)*"
+    #   k-数字
+    #   exp-字母
+    #和纟带系数乘积:regex"SUM_IIgbspK\._((\d+[a-j]+)*\d*K[np])*"
+    ==>>:
+    SUM_gsspK用SUM_IIgbspK表达
+简单对称多项式牜乘型:
+[n::uint][coeffs::[number]][xs::[symbol]{len==n}]:
+  #mul-symmetric-polynomial
+  [mspoly(n,coeffs;xs) =[def]= II[sum[coeffs[k]*xs[j]**k | [k:<-[0..<len(coeffs]]] | [j:<-[0..<n]]]]
+  [mspoly(3,[1,2,5];xs) == (1+2*x0+5*x0**2)*(1+2*x1+5*x1**2)*(1+2*x2+5*x2**2)]
+  view others/数学/polynomial/范巛共轭根纟多项式.txt
+    ==>> resultant
+
+
+??? 递归关系:
+  bspoly(n,k;xs)
+  sspoly(n,exp2repeat;xs)
+  mspoly(n,coeffs;xs)
+#拆出xs[n-1]:
+[[k>1] -> [bspoly(n,k;xs) == xs[n-1]*bspoly(n-1,k-1;xs[:n-1]) +bspoly(n-1,k;xs[:n-1])]]
+
+xxx:[[len(exp2repeat)>0] -> [min_e:=min(exp2repeat)] -> [repeat4min_e:=exp2repeat[min_e]] -> [_exp2repeat:=exp2repeat\-\{min_e:repeat4min_e}] -> [sspoly(n,exp2repeat;xs) == sspoly(n,_exp2repeat;xs)*bspoly(n,repeat4min_e;xs)**min_e +-???]]
+xxx:[[len(exp2repeat)>0] -> [sspoly(n,exp2repeat;xs) -II(bspoly(n,repeat;xs)**exp for exp,repeat in exp2repeat.items()) == +-???]]
+#拆出xs[n-1]:
+[[len(exp2repeat)>0] -> [_n:=n-1] -> [_xs:=xs[:n-1]] -> [_poly5e_(e) := ??? if e==0 then (if n==sum(exp2repeat.values()) then 0 else sspoly(_n,exp2repeat;_xs)) else (sspoly(_n,exp2repeat\-\{e:exp2repeat[e]};_xs))] -> [sspoly(n,exp2repeat;xs) == sum[_poly5e_(e)*xs[n-1]**e | [e:<-{0,*exp2repeat}]]]]
+  无用！
+
+bug:[rank4sspoly_(sspoly(n,exp2repeat;xs)) =[def]= (-len(exp2repeat),max(exp2repeat, default=0))]
+bug:[rank4sspoly_(sspoly(n,exp2repeat;xs)) =[def]= (-len(exp2repeat),sorted(exp2repeat.items(),reverse=True))]
+  # 成立:[rank4sspoly_(sspoly(n,exp2repeat;xs)) > rank4sspoly_(sspoly(n,_e2r;xs))]
+  # 但不一定:[rank4sspoly_(sspoly(n,exp2repeat;xs)) > rank4sspoly_(sspoly(n,_exp2repeat;xs))]
+[rank4sspoly_(sspoly(n,exp2repeat;xs)) =[def]= (sorted(exp2repeat.items(),reverse=True))]
+  # 但不一定成立:[rank4sspoly_(sspoly(n,exp2repeat;xs)) > rank4sspoly_(sspoly(n,_e2r;xs))]
+  # 成立:[rank4sspoly_(sspoly(n,exp2repeat;xs)) > rank4sspoly_(sspoly(n,_exp2repeat;xs))]
+#拆分后,rank4sspoly_下降#保持齐次(m不变)
+[[max(exp2repeat, default=0)==0] -> [k := sum(exp2repeat.values())] -> [[exp2repeat=={}][k==0][sspoly(n,exp2repeat;xs) == bspoly(n,k;xs) == 1]]]
+  # ==0
+[[max(exp2repeat, default=0)==1] -> [k := sum(exp2repeat.values())] -> [[exp2repeat=={1:k}][k>=1][sspoly(n,exp2repeat;xs) == bspoly(n,k;xs)]]]
+  # ==1
+[[max(exp2repeat, default=0)>=2] -> [k := sum(exp2repeat.values())] -> [_exp2repeat:={e-1:r for e,r in exp2repeat.items() if e>=2}] -> [sspoly(n,exp2repeat;xs) == (bspoly(n,k;xs)*sspoly(n,_exp2repeat;xs) -sum[_c*sspoly(n,_e2r;xs) | [(_c,_e2r):<-_iter4tail_partition4sspoly_(k,_exp2repeat)]])]]
+  # >=2
+  # [rank4sspoly_(sspoly(n,exp2repeat;xs)) > rank4sspoly_(sspoly(n,_exp2repeat;xs))]
+  # [rank4sspoly_(sspoly(n,exp2repeat;xs)) > rank4sspoly_(sspoly(n,_e2r;xs))]
+  # ==>> 定理:对称简并单项式以对称简并基础单项式表达则形式不变
+  where:
+   #xxx:... -> [r1:=exp2repeat.get(1,0)] -> [_c1:=C(n-(k-r1);r1)] -> ...
+   [r1:=exp2repeat.get(1,0)]
+   [_r1:=_exp2repeat.get(1,0)]
+  [_iter4tail_partition4sspoly_(k,_exp2repeat) := [(_c,_e2r) | [[sz4miss:<-[1..=k]][(_c,_e2r):<-_iter4tail_partition4sspoly__inner_(k,_exp2repeat,sz4miss)]]]]
+    # [_c1:=1][sz4miss==0] is the lhs:(_c1,exp2repeat)
+  [_iter4tail_partition4sspoly__inner_(k,_exp2repeat,sz4miss) := [(_c,_e2r) | [
+    # [sz4miss:<-[0..=k]]
+    #   but used only:[sz4miss:<-[1..=k]]
+    [_e2num_overlaps::{pint:pint}]
+    [_e2num_overlaps.keys() <= _exp2repeat.keys()]
+    [sum(_e2num_overlaps.values()) == k-sz4miss]
+    [all(1<=num_overlaps<=_exp2repeat[e] for e,num_overlaps in _e2num_overlaps.items())]
+    [_e2r := add4counter_(subtract4counter_(_exp2repeat,_e2num_overlaps), {e+1:num_overlaps for e,num_overlaps in _e2num_overlaps.items()}, {1:sz4miss})]
+    [_c:=II(C(r;(if e==0 then sz4miss else _e2num_overlaps.get(e-1,0))) for e,r in _e2r.items())]
+    # [[_e2r::{pint:pint}][sum(_e2r.values()) == k+sz4miss[#每项变量数增加#]][sum(exp*repeat for exp,repeat in _e2r.items()) == sum(exp*repeat for exp,repeat in exp2repeat.items())[#保持齐次#]][_c>0]]
+    ]]]
+subtract4counter_
+add4counter_
+#update4counter_
+#remove_zero_key_or_values4counter_
+view script/对称多项式讠基表达.py
+

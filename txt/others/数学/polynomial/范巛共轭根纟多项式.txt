@@ -1,0 +1,98 @@
+
+e others/数学/polynomial/范巛共轭根纟多项式.txt
+
+[r0 :: complex][r0 <- 代数数][g(x) :<- QQ[x]][deg(g(x)) > 0]:
+  # ??? [deg(g(x)) > 0] 是 多余的
+  #     !! [norm(a+b*1j) == a**2+b**2]
+  #     => [norm(a+0*1j) == a**2 == abs(a)**2]
+  #
+  !! [r0 <- 代数数]
+  [f(x):=min_primitive_polynomial_of_(r0)]
+  [f(x) <- ZZ[x]][f(x) irreducible over ZZ][f(r0)==0]
+  [d:=deg(f(x))][roots_of(f(x)) := {r | [[r <- complex][f(r)==0]]}][r0 <- roots_of(f(x))]
+  [norm(g(r0)) =[def]= II[g(r) | [r :<- roots_of(f(x))]]]
+    #注意:可能是负分数
+<<==:
+[f(x) :<- ZZ[x]][f(x) irreducible over ZZ][d:=deg(f(x))][roots_of(f(x)) := {r | [[r <- complex][f(r)==0]]}][r0 :<- roots_of(f(x))][g(x) :<- QQ[x]][deg(g(x)) > 0]:
+  #or:[f(x) :<- QQ[x]][f(x) irreducible over QQ][f(x) monic]
+  [norm(g(r0)) =[def]= II[g(r) | [r :<- roots_of(f(x))]]]
+    #注意:可能是负分数
+
+  !! 上面右式是关于roots_of(f(x))的对称多项式
+  !! f(x)的系数都是ZZ
+  !! g(x)的系数都是QQ
+  [norm(g(r0)) <- QQ]
+  [[g(x) :<- ZZ[x]] -> [norm(g(r0)) <- ZZ]]
+  [[a,b :: QQ] -> [b=!=0] -> [g(x)==a-b*x] -> [norm(g(r0)) == f(a/b)*b**d/LC(f(x))]]
+    # [g(x)==b*(a/b-x)]
+    # [g(r0)==b*(a/b-r0)]
+    # [norm(g(r0)) == II[g(r) | [r :<- roots_of(f(x))]] == b*(a/b-r0) * b*(a/b-r1) * ... == b**d*f(a/b)/LC(f(x))]
+    #线性时，范的计算 十分简单
+    #但一般情形又当如何？
+    #   [norm(g(r0)) == II[g(r) | [r :<- roots_of(f(x))]]]如何展开并以基础对称多项式来表达？
+  # let [(a,b):=(rp,1)]
+  [[rp :: QQ] -> [g(x):=rp-x] -> [norm(g(r0)) == f(rp)]]
+  [[p::prime] -> [rp :: ZZ%p] -> [f(rp)%p==0] -> [g(x):=rp-x] -> [norm(g(r0))%p == f(rp)%p == 0]]
+
+<<==:
+@page281[291/604] /sdcard/0my_files/book/math/factorint/202308/Prime numbers-A Computational Perspective(2ed)(2005)(Pomerance)/Prime numbers-A Computational Perspective(2ed)(2005)(Pomerance).pdf
+6.2 Number field sieve
+NFS
+Let the roots of f(x) in the complex numbers be α[1],...,α[d], where α = α[1].
+  The norm of an element β = s0+ s1*α + ··· + s[d−1]*α[d−1] in the algebraic number field QQ[α] (where the coefficients s0,s1,...,s[d−1] are arbitrary rational numbers) is simply the product of the complex numbers s0+s1*α[j]+···+s[d−1]*α[d−1] j for j = 1,2,...,d.
+  This complex number, denoted by N(β), is actually a rational number, since it is a symmetric expression in the roots α[1],...,α[d], and the elementary symmetric polynomials in these roots are ±c[j] for j = 0,1,...,d−1, which are integers.
+  In particular, if the rationals sjare all actually integers, then N(β) is an integer, too.
+  (We shall later refer to what is called the trace of β.  This is the sum of the conjugates s0+ s1*α[j]+ ··· + s[d−1]*α[d−1] j for j = 1,2,...,d.)
+
+
+
+
+
+
+
+??? [norm(g(r0)) == II[g(r) | [r :<- roots_of(f(x))]]]如何展开并以基础对称多项式来表达？
+[h(ks;x) := sum[ks[j]*x**j | [j:<-[0..]]]]
+情形:2个因子:
+  [h(ks;x)*h(ks;y) == ???]
+  [h(ks;x)*h(ks;y)
+  == sum[ks[i]*ks[j]*x**i*y**j | [i,j:<-[0..]]]
+  == sum[ks[i]*ks[j]*(x**i*y**j+x**j*y**i)/2**[i==j] | [i:<-[0..]][j:<-[i..]]]
+  == sum[ks[i]*ks[j]*(x*y)**i*(y**(j-i)+x**(j-i))/2**[i==j] | [i:<-[0..]][j:<-[i..]]]
+  == sum[ks[i]*(x*y)**i*sum[ks[j]*(y**(j-i)+x**(j-i))/2**[i==j] | [j:<-[i..]]] | [i:<-[0..]]]
+  == sum[ks[i]*(x*y)**i*sum[ks[j]*(x**j+y**j)/2**[j==0] | [j:<-[0..]]] | [i:<-[0..]]]
+  == sum[ks[i]*(x*y)**i | [i:<-[0..]]]*sum[ks[j]*(x**j+y**j)/2**[j==0] | [j:<-[0..]]]
+  ]
+
+情形:多个因子:
+  [rs := roots_of(f(x))]
+  [ts := roots_of(g(x))]
+  [f(x) == LC(f(x))*II[(x-r) | [r :<- roots_of(f(x))]]]
+  [g(x) == LC(g(x))*II[(x-t) | [t :<- roots_of(g(x))]]]
+  [norm(g(r0))
+  == II[g(r) | [r :<- roots_of(f(x))]]
+  == II[LC(g(x))*II[(r-t) | [t :<- roots_of(g(x))]] | [r :<- roots_of(f(x))]]
+  == LC(g(x))**deg(f(x))*II[II[(r-t) | [t :<- roots_of(g(x))]] | [r :<- roots_of(f(x))]]
+  == (-1)**(deg(f(x))*deg(g(x)))*LC(g(x))**deg(f(x))*II[II[(t-r) | [t :<- roots_of(g(x))]] | [r :<- roots_of(f(x))]]
+  == (-1)**(deg(f(x))*deg(g(x)))*LC(g(x))**deg(f(x))/LC(f(x))**deg(g(x))*II[LC(f(x))*II[(t-r) | [r :<- roots_of(f(x))]] | [t :<- roots_of(g(x))]]
+  == (-1)**(deg(f(x))*deg(g(x)))*LC(g(x))**deg(f(x))/LC(f(x))**deg(g(x))*II[f(t) | [t :<- roots_of(g(x))]]
+
+  == resultant(f(x),g(x))/LC(f(x))**deg(g(x))
+      #norm(),resultant()都是『消除一个变量』
+  ]
+grep resultant -r others/数学/ -l
+view others/数学/判别式实数域[my].txt
+  [resultant(f(x),g(y)) = lc(f)^deg(g)*lc(g)^deg(f)*II(xi-yj){i,j}]
+view others/数学/math.txt
+  Sylvester
+view others/数学/polynomial/real_root_isolation_method.txt
+  Amazingly, the resultant is also given by the determinant of the corresponding Sylvester matrix.
+  An important application of the resultant is the elimination of one variable from a system of two polynomial equations (Trott 2006, p. 26).
+  For example, the Sylvester matrix for P_1(x)=a_3x^3+a_2x^2+a_1x+a_0 and P_2(x)=b_2x^2+b_1x+b_0 is
+   [a_3 a_2 a_1 a_0 0; 0 a_3 a_2 a_1 a_0; b_2 b_1 b_0 0 0; 0 b_2 b_1 b_0 0; 0 0 b_2 b_1 b_0]. 
+  The determinant of the Sylvester matrix of two polynomials is the resultant of the polynomials.
+
+
+  [resultant(f,g) =[def]= LC(f)**deg(g)*LC(g)**deg(f)*II[(r-t) | [r :<- roots_of(f(x))][t :<- roots_of(g(x))]]]
+  [resultant(f,g) == determinant(Sylvester_matrix_of(f,g))]
+  [Sylvester_matrix_of(f,g) =[def]= let [sz:=deg(f)+deg(g)][sum[fc[j]*x**j | [j:<-[0..=deg(f)]]] := f(x)][sum[gc[j]*x**j | [j:<-[0..=deg(g)]]] := g(x)] in Matrix(sz,sz, (\i,j-> if i < deg(g) then (let [k:=j-i] in if 0<=k<=deg(f) then fc[deg(f)-k]) else 0 else (let [k:=j-(i-deg(g))] in if 0<=k<=deg(g) then gc[deg(g)-k])))]
+

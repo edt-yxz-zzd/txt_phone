@@ -1,0 +1,543 @@
+
+e others/我的叶子/待办事项牜短期.txt
+
+
+:r !date +@\%Y\%m\%d
+
+@20250312
+整数分解牜尸方法:
+  x:=(g0:=g0**e0)*(g1:=g1**e1) + (g2:=g2**e2)
+  [x==(g0**e0**k)*(g1**e1**k) + (g2**e2**k)]
+  或者:矩阵...
+  x:=U * (M:=M**2) * V
+  [x==U * (M**2**k) * V]
+
+@20250226
+制表冫间歇性素数数量扌
+  num_primes_le
+    [num_primes_le(PRIMES_S1[n]) == n]
+    [PRIMES_S1[1+num_primes_le(x)] == min_prime_gt_(x)]
+    [PRIMES_S1[num_primes_le(x)] == max_prime_le_(x)]
+  [1..=2**40]
+    记录每2**16或2**20
+  即:[num_primes_le(j) for j in range(2**16, 2**40+1, 2**16)]
+  或:[num_primes_le(j) for j in range(2**20, 2**40+1, 2**20)]
+  配合:is_prime__le_{2**81}:扫描小区间
+  >>> 2**16 # 6万
+  65536
+  >>> 2**20 # 1百万
+  1048576
+  >>> 2**24 # 1千万
+  16777216
+  >>> 2**40 # 1万亿
+  1099511627776
+
+  1 0995 1162 7776
+  >>> 2**40/10**12
+  1.099511627776
+
+
+@20250226
+数值计算冫前缀峰值纟比率纟素数间距与该素数对数平方扌:(diff_PRIMES_S1[n] / (ln(PRIMES_S1[n])**2))
+  !! [素数间距猜想冫素数间距估计约不超过对数平方:conjecture_Cramer_1937:diff_PRIMES_S1[n] == O(ln(PRIMES_S1[n])**2)]
+
+@20250225
+prome gap:
+  [n..<2*n]
+  [n..<n+sqrt(n)]
+  [n..<n+log2(n)**k]
+  =>用于更新素数筛:view ../../python3_src/seed/math/prime_gens.py
+  =>用于搜索素数
+  /sdcard/0my_files/book/math/factorint/snd/The new book of prime number records(3ed)(1996)(Ribenboim).djvu
+  e ../../python3_src/seed/math/prime_pint/generate_primes.py
+    生成PRIMES[?]
+    估算PRIMES[n]的上限
+  e ../../python3_src/seed/math/prime_pint/num_primes_le.py
+    估算num_primes_le(x)
+    精确计算num_primes_le(x)
+
+e ../lots/NOTE/math-book/prime/The_new_book_of_prime_number_records-note.txt
+
+
+
+
+
+@20250225
+枚举冫正整数牜不含平方因子扌
+  /sdcard/0my_files/book/math/factorint/202308/Prime numbers-A Computational Perspective(2ed)(2005)(Pomerance)/Prime numbers-A Computational Perspective(2ed)(2005)(Pomerance).pdf
+  e script/辅助冫素性判定牜高斯和.py
+  squarefree
+  view ../../python3_src/seed/math/iter_sorted_products_of_uints.py
+  grep 'square[a-z_ -]*free'  -i  -r ../../python3_src/seed/math/ script/辅助冫素性判定牜高斯和.py
+  grep 'merge[a-z_]*_ex'  -i  -r ../../python3_src/seed/math/
+
+  view ../../python3_src/seed/math/primes__inductive_generated__almost_smooth.py
+    from seed.for_libs.for_heapq import iter_merge_sorted_iterable_exs_, merge_ex
+    #def merge_ex(*sorted_iterable_exs, key4stable:[False,callable]=False, key4le=None, __le__=None, reverse=False, unique:[bool,callable]=False, obj2value_:[None,callable]=None):
+    #   '# [sorted_iterable_exs :: [sorted<fst> Iter (x, may sorted_iterable_exs{all <= x})]] # [[key4stable := False] -> [unstable sort]]'
+
+
+
+@20250225
+计算冫圆周率扌
+  e others/数学/BBP-type-formulas[浮点数片段截取].txt
+
+
+
+@20250226
+列表冫分圆多项式扌
+[n>=1]:
+  cyclotomic polynomial
+  [PHI(n;x) =[def]= the polynomial of smallest degree having as roots all the primitive n-th roots of 1]
+  a primitive nth root of 1
+  [r(n) =[def]= cos(2*pi/n) +1j*sin(2*pi/n)]
+  [PHI(n;x) == II[(x-r(n)**e) | [[e:<-[1..=n]][gcd(e,n)==1]]]]
+  [(x**n - 1) == II[PHI(m;x) | [[m:<-[1..=n]][n%m==0]]]]
+  [PHI(n;x) == (x**n - 1)/gcd((x**n - 1), II[(x**m - 1) | [[m:<-[1..<n]][n%m==0]]])]
+[is_prime_(p)]:
+  [PHI(p;x) == (x**p - 1)/(x-1)]
+  [m>=1][m%p==0]:
+    [PHI(p*m;x) == PHI(m;x**p)]
+    也就是说，重点在于squarefree部分
+  [m>=1][m%p=!=0]:
+    [PHI(p*m;x) == PHI(m;x**p)/PHI(m;x)]
+      计算squarefree部分
+    =>:
+    [e>=1]:
+      [PHI(m*p**e;x) == PHI(m;x**p**e)/PHI(m;x**p**(e-1))]
+[n::int][y::real][n>=2][y>1]:
+  [{p | [[p:<-[1..]][is_prime_(p)][(y**n-1)%p==0][@[m:<-[1..<n]] -> [(y**m-1)%p=!=0]]]}
+  # <=
+  == {p | [[p:<-[1..]][is_prime_(p)][p%n==1][PHI(n;y)%p==0]]}
+  # <=
+  == {p | [[p:<-[1..]][is_prime_(p)][p%n=!=0][PHI(n;y)%p==0]]}
+  ]
+monic polynomial with integer coefficients.
+coincide
+extensive calculations
+surpass
+
+
+
+@20250314
+TODO:转化为%m不相等？phi(m):费马大定理: Fermat's last theorem
+  [[n:<-[3..]] -> [@[x,y,z:<-[1..]] -> [x**n+y**n=!=z**n]]]
+  <<==
+  ??? [[n:<-[3..]] -> ?[m:<-[3..]] -> [e:=phi(m)] -> [n%e == 0] -> [@[x,y,z:<-[1..]] -> [x**e+y**e=!=z**e]]]
+    但是:[x**e=[%m]=0/1]
+    只能说:
+  [[n:<-[3..]] -> @[m:<-[3..]] -> [e:=phi(m)] -> [n%e == 0] -> [@[x,y,z:<-[1..]] -> [gcd(x*y*z,m) == 1] -> [x**e+y**e=!=z**e]]]
+  考虑:
+    [phi(q)%p == 0][phi(q) < p**2]
+    是否每个p必有q？
+    是否[x**p+y**p=[%q]=z**p]不成立？
+
+
+G be the multiplicative group of invertible residue classes modulo n
+primality certificate of p
+primality certification algorithm
+ECPP (elliptic curve prime proving)
+  Elliptic curve primality proving (ECPP)
+the last condition is superfluous(多余)
+Then q**e is called the exact power of q dividing a.
+curious primes
+lexicon
+pertaining
+The wonderful properties, known results, and open conjectures pertaining to the primes are manifold.
+a skeletal version
+start from scratch
+prime-counting function
+the celebrated “prime number theorem” (PNT)
+Riemann hypothesis (RH)
+Cunningham numbers (k**n+(+/-1))
+attention
+more weeding out of
+established a profound theorem
+
+
+Mersenne Numbers
+[q::prime]:
+  [M[q] =[def]= (2**q-1)]
+[[m:<-[1..]] -> [is_prime_(2**m-1)] -> [is_prime_(m)]]
+[[m:<-[1..]] -> [is_prime_power_(2**m-1)] -> [[is_prime_(2**m-1)][is_prime_(m)]]]
+[[q::prime] -> [d:<-[2..]] -> [(2**q-1)%d==0] -> [[d%8 <- {1,7}][d%q==1]]]
+<==>[[q::prime] -> [dp::prime] -> [(2**q-1)%dp==0] -> [[dp%8 <- {1,7}][dp%q==1]]]
+  proof:
+    !! [(2**q-1)%dp==0]
+    [2**q%dp==1]
+    [gcd(phi(dp), q) > 1]
+    !! [q::prime]
+    !! [dp::prime]
+    [(dp-1)%q == 0]
+    [dp%q == 1]
+
+    !! [(2**q-1)%2==1]
+    !! [(2**q-1)%dp==0]
+    [dp%2==1]
+    [k:=(dp-1)///(2*q)]
+    [k*q==((dp-1)///2)]
+    !! [2**q%dp==1]
+    [2**((dp-1)///2)%dp == 2**(k*q)%dp == 1]
+    !! [dp::prime]
+    [is_quadratic_residue_mod_(dp;2)]
+    [dp%8 <- {1,7}]
+[[m:<-[3,5..]] -> [m%2==1] -> [(2**m-1)%12==7]]
+[[m:<-[1..]] -> [m%12==7] -> [Jacobi_symbol(m;3%m) == Jacobi_symbol(3;m%3)*(-1)**((m-1)///2) == -1]]
+  Primality Test for Mersenne Numbers:
+    Let P = 2, Q = -2, and consider the associated Lucas sequences (U[m]){m>=0}, (V[m]){m>=0}, which have discriminant D = 12. Then N = M[q] is a prime if and only if N divides V[(N+1)///2]
+  [[(U(P,Q;m),V(P,Q;m))=[def]=...associated_Lucas_sequences...] => @[n:<-[1..]] -> [[is_prime_(2**n-1)] <-> [V(P:=2,Q:=-2;2**(n-1))%(2**n-1)==0]]]
+    #n
+  [[(U(P,Q;m),V(P,Q;m))=[def]=...associated_Lucas_sequences...] => @[q::prime] -> [[is_prime_(2**q-1)] <-> [V(P:=2,Q:=-2;2**(q-1))%(2**q-1)==0]]]
+    #q
+    # [(P,Q):=(2,-2)] -> [D==12]
+  [S[0]:=4][]
+  []
+  [k:<-[0..]]:
+    [S[k] =[def]= if k==0 then 4 else S[k-1]**2-2]
+    [S[k] == V(P:=2,Q:=-2;2**(k+1))/(2**(2**k))]
+  [@[n:<-[1..]] -> [[is_prime_(2**n-1)] <-> [S[n-2]%(2**n-1)==0]]]
+    #n
+
+
+
+[[q::prime] -> [q%4==3] -> [[is_prime_(2*q+1)] <-> [(2**q-1)%(2*q+1)==1]]]
+<==>[[q::prime] -> [q%4==3] -> [[is_Sophie_Germain_prime_(q)] <-> [(2**q-1)%(2*q+1)==1]]]
+  proof:
+    !! [q%4==3]
+    [(2*q+1)%8==7]
+    * (<<==):
+      [(2**q-1)%(2*q+1)==1]:
+        !! [(2**q-1)%(2*q+1)==1]
+        [(2**(2*q)-1)%(2*q+1) == (2**q+1)*(2**q-1)%(2*q+1) == 0]
+        [(2**(2*q)-1)%(2*q+1) == 0]
+        [2**(2*q)%(2*q+1) == 1]
+        [(-2)**(2*q)%(2*q+1) == 1]
+
+        !! [q::prime]
+        [q >= 2]
+        [(2*q+1) >= 5]
+        [2**2%(2*q+1) == 4 =!= 1]
+        [(-2)**(2*q///q)%(2*q+1) =!= 1]
+
+        !! [(2*q+1)%8==7]
+        [Jacobi_symbol((2*q+1);2)==+1]
+        !! [(2*q+1)%4==3]
+        [Jacobi_symbol((2*q+1);-1)==-1]
+        #view ../../python3_src/seed/math/Jacobi_symbol.py
+        #.注意:
+        #.    [[Jacobi_symbol(M;x)==-1] -> [is_square_nonresidual_mod_(M;x)]]
+        #.    但是:[Jacobi_symbol(M;x)==+1]无用，可能是也可能不是平方剩余
+        #.    [MAYBE:[Jacobi_symbol(M;x)==+1][is_square_nonresidual_mod_(M;x)]]
+        [Jacobi_symbol((2*q+1);-2)==Jacobi_symbol((2*q+1);-1)*Jacobi_symbol((2*q+1);2)==-1]
+        [Jacobi_symbol((2*q+1);-2)==-1]
+        [is_quadratic_nonresidue_mod_((2*q+1);-2)]
+        !! [(2*q+1) >= 5]
+        [@[odd:<-[1,3..]] -> [(-2)**odd%(2*q+1) =!= 1]]
+        !! [q%4==3]
+        [q%2==1]
+        [(-2)**q%(2*q+1) =!= 1]
+        [(-2)**(2*q///2)%(2*q+1) =!= 1]
+
+        !! [(-2)**(2*q)%(2*q+1) == 1]
+        !! [(-2)**(2*q///q)%(2*q+1) =!= 1]
+        !! [(-2)**(2*q///2)%(2*q+1) =!= 1]
+        !! [q::prime]
+        !! [2::prime]
+        [is_a_primitive_kth_root_of_unity_mod_(2*q+1, 2*q;-2)]
+        [phi(2*q+1)%(2*q) == 0]
+        [phi(2*q+1) >= (2*q)]
+        [phi(2*q+1) == (2*q)]
+        [is_prime_(2*q+1)]
+    * (==>>):
+      [is_prime_(2*q+1)]:
+        !! [(2*q+1)%8==7]
+        !! [is_prime_(2*q+1)]
+        [is_quadratic_residue_mod_((2*q+1);2)]
+        ?rt :=> [rt**2%(2*q+1)==2]
+        [2**q%(2*q+1)==rt**(2*q)%(2*q+1)==1]
+        [(2**q-1)%(2*q+1)==0]
+
+Sophie Germain prime
+Sophie_Germain_prime
+  [[is_Sophie_Germain_prime_(p)] =[def]= [[p::prime][(2*p+1)::prime]]]
+  [[is_extended_Sophie_Germain_prime_(k;p)] =[def]= [[p::prime][k<-[1..]][(2*k*p+1)::prime]]]
+  [[is_snd_extended_Sophie_Germain_prime_(k;p)] =[def]= [[p::prime][k<-[1..]][k%3=!=1][(2*k*p+1)::prime][3**(m)<(2*k*p+1)**2][2**(2*m)%(2*k*p+1)=!=1]]]
+    ??? [[is_3rd_extended_Sophie_Germain_prime_(k;p)] =[def]= [[p::prime][k<-[1..]][k%3=!=1][(2*k*p+1)::prime][3**phi(2*m)<(2*k*p+1)]]]
+  [@[p::prime] -> [is_Sophie_Germain_prime_(p)] -> [First_FLT(p)]]
+  [@[p::prime] -> [k:<-[1..=100]] -> [k%3=!=0] -> [is_extended_Sophie_Germain_prime_(k;p)] -> [First_FLT(p)]]
+  [@[p::prime] -> [k:<-[1..]] -> [k%3=!=0] -> [is_snd_extended_Sophie_Germain_prime_(k;p)] -> [First_FLT(p)]]
+
+  ==>>:
+  [@[p::prime] -> [not First_FLT(p)] -> [not is_Sophie_Germain_prime_(p)]]
+  [@[p::prime] -> [not First_FLT(p)] -> [not [?[k:<-[1..=100]] -> [[k%3=!=0][is_extended_Sophie_Germain_prime_(k;p)]]]]]
+  [@[p::prime] -> [not First_FLT(p)] -> [not [?[k:<-[1..]] -> [[k%3=!=0][is_snd_extended_Sophie_Germain_prime_(k;p)]]]]]
+Wilson prime
+  [[is_Wilson_prime_(p)] =[def]= [[p::prime][((p-1)!+1)%p**2==0]]]
+  [[n:<-[1..=5*10**8]] -> [[is_Wilson_prime_(n)] <-> [n <- {5, 13, 563}]]]
+
+Wall–Sun–Sun prime
+  [[is_Wall_Sun_Sun_prime_(p)] =[def]= [[p::prime][Fibonacci_number[p-Jacobi_Symbol(p/5)]%p**2==0]]]
+  <==>
+  [[is_Wall_Sun_Sun_prime_(p)] =[def]= [[p::prime][Fibonacci_number[p-([0,1,-1,-1,1][p%5])]%p**2==0]]]
+  <==>
+  [[is_Wall_Sun_Sun_prime_(p)] =[def]= [[p::prime][Fibonacci_number[p+((abs(p%5)+1)%3-1)]%p**2==0]]]
+
+  [[n:<-[1..=3.2*10**12]] -> [[is_Wall_Sun_Sun_prime_(n)] <-> [n <- {}]]]
+  [@[p::prime] -> [?[x,y,z::int] -> [[(x*y*z)%p=!=0][x**p+y**p==z**p]]] -> [[is_Wall_Sun_Sun_prime_(p)][is_Wieferich_prime_(p)]]]
+  [@[p::prime] -> [not First_FLT(p)] -> [is_Wall_Sun_Sun_prime_(p)]]
+
+Wieferich prime
+Mirimanoff prime
+  # first case of FLT # Fermat's last theorem
+  the first case of Fermat's last theorem (which I abbreviate First FLT)
+    #First_FLT
+  [[is_Wieferich_prime_(p)] =[def]= [[p::prime][(2**(p-1)-1)%p**2==0]]]
+    #@1909
+  [[is_Mirimanoff_prime_(p)] =[def]= [[p::prime][(3**(p-1)-1)%p**2==0]]]
+    #@1910
+
+  [[n:<-[1..=16*10**12]] -> [[is_Wieferich_prime_(n)] <-> [n <- {1093, 3511}]]]
+  [[n :<- {1093, 3511}] -> [not is_Mirimanoff_prime_(n)]]
+  [@[p::prime] -> [?[x,y,z::int] -> [[(x*y*z)%p=!=0][x**p+y**p==z**p]]] -> [is_Wieferich_prime_(p)]]
+    注意:[p==2][x**p+y**p==z**p] ==>> xyz必偶
+    @page31[45/604] /sdcard/0my_files/book/math/factorint/202308/Prime numbers-A Computational Perspective(2ed)(2005)(Pomerance)/Prime numbers-A Computational Perspective(2ed)(2005)(Pomerance).pdf
+  so??? => [First_FLT =[def]= [@[p::prime] -> @[x,y,z::int] -> [(x*y*z)%p=!=0] -> [x**p+y**p=!=z**p]]]
+  so??? => [First_FLT(p) =[def]= [[p::prime][@[x,y,z::int] -> [(x*y*z)%p=!=0] -> [x**p+y**p=!=z**p]]]]
+
+  [@[p::prime] -> [not First_FLT(p)] -> [[is_Wall_Sun_Sun_prime_(p)][is_Wieferich_prime_(p)][is_Mirimanoff_prime_(p)][not is_Sophie_Germain_prime_(p)][not [?[k:<-[1..]] -> [[k%3=!=0][is_snd_extended_Sophie_Germain_prime_(k;p)]]]][not [?[k:<-[1..=100]] -> [[k%3=!=0][is_extended_Sophie_Germain_prime_(k;p)]]]][@[n:<-{2,3}] -> [(n**(p-1)-1)%p**2==0]][p > 16*10**12]]]
+
+
+  ??? [[is_Wieferich_prime_(p)] <-> [[p::prime][?[r:<-[2..<p]] -> [r**p%p**2==2]]]]
+  ??? [[is_Wieferich_prime_(p)] <-> [[p::prime][?[r:<-[2..<p]] -> [r**p**2=[%p**2]=2**p]]]]
+  !! [x**p**2=[%p**2]=x**p]
+  ??? [[is_Wieferich_prime_(p)] <-> [[p::prime][?[r:<-[2..<p]] -> [r**p=[%p**2]=2**p]]]]
+
+  ??? [@[p::odd_prime] -> [?[x,y,z:<-[1..<p]] -> [x**p+y**p=[%p]=z**p]] -> [is_Wieferich_prime_(p)]]
+    bug@[p==3]
+  ??? [@[p::odd_prime] -> [?[x,y,z:<-[1..]] -> [(x*y*z)%p=!=0] -> [x**p+y**p=[%p**2]=z**p]] -> [is_Wieferich_prime_(p)]]
+    !! [(x+k*p)**p%p**2 == x**p%p**2]
+    ??? [@[p::odd_prime] -> [?[x,y,z:<-[1..<p]] -> [x**p+y**p=[%p**2]=z**p]] -> [is_Wieferich_prime_(p)]]
+  ??? [@[p::odd_prime] -> [?[x,y,z:<-[1..]] -> [(x*y*z)%p=!=0] -> [x**p+y**p==z**p]] -> [is_Wieferich_prime_(p)]]
+
+
+
+@20250314
+泛化冫配对纟循环对抗赛
+  view ../../python3_src/seed/algo/round_robin_schedule.py
+  两队配对:[C(2*n;2)///n == (2*n-1)]
+  -->
+  三队配对:[C(3*n;3)///n == (3*n-1)*(3*n-2)///2]
+
+
+
+@20250315
+整数分解牜二次根数域最大公约数
+  [r:=a**2%N]
+  [a**2==r*1**2+k*N]
+  [a**2-r*1**2==k*N]
+  [(a-sqrt(r)*1)*(a+sqrt(r)*1)==k*N]
+  gcd(N,(a+sqrt(r)*1))
+  view ../../python3_src/seed/math/GaussInteger.py
+  不太行:因为[N:=p*q]同时有效:
+      [r%p==a**2%p]
+      [r%q==a**2%q]
+  任选D:
+    [P([is_square_nonresidual_(p;D) =!= is_square_nonresidual_(q;D)]) == 1/2]
+
+
+
+
+@20250321
+分布纟素幂模幺元根纟素数减一次凵该素数进制数表达
+e script/分布纟素幂模幺元根纟素数减一次凵该素数进制数表达.py
+  list_all_Pmmth_roots_of_unity_mod_PpowK__in_radixP_(p, k, g=None, /):
+  [rs[p,k] := {r | [r:<-[1..<p**k]][r**(p-1)%p**k==1]}]
+  [g[p] <- 本原根集%p]
+  [1 <= len({g,g+p}/-\本原根集%p**k)]
+  [gg[p,k;g] :<- ({g,g+p}/-\本原根集%p**k)]
+  [ggg[p,k;g] := (gg**p**(k-1)%p**k)]
+  [ggg 是 本原(p-1)次幺元根%p**k]
+  [(p-1)次幺元根集%p**k == {ggg**i%p**k | [i:<-[1..<p]]}]
+
+
+@20250322
+整数分解牜阶乘差
+  [i,j:<-[1..<4*ln(p)]]:
+    (i!%p)
+    ((i!-j!)%p)
+e script/尝试冫整数分解牜阶乘差.py
+
+
+
+@20250405
+  view others/数学/我的猜想.txt
+  (p,radix) -> digits8coeffs{polynomial}
+    多项式生成最小4*deg个素数
+    [deg>=2] -> [radix**2<p]
+    [radix:<-[2..<sqrt(p)]]
+    求解冫有限域上多项式:
+      gcd(f(x), x**q-x)
+      [g(x) := gcd(f(x), (x**q%f(x))-x)]
+      [roots_of(g(x)) == roots_of(f(x)) /-\ [0..<q]]
+      xxx:[h(a;x) := gcd(g(x), (x**((q+1)///2)%g(x))-a)]
+      [h(a;x) := gcd(g(x), ((x+a)**((q-1)///2)%g(x))-1)]
+        # [a:<-[0..<q]]
+    素数筛纟多项式:
+      [[r:<-roots_of(g(x))] -> [f(r)%q==0]]
+      [[r:<-roots_of(g(x))] -> [f(r+k*q)%q==0]]
+
+
+
+
+@20250405
+设计冫识别器
+e ../../python3_src/seed/recognize/rgnr/abc/IRecognizer.py
+  主要目标:py.re+py.str
+    用于:e script/对称多项式讠基表达.py
+  极简:simple_text_rgnr
+    *极简递归:simple_text_recursive_rgnr
+      view ../../python3_src/seed/func_tools/recur5yield.py
+    *极简非递归:simple_text_nonrecursive_rgnr
+      no:yield#using "return"
+      *极简非递归无环境变量无缓存:simple_text_nonrecursive_nogctx_nocache_rgnr
+  参数:识别器.识别扌(通行包,讫限址,欤忽略结果) -> 讫讫错果
+    语境无关(无:识别器动态参数)
+    静态资源(无:资源解锁器:址==虚址==实址)
+    使用语言内建数据类型:输入串::(str,uint) # (文本,起址)
+    讫限址唯一(讫限址==讫限址牜虚==移驻型讫限址牜虚==前瞻型讫限址牜虚)
+        因为py.re前瞻不越界<<==:
+        >>> import re
+        >>> rex = re.compile(r'a(?=b)')
+        >>> rex.match('ab', 0, 2)
+        <re.Match object; span=(0, 1), match='a'>
+        >>> rex.match('ab', 0, 1)
+        >>> rex.match('ab', 0, 1) is None
+        True
+        >>> rex.match('ab', 0, 2) is None
+        False
+
+  <<==:
+  下面过于复杂:
+  参数:识别器.识别扌(通行包,移驻型讫限址牜虚,前瞻型讫限址牜虚,欤忽略结果,识别器动态参数,资源解锁器) -> 讫讫错果
+      讫讫错果==(讫址牜虚牜移至,讫址牜虚牜远至,错误屮成果)
+      识别结果/错误屮成果==(错误丷成果,错误丨成果)
+      通行包==(递归组,输入串,环境变量)
+      递归组:
+        +纯核递归组/识别器构造器名解析包::(识别器构造器名,识别器静态参数)->识别器
+        +递归组配置
+      识别器动态参数(语境相关:输入串+起址牜实:前文/前情提要:串联后件)
+      输入串{定位于:,起址牜实(实址:锁定资源)}
+      移驻型讫限址牜虚,前瞻型讫限址牜虚(虚址:资源无关)
+        前后关系？考虑到:前瞻长度上限...可能没有前后关系...
+      资源解锁器/分支排他器:管理-动态资源{输入串}
+      环境变量:
+        #变量环境初始化:一次:本次识别过程
+        #变量环境初始化:每:识别器
+        +变量环境纟缓存效率
+          +回顾长度上限
+          +前瞻长度上限
+        +变量环境纟递归组
+          比如:缓存:递归组-解析结果{(识别器构造器名,识别器静态参数):识别器}
+          比如:缓存:递归组-识别器属性{递归组配置}{(识别器构造器名,识别器静态参数,符号冃属性名):识别器属性(浅|深)}
+        +变量环境纟丮递归组丶输入串厈
+          比如:缓存:识别结果{(识别器,起址牜虚,移驻型讫限址牜虚,前瞻型讫限址牜虚,欤忽略结果,识别器动态参数):讫讫错果}
+          比如:缓存:输入串-回顾串&前瞻串
+        +变量环境纟动态运行期#每次识别过程
+    识别器-属性:
+    识别器构造器-属性:
+      +浅枚举冫子识别器构造器
+        +深枚举冫后裔识别器构造器
+      #(浅属性,深属性)@缓存于:变量环境纟递归组
+      +回顾长度需求
+      +前瞻长度需求
+      +欤讫址无关:即:右侧自刹/合法语句不是合法语句的真前缀
+      +欤语境无关:即:识别器动态参数-无用
+      +欤识别结果不可改动:immutable
+
+
+
+
+@20250423
+统计字频(区分繁简):汉语大辞典-词条|释义
+grep 字频 -r script/ -l
+已有:
+view script/字频统计冫词汇纟汉语大辞典.py
+  #订正版冫汉字行每频数:goto
+  #订正版冫前二六一九汉字乊频数不小于七十:goto
+
+
+
+
+@20250426
+view script/爻元数纟累积纟素数牜对比机器字长.py
+  /sdcard/0my_files/book/math/factorint/202308/Prime numbers-A Computational Perspective(2ed)(2005)(Pomerance)/Prime numbers-A Computational Perspective(2ed)(2005)(Pomerance).pdf
+  Algorithm 3.3.1 (Batch smoothness test (Bernstein)).
+    pg129 [142/604]“product tree”
+      IIps = II(PRIMES[:k])
+    pg130 [143/604]“remainder tree”
+      II(modulus) => tree/forest:only height:root <= IIps
+        go down to leaves
+          => IIps%remainder_tree
+          => r:=IIps%modulus
+          => rr:=r**2**e%modulus
+
+@20250426
+e ../../python3_src/seed/math/prime_pint/easy_primes.py
+easy number:
+  view ../../python3_src/seed/math/primes__inductive_generated__almost_smooth.py
+    欤幺链素数扌
+    欤扩展幺链素数扌#允许多个小素数纟减一
+    欤再扩展幺链素数扌#允许素幂
+  view script/爻元数纟累积纟素数牜对比机器字长.py
+  4.5.4 A quartic time primality test
+    pg213
+    222?
+  (p-1)分解是必要的，如用于:求本原根
+    分解部分>=sqrt(p-1)都没用...
+easy number:
+    easy number:easy factor and recur easy-prime
+        easy-prime:(p-1) is easy number
+      easy factor:
+        trial_division lt f4td(B)
+            and sqare diff detect: 0 <= a**2-n < f4sd(B)
+        perfect_power
+        Pollard rho?
+        Pollard(p-1)?++second stage?
+            e:=lcm([1..=f4me(B)])
+            (odd,ez) :=> [odd*2**ez==e]
+            [c:<-[isqrt(n)-f4mn(B)..=isqrt(n)+f4mp(B)]]:
+                c:=pow(c,odd,n)
+                for _ in range(ez):
+                    if gcd(c-1,n) > 1:break
+                    c = pow(c,2,n)
+                else:
+                    #second stage
+                    p = max_prime_le(f4me(B)) or 0
+                    c0 = c
+                    # eg:f4me2(B)==f4me(B)*ln(f4me(B))
+                    for q in prime_between_(f4me(B)+1, f4me2(B)):
+                        c = c*pow(c0,(q-p),n)%n
+                        if gcd(c-1,n) > 1:break
+                        p = q
+
+@20250507
+尸方法rho:??考虑使用:
+  *牛顿迭代:
+    x[k+1]:=x[k]-f(x[k])/Df(x[k])
+  *分式多项式:
+    x:=(x*x+1)/(x+1)==(x+1)-2*x/(x+1)
+    x:=f(x)+g(x)/h(x)
+  *:
+    [Jacobi_Symbol(M;D)==-1]:
+      x:=D*(x+1)**2
+
+  #哪些迭代公式[x':=f(x)+g(x)/h(x)]将GF(p)切成许多小环？
+  =>:
+    可逆...
+  展开成连分式:(f0(x)+1/(f1(x)+1/(f2(x)+1/(f3(x)+1/(f4(x)+...)))))
+
+
+@20250507
+3**3==27==1+6+12+8#魔方
+  泛化此类拆分
+e script/拆分冫幂方纟奇数.py

@@ -1,4 +1,5 @@
 
+e others/app/usage/阅读.txt
 
 [[[
 copy from:
@@ -8,6 +9,11 @@ view others/app/app.txt
     #
       官网:https://github.com/gedoor/MyBookshelf
 ]]]
+
+注意:书籍第一章之前部分 并不出现在 阅读界面，但可以在 主界面/书架界面 长按该书籍项 从弹出框中查看
+
+注意:修改书籍文本或标题匹配规则后，需更新目录:该书阅读界面->右上角竖排三点->更新目录
+  注意:(修改冫书籍文本|窜改冫标题匹配规则备份文件+点击恢复)之后，记得更新目录:该书阅读界面->右上角竖排三点->更新目录
 
 注意:
   搜索:
@@ -197,3 +203,447 @@ myTxtChapterRule.json共98行:[[[[[[[[[[[[[[
 
 
 ]]
+[[
+@20250421
+内容缓存路径:
+  /storage/emulated/0/Android/data/com.gedoor.monkeybook/files/
+备份路径:
+  /storage/emulated/0/0my_files/tmp/xxx/
+  <==>
+  content://com.android.externalstorage.documents/tree/primary%3A0my_files%2Ftmp%2Fxxx
+view /sdcard/0my_files/tmp/xxx/阅读app备份json/README.txt
+cd /storage/emulated/0/0my_files/tmp/xxx/
+cd /storage/emulated/0/0my_files/tmp/xxx/auto/
+ls -t --time=mtime --full-time -g
+  --full-time
+    但多了『-l』
+    时间的显示格式:=full-iso
+ls -t --time=atime --time-style=full-iso -g
+ls -t --time=birth --time-style=full-iso -g
+ls -t --time=ctime --time-style=full-iso -g
+ls -t --time=mtime --time-style=full-iso -g
+  -t
+    按某种时间排序
+  --time=mtime
+    某种时间:=文件修改时间
+  --time-style=full-iso
+    时间的显示格式:=full-iso
+
+.../xxx/ 之下的数据文件长期不被使用(各种时间超过两三年)
+  但是:
+    app->点击备份 之后:
+    .../xxx/6个文件被更新:
+        config.xml myTxtChapterRule.json myBookReplaceRule.json myBookSearchHistory.json myBookSource.json myBookShelf.json
+    .../xxx/auto/0个文件被更新:
+        <None>
+  可见.../xxx/手动备份
+.../xxx/auto 之下的文件超过半天不被使用
+  !! 各文件各时间大约都是:2025-04-20 17:56:15, 而命令执行时间为:@20250421-12:11
+  可见.../xxx/auto/定时自动备份
+6个文件:
+    config.xml myTxtChapterRule.json myBookReplaceRule.json myBookSearchHistory.json myBookSource.json myBookShelf.json
+窜改流程:
+  打包xxx/6个文件
+  打包xxx/auto/  #6个文件 即是 所有文件
+  app->点击备份
+  打包xxx/6个文件
+  打包xxx/auto/  #6个文件 即是 所有文件
+  窜改xxx/6个文件
+  app->点击恢复
+    需等十几秒，直至显示成功信息
+    另外:finalDate,finalRefreshData影响排序，所以可能没有置顶#另外:时间单位是秒
+
+cd /storage/emulated/0/0my_files/tmp/xxx/
+tar -cvJf auto-20250421-12-20.xz auto/
+du -h auto
+  5.0M
+du -h auto-20250421-12-20.xz
+  336K
+
+tar -cvJf 手动备份后6文件-20250421-12-33.xz {config.xml,myTxtChapterRule.json,myBookReplaceRule.json,myBookSearchHistory.json,myBookSource.json,myBookShelf.json}
+du -h 手动备份后6文件-20250421-12-33.xz
+  340K
+
+
+view /sdcard/0my_files/git_repos/txt_phone/txt/古籍整理/道德经/道德经-1.txt
+view /sdcard/0my_files/tmp/xxx/myBookShelf.json
+e /sdcard/0my_files/tmp/xxx/myBookShelf.json
+  复制并窜改:
+    "bookInfoBean": {
+      ... ...
+      "name": "道德经-1",
+      "noteUrl": "/sdcard/0my_files/git_repos/txt_phone/txt/古籍整理/道德经/道德经-1.txt",
+        两处
+      "finalRefreshData": 1627443350000,
+      ... ...
+    },
+    ... ...
+    "chapterListSize": 0,
+    del "lastChapterName":
+    del "durChapterName":
+    "finalDate": 1745194242985,
+    "finalRefreshData": 1631334465773,
+    "hasUpdate": false,
+    ... ...
+
+  app->点击恢复
+    需等十几秒，直至显示成功信息
+    另外:finalDate,finalRefreshData影响排序，所以可能没有置顶#另外:时间单位是秒
+>>> import time
+>>> time.time_ns()
+1745211624197272583
+
+  vs:1745211624197272583    纳秒
+  vs:1745194242985          秒
+>>> time.ctime(1745194242985)
+'Sun Jan  1 18:36:25 57273'
+
+>>> time.time()
+1745226507.8925745
+>>> time.time_ns()
+1745226514488257503
+>>> time.localtime()
+time.struct_time(tm_year=2025, tm_mon=4, tm_mday=21, tm_hour=17, tm_min=9, tm_sec=4, tm_wday=0, tm_yday=111, tm_isdst=0)
+>>> time.localtime(1745226507.8925745)
+time.struct_time(tm_year=2025, tm_mon=4, tm_mday=21, tm_hour=17, tm_min=8, tm_sec=27, tm_wday=0, tm_yday=111, tm_isdst=0)
+>>> time.strftime('%Y%m%d-%H:%M:%S', time.localtime(1745226507.8925745))
+'20250421-17:08:27'
+
+######################
+#开始:示例:myBookShelf.json
+######################
+[
+  {
+    "allowUpdate": false,
+    "bookInfoBean": {
+      "author": "",
+      "coverUrl": "",
+      "finalRefreshData": 1627443350000,
+      "name": "《道德经",
+      "noteUrl": "/storage/emulated/0/20220614_copy5sd__0my_files/book_txt/小说天堂txt/重命名/小说天堂txt-1/《《道德经》全文及译文》.txt",
+      "origin": "本地",
+      "tag": "loc_book"
+    },
+    "chapterListSize": 136,
+    "durChapter": 101,
+    "durChapterName": "\r\n\n\t四十三章",
+    "durChapterPage": 0,
+    "finalDate": 1745194242985,
+    "finalRefreshData": 1631334465773,
+    "group": 3,
+    "hasUpdate": false,
+    "isLoading": false,
+    "lastChapterName": "\r\n\n\t八十一章",
+    "newChapters": 0,
+    "noteUrl": "/storage/emulated/0/20220614_copy5sd__0my_files/book_txt/小说天堂txt/重命名/小说天堂txt-1/《《道德经》全文及译文》.txt",
+    "replaceEnable": false,
+    "serialNumber": 0,
+    "tag": "loc_book",
+    "useReplaceRule": true
+  },
+  {
+    "allowUpdate": false,
+    "bookInfoBean": {
+      "author": "姬叉",
+      "coverUrl": "",
+      "finalRefreshData": 1622129798000,
+      "name": "问道红尘(仙子请自重)",
+      "noteUrl": "/storage/emulated/0/20220614_copy5sd__0my_files/novel/3/《问道红尘(仙子请自重)》（校对版全本）作者：姬叉.txt",
+      "origin": "本地",
+      "tag": "loc_book"
+    },
+    "chapterListSize": 0,
+    "durChapter": 0,
+    "durChapterPage": 0,
+    "finalDate": 1624404904911,
+    "finalRefreshData": 1624404904911,
+    "group": 3,
+    "hasUpdate": true,
+    "isLoading": false,
+    "newChapters": 0,
+    "noteUrl": "/storage/emulated/0/20220614_copy5sd__0my_files/novel/3/《问道红尘(仙子请自重)》（校对版全本）作者：姬叉.txt",
+    "replaceEnable": false,
+    "serialNumber": 0,
+    "tag": "loc_book",
+    "useReplaceRule": true
+  },
+  {
+    "allowUpdate": false,
+    "bookInfoBean": {
+      "author": "府天",
+      "coverUrl": "",
+      "finalRefreshData": 1565347472000,
+      "name": "公子千秋",
+      "noteUrl": "/storage/emulated/0/0my_files/novel/《公子千秋》（校对版全本）作者：府天.txt",
+      "origin": "本地",
+      "tag": "loc_book"
+    },
+    "chapterListSize": 815,
+    "durChapter": 62,
+    "durChapterName": "第六十章 鹤鸣轩里小过堂",
+    "durChapterPage": 0,
+    "finalDate": 1613696297901,
+    "finalRefreshData": 1612760482602,
+    "group": 3,
+    "hasUpdate": false,
+    "isLoading": false,
+    "lastChapterName": "番外六 老刘",
+    "newChapters": 0,
+    "noteUrl": "/storage/emulated/0/0my_files/novel/《公子千秋》（校对版全本）作者：府天.txt",
+    "replaceEnable": false,
+    "serialNumber": 0,
+    "tag": "loc_book",
+    "useReplaceRule": true
+  },
+  {
+    "allowUpdate": false,
+    "bookInfoBean": {
+      "author": "再入江湖",
+      "coverUrl": "",
+      "finalRefreshData": 1612880284000,
+      "name": "纵横天下从铁布衫开始",
+      "noteUrl": "/storage/emulated/0/0my_files/novel/《纵横天下从铁布衫开始》（校对版全本）作者：再入江湖.txt",
+      "origin": "本地",
+      "tag": "loc_book"
+    },
+    "chapterListSize": 522,
+    "durChapter": 521,
+    "durChapterName": "第五百二十一章 新的传说（大结局）",
+    "durChapterPage": 58,
+    "finalDate": 1613628671031,
+    "finalRefreshData": 1612881022477,
+    "group": 3,
+    "hasUpdate": false,
+    "isLoading": false,
+    "lastChapterName": "第五百二十一章 新的传说（大结局）",
+    "newChapters": 0,
+    "noteUrl": "/storage/emulated/0/0my_files/novel/《纵横天下从铁布衫开始》（校对版全本）作者：再入江湖.txt",
+    "replaceEnable": false,
+    "serialNumber": 0,
+    "tag": "loc_book",
+    "useReplaceRule": true
+  }
+]
+######################
+#结束:示例:myBookShelf.json
+######################
+
+
+######################
+#开始:本地新书入架模板:myBookShelf.json
+#   变量: <时间> <文件路径> <书名> <作者名>
+######################
+  {
+    "allowUpdate": false,
+    "bookInfoBean": {
+      "author": "<作者名>",
+      "coverUrl": "",
+      "finalRefreshData": <时间>,
+      "name": "<书名>",
+      "noteUrl": "<文件路径>",
+      "origin": "本地",
+      "tag": "loc_book"
+    },
+    "chapterListSize": 0,
+    "durChapter": 0,
+    "durChapterPage": 0,
+    "finalDate": <时间>,
+    "finalRefreshData": <时间>,
+    "group": 3,
+    "hasUpdate": true,
+    "isLoading": false,
+    "newChapters": 0,
+    "noteUrl": "<文件路径>",
+    "replaceEnable": false,
+    "serialNumber": 0,
+    "tag": "loc_book",
+    "useReplaceRule": true
+  },
+######################
+#结束:本地新书入架模板:myBookShelf.json
+######################
+
+DONE:编程:添加新书入书架-提醒先点击备份，窜改后，提醒需点击恢复等待半分钟
+view script/窜改冫备份文件纟轻阅.py
+  #[:示例纟窜改冫书架备份文件纟轻阅]:goto
+示例:py_adhoc_call   script.窜改冫备份文件纟轻阅   @窜改冫书架备份文件纟轻阅扌  -book_file_nonexist_ok +欤提示窜改流程  --path4book_shelf_json:'/sdcard/0my_files/tmp/0tmp'  --infos4local_book_texts='[("/sdcard/0my_files/git_repos/txt_phone/txt/古籍整理/道德经/道德经-1.txt",), ("/sdcard/0my_files/git_repos/txt_phone/txt/古籍整理/道德经/道德经-1.txt", "", "老子 著；王弼 注")]'
+
+]]
+[[[
+确认:只使用了一条规则(而非『or』运算)，enable&&有效，serialNumber越小优先级越高。
+注意:(修改冫书籍文本|窜改冫标题匹配规则备份文件+点击恢复)之后，记得更新目录:该书阅读界面->右上角竖排三点->更新目录
+<<==:
+@20250422
+窜改冫标题匹配规则备份文件
+e /sdcard/0my_files/tmp/xxx/myTxtChapterRule.json
+===插入(并调整次序):
+  {
+    "enable": true,
+    "name": "简单-短标题",
+    "rule": "^[ 　\\t]{0,4}.{0,10}(?:[卷章节课集部分篇《》【】〖〗]|第\\s*[ \\t　]*[0-9\\d零一二两三四五六七八九十百千万壹贰叁肆伍陆柒捌玖拾佰仟]).{0,10}$",
+    "serialNumber": 16
+  },
+===窜改后全文:
+[
+  {
+    "enable": true,
+    "name": "目录",
+    "rule": "^[ 　\\t]{0,4}(?:(?:内容|文章)?简介|文案|前言|序章|楔子|正文(?!完|结)|终章|后记|尾声|番外|第?\\s{0,4}[\\d零一二两三四五六七八九十百千万壹贰叁肆伍陆柒捌玖拾佰仟]+?\\s{0,4}(?:章|节(?!课)|卷|集(?![合和])|部(?!分)|篇(?!张))).{0,30}$",
+    "serialNumber": 0
+  },
+  {
+    "enable": false,
+    "name": "目录(去空白)",
+    "rule": "(?<=[　\\s])(?:(?:内容|文章)?简介|文案|前言|序章|楔子|正文(?!完|结)|终章|后记|尾声|番外|第?\\s{0,4}[\\d零一二两三四五六七八九十百千万壹贰叁肆伍陆柒捌玖拾佰仟]+?\\s{0,4}(?:章|节(?!课)|卷|集(?![合和])|部(?!分)|篇(?!张))).{0,30}$",
+    "serialNumber": 1
+  },
+  {
+    "enable": false,
+    "name": "目录(去简介)",
+    "rule": "(?<=[　\\s])(?:前言|序章|楔子|正文(?!完|结)|终章|后记|尾声|番外|第?\\s{0,4}[\\d零一二两三四五六七八九十百千万壹贰叁肆伍陆柒捌玖拾佰仟]+?\\s{0,4}(?:章|节(?!课)|卷|集(?![合和])|部(?!分)|回(?![合来事去])|场(?![和合比电是])|篇(?!张))).{0,30}$",
+    "serialNumber": 2
+  },
+  {
+    "enable": false,
+    "name": "目录(古典、轻小说备用)",
+    "rule": "^[ 　\\t]{0,4}(?:前言|序章|楔子|正文(?!完|结)|终章|后记|尾声|番外|第?\\s{0,4}[\\d零一二两三四五六七八九十百千万壹贰叁肆伍陆柒捌玖拾佰仟]+?\\s{0,4}(?:章|节(?!课)|卷|集(?![合和])|部(?!分)|回(?![合来事去])|场(?![和合比电是])|篇(?!张))).{0,30}$",
+    "serialNumber": 3
+  },
+  {
+    "enable": false,
+    "name": "数字(纯数字标题)",
+    "rule": "(?<=[　\\s])\\d+[ 　\\t]{0,4}$",
+    "serialNumber": 4
+  },
+  {
+    "enable": true,
+    "name": "数字 分隔符 标题名称",
+    "rule": "^[ 　\\t]{0,4}\\d{1,5}[\\,\\.， 、\\-].{1,30}$",
+    "serialNumber": 5
+  },
+  {
+    "enable": true,
+    "name": "正文 标题/序号",
+    "rule": "^[ 　\\t]{0,4}正文[ 　]{1,4}.{0,20}$",
+    "serialNumber": 6
+  },
+  {
+    "enable": true,
+    "name": "Chapter/Section/Part/Episode 序号 标题",
+    "rule": "^[ 　\\t]{0,4}(?:[Cc]hapter|[Ss]ection|[Pp]art|ＰＡＲＴ|[Ee]pisode|(?:内容|文章)?简介|文案|前言|序章|楔子|正文(?!完|结)|终章|后记|尾声|番外)\\s{0,4}\\d{1,4}.{0,30}$",
+    "serialNumber": 7
+  },
+  {
+    "enable": false,
+    "name": "Chapter(去简介)",
+    "rule": "^[ 　\\t]{0,4}(?:[Cc]hapter|[Ss]ection|[Pp]art|ＰＡＲＴ|[Ee]pisode)\\s{0,4}\\d{1,4}.{0,30}$",
+    "serialNumber": 8
+  },
+  {
+    "enable": true,
+    "name": "特殊符号 序号 标题",
+    "rule": "(?<=[\\s　]{0,4}).{1,3}(?:第|卷|[Cc]hapter)[\\d零一二两三四五六七八九十百千万壹贰叁肆伍陆柒捌玖拾佰仟]{1,10}[章节]?[\\.:： \f\t].{0,20}$",
+    "serialNumber": 9
+  },
+  {
+    "enable": false,
+    "name": "特殊符号 标题(成对)",
+    "rule": "(?<=[\\s　]{0,4})(?:[\\[〈「『〖〔《（【\\(].{1,30}[\\)】）》〕〗』」〉\\]]?|(?:内容|文章)?简介|文案|前言|序章|楔子|正文(?!完|结)|终章|后记|尾声|番外)[ 　]{0,4}$",
+    "serialNumber": 10
+  },
+  {
+    "enable": true,
+    "name": "特殊符号 标题(单个)",
+    "rule": "(?<=[\\s　]{0,4})(?:[☆★✦✧].{1,30}|(?:内容|文章)?简介|文案|前言|序章|楔子|正文(?!完|结)|终章|后记|尾声|番外)[ 　]{0,4}$",
+    "serialNumber": 11
+  },
+  {
+    "enable": true,
+    "name": "章/卷 序号 标题",
+    "rule": "^[ \\t　]{0,4}(?:(?:内容|文章)?简介|文案|前言|序章|楔子|正文(?!完|结)|终章|后记|尾声|番外|[卷章][\\d零一二两三四五六七八九十百千万壹贰叁肆伍陆柒捌玖拾佰仟]{1,8})[ 　]{0,4}.{0,30}$",
+    "serialNumber": 12
+  },
+  {
+    "enable": false,
+    "name": "顶格标题",
+    "rule": "^\\S.{1,20}$",
+    "serialNumber": 13
+  },
+  {
+    "enable": false,
+    "name": "双标题(前向)",
+    "rule": "(?m)(?<=[ \\t　]{0,4})第[\\d零一二两三四五六七八九十百千万壹贰叁肆伍陆柒捌玖拾佰仟]{1,8}章.{0,30}$(?=[\\s　]{0,8}第[\\d零一二两三四五六七八九十百千万壹贰叁肆伍陆柒捌玖拾佰仟]{1,8}章)",
+    "serialNumber": 14
+  },
+  {
+    "enable": false,
+    "name": "双标题(后向)",
+    "rule": "(?m)(?<=[ \\t　]{0,4}第[\\d零一二两三四五六七八九十百千万壹贰叁肆伍陆柒捌玖拾佰仟]{1,8}章.{0,30}$[\\s　]{0,8})第[\\d零一二两三四五六七八九十百千万壹贰叁肆伍陆柒捌玖拾佰仟]{1,8}章.{0,30}$",
+    "serialNumber": 15
+  },
+  {
+    "enable": true,
+    "name": "简单-短标题",
+    "rule": "^[ 　\\t]{0,4}.{0,10}(?:[卷章节课集部分篇《》【】〖〗]|第\\s*[ \\t　]*[0-9\\d零一二两三四五六七八九十百千万壹贰叁肆伍陆柒捌玖拾佰仟]).{0,10}$",
+    "serialNumber": 16
+  },
+  {
+    "enable": false,
+    "name": "史记全译本",
+    "rule": "^[ 　\\t]{0,4}[卷【].{0,30}$",
+    "serialNumber": 17
+  }
+]
+
+===
+]]]
+[[[
+@20250422
+更新和搜索线程数:6->1
+view /sdcard/0my_files/tmp/xxx/auto/config.xml
+    <int name="threads_num" value="1" />
+===其他感兴趣的配置项:
+    <string name="downloadPath">/storage/emulated/0/Android/data/com.gedoor.monkeybook/cache</string>
+    <string name="backupPath">content://com.android.externalstorage.documents/tree/primary%3A0my_files%2Ftmp%2Fxxx</string>
+      # 『%3A』==『:』
+      # 『%2F』==『/』
+===配置全文:
+<?xml version='1.0' encoding='utf-8' standalone='yes' ?>
+<map>
+    <boolean name="auto_refresh" value="false" />
+    <int name="textDrawableIndex" value="4" />
+    <boolean name="immersionStatusBar" value="false" />
+    <boolean name="showAllFind" value="false" />
+    <int name="colorPrimaryNight" value="-12434878" />
+    <long name="DonateHb" value="0" />
+    <int name="colorAccent" value="-2614432" />
+    <int name="search_result_filter_grade" value="0" />
+    <int name="screenDirection" value="1" />
+    <string name="downloadPath">/storage/emulated/0/Android/data/com.gedoor.monkeybook/cache</string>
+    <string name="backupPath">content://com.android.externalstorage.documents/tree/primary%3A0my_files%2Ftmp%2Fxxx</string>
+    <int name="threads_num" value="1" />
+    <string name="launcher_icon">ic_launcher_round</string>
+    <int name="webPort" value="1122" />
+    <boolean name="upChangeSourceLastChapter" value="false" />
+    <int name="colorPrimary" value="-657931" />
+    <string name="bookshelf_px">0</string>
+    <int name="colorAccentNight" value="-5434281" />
+    <boolean name="navigationBarColorChange" value="false" />
+    <int name="colorBackground" value="-657931" />
+    <int name="textSize" value="29" />
+    <boolean name="behaviorMain" value="true" />
+    <int name="colorBackgroundNight" value="-12434878" />
+    <boolean name="autoDownload" value="false" />
+    <boolean name="E-InkMode" value="false" />
+    <boolean name="process_text" value="true" />
+    <int name="versionCode" value="15979" />
+    <long name="lastBackup" value="1745332134573" />
+    <boolean name="lightFollowSys" value="true" />
+    <boolean name="textBold" value="true" />
+    <boolean name="defaultToRead" value="false" />
+    <boolean name="replaceEnableDefault" value="false" />
+</map>
+===
+]]]
+
+

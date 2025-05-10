@@ -1,6 +1,6 @@
 
 e others/数学/BBP-type-formulas[浮点数片段截取].txt
-/storage/emulated/0/0my_files/book/math/float/High-Precision Arithmetic-Progress and Challenges(after2015)(Bailey).pdf
+/sdcard/0my_files/book/math/float/High-Precision Arithmetic-Progress and Challenges(after2015)(Bailey).pdf
 view others/数学/float/high-precision-floating-point-arithmetic.txt
 the_BBP_formula_for_pi = bbp4pi = [pi == sum [16**-k * (4/(1+8*k) -2/(4+8*k) -1/(5+8*k) -1/(6+8*k)) | [k :<- [0..]]]]
   The BBP (named after Bailey-Borwein-Plouffe) is a formula for calculating pi discovered by Simon Plouffe in 1995,
@@ -10,8 +10,8 @@ the_BBP_formula_for_pi = bbp4pi = [pi == sum [16**-k * (4/(1+8*k) -2/(4+8*k) -1/
   The underlying scheme requires very little memory and no multiple-precision arithmetic software.
 
 [[[
-/storage/emulated/0/0my_files/book/math/float/High-Precision Arithmetic and Mathematical Physics(ppt)(2012)(Bailey)[good].pdf
-/storage/emulated/0/0my_files/book/math/float/PSLQ-algorithm/BBP-type-formula/The BBP Algorithm for Pi(2006)(Bailey).pdf
+/sdcard/0my_files/book/math/float/High-Precision Arithmetic and Mathematical Physics(ppt)(2012)(Bailey)[good].pdf
+/sdcard/0my_files/book/math/float/PSLQ-algorithm/BBP-type-formula/The BBP Algorithm for Pi(2006)(Bailey).pdf
 ===
 [frac_(x) == fractional_part_(x) =[def]= x - floor_(x)]
 提取:
@@ -26,6 +26,8 @@ the_BBP_formula_for_pi = bbp4pi = [pi == sum [16**-k * (4/(1+8*k) -2/(4+8*k) -1/
 
 [pi == sum [16**-k * (4/(1+8*k) -2/(4+8*k) -1/(5+8*k) -1/(6+8*k)) | [k :<- [0..]]]]
 [s_(j) := sum [16**-k * (1/(j+8*k)) | [k :<- [0..]]]]
+[sx_(o,a,b;x) := sum [x**k /(a+b*k) | [k :<- [o..]]]]
+[s_(j) == sx_(0,j,8;1/16)]
 [pi == (4*s_(1) -2*s_(4) -s_(5) -s_(6))]
 [frac_(16**d * pi)
 == frac_(16**d * (4*s_(1) -2*s_(4) -s_(5) -s_(6)))
@@ -37,7 +39,272 @@ the_BBP_formula_for_pi = bbp4pi = [pi == sum [16**-k * (4/(1+8*k) -2/(4+8*k) -1/
 == frac_(sum [16**(d-k) * (1/(j+8*k)) | [k :<- [0..=d]]] + sum [16**(d-k) * (1/(j+8*k)) | [k :<- [d+1..]]])
 == frac_(frac_(sum [frac_(16**(d-k) * (1/(j+8*k))) | [k :<- [0..=d]]]) + sum [16**(d-k) * (1/(j+8*k)) | [k :<- [d+1..]]])
 == frac_(frac_(sum [frac_(16**(d-k)%(j+8*k) * (1/(j+8*k))) | [k :<- [0..=d]]]) + sum [16**(d-k) * (1/(j+8*k)) | [k :<- [d+1..]]])
+...
+# [w := k-d-1][k == w+d+1]
+== frac_(frac_(sum [frac_(16**(d-k)%(j+8*k) * (1/(j+8*k))) | [k :<- [0..=d]]]) + sum [16**(-w-1) * (1/(j+8*(w+d+1))) | [w :<- [0..]]])
+== frac_(frac_(sum [frac_(16**(d-k)%(j+8*k) * (1/(j+8*k))) | [k :<- [0..=d]]]) + 16**-1 * sum [16**(-w) * (1/(j+8*(d+1)+8*w)) | [w :<- [0..]]])
+== frac_(frac_(sum [frac_(16**(d-k)%(j+8*k) * (1/(j+8*k))) | [k :<- [0..=d]]]) + 16**-1 * s_(j+8*(d+1)))
+# [m := d-k][k == d-m]
+== frac_(frac_(sum [frac_(16**m%(j+8*(d-m)) * (1/(j+8*(d-m)))) | [m :<- [0..=d]]]) + 16**-1 * s_(j+8*(d+1)))
+#怎么搞？
+#??动态调节精度:定点数+双边误差??
+!! [[j > 0] -> [(1/(15*j+128) + 1/j) <= s_(j) <= (16/15 /j)]]
+  # [:formula__boundaries4s_]:goto
+!! [[g >= 0] -> [tail_s_(g;j) == 16**-g * s_(j+8*g)]]
+  # [:formula__tail_s_]:goto
+...
+# 从头再来:goto
 ]
+[j > 0][d >= 0][L>=1]:
+  # 从头再来:here
+  #输入: (j,d,L)
+  # [d:=起始位置纟十六进制纟一次性提取]
+  # [L:=输出位数纟十六进制纟一次性提取]
+  #可选输入: (ez4buffer_zone,)
+  # [ez4buffer_zone:=保险缓冲区纟精度]
+  #可选输出: (t,prec,i)
+  # [t:=保留项数纟截断]
+  # [prec:=定点精度]
+  # [i:=尾项误差牜以定点精度为单位]
+  #输出:output
+  [output := floor(16**L * frac_(16**d * s_(j)))]
+
+
+
+  :> [prec:=定点精度]
+  => [prec > log2(16)*L == 4*L >= 4 ]
+
+  !! [16**(d-k) * (1/(j+8*k)) >= 1] <==>:
+    <==> [16**(d-k) >= (j+8*k)]
+    <==> [(d-k) >= log_(16;j+8*k)]
+    <==> [d >= k +log_(16;j+8*k)]
+    <==> [k +log_(16;j+8*k) <= d]
+    !! [k >= 0]
+    !! [j > 0]
+    => [j+8*k >= 1]
+    => [log_(16;j+8*k) >= 0]
+    => [k <= d]
+    => [0 <= k <= d]
+    => [k <= d -log_(16;j+8*k) <= d -log_(16;j+8*d)]
+    => [k <= d -log_(16;j+8*k) <= d -log_(16;j+8*(d -log_(16;j+8*d)))]
+    :> [max_k[j,d] := d -log_(16;j+8*(d -log_(16;j+8*(...d...))))]
+    => [0 <= k <= max_k[j,d]]
+  自适应:动态调整:截断长度:select some t :=> [t >= max_k[j,d]]
+  [frac_(16**d * s_(j))
+  !! [s_(j) == trunc_s_(g;j) +tail_s_(g;j)]
+  == frac_(16**d * (trunc_s_(t;j) +tail_s_(t;j)))
+  == frac_(
+    +16**d * trunc_s_(t;j)
+    +16**d * tail_s_(t;j)
+    )
+  !! [[g >= 0] -> [tail_s_(g;j) == 16**-g * s_(j+8*g)]]
+    # [:formula__tail_s_]:goto
+  == frac_(
+    +16**d * trunc_s_(t;j)
+    +16**d * 16**-t * s_(j+8*t)
+    )
+  :> [negligible(j,d,t) := 16**(d-t) * s_(j+8*t)]
+  == frac_(
+    +16**d * trunc_s_(t;j)
+    +negligible(j,d,t)
+    )
+  !! [[j > 0] -> [(1/(15*j+128) + 1/j) <= s_(j) <= (16/15 /j)]]
+    # [:formula__boundaries4s_]:goto
+  !! [[j > 0] -> [err_s_(j) == 128/(15*j+128)/(15*j)]]
+    # [:formula__err_s_]:goto
+  => [negligible(j,d,t) == 16**(d-t) * ((upperbound_s_|lowerbound_s_)(j+8*t)[-|+]err_s_(j+8*t))]
+  :> [err4negligible(j,d,t) == 16**(d-t) * err_s_(j+8*t)]
+  => [err4negligible(j,d,t) == 16**(d-t) * 128/(15*(j+8*t)+128)/(15*(j+8*t))]
+  :> i :=> 忽略项 带来的截断误差:i单位
+  => [i*2**-prec > err4negligible(j,d,t)]
+  => [i > (2**prec * err4negligible(j,d,t))]
+  !! 每一项 除法 带来 1单位 误差 共计t单位
+  !! 忽略项 带来的截断误差:i单位
+  !! 保险缓冲区纟精度ez4buffer_zone
+  => [(t+i)*2**-(prec-ez4buffer_zone) < 16**-L == 2**(-4*L)]
+  => [log2(t+i) + -prec +ez4buffer_zone < -4*L]
+  => [log2(t+i) + 4*L +ez4buffer_zone < prec]
+  => [prec > log2(t+i) + 4*L +ez4buffer_zone]
+
+  ==>>:
+  总结:可选输出: (t,prec,i)
+    [err4negligible(j,d,t) == 16**(d-t) * 128/(15*(j+8*t)+128)/(15*(j+8*t))]
+    [i > (2**prec * err4negligible(j,d,t))]
+    [prec > log2(t+i) + 4*L +ez4buffer_zone]
+  ==>>:
+    [prec
+    > log2(t+i) + 4*L +ez4buffer_zone
+    > max{log2(t),log2(i)} + 4*L +ez4buffer_zone
+    > log2(i) + 4*L +ez4buffer_zone
+    > log2(2**prec * err4negligible(j,d,t)) + 4*L +ez4buffer_zone
+    == prec + log2(err4negligible(j,d,t)) + 4*L +ez4buffer_zone
+    ]
+  ==>>:
+    [log2(err4negligible(j,d,t)) + 4*L +ez4buffer_zone < 0]
+    [2**-(4*L +ez4buffer_zone) > err4negligible(j,d,t) == 16**(d-t) * 128/(15*(j+8*t)+128)/(15*(j+8*t))]
+    [(15*(j+8*t)+128) * (15*(j+8*t)) * 2**-(4*L +ez4buffer_zone) > 16**(d-t) * 128]
+    [log2((15*(j+8*t)+128) * (15*(j+8*t))) -(4*L +ez4buffer_zone) > 4*(d-t) +7]
+    =>
+    [4*t +log2((15*(j+8*t)+128) * (15*(j+8*t))) > 4*d +7 +(4*L +ez4buffer_zone)]
+      # [:constraint__lowerbound4t]:here
+  先求 t下限
+  搜索t:最小化(总计算量,t)
+    固定t:
+      求 prec下限
+      反复迭代 求 i下限,prec下限 直至 不变
+      得到 (prec,i)
+  ]
+
+{s_(j),sx_(o,a,b;x)}上下限范围公式推导:
+[g >= o]:
+  [trunc_sx_(g;o,a,b;x) := sum [x**k /(a+b*k) | [k :<- [0..<g]]]]
+  [tail_sx_(g;o,a,b;x) := sum [x**k /(a+b*k) | [k :<- [g..]]]]
+
+  [sx_(o,a,b;x) == trunc_sx_(g;o,a,b;x) +tail_sx_(g;o,a,b;x)]
+
+  [tail_sx_(g;o,a,b;x) == sx_(g,a,b;x)]
+  [tail_sx_(g;o,a,b;x)
+  == sum [x**k /(a+b*k) | [k :<- [g..]]]
+  == sum [x**(k+g-o) /(a+b*(k+g-o)) | [k :<- [o..]]]
+  == x**(g-o) * sum [x**k /((a+b*(g-o))+b*k) | [k :<- [o..]]]
+  == x**(g-o) * sx_(o,(a+b*(g-o)),b;x)
+  ]
+  [tail_sx_(g;o,a,b;x) == x**(g-o) * sx_(o,(a+b*(g-o)),b;x)]
+  [sx_(g,a,b;x) == tail_sx_(g;o,a,b;x) == x**(g-o) * sx_(o,(a+b*(g-o)),b;x)]
+[[g >= o] -> [sx_(g,a,b;x) == tail_sx_(g;o,a,b;x) == x**(g-o) * sx_(o,(a+b*(g-o)),b;x)]]
+  # [:formula__free_transform4sx__form1]:here
+
+[b =!= 0]:
+  [sx_(o,a,b;x)
+  !! [sx_(o,a,b;x) := sum [x**k /(a+b*k) | [k :<- [o..]]]]
+  == sum [x**k /(a+b*k) | [k :<- [o..]]]
+  !! [b =!= 0]
+  :> [(q,r) := a/%b]
+  => [a == q*b+r]
+  == x**-q * sum [x**(q+k) /(r+b*(q+k)) | [k :<- [o..]]]
+  == x**-q * sum [x**_k /(r+b*_k) | [_k :<- [q+o..]]]
+  == x**-q * sx_(q+o,r,b;x)
+  == x**-(a//b) * sx_((a//b)+o,(a%b),b;x)
+  ]
+  [sx_(o,a,b;x) == x**-(a//b) * sx_((a//b)+o,(a%b),b;x)]
+[[b =!= 0] -> [sx_(o,a,b;x) == x**-(a//b) * sx_((a//b)+o,(a%b),b;x)]]
+  # [:formula__reduce4sx_]:here
+[@[q :: int] -> [sx_(o,a,b;x) == x**-q * sx_(q+o,a-q*b,b;x)]]
+  # [:formula__free_transform4sx__form2]:here
+# [q := -o]
+[sx_(o,a,b;x) == x**o * sx_(0,a+o*b,b;x)]
+  # [:formula__offset_o4sx_]:here
+
+
+[0 <= x < 1][o >= 0][a,b>0]:
+  [a+b*o > 0]
+  [sx_(o,a,b;x)
+  !! [sx_(o,a,b;x) := sum [x**k /(a+b*k) | [k :<- [o..]]]]
+  == sum [x**k /(a+b*k) | [k :<- [o..]]]
+  (<=):
+      ... <= sum [x**k /(a+b*o) | [k :<- [o..]]]
+          !! [0 <= x < 1]
+          ==  x**o/(1-x)/(a+b*o)
+  (>=):
+      ... == 1/a * sum [x**k /(1+b/a*k) | [k :<- [o..]]]
+          !! [a,b>0]
+          => [b/a > 0]
+          >= 1/a * sum [x**k /(1+b/a)**k | [k :<- [o..]]]
+          == 1/a * sum [(x/(1+b/a))**k | [k :<- [o..]]]
+          !! [b/a > 0]
+          => [(1+b/a) > 1]
+          !! [0 <= x < 1]
+          => [0 <= (x/(1+b/a)) < 1]
+          == 1/a * (x/(1+b/a))**o / (1-(x/(1+b/a)))
+          == (x/(1+b/a))**o / (1-(x/(1+b/a))) / a
+
+  #.(>=):
+  #.    :> [Q := ceil(a/b)]
+  #.    !! [a,b > 0]
+  #.    => [0 < a/b <= Q]
+  #.    => [a <= b*Q][Q >= 1]
+  #.    ... >= sum [x**k /(b*Q+b*k) | [k :<- [o..]]]
+  #.        == x**-Q /b * sum [x**(Q+k) /(Q+k) | [k :<- [o..]]]
+  #.        !! [Q >= 1][o >= 0]
+  #.        => [Q+o >= 1]
+  #.        => [Q-1+o >= 0]
+  #.        == x**-Q /b * SS {sum [x**(Q-1+k) | [k :<- [o..]]] | dx}
+  #.        == x**-Q /b * SS {sum [x**k | [k :<- [(Q-1+o)..]]] | dx}
+  #.            # == x**-Q /b * SS {x**(Q-1+o)/(1-x) | dx}
+  #.        == x**-Q /b * SS {(sum [x**k | [k :<- [0..]]] -sum [x**k | [k :<- [0..<(Q-1+o)]]]) | dx}
+  #.        == x**-Q /b * SS {(1/(1-x) -sum [x**k | [k :<- [0..<(Q-1+o)]]]) | dx}
+  #.        == x**-Q /b * (-ln(1-x) - SS {sum [x**k | [k :<- [0..<(Q-1+o)]]] | dx})
+
+  ]
+  ==>>:
+  [((x/(1+b/a))**o / (1-(x/(1+b/a))) / a) <= sx_(o,a,b;x) <=  (x**o/(1-x)/(a+b*o))]
+[[[0 <= x < 1][o >= 0][a,b>0]] -> [((x/(1+b/a))**o / (1-(x/(1+b/a))) / a) <= sx_(o,a,b;x) <=  (x**o/(1-x)/(a+b*o))]]
+  # [:formula__boundaries4sx__form1]:here
+#. !! [[b =!= 0] -> [sx_(o,a,b;x) == x**-(a//b) * sx_((a//b)+o,(a%b),b;x)]]
+  # [:formula__reduce4sx_]:goto
+  但是[a' := (a%b)]可能为0
+#. !! [@[q :: int] -> [sx_(o,a,b;x) == x**-q * sx_(q+o,a-q*b,b;x)]]
+  # [:formula__free_transform4sx__form2]:goto
+!! [sx_(o,a,b;x) == x**o * sx_(0,a+o*b,b;x)]
+  # [:formula__offset_o4sx_]:goto
+[[[0 <= x < 1][o >= 0][a,b>0]] -> [(x**o / (1-(x/(1+b/(a+o*b)))) / (a+o*b)) <= sx_(o,a,b;x) == x**o * sx_(0,a+o*b,b;x) <= (x**o/(1-x)/(a+b*o))]]
+  # [:formula__boundaries4sx__form2]:here
+[[[0 <= x < 1][o >= 0][a,b>0]] -> [max{(x**o / (1-(x/(1+b/(a+o*b)))) / (a+o*b)), ((x/(1+b/a))**o / (1-(x/(1+b/a))) / a)} <= sx_(o,a,b;x) <= (x**o/(1-x)/(a+b*o))]]
+  # [:formula__boundaries4sx__form1X2]:here
+
+
+[BB := 16**/8][BB == sqrt2]
+[j > 0]
+  [s_(j)
+  !! [s_(j) := sum [16**-k * (1/(j+8*k)) | [k :<- [0..]]]]
+  !! [s_(j) == sx_(0,j,8;1/16)]
+  !! [[[0 <= x < 1][o >= 0][a,b>0]] -> [max{(x**o / (1-(x/(1+b/(a+o*b)))) / (a+o*b)), ((x/(1+b/a))**o / (1-(x/(1+b/a))) / a)} <= sx_(o,a,b;x) <= (x**o/(1-x)/(a+b*o))]]
+    # [:formula__boundaries4sx__form1X2]:goto
+  # [o := 0][a := j][b := 8][x := 1/16]
+  * >= (1 / (1-(x/(1+b/a))) / a)
+      == (1 / (1-(1/16/(1+8/j))) / j)
+      == (1 / (1-(j/16/(j+8))) / j)
+      == (16*(j+8) / (16*(j+8)-j) / j)
+      == (16*(j+8) / (15*j+128) /j)
+      == (1/(15*j+128) + 1/j)
+  * <= (1/(1-x)/a)
+      == (1/(1-1/16)/j)
+      == (1/(15/16)/j)
+      == (16/15 /j)
+  ]
+  [(1/(15*j+128) + 1/j) <= s_(j) <= (16/15 /j)]
+[[j > 0] -> [(1/(15*j+128) + 1/j) <= s_(j) <= (16/15 /j)]]
+  # [:formula__boundaries4s_]:here
+[j > 0]:
+  [upperbound_s_(j) := (16/15 /j)]
+  [lowerbound_s_(j) := (1/(15*j+128) + 1/j)]
+  [err_s_(j) := upperbound_s_(j) -lowerbound_s_(j)]
+  [err_s_(j)
+  == (16/15 /j) -(1/(15*j+128) + 1/j)
+  == (1/15 /j) -1/(15*j+128)
+  == 128/(15*j+128)/(15*j)
+  ]
+  [err_s_(j) == 128/(15*j+128)/(15*j)]
+[[j > 0] -> [err_s_(j) == 128/(15*j+128)/(15*j)]]
+  # [:formula__err_s_]:here
+[g >= 0]:
+  [trunc_s_(g;j) := sum [16**-k * (1/(j+8*k)) | [k :<- [0..<g]]]]
+  [tail_s_(g;j) := sum [16**-k * (1/(j+8*k)) | [k :<- [g..]]]]
+
+  [s_(j) == trunc_s_(g;j) +tail_s_(g;j)]
+
+  [tail_s_(g;j) == tail_sx_(g;0,j,8;1/16)]
+  !! [[g >= o] -> [sx_(g,a,b;x) == tail_sx_(g;o,a,b;x) == x**(g-o) * sx_(o,(a+b*(g-o)),b;x)]]
+    # [:formula__free_transform4sx__form1]:goto
+  [tail_s_(g;j)
+  == tail_sx_(g;0,j,8;1/16)
+   == (1/16)**(g-0) * sx_(0,(j+8*(g-0)),8;1/16)
+  == 16**-g * s_(j+8*g)
+  ]
+  [tail_s_(g;j) == 16**-g * s_(j+8*g)]
+[[g >= 0] -> [tail_s_(g;j) == 16**-g * s_(j+8*g)]]
+  # [:formula__tail_s_]:here
+
 
 Table 1: Computed hexadecimal digits of π.
   Position => Hex Digits Beginning at This Position 
