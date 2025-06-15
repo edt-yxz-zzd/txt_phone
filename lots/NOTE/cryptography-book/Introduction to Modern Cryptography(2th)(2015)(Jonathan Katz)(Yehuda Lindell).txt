@@ -1,0 +1,1201 @@
+
+e ../lots/NOTE/cryptography-book/Introduction to Modern Cryptography(2th)(2015)(Jonathan Katz)(Yehuda Lindell).txt
+
+释义纟常用符号:goto
+附录:goto
+建模:乸全体离散概率分布:goto
+TODO:goto
+
+'/sdcard/0my_files/book/cryptography/Introduction to Modern Cryptography(2th)(2015)(Jonathan Katz)(Yehuda Lindell).pdf'
+  good:严格证明(+正式定义+精密假说)
+
+/ [fi] ####
+/- ####
+:.+1,$s/—/ -- /g
+:.,$s/  *$/
+:s/[.?]  */\0\r/g
+
+[[
+
+Principles of Modern Cryptography:
+  Principle 1: Formal Definitions
+  Principle 2: Precise Assumptions
+  Principle 3: Proofs of Security
+  #Provable Security and Real-World Security
+
+strong formal definitions
+long-standing widely believed precise assumptions
+rigorous proofs of security
+
+* The central role of definitions:
+  "formal definitions of security are an essential first step in the design of any cryptographic primitive or protocol."
+  One of the most amazing aspects of cryptography is that efficient constructions satisfying such strong definitions can be proven to exist (under rather mild assumptions).
+
+* The importance of precise assumptions:
+  Security often relies on some widely believed (though unproven) assumption(s).
+  The modern cryptographic approach dictates that "any such assumption must be clearly stated and unambiguously defined."
+  This not only allows for objective evaluation of the assumption but, more importantly, enables rigorous proofs of security as described next.
+
+* The possibility of proofs of security:
+  The previous two principles serve as the basis for the idea that "cryptographic constructions can be proven secure" with respect to clearly stated definitions of security and relative to well-defined cryptographic assumptions.
+  This concept is the essence of modern cryptography, and is what has transformed the field from an art to a science.
+    #vs:ad hoc fashion
+  modern cryptography advocates the design of schemes with formal, mathematical proofs of security in well-defined models.
+  Such schemes are guaranteed to be secure unless the underlying assumption is false (or the security definition did not appropriately model the real-world security concerns).
+  By relying on long-standing assumptions (e.g., the assumption that “factoring is hard”), it is thus possible to obtain schemes that are extremely unlikely to be broken.
+
+
+
+]]
+
+
+
+
+
+terminology: "encryption schemes"
+  [codes == ciphers == encryption schemes]
+  [private-key == shared-key == secret-key]
+
+
+communicating parties vs eavesdropper
+  the presence of an eavesdropper who can monitor all communication between them.
+  public communication channel
+
+
+scenario: "private-key setting"=="symmetric-key setting"
+  Security of all classical encryption schemes relied on a secret-key shared by the communicating parties in advance and unknown to the eavesdropper.
+  This scenario is known as the private-key setting.
+
+  private-key encryption is just one example of a cryptographic primitive used in this setting.
+private-key encryption == symmetric-key encryption
+  #vs:asymmetric-key encryption == public-key encryption
+
+encrypt == scramble
+decrypt == unscramble
+plaintext
+ciphertext
+receiver
+
+the principle of open cryptographic design == Kerckhoffs’ principle
+
+
+e others/数学/编程/密码学/加密框架之其他可能.txt
+  e others/数学/编程/密码学/我的设计冫加密框架.txt
+
+
+
+
+“:=” to denote deterministic assignment
+eavesdropping adversary
+eavesdropper 窃听者
+adversary,对手/敌方
+attacker
+expired到期，期满
+
+[[
+
+the principle of open cryptographic design == Kerckhoffs’ principle
+主张牜加密系统公开化:加密系统安全性只依赖于密钥的私密性，而不依赖于加密系统的私密性。
+  要么任意通信双方拥有私密加密系统，则共享私密信息太复杂难以构造以保证安全性丶共享私密信息太大泄露后或期满后难以更新
+  要么不确定数人拥有该加密系统，则副本多易泄露。
+  vs:密钥短，结构简单，随机生成较容易。
+private-key encryption scheme == (message_space MM, key_space KK, three algorithms (Gen,Enc,Dec), correctness_requirement)
+  [MM :: {message}]
+    # [plaintext :: message]
+    # [ciphertext :: message]
+  [KK :: {key}]
+  [Gen :: () -> probabilistic key/KK]
+    # [Gen :: () -> uniform-probabilistic key/KK]
+  [Enc :: key/KK -> plaintext/MM -> ciphertext/MM]
+  [Dec :: key/KK -> ciphertext/MM -> plaintext/MM]
+  [correctness_requirement == [[k:<-KK] -> [m:<-MM] -> [Dec[k](Enc[k](m)) == m]]]
+
+===
+message space MM, key space KK, three algorithms (Gen,Enc,Dec):
+  a procedure for generating keys (Gen)
+  a procedure for encrypting (Enc)
+  a procedure for decrypting (Dec)
+  ===
+  The message space MM defines the set of “legal” messages, i.e., those supported by the scheme.
+  The algorithms have the following functionality:
+    1.  The key-generation algorithm Gen is a probabilistic algorithm that outputs a key k chosen according to some distribution.
+    2.  The encryption algorithm Enc takes as input a key k and a message m and outputs a ciphertext c.
+      We denote by Enc[k](m) the encryption of the plaintext m using the key k.
+    3.  The decryption algorithm Dec takes as input a key k and a ciphertext c and outputs a plaintext m.
+      We denote the decryption of the ciphertext c using the key k by Dec[k](c).
+  An encryption scheme must satisfy the following correctness requirement: "for every key k output by Gen and every message m ∈ MM, it holds that Dec[k](Enc[k](m)) = m."
+  The set of all possible keys output by the key-generation algorithm is called the key space and is denoted by KK.
+    Almost always, Gen simply chooses a uniform key from the key space; in fact, one can assume without loss of generality that this is the case.
+
+===
+Kerckhoffs’ principle: "The cipher method must not be required to be secret, and it must be able to fall into the hands of the enemy without inconvenience."
+  That is, an encryption scheme should be designed to be secure even if an eavesdropper knows all the details of the scheme, so long as the attacker doesn’t know the key being used.
+  Stated differently, security should not rely on the encryption scheme being secret; instead, Kerckhoffs’ principle demands that security rely solely on secrecy of the key.
+
+===
+There are three primary arguments in favor of Kerckhoffs’ principle.
+  The first is that it is significantly easier for the parties to maintain secrecy of a short key than to keep secret the (more complicated) algorithm they are using.
+    This is especially true if we imagine using encryption to secure the communication between all pairs of employees in some organization.
+    Unless each pair of parties uses their own, unique algorithm, some parties will know the algorithm used by others.
+    Information about the encryption algorithm might be leaked by one of these employees (say, after being fired), or obtained by an attacker using reverse engineering.
+    In short, it is simply unrealistic to assume that the encryption algorithm will remain secret.
+  Second, in case the honest parties’ shared secret information is ever exposed, it will be much easier for them to change a key than to replace an encryption scheme.
+    (Consider updating a file versus installing a new program.)
+    Moreover, it is relatively trivial to generate a new random secret, whereas it would be a huge undertaking to design a new encryption scheme.
+  Finally, for large-scale deployment it is significantly easier for users to all rely on the same encryption algorithm/software (with different keys) than for everyone to use their own custom algorithm.
+    (This is true even for a single user who is communicating with several different parties.)
+    In fact, it is desirable for encryption schemes to be "standardized" so that
+      (1) compatibility is ensured by default
+      (2) users will utilize an encryption scheme that has undergone public scrutiny and in which no weaknesses have been found.
+
+
+===
+Nowadays Kerckhoffs’ principle is understood as advocating that cryptographic designs be made completely public, in stark contrast to the notion of “security by obscurity” which suggests that keeping algorithms secret improves security.
+  It is very dangerous to use a proprietary, “home-brewed” algorithm (i.e., a non-standardized algorithm designed in secret by some company).
+  In contrast, published designs undergo public review and are therefore likely to be stronger.
+  Many years of experience have demonstrated that it is very difficult to construct good cryptographic schemes.
+  Therefore, our confidence in the security of a scheme is much higher if it has been extensively studied (by experts other than the designers of the scheme) and no weaknesses have been found.
+  As simple and obvious as it may sound, the principle of open cryptographic design (i.e., Kerckhoffs’ principle) has been ignored over and over again with disastrous results.
+  Fortunately, today there are enough secure, standardized, and widely available cryptosystems that there is no reason to use anything else.
+===
+
+]]
+
+
+
+
+[[
+#historical “ad hoc” approach vs modern rigorous approach
+“shift cipher”
+  “Caesar’s cipher” == shift_cipher[3]
+  ROT-13 == shift_cipher[13]
+
+brute-force attack == exhaustive-search attack
+An attack that involves trying every possible key is called a brute-force or exhaustive-search attack.
+  for an encryption scheme to be secure it must not be vulnerable to such an attack.
+    (Technically, this is only true if the message space is larger than the key space.)
+
+shift_cipher&brute_force_attack ==>> the sufficient key-space principle
+the sufficient key-space principle: "Any secure encryption scheme must have a key space that is sufficiently large to make an exhaustive-search attack infeasible."
+  主张牜密钥空间巨大化#必要不充分条件纟安全性
+  necessary condition for security, not a sufficient one
+
+===
+the mono-alphabetic substitution cipher
+  the key defines a one-to-one map(bijection/permutation) on the alphabet.
+frequency distribution
+The frequency distribution of individual letters in the English language is known (see Figure 1.3).
+  Of course, very short texts may deviate from this distribution, but even texts consisting of only a few sentences tend to have distributions that are very close to the average.
+letter-frequency tables
+letter-frequency analysis
+
+===
+FIGURE 1.3:Average letter frequencies for English-language text.
+letter_frequencies4English=dict(*[]
+  #单位:‰
+  ,a=82
+  ,b=15
+  ,c=28
+  ,d=43
+  ,e=127
+  ,f=22
+  ,g=20
+  ,h=61
+  ,i=70
+  ,j=2
+  ,k=8
+  ,l=40
+  ,m=24
+  ,n=67
+  ,o=15
+  ,p=19
+  ,q=1
+  ,r=60
+  ,s=63
+  ,t=91
+  ,u=28
+  ,v=10
+  ,w=24
+  ,x=2
+  ,y=20
+  ,z=1
+  )
+sum(letter_frequencies4English.values()) == 943 == 1000-57
+  # ???(ignoring spaces, punctuation, etc.).???
+
+An improved attack on the shift cipher:
+  letter-frequency analysis
+  #类似:互相关
+  known:ch2frq4English
+  ciphertext=>ch2frq4ciphertext
+  [sum[ch2frq4English[ch]*ch2frq4ciphertext[Enc[k](ch)] | [ch:<-letters4English]] | [k:<-KK{shift_cipher}]]
+    vs: [基准值 := sum[ch2frq4English[ch]**2 | [ch:<-letters4English]] ~= 0.065]
+      #??? 0.065 ???
+
+  ch2frq4English := .../1000
+  ch2frq4English = {ch:frq*943/1000 for ch, frq in ch2fq4English.items()}
+  [sum(frq**2 for ch, frq in ch2frq4English.items()) ~= 0.06025099999999999]
+
+  ch2fq4English := .../943
+  [sum(frq**2 for ch, frq in ch2fq4English.items()) ~= 0.06775492578569109]
+
+e ../lots/NOTE/cryptography-book/Introduction to Modern Cryptography(2th)(2015)-exercise-letter_frequency_analysis.txt
+  TODO...
+  ciphertext = (
+  'JGRMQOYGHMVBJWRWQFPWHGFFDQGFPFZRKBEEBJIZQQOCIBZKLFAFGQVFZFWWE'
+  'OGWOPFGFHWOLPHLRLOLFDMFGQWBLWBWQOLKFWBYLBLYLFSFLJGRMQBOLWJVFP'
+  'FWQVHQWFFPQOQVFPQOCFPOGFWFJIGFQVHLHLROQVFGWJVFPFOLFHGQVQVFILE'
+  'OGQILHQFQGIQVVOSFAFGBWQVHQWIJVWJVFPFWHGFIWIHZZRQGBABHZQOCGFHX'
+  )
+
+===
+poly-alphabetic substitution cipher
+  where the key defines a mapping that is applied on blocks of plaintext characters.
+Vigenere cipher == poly-alphabetic shift cipher == poly-alphabetic substitution cipher
+  Vigenere_cipher works by applying several independent instances of the shift cipher in sequence.
+    [key{Vigenere_cipher} == cycle [key{shift_cipher}]]
+period == the length of the key
+
+Attacking the Vigenere cipher:
+  require a long ciphertext
+There are also more efficient ways to determine the key length from an observed ciphertext.
+  [难以自动化]Kasiski’s method
+  The first step here is to identify repeated patterns of length 2 or 3 in the ciphertext.
+    These are likely the result of certain bigrams or trigrams that appear frequently in the plaintext.
+      For example, consider the common word “the.”
+        This word will be mapped to different ciphertext characters, depending on its position in the plaintext.
+        However, if it appears twice in the same relative position, then it will be mapped to the same ciphertext characters.
+        For a sufficiently long plaintext, there is thus a good chance that “the” will be mapped repeatedly to the same ciphertext characters.
+
+  [容易自动化]index of coincidence method
+  #类似:自相关
+  对比:见上面:基准值
+  假设周期为t，抽取一个子串，统计相应值，若t是周期的倍数，则 近似于 基准值，否则 近似于 [sum[(1/len(letters4English))**2 | [ch:<-letters4English]] == 1/len(letters4English) == 1/26 ~= 0.038]
+
+
+===
+Ciphertext length and cryptanalytic attacks.
+"a longer key can, in general, require the cryptanalyst to obtain more ciphertext in order to carry out an attack."
+  (Indeed, the Vigenere cipher can be shown to be secure if the key is as long as what is being encrypted.)
+
+===
+Conclusions.
+designing secure ciphers is hard.
+  !! all historical schemes have been broken.
+===
+===
+]]
+
+Principle 1 – Formal Definitions
+  主张牜定义需得正式化
+[[
+[security_definition =[def]= (security_guarantee, threat_model)]
+  + security_guarantee defines what the scheme is intended to prevent the attacker from doing.
+    (or, from the attacker’s point of view, what constitutes a successful attack on the scheme)
+    [security_guarantee == security_goal]
+  + threat_model describes the power of the adversary.
+    (i.e., what actions the attacker is assumed able to carry out)
+    # power vs strategy:
+    This specifies what "power" the attacker is assumed to have, but does not place any restrictions on the adversary’s "strategy".
+      This is an important distinction: we specify what we assume about the adversary’s abilities, but we do not assume anything about how it uses those abilities.
+      It is impossible to foresee what strategies might be used in an attack, and history has proven that attempts to do so are doomed to failure.
+]]
+[[
+case:secure_encryption
+# informal security_guarantee{secure_encryption}:
+What should a secure encryption scheme guarantee?
+  regardless of any information an attacker already has, a ciphertext should leak no additional information about the underlying plaintext.
+  What is missing here is a precise, mathematical formulation of the definition.
+      How should we capture an attacker’s prior knowledge about the plaintext?
+      And what does it mean to (not) leak information?
+
+  任意已知明文信息不能泄露剩余未知明文信息
+    #这个所谓正确答案依旧可疑:密文长度 明显依赖于 明文长度，即使不等长，也是正相关。明文长度 重要吗？是的，数据规模 本身 可能隐含重大机密。
+  本书列举几个不正确的答案:
+    * 敌方不能复原密钥:
+      反例:恒等加密:[Enc[k](m) =[def]= m]
+      密钥保密，明文不保密
+    * 敌方不能复原整份明文:
+      毛病:允许复原99%？
+    * 敌方不能复原明文的任一字符:
+      毛病:允许探知其他方面的信息？比如说:明文中的『工资』数值超过某个阈值？
+      毛病:若是敌方猜出来某个字符，是否就不再机密？
+
+# informal threat_model{secure_encryption}:
+There are several plausible options for the threat model in the context of encryption; standard ones, in order of increasing power of the attacker, are:
+* Ciphertext-only attack:
+  This is the most basic attack, and refers to a scenario where the adversary just observes a ciphertext (or multiple ciphertexts) and attempts to determine information about the underlying plaintext (or plaintexts).
+* Known-plaintext attack:
+  Here, the adversary is able to learn one or more plaintext/ciphertext pairs generated using some key.
+  The aim of the adversary is then to deduce information about the underlying plaintext of some "other" ciphertext produced using the same key.
+* Chosen-plaintext attack:
+  In this attack, the adversary can obtain plaintext/ciphertext pairs (as above) for plaintexts of "its choice".
+* Chosen-ciphertext attack:
+  # "additionally":名称上没体现出来，但是 定义包含了『Chosen-plaintext attack』的能力
+  The final type of attack is one where the adversary is additionally able to obtain (some information about) the "decryption" of ciphertexts of its choice,
+    e.g., whether the decryption of some ciphertext chosen by the attacker yields a valid English message.
+  The adversary’s aim, once again, is to learn information about the underlying plaintext of some "other" ciphertext (whose decryption the adversary is unable to obtain directly).
+None of these threat models is inherently better than any other; the right one to use depends on the environment in which an encryption scheme is deployed.
+
+信息来源:
+  攻击牜仅有密文:窃听公开信道
+  攻击牜已有明文:窃听公开信道+（固定明文(握手协议)|非永久机密性信息(到期解密|定期报告)）
+  攻击牜自选明文:???
+  攻击牜自选明密文:???
+
+]]
+
+
+Principle 2 – Precise Assumptions
+  主张牜假说需得显式化精密化
+[[
+proofs of security typically rely on assumptions.
+  #通常不能无条件证明
+  Modern cryptography requires any such assumptions to be made explicit and mathematically precise.
+    前提假说耂显式化精密化耂原由:
+      +0: 安全性耂数学证明所需
+      +1: 前提假说耂可证伪性所需，而可证伪性是实践检验学术研究的起点。
+      +2: 比较不同加密方案所需:(假定待比较的加密方案假说以外的部分相同)若可比较，则弱假说更可取。若不可比较，则偏好被更深入研究过的假说。
+      +3: 理解假说的必要性以应对各种变化:在外，破解的策略日新月异；在内，部件更替。都需要判断安全性是否受到冲击
++0:mathematical proofs of security require this.
++1:  Validation of assumptions:
+  By their very nature, assumptions are statements that are not proven but are instead conjectured to be true.
+  In order to strengthen our belief in some assumption, it is necessary for the assumption to be studied.
+  The more the assumption is examined and tested without being refuted, the more confident we are that the assumption is true.
+  Furthermore, study of an assumption can provide evidence of its validity by showing that it is implied by some other assumption that is also widely believed.
+  If the assumption being relied upon is not precisely stated, it cannot be studied and (potentially) refuted.
+  Thus, a pre-condition to increasing our confidence in an assumption is having a precise statement of what exactly is being assumed.
+  # refute:vt. 反驳，驳斥；驳倒
++2:  Comparison of schemes:
+  Often in cryptography we are presented with two schemes that can both be proven to satisfy some definition, each based on a different assumption.
+  Assuming all else is equal, which scheme should be preferred?
+  If the assumption on which the first scheme is based is weaker than the assumption on which the second scheme is based (i.e., the second assumption implies the first), then the first scheme is preferable since it may turn out that the second assumption is false while the first assumption is true.
+  If the assumptions used by the two schemes are not comparable, then the general rule is to prefer the scheme that is based on the better-studied assumption in which there is greater confidence.
+  # prefer,preferable,preference,preferential,preferred:更可取，宁可，偏爱，偏好，较喜欢，首选，优先，优待，适宜，特惠
++3:  Understanding the necessary assumptions:
+  An encryption scheme may be based on some underlying building block.
+  If some weaknesses are later found in the building block, how can we tell whether the encryption scheme is still secure?
+  If the underlying assumptions regarding the building block are made clear as part of proving security of the scheme, then we need only check whether the required assumptions are affected by the new weaknesses that were found.
+
+]]
+[[
+驳斥冫直接假定久经考验的加密方案为安全的做法:
+  复杂专用具象的对象不如简单通用抽象的对象于研究方面丶于应用广度方面丶于订正方面。
+A question that sometimes arises is: rather than prove a scheme secure based on some other assumption, why not simply assume that the construction itself is secure?
+  In some cases -- e.g., when a scheme has successfully resisted attack for many years -- this may be a reasonable approach.
+  But this approach is never preferred, and is downright dangerous when a new scheme is being introduced.
+  The reasons above help explain why.
+    First, an assumption that has been tested for several years is preferable to a new, ad hoc assumption that is introduced along with a new construction.
+    Second, there is a general preference for assumptions that are simpler to state, since such assumptions are easier to study and to (potentially) refute.
+      So, for example, an assumption that some mathematical problem is hard to solve is simpler to study and evaluate than the assumption that an encryption scheme satisfies a complex security definition.
+      Another advantage of relying on “lower-level” assumptions (rather than just assuming a construction is secure) is that these low-level assumptions can typically be used in other constructions.
+    Finally, low-level assumptions can provide modularity.
+      Consider an encryption scheme whose security relies on some assumed property of one of its building blocks.
+      If the underlying building block turns out not to satisfy the stated assumption, the encryption scheme can still be instantiated using a different component that is believed to satisfy the necessary requirements.
+]]
+
+
+
+
+
+
+
+Principle 3 – Proofs of Security
+  主张牜安全性需得严格证明
+[[
+可行性丶必要性纟严格证明纟某个具象方案符合指定定义乊特定假说
+  #虽说未经证明单凭直觉认可的加密方案容易被破解，但是加密方案的具现有许多细节可被利用，似乎不在证明所能涵盖的范围内，感觉也有毛病。
+The two principles described above allow us to achieve our goal of providing a rigorous proof that a construction satisfies a given definition under certain specified assumptions.
+Such proofs are especially important in the context of cryptography where there is an attacker who is actively trying to “break” some scheme.
+Proofs of security give an iron-clad guarantee -- relative to the definition and assumptions -- that no attacker will succeed; this is much better than taking an unprincipled or heuristic approach to the problem.
+Without a proof that no adversary with the specified resources can break some scheme, we are left only with our intuition that this is the case.
+Experience has shown that intuition in cryptography and computer security is disastrous.
+There are countless examples of unproven schemes that were broken, sometimes immediately and sometimes years after being developed.
+# iron-clad:铠装/铁甲/铁壳/装甲 #adj. 装甲的；打不破的；坚固的；必须遵守的,不可违反的,严格的 n. 装甲舰
+]]
+[[
+Summary: Rigorous vs. Ad Hoc Approaches to Security
+Reliance on definitions, assumptions, and proofs constitutes a rigorous approach to cryptography that is distinct from the informal approach of classical cryptography.
+Unfortunately, unprincipled, “off-the-cuff” solutions are still designed and deployed by those wishing to obtain a quick solution to a problem, or by those who are simply unknowledgable.
+We hope this book will contribute to an awareness of the rigorous approach and its importance in developing provably secure schemes.
+
+# off-the-cuff: adj. 未预备的,即席的
+# off-the-peg: adj. 现成的
+]]
+
+
+
+
+Provable Security and Real-World Security
+[[
+自由空间纟严格方法:
+  开发新定义以匹配同期应用环境
+  提议新假说
+  设计新基础构件
+  证明新方案的安全性
+  破解艺术
+无效况态纟严格方法:
+  安全担保是否涵盖所有安全需求？
+  威胁模型是否涵盖所有破解能力？
+  前提假说是否未被证伪？
+
+经证明耂理论安全性不等同于实践安全性
+  只能视『理论安全性』为一种优点/说服力/有效性强度。
+  攻守双方聚焦于:
+    + 定义偏离实际环境有多远？琢磨精炼改良定义。
+    + 研究测试假说有效性
+
+<<==:
+Much of modern cryptography now rests on sound mathematical foundations.
+  But this does not mean that the field is no longer partly an art as well.
+    The rigorous approach leaves room for creativity in developing definitions suited to contemporary applications and environments, in proposing new mathematical assumptions or designing new primitives, and in constructing novel schemes and proving them secure.
+    There will also, of course, always be the art of attacking deployed cryptosystems, even if they are proven secure.
+  We expand on this point next.
+
+The approach taken by modern cryptography has revolutionized the field, and helps provide confidence in the security of cryptographic schemes deployed in the real world.
+  But it is important not to overstate what a proof of security implies.
+  A proof of security is always relative to the definition being considered and the assumption(s) being used.
+    If the security guarantee does not match what is needed, or the threat model does not capture the adversary’s true abilities, then the proof may be irrelevant.
+    Similarly, if the assumption that is relied upon turns out to be false, then the proof of security is meaningless.
+
+The take-away point is that provable security of a scheme does not necessarily imply security of that scheme in the real world.
+  (Here we are not even considering the possibility of an incorrect implementation of the scheme.
+    Poorly implemented cryptography is a serious problem in the real world, but this problem is somewhat outside the scope of cryptography per se.
+  )
+  While some have viewed this as a drawback of provable security, we view this optimistically as illustrating the "strength" of the approach.
+  To attack a provably secure scheme in the real world, it suffices to focus attention on the definition
+    (i.e., to explore how the idealized definition differs from the real-world environment in which the scheme is deployed) or the underlying assumptions (i.e., to see whether they hold).
+    In turn, it is the job of cryptographers to continually refine their definitions to more closely match the real world, and to investigate their assumptions to test their validity.
+    Provable security does not end the age-old battle between attacker and defender, but it does provide a framework that helps shift the odds in the defender’s favor.
+
+# revolutionize:改革,变革
+# contemporary: 同期/当代/近期 #adj. 当代的 同时代的, 同属一个时期的 n. 同代人, 同龄人
+# take-away point:???
+# take-away:==takeout:adj. 外卖的；外吃的 n. 外卖食品；外卖餐馆 #adj. (饭食)外带的;(餐厅)供应外带食物的(相当于美语take-out)
+# favor:嗜好/欢心/好感/偏袒/偏爱/宠爱/宠信/喜爱/赞成/支持
+]]
+
+
+[[[[[
+释义纟常用符号:here
+Index of Common Notation
+[[
+General notation:
+• 『:=』:= refers to deterministic assignment
+
+• 『:<-』If S is a set, then x ← S denotes that x is chosen uniformly from S
+• 显化随机性变量『:<-』转『:=』If A is a randomized algorithm, then y ← A(x) denotes running A on input x with a uniform random tape and assigning the output to y.  We write y := A(x;r) to denote running A on input x using random tape r and assigning the output to y
+• 『/\』∧ denotes Boolean conjunction (the AND operator)
+• 『\/』∨ denotes Boolean disjunction (the OR operator)
+• 『^』『[+]』⊕ denotes the exclusive-or (XOR) operator; this operator can be applied to single bits or entire strings (in the latter case, the XOR is bitwise)
+• {0,1}**n is the set of all bit-strings of length n
+• {0,1}**(<=n) {0,1}**(≤n) is the set of all bit-strings of length at most n
+• 『{0,1}*』{0,1}∗ is the set of all i nite bit-strings
+• 0**n(resp., 1**n) denotes the string comprised of n zeroes (resp., n ones)
+• 『[x::int{>=1}]:x.bit_length()』||x|| denotes the length of the binary representation of the (positive) integer x, written with leading bit 1.  Note that logx < kxk ≤ logx + 1
+• 『???』|x| denotes the length of the binary string x (which may have leading 0s), or the absolute value of the real number x
+• O(·),Θ(·),Ω(·),o(·),ω(·) see Appendix A.2
+• 0x denotes that digits are being represented in hexadecimal
+• (xxx:『x++y』x||y)『(x,x++y)』 denotes umambiguous concatenation of the strings x and y (“unambiguous” means that x and y can be recovered from x||y)
+• Pr[X] denotes the probability of event X
+• 『log2(x)』log(x) denotes the base-2 logarithm of x
+]]
+[[
+Crypto-specific notation:
+• n is the security parameter
+• PPT stands for “probabilistic polynomial time”
+• A**O(·)denotes the algorithm A with oracle access to O
+• k typically denotes a secret key (as in private-key encryption and MACs)
+• (pk,sk) denotes a public/private key-pair (for public-key encryption and digital signatures)
+• negl denotes a negligible function; see Definition 3.4
+• poly(n) denotes an arbitrary polynomial
+• polylog(n) denotes poly(log(n))
+• Func[n] denotes the set of functions mapping n-bit strings to n-bit strings
+• Perm[n] denotes the set of bijections on n-bit strings
+• IV denotes an initialization vector (used for modes of operation and collision-resistant hash functions)
+]]
+[[
+Algorithms and procedures:
+• G denotes a pseudorandom generator
+• F denotes a keyed function that is typically a pseudorandom function or permutation
+• (Gen,Enc,Dec) denote the key-generation, encryption, and decryption procedures, respectively, for both private- and public-key encryption.  For the case of private-key encryption, when Gen is unspecified then Gen(1**n) outputs a uniform k ∈ {0,1}**n
+• (Gen,Mac,Vrfy) denote the key-generation, tag-generation, and verification procedures, respectively, for a message authentication code.  When Gen is unspecified then Gen(1**n) outputs a uniform k ∈ {0,1}**n
+• (Gen,Sign,Vrfy) denote the key-generation, signature-generation, and verification procedures, respectively, for a digital signature scheme
+• GenPrime denotes a PPT algorithm that, on input 1**n, outputs an n-bit prime except with probability negligible in n
+  #生成器纟拟素数#准素数
+• GenModulus denotes a PPT algorithm that, on input 1**n, outputs (N,p,q) where N = p*q and (except with negligible probability) p and q are n-bit primes
+  #生成器纟拟双素数积
+
+• GenRSA denotes a PPT algorithm that, on input 1**n, outputs (except with negligible probability) a modulus N, an integer e > 0 with gcd(e,φ(N)) = 1, and an integer d satisfying e*d = 1 mod φ(N)
+• G denotes a PPT algorithm that, on input 1**n, outputs (except with negligible probability) a description of a cyclic group G, the group order q (with q.bit_length() = n), and a generator g ∈ G.
+]]
+[[
+Number theory:
+• 『ZZ』Z denotes the set of integers
+• 『[b%a==0]』a|b means a divides b
+• 『[b%a=!=0]』a`|b means that a does not divide b
+• gcd(a,b) denotes the greatest common divisor of a and b
+• 『a%b』[a mod b] denotes the remainder of a when divided by b.Note that 0 ≤ [a mod b] < b.
+• 『[x1=[%N]=x2...]』x1=x2= ··· = x[n] mod N means that x1,...,xnare all congruent modulo N
+  Note: x = y mod N means that x and y are congruent modulo N, whereas x = [y mod N] means that x is equal to the remainder of y when divided by N.
+• 『ZZ%N』Z[N]denotes the additive group of integers modulo N as well as the set {0,...,N-1}
+• 『ZZ*%N』Z∗[N] denotes the multiplicative group of invertible integers modulo N (i.e., those that are relatively prime to N)
+• 『phi(N)』φ(N) denotes the size of Z∗[N]
+• G and H denote groups
+• 『G1 ~=~ G2』『[[x1<-->x2] -> [f(x1)==x2]]』G1 ≌ G2 means that groups G1 and G2 are isomorphic.  If this isomorphism is given by f and f(x1) = x2 then we write x1↔ x2
+• g is typically a generator of a group
+• 『log(g;h)』log[g](h) denotes the discrete logarithm of h to the base g
+• 『〈g〉』『span<g>』<g> denotes the group generated by g
+• p and q usually denote primes
+• N typically denotes the product of two distinct primes p and q of equal length
+• 『QR[%p]』QR[p] is the set of quadratic residues modulo p
+• 『QNR[%p]』QNR[p] is the set of quadratic non-residues modulo p
+• 『Jacobi_symbol(p;x)』J[p](x) is the Jacobi symbol of x modulo p
+• 『invs_Jacobi_symbol(N;+1)』J{+1}[N] is the set of elements with Jacobi symbol +1 modulo N
+• 『invs_Jacobi_symbol(N;-1)』J{-1}[N] is the set of elements with Jacobi symbol -1 modulo N
+• 『???』QNR{+1}[N] is the set of quadratic non-residues modulo N having Jacobi symbol +1
+]]
+]]]]]
+[[[[[
+附录:here
+Appendix A Mathematical Background
+[[
+A.1 Identities and Inequalities
+We list some standard identities and inequalities that are used at various points throughout the text.
+THEOREM A.1 (Binomial expansion theorem)
+[[x,y::real] -> [n::pint] -> [(x+y)**n == sum[C(n;j)*x**j*y**(n-j) | [j:<-[0..=n]]]]]
+
+PROPOSITION A.2
+[[x::real{>=1}] -> [(1-1/x)**x <= 1/e]]
+
+PROPOSITION A.3-I
+[[x::real] -> [(1-x) <= 1/e**x]]
+PROPOSITION A.3-II
+[[x::real] -> [(1+x) <= exp(x)]]
+
+PROPOSITION A.4-I
+[[x::real] -> [0<=x<=1] -> [1/e**x <= 1-(1-1/e)*x <= 1-x/2]]
+PROPOSITION A.4-II
+[[x::real] -> [0<=x<=1] -> [exp(-x) <= 1-(1-exp(-1))*x <= 1-x/2]]
+PROPOSITION A.4-III
+[[x::real] -> [-1<=x<=0] -> [exp(x) <= 1+(1-exp(-1))*x <= 1+x/2]]
+]]
+[[
+A.2 Asymptotic Notation
+We use standard notation for expressing asymptotic behavior of functions.
+DEFINITION A.5
+[f,g :: uint -> uint]:
+  # big_O_notation:
+  [[f(n) == O(g(n))] =[def]= [?[c,n0::pint] -> @[n::uint{>n0}] -> [f(n) <= c*g(n)]]]
+  [[f(n) == Ω(g(n))] =[def]= [?[c,n0::pint] -> @[n::uint{>n0}] -> [f(n) >= c*g(n)]]]
+  [[f(n) == Θ(g(n))] =[def]= [?[c1,c2,n0::pint] -> @[n::uint{>n0}] -> [c1*g(n) <= f(n) <= c2*g(n)]]]
+  [[f(n) = o(g(n))] =[def]= [0==lim[f(n)/g(n)| n-->+oo]]]
+  [[f(n) = ω(g(n))] =[def]= [+oo==lim[f(n)/g(n)| n-->+oo]]]
+  ==>>:
+  [[f(n) == Θ(g(n))] <-> [[f(n) == O(g(n))][f(n) == Ω(g(n))]]]
+  [[f(n) = o(g(n))] <-> [g(n) = ω(f(n))]]
+  [not$[[f(n) = o(g(n))][f(n) == Ω(g(n))]]]
+  [not$[[f(n) = ω(g(n))][f(n) == O(g(n))]]]
+  [[f(n) = o(g(n))] -> [f(n) == O(g(n))]]
+  [[f(n) = ω(g(n))] -> [f(n) == Ω(g(n))]]
+
+Example A.6 Let f(n) = n**4 + 3*n + 500.  Then:
+  • f(n) = O(n**4).
+  • f(n) = O(n**5).  In fact, f(n) = o(n**5).
+  • f(n) = Ω(n**3 * log2(n)).  In fact, f(n) = ω(n**3 * log2(n)).
+  • f(n) = Θ(n**4).
+
+]]
+[[
+A.3 Basic Probability
+We assume the reader is familiar with basic probability theory, on the level of what is covered in a typical undergraduate course on discrete mathematics.
+Here we simply remind the reader of some notation and basic facts.
+If E is an event, then ¯E[#『~E』#] denotes the complement of that event; i.e., ¯E/~E is the event that E does not occur.
+  By definition, Pr[E] = 1 − Pr[~E].
+  # ¯E layout as \above{-}{E}
+If E1 and E2 are events, then E1∧E2 denotes their conjunction; i.e., E1∧ E2is the event that both E1 and E2 occur.
+  By definition, Pr[E1∧ E2] ≤ Pr[E1].
+  Events E1 and E2 are said to be independent if Pr[E1∧ E2] = Pr[E1]*Pr[E2].
+If E1 and E2 are events, then E1∨E2 denotes the disjunction of E1 and E2; that is, E1∨E2 is the event that either E1 or E2 occurs.
+  It follows from the definition that Pr[E1∨E2] ≥ Pr[E1].
+  The "union bound" is often a very useful upper bound of this quantity.
+PROPOSITION A.7 (Union Bound)
+[Pr[E1∨E2] <= Pr[E1] + Pr[E2]]
+
+Repeated application of the union bound for any events E1,...,E[k] gives
+[Pr[\/~[E[j] | [j:<-[1..=k]]]] <= sum[Pr[E[j]] | [j:<-[1..=k]]]]
+
+The conditional probability of E1 given E2, denoted Pr[E1|E2], is defined as
+  [Pr[E1|E2] =[def]= Pr[E1∧E2]/Pr[E2]] as long as Pr[E2] =!= 0.
+  (If Pr[E2] = 0 then Pr[E1|E2] is undefined.)
+  This represents the probability that event E1 occurs, given that event E2 has occurred.
+    It follows immediately from the definition that [Pr[E1∧E2] == Pr[E1|E2]*Pr[E2]]; equality holds even if Pr[E2] = 0 as long as we interpret multiplication by zero on the right-hand side in the obvious way.
+==>>:
+#条件概率分布:
+[Pr[E1|E2] =[def]= if [Pr[E2] =!= 0] then Pr[E1/\E2]/Pr[E2] else undefined]
+#条件概率恒等式:
+[Pr[E1/\E2] == Pr[E1|E2]*Pr[E2]]
+我:
+[Pr[E1|E2] =[def]= if [Pr[E2] =!= 0] then Pr[E1/\E2]/Pr[E2] else Pr[E1]]
+[Pr[E1/\E2] = Pr[E1|E2]*Pr[E2]]
+[[Pr[E2] =!= 0] -> [Pr[E1/\E2] == 0 == Pr[E1]*Pr[E2]]] #=>independent
+[x@/y =[def]= if y==0 then x else x/y]
+[Pr[E1|E2] == Pr[E1/\E2]@/Pr[E2]]
+
+We can now easily derive Bayes’ theorem.
+THEOREM A.8 (Bayes’ Theorem)
+  #后验概率分布:
+  [[Pr[E2] =!= 0] -> [Pr[E1|E2] == Pr[E2|E1] * Pr[E1]/Pr[E2]]]
+  我:[Pr[E1|E2] == Pr[E2|E1] * Pr[E1]@/Pr[E2]]
+  [[proof:
+    !! [Pr[E1/\E2] == Pr[E1|E2]*Pr[E2]]
+    !! [Pr[E1/\E2] == Pr[E2|E1]*Pr[E1]]
+    [Pr[E1|E2]*Pr[E2] == Pr[E2|E1]*Pr[E1]]
+    [Pr[E1|E2] == Pr[E2|E1]*Pr[E1]@/Pr[E2]]
+  ]]
+
+Let E1,...,E[n] be events such that Pr[E1∨···∨En] = 1 and Pr[Ei∧Ej] = 0 for all i =!= j.  That is, the {Ei} partition the space of all possible events, so that with probability 1 exactly one of the events E[i] occurs.
+  Then for any F: Pr[F] = sum[Pr[F ∧ Es[i]]| [j:<-[0..<len(Es)]]].
+  ... ...
+==>>:
+[Es :: [event]]:
+    [is_event_partition_(Es) =[def]= [[Pr[\/~Es] == 1][@[i,j:<-[0..<len(Es)]] -> [i=!=j] -> [Pr[Es[i]/\Es[j]] == 0]]]]
+        #划分 == 圆满 且 互斥
+[[Es :: [event]] -> [is_event_partition_(Es)] -> @[F::event] -> [Pr[F] == sum[Pr[F /\ Es[i]] | [j:<-[0..<len(Es)]]]]]
+!! [Es:=[E,~E]]
+[@[E,F::event] -> [Pr[F] == Pr[F /\ E] + Pr[F /\ ~E] == Pr[F|E]*Pr[E] + Pr[F|~E]*(1-Pr[E])]]
+!! [F:=(E1\/E2)] => [@[E1,E2::event] -> [Pr[E1\/E2] == Pr[(E1\/E2) /\ E1] + Pr[(E1\/E2) /\ ~E1]]]
+[@[E1,E2::event] -> [Pr[E1\/E2] == Pr[E1] + Pr[E2 /\ ~E1] == Pr[E1] + Pr[E2|~E1]*(1-Pr[E1]) <= Pr[E1] + Pr[E2|~E1]]]
+[@[E1,E2::event] -> [Pr[E1\/E2] <= Pr[E1] + Pr[E2|~E1]]]
+  #a tighter version of the union bound
+  #Extending this to events E1,...,E[n] we obtain:
+PROPOSITION A.9
+#无需是划分:[is_event_partition_(Es)]
+[[Es :: [event]] -> [Pr[V~Es] <= Pr[Es[0]] + sum[Pr[Es[j] | /\~[~Es[k] | [k:<-[0..<j]]]] | [j:<-[1..<len(Es)]]]]]
+<==>:
+[[Es :: [event]] -> [Pr[V~Es] <= sum[Pr[Es[j] | /\~[~Es[k] | [k:<-[0..<j]]]] | [j:<-[0..<len(Es)]]]]]
+
+
+* Useful Probability Bounds
+We review some terminology and state probability bounds that are standard, but may not be encountered in a basic discrete mathematics course.
+The material here is used only in Section 7.3.
+A (discrete, real-valued) random variable X is a variable whose value is assigned probabilistically from some finite set S of real numbers.
+  X is non-negative if it does not take negative values;
+  it is a 0/1-random variable if S = {0,1}.
+  The 0/1-random variables X1,...,X[k] are independent if for all b1,...,b[k] it holds that [Pr[X1==b1∧ ··· ∧ X[k]==b[k]] == II[Pr[X[j] == b[j]] | [j:<-[1..=k]]]].
+==>>:
+[S::finite{real}][X::Variable]:
+    [is_discrete_real_valued_random_variable5_(S;X) =[def]= [X is a variable whose value is assigned probabilistically from S]]
+    [_is_random_variable5_(S;X) =[def]= is_discrete_real_valued_random_variable5_(S;X)]
+    [_is_nonnegative_random_variable5_(S;X) =[def]= [[@[s:<-S] -> [s>=0]][is_discrete_real_valued_random_variable5_(S;X)]]]
+    [_is_uniform_random_variable5_(S;X) =[def]= [[is_discrete_real_valued_random_variable5_(S;X)][@[s:<-S] -> [Pr[X==s] == 1/len(S)]]]]
+      #is chosen uniformly from S
+[X::Variable]:
+    [is_bit_random_variable_(X) =[def]= is_discrete_real_valued_random_variable5_({0,1};X)]
+non-negative
+0/1-random variable
+
+
+[S::finite{real}][Xs::[Variable]]:
+    [_are_random_variables5_(S;Xs) =[def]= [[X:<-Xs] -> [_is_random_variable5_(S;X)]]]
+    [_are_uniform_random_variables5_(S;Xs) =[def]= [[X:<-Xs] -> [_is_uniform_random_variable5_(S;X)]]]
+[Xs::[Variable]]:
+    [are_bit_random_variables_(Xs) =[def]= [[X:<-Xs] -> [is_bit_random_variable_(X)]]]
+
+[S::finite{real}][Xs::[Variable]]:
+    #independent
+    [are_independent_variables5_(S;Xs) =[def]= [[_are_random_variables5_(S;Xs)][@[xs :<- S**len(Xs)] -> [Pr[/-\~[[Xs[j] == xs[j]] | [j:<-[0..<len(Xs)]]]] == II[Pr[Xs[j] == xs[j]] | [j:<-[0..<len(Xs)]]]]]]]
+    #vs:
+    #pairwise_independent
+    [are_pairwise_independent_variables5_(S;Xs) =[def]= [[_are_random_variables5_(S;Xs)][@[i,j:<-[0..<len(Xs)]] -> [i=!=j] -> @[(xi,xj) :<- S**2] -> [Pr[[Xs[i] == xi][Xs[j] == xj]] == Pr[Xs[i] == xi]*Pr[Xs[j] == xj]]]]]
+
+
+
+
+[S::finite{real}][X::Variable][_is_random_variable5_(S;X)]:
+    #expectation
+    #def__Exp
+    [Exp[X] =[def]= sum[s * Pr[X == s] | [s:<-S]]]
+      #Exp[X] denote the expectation of a random variable X;
+
+[S::finite{real}][Xs::[Variable]][_are_random_variables5_(S;Xs)]:
+    #linearity__Exp_sum:
+    [Exp[sum[Xs[j] | [j:<-[0..<len(Xs)]]]] == sum[Exp[Xs[j]] | [j:<-[0..<len(Xs)]]]]
+        #(with arbitrary dependencies)
+        #linearity of expectation
+[S::finite{real}][Xs::[Variable]][_are_random_variables5_(S;Xs)][are_independent_variables5_(S;Xs)]:
+    #???or:are_pairwise_independent_variables5_
+    #前提:independent
+    #linearity__Exp_product-I@independent:
+    [@[i,j:<-[0..<len(Xs)]] -> [i=!=j] -> [Exp[X[i]*X[j]] == Exp[X[i]]*Exp[X[j]]]]
+
+      #.One of the most important facts is that expectation is linear;
+      #.  for random variables X1,...,X[k] (with arbitrary dependencies) we have [Exp[sum[X[j] | [j:<-[1..=k]]]] == sum[Exp[X[j]] | [j:<-[1..=k]]]].
+      #.  If X[i],X[j] are independent, then [Exp[X[i]*X[j]] == Exp[X[i]]*Exp[X[j]]].
+
+
+PROPOSITION A.10 (Markov’s inequality)
+[S::finite{real}][X::Variable][_is_nonnegative_random_variable5_(S;X)]:
+  #Markov_inequality
+  [[v::real{>0}] -> [Pr[X >= v] <= Exp[X]/v]]
+    #.Markov’s inequality is useful when little is known about X.
+  [[proof:
+  [Exp[X]
+  !! def__Exp
+  == sum[s * Pr[X == s] | [s:<-S]]
+  == sum[s * Pr[X == s] | [s:<-S][s < v]]
+    +sum[s * Pr[X == s] | [s:<-S][s >= v]]
+  !! [_is_nonnegative_random_variable5_(S;X)]
+  >= 0 +sum[v * Pr[X == s] | [s:<-S][s >= v]]
+  == v*sum[Pr[X == s] | [s:<-S][s >= v]]
+  == v*Pr[X >= v]
+  ]
+  [Exp[X] == v*Pr[X >= v]]
+  !! [v > 0]
+  [Pr[X >= v] <= Exp[X]/v]
+  !DONE!
+  ]]
+
+[S::finite{real}][X::Variable][_is_random_variable5_(S;X)]:
+  #variance
+  #def__Var-I
+  [Var[X] =[def]= Exp[(X-Exp[X])**2]]
+    #.The variance of X, denoted Var[X], measures how much X deviates from its expectation.
+  #def__Var-II
+  [Var[X] == (Exp[X**2]-Exp[X]**2)]
+[S::finite{real}][X::Variable][_is_random_variable5_(S;X)][a,b::real]:
+  [Var[a*X + b] = a**2*Var[X]]
+[X::Variable][is_bit_random_variable_(X)]:
+  #upperbound__Var_random_bit
+  [Var[X] <= 1/4]
+  [[proof:
+  !! [is_bit_random_variable_(X)]
+  [p1 := Pr[X==1]]
+  [p0 := Pr[X==0]]
+  [p0 == 1-p1]
+  [Exp[X] == 0*p0 +1*p1 == p1]
+  [Exp[X**2] == 0**2*p0 +1**2*p1 == p1]
+  !! [Var[X] == (Exp[X**2]-Exp[X]**2)]
+  [Var[X] == (p1-p1**2) == p1*(1-p1) == p1*p0]
+  [Var[X] == (p1-p1**2) == 1/4 -(p1**2-p1+1/4) == 1/4 -(p1-1/2)**2 <= 1/4]
+  [Var[X] <= 1/4]
+  !DONE!
+  ]]
+
+PROPOSITION A.11 (Chebyshev’s inequality)
+[S::finite{real}][X::Variable][_is_random_variable5_(S;X)][err::real{>0}]:
+  #Chebyshev_inequality
+  [Pr[abs(X -Exp[X]) >= err] <= Var[X]/err**2]
+  [[proof:
+  [Pr[abs(X -Exp[X]) >= err]
+  !! [err>0]
+  == Pr[(X -Exp[X])**2 >= err**2]
+  #Markov_inequality
+  !! [[v::real{>0}] -> [Pr[X >= v] <= Exp[X]/v]]
+  <= Exp[(X -Exp[X])**2]/err**2
+  !! def__Var-I
+  == Var[X]/err**2
+  ]
+  [Pr[abs(X -Exp[X]) >= err] <= Var[X]/err**2]
+  !DONE!
+  ]]
+
+[S::finite{real}][Xs::[Variable]][_are_random_variables5_(S;Xs)][are_pairwise_independent_variables5_(S;Xs)]:
+    #前提:pairwise_independent
+    #linearity__Exp_product-II@pairwise_independent:
+    [@[i,j:<-[0..<len(Xs)]] -> [i=!=j] -> [Exp[X[i]*X[j]] == Exp[X[i]]*Exp[X[j]]]]
+
+    #linearity__Var_sum@pairwise_independent:
+    [Var[sum[Xs[j] | [j:<-[0..<len(Xs)]]]] == sum[Var[Xs[j]] | [j:<-[0..<len(Xs)]]]]
+    [[proof:
+    [Var[sum[Xs[j] | [j:<-[0..<len(Xs)]]]]
+    !! def__Var-II
+    == Exp[sum(Xs)**2] -Exp[sum(Xs)]**2
+    == sum[Exp[Xs[j]**2] | [j:<-[0..<len(Xs)]]]
+      +2*sum[Exp[Xs[i]*Xs[j]] | [[i,j:<-[0..<len(Xs)][i=!=j]]]]
+      -sum[Exp[Xs[j]] | [j:<-[0..<len(Xs)]]]**2
+
+    #linearity__Exp_product-II@pairwise_independent:
+    !! [@[i,j:<-[0..<len(Xs)]] -> [i=!=j] -> [Exp[X[i]*X[j]] == Exp[X[i]]*Exp[X[j]]]]
+    == sum[Exp[Xs[j]**2] | [j:<-[0..<len(Xs)]]]
+      +2*sum[Exp[Xs[i]]*Exp[Xs[j]] | [[i,j:<-[0..<len(Xs)][i=!=j]]]]
+      -sum[Exp[Xs[j]] | [j:<-[0..<len(Xs)]]]**2
+
+    == sum[Exp[Xs[j]**2] | [j:<-[0..<len(Xs)]]]
+      -sum[Exp[Xs[j]]**2 | [j:<-[0..<len(Xs)]]]
+
+    == sum[(Exp[Xs[j]**2] -Exp[Xs[j]]**2) | [j:<-[0..<len(Xs)]]]
+    !! def__Var-II
+    == sum[Var[Xs[j]] | [j:<-[0..<len(Xs)]]]
+    ]
+    !DONE!
+    ]]
+
+
+[S::finite{real}][Xs::[Variable]][_are_random_variables5_(S;Xs)][u::real]:
+  [with_same_expectation_(u;Xs) =[def]= [@[X:<-Xs] -> [Exp[X] == u]]]
+[S::finite{real}][Xs::[Variable]][_are_random_variables5_(S;Xs)][vv::real{>=0}]:
+  [with_same_variance_(vv;Xs) =[def]= [@[X:<-Xs] -> [Var[X] == vv]]]
+  [all_variances_le_(vv;Xs) =[def]= [@[X:<-Xs] -> [Var[X] <= vv]]]
+
+COROLLARY A.12-I@original:
+[S::finite{real}][Xs::[Variable]][_are_random_variables5_(S;Xs)][are_pairwise_independent_variables5_(S;Xs)][u::real][with_same_expectation_(u;Xs)][d::real{>=0}][with_same_variance_(d**2;Xs)][err::real{>=0}]:
+  #with_same_variance_
+  [Pr[abs(sum(Xs)/len(Xs) -u) >= err] <= d**2/(len(Xs)*err**2)]
+COROLLARY A.12-II:
+[S::finite{real}][Xs::[Variable]][_are_random_variables5_(S;Xs)][are_pairwise_independent_variables5_(S;Xs)][u::real][with_same_expectation_(u;Xs)][d::real{>=0}][all_variances_le_(d**2;Xs)][err::real{>=0}]:
+  #all_variances_le_
+  [Pr[abs(sum(Xs)/len(Xs) -u) >= err] <= d**2/(len(Xs)*err**2)]
+COROLLARY A.12-III:
+[S::finite{real}][Xs::[Variable]][_are_random_variables5_(S;Xs)][are_pairwise_independent_variables5_(S;Xs)][u := Exp[sum(Xs)/len(Xs)]][d::real{>=0}][all_variances_le_(d**2;Xs)][err::real{>=0}]:
+  #all_variances_le_
+  [Pr[abs(sum(Xs)/len(Xs) -u) >= err] <= d**2/(len(Xs)*err**2)]
+  [[proof-II:
+  !! [with_same_expectation_(u;Xs)]
+  [Exp[sum(Xs)] == len(Xs)*u]
+  [u == Exp[sum(Xs)/len(Xs)]]
+  # proof-III:
+  [Pr[abs(sum(Xs)/len(Xs) -u) >= err]
+  !! [u == Exp[sum(Xs)/len(Xs)]]
+  == Pr[abs(sum(Xs)/len(Xs) -Exp[sum(Xs)/len(Xs)]) >= err]
+  #Chebyshev_inequality
+  !! [Pr[abs(X -Exp[X]) >= err] <= Var[X]/err**2]
+  <= Var[sum(Xs)/len(Xs)]/err**2
+  == Var[sum(Xs)] /len(Xs)**2 /err**2
+  #linearity__Var_sum@pairwise_independent:
+  !! [Var[sum[Xs[j] | [j:<-[0..<len(Xs)]]]] == sum[Var[Xs[j]] | [j:<-[0..<len(Xs)]]]]
+  == sum[Var[Xs[j]] | [j:<-[0..<len(Xs)]]] /len(Xs)**2 /err**2
+  # original: !! [with_same_variance_(d**2;Xs)]
+  !! [all_variances_le_(d**2;Xs)]
+  <= sum[d**2 | [j:<-[0..<len(Xs)]]] /len(Xs)**2 /err**2
+  == d**2 * len(Xs) /len(Xs)**2 /err**2
+  == d**2/(len(Xs)*err**2)
+  ]
+  [Pr[abs(sum(Xs)/len(Xs) -u) >= err] <= d**2/(len(Xs)*err**2)]
+  !DONE!
+  ]]
+
+
+
+#.Say 0/1-random variables X1,...,X[m] each provides an estimate of some fixed (unknown) bit b.
+#.    That is, Pr[X[i]==b] ≥ 1/2 + ε for all i, where ε > 0.
+#.We can estimate b by looking at the value of X1; this estimate will be correct with probability Pr[X1==b].
+#.    A better estimate can be obtained by looking at the values of X1,...,X[m] and taking the value that occurs the majority of the time.
+#.    We analyze how well this does when X1,...,X[m] are pairwise independent.
+#.PROPOSITION A.13
+#.Fix ε > 0 and b ∈ {0,1}, and let {X[i]} be pairwise-independent, 0/1-random variables for which Pr[X[i]==b] ≥ 1/2 + ε for all i.
+#.  Consider the process in which m values X1,...,X[m] are recorded and X is set to the value that occurs a strict majority of the time.
+#.  Then [Pr[X =!= b] ≤ 1 / (4*m*ε**2)]
+#.
+PROPOSITION A.13
+[Xs::[Variable]][are_bit_random_variables_(Xs)][are_pairwise_independent_variables5_({0,1};Xs)][err::real{>0}][Y0:=[sum(Xs) < len(Xs)/2]][Y1:=[sum(Xs) > len(Xs)/2]][Ys:=[Y0,Y1]]:
+  #pairwise_independent#见下面:independent版
+  #0/1-random variables
+  #strict majority
+  [[b:<-{0,1}] -> [[X:<-Xs] -> [Pr[X==b] >= 1/2 + err]] -> [Pr[Ys[b] =!= b] <= 1 / (4*len(Xs)*err**2)]]
+  [[proof:
+  [b:<-{0,1}][[X:<-Xs] -> [Pr[X==b] >= 1/2 + err]]:
+    [delta2 := Exp[sum(Xs)/len(Xs)] -(1/2)]
+    [Exp[sum(Xs)/len(Xs)] == (1/2 + delta2)]
+    [err2 := abs(delta2)]
+
+    #linearity__Exp_sum:
+    !! [Exp[sum[Xs[j] | [j:<-[0..<len(Xs)]]]] == sum[Exp[Xs[j]] | [j:<-[0..<len(Xs)]]]]
+    !! [[X:<-Xs] -> [Pr[X==b] >= 1/2 + err]]
+    * [b==1]:
+      [Exp[sum(Xs)] >= (1/2 + err)*len(Xs)]
+      [Exp[sum(Xs)/len(Xs)] >= (1/2 + err)]
+      [delta2 >= err]
+      [abs(delta2) >= err]
+    * [b==0]:
+      [Exp[sum(Xs)] <= (1/2 - err)*len(Xs)]
+      [Exp[sum(Xs)/len(Xs)] <= (1/2 - err)]
+      [delta2 <= -err]
+      [abs(delta2) >= err]
+    [abs(delta2) >= err]
+    [err2 >= err]
+    !! [err > 0]
+    [err2 >= err >= 0]
+
+    #linearity__Var_sum@pairwise_independent:
+    !! [Var[sum[Xs[j] | [j:<-[0..<len(Xs)]]]] == sum[Var[Xs[j]] | [j:<-[0..<len(Xs)]]]]
+    #upperbound__Var_random_bit
+    !! [Var[X] <= 1/4]
+    [all_variances_le_(1/4;Xs)]
+    [Var[sum(Xs)] <= 1/4 * len(Xs)]
+    [Var[sum(Xs)/len(Xs)] <= 1/(4*len(Xs))]
+
+    * [b==1]:
+      [Pr[Ys[b] =!= b]
+      == Pr[Y1 =!= 1]
+      == Pr[[sum(Xs) > len(Xs)/2] =!= 1]
+      == Pr[sum(Xs) <= len(Xs)/2]
+      == Pr[sum(Xs)/len(Xs) <= 1/2]
+      == Pr[sum(Xs)/len(Xs) -(1/2+delta2) <= 1/2 -(1/2+delta2) == -delta2]
+      !! [b==1] => [delta2 > 0]
+      == Pr[abs(sum(Xs)/len(Xs) -(1/2+delta2)) >= abs(delta2) == err2]
+      ]
+      [Pr[Ys[b] =!= b] == Pr[abs(sum(Xs)/len(Xs) -(1/2+delta2)) >= err2]]
+    * [b==0]:
+      [Pr[Ys[b] =!= b]
+      == Pr[Y0 =!= 0]
+      == Pr[[sum(Xs) < len(Xs)/2] =!= 0]
+      == Pr[sum(Xs) >= len(Xs)/2]
+      == Pr[sum(Xs)/len(Xs) >= 1/2]
+      == Pr[-sum(Xs)/len(Xs) <= -1/2]
+      == Pr[-sum(Xs)/len(Xs) +(1/2+delta2) <= -1/2 +(1/2+delta2) == delta2]
+      !! [b==0] => [delta2 < 0]
+      == Pr[abs(sum(Xs)/len(Xs) -(1/2+delta2)) >= abs(delta2) == err2]
+      ]
+      [Pr[Ys[b] =!= b] == Pr[abs(sum(Xs)/len(Xs) -(1/2+delta2)) >= err2]]
+    [Pr[Ys[b] =!= b] == Pr[abs(sum(Xs)/len(Xs) -(1/2+delta2)) >= err2]]
+
+    [Pr[Ys[b] =!= b]
+    == Pr[abs(sum(Xs)/len(Xs) -(1/2+err2)) >= err2]
+    !! [Exp[sum(Xs)/len(Xs)] == (1/2 + err2)]
+    !! [all_variances_le_(1/4;Xs)]
+    !! COROLLARY A.12-III
+    <= (1/4)/(len(Xs)*err2**2)
+    !!  [err2 >= err >= 0]
+    <= 1 / (4*len(Xs)*err**2)
+    ]
+    [Pr[Ys[b] =!= b] <= 1 / (4*len(Xs)*err**2)]
+  [[b:<-{0,1}] -> [[X:<-Xs] -> [Pr[X==b] >= 1/2 + err]] -> [Pr[Ys[b] =!= b] <= 1 / (4*len(Xs)*err**2)]]
+  !DONE!
+  ]]
+
+
+#.A better bound is obtained if the {X[i]} are independent:
+#.PROPOSITION A.14 (Chernoff bound)
+#.  Fix ε > 0 and b ∈ {0,1}, and let {X[i]} be independent 0/1-random variables with Pr[X[i]==b] == 1/2 + ε for all i.
+#.    The probability that their majority value is not b is at most exp(-ε**2*m/2).
+PROPOSITION A.14 (Chernoff bound):
+[Xs::[Variable]][are_bit_random_variables_(Xs)][are_independent_variables5_({0,1};Xs)][err::real{>0}][Y0:=[sum(Xs) < len(Xs)/2]][Y1:=[sum(Xs) > len(Xs)/2]][Ys:=[Y0,Y1]]:
+  #independent#见上面:pairwise_independent版
+  #0/1-random variables
+  #strict majority
+  [[b:<-{0,1}] -> [[X:<-Xs] -> [Pr[X==b] >= 1/2 + err]] -> [Pr[Ys[b] =!= b] <= exp(-err**2*len(Xs)/2)]]
+    #原文中无证明
+
+]]
+[[
+A.4 The “Birthday” Problem
+collision
+coll(q,N)
+birthday problem
+
+[q:<-[0..]][N:<-[1..]]:
+  let (S,Xs) :=>
+    [S:=[0..<N]]
+    [Xs::[Variable]{len==q}]
+    [_are_uniform_random_variables5_(S;Xs)]
+    [are_independent_variables5_(S;Xs)]:
+    [len(S) == N > 0]
+    [len(Xs) == q >= 0]
+  #.[Pr4has_no_collisions_(q,N) =[def]= Pr[[@[[i,j:<-[0..<q]] -> [i=!=j]] -> [Xs[i]=!=Xs[j]]]]]
+  #def__Pr4has_no_collisions_
+  [Pr4has_no_collisions_(q,N) =[def]= Pr[/\~{[Xs[i]=!=Xs[j]] | [[i,j:<-[0..<q]][i=!=j]]}]]
+  #def__Pr4has_collisions_-I
+  [Pr4has_collisions_(q,N) =[def]= 1-Pr4has_no_collisions_(q,N)]
+  #def__Pr4has_collisions_-II
+  [Pr4has_collisions_(q,N) == Pr[\/~{[Xs[i]==Xs[j]] | [[i,j:<-[0..<q]][i=!=j]]}]]
+
+  [coll(q,N) =[def]= Pr4has_collisions_(q,N)]
+
+#.If we choose q elements y1,...,y[q] uniformly from a set of size N, what is the probability that there exist distinct i,j with y[i]==y[j]?
+#.  We refer to the stated event as a collision, and denote the probability of this event by coll(q,N).
+#.  [birthday_problem =[def]= min{q | [[q:<-[1..]][coll(q,365)]]} == 23]
+#.
+#.In this section, we prove lower and upper bounds on coll(q,N).
+#.  Taken together and summarized at a high level, they show that:
+#.    + if q < √N then the probability of a collision is Θ(q**2/N);
+#.    + alternately, for q = Θ(√N) the probability of a collision is constant.
+
+#.LEMMA A.15
+#.  Fix a positive integer N, and say q elements y1,...,y[q] are chosen uniformly and independently at random from a set of size N.
+#.  Then the probability that there exist distinct i,j with y[i]==y[j] is at most q**2/(2*N).
+#.  That is, [coll(q,N) ≤ q**2/(2*N)]
+LEMMA A.15
+[q:<-[0..]][N:<-[1..]]:
+  [Pr4has_collisions_(q,N) <= q**2/(2*N)]
+  [Pr4has_collisions_(q,N) <= q*(q-1)/(2*N) <= q**2/(2*N)]
+  [[proof:
+  [S:=[0..<N]][Xs::[Variable]{len==q}][_are_uniform_random_variables5_(S;Xs)][are_independent_variables5_(S;Xs)]:
+    [Pr4has_collisions_(q,N)
+    #def__Pr4has_collisions_-II
+    !! [Pr4has_collisions_(q,N) == Pr[\/~{[Xs[i]==Xs[j]] | [[i,j:<-[0..<q]][i=!=j]]}]]
+    == Pr[\/~{[Xs[i]=!=Xs[j]] | [[i,j:<-[0..<q]][i=!=j]]}]
+    !! PROPOSITION A.7 (Union Bound)
+    <= sum[Pr[Xs[i]=!=Xs[j]] | [[i,j:<-[0..<q]][i=!=j]]]
+    !! [_are_uniform_random_variables5_(S;Xs)]
+    !! [are_independent_variables5_(S;Xs)]
+    => [Pr[Xs[i]=!=Xs[j]] == 1/N]
+    == sum[1/N | [[i,j:<-[0..<q]][i=!=j]]]
+    == 1/N * C(q;2)
+    == 1/N * (q*(q-1)/2)
+    == q*(q-1)/(2*N)
+    <= q**2/(2*N)
+    ]
+    [Pr4has_collisions_(q,N) <= q*(q-1)/(2*N) <= q**2/(2*N)]
+  [Pr4has_collisions_(q,N) <= q*(q-1)/(2*N) <= q**2/(2*N)]
+  !DONE!
+  ]]
+
+#.LEMMA A.16
+#.  Fix a positive integer N, and say q ≤ √2N elements y1,...,y[q] are chosen uniformly and independently at random from a set of size N.
+#.    Then the probability that there exist distinct i,j with y[i]==y[j] is at least q*(q−1)/(4*N).
+#.    In fact, [coll(q,N) ≥ 1-exp(-q*(q-1)/(2*N)) ≥ q*(q-1)/(4*N)]
+
+#LEMMA A.16-I:由于条件较少，故排头；由于证明较长，故后移
+LEMMA A.16-II:
+[N:<-[1..]][q:<-[0..<sqrt(2*N)]]:
+  [Pr4has_collisions_(q,N) >= 1-exp(-q*(q-1)/(2*N)) >= q*(q-1)/(4*N)]
+  [[proof-II:
+  !! [q < sqrt(2*N)]
+  [q**2 < 2*N]
+  !! [q >= 0]
+  [q**2-q < 2*N]
+  [q*(q-1) < 2*N]
+  !! [q::uint]
+  [0 <= q*(q-1) < 2*N]
+  !! [N >= 1]
+  [0 <= q*(q-1)/(2*N) < 1]
+  [-1 < -q*(q-1)/(2*N) <= 0]
+
+  [exp(-q*(q-1)/(2*N))
+  !! [-1 < -q*(q-1)/(2*N) <= 0]
+  #PROPOSITION A.4-III
+  !! [[x::real] -> [-1<=x<=0] -> [exp(x) <= 1+(1-exp(-1))*x <= 1+x/2]]
+  <= 1-q*(q-1)/(2*N)
+  ]
+  [exp(-q*(q-1)/(2*N)) <= 1-q*(q-1)/(2*N)]
+
+  !! LEMMA A.16-I:
+  [Pr4has_collisions_(q,N) >= 1-exp(-q*(q-1)/(2*N)) >= q*(q-1)/(2*N)]
+  !DONE!
+  ]]
+
+LEMMA A.16-I:
+[N:<-[1..]][q:<-[0..]]:
+  [Pr4has_collisions_(q,N) >= 1-exp(-q*(q-1)/(2*N))]
+  [[proof-I:
+  [S:=[0..<N]][Xs::[Variable]{len==q}][_are_uniform_random_variables5_(S;Xs)][are_independent_variables5_(S;Xs)]:
+    [Pr4has_no_collisions_(q,N)
+    !! 条件概率恒等式
+    == Pr4has_no_collisions_(0,N)*II[Pr[has_no_collisions_(j+1,N) | has_no_collisions_(j,N)] | [j:<-[0..<q]]]
+    !! [1 == Pr4has_no_collisions_(0,N)]
+    == 1*II[Pr[has_no_collisions_(j+1,N) | has_no_collisions_(j,N)] | [j:<-[0..<q]]]
+    !! [_are_uniform_random_variables5_(S;Xs)]
+    !! [are_independent_variables5_(S;Xs)]
+    => [Pr[has_no_collisions_(j+1,N) | has_no_collisions_(j,N)] == (1-j/N)]
+    == 1*II[(1-j/N) | [j:<-[0..<q]]]
+    == II[(1-j/N) | [j:<-[1..<q]]]
+    #.!! [q-1 < N]
+    #.=> [0 < j/N < 1] #???无用???
+    #PROPOSITION A.3-II
+    !! [[x::real] -> [(1+x) <= exp(x)]]
+    <= II[exp(-j/N) | [j:<-[1..<q]]]
+    == exp(sum[-j/N | [j:<-[1..<q]]])
+    == exp(-1/N * sum[j | [j:<-[1..<q]]])
+    == exp(-1/N * q*(q-1)/2)
+    == exp(-q*(q-1)/(2*N))
+    ]
+    [Pr4has_no_collisions_(q,N) <= exp(-q*(q-1)/(2*N))]
+  [Pr4has_no_collisions_(q,N) <= exp(-q*(q-1)/(2*N))]
+  [Pr4has_collisions_(q,N)
+  !! def__Pr4has_collisions_-I
+  == 1-Pr4has_no_collisions_(q,N)
+  >= 1-exp(-q*(q-1)/(2*N))
+  ]
+  [Pr4has_collisions_(q,N) >= 1-exp(-q*(q-1)/(2*N))]
+  !DONE!
+  ]]
+
+
+]]
+TODO:
+[[
+A.5 *Finite Fields
+... ...
+]]
+
+#Appendix B Basic Algorithmic Number Theory
+#B.2.4 *Montgomery Multiplication
+#   #Montgomery representation: [M(x)=[def]=x*R%N]
+#   #Montgomery Multiplication: [Mont(M(x),M(y))=[def]=M(x)*M(y)*R**-1 %N]
+#   #view others/数学/power-ladder.txt
+#B.2.5 Choosing a Uniform Group Element
+#   多项式时间
+#   条件概率:成功前提下是均匀分布，失败概率极小可忽略:
+#       uniformly distributed when not fail
+#       will yield a generator with all but negligible probability
+#The case of 『ZZ*%N』Z∗[N].
+#   『N/phi(N) == ?』
+#   THEOREM B.15 For N ≥ 3 of length n, we have N/φ(N) < 2*n.
+#       (Stronger bounds are known, but the above suffices for our purpose.)
+#       The theorem can be proved using Bertrand’s Postulate (Theorem 8.32)
+#           # 即 [[n:<-[1..]] -> [n..<=2*n]] 之间必有素数
+#           # 尝试证明:let [max_sz5N_(N):=max{sz | [sz:<-[0..]][II(PRIMES[:sz]) <= N]}] in [N/phi(N) <= 1/II[(1-1/p) | [p:<-PRIMES[:max_sz5N_(N)]]] <= 1/II[(1-1/j2) | [j2:<-[2..<2+max_sz5N_(N)]]] == 1+max_sz5N_(N) <= 1+log2(N)]
+#       , but we content ourselves with a proof in two special cases:
+#           + when N is prime and
+#           + when N is a product of two equal-length (distinct) primes.
+#
+#B.3 *Finding a Generator of a Cyclic Group
+#   Here, we repeatedly sample uniform elements of G until we find an element that is a generator.
+#     As in Section B.2.5, an analysis of this method requires understanding two things:
+#       * How to efficiently test whether a given element is a generator; and
+#       * the fraction of group elements that are generators.
+#   Interestingly, there is no known efficient algorithm for testing whether an element of an arbitrary group is a generator when the factors of the group order are not known.
+#       # 当下循环群的本原根的判定算法需要群规模的整数分解
+#
+#
+#
+#References
+#end-book
+
+]]]]]
+[[
+TODO:建模:乸全体离散概率分布
+[Probability =[def]= Real{>=0}{<=1}]
+[Variable =[def]= Str]
+  #Var-variance
+[乸变量讠值型 =[def]= {Variable:Type}]
+[nm2typ::乸变量讠值型]:
+  [乸变量讠值集{nm2typ} =[def]= [@[nm:<-nm2typ.keys()] -> Set{nm2typ[nm]}]]
+      #乸变量讠合法值集
+  [乸变量讠值{nm2typ} =[def]= [@[nm:<-nm2typ.keys()] -> nm2typ[nm]]]
+[nm2typ::乸变量讠值型][nm2values::乸变量讠值集{nm2typ}]:
+  [合法集合纟变量讠值{nm2typ,nm2values} =[def]= {nm2value | [[nm2value::乸变量讠值{nm2typ}][@[nm:<-nm2typ.keys()] -> [nm2value[nm] <- nm2values[nm]]]]}]
+  [乸全体离散概率分布{nm2typ,nm2values} =[def]= [@[nm2value:<-合法集合纟变量讠值{nm2typ,nm2values}] -> Probability]{[sum[this(nm2value) | [nm2value:<-合法集合纟变量讠值{nm2typ,nm2values}]] == 1]}]
+[nm2typ::乸变量讠值型][nm2values::乸变量讠值集{nm2typ}][nm2valueZprob::乸全体离散概率分布{nm2typ,nm2values}][pred::合法集合纟变量讠值{nm2typ,nm2values} -> Bool]:
+  [Pr1{nm2typ,nm2values,nm2valueZprob}[pred] =[def]= sum[nm2valueZprob(nm2value) | [[nm2value:<-合法集合纟变量讠值{nm2typ,nm2values}][pred(nm2value)]]]]
+[nm2typ::乸变量讠值型][nm2values::乸变量讠值集{nm2typ}][nm2valueZprob::乸全体离散概率分布{nm2typ,nm2values}][pred1, pred2::合法集合纟变量讠值{nm2typ,nm2values} -> Bool]:
+  [Pr2{nm2typ,nm2values,nm2valueZprob}[pred1 | pred2] =[def]= let [p1:=Pr1{nm2typ,nm2values,nm2valueZprob}[pred1]][p12:=Pr1{nm2typ,nm2values,nm2valueZprob}[pred1&&&pred2]][p2:=Pr1{nm2typ,nm2values,nm2valueZprob}[pred2]] in (if p2==0 then p1 else p12/p2)]
+]]
+[[
+Chapter 2 Perfectly Secret Encryption
+(Beginning in this chapter, we assume familiarity with basic probability theory.  The relevant notions are reviewed in Appendix A.3.)
+]]
+
+[[
+Perfectly Secret Encryption
+[perfectly secret  encryption scheme =[def]= encryption schemes that are provably secure even against an adversary with unbounded computational power.]
+unbounded computational power
+it has inherent limitations to avoid unproven computational assumptions.
+]]
+[[
+]]
+[[
+]]
+[[
+]]
+[[
+]]
+[[
+]]
+[[
+]]
+[[
+]]
+[[
+]]

@@ -7,7 +7,28 @@ view others/app/termux/grep/man_grep__4regex.txt
   -E 扩展正则表达式
   -P Perl正则表达式
 
-
+view others/app/termux/grep/bug4grep.txt
+  注意:使用『$』应避免『\n\r』:似乎不支持『$'[\n\r]'』
+  fixed by:grep -P '^[^\x0A\x0D]*[\x0A\x0D]*$'
+失败实例:
+  grep $'汉语大辞典\n.*\\(\n(.*)\n\\)\\?' others/杂/词语解释/虑.txt
+    grep: Unmatched ( or \(
+    grep: Unmatched ) or \)
+  注意:grep 既不支持『'\n'』也不支持『$'\n'』
+  grep '汉语大辞典\x0A.*\(\x0A(.*)\x0A\)\?' others/杂/词语解释/虑.txt
+    grep: warning: stray \ before x
+    grep: warning: stray \ before x
+    grep: warning: stray \ before x
+  grep -P $'汉语大辞典\n.*\\(\n(.*)\n\\)\\?' others/杂/词语解释/虑.txt
+    grep: the -P option only supports a single pattern
+  grep -P '汉语大辞典\x0A.*\(\x0A(.*)\x0A\)\?' others/杂/词语解释/虑.txt
+    fail
+  grep -P '汉语大辞典\x0A' others/杂/词语解释/虑.txt
+    fail? why? 『-P』只支持单行？
+  grep '[[:newline:]]'
+    grep: Invalid character class name
+  grep '汉语大辞典[[:cntrl:][:blank:][:space:]]' others/杂/词语解释/虑.txt
+    fail
 
 grep_G_E_P__supports:goto
 

@@ -1,0 +1,157 @@
+
+e others/app/termux/grep/bug4grep.txt
+
+[[[
+@20250525
+源起:e others/book/read.txt
+注意:使用『$』应避免『\n\r』:似乎不支持『$'[\n\r]'』
+fixed by:grep -P '^[^\x0A\x0D]*[\x0A\x0D]*$'
+<<==:
+why fail!!!!
+echo $'第3章 赡养人类(1)\n第4章 赡养人类(2)\n第5章 赡养人类\n' | grep '^第[^()\n\r]*\((1)\)\?$'
+  OK
+echo $'第3章 赡养人类(1)\n第4章 赡养人类(2)\n第5章 赡养人类\n' | grep -E '^第[^()\n\r]*(\(1\))?$'
+  OK
+echo $'第3章 赡养人类(1)\n第4章 赡养人类(2)\n第5章 赡养人类\n' | grep -P '^第[^()\n\r]*(\(1\))?$'
+  OK
+grep -G '^第[^()\n\r]*\((1)\)\?$' /sdcard/20220614_copy5sd__0my_files/book_txt/小说天堂txt/重命名/小说天堂txt-5/《全球华语小说大系·科幻卷》.txt
+  fail
+  仅输出两章:无『()』
+grep -E '^第[^()\n\r]*(\(1\))?$' /sdcard/20220614_copy5sd__0my_files/book_txt/小说天堂txt/重命名/小说天堂txt-5/《全球华语小说大系·科幻卷》.txt
+  fail
+  仅输出两章:无『()』
+grep -P '^第[^()\n\r]*(\(1\))?$' /sdcard/20220614_copy5sd__0my_files/book_txt/小说天堂txt/重命名/小说天堂txt-5/《全球华语小说大系·科幻卷》.txt
+  fail
+  无输出
+grep -P $'^第[^()\n\r]*(\(1\))?$' /sdcard/20220614_copy5sd__0my_files/book_txt/小说天堂txt/重命名/小说天堂txt-5/《全球华语小说大系·科幻卷》.txt
+  abort:『grep: the -P option only supports a single pattern』
+grep -P $'^第[^()\n\r]*(\\(1\\))?$' /sdcard/20220614_copy5sd__0my_files/book_txt/小说天堂txt/重命名/小说天堂txt-5/《全球华语小说大系·科幻卷》.txt
+  abort:『grep: the -P option only supports a single pattern』
+grep -P $'^第[^()]*([(]1[)])?$' /sdcard/20220614_copy5sd__0my_files/book_txt/小说天堂txt/重命名/小说天堂txt-5/《全球华语小说大系·科幻卷》.txt
+  fail
+  仅输出两章:无『()』
+#改换『-E』
+grep -E $'^第[^()]*([(]1[)])?$' /sdcard/20220614_copy5sd__0my_files/book_txt/小说天堂txt/重命名/小说天堂txt-5/《全球华语小说大系·科幻卷》.txt
+  fail
+  仅输出两章:无『()』
+grep -E '^第[^()]*[(][^()]*[)]$' /sdcard/20220614_copy5sd__0my_files/book_txt/小说天堂txt/重命名/小说天堂txt-5/《全球华语小说大系·科幻卷》.txt
+  fail
+  无输出
+grep -E '^第[^()]*([(][^()]*[)])*$' /sdcard/20220614_copy5sd__0my_files/book_txt/小说天堂txt/重命名/小说天堂txt-5/《全球华语小说大系·科幻卷》.txt
+  fail
+  仅输出两章:无『()』
+#改换『-P』
+grep -P '^第[^()]*([(][^()]*[)])*$' /sdcard/20220614_copy5sd__0my_files/book_txt/小说天堂txt/重命名/小说天堂txt-5/《全球华语小说大系·科幻卷》.txt
+  fail
+  仅输出两章:无『()』
+grep -P '^第[^()]*?([(][^()]*?[)])*?$' /sdcard/20220614_copy5sd__0my_files/book_txt/小说天堂txt/重命名/小说天堂txt-5/《全球华语小说大系·科幻卷》.txt
+  fail
+  仅输出两章:无『()』
+grep -P '^第[^()]*$' /sdcard/20220614_copy5sd__0my_files/book_txt/小说天堂txt/重命名/小说天堂txt-5/《全球华语小说大系·科幻卷》.txt
+  ...ok:仅输出两章:无『()』
+grep -G '^第' /sdcard/20220614_copy5sd__0my_files/book_txt/小说天堂txt/重命名/小说天堂txt-5/《全球华语小说大系·科幻卷》.txt
+  ...ok
+grep -G '^第.*$' /sdcard/20220614_copy5sd__0my_files/book_txt/小说天堂txt/重命名/小说天堂txt-5/《全球华语小说大系·科幻卷》.txt
+  ...ok
+==>>:
+grep -G '^第.*$' /sdcard/20220614_copy5sd__0my_files/book_txt/小说天堂txt/重命名/小说天堂txt-5/《全球华语小说大系·科幻卷》.txt > /sdcard/0my_files/tmp/0tmp
+第1章 总序：重塑中国的想象力(1)
+第2章 总序：重塑中国的想象力(2)
+第3章 赡养人类(1)
+第4章 赡养人类(2)
+第5章 赡养人类(3)
+第6章 赡养人类(4)
+第7章 赡养人类(5)
+第8章 2127年的母系社会(1)
+第9章 2127年的母系社会(2)
+第10章 2127年的母系社会(3)
+第11章 2127年的母系社会(4)
+第12章 动若脱兔(1)
+第13章 动若脱兔(2)
+第14章 动若脱兔(3)
+第15章 地铁惊变(1)
+第16章 地铁惊变(2)
+第17章 地铁惊变(3)
+第18章 六道众生(1)
+第19章 六道众生(2)
+第20章 六道众生(3)
+第21章 六道众生(4)
+第22章 六道众生(5)
+第23章 六道众生(6)
+第24章 饿塔(1)
+第25章 饿塔(2)
+第26章 饿塔(3)
+第27章 来看天堂(1)
+第28章 来看天堂(2)
+第29章 来看天堂(3)
+第30章 瘟疫(1)
+第31章 瘟疫(2)
+第32章 蜕(1)
+第33章 蜕(2)
+第34章 末日火种(1)
+第35章 末日火种(2)
+第36章 末日火种(3)
+第37章 末日火种(4)
+第38章 末日火种(5)
+第39章 末日火种(6)
+第40章 末日火种(7)
+第41章 末日火种(8)
+第42章 星潮·皇帝的风帆(1)
+第43章 星潮·皇帝的风帆(2)
+第44章 星潮·皇帝的风帆(3)
+第45章 百鬼夜行街(1)
+第46章 百鬼夜行街(2)
+第47章 春日泽·云梦山·仲昆(1)
+第48章 春日泽·云梦山·仲昆(2)
+第49章 春日泽·云梦山·仲昆(3)
+第50章 春日泽·云梦山·仲昆(4)
+第51章 昆仑(1)
+第52章 昆仑(2)
+第53章 昆仑(3)
+第54章 昆仑(4)
+第55章 一览众山小(1)
+第56章 一览众山小(2)
+第57章 一览众山小(3)
+第58章 一览众山小(4)
+第59章 归者无路(1)
+第60章 归者无路(2)
+第61章 归者无路(3)
+第62章 废楼十三层(1)
+第63章 废楼十三层(2)
+第64章 废楼十三层(3)
+第65章 废楼十三层(4)
+第66章 丽江的鱼儿们(1)
+第67章 丽江的鱼儿们(2)
+第68章 鼠标垫(1)
+第69章 鼠标垫(2)
+第70章 说谎的权利
+第71章 捕捉K兽(1)
+第72章 捕捉K兽(2)
+第73章 在烈日与暴雨下
+
+grep -P '^第[^()]*?([(][^()]*?[)])*?$' /sdcard/0my_files/tmp/0tmp
+  fail
+  仅输出两章:无『()』
+grep -P $'^第[^()\n\r]*?([(][^()\n\r]*?[)])*?[\n\r]*$' /sdcard/0my_files/tmp/0tmp
+  abort:『grep: the -P option only supports a single pattern』
+grep -P '^第[^()\x0A\x0D]*?([(][^()\x0A\x0D]*?[)])*?[\x0A\x0D]*$' /sdcard/0my_files/tmp/0tmp
+  OK!!
+grep -P '^第[^()\x0A\x0D]*([(]1[)])?[\x0A\x0D]*$' /sdcard/0my_files/tmp/0tmp
+  OK!!
+
+[[
+肯定有bug!
+grep --version
+grep (GNU grep) 3.11
+Copyright (C) 2023 Free Software Foundation, Inc.
+License GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+
+Written by Mike Haertel and others; see
+<https://git.savannah.gnu.org/cgit/grep.git/tree/AUTHORS>.
+
+grep -P uses PCRE2 10.44 2024-06-07
+]]
+]]]
+

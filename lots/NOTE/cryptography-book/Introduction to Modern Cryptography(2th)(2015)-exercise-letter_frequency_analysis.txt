@@ -1,0 +1,438 @@
+
+e ../lots/NOTE/cryptography-book/Introduction to Modern Cryptography(2th)(2015)-exercise-letter_frequency_analysis.txt
+[[[
+===
+letter-frequency analysis
+letter-frequency tables
+
+===
+FIGURE 1.3:Average letter frequencies for English-language text.
+letter_frequencies4English=dict(*[]
+  #单位:‰
+  ,a=82
+  ,b=15
+  ,c=28
+  ,d=43
+  ,e=127
+  ,f=22
+  ,g=20
+  ,h=61
+  ,i=70
+  ,j=2
+  ,k=8
+  ,l=40
+  ,m=24
+  ,n=67
+  ,o=15
+  ,p=19
+  ,q=1
+  ,r=60
+  ,s=63
+  ,t=91
+  ,u=28
+  ,v=10
+  ,w=24
+  ,x=2
+  ,y=20
+  ,z=1
+  )
+
+sum(letter_frequencies4English.values()) == 943 == 1000-57
+  # ???(ignoring spaces, punctuation, etc.).???
+frqsorted_letter_frequency_pairs4English = sorted(letter_frequencies4English.items(), key=lambda t:t[::-1])
+[('q', 1), ('z', 1), ('j', 2), ('x', 2), ('k', 8), ('v', 10), ('b', 15), ('o', 15), ('p', 19), ('g', 20), ('y', 20), ('f', 22), ('m', 24), ('w', 24), ('c', 28), ('u', 28), ('l', 40), ('d', 43), ('r', 60), ('h', 61), ('s', 63), ('n', 67), ('i', 70), ('a', 82), ('t', 91), ('e', 127)]
+frqsorted_letters4English = ''.join(ch for ch, cn in frqsorted_letter_frequency_pairs4English)
+'qzjxkvbopgyfmwculdrhsniate'
+revfrqsorted_letters4English = frqsorted_letters4English[::-1]
+'etainshrdlucwmfygpobvkxjzq'
+
+
+ciphertext = (
+  'JGRMQOYGHMVBJWRWQFPWHGFFDQGFPFZRKBEEBJIZQQOCIBZKLFAFGQVFZFWWE'
+  'OGWOPFGFHWOLPHLRLOLFDMFGQWBLWBWQOLKFWBYLBLYLFSFLJGRMQBOLWJVFP'
+  'FWQVHQWFFPQOQVFPQOCFPOGFWFJIGFQVHLHLROQVFGWJVFPFOLFHGQVQVFILE'
+  'OGQILHQFQGIQVVOSFAFGBWQVHQWIJVWJVFPFWHGFIWIHZZRQGBABHZQOCGFHX'
+  )
+from collections import Counter
+ch2n = Counter(ciphertext)
+revfrqsorted_letter_frequency_pairs4ciphertext = ch2n.most_common()
+[('F', 37), ('Q', 26), ('W', 21), ('G', 19), ('L', 17), ('O', 16), ('V', 15), ('H', 14), ('B', 12), ('P', 10), ('J', 9), ('I', 9), ('R', 7), ('Z', 7), ('M', 4), ('E', 4), ('Y', 3), ('K', 3), ('C', 3), ('A', 3), ('D', 2), ('S', 2), ('X', 1)]
+revfrqsorted_letters4ciphertext = ''.join(ch for ch, cn in revfrqsorted_letter_frequency_pairs4ciphertext)
+'FQWGLOVHBPJIRZMEYKCADSX'
+
+
+'FQWGLOVHBPJIRZMEYKCADSX'
+'etainshrdlucwmfygpobvkxjzq'
+tbl_23 = str.maketrans(revfrqsorted_letters4ciphertext, revfrqsorted_letters4English[:len(revfrqsorted_letters4ciphertext)])
+ciphertext.translate(tbl_23)
+'uiwftsgirfhduawatelarieevtielemwpdyyducmttsocdmpnebeithemeaaysiasleierasnlrnwnsnevfeitadnadatsnpeadgndngnekenuiwftdsnauheleathrtaeeltstheltsoelsieaeuciethrnrnwstheiauhelesneriththecnysitcnrteticthhskebeidathrtacuhauheleariecacrmmwtidbdrmtsoierx'
+
+tbl_10 = str.maketrans(revfrqsorted_letters4ciphertext[:10], revfrqsorted_letters4English[:10])
+ciphertext.translate(tbl_10)
+'JiRMtsYirMhdJaRatelarieeDtieleZRKdEEdJIZttsCIdZKneAeitheZeaaEsiasleierasnlrnRnsneDMeitadnadatsnKeadYndnYneSenJiRMtdsnaJheleathrtaeeltstheltsCelsieaeJIiethrnrnRstheiaJhelesneriththeInEsitInrtetiIthhsSeAeidathrtaIJhaJhelearieIaIrZZRtidAdrZtsCierX'
+
+def eval_freq_(ch2n, /):
+    D = sum(ch2n.values())
+    return {ch:n/D for ch, n in ch2n.items()}
+
+def revsorted_by_value_(d, /):
+    return sorted(d.items(), key=lambda t:t[::-1], reverse=True)
+
+ch2fq4English = eval_freq_(letter_frequencies4English)
+ch2fq4ciphertext = eval_freq_(ch2n)
+
+revsorted_by_value_(ch2fq4English)
+[('e', 0.13467656415694593), ('t', 0.09650053022269353), ('a', 0.08695652173913043), ('i', 0.07423117709437964), ('n', 0.07104984093319194), ('s', 0.06680805938494168), ('h', 0.06468716861081654), ('r', 0.06362672322375397), ('d', 0.04559915164369035), ('l', 0.042417815482502653), ('u', 0.029692470837751856), ('c', 0.029692470837751856), ('w', 0.02545068928950159), ('m', 0.02545068928950159), ('f', 0.02332979851537646), ('y', 0.021208907741251327), ('g', 0.021208907741251327), ('p', 0.02014846235418876), ('o', 0.015906680805938492), ('b', 0.015906680805938492), ('v', 0.010604453870625663), ('k', 0.008483563096500531), ('x', 0.0021208907741251328), ('j', 0.0021208907741251328), ('z', 0.0010604453870625664), ('q', 0.0010604453870625664)]
+revsorted_by_value_(ch2fq4ciphertext)
+[('F', 0.15163934426229508), ('Q', 0.10655737704918032), ('W', 0.0860655737704918), ('G', 0.0778688524590164), ('L', 0.06967213114754098), ('O', 0.06557377049180328), ('V', 0.06147540983606557), ('H', 0.05737704918032787), ('B', 0.04918032786885246), ('P', 0.040983606557377046), ('J', 0.036885245901639344), ('I', 0.036885245901639344), ('Z', 0.028688524590163935), ('R', 0.028688524590163935), ('M', 0.01639344262295082), ('E', 0.01639344262295082), ('Y', 0.012295081967213115), ('K', 0.012295081967213115), ('C', 0.012295081967213115), ('A', 0.012295081967213115), ('S', 0.00819672131147541), ('D', 0.00819672131147541), ('X', 0.004098360655737705)]
+revsorted_by_value_({**ch2fq4English, **ch2fq4ciphertext})
+[('F', 0.15163934426229508)
+,('e', 0.13467656415694593)
+,('Q', 0.10655737704918032)
+,('t', 0.09650053022269353)
+,('a', 0.08695652173913043)
+,('W', 0.0860655737704918)
+,('G', 0.0778688524590164)
+,('i', 0.07423117709437964)
+,('n', 0.07104984093319194)
+,('L', 0.06967213114754098)
+,('s', 0.06680805938494168)
+,('O', 0.06557377049180328)
+,('h', 0.06468716861081654)
+,('r', 0.06362672322375397)
+,('V', 0.06147540983606557)
+,('H', 0.05737704918032787)
+,('B', 0.04918032786885246)
+,('d', 0.04559915164369035)
+,('l', 0.042417815482502653)
+,('P', 0.040983606557377046)
+'QVFWGLOP?JIRZMEYKCADSX?HB'
+'theansrl?ucwmfygpobvkxjzq'
+WG-ains;LO-nshr;?VHB-rd;JI-uc
+,('J', 0.036885245901639344)
+,('I', 0.036885245901639344)
+,('u', 0.029692470837751856)
+,('c', 0.029692470837751856)
+,('Z', 0.028688524590163935)
+,('R', 0.028688524590163935)
+,('w', 0.02545068928950159)
+,('m', 0.02545068928950159)
+,('f', 0.02332979851537646)
+,('y', 0.021208907741251327)
+,('g', 0.021208907741251327)
+,('p', 0.02014846235418876)
+,('M', 0.01639344262295082)
+,('E', 0.01639344262295082)
+,('o', 0.015906680805938492)
+,('b', 0.015906680805938492)
+,('Y', 0.012295081967213115)
+,('K', 0.012295081967213115)
+,('C', 0.012295081967213115)
+,('A', 0.012295081967213115)
+,('v', 0.010604453870625663)
+,('k', 0.008483563096500531)
+,('S', 0.00819672131147541)
+,('D', 0.00819672131147541)
+,('X', 0.004098360655737705)
+,('x', 0.0021208907741251328)
+,('j', 0.0021208907741251328)
+,('z', 0.0010604453870625664)
+,('q', 0.0010604453870625664)
+]
+
+tbl_ver1 = str.maketrans('FQWGLOP', manual_ver1:='etaishl')
+ciphertext.translate(tbl_ver1)
+'JiRMthYiHMVBJaRatelaHieeDtieleZRKBEEBJIZtthCIBZKseAeitVeZeaaEhiahleieHahslHsRshseDMeitaBsaBathsKeaBYsBsYseSesJiRMtBhsaJVeleatVHtaeelthtVelthCelhieaeJIietVHsHsRhtVeiaJVelehseHitVtVeIsEhitIsHtetiItVVhSeAeiBatVHtaIJVaJVeleaHieIaIHZZRtiBABHZthCieHX'
+
+
+tbl_ver2 = str.maketrans('FQWGLOP', manual_ver2:='etanshl')
+ciphertext.translate(tbl_ver2)
+'JnRMthYnHMVBJaRatelaHneeDtneleZRKBEEBJIZtthCIBZKseAentVeZeaaEhnahleneHahslHsRshseDMentaBsaBathsKeaBYsBsYseSesJnRMtBhsaJVeleatVHtaeelthtVelthCelhneaeJInetVHsHsRhtVenaJVelehseHntVtVeIsEhntIsHtetnItVVhSeAenBatVHtaIJVaJVeleaHneIaIHZZRtnBABHZthCneHX'
+
+Kasiski’s method
+#Counter(ciphertext[j:j+4] for j in range(1+len(ciphertext)))
+L = 4
+js = sorted(range(1+len(ciphertext)), key=lambda j:ciphertext[j:j+L])
+j_cs_pairs = [(j,ciphertext[j:j+L]) for j in js]
+  :s/, (/\r,(/g
+  /'\(\w\{3}\).*\n.*'\1
+[(244, '')
+,(233, 'ABHZ')
+,(200, 'AFGB')
+,(50, 'AFGQ')
+,(232, 'BABH')
+,(33, 'BEEB')
+,(234, 'BHZQ')
+,(36, 'BJIZ')
+,(11, 'BJWR')
+,(87, 'BLWB')
+,(101, 'BLYL')
+,(114, 'BOLW')
+,(90, 'BWQO')
+,(203, 'BWQV')
+,(98, 'BYLB')
+,(45, 'BZKL')
+,(140, 'CFPO')
+,(239, 'CGFH')
+,(43, 'CIBZ')
+,(81, 'DMFG')
+,(24, 'DQGF')
+,(35, 'EBJI')
+,(34, 'EEBJ')
+,(182, 'EOGQ')
+,(60, 'EOGW')
+,(49, 'FAFG')
+,(199, 'FAFG')
+,(80, 'FDMF')
+,(23, 'FDQG')
+,(22, 'FFDQ')
+,(129, 'FFPQ')
+,(201, 'FGBW')
+,(66, 'FGFH')
+,(51, 'FGQV')
+,(83, 'FGQW')
+,(162, 'FGWJ')
+,(172, 'FHGQ')
+,(68, 'FHWO')
+,(241, 'FHX')
+,(179, 'FILE')
+,(222, 'FIWI')
+,(147, 'FJIG')
+,(107, 'FLJG')
+,(169, 'FOLF')
+,(167, 'FPFO')
+,(120, 'FPFW')
+,(216, 'FPFW')
+,(27, 'FPFZ')
+,(141, 'FPOG')
+,(130, 'FPQO')
+,(136, 'FPQO')
+,(17, 'FPWH')
+,(190, 'FQGI')
+,(151, 'FQVH')
+,(105, 'FSFL')
+,(96, 'FWBY')
+,(145, 'FWFJ')
+,(218, 'FWHG')
+,(122, 'FWQV')
+,(57, 'FWWE')
+,(55, 'FZFW')
+,(29, 'FZRK')
+,(231, 'GBAB')
+,(202, 'GBWQ')
+,(21, 'GFFD')
+,(67, 'GFHW')
+,(240, 'GFHX')
+,(221, 'GFIW')
+,(26, 'GFPF')
+,(150, 'GFQV')
+,(144, 'GFWF')
+,(7, 'GHMV')
+,(192, 'GIQV')
+,(184, 'GQIL')
+,(52, 'GQVF')
+,(174, 'GQVQ')
+,(84, 'GQWB')
+,(1, 'GRMQ')
+,(110, 'GRMQ')
+,(163, 'GWJV')
+,(62, 'GWOP')
+,(20, 'HGFF')
+,(220, 'HGFI')
+,(173, 'HGQV')
+,(154, 'HLHL')
+,(74, 'HLRL')
+,(156, 'HLRO')
+,(8, 'HMVB')
+,(188, 'HQFQ')
+,(126, 'HQWF')
+,(207, 'HQWI')
+,(69, 'HWOL')
+,(242, 'HX')
+,(235, 'HZQO')
+,(226, 'HZZR')
+,(44, 'IBZK')
+,(149, 'IGFQ')
+,(225, 'IHZZ')
+,(210, 'IJVW')
+,(180, 'ILEO')
+,(186, 'ILHQ')
+,(193, 'IQVV')
+,(223, 'IWIH')
+,(38, 'IZQQ')
+,(0, 'JGRM')
+,(109, 'JGRM')
+,(148, 'JIGF')
+,(37, 'JIZQ')
+,(118, 'JVFP')
+,(165, 'JVFP')
+,(214, 'JVFP')
+,(211, 'JVWJ')
+,(12, 'JWRW')
+,(32, 'KBEE')
+,(95, 'KFWB')
+,(47, 'KLFA')
+,(100, 'LBLY')
+,(181, 'LEOG')
+,(48, 'LFAF')
+,(79, 'LFDM')
+,(171, 'LFHG')
+,(104, 'LFSF')
+,(155, 'LHLR')
+,(187, 'LHQF')
+,(108, 'LJGR')
+,(94, 'LKFW')
+,(77, 'LOLF')
+,(72, 'LPHL')
+,(75, 'LRLO')
+,(157, 'LROQ')
+,(88, 'LWBW')
+,(116, 'LWJV')
+,(102, 'LYLF')
+,(82, 'MFGQ')
+,(112, 'MQBO')
+,(3, 'MQOY')
+,(9, 'MVBJ')
+,(139, 'OCFP')
+,(238, 'OCGF')
+,(42, 'OCIB')
+,(143, 'OGFW')
+,(183, 'OGQI')
+,(61, 'OGWO')
+,(78, 'OLFD')
+,(170, 'OLFH')
+,(93, 'OLKF')
+,(71, 'OLPH')
+,(115, 'OLWJ')
+,(64, 'OPFG')
+,(133, 'OQVF')
+,(159, 'OQVF')
+,(197, 'OSFA')
+,(5, 'OYGH')
+,(65, 'PFGF')
+,(168, 'PFOL')
+,(217, 'PFWH')
+,(121, 'PFWQ')
+,(28, 'PFZR')
+,(73, 'PHLR')
+,(142, 'POGF')
+,(137, 'PQOC')
+,(131, 'PQOQ')
+,(18, 'PWHG')
+,(113, 'QBOL')
+,(16, 'QFPW')
+,(189, 'QFQG')
+,(230, 'QGBA')
+,(25, 'QGFP')
+,(191, 'QGIQ')
+,(185, 'QILH')
+,(138, 'QOCF')
+,(237, 'QOCG')
+,(41, 'QOCI')
+,(92, 'QOLK')
+,(132, 'QOQV')
+,(4, 'QOYG')
+,(40, 'QQOC')
+,(160, 'QVFG')
+,(177, 'QVFI')
+,(134, 'QVFP')
+,(53, 'QVFZ')
+,(152, 'QVHL')
+,(124, 'QVHQ')
+,(205, 'QVHQ')
+,(175, 'QVQV')
+,(194, 'QVVO')
+,(85, 'QWBL')
+,(127, 'QWFF')
+,(208, 'QWIJ')
+,(31, 'RKBE')
+,(76, 'RLOL')
+,(111, 'RMQB')
+,(2, 'RMQO')
+,(158, 'ROQV')
+,(229, 'RQGB')
+,(14, 'RWQF')
+,(198, 'SFAF')
+,(106, 'SFLJ')
+,(10, 'VBJW')
+,(161, 'VFGW')
+,(178, 'VFIL')
+,(119, 'VFPF')
+,(166, 'VFPF')
+,(215, 'VFPF')
+,(135, 'VFPQ')
+,(54, 'VFZF')
+,(153, 'VHLH')
+,(125, 'VHQW')
+,(206, 'VHQW')
+,(196, 'VOSF')
+,(176, 'VQVF')
+,(195, 'VVOS')
+,(212, 'VWJV')
+,(86, 'WBLW')
+,(89, 'WBWQ')
+,(97, 'WBYL')
+,(59, 'WEOG')
+,(128, 'WFFP')
+,(146, 'WFJI')
+,(19, 'WHGF')
+,(219, 'WHGF')
+,(224, 'WIHZ')
+,(209, 'WIJV')
+,(117, 'WJVF')
+,(164, 'WJVF')
+,(213, 'WJVF')
+,(70, 'WOLP')
+,(63, 'WOPF')
+,(15, 'WQFP')
+,(91, 'WQOL')
+,(123, 'WQVH')
+,(204, 'WQVH')
+,(13, 'WRWQ')
+,(58, 'WWEO')
+,(243, 'X')
+,(6, 'YGHM')
+,(99, 'YLBL')
+,(103, 'YLFS')
+,(56, 'ZFWW')
+,(46, 'ZKLF')
+,(236, 'ZQOC')
+,(39, 'ZQQO')
+,(30, 'ZRKB')
+,(228, 'ZRQG')
+,(227, 'ZZRQ')
+]
+
+def filter_sz_num_(sz, num, j_cs_pairs, /):
+    from itertools import groupby
+    def key(pair, /):
+        (j, cs) = pair
+        return cs[:sz]
+    for k, it in groupby(j_cs_pairs, key=key):
+        ls = [*it]
+        n = len(ls)
+        if n >= num:
+            yield (k, n)
+
+def count_sz_num_(sz, num, j_cs_pairs, /):
+    return Counter(dict(filter_sz_num_(sz, num, j_cs_pairs))).most_common()
+
+count_sz_num_(2, 3, j_cs_pairs)
+[('QV', 9), ('FP', 8), ('GF', 7), ('VF', 7), ('QO', 6), ('FG', 5), ('FW', 5), ('OL', 5), ('PF', 5), ('GQ', 4), ('JV', 4), ('LF', 4), ('WQ', 4), ('FH', 3), ('HG', 3), ('HL', 3), ('HQ', 3), ('OC', 3), ('OG', 3), ('QG', 3), ('QW', 3), ('VH', 3), ('WB', 3), ('WJ', 3)]
+
+count_sz_num_(3, 3, j_cs_pairs)
+[('FPF', 4), ('QVF', 4), ('VFP', 4), ('JVF', 3), ('QOC', 3), ('QVH', 3), ('WJV', 3)]
+WG-ains;LO-nshr
+==>>
+  Q=t
+  V=h
+  F=e
+  P=r
+
+tbl_ver3 = str.maketrans('QVFP', manual_ver3:='ther')
+ciphertext.translate(tbl_ver3)
+'JGRMtOYGHMhBJWRWterWHGeeDtGereZRKBEEBJIZttOCIBZKLeAeGtheZeWWEOGWOreGeHWOLrHLRLOLeDMeGtWBLWBWtOLKeWBYLBLYLeSeLJGRMtBOLWJhereWthHtWeertOthertOCerOGeWeJIGethHLHLROtheGWJhereOLeHGththeILEOGtILHtetGIthhOSeAeGBWthHtWIJhWJhereWHGeIWIHZZRtGBABHZtOCGeHX'
+
+TODO...
+===
+]]]

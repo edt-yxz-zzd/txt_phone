@@ -1,0 +1,537 @@
+TODO:goto
+e others/数学/术语/费马大定理之第一子类.txt
+费马大定理之甲子类
+费马大定理之甲类
+甲型费马大定理
+
+???what is:the first case of Fermat's last theorem (which I abbreviate First FLT)
+x**p+y**p=z**p into two cases:
+  • Case 1: x,y,z pairwise coprime and not p|xyz
+  • Case 2: x,y,z pairwise coprime and p|xyz
+
+源自:
+  /sdcard/0my_files/book/math/factorint/202308/Prime numbers-A Computational Perspective(2ed)(2005)(Pomerance)/Prime numbers-A Computational Perspective(2ed)(2005)(Pomerance).pdf
+  /sdcard/0my_files/book/math/factorint/snd/The new book of prime number records(3ed)(1996)(Ribenboim).djvu
+      page329[354/567]
+
+[[
+我:@20250524
+[n:<-[2..]][q::odd_prime]:
+    [nonzero_Nth_powers_modQ(n,q) =[def]= {j**n%q | [j:<-[1..<q]]}]
+
+#xxx:[n:<-[3..]]:
+#   错『必需是 奇数指数，不能是4，因为 使用 对称版』
+#   [n:<-[3..]]可行！
+#   [x**n+y**n==z**n]
+#   [x**n+y**n=[%q]=z**n]
+#   [(x*inv_mod_(q;y))**n+1=[%q]=(z*inv_mod_(q;y))**n]
+#[p::odd_prime]:
+[n:<-[3..]]:
+  [coprime_solutions4FLT_(n) =[def]= {(x,y,z) | [[x,y,z::int][pairwise_coprime({x,y,z})][(x*y*z)=!=0][x**n+y**n+z**n==0]]}]
+    #FLT_(n)
+    #FLT_1_(p)\-/FLT_2_(p)
+  [prime_factors4coprime_solution4FLT_(n) =[def]= {q | [[q::odd_prime][q%n==1][@[(x,y,z) :<- coprime_solutions4FLT_(n)] -> [(x*y*z)%q==0]]]}]
+  # <==>:
+  [prime_factors4coprime_solution4FLT_(n) == {q | [[q::odd_prime][q%n==1][@[a,b,c::uint%q] -> [(a**n+b**n+c**n)%q==0] -> [(a*b*c)%q==0]]]}]
+  # <==>:
+  [prime_factors4coprime_solution4FLT_(n) == {q | [[q::odd_prime][q%n==1][{/} == {(u-1, u) | [u :<- nonzero_Pth_powers_modQ(n,q)]} /-\ nonzero_Pth_powers_modQ(n,q)]]}]
+[@[n:<-[3..]] -> [len(prime_factors4coprime_solution4FLT_(n)) == +oo] -> [FLT_(n)]]
+[@[p::odd_prime] -> [len(prime_factors4coprime_solution4FLT_(p)) == +oo] -> [FLT_(p)]]
+  #我的一个证明思路纟费马大定理
+==>>:
+归结为:如何证明无穷多prime_factors4coprime_solution4FLT_(p)？
+e script/费马大定理牜我的一个证明思路.py
+  含证明:[... -> [q==2*k*p+1] -> [k%3==0] -> [num_consecutive_pow_pairs>=2]]
+      # (If q =6*k*p+1 is an auxiliary prime, then condition 1 of Germain’s Theorem does not hold.)
+
+]]
+[[
+简略证明: (If q =6*k*p+1 is an auxiliary prime, then condition 1 of Germain’s Theorem does not hold.)
+[p,q::old_prime][k:<-[1..]][q==6*k*p+1][g :<- primitive_roots_mod_(q)]:
+    [a:=g**(5*k)%q]
+    [b:=g**(1*k)%q]
+    [c:=g**(4*k)%q]
+    [d:=g**(2*k)%q]
+
+    !! [g**(3*k)%q == q-1]
+    !! [g**(6*k)%q == 1]
+    [(-a)%q == g**(8*k)%q == d]
+    [(-b)%q == g**(4*k)%q == c]
+
+    [a*b%q == g**(6*k)%q == 1]
+    [c*d%q == g**(6*k)%q == 1]
+    [a*c%q == g**(9*k)%q == q-1]
+    [b*d%q == g**(3*k)%q == q-1]
+
+    [c**2%q == g**(8*k)%q == d]
+    [d**2%q == g**(4*k)%q == c]
+    [c**3%q == g**(12*k)%q == 1]
+    [d**3%q == g**(6*k)%q == 1]
+    [c,d are primitive 3-th roots of unity%q]
+
+    [a**2%q == g**(10*k)%q == c]
+    [b**2%q == g**(2*k)%q == d]
+    [a**3%q == g**(15*k)%q == q-1]
+    [b**3%q == g**(3*k)%q == q-1]
+    [a,b are primitive 3-th roots of unity%q]
+
+    [(c**2+c+1)%q
+    !! [c**3%q == 1]
+    == (c**2+c+c**3)%q
+    == c*(c+1+c**2)%q
+    ]
+    [(1-c)*(c**2+c+1)%q == 0]
+    !! [c%q=!=1]
+    [(1-c)%q =!= 0]
+    [(c**2+c+1)%q == 0]
+
+    !! 同理:
+    [(d**2+d+1)%q == 0]
+    [{c,d} == {z%q | [(z**2+z+1)%q == 0]}]
+    [(c+d) =[%q]= -1]
+    [(c*d) =[%q]= +1]
+
+    [(a**2-a+1)%q
+    !! [a**3%q == q-1]
+    ==(a**2-a-a**3)%q
+    ==-a*(-a+1+a**2)%q
+    ]
+    [(1+a)*(a**2-a+1)%q == 0]
+    !! [a%q=!=q-1]
+    [(1+a)%q =!= 0]
+    [(a**2-a+1)%q == 0]
+
+    !! 同理:
+    [(b**2-b+1)%q == 0]
+    [{a,b} == {z%q | [(z**2-z+1)%q == 0]}]
+    [(a+b) =[%q]= +1]
+    [(a*b) =[%q]= +1]
+
+    !! [(-a)%q == d]
+    !! [(-b)%q == c]
+    !! [(a+b) =[%q]= +1]
+    [(-d+b) =[%q]= +1]
+    [(a+-c) =[%q]= +1]
+
+    [(b-d) =[%q]= +1]
+    [(a-c) =[%q]= +1]
+
+    [(g**(1*k)-g**(2*k)) =[%q]= +1]
+    [(g**(5*k)-g**(4*k)) =[%q]= +1]
+
+    [{(g**(2*k),g**(1*k)), (g**(4*k),g**(5*k))} <= {(u-1, u) | [u :<- nonzero_Pth_powers_modQ(p,q)]} /-\ nonzero_Pth_powers_modQ(p,q)]
+[@[p,q::old_prime] -> @[k:<-[1..]] -> [q==6*k*p+1] -> [g :<- primitive_roots_mod_(q)] -> [{(g**(2*k),g**(1*k)), (g**(4*k),g**(5*k))} <= {(u-1, u) | [u :<- nonzero_Pth_powers_modQ(p,q)]} /-\ nonzero_Pth_powers_modQ(p,q)]]
+[@[p,q::old_prime] -> @[k:<-[1..]] -> [q==6*k*p+1] -> [2 <= len{(u-1, u) | [u :<- nonzero_Pth_powers_modQ(p,q)]} /-\ nonzero_Pth_powers_modQ(p,q)]]
+        #not condition1(the list of p-th powers modulo q contains no consecutive non-zero integers.)
+
+<<==:
+[k%3==0][k3:=k///3]:
+    ?common_exps4consecutive_pows?
+        (4*k3, 5*k3)
+        (2*k3, 1*k3)
+    !! [len(pows) == 2*k]
+    [exp <- [1..=2*k]]
+    [exp <- [1..=6*k3]]
+    primitive 6-th roots of unity%q == {u0**(1*k3)%q,u0**(5*k3)%q}
+    primitive 3-th roots of unity%q == {u0**(2*k3)%q,u0**(4*k3)%q}
+    [z**6=[%q]=1]
+    [(z**6-1)%q==0]
+    # [(z**2-1)*(z**4+z**2+1)%q==0]
+    [(z**3-1)*(z**3+1)%q==0]
+    [(z-1)*(z**2+z+1)*(z+1)*(z**2-z+1)%q==0]
+    #(61, 367, 3, 2, False, [((83, 84), (4, 5)), ((283, 284), (2, 1))], '')
+    # [(83*84)%367==366]
+    # [(283*284)%367==366]
+    # [(83*283)%367==1]
+    # [(84*284)%367==1]
+    # [(83*83+83+1)%367==0]
+    # [(283*283+283+1)%367==0]
+    [{a,b} := {z%q | [(z**2+z+1)%q == 0]}]
+    [{c,d} := {z%q | [(z**2-z+1)%q == 0]}]
+    [{a,b} == {-c,-d}%q]
+    * [a==(-c)%q]:
+        [b==(-d)%q]
+        [c+d=[%q]=1]
+        [c-b=[%q]=1]
+        [-a+d=[%q]=1]
+        [d-a=[%q]=1]
+        [num_consecutive_pow_pairs>=2]
+    * [a==(-d)%q]:
+        ... ...同理
+    [num_consecutive_pow_pairs>=2]
+[[k%3==0] -> [num_consecutive_pow_pairs>=2]]
+]]
+
+
+[[
+
+/sdcard/0my_files/book/math/factorint/snd/The new book of prime number records(3ed)(1996)(Ribenboim).djvu
+page329[354/567]
+Fee and Granville (1991):
+  [[[p,q::odd_prime][?[m:<-[1..<=100]] -> [[m%3=!=0][q == 2*m*p+1]]]] -> [First_FLT_(p)]]
+    #==>>??? condition1&condition2充分条件:[@[p,q::odd_prime] -> [q%p==1] -> [[?[k:<-[2..<=200]] -> [[k%3=!=0][q == k*p+1]]] -> [[@[a,b,c::uint%q] -> [(a**p+b**p+c**p)%q==0] -> [(a*b*c)%q==0]][@[w::uint%q] -> [w**p%q=!=p]]]]]
+      似乎并非这两条件的充分条件，应该是使用其他证明方法:
+        !! [[p:=61][q:=4271][m:=35][q==(2*35*p+1)]] => [not$condition1]
+        view script/费马大定理牜我的一个证明思路.py
+          (61, 4271, 35, 6, False, [(599, 600), (1202, 1203), (1368, 1369), (2902, 2903), (3068, 3069), (3671, 3672)], '-')
+
+Krasner (1940):
+  [[[p,q::odd_prime][?[m:<-[1..]] -> [[m%3=!=0][q == 2*m*p+1][3**(m/2) < q][4**m%q =!= 1]]]] -> [First_FLT_(p)]]
+    [4**m%q =!= 1]:
+      [2**(2*m)%q =!= 1]
+      [2**(2*m)%(2*m*p+1) =!= 1]
+      [2 !<- nonzero_Pth_powers_modQ(p,q)]
+    [4**m%q == 1]:
+      [2**(2*m)%q == 1]
+      [(2**(2*m)-1)%q == 0]
+      [(2**m-1)%q == 0]or[(2**m+1)%q == 0]
+Ribenboim (1985)
+  原文说替代最后一个条件:可能是:
+  ??? [[[p,q::odd_prime][?[m:<-[1..]] -> [[m%3=!=0][q == 2*m*p+1][3**max{phi(2*m),(m/2)} < q]]]] -> [First_FLT_(p)]]
+  ???试证明: [@[m:<-[1..]] -> [m%3=!=0] -> [3**max{phi(2*m),(m/2)} > 4**m]]
+    不太行
+    [max{phi(2*m),(m/2)} <= m]
+    [3 < 4]
+    [3**max{phi(2*m),(m/2)} < 4**m]
+
+  原文说替代最后一个条件:也可能是:
+  ??? [[[p,q::odd_prime][?[m:<-[1..]] -> [[m%3=!=0][q == 2*m*p+1][3**phi(2*m) < q]]]] -> [First_FLT_(p)]]
+  ???试证明: [@[m:<-[1..]] -> [m%3=!=0] -> [3**phi(2*m)<q] -> [[3**m < q**2][4**m%q =!= 1]]]
+    不太行:???[phi(2*m) > (m/2)]
+      ??? [II[(1-1/p) | [p::prime][p>=5]] > 1/2]
+      ??? [II[(1-1/p) | [p::prime]] > 1/6]
+      [II[(1-1/p) | [p::prime][p<=23]] < 1/6]
+      [II[(1-1/p) | [p::prime][5<=p<=23]] < 1/2]
+      <<==:
+      [@[z::complex] -> [z.real>1] -> [zeta(z) == sum[1/n**z | [n:<-[1..]]] == II[1/(1-1/p**z) | [p::prime]] =!= 0]]
+        #Euler_product_formula:here
+      [II[(1-1/p) | [p::prime]] == 1/zeta(1) == 1/sum[1/n | [n:<-[1..]]] == 0]
+      [II[(1-1/p) | [p::prime]] == 0]
+      [II[(1-1/p) | [p::prime][p<=23]] < 1/6]
+      <<==:
+      >>> from seed.math.prime_gens import prime_gen
+      >>> from math import prod
+      >>> prod(1-1/p for p in prime_gen[2:8])
+      0.513072067251634
+      >>> prod(1-1/p for p in prime_gen[2:9])
+      0.49076458606678036
+      >>> prime_gen[2:9]
+      (5, 7, 11, 13, 17, 19, 23)
+
+]]
+
+
+[[
+
+相关:
+'/sdcard/0my_files/book/math/Fermat_Last_Theorem/[FLT_1][6germain]section6-Sophie Germain and Fermat_s Last Theorem.pdf'
+'/sdcard/0my_files/book/math/Fermat_Last_Theorem/[FLT_1][S0002-9947-1988-0927694-5]THE FIRST CASE OF FERMAT_S LAST THEOREM IS TRUE FOR ALL PRIME EXPONENTS UP TO 714591416091389(1988)(GRANVILLE,MONAGAN).pdf'
+
+两处保存:
+  /sdcard/0my_files/book/math/Fermat_Last_Theorem/
+  others/数学/术语/费马大定理/
+
+<<==:
+mv -iv /sdcard/Download/S0002-9947-1988-0927694-5.pdf 'others/数学/术语/费马大定理之第一子类-[S0002-9947-1988-0927694-5]THE FIRST CASE OF FERMAT_S LAST THEOREM IS TRUE FOR ALL PRIME EXPONENTS UP TO 714591416091389(new-156442236847241650)(1988)(ANDREW GRANVILLE)(MICHAEL B. MONAGAN).pdf'
+mv -iv /sdcard/Download/6germain.pdf 'others/数学/术语/费马大定理之第一子类-[6germain]section6-Sophie Germain and Fermat_s Last Theorem.pdf'
+cp -iv /sdcard/0my_files/git_repos/txt_phone/txt/others/数学/术语/'费马大定理之第一子类-[6germain]section6-Sophie Germain and Fermat_s Last Theorem.pdf' /sdcard/0my_files/git_repos/txt_phone/txt/others/数学/术语/'费马大定理之第一子类-[S0002-9947-1988-0927694-5]THE FIRST CASE OF FERMAT_S LAST THEOREM IS TRUE FOR ALL PRIME EXPONENTS UP TO 714591416091389(new-156442236847241650)(1988)(ANDREW GRANVILLE)(MICHAEL B. MONAGAN).pdf' /sdcard/0my_files/book/math/Fermat_Last_Theorem/
+
+
+
+@20250523
+mv -iv others/数学/术语/费马大定理/'费马大定理之第一子类-[6germain]section6-Sophie Germain and Fermat_s Last Theorem.pdf' others/数学/术语/费马大定理/'[First FLT][6germain]section6-Sophie Germain and Fermat_s Last Theorem.pdf'
+mv -iv others/数学/术语/费马大定理/'费马大定理之第一子类-[S0002-9947-1988-0927694-5]THE FIRST CASE OF FERMAT_S LAST THEOREM IS TRUE FOR ALL PRIME EXPONENTS UP TO 714591416091389(new-156442236847241650)(1988)(ANDREW GRANVILLE)(MICHAEL B. MONAGAN).pdf' others/数学/术语/费马大定理/'[First FLT][S0002-9947-1988-0927694-5]THE FIRST CASE OF FERMAT_S LAST THEOREM IS TRUE FOR ALL PRIME EXPONENTS UP TO 714591416091389(new-156442236847241650)(1988)(ANDREW GRANVILLE)(MICHAEL B. MONAGAN).pdf'
+
+
+@20250524
+mv -iv  others/数学/术语/费马大定理/'[First FLT][S0002-9947-1988-0927694-5]THE FIRST CASE OF FERMAT_S LAST THEOREM IS TRUE FOR ALL PRIME EXPONENTS UP TO 714591416091389(new-156442236847241650)(1988)(ANDREW GRANVILLE)(MICHAEL B. MONAGAN).pdf'  others/数学/术语/费马大定理/'[FLT_1][S0002-9947-1988-0927694-5]THE FIRST CASE OF FERMAT_S LAST THEOREM IS TRUE FOR ALL PRIME EXPONENTS UP TO 714591416091389(1988)(GRANVILLE,MONAGAN).pdf'
+mv -iv  others/数学/术语/费马大定理/'[First FLT][6germain]section6-Sophie Germain and Fermat_s Last Theorem.pdf'  others/数学/术语/费马大定理/'[FLT_1][6germain]section6-Sophie Germain and Fermat_s Last Theorem.pdf'
+
+mv -iv  '/sdcard/0my_files/book/math/Fermat_Last_Theorem/费马大定理之第一子类-[6germain]section6-Sophie Germain and Fermat_s Last Theorem.pdf'  '/sdcard/0my_files/book/math/Fermat_Last_Theorem/[FLT_1][6germain]section6-Sophie Germain and Fermat_s Last Theorem.pdf'
+mv -iv  '/sdcard/0my_files/book/math/Fermat_Last_Theorem/费马大定理之第一子类-[S0002-9947-1988-0927694-5]THE FIRST CASE OF FERMAT_S LAST THEOREM IS TRUE FOR ALL PRIME EXPONENTS UP TO 714591416091389(new-156442236847241650)(1988)(ANDREW GRANVILLE)(MICHAEL B. MONAGAN).pdf'  '/sdcard/0my_files/book/math/Fermat_Last_Theorem/[FLT_1][S0002-9947-1988-0927694-5]THE FIRST CASE OF FERMAT_S LAST THEOREM IS TRUE FOR ALL PRIME EXPONENTS UP TO 714591416091389(1988)(GRANVILLE,MONAGAN).pdf'
+
+]]
+
+[[[[[[[
+'/sdcard/0my_files/book/math/Fermat_Last_Theorem/[FLT_1][6germain]section6-Sophie Germain and Fermat_s Last Theorem.pdf'
+
+the first case of Fermat's Last Theorem
+case_1_of_FLT
+FLT_1
+First_FLT_
+[p::odd_prime]:
+    [First_FLT_(p) =[def]= [@[x,y,z::int{>=1}] -> [pairwise_coprime({x,y,z})] -> [(x*y*z)%p=!=0] -> [x**p+y**p=!=z**p]]]
+      # ===FLT_1_
+[p::odd_prime]:
+    [FLT_1_(p) == [@[x,y,z::int] -> [pairwise_coprime({x,y,z})] -> [(x*y*z)%p=!=0] -> [x**p+y**p+z**p=!=0]]]
+
+Sophie Germain
+(Germain-Legendre Theorem):
+(Germain_Legendre_Theorem):
+[@[p,q::odd_prime] -> [q%p==1] -> [@[a,b,c::uint%q] -> [(a**p+b**p+c**p)%q==0] -> [(a*b*c)%q==0]] -> [@[w::uint%q] -> [w**p%q=!=p]] -> [First_FLT_(p)]]
+  NOTE: condition1充要条件:[@[p,q::odd_prime] -> [q%p==1] -> [[@[u,v:<-[1..<q]] -> [u**p%q - v**p%q =!= 1]] <-> [@[a,b,c::uint%q] -> [(a**p+b**p+c**p)%q==0] -> [(a*b*c)%q==0]]]]
+  NOTE: condition1&condition2充分条件:[@[p,q::odd_prime] -> [q%p==1] -> [[?[k:<-{2,4,8,10,14,16}] -> [q == k*p+1]] -> [[@[a,b,c::uint%q] -> [(a**p+b**p+c**p)%q==0] -> [(a*b*c)%q==0]][@[w::uint%q] -> [w**p%q=!=p]]]]]
+      # 2*p+1, 4*p+1, 8*p+1, 10*p+1, 14*p+1, 16*p+1
+      # 6*?*p+1 不行:排除 6,12,18,...
+      #     TODO:尝试:找出反例:哪些(k,p)不行？
+      见上面:Fee and Granville (1991)
+  两个条件统一处理:
+    [nonzero_Nth_powers_modQ(n,q) := {j**n%q | [j:<-[1..<q]]}]
+    [nonzero_Pth_powers_modQ(p,q) := {j**p%q | [j:<-[1..<q]]}]
+    [p !<- nonzero_Pth_powers_modQ(p,q)]
+      #condition2
+    [{/} == {(u-1, u) | [u :<- nonzero_Pth_powers_modQ(p,q)]} /-\ nonzero_Pth_powers_modQ(p,q)]
+        #condition1
+        #<==> the list of p-th powers modulo q contains no consecutive non-zero integers.
+
+[@[p::odd_prime] -> @[s,t::int] -> [gcd(s,t) == 1] -> [gcd(s+t, (s**p+t**p)///(s+t)) == gcd(s+t, p) <- {1,p}]]
+  [[proof:
+  !! [gcd(s,t) == 1]
+  [gcd(s+t,t) == 1]
+  [gcd(s+t,t**(p-1)) == 1]
+
+  !! [s+t =!= 0]
+  [(s**p+t**p)///(s+t)
+  == (((s+t)-t)**p+t**p)///(s+t)
+  !! binomial theorem
+  == (sum[C(p;j)*(s+t)**j*(-t)**(p-j) | [j:<-[0..=p]]]+t**p)///(s+t)
+  !! [p::odd]
+  == (sum[C(p;j)*(s+t)**j*(-t)**(p-j) | [j:<-[1..=p]]])///(s+t)
+  == sum[C(p;j)*(s+t)**(j-1)*(-t)**(p-j) | [j:<-[1..=p]]]
+  !! [s+t =!= 0]
+  =[%(s+t)]= C(p;1)*(s+t)**(1-1)*(-t)**(p-1)
+    == p*(-t)**(p-1)
+    !! [p::odd]
+    == p*t**(p-1)
+  ]
+  [gcd(s+t, (s**p+t**p)///(s+t))
+  == gcd(s+t, (s**p+t**p)///(s+t) %(s+t))
+  == gcd(s+t, p*t**(p-1) %(s+t))
+  == gcd(s+t, p*t**(p-1))
+  !! [gcd(s+t,t**(p-1)) == 1]
+  == gcd(s+t, p)
+  !! [p::prime]
+  <- {1,p}
+  ]
+  [gcd(s+t, (s**p+t**p)///(s+t)) == gcd(s+t, p) <- {1,p}]
+  !DONE!
+  ]]
+
+proof:Germain_Legendre_Theorem:
+[@[p,q::odd_prime] -> [q%p==1] -> [@[a,b,c::uint%q] -> [(a**p+b**p+c**p)%q==0] -> [(a*b*c)%q==0]] -> [@[w::uint%q] -> [w**p%q=!=p]] -> [First_FLT_(p)]]
+  [[proof:
+  #太麻烦:[[x,y,z::int{>=1}][pairwise_coprime({x,y,z})][(x*y*z)%p=!=0][x**p+y**p==z**p]]:
+  #改为:对称版:
+  [[x,y,z::int][pairwise_coprime({x,y,z})][(x*y*z)%p=!=0][x**p+y**p+z**p==0]]:
+    !! [x**p+y**p+z**p==0]
+    [(x+y+z)%p==(x**p+y**p+z**p)%p==0]
+    [(x+y+z)%p==0]
+    ######################
+    !! [(x+y+z)%p==0]
+    [(x+y)%p == -z%p]
+    !! [(x*y*z)%p=!=0]
+    [z%p =!= 0]
+    !! [(x+y)%p == -z%p]
+    [(x+y)%p =!= 0]
+    [gcd(x+y, p) == 1]
+    !! [@[p::odd_prime] -> @[s,t::int] -> [gcd(s,t) == 1] -> [gcd(s+t, (s**p+t**p)///(s+t)) == gcd(s+t, p) <- {1,p}]]
+    [gcd(x+y, (x**p+y**p)///(x+y)) == 1]
+
+    !! [p::odd]
+    !! [x**p+y**p+z**p==0]
+    [x**p+y**p == (-z)**p]
+    [(-z)**p == (x+y) * (x**p+y**p)///(x+y)]
+    ?mz :=> [(x+y)==mz**p]
+    ?nz :=> [(x**p+y**p)///(x+y)==nz**p]
+    [z == -mz*nz]
+    [gcd(mz,nz)==1]
+    ######################
+
+    ######################
+    !! 对称版
+    ... ... #类同上面
+    ?mx :=> [(z+y)==mx**p]
+    ?nx :=> [(z**p+y**p)///(z+y)==nx**p]
+    [x == -mx*nx]
+    [gcd(mx,nx)==1]
+    ######################
+
+    ######################
+    !! 对称版
+    ... ... #类同上面
+    ?my :=> [(z+x)==my**p]
+    ?ny :=> [(z**p+x**p)///(z+x)==ny**p]
+    [y == -my*ny]
+    [gcd(my,ny)==1]
+    ######################
+
+
+    !! [pairwise_coprime({x,y,z})]
+    !! [z == -mz*nz]
+    !! [x == -mx*nx]
+    !! [y == -my*ny]
+    [pairwise_coprime({mx,my,mz})]
+
+    !! [x**p+y**p+z**p==0]
+    [(x**p+y**p+z**p)%q == 0]
+    !! [@[a,b,c::uint%q] -> [(a**p+b**p+c**p)%q==0] -> [(a*b*c)%q==0]]
+    [(x*y*z)%q == 0]
+
+    !! [pairwise_coprime({x,y,z})]
+    [[x%q==0] + [y%q==0] + [z%q==0] == 1]
+    #######
+    * [x%q==0]:
+      [2*x == (x+y) +(z+x) -(z+y) == mz**p +my**p -mx**p]
+      [(mz**p +my**p +(-mx)**p)%q == 2*x%q == 0]
+      !! [@[a,b,c::uint%q] -> [(a**p+b**p+c**p)%q==0] -> [(a*b*c)%q==0]]
+      [(mx*my*mz)%q == 0]
+      !! [pairwise_coprime({mx,my,mz})]
+      [[mx%q==0] + [my%q==0] + [mz%q==0] == 1]
+      !! [[x%q==0] + [y%q==0] + [z%q==0] == 1]
+      !! [x%q==0]
+      [y*z%q =!= 0]
+      [my*mz%q =!= 0]
+      [mx%q == 0]
+      !! [(z+y)==mx**p]
+      [(z+y)%q==mx**p%q==0]
+      [(z+y)%q==0]
+      [z%q == -y%q]
+      !! [(z**p+y**p)///(z+y)==nx**p]
+      [nx**p == sum[(-z)**j * y**(p-1-j) | [j:<-[0..<p]]] =[%q]= p*y**(p-1)]
+      [nx**p =[%q]= p*y**(p-1)]
+
+      !! [(x**p+y**p)///(x+y)==nz**p]
+      !! [x%q==0]
+      [nz**p == sum[(-x)**j * y**(p-1-j) | [j:<-[0..<p]]] =[%q]= y**(p-1)]
+      [nz**p =[%q]= y**(p-1)]
+
+      !! [nx**p =[%q]= p*y**(p-1)]
+      !! [nz**p =[%q]= y**(p-1)]
+      [nx**p =[%q]= p*nz**p]
+      [p == (nx*inv_mod_(q;nz))**p%q]
+      !! [@[w::uint%q] -> [w**p%q=!=p]]
+      _L
+
+    #######
+    * [y%q==0]:
+      !! 对称版
+      ... ... #类同上面
+      _L
+    #######
+    * [z%q==0]:
+      !! 对称版
+      ... ... #类同上面
+      _L
+    #######
+    _L
+  [not$[[x,y,z::int][pairwise_coprime({x,y,z})][(x*y*z)%p=!=0][x**p+y**p+z**p==0]]]
+
+  [not$[[x,y,z::int{>=1}][pairwise_coprime({x,y,z})][(x*y*z)%p=!=0][x**p+y**p==z**p]]]
+  [First_FLT_(p)]
+  !DONE!
+  ]]
+
+[[
+Legendre built on Germain’s work to show that conditions 1 and 2 hold whenever at least one of 4*p+1, 8*p+1, 10*p+1, 14*p+1, or 16*p+1 is also a prime: there is a debate over whether these were known to Germain.
+  (If q =6*k*p+1 is an auxiliary prime, then condition 1 of Germain’s Theorem does not hold.)
+Regardless of the attribution, between them they were able to prove case 1 of Fermat’s Last Theorem for all primes p<197.
+Why did they stop before 197?
+If p=197, then the first three auxiliary primes q=2*k*p+1 are q=3547, 4729 and 7487 (corresponding to k=9,12 and 19).
+In the first case we obtain consecutive 197th power residues of 1162, 1163, 2384, 2385.
+In the second case we find 2036, 2037, 2692, 2693.
+The third prime works: computing all this by hand was prohibitively difficult!
+
+Later Work
+Germain attempted to generalize the approach and ultimately claimed that if x**p+y**p==z**p had a solution, then one of x+y,y−z,z−x must be divisible by p**(2*p−1) and by the pth power of all auxiliary primes satisfying conditions 1 and 2.
+Her intent was to show that any purported solutions to case 1 of Fermat’s Last Theorem were absurdly huge.
+Unfortunately she couldn’t prove this.
+However she did manage to show that if conditions 1 and 2 hold for some q, then one of x,y,z is divisible by p**2, so solutions would have to be very large.
+For many many decades afterwards, mathematicians hunted for auxiliary primes and thus proofs for case 1 of Fermat’s Last Theorem.
+Using related methods, the following were established:
+• Dickson (1908): proved case 1 for all primes<7000 except for p=6857.
+• Emma Lehmer (1941): proved case 1 for all primes<253747889.
+• Heath-Brown, Fouvry, Adelman (1985): there are infinitely many primes for which we can prove case 1 of Fermat’s Last Theorem.
+]]
+]]]]]]]
+
+
+[[[[[[[
+'/sdcard/0my_files/book/math/Fermat_Last_Theorem/[FLT_1][S0002-9947-1988-0927694-5]THE FIRST CASE OF FERMAT_S LAST THEOREM IS TRUE FOR ALL PRIME EXPONENTS UP TO 714591416091389(1988)(GRANVILLE,MONAGAN).pdf'
+[[
+# [pairwise_coprime({x,y,z})]
+[n:<-[3..]]:
+  [FLT_(n) =[def]= [@[x,y,z::int] -> [x*y*z=!=0] -> [x**n+y**n=!=z**n]]]
+[Fermat_Last_Theorem =[def]= [@[n:<-[3..]] -> [FLT_(n)]]]
+[p::odd_prime]:
+    [FLT_1_(p) =[def]= [@[x,y,z::int] -> [x*y*z=!=0] -> [(x*y*z)%p=!=0] -> [x**p+y**p=!=z**p]]]
+      # ===First_FLT_
+    [FLT_2_(p) =[def]= [@[x,y,z::int] -> [x*y*z=!=0] -> [(x*y*z)%p==0] -> [x**p+y**p=!=z**p]]]
+[FLT_2 =[def]= [@[p::odd_prime] -> [FLT_2_(p)]]]
+[FLT_1 =[def]= [@[p::odd_prime] -> [FLT_1_(p)]]]
+[FLT_0 =[def]= FLT_(4)]
+[[Fermat_Last_Theorem] <-> [[FLT_0][FLT_1][FLT_2]]]
+  一般只拆成后面两况态，FLT_0早已被证明
+
+[p::odd_prime]:
+    #对称版&精简版:
+    [FLT_1_(p) == [@[x,y,z::int] -> [pairwise_coprime({x,y,z})] -> [(x*y*z)%p=!=0] -> [x**p+y**p+z**p=!=0]]]
+    [FLT_2_(p) == [@[x,y,z::int] -> [pairwise_coprime({x,y,z})] -> [(x*y*z)=!=0] -> [(x*y*z)%p==0] -> [x**p+y**p+z**p=!=0]]]
+]]
+
+[[
+Wendt (1894)
+[@[p,q::odd_prime] -> [zk::even_uint] -> [zk%3 =!= 0] -> [zk**zk%p =!= 1] -> [q==zk*p+1] -> [(II[((rt+1)**zk-1) | [[rt::complex][rt**zk==1]]])%q =!= 0] -> [FLT_1_(p)]]
+  # [zk%6 <- {2,4}]
+
+Wieferich (1909)
+  [@[p::odd_prime] -> [2**(p-1)%p**2 =!= 1] -> [FLT_1_(p)]]
+Lehmer (1981)
+  [{p | [[p::odd_prime][2**(p-1)%p**2 == 1]]}/-\{1..<6*10**9} == {1093,3511}]
+
+[p::odd_prime][bp::prime]:
+    [is_pmmth_root_mod_quadratic_p_(p;bp)=[def]= [bp**(p-1)%p**2 == 1]]
+[p::odd_prime]:
+    [primes_le_are_pmmth_roots_mod_quadratic_p_(p;max4bp)=[def]= [@[bp::prime{<=max4bp}] -> [bp**(p-1)%p**2 == 1]]]
+
+Pollaczek (1917)(minor errors)
+  [@[p::odd_prime] -> @[bp::prime] -> [bp<=31] -> [p > ((sqrt5+1)/2)**(bp**2/3)] -> [bp**(p-1)%p**2 =!= 1] -> [FLT_1_(p)]]
+    #p sufficiently large
+
+Morishima (1931)(prove quite vaguely)
+  #vaguely:adv. 暧昧地；含糊地；茫然地
+  [@[p::odd_prime] -> @[bp::prime] -> [bp<=31] -> [bp**(p-1)%p**2 =!= 1] -> [FLT_1_(p)]]
+  # [@[p::odd_prime] -> @[bp::prime] -> [bp<=43] -> [bp**(p-1)%p**2 =!= 1] -> [FLT_1_(p)]]
+  #     We shall see that there are such large computational difficulties in the gap from 31 to 43 that we cannot really accept this as valid mathematical proof.
+
+Gunderson (1984)
+  #[p::odd_prime][bps::{prime}]:
+  [p::odd_uint][bps::{prime}]:
+      [low_bound4pmm6gWieferich_(p;bps) =[def]= let [n:=len(bps)] in (4*C(2*n-2;n-1)*(ln_(p/sqrt2))**n/(n!*II[ln_(bp) | [bp:<-bps]]))]
+  [@[p::odd_prime] -> @[bps::{prime}] -> [@[bp:<-bps] -> [bp**(p-1)%p**2 == 1]] -> [p-1 >= low_bound4pmm6gWieferich_(p;bps)]]
+  [@[p::odd_prime] -> [@[bp::prime] -> [bp<=31] -> [bp**(p-1)%p**2 == 1]] -> [p > 1_110_601_027]]
+    #1110601027
+
+Shanks and Williams (1981)
+  [@[p:<-(4.2*10**15).+[1,3..]] -> @[n:<-[30..]] -> @[bps::{prime}] -> [len(bps) == n] -> [low_bound4pmm6gWieferich_(p;bps) <= p-1]]
+      #自动成立，即[n>=30]开始走下坡路
+      # 峰值于:[bps:=prime_gen[:29]]
+  >>> prime_gen[:29]
+  (2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97, 101, 103, 107, 109)
+  [@[p::odd_prime] -> [@[bp::prime] -> [bp<=109] -> [bp**(p-1)%p**2 == 1]] -> [p > 4_408_660_978_137_503]]
+    #4408660978137503
+  ###下面用到:
+  >>> prime_gen[:24]
+  (2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89)
+  [@[p::odd_prime] -> [@[bp::prime] -> [bp<=89] -> [bp**(p-1)%p**2 == 1]] -> [p > 714_591_416_091_389]]
+    #714591416091389
+
+granville and monagan (1988)#即本文
+  仅证明[bp<=89]
+  [@[p::odd_prime] -> @[bp::prime] -> [bp<=89] -> [bp**(p-1)%p**2 =!= 1] -> [FLT_1_(p)]]
+  [@[p::odd_prime] -> [p <= 714_591_416_091_389] -> [FLT_1_(p)]]
+  [714_591_416_091_389 ~= 7.14*10**14]
+
+]]
+
+]]]]]]]
+

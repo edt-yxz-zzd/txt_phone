@@ -1,0 +1,188 @@
+
+e others/数学/术语/smooth_number.txt
+主要定理:goto
+
+
+view ../../python3_src/seed/math/primes__inductive_generated__almost_smooth.py
+view ../../python3_src/seed/math/prime_pint/easy_primes.py
+
+[[
+@20250524
+smooth number
+  PRIMES[:log2(x)**k] 有没有可能在x附加生成 非零比例的数字？
+  回答:不能！
+  [k==2]估计下限超过平方根
+  [k>2]连下限也还未能估计
+]]
+<<==:
+[[[
+/sdcard/0my_files/book/math/factorint/202308/Prime numbers-A Computational Perspective(2ed)(2005)(Pomerance)/Prime numbers-A Computational Perspective(2ed)(2005)(Pomerance).pdf
+  #view ../lots/NOTE/math-book/prime/Prime_numbers__A_Computational_Perspective(2ed)(2005)(Pomerance)-note.txt
+===
+
+A positive integer is said to be y-smooth if it does not have any prime factor exceeding y.
+[n:<-[1..]][y::real]:
+  [is_smooth_number6_(y;n) =[def]= [@[p::prime] -> [n%p==0] -> [p <= y]]]
+[x,y::real]:
+  [num_smooth_numbers6_le_(x;y) =[def]= len{n | [[n:<-[1..]][n <= x][is_smooth_number6_(y;n)]]}]
+
+Dickman theorem 1930:
+  [?[rho_:: (real{>=0} -> real{>=0})] -> @[u::real{>0}] -> [lim{num_smooth_numbers6_le_(x;x**/u) / x | x-->+oo} == rho_(u)]]
+    #注意:『>=』『>』同时在线
+  [rho_() is the unique continuous_function :=> [[@[u::real{>=0}{<=1}] -> [rho_(u) == 1]][@[u::real{>1}] -> [D`rho_(u) == -rho_(u-1)/u]]]]
+  ==>>:
+    [lim{ln_(rho_(u)) / (-u*ln_(u)) | u-->+oo} == 1]
+      # ??? [u-->+oo => [rho_(u) < u**-u]]
+      # [rho_(u) == u**(-u+o(u))]
+  ==>>:
+    [@[u::real{>=1}{<=2}] -> [rho_(u) == 1-ln_(u)]]
+    #平方根:
+    [lim{num_smooth_numbers6_le_(x;sqrt(x)) / x | x-->+oo} == rho_(2) == 1-ln_(2) ~= 0.3068528194400547]
+    # Exercise 1.73: [rho_(10) ~= 2.77*10**-11]
+    # Exercise 1.74: --> Exercise 3.5: bug:[rho_(2*sqrt(e)) == 1/2] # [2*sqrt(e) ~= 3.2974425414002564]
+      ???bug???
+      rho_(u)递降，但是:
+        [rho_(2) ~= 0.3068528194400547]
+        [rho_(3.2974425414002564) ~= 1/2]
+      订正:[rho_(sqrt(e)) == 1-ln_(sqrt(e)) == 1/2] # [sqrt(e) ~= 1.6487212707001282]
+
+
+[Canfield 1983]:
+  [[num_smooth_numbers6_le_(x;x**/u) == x*u**(-u+o(u))] uniformly as [[u --> +oo][u < (1−err)*ln_(x)/lnln_(x)]]]
+      #we have a reasonable estimate for num_smooth_numbers6_le_(x;y) when [[y > ln_(x)**(1+err)][x is large]].
+[Konyagin and Pomerance 1997]:
+  [@[u,x::real{>0}] -> [x>=4] -> [2 <= x**/u <= x] -> [num_smooth_numbers6_le_(x;x**/u) >= x/ln_(x)**u]]
+  #let [c>1][x**/u == ln_(x)**c] => [ln_(x)**u == (ln_(x)**c)**(u/c) == (x**/u)**(u/c) == x**/c]
+  [@[c,x::real{>1}] -> [x>=4] -> [2 <= ln_(x)**c <= x] -> [num_smooth_numbers6_le_(x;ln_(x)**c) >= x**(1-1/c)]]
+  # let [n:<-[1..]][c==(n+1)/n==1+1/n]
+  [@[n:<-[1..]] -> @[x::real{>1}] -> [x>=4] -> [2 <= ln_(x)**(1+1/n) <= x] -> [num_smooth_numbers6_le_(x;ln_(x)**(1+1/n)) >= x**/(1+n)]]
+
+  # let [n==1][c==2][2 <= ln_(x)**c <= x][x>=4] => [x>=5]
+  #     !! [4 ==log2(4)**2 > ln_(x)**c ~= 1.3862943611198906**2 ~= 1.9218120556728056 < 2]
+  #     !! [5 > exp(sqrt(2)) ~= 4.1132503787829275][2 < log(5)**2 ~= 2.5902903939802346]
+  [@[x::real{>=5}] -> [num_smooth_numbers6_le_(x;ln_(x)**2) >= x**(1/2)]]
+
+  # let [n==2][c==3/2][2 <= ln_(x)**c <= x][x>=4] => [x>=5]
+  #     !! [x >= exp(2**(2/3)) ~= 4.8910208866246965]
+  #     !! [5 > ln_(5)**(3/2) ~= 2.0417912636422098]
+  [@[x::real{>=5}] -> [num_smooth_numbers6_le_(x;ln_(x)**(3/2)) >= x**(1/3)]]
+
+  # let [n==3][c==4/3][2 <= ln_(x)**c <= x][x>=4] => [x>=6]
+  #     !! [x >= exp(2**(3/4)) ~= 5.375184131807488]
+  #     !! [6 > ln_(6)**(4/3) ~= 2.1762374407740617]
+  [@[x::real{>=6}] -> [num_smooth_numbers6_le_(x;ln_(x)**(4/3)) >= x**(1/4)]]
+
+  # [log(2, ln_(min_x)) <= c <= log(min_x, ln_(min_x))]
+  # !! [log(2, ln_(exp(2))) == 1]
+  # !! [8 > exp(2) ~= 7.38905609893065]
+  # !! [c > 1]
+  # [[min_x >= 8] -> [c > 1 > log(2, ln_(min_x))]]
+  # [n == 1/(c-1)]
+  # [min_x <= 7] => [1/(log(2, ln_(min_x))-1) >= n >= 1/(log(min_x, ln_(min_x))-1)]
+  # [min_x >= 8] => [n >= 1/(log(min_x, ln_(min_x))-1)]
+  # !! [log(4, ln_(4)) ~= 4.24417928851698]
+  # !! [log(5, ln_(5)) ~= 3.3819891953681287]
+  # !! [log(14, ln_(14)) ~= 2.7194951520373656]
+  # !! [log(15, ln_(15)) ~= 2.718301205940163]
+  # !! [log(exp(e), ln_(exp(e))) == e ~= 2.718281828459045]
+  # !! [log(16, ln_(16)) ~= 2.7188068070511737]
+  # [log(min_x, ln_(min_x)) >= log(15, ln_(15)) > 3]
+  # !! [min_x>=4]
+  # [1/(log(min_x, ln_(min_x))-1) < 1/(3-1) <= 1]
+  # !! [n>=1]
+  # [n >= 1/(log(min_x, ln_(min_x))-1)] 自动成立
+  # 只需考虑:[min_x <= 7] => [n <= 1/(log(2, ln_(min_x))-1)]
+  # [min_x==7] => [n <= 24]
+  # [min_x==6] => [n <= 5]
+  # [min_x==5] => [n <= 2]
+  # [min_x==4] => _L
+    >>> f=lambda min_x:(1/(log(2, ln_(min_x))-1), 1/(log(min_x, ln_(min_x))-1))
+    >>> f(8)
+    (-18.794820383024256, 0.5433655848045791)
+    >>> f(7)
+    (24.281315495373235, 0.5200281480422204)
+    >>> f(6)
+    (5.304255168655231, 0.4825556122828334)
+    >>> f(5)
+    (2.1903719453853223, 0.4198171855458199)
+    >>> f(4)
+    (0.8911943935288963, 0.30824436970532926)
+
+  [@[x::real{>=5}] -> [num_smooth_numbers6_le_(x;ln_(x)**2) >= x**(1/2)]]
+  [@[x::real{>=5}] -> [num_smooth_numbers6_le_(x;ln_(x)**(3/2)) >= x**(1/3)]]
+
+  [@[n:<-[1..=2]] -> @[x::real{>=5}] -> [num_smooth_numbers6_le_(x;ln_(x)**(1+1/n)) >= x**/(1+n)]]
+  [@[n:<-[1..=5]] -> @[x::real{>=6}] -> [num_smooth_numbers6_le_(x;ln_(x)**(1+1/n)) >= x**/(1+n)]]
+  [@[n:<-[1..=24]] -> @[x::real{>=7}] -> [num_smooth_numbers6_le_(x;ln_(x)**(1+1/n)) >= x**/(1+n)]]
+  [@[n:<-[1..]] -> @[x::real{>=8}] -> [num_smooth_numbers6_le_(x;ln_(x)**(1+1/n)) >= x**/(1+n)]]
+  ==>>:
+  [@[n:<-[1..]] -> @[x::real{>=(8-[n<=24]-[n<=5]-[n<=2])}] -> [num_smooth_numbers6_le_(x;ln_(x)**(1+1/n)) >= x**/(1+n)]]
+
+Exercise 1.71:
+  [num_smooth_numbers6_le_(10**100;4) == 35084]
+  [?[c::real{>0}] -> [lim{num_smooth_numbers6_le_(x;4)/ln_(x)**2 | x-->+oo} == c]]
+  [@[y::real{>=2}] -> ?[c[num_primes_le(y)]::real{>0}] -> [lim{num_smooth_numbers6_le_(x;y)/ln_(x)**num_primes_le(y) | x-->+oo} == c[num_primes_le(y)]]]
+
+主要定理:
+  #平方根-smooth:占比超过30%
+  [lim{num_smooth_numbers6_le_(x;sqrt(x)) / x | x-->+oo} == rho_(2) == 1-ln_(2) ~= 0.3068528194400547]
+    # [@[u::real{>=1}{<=2}] -> [lim{num_smooth_numbers6_le_(x;x**/u) / x | x-->+oo} == 1-ln_(u)]]
+  #对数平方-smooth:数量超过平方根
+  [@[x::real{>=5}] -> [num_smooth_numbers6_le_(x;ln_(x)**2) >= x**(1/2)]]
+    # [@[n:<-[1..]] -> @[x::real{>=(8-[n<=24]-[n<=5]-[n<=2])}] -> [num_smooth_numbers6_le_(x;ln_(x)**(1+1/n)) >= x**/(1+n)]]
+  #常量-smooth:正比例于对数幂方
+  [@[y::real{>=2}] -> ?[c[num_primes_le(y)]::real{>0}] -> [lim{num_smooth_numbers6_le_(x;y)/ln_(x)**num_primes_le(y) | x-->+oo} == c[num_primes_le(y)]]]
+
+
+Exercise 1.74: --> Exercise 3.5
+  bug:[rho_(2*sqrt(e)) == 1/2] # [2*sqrt(e) ~= 3.2974425414002564]
+      ???bug???
+      rho_(u)递降，但是:
+        [rho_(2) ~= 0.3068528194400547]
+        [rho_(3.2974425414002564) ~= 1/2]
+      订正:[rho_(sqrt(e)) == 1-ln_(sqrt(e)) == 1/2] # [sqrt(e) ~= 1.6487212707001282]
+
+]]]
+
+Exercise 1.74: --> Exercise 3.5
+[[
+Exercise 1.74:
+1.74.What is the approximate probability that a random integer (but of size x, say) has all but one of its prime factors not exceeding B, with a single outlying prime in the interval (B,C]?
+  This problem has importance for factoring methods that employ a “second stage,” which, after a first stage exhausts (in a certain algorithm-dependent sense) the first bound B, attempts to locate the outlying prime in (B,C].
+  It is typical in implementations of various factoring methods that C is substantially larger than B, for usually the operations of the second stage are much cheaper.
+  See Exercise 3.5 for related concepts.
+
+]]
+[[
+Exercise 3.5:
+  ***
+  Let c be a real number and consider the set of those integers n whose largest prime factor does not exceed n**c.
+  Let c be such that the asymptotic density of this set is 1/2.
+      Show that c = 1/(2√e). [#fixed:『c = 1/(√e)』#]
+      A pleasantly interdisciplinary reference is [Knuth and Trabb Pardo 1976].
+
+  ***
+  Now, consider the set of those integers n whose second-largest prime factor (if there is one) does not exceed n**c.
+  Let c be such that the asymptotic density of this set is 1/2.
+    Show that c is the solution to the equation:
+      [I(c) == 1/2], where:
+        [I(c) =[def]= Integral{((ln_(1-u) -ln_(u)) / u) * d`u | [u :<- c~~>1/2]}]
+      , and solve this numerically for c.
+    An interesting modern approach for the numerics is to show, first, that this integral is given exactly by:
+      [I(c) == (−pi**2/12 +ln_(c)**2/2 +Li2(c))]
+        where [Li2(c) =[def]= sum[c**n/n**2 | [n:<-[1..]]]]
+      , in which the standard polylogarithm Li2(c) = c/1**2+ c**2/2**2+ c**3/3**2+ ··· appears.
+      Second, using any of the modern packages that know how to evaluate Li2 to high precision, implement a Newton-method solver, in this way circumventing the need for numerical integration per se.
+          # pari/gp 无Li2
+      You ought to be able to obtain, for example:
+          c ≈ 0.2304366013159997457147108570060465575080754...
+      , presumed correct to the implied precision.
+
+  ***
+  Another intriguing direction: Work out a fast algorithm—having a value of c as input—for counting the integers n ∈ [1,x] whose second-largest prime factor exceeds n**c(when there are less than two prime factors let us simply not count that n).
+      For the high-precision c value given above, there are 548 such n ∈ [1,1000], whereas the theory predicts 500.
+      Give the count for some much higher value of x.
+
+
+]]
+
