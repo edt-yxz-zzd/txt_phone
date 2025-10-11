@@ -8,6 +8,7 @@ $ help__save_to_file gawk
 view others/app/termux/help/gawk.help.txt
 
 
+[[
 echo $'aaa\n777\n...' | gawk '{ print NR, $0 }'
 <==>
 echo $'aaa\n777\n...' | gawk '{ print FNR, $0 }'
@@ -46,6 +47,73 @@ echo $'aaa bbb ccc bbb \nbb a bb' | gawk $'{ gsub("bb", "qq") ; print $0 }'
 aaa qqb ccc qqb
 qq a qq
 
+]]
+
+
+[[
+view others/app/termux/help/awk-see-gawk.txt
+  正则表达式:同egrep:ERE:
+    view others/app/termux/help/grep.man.BREvsERE.txt
+      ERE没有 前瞻锚『(?=...)』『(...)\@=』，下面的RS找不到恰当的正则表达式来表达，毛病最小的是『RS="(^|\n),"』
+===
+#bug: $0 含\n
+echo $',aaa\n:000\n,bbb\n:111\n,ccc\n:222\n' | gawk 'BEGIN { RS = "\n," } { print FNR, $0 }'
+1 ,aaa
+:000
+2 bbb
+:111
+3 ccc
+:222
+
+===
+#bug:逗号:只有首行保留
+echo $',aaa\n:000\n,bbb\n:111\n,ccc\n:222\n' | gawk 'BEGIN { RS = "\n," } { print FNR, $1, $2 }'
+1 ,aaa :000
+2 bbb :111
+3 ccc :222
+
+===
+#bug: 首record/逻辑行 空；缺失后两逻辑行:bbb ccc
+echo $',aaa\n:000\n,bbb\n:111\n,ccc\n:222\n' | gawk 'BEGIN { RS = "^," } { print FNR, $1, $2 }'
+1
+2 aaa :000
+
+===
+#bug: 首record/逻辑行 空
+#   但已是 毛病最小
+echo $',aaa\n:000\n,bbb\n:111\n,ccc\n:222\n' | gawk 'BEGIN { RS = "(^|\n)," } { print FNR, $1, $2 }'
+1
+2 aaa :000
+3 bbb :111
+4 ccc :222
+
+
+echo $',aaa\n:000\n,bbb\n:111\n,ccc\n:222\n' | gawk 'BEGIN { RS = "(^|\n)," ; FS = "\n:" } { print FNR, $1, $2 }'
+1
+2 aaa 000
+3 bbb 111
+4 ccc 222
+
+===
+]]
+[[
+filter,select:
+
+echo $',aaa\n:000\n,bbb\n:111\n,ccc\n:222\n' | gawk -- 'BEGIN { RS = "(^|\n)," ; FS = "\n:" } ($1 ~ /[ac]/) { print FNR, $1, $2 }'
+2 aaa 000
+4 ccc 222
+
+]]
+[[
+file:
+gawk -- '{<模式辻动作...>}' <文件名>
+示例:
+gawk -- 'BEGIN { RS = "(^|\n)," ; FS = "\n:" } ($2 ~ /正月初一/)  { print $1 }'  /sdcard/0my_files/tmp/out4py/script.欧路词典囗.试读囗囗假设简介字节数地址固定囗.汉语大辞典.out.词典-初步清理.txt  | more
+gawk -- 'BEGIN { RS = "(^|\n)," ; FS = "\n:" } ($2 ~ /二月初?二|三月初?三|四月初?四|五月初?五|六月初?六|七月初?七|八月初?八|九月初?九|十月初?十/)  { print $1 }'  /sdcard/0my_files/tmp/out4py/script.欧路词典囗.试读囗囗假设简介字节数地址固定囗.汉语大辞典.out.词典-初步清理.txt  | more
+
+#注意:字符串 串联: 空格
+gawk -- 'BEGIN { RS = "(^|\n)," ; FS = "\n:" } ($1 ~ /^(春節|春元|打灰堆)$/)  { print ("," $0) }'  /sdcard/0my_files/tmp/out4py/script.欧路词典囗.试读囗囗假设简介字节数地址固定囗.汉语大辞典.out.词典-初步清理.txt  | more
+]]
 
 
 
@@ -172,6 +240,12 @@ view others/app/termux/help/gawk.man.txt
 ]]
 
 [[
+！字符串 址引 从一开始 而非 从零开始！
+sub(r, s [, t]), gsub(r, s [, t])
+match(s, r [, a]) # (s~r) # RSTART RLENGTH
+index(s, t), length([s])
+
+===
        sub(r, s [, t])        Just like gsub(), but replace only the first
                               matching substring.  Return either zero or one.
 
@@ -188,6 +262,26 @@ view others/app/termux/help/gawk.man.txt
                               ampersands and backslashes in the replacement
                               text of sub(), gsub(), and gensub().)
 
+
+===
+       match(s, r [, a])      Return the position in s where the regular
+                              expression r occurs, or zero if r is not
+                              present, and set the values of RSTART and
+                              RLENGTH.  Note that the argument order is the
+                              same as for the ~ operator: str ~ re.  See
+                              https://www.gnu.org/software/gawk/manual/html_node/String-Functions.html#String-Functions
+                              for a description of how the array a is filled
+                              if it is provided.
+
+===
+       index(s, t)            Return the index of the string t in the string
+                              s, or zero if t is not present.  (This implies
+                              that character indices start at one.)
+
+       length([s])            Return the length of the string s, or the length
+                              of $0 if s is not supplied.  With an array
+                              argument, length() returns the number of
+                              elements in the array.
 
 
 ]]
