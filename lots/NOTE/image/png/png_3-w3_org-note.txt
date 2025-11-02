@@ -1,0 +1,2605 @@
+
+e ../lots/NOTE/image/png/png_3-w3_org-note.txt
+
+view /sdcard/0my_files/unzip/png_specification/www.w3.org/TR/png-3/index.html
+view /sdcard/0my_files/tmp/out4py/html2text/w3_org-png_3-index.html.txt
+  抽取目录:goto
+  原文目录:goto
+
+
+png vs apng
+  png:still_png/static_png
+  apng:animated_png:动画，但 同样含有一静态图片 用于打印
+   => 窃昵称为 (spng|apng)
+
+RGB vs L/Luminance
+EXIF information:Exchangeable image file format metadata such as shutter speed, aperture, and orientation
+Gamma and chromaticity:Gamma value of the image with respect to the desired output intensity, and chromaticity characteristics of the RGB values used in the image.
+  #chroma:色度
+  #chromaticity:光’色品 #色度？
+The allowed bit depths and sample depths for each PNG image type are listed in Image header.
+  ???bit_depths <?> sample_depths???
+Greyscale samples represent:
+    luminance if the transfer curve is indicated (by gAMA, sRGB, iCCP or cICP);
+    or device-dependent greyscale if not.
+RGB samples represent:
+    calibrated color information if the color space is indicated (by gAMA and cHRM, sRGB,  iCCP,  or cICP);
+    or uncalibrated device-dependent color if not.
+Sample values are not necessarily proportional to light intensity; the gAMA chunk specifies the relationship between sample values and display output intensity.
+
+
+Physical pixel dimensions:Intended pixel size and aspect ratio to be used in presenting the PNG image.
+Significant bits:The number of bits that are significant in the samples.
+
+vs:
+  (width4canvas, height4canvas)
+  (width4frame, height4frame)
+  (width4pixel, height4pixel)
+
+
+
+reference_image#纯概念
+png_image#内存
+png_datastream#字节串#文件,或者 只是 文件中的一个对象
+
+[apng =?= (static_image, [frame])]
+[frame == (timing_info, position_info, handling_info, ...)]
+
+
+[reference_image == (size4image, sample_depths4RGBA, pixel_matrix8image7RGBA{size4image, sample_depths4RGBA})]
+  ???purepng.py=>[size4image == (width4canvas, height4canvas)/(num_columns, num_rows)]
+[Matrix{size4image, T} = [[T]{len=width4canvas}]{len=height4canvas}]
+
+[sample_depths4RGBA == (sample_depth{R}, sample_depth{G}, sample_depth{B}, sample_depth{A})]
+[sample_depth{X} :: uint%17]
+
+[pixel7RGBA{sample_depths4RGBA} == (sample{sample_depth{R}}, sample{sample_depth{G}}, sample{sample_depth{B}}, sample{sample_depth{A}})]
+[sample{sample_depth{X}} :: uint%2**sample_depth{X}]
+[channel{X} == sample_matrix8channel{size4image, sample_depth{X}}]
+
+
+[sample_matrix8channel{size4image, sample_depth{X}} == Matrix{size4image, sample{sample_depth{X}}}]
+[pixel_matrix8image7RGBA{size4image, sample_depths4RGBA} == Matrix{size4image, pixel7RGBA{sample_depths4RGBA}}]
+[pixel_matrix8image7RGBA{size4image, sample_depths4RGBA} ~=~ (sample_matrix8channel{size4image, sample_depth{R}}, sample_matrix8channel{size4image, sample_depth{G}}, sample_matrix8channel{size4image, sample_depth{B}}, sample_matrix8channel{size4image, sample_depth{A}})]
+
+[png_image == (sample_depth7uniform,
+  (Truecolor_with_alpha :: pixel_matrix7RGBA
+  |Greyscale_with_alpha :: pixel_matrix7LA
+  |Truecolor :: (pixel_matrix7RGB, Maybe pixel7RGB8fully_transparent)
+  |Greyscale :: (sample_matrix7L, Maybe sample7L8fully_transparent)
+  |Indexed_color :: (palette7RGB, palette7A/alpha_table, bit_depth{Indexed_color}, palette_index_matrix)
+  )
+  )]
+[bit_depth{not Indexed_color} == sample_depth7uniform]
+[1 <= bit_depth{Indexed_color} <= 8 == sample_depth7uniform{Indexed_color}]
+[1 <= len(palette7RGB) <= 2**bit_depth{Indexed_color} <= 256]
+
+[sample_depth7uniform >= 2**ceil_log2_(max(sample_depths4RGBA))]
+[sample_depth7uniform <= 16]
+[sample_depth7uniform <- {1,2,4,8,16}]
+[color_type == (6/Truecolor_with_alpha|4/Greyscale_with_alpha|3/Indexed_color|2/Truecolor|0/Greyscale)]
+[color_type :: uint%7 \-\{1,5}]
+[color_type == [palette_used]1 + [truecolor_used]2 + [alpha_used]4]
+[[palette_used] -> [truecolor_used]]
+[[palette_used] -> [not [alpha_used]]]
+  no:explicit alpha channel,but have palette7A
+
+[1 <= len(palette7A) <= len(palette7RGB) <= 256]
+  # palette7A 尾部填充 (max_alpha)
+[max_alpha == (2**sample_depth7uniform -1)]
+
+[palette_index_matrix :: Matrix size4image palette_index]
+[palette_index :: uint%len(palette7RGB) <: uint%2**bit_depth{Indexed_color}]
+  # ??? [palette_index :: uint%2**bit_depth{Indexed_color}]
+
+
+
+[[
+transformation :: reference_image -> png_image
+  [alpha_separation]
+  indexing or ( [RGB_merging] [alpha_compaction] )
+  sample_depth_scaling
+
+
+尝试精简:
+alpha_separation
+  [[all [[sample7A==max_alpha] | [sample7A :<- channel{A}]]] => [del channel{A}]]
+
+indexing#看情况而定，因为固定 palette_index存储为byte，所以未必精简
+  [[[len {pixel7RGBA | [pixel7RGBA :<- pixel_matrix7RGBA]} <= 256][[max(sample_depths4RGBA) <= 8]or[max(sample_depths4RGB) <= 8][[[sample7A==0] | [sample7A :<- channel{A}]]or[[sample7A==max_alpha] | [sample7A :<- channel{A}]]]]] => [mk (palette7RGB, palette7A, palette_index_matrix)]]
+      # [[sample_depth{A} <= 8] or fully_transparent/0 or fully_opaque/max_alpha]
+  同步调整:(palette7RGB, palette7A, palette_index_matrix):
+    palette7A 中的 max_alpha 全部移至尾部(同步调整)
+    palette7A 尾部的 max_alpha 全部移除
+
+RGB_merging
+  [all_eq_ xs = min(xs) == max(xs)]
+  [[[all_eq_(sample_depths4RGBA[:3])][all [all_eq_(pixel7RGBA[:3]) | [pixel7RGBA :<- pixel_matrix7RGBA]]]] => [简并:RGB-->L]]
+
+alpha_compaction
+  [[non-indexed image][?pixel7RGB8fully_transparent -> [all [(pixel7RGBA[3] == 0 and pixel7RGBA[3] == pixel7RGB8fully_transparent)or(pixel7RGBA[3] == max_alpha and pixel7RGBA[3] =!= pixel7RGB8fully_transparent) | [pixel7RGBA :<- pixel_matrix7RGBA]]]] => [使用pixel7RGB8fully_transparent/sample7L8fully_transparent替代channel{A}]]
+      # [fully_transparent/0{solo-RGB} or fully_opaque/max_alpha{other-RGBs}]
+
+sample_depth_scaling
+  [[[sample_depths:=(sample_depths4RGBA if has channel(A) else sample_depths4RGB)][not [[all_eq_(sample_depths)][is_zpow(sample_depths[0])]]]] => [调整至适当的sample_depth7uniform]]
+
+
+#即:见下面:拟标准放大方法:周期延拓left bit replication
+[my_extended_sample_depth_scaling{sample_depth7src, sample_depth7dst} :: sample{sample_depth7src} -> (sample{sample_depth7dst}|[sample_depth7src > sample_depth7dst]=>^ValueError)]
+    # 注意:有瑕疵:一个放大过程若是通过一个中间层拆成两个放大过程，则结果不同。比如:1爻元1爻元地增加
+[my_extended_sample_depth_scaling{sample_depth7src, sample_depth7dst} sample8src =
+    if sample_depth7src == sample_depth7dst then sample8src else
+    if sample_depth7src < sample_depth7dst <= 2*sample_depth7src then (sample8src<<(sample_depth7dst-sample_depth7src))|(sample8src>>(2*sample_depth7src-sample_depth7dst)) else
+    if 2*sample_depth7src < sample_depth7dst then (my_extended_sample_depth_scaling{2*sample_depth7src, sample_depth7dst} (my_extended_sample_depth_scaling{sample_depth7src, 2*sample_depth7src} sample8src)) else
+    #now:[sample_depth7src > sample_depth7dst]
+    let sample8dst := (sample8src >> (sample_depth7src-sample_depth7dst))
+    in if (my_extended_sample_depth_scaling{sample_depth7dst, sample_depth7src} sample8dst) == sample8src then sample8dst else
+    raise ValueError(sample8src)
+    ]
+
+]]
+
+
+
+[[
+encode :: png_image -> png_datastream
+
+pass_extraction :: png_image -> interlaced_png_image/[pass/reduced_image]
+    #rearranged for progressive_display
+    * no_interlace/0: -> 1pass
+    * Adam7_interlace/1: -> 7passes
+    #抽取(pass_extraction)以 像素(pixel) 为单位 而非字节
+    # 但 filtering 以 字节 为 单位
+
+scanline_serialization :: row/[pixel] -> scanline_bytes
+    #scanline:row of pixels within an image or interlaced PNG image.
+
+filtering{filter_method,filter_type{filter_method}} :: may prev_scanline_bytes -> scanline_bytes -> (filtered_scanline_bytes{len==1+len(scanline_bytes) if len(scanline_bytes) else 0}{.[:1] == filter_type_byte if len(scanline_bytes) else b''}
+    #prepare for compression
+    #filter_method{interlaced_png_image}{全图唯一},filter_type{scanline}{编码器自选每行}
+
+compression :: [[filtered_scanline_bytes]{of same reduced_image}]{of all reduced_images} -> compressed_bytes4interlaced_png_image
+
+chunking :: compressed_bytes4interlaced_png_image -> [chunk/bytes]
+
+datastream_construction :: [chunk] -> png_datastream
+
+
+
+]]
+
+[[
+[png_datastream == (png_signature, chunks8body/[chunk])]
+[png_signature :: bytes{len==8}]
+[png_signature == b'\x89PNG\r\n\x1A\n']
+  #89 50 4E 47 0D 0A 1A 0A
+
+[chunk == (len4chunk_data, chunk_type, chunk_data, crc4typ_dat)]
+[chunks8body[0].chunk_type == b'IHDR']
+[chunks8body[-1].chunk_type == b'IEND']
+[[chunk :<- chunks8body[0:-1]] -> [chunk.chunk_type !<- (b'IHDR', b'IEND')]]
+
+[len4chunk_data :: (uint%2**31){uint_31bit___big_endian_4byte}]
+[chunk_data :: bytes{len==len4chunk_data}]
+
+[crc4typ_dat :: uint%2**32{uint_32bit___big_endian_4byte}]
+[crc4typ_dat == crc(chunk_type++chunk_data)]
+
+[chunk_type :: bytes{len==4}{ascii_letter}{<- regex"[A-Za-z]{4}"}]
+[critical_vs_ancillary := chunk_type[0].islower()]
+[public_vs_private := chunk_type[1].islower()]
+[reserved := chunk_type[2].islower()]
+[unsafe_to_copy__vs__safe_to_copy := chunk_type[3].islower()]
+    # Private critical chunks SHOULD NOT be defined because PNG datastreams containing such chunks are not portable, and SHOULD NOT be used in publicly available software or datastreams.
+5.8 Private field values
+  [@[nm :<- 'bit_depth,color_type,compression_method,filter_method,interlace_method'.split(',')] -> [v:=getattr(png_image, nm)] -> [is_private_field_value_(nm,v) =[def]= [v >= 128]]]
+    # Private field values MAY be used for experimental or private semantics.
+    # Private field values SHOULD NOT appear in publicly available software or datastreams
+
+
+]]
+
+[[
+Table 7 Chunk ordering rules
+Critical chunks:
+  [IHDR < PLTE? < IDAT+ < IEND]
+
+Ancillary chunks:
+  [IHDR < { tIME? , iTXt* , tEXt* , zTXt* , { eXIf? , pHYs? , sPLT* , {(iCCP|cICP|sRGB)?,cHRM?,gAMA?,mDCV?,cLLI?,sBIT?} < PLTE? < {[PLTE]hIST?,bKGD?,tRNS?} , acTL? < [acTL]fcTL? } < IDAT+ < [acTL](fcTL < fdAT+)+ } < IEND]
+  注意:部分图片bug: 没有体现出 pHYs < IDAT
+  注意:我私改:『acTL? < [acTL]fcTL?』，原文是『{acTL,fcTL}?』
+  注意:我私改:『[acTL](fcTL < fdAT+)+』，原文是『{[acTL]fcTL+ , [acTL]fdAT+}』
+
+spng__PLTE
+  无{acTL,fcTL,fdAT}有{PLTE}
+spng__no_PLTE
+  无{acTL,fcTL,fdAT}无{PLTE,hIST}
+apng__PLTE__spng8fst_frame
+  有{acTL,fcTL,fdAT}有{1个fcTL<IDAT+}有{PLTE}
+apng__no_PLTE__spng8fst_frame
+  有{acTL,fcTL,fdAT}有{1个fcTL<IDAT+}无{PLTE}
+apng__PLTE__spng_not_frame
+  有{acTL,fcTL,fdAT}无{1个fcTL<IDAT+}有{PLTE}
+apng__no_PLTE__spng_not_frame
+  有{acTL,fcTL,fdAT}无{1个fcTL<IDAT+}无{PLTE}
+
+Figure 11 Lattice diagram: Static PNG images with PLTE
+  [IHDR < { tIME? , iTXt* , tEXt* , zTXt* , { eXIf? , pHYs? , sPLT* , {(iCCP|cICP|sRGB)?,cHRM?,gAMA?,mDCV?,cLLI?,sBIT?} < PLTE < {hIST?,bKGD?,tRNS?} } < IDAT+ } < IEND]
+    #hIST{PLTE}
+
+Figure 12 Lattice diagram: Static PNG images without PLTE
+  [IHDR < { tIME? , iTXt* , tEXt* , zTXt* , { eXIf? , pHYs? , sPLT* , (iCCP|cICP|sRGB)?,cHRM?,gAMA?,mDCV?,cLLI?,sBIT? , bKGD?,tRNS? } < IDAT+ } < IEND]
+  # 去掉:PLTE,hIST{PLTE}
+
+Figure 13 Lattice diagram: Animated PNG images with PLTE, static image forms the first frame
+  [IHDR < { tIME? , iTXt* , tEXt* , zTXt* , { eXIf? , pHYs? , sPLT* , {(iCCP|cICP|sRGB)?,cHRM?,gAMA?,mDCV?,cLLI?,sBIT?} < PLTE < {hIST?,bKGD?,tRNS?} , acTL < fcTL } < IDAT+ < (fcTL < fdAT+)+ } < IEND]
+
+Figure 14 Lattice diagram: Animated PNG images without PLTE, static image forms the first frame
+  [IHDR < { tIME? , iTXt* , tEXt* , zTXt* , { eXIf? , pHYs? , sPLT* , (iCCP|cICP|sRGB)?,cHRM?,gAMA?,mDCV?,cLLI?,sBIT? , bKGD?,tRNS? , acTL < fcTL } < IDAT+ < (fcTL < fdAT+)+ } < IEND]
+
+Figure 15 Lattice diagram: Animated PNG images with PLTE, static image not part of animation
+  [IHDR < { tIME? , iTXt* , tEXt* , zTXt* , { eXIf? , pHYs? , sPLT* , {(iCCP|cICP|sRGB)?,cHRM?,gAMA?,mDCV?,cLLI?,sBIT?} < PLTE < {hIST?,bKGD?,tRNS?} , acTL } < IDAT+ < (fcTL < fdAT+)+ } < IEND]
+    #去掉1个fcTL@(<IDAT)
+
+Figure 16 Lattice diagram: Animated PNG images without PLTE, static image not part of animation
+  [IHDR < { tIME? , iTXt* , tEXt* , zTXt* , { eXIf? , pHYs? , sPLT* , (iCCP|cICP|sRGB)?,cHRM?,gAMA?,mDCV?,cLLI?,sBIT? , bKGD?,tRNS? , acTL } < IDAT+ < (fcTL < fdAT+)+ } < IEND]
+
+
+
+
+
+
+]]
+[[
+[(Truecolor_with_alpha|Greyscale_with_alpha) => [no:tRNS_chunk]]
+[[has:tRNS_chunk] => (Truecolor|Greyscale|Indexed_color)]
+[:4ways_repr_alpha]:here
+4ways repr alpha:
+  * channel{A}@(Truecolor_with_alpha|Greyscale_with_alpha)
+  * [no:tRNS_chunk]@(Truecolor|Greyscale|Indexed_color) => fully_opaque
+  * [has:tRNS_chunk{palette7A/alpha_table}]@Indexed_color
+  * [has:tRNS_chunk{pixel7RGB8fully_transparent|pixel7L8fully_transparent}]@(Truecolor|Greyscale)
+
+[alpha_channel => [delivered_image := png_image <* background_image]]
+
+
+]]
+[[
+7. Encoding the PNG image as a PNG datastream
+7.1 Integers and byte order
+All integers that require more than one byte shall be in network byte order
+  #big_endian
+Values explicitly noted as signed are represented in two's complement notation.
+  #neg_int:two's complement # vs:one's complement
+  # [ones_complement u =[def]= ~u == max_digit-u = (unsigned)(-1-u)]
+  #     反码
+  # [twos_complement u =[def]= (~u)+1 == zpow_radix-u == (unsigned)(-u)]
+  #     补码
+PNG four-byte unsigned integers are limited to the range 0 to 2^31-1 to accommodate languages that have difficulty with unsigned four-byte values.
+  #uint_31bit___big_endian_4byte
+  #but:crc4typ_dat:uint_32bit___big_endian_4byte
+
+7.2 Scanlines
+[(LA|RGB|RGBA) => sample_depth7uniform <- {8,16}]
+  #PNG permits multi-sample pixels only with 8 and 16-bit samples, so multiple samples of a single pixel are never packed into one byte.
+[Greyscale => (1|2|4|8|16)bit sample_depth7uniform]
+[Indexed_color => (1|2|4|8)bit bit_depth{Indexed_color}]
+  少于8bit,合并方式pack类同于Greyscale
+    填充bit未指定
+      #When there are multiple pixels per byte, some low-order bits of the last byte of a scanline may go unused. The contents of these unused bits are not specified.
+
+7.3 Filtering
+  insert filter_type_byte at beginning of each filtered_scanline_bytes
+
+8. Interlacing and pass extraction
+  coarse view
+Adam7_interlace:
+  #抽取(pass_extraction)以 像素(pixel) 为单位 而非字节
+  # 但 filtering 以 字节 为 单位,但以 像素 为 间隔 关联 (间隔字节数:1 if bit_depth < 8 else bit_depth*num_channels6dat_mx///8)
+  Each pass transmits a subset of the pixels in the reference image. The pass in which each pixel is transmitted (numbered from 1 to 7) is defined by replicating the following 8-by-8 pattern over the entire image, starting at the upper left corner:
+1 6 4 6 2 6 4 6
+7 7 7 7 7 7 7 7
+5 6 5 6 5 6 5 6
+7 7 7 7 7 7 7 7
+3 6 4 6 3 6 4 6
+7 7 7 7 7 7 7 7
+5 6 5 6 5 6 5 6
+7 7 7 7 7 7 7 7
+  #The transmission order is defined so that all the scanlines transmitted in a pass will have the same number of pixels; this is necessary for proper application of some of the filters.
+  #NOTE If the reference image contains fewer than five columns or fewer than five rows, some passes will be empty.
+# [:Adam7_interlace相关数据丶代码]:goto
+
+9. Filtering
+9.1 Filter methods and filter types
+  #Filtering transforms the PNG image with the goal of improving compression.
+  #Filter type bytes are associated only with non-empty scanlines. No filter type bytes are present in an empty pass.
+  #Filters are applied to bytes, not to pixels, regardless of the bit depth or color type of the image.
+
+Table 10 Named filter bytes
+Figure 19 Positions of filter bytes a, b and c relative to x
+  c ... b
+  a ... x
+      #a/left, b/above, c/upper_left
+      x:the byte being filtered;
+      a:the byte corresponding to x in the pixel immediately before the pixel containing x (or the byte immediately before x, when the bit depth is less than 8);
+      b:the byte corresponding to x in the previous scanline;
+
+[filter_method==0]
+    #Only filter method 0 is defined by this specification.
+    #Filter method 0 specifies exactly this set of five filter types and this shall not be extended.
+    #   {None/0, Sub/1, Up/2, Average/3, Paeth/4}
+[predictor(a,b,c) -> x7pred]
+[filter{predictor}(a,b,c;x) =[def]= x-predictor(a,b,c)]
+[reconstruction{predictor}(a,b,c;y) =[def]= y+predictor(a,b,c)]
+[predictor{filter_method:=0,filter_type:=None/0}(a,b,c) =[def]= 0]
+[predictor{filter_method:=0,filter_type:=Sub/1}(a,b,c) =[def]= a]
+[predictor{filter_method:=0,filter_type:=Up/2}(a,b,c) =[def]= b]
+[predictor{filter_method:=0,filter_type:=Average/3}(a,b,c) =[def]= (a+b)//2] # floor()
+[predictor{filter_method:=0,filter_type:=Paeth/4}(a,b,c) =[def]= PaethPredictor(a,b,c)]
+def PaethPredictor(a,b,c):
+    p = a + b - c
+    pa = abs(p - a) # abs(b-c)
+    pb = abs(p - b) # abs(a-c)
+    pc = abs(p - c) # abs(a+b-2*c)
+    if pa <= pb and pa <= pc then Pr = a
+        # 认为a最近似x的条件:abs(b-c)最小#理解为 平行线相应近似
+    else if pb <= pc then Pr = b
+        # 认为b最近似x的条件:abs(a-c)最小#理解为 平行线相应近似
+    else Pr = c
+        # 认为c最近似x的条件:abs(a+b-2*c)最小#理解为 对角和近似
+    return Pr
+
+
+#不存在的位置，其值缺省为0
+  #For all filters, the bytes "to the left of" the first pixel in a scanline shall be treated as being zero.
+  #For filters that refer to the prior scanline, the entire prior scanline and bytes "to the left of" the first pixel in the prior scanline shall be treated as being zeroes for the first scanline of a reduced image.
+
+10. Compression
+10.1 Compression method 0
+[compression_method==0]
+    #Only PNG compression method 0 is defined by this International Standard.
+    #PNG compression method 0 is deflate compression with a sliding window (which is an upper bound on the distances appearing in the deflate stream) of at most 32768 bytes.
+    #   # [32768 == 2**15 == 32K]
+    #   # [16384 == 2**14 == 16K]
+    #Deflate compression is derived from LZ77.
+    #Deflate-compressed datastreams within PNG are stored in the zlib format
+
+[zlib_format_datastream == (zlib_compression_method/flags_code, additional_flags/check_bits, compressed_data_blocks, check_value) :: (1byte,1byte,bytes,4bytes)]
+  #zlib is specified at [rfc1950].
+  #deflate specification [rfc1951].
+
+[deflate_compressed_datastream{png.compression_method==0} == zlib_format_datastream{zlib_compression_method:=deflate_compression/8}{LZ77_window_size<=2**15}{no:preset_dictionary}]
+    # ["zlib_compression_method" is not "png.compression_method"]
+推荐:[LZ77_window_size{sz4dat} := 2**max(8,min(15, ceil_log2_(sz4dat)))]
+    #This decreases the memory required for both encoding and decoding, without adversely affecting the compression ratio.
+
+随意切割
+  # It is important to emphasize that the boundaries between IDAT chunks are arbitrary and can fall anywhere in the zlib datastream.
+  # Similarly, there is no required correlation between the structure of the image data (i.e., scanline boundaries) and deflate block boundaries or IDAT chunk boundaries.
+
+
+10.3 Other uses of compression
+PNG also uses compression method 0 in iTXt, iCCP, and zTXt chunks.
+    Unlike the image data, such datastreams are not split across chunks; each such chunk contains an independent zlib datastream
+[1 (iTXt_chunk|iCCP_chunk|zTXt_chunk) <-> 1 zlib_datastream]
+[all [IDAT_chunk] <-> 1 zlib_datastream]
+  fdAT??
+
+
+
+]]
+
+[[
+11. Chunk specifications
+
+11.2.1 IHDR Image header
+
+[chunk_data4IHDR == (width4canvas, height4canvas, bit_depth, color_type, compression_method, filter_method, interlace_method)]
+
+[width4canvas,height4canvas :: pint_31bit___big_endian_4byte]
+[bit_depth, color_type, compression_method, filter_method, interlace_method :: uint_8bit_1byte{public_value@uint_7bit_1byte}{private_value@{>=128}}]
+  [compression_method <- {0}]
+      # (deflate compression with a sliding window of at most 32768 bytes)
+  [filter_method <- {0}]
+      # (adaptive filtering with five basic filter types)
+  [interlace_method <- {0,1}]
+      # (no_interlace|Adam7_interlace)
+  [color_type <- {0,2,3,4,6}]
+  [bit_depth <- {1,2,4,8,16}{depends on color_type}]
+      #Bit depth restrictions for each color type are imposed to simplify implementations and to prohibit combinations that do not compress well.
+Greyscale:
+  L1,L2,L4,L8,L16
+  [pixel{L} == (L/luminance,)]
+  no:PLTE_chunk
+
+Truecolor:
+  RGB8,RGB16
+  [pixel{RGB} == (R,G,B)]
+  PLTE_chunk?
+
+Indexed_color:
+  P1,P2,P4,P8
+  [pixel{L} == (P/palette_index,)]
+  [sample_depth7uniform{P} === 8]
+  PLTE_chunk!
+
+
+Greyscale_with_alpha:
+  LA8,LA16
+  [pixel{LA} == (L,A)]
+  no:PLTE_chunk
+
+Truecolor_with_alpha:
+  RGBA8,RGBA16
+  [pixel{RGBA} == (R,G,B,A)]
+  PLTE_chunk?
+
+
+[sample_depth7uniform{color_type} === 8 if color_type==P else bit_depth{color_type}]
+
+
+11.2.2 PLTE Palette
+
+[chunk_data4PLTE == palette_entries :: [palette_entry/pixel7RGB_3byte]{1<=len<=256}]
+    #不论原图sample_depths7XXX4src是多少,[palette_entry.sample_depth==8]
+    #   考虑到lossless:要么[max(sample_depths7XXX4src) <= 8]要么我猜[所有颜色均可依照my_extended_sample_depth_scaling脱水]
+    # palette_entry不一定都被用到
+    # 允许palette_entry重复出现
+[len(palette_entries) == len(chunk_data4PLTE)///3]
+
+###use PLTE as sPLT:suggested_palette###
+For color types 2 and 6 (truecolor and truecolor with alpha), the PLTE chunk is optional.
+    If present, it provides a suggested set of colors (from 1 to 256) to which the truecolor image can be quantized if it cannot be displayed directly.
+    It is, however, recommended that the sPLT chunk be used for this purpose, rather than the PLTE chunk.
+    If neither PLTE nor sPLT chunks are present and the image cannot be displayed directly, quantization has to be done by the viewing system.
+    However, it is often preferable for the selection of colors to be done once by the PNG encoder.
+
+
+
+11.2.3 IDAT Image data
+所有IDAT_chunk必须连续出现
+  #There may be multiple IDAT chunks; if so, they shall appear consecutively with no other intervening chunks.
+所有chunk_data4IDAT串联起来成为单个zlib_datastream
+
+
+最后一个chunk_data4IDAT尾部可能有无用数据
+  #Some images have unused trailing bytes at the end of the final IDAT chunk.
+  #This is undesirable.
+  #A decoder should ignore these trailing bytes.
+
+11.2.4 IEND Image trailer
+[chunk_data4IEND == b'']
+
+]]
+
+
+[[[[[[[
+11.3 Ancillary chunks
+
+11.3.1 Transparency information
+11.3.2 Color space information
+11.3.3 Textual information
+11.3.4 Miscellaneous information
+11.3.5 Time stamp information
+11.3.6 Animation information
+
+
+
+
+
+
+
+[[
+11.3.1 Transparency information
+11.3.1.1 tRNS Transparency
+单色透明
+[:4ways_repr_alpha]:goto
+含tRNS两种情况:
+  * [has:tRNS_chunk{palette7A/alpha_table}]@Indexed_color
+  * [has:tRNS_chunk{pixel7RGB8fully_transparent|pixel7L8fully_transparent}]@(Truecolor|Greyscale)
+
+Greyscale/0:
+  [chunk_data4tRNS{L} == pixel7L8fully_transparent/grey_sample_value :: uint_2byte_BE]
+
+Truecolor/2:
+  [chunk_data4tRNS{RGB} == pixel7RGB8fully_transparent/(red_sample_value,green_sample_value,blue_sample_value) :: (uint_2byte_BE,uint_2byte_BE,uint_2byte_BE)]
+  #(0|2):
+    If the image bit depth is less than 16, the least significant bits are used.
+      #xxx:这里又不进行sample_depth_scaling? 真是操蛋#xxx
+      # 『image bit depth』应该是指png.sample_depth7uniform，而非 原图sample_depths7XXX4src，这里的pixel保存的是sample_depth_scaling后的值，因为已经放大过，所以只是低端保存而无需再放大，16bit只是容器
+      #Decoders have to postpone any sample depth rescaling until after the pixels have been tested for transparency.
+
+Indexed_color/3:
+  [chunk_data4tRNS{P} == palette7A/alpha_table :: [uint_1byte]*len(palette7A)]
+    #3:
+    [1 <= len(palette7A) <= len(palette7RGB) <= 256]
+      # palette7A 尾部填充 (max_alpha)
+      填充
+
+]]
+
+
+
+
+
+
+
+[[
+11.3.2 Color space information
+  未说忽略:sBIT，mDCV，cLLI
+  不该忽略:gAMA
+11.3.2.1 cHRM Primary chromaticities and white point
+忽略:
+  #This chunk is ignored unless it is the highest-precedence color chunk understood by the decoder.
+
+
+4个基准点:WRGB#白红绿蓝
+  #The cHRM chunk may be used to specify the 1931 CIE x,y chromaticities of the red, green, and blue display primaries used in the PNG image, and the referenced white point.
+
+[chunk_data4cHRM == scaled_coordinatess8WRGB :: (scaled_coordinates{W},scaled_coordinates{R},scaled_coordinates{G},scaled_coordinates{B})]
+[scaled_coordinates/(x_1e5,y_1e5) :: (uint_31bit___big_endian_4byte,uint_31bit___big_endian_4byte)]
+[coordinates :: (float,float)]
+  [x == x_1e5/1e5 == x_1e5/10_0000.0]
+
+
+11.3.2.2 gAMA Image gamma
+忽略:
+  #This chunk is ignored unless it is the highest-precedence color chunk understood by the decoder.
+see below:『If the source datastream describes the gamma characteristics of the image, a datastream converter is strongly encouraged to write a gAMA chunk.』
+
+强度+输出情况:
+  #In fact specifying the desired display output intensity is insufficient. It is also necessary to specify the viewing conditions under which the output is desired.
+    #intensity:强度,亮度
+
+[chunk_data4gAMA == scaled_image_gamma :: uint_31bit___big_endian_4byte]
+[image_gamma :: float]
+[image_gamma == scaled_image_gamma/1e5]
+
+
+
+11.3.2.3 iCCP Embedded ICC profile
+11.3.2.5 sRGB Standard RGB color space
+11.3.2.6 cICP Coding-independent code points for video signal type identification
+忽略:
+  #This chunk is ignored unless it is the highest-precedence color chunk understood by the decoder.
+
+
+
+11.3.2.4 sBIT Significant bits
+即:原图:sample_depths7XXX4src{color_type}
+[significant_bits{X} :: uint_1byte]
+    #有效位数
+[1 <= significant_bits{X} <= sample_depth7uniform]
+    # Each depth specified in sBIT shall be greater than zero and less than or equal to the sample depth (which is 8 for indexed-color images, and the bit depth given in IHDR for other color types).
+
+[chunk_data4sBIT{L} == significant_bits{L}]
+  #significant_greyscale_bits
+[chunk_data4sBIT{(RGB|P)} == (significant_bits{R},significant_bits{G},significant_bits{B})]
+[chunk_data4sBIT{LA} == (significant_bits{L},significant_bits{A})]
+[chunk_data4sBIT{RGBA} == (significant_bits{R},significant_bits{G},significant_bits{B},significant_bits{A})]
+
+tRNS=>(L|RGB|P) 而sBIT@(L|RGB|P)皆无:significant_bits{A}
+#Note that sBIT does not provide a sample depth for the alpha channel that is implied by a tRNS chunk; in that case, all of the sample bits of the alpha channel are to be treated as significant.
+#   If the sBIT chunk is not present, then all of the sample bits of all channels are to be treated as significant.
+
+
+
+11.3.2.7 mDCV Mastering Display Color Volume
+  竟然没有说:忽略
+    #If present, the mDCV chunk characterizes the Mastering Display Color Volume (mDCV) used at the point of content creation, as specified in [SMPTE-ST-2086].
+    #   The mDCV chunk provides informative static metadata which allows a target (consumer) display to potentially optimize its tone mapping decisions on a comparison of its inherent capabilities versus the original mastering display's capabilites.
+
+11.3.2.8 cLLI Content Light Level Information
+  竟然没有说:忽略
+If present, the cLLI chunk identifies two characteristics of HDR content:
+The cLLI chunk adds static metadata which provides an opportunity to optimize tone mapping of the associated content to a specific target display.
+    This is accomplished by tailoring the tone mapping of the content itself to the specific peak brightness capabilities of the target display to prevent clipping.
+    The method of tone-mapping optimization is currently subjective.
++ MaxCLL (Maximum Content Light Level)
+    uses a static metadata value to indicate the maximum light level of any single pixel (in cd/m2, also known as nits) of the entire playback sequence.
+    There is often an algorithmic filter to eliminate false values occurring from processing or noise that could adversely affect intended downstream tone mapping.
++ MaxFALL (Maximum Frame Average Light Level)
+    uses a static metadata value to indicate the maximum value of the frame average light level (in cd/m2, also known as nits) of the entire playback sequence.
+    MaxFALL is calculated by first averaging the decoded luminance values of all the pixels in each frame, and then using the value for the frame with the highest value.
+
+
+]]
+
+
+
+
+
+
+[[
+11.3.3 Textual information
+PNG provides the tEXt, iTXt, and zTXt chunks for storing text strings associated with the image, such as an image description or copyright notice.
+    Keywords are used to indicate what each text string represents.
+    Any number of such text chunks may appear, and more than one with the same keyword is permitted.
+
+
+11.3.3.1 Keywords and text strings
+
+encoding:
+  iTXt:utf8
+  (tEXt|zTXt):latin1{regex4printable_Latin_1_include_LF}
+
+Table 21 Predefined keywords
+Title
+    Short (one line) title or caption for image
+
+Author
+    Name of image's creator
+
+Description
+    Description of image (possibly long)
+
+Copyright
+    Copyright notice
+
+Creation Time
+    Time of original image creation
+
+Software
+    Software used to create the image
+
+Disclaimer
+    Legal disclaimer
+
+Warning
+    Warning of nature of content
+
+Source
+    Device used to create the image
+
+Comment
+    Miscellaneous comment
+
+XML:com.adobe.xmp
+    Extensible Metadata Platform (XMP) information, formatted as required by the XMP specification [XMP].
+    The use of iTXt, with Compression Flag set to 0, and both Language Tag and Translated Keyword set to the null string, are recommended for XMP compliance.
+
+Collection
+    Name of a collection to which the image belongs.
+    An image may belong to one or more collections, each named by a separate text chunk.
+
+
+[regex4printable_Latin_1_include_LF := regex"[\x0A\x20-\x7E\xA1-\xFF]"]
+[regex4printable_Latin_1 := regex"[\x20-\x7E\xA1-\xFF]"]
+[SL1 := regex4printable_Latin_1_except_space := regex"[\x21-\x7E\xA1-\xFF]"]
+[keyword <- regex_f"{SL1}+( {SL1}+)*" /-\ regex".{1,79}"]
+[1 <= len(keyword) < 80]
+    #Keywords shall contain only printable Latin-1 [ISO_8859-1] characters and spaces; that is, only code points 0x20-7E and 0xA1-FF are allowed.
+    #   To reduce the chances for human misreading of a keyword, leading spaces, trailing spaces, and consecutive spaces are not permitted in keywords, nor is U+00A0 NON-BREAKING SPACE since it is visually indistinguishable from an ordinary space.
+    #case-sensitive.
+    #Keywords are restricted to 1 to 79 bytes in length.
+
+
+
+11.3.3.2 tEXt Textual data
+
+[chunk_data4tEXt == (keyword, null_separator, text_string)]
+
+[null_separator == b'\0']
+# [def__restrictions4keyword]:here
+[keyword :: bytes{no:null_byte}{len<-[1..<80]}{latin1}]
+    [keyword <- regex_f"{SL1}+( {SL1}+)*" /-\ regex".{1,79}"]
+    [1 <= len(keyword) < 80]
+[text_string :: bytes{no:null_byte}{latin1}]
+    换行符:『\x0A』LineFeed(LF)
+编码空间切换:
+  #Text containing characters outside the repertoire of ISO/IEC 8859-1 should be encoded using the iTXt chunk.
+
+
+
+
+
+11.3.3.3 zTXt Compressed textual data
+    #zTXt chunk is recommended for storing large blocks of text.
+
+[chunk_data4zTXt == (keyword,null_separator, compression_method, compressed_text_datastream)]
+
+
+[compression_method :: uint_1byte]
+[compression_method <- {0}] #同上
+[compressed_text_datastream :: bytes]
+
+
+
+
+11.3.3.4 iTXt International textual data
+
+[chunk_data4iTXt == (keyword,null_separator,   compression_flag,compression_method,   language_tag,null_separator,   translated_keyword,null_separator,   text)]
+[compression_flag :: uint_1byte]
+[compression_flag <- {0,1}]
+  #1=>压缩  #只压缩text
+  #0=>不压缩#=>[compression_method:=0]
+[language_tag :: bytes{no:null_byte}{latin1}]
+    #大小写不敏感
+[translated_keyword :: bytes{no:null_byte}{utf8}]
+[text :: bytes{!!!no:null_byte!!!}{utf8}]
+
+
+language_tag:
+The language tag is a well-formed language tag defined by [BCP47].
+    Unlike the keyword, the language tag is case-insensitive.
+    Subtags must appear in the IANA language subtag registry.
+    If the language tag is empty, the language is unspecified.
+    Examples of language tags include: en, en-GB, es-419, zh-Hans, zh-Hans-CN, tlh-Cyrl-AQ, ar-AE-u-nu-latn, and x-private.
+
+encoding:
+The translated keyword and text both use the UTF-8 encoding [rfc3629], and neither shall contain a zero byte (null character).
+    The text, unlike other textual data in this chunk, is not null-terminated; its length is derived from the chunk length.
+Line breaks should not appear in the translated keyword.
+    In the text, a newline should be represented by a single linefeed character (hexadecimal 0A).
+    The remaining control characters (01-09, 0B-1F, 7F-9F) are discouraged in both the translated keyword and text.
+    In UTF-8 there is a difference between the characters 80-9F (which are discouraged) and the bytes 80-9F (which are often necessary).
+The translated keyword, if not empty, should contain a translation of the keyword into the language indicated by the language tag, and applications displaying the keyword should display the translated keyword in addition.
+
+]]
+
+
+
+
+
+
+[[
+11.3.4 Miscellaneous information
+
+11.3.4.1 bKGD Background color
+忽略
+The bKGD chunk specifies a default background color to present the image against. If there is any other preferred background, either user-specified or part of a larger page (as in a browser), the bKGD chunk should be ignored.
+
+[chunk_data4bKGD{P} == palette_index :: uint_1byte]
+[chunk_data4bKGD{(L|LA)} == pixel7L/grey_sample_value :: uint_2byte_BE]
+[chunk_data4bKGD{(RGB|RGBA)} == pixel7RGB/(red_sample_value,green_sample_value,blue_sample_value) :: (uint_2byte_BE,uint_2byte_BE,uint_2byte_BE)]
+    #see:chunk_data4tRNS
+    #不必再放大，因为值本身已放大，这里只是提供一个足够大的存储空间
+    #If the image bit depth is less than 16, the least significant bits are used.
+
+
+
+
+11.3.4.2 hIST Image histogram
+[chunk_data4hIST == frequency_list :: [frequency/uint_2byte_BE]{len==len(palette_entries)}]
+    #近似引用频度表
+要求:呈正比关系
+强制要求:[频度0<->不被图片使用]
+    #   考虑 宽高均为2**16的图片，像素人口2**32，假如[len(palette_entries)==3][甲色 人口 1][乙色 人口 2**16][丙色 人口 2**32-1-2**16]
+    #   [甲色 频度 取最小值{不能为0} 1]
+    #   [丙色 频度 取最大值 2**16-1]
+    #   =>[乙色 频度 该取多少？]
+    #   =>[(2**16 -1)/(x -1) == (2**32-1-2**16 -1)/(2**16-1 -1)] # (人口差 / 频度差)
+    #   =>[(x -1) == (2**16 -1)*(2**16-1 -1)/(2**32-1-2**16 -1)]
+    #   =>[(x -1) ~= 0.9999694828875292]
+    #   =>[x ~= 2]
+    #
+
+
+The hIST chunk gives the approximate usage frequency of each color in the palette.
+  A histogram chunk can appear only when a PLTE chunk appears.
+  If a viewer is unable to provide all the colors listed in the palette, the histogram may help it decide how to choose a subset of the colors for display.
+
+???[WTF]???:NOTE When the palette is a suggested quantization of a truecolor image, the histogram is necessarily approximate, since a decoder may map pixels to palette entries differently than the encoder did. In this situation, zero entries should not normally appear, because any entry might be used.
+
+
+
+11.3.4.3 pHYs Physical pixel dimensions
+The pHYs chunk specifies the intended pixel size or aspect ratio for display of the image.
+    #像素点的物理尺寸 或者 宽高比@无单位
+        #pixel_dimension{像素物理尺寸} or pixel_aspect_ratio{像素宽高比} #见下面
+    #此数据块不出现=>像素 呈 正方形，物理尺寸未知
+
+[chunk_data4pHYs == (ppu6X, ppu6Y, unit_specifier)]
+    #ppu6X:Pixels per unit, X axis
+    #   X-width     #~num_columns
+    #   Y-height    #~num_rows
+
+[ppu6X,ppu6Y :: uint_31bit___big_endian_4byte]
+[unit_specifier :: uint_1byte]
+[unit_specifier <- {0/unknown, 1/metre}]
+  # 0/unknown => pixel aspect ratio only
+
+If the pHYs chunk is not present, pixels are assumed to be square, and the physical size of each pixel is unspecified.
+
+
+
+
+
+
+
+
+11.3.4.4 sPLT Suggested palette
+[chunk_data4sPLT == (palette_name,null_separator,   sample_depth, [(pixel7RGBA{sample_depth}, frequency)])]
+
+[palette_name :: 同keyword]
+    # [def__restrictions4keyword]:goto
+[sample_depth :: uint_1byte]
+[sample_depth <- {8,16}]
+
+[pixel7RGBA{sample_depth} == (red_sample_value{sample_depth}, green_sample_value{sample_depth}, blue_sample_value{sample_depth}, alpha_sample_value{sample_depth})]
+[sample_value{sample_depth:=8} :: uint_1byte]
+[sample_value{sample_depth:=16} :: uint_2byte_BE]
+
+[frequency :: uint_2byte_BE]
+
+
+pixel7RGBA 非常自由，与原图或者png_image无关
+频度:不是 该颜色的频度，而是 该颜色地盘上的所有颜色的总频度(压缩/采样)
+Each frequency value is proportional to the fraction of the pixels in the image for which that palette entry is the closest match in RGBA space, before the image has been composited against any background.
+    The exact scale factor is chosen by the PNG encoder; it is recommended that the resulting range of individual values reasonably fills the range 0 to 65535.
+    A PNG encoder may artificially inflate the frequencies for colors considered to be "important", for example the colors used in a logo or the facial features of a portrait.
+    Zero is a valid frequency meaning that the color is "least important" or that it is rarely, if ever, used.
+    When all the frequencies are zero, they are meaningless, that is to say, nothing may be inferred about the actual frequencies with which the colors appear in the PNG image.
+Multiple sPLT chunks are permitted, but each shall have a different palette name.
+
+
+
+
+
+
+
+
+
+
+
+
+11.3.4.5 eXIf Exchangeable Image File (Exif) Profile
+...这一metadata不一定绑定于png_image，有可能已过气(修改png_image而未同时更新eXIf)
+  ...忽略吧
+
+]]
+
+
+
+
+
+
+[[
+11.3.5 Time stamp information
+11.3.5.1 tIME Image last-modification time
+Universal Time (UTC)
+#The tIME chunk is intended for use as an automatically-applied time stamp that is updated whenever the image data are changed.
+
+[chunk_data4tIME == (year, month, day, hour, minute, second)]
+[year :: uint_2byte_BE]
+    # (complete; for example, 1995, not 95)
+[month, day, hour, minute, second :: uint_1byte]
+[month <- [1..=12]]
+[day <- [1..=31]]
+[hour <- [0..=23]]
+[minute <- [0..=59]]
+[second <- [0..=60]]
+    # (to allow for leap seconds)
+
+]]
+
+
+
+
+
+
+[[
+11.3.6 Animation information
+  历史原因 导致 命名 使用 私用区标识:acTL,fcTL,fdAT
+[chunk_data4acTL == (num_frames, num_plays)]
+[chunk_data4fcTL == (sequence_number,    width4frame,height4frame,x_offset, y_offset,    numerator7delay,denominator7delay,    dispose_op,blend_op)]
+[chunk_data4fdAT == (sequence_number, frame_data)]
+<<==:
+
+
+11.3.6.1 acTL Animation Control Chunk
+The acTL chunk declares that this is an animated PNG image, gives the number of frames, and the number of times to loop.
+[chunk_data4acTL == (num_frames, num_plays)]
+[num_frames :: pint_31bit___big_endian_4byte]
+  #总帧数
+  #     == the number of fcTL chunks
+[num_plays :: uint_31bit___big_endian_4byte]
+  #循环播放次数
+  #     每次播放必须相同，即初始状态相同(清空output_buffer全画布像素为透明黑)
+  #     0-未定#也许是 无限循环播放？
+
+
+11.3.6.2 fcTL Frame Control Chunk
+The fcTL chunk defines the dimensions, position, delay and disposal of an individual frame.
+  #定义此帧的修改区域范围、持续时长、修改模式
+Exactly one fcTL chunk chunk is required for each frame.
+
+[chunk_data4fcTL == (sequence_number,    width4frame,height4frame,x_offset, y_offset,    numerator7delay,denominator7delay,    dispose_op,blend_op)]
+[sequence_number :: uint_31bit___big_endian_4byte]
+  #从零开始
+
+[width4frame, height4frame :: pint_31bit___big_endian_4byte]
+[x_offset, y_offset :: uint_31bit___big_endian_4byte]
+  #修改区域范围
+  [0 <= x_offset < x_offset+width4frame <= IHDR.width4canvas]
+  [0 <= y_offset < y_offset+height4frame <= IHDR.height4canvas]
+  #若 初帧 为 静图IDAT,则 修改区域范围 必须刚好是 静图尺寸，即 (IHDR.width4canvas,IHDR.height4canvas,0,0)
+[numerator7delay/delay_num, denominator7delay/delay_den :: uint_2byte_BE]
+  [delay_fraction :: float]
+  [delay_fraction := numerator7delay/(100 if 0==denominator7delay else denominator7delay)] #unit:second
+  #If the the value of the numerator is 0 the decoder should render the next frame as quickly as possible, though viewers may impose a reasonable lower bound.
+
+[dispose_op, blend_op :: uint_1byte]
+[dispose_op <- {0,1,2}]
+  # how the output buffer should be changed at the end of the delay (before rendering the next frame)
+  #     本帧结束时如何更新修改区域
+  # 0/APNG_DISPOSE_OP_NONE:the contents of the output buffer are left as is.
+  #     保留本次修改
+  # 1/APNG_DISPOSE_OP_BACKGROUND:the frame's region of the output buffer is to be cleared to fully transparent black before rendering the next frame.
+  #     擦除牜使用透明黑
+  # 2/APNG_DISPOSE_OP_PREVIOUS:the frame's region of the output buffer is to be reverted to the previous contents before rendering the next frame.
+  #     取消本次修改
+
+[blend_op <- {0,1}]
+    #whether the frame is to be alpha blended into the current output buffer content, or whether it should completely replace its region in the output buffer.
+    #   透明度通道的使用方式
+    #0/APNG_BLEND_OP_SOURCE:all color components of the frame, including alpha, overwrite the current contents of the frame's output buffer region.
+    #   覆盖牜直写
+    #1/APNG_BLEND_OP_OVER:the frame should be composited onto the output buffer based on its alpha, using a simple OVER operation as described in Alpha Channel Processing. Note that the second variation of the sample code is applicable.
+    #   半透明覆写
+output_buffer初始化@每次播放:全部像素 透明黑
+  #the output buffer must be completely initialized to fully transparent black at the beginning of each play.
+  #Note that for the first frame, the two blend modes are functionally equivalent due to the clearing of the output buffer at the beginning of each play.
+
+
+11.3.6.3 fdAT Frame Data Chunk
+[fdAT ~= IDAT]{except:sequence_number,(width4frame,height4frame)vs(IHDR.width4canvas,IHDR.height4canvas)}
+    #IDAT连续且顺次
+    #fdAT因为有sequence_number，没有说明『要求:连续且顺次』
+    #   fdAT,fcTL,acTL的 次序 都没有要求
+    #The fdAT chunk serves the same purpose for animations as the IDAT chunks do for static images;
+    #the set of fdAT chunks contains the image data for all frames (or, for animations which include the static image as first frame, for all frames after the first one).
+[chunk_data4fdAT == (sequence_number, frame_data)]
+[frame_data :: bytes]
+[fdAT.frame_data ~= IDAT.chunk_data4IDAT]{except:(width4frame,height4frame)vs(IHDR.width4canvas,IHDR.height4canvas)}
+    #Each frame inherits every property specified by any critical or ancillary chunks before the first IDAT chunk in the file, except the width and height, which come from the fcTL chunk.
+
+#At least one fdAT chunk is required for each frame, except for the first frame, if that frame is represented by an IDAT chunk.
+
+靠sequence_number排序:
+#The compressed datastream for each frame is then the concatenation, in ascending sequence number order, of the contents of the frame_data fields of all the fdAT chunks within a frame.
+
+???[WTF]???:If the PNG pHYs chunk is present, the APNG images and their x_offset and y_offset values must be scaled in the same way as the main image. Conceptually, such scaling occurs while mapping the output buffer onto the canvas.
+]]
+
+#end:11.3 Ancillary chunks
+]]]]]]]
+
+[[[[[[[
+12. PNG Encoders
+12.1 Encoder gamma handling
+12.2 Encoder color handling
+12.3 Alpha channel creation
+
+
+
+
+
+[[
+12.1 Encoder gamma handling
+透明度 是 gamma_value 无关:
+    『gamma does not apply to alpha samples; alpha is always represented linearly.』
+
+A PNG encoder has to determine:
+    + what value to write in the gAMA chunk;
+    + how to transform the provided image samples into the values to be written in the PNG datastream.
+
+The value to write in the gAMA chunk is that value which causes a PNG decoder to behave in the desired way. See 13.13 Decoder gamma handling.
+
+[encoding_exponent :: float]
+[0.0 < encoding_exponent <= 1.0]
+[intensity :: float]
+[0.0 <= intensity <= 1.0]
+[integer_sample5intensity_{sample_depth,encoding_exponent}(intensity) -> uint]
+  [integer_sample := floor((2**sample_depth-1) * intensity**encoding_exponent + 0.5)]
+      # [:equation__integer_sample5intensity]:here
+  # intensity-->original_scene_intensity
+  [integer_sample := floor((2**sample_depth-1) * original_scene_intensity**encoding_exponent + 0.5)]
+
+
+#我定义:float_uniform_sample:
+[max4integer_sample := (2**sample_depth-1)]
+[float_uniform_sample :: float]
+[0.0 <= float_uniform_sample <= 1.0]
+[float_uniform_sample =[def]= (integer_sample/max4integer_sample)]
+
+# [:original_scene_intensity__vs__desired_output_intensity]:here
+[original_scene_intensity == float_uniform_sample**(1.0/encoding_exponent)]
+[desired_output_intensity == float_uniform_sample**(1.0/gamma_value)]
+      #gamma_value的定义源起
+[desired_output_intensity == float_uniform_sample**display_U2O_exponent]
+      #display_U2O_exponent的定义源起
+
+
+[desired_output_intensity == original_scene_intensity**(encoding_exponent/gamma_value)]
+[end_to_end_exponent == (encoding_exponent/gamma_value)]
+[desired_output_intensity == original_scene_intensity**end_to_end_exponent]
+      #end_to_end_exponent的定义源起
+      #an end-to-end transfer function from original scene to display output with an exponent greater than 1.
+[end_to_end_exponent :: float]
+[end_to_end_exponent >= 1.0]
+
+
+
+[gamma_value =[def]= log_(desired_output_intensity; float_uniform_sample)]
+    # [:def__gamma_value]:here
+    # 见下面:显示屏的输入丶输出
+    # [#奇怪:图片为啥要考虑输出条件？#]=>[定制版方便在特定场合下的后续操作]
+    # [#但是:这样一来，就没办法用于其他场合。重点是，并无一个 定制版条件的声明 或 定制版条件偏离标准场合的声明，完全不知道是 哪一定制版，明显有毛病#]
+    # 还不如直接记录encoding_exponent，不过都一样,输入环境条件&输出环境条件 都是未知状态
+[display_U2O_exponent =[def]= log_(float_uniform_sample; desired_output_intensity)]
+[display_U2O_exponent == 1.0/gamma_value]
+
+[end_to_end_exponent =[def]= log_(original_scene_intensity; desired_output_intensity)]
+    # [:def__end_to_end_exponent]:here
+
+[encoding_exponent == end_to_end_exponent*gamma_value == log_(original_scene_intensity; float_uniform_sample)]
+[gamma_value == encoding_exponent/end_to_end_exponent]
+!! [0.0 < encoding_exponent <= 1.0]
+!! [end_to_end_exponent >= 1.0]
+[0.0 < gamma_value <= 1.0]
+  # pow_{gamma_value{<1}} 类似于 log_{>1} 的作用: 递增函数但是导数递降，非线性离散化{高端压缩，低端放大}
+  # 竟然是 pow 而非 log，真是稀奇
+###
+#毛病:使用了gamma_value，这还怎么lossless???
+    see below:
+        『If the PNG encoder receives sample values that have already been quantized into integer values, there is no point in doing gamma encoding on them; that would just result in further loss of information.』
+        『This does not imply that the gAMA chunk should contain a gamma value of 1.0 because the desired end-to-end transfer function from scene intensity to display output intensity is not necessarily linear.[#奇怪:图片为啥要考虑输出条件？#]』
+        『It should be remembered that gamma relates samples to desired display output, not to scanner input.』
+###
+
+
+]]
+[[
+原文:
+If the intensity in the equation{#equation__integer_sample5intensity#} is the desired output intensity, the encoding exponent is the gamma value to be used in the gAMA chunk.
+  [gamma_value := encoding_exponent]
+    # ==>> [:def__gamma_value]:goto
+
+If the intensity available to the PNG encoder is the original scene intensity, another transformation may be needed.
+    There is sometimes a requirement for the displayed image to have higher contrast than the original source image.
+    This corresponds to an end-to-end transfer function from original scene to display output with an exponent greater than 1.
+    In this case:
+      [gamma := encoding_exponent/end_to_end_exponent]
+      [end_to_end_exponent >= 1.0]
+      => [end_to_end_exponent == encoding_exponent/gamma]
+      # [:original_scene_intensity__vs__desired_output_intensity]:goto
+
+If it is not known whether the conditions under which the original image was captured or calculated warrant such a contrast change, it may be assumed that the display intensities are proportional to original scene intensities, i.e. the end-to-end exponent is 1 and hence:
+    assume:[end_to_end_exponent := 1.0]
+    [gamma := encoding_exponent]
+
+If the image is being written to a datastream only, the encoder is free to choose the encoding exponent.
+    Choosing a value that causes the gamma value in the gAMA chunk to be 1/2.2 is often a reasonable choice because it minimizes the work for a PNG decoder displaying on a typical video monitor.
+    wanted: [gamma := 1/2.2]
+    => [encoding_exponent := gamma*end_to_end_exponent = end_to_end_exponent/2.2]
+
+Some image renderers may simultaneously write the image to a PNG datastream and display it on-screen.
+    The displayed pixels should be gamma corrected for the display system and viewing conditions in use, so that the user sees a proper representation of the intended scene.
+    If the renderer wants to write the displayed sample values to the PNG datastream, avoiding a separate gamma encoding step for the datastream, the renderer should approximate the transfer function of the display system by a power function, and write the reciprocal of the exponent into the gAMA chunk.
+    This will allow a PNG decoder to reproduce what was displayed on screen for the originator during rendering.
+    wanted: [desired_output_intensity == float_uniform_sample**display_U2O_exponent]
+    [gamma := 1.0/display_U2O_exponent]
+        # 或许 另称:[decoding_U2O_exponent == display_system_exponent == display_U2O_exponent{见下面}]
+        # 此规范命名混乱:decoding_exponent,display_exponent在后面出现了，但意义不同
+        # 这里的 分别改名为:decoding_U2O_exponent,display_U2O_exponent
+        # 后面的 分别改名为:decoding_U2I_exponent,display_I2O_exponent
+
+However, it is equally reasonable for a renderer to compute displayed pixels appropriate for the display device, and to perform separate gamma encoding for data storage and transmission, arranging to have a value in the gAMA chunk more appropriate to the future use of the image.
+    # [#奇怪:图片为啥要考虑输出条件？#]=>[定制版方便在特定场合下的后续操作]
+
+Computer graphics renderers often do not perform gamma encoding, instead making sample values directly proportional to scene light intensity.
+    If the PNG encoder receives sample values that have already been quantized into integer values, there is no point in doing gamma encoding on them; that would just result in further loss of information.
+    The encoder should just write the sample values to the PNG datastream.
+    This does not imply that the gAMA chunk should contain a gamma value of 1.0 because the desired end-to-end transfer function from scene intensity to display output intensity is not necessarily linear.
+    However, the desired gamma value is probably not far from 1.0.
+    It may depend on whether the scene being rendered is a daylight scene or an indoor scene, etc.
+
+When the sample values come directly from a piece of hardware, the correct gAMA value can, in principle, be inferred from the transfer function of the hardware and lighting conditions of the scene.
+    In the case of video digitizers ("frame grabbers"), the samples are probably in the sRGB color space, because the sRGB specification was designed to be compatible with modern video standards.
+    Image scanners are less predictable.
+    Their output samples may be proportional to the input light intensity since CCD sensors themselves are linear, or the scanner hardware may have already applied a power function designed to compensate for dot gain in subsequent printing (an exponent of about 0.57), or the scanner may have corrected the samples for display on a monitor.
+    It may be necessary to refer to the scanner's manual or to scan a calibrated target in order to determine the characteristics of a particular scanner.
+    It should be remembered that gamma relates samples to desired display output, not to scanner input.
+
+# [lossless 要求 数据不变, gamma_value不变]
+Datastream format converters generally should not attempt to convert supplied images to a different gamma.
+    The data should be stored in the PNG datastream without conversion, and the gamma value should be deduced from information in the source datastream if possible.
+    Gamma alteration at datastream conversion time causes re-quantization of the set of intensity levels that are represented, introducing further roundoff error with little benefit.
+    It is almost always better to just copy the sample values intact from the input to the output file.
+
+# display_U2O_exponent
+If the source datastream describes the gamma characteristics of the image, a datastream converter is strongly encouraged to write a gAMA chunk.
+    Some datastream formats specify the display exponent (the exponent of the function which maps image samples to display output rather than the other direction).
+    If the source file's gamma value is greater than 1.0, it is probably a display exponent, and the reciprocal of this value should be used for the PNG gamma value.
+        [display_U2O_exponent >= 1.0]
+        [gamma_value := 1.0/display_U2O_exponent]
+    If the source file format records the relationship between image samples and a quantity other than display output, it will be more complex than this to deduce the PNG gamma value.
+
+If a PNG encoder or datastream converter knows that the image has been displayed satisfactorily using a display system whose transfer function can be approximated by a power function with exponent display_exponent{改名:display_U2O_exponent}, the image can be marked as having the gamma value:
+    [gamma := 1/display_U2O_exponent]
+
+It is better to write a gAMA chunk with a value that is approximately correct than to omit the chunk and force PNG decoders to guess an approximate gamma value.
+    If a PNG encoder is unable to infer the gamma value, it is preferable to omit the gAMA chunk.
+    If a guess has to be made this should be left to the PNG decoder.
+    gamma does not apply to alpha samples; alpha is always represented linearly.
+See also 13.13 Decoder gamma handling.
+
+
+]]
+
+
+[[
+12.2 Encoder color handling
+
+]]
+[[
+原文:
+#iCCP chunk:最复杂
+#sRGB chunk#标准#视频
+PNG encoders capable of full color management will perform more sophisticated calculations than those described here and may choose to use the iCCP chunk.
+    If it is known that the image samples conform to the sRGB specification [SRGB], PNG encoders are strongly encouraged to use the sRGB chunk.
+#cHRM chunk && gAMA chunk
+If it is possible for the encoder to determine the chromaticities of the source display primaries, or to make a strong guess based on the origin of the image, or the hardware running it, the encoder is strongly encouraged to output the cHRM chunk.
+    If this is done, the gAMA chunk should also be written; decoders can do little with a cHRM chunk if the gAMA chunk is missing.
+
+There are a number of recommendations and standards for primaries and white points, some of which are linked to particular technologies, for example the CCIR 709 standard [ITU-R-BT.709] and the SMPTE-C standard [SMPTE-170M].
+There are three cases that need to be considered:
+  * the encoder is part of the generation system;
+      #图源是虚拟数字图像
+  * the source image is captured by a camera or scanner;
+      #图源是物理感光器件
+  * the PNG datastream was generated by translation from some other format.
+      #图源是其他图像格式
+
+#图源是虚拟数字图像
+# device-independent color space internally => cHRM chunk && gAMA chunk
+In the case of hand-drawn or digitally edited images, it is necessary to determine what monitor they were viewed on when being produced.
+    Many image editing programs allow the type of monitor being used to be specified.
+    This is often because they are working in some device-independent space internally.
+    Such programs have enough information to write valid cHRM and gAMA chunks, and are strongly encouraged to do so automatically.
+
+If the encoder is compiled as a portion of a computer image renderer that performs full-spectral rendering, the monitor values that were used to convert from the internal device-independent color space to RGB should be written into the cHRM chunk.
+    Any colors that are outside the gamut of the chosen RGB device should be mapped to be within the gamut; PNG does not store out-of-gamut colors.
+        # ???out-of-gamut
+
+# device-dependent RGB space => no:cHRM
+# device-dependent RGB space && 参数调整{monitor} => cHRM
+If the computer image renderer performs calculations directly in device-dependent RGB space, a cHRM chunk should not be written unless the scene description and rendering parameters have been adjusted for a particular monitor.
+    In that case, the data for that monitor should be used to construct a cHRM chunk.
+
+#图源是其他图像格式
+A few image formats store calibration information, which can be used to fill in the cHRM chunk.
+    For example, TIFF 6.0 files [TIFF-6.0] can optionally store calibration information, which if present should be used to construct the cHRM chunk.
+
+#图源是物理感光器件
+Video created with recent video equipment probably uses the CCIR 709 primaries and D65 white point [ITU-R-BT.709], which are given in Table 29.
+An older but still very popular video standard is SMPTE-C [SMPTE-170M] given in Table 30.
+
+Table 29 CCIR 709 primaries and D65 whitepoint
+    - Red   Green Blue  White
+    x 0.640 0.300 0.150 0.3127
+    y 0.330 0.600 0.060 0.3290
+Table 30 SMPTE-C video standard
+    - Red   Green Blue  White
+    x 0.630 0.310 0.155 0.3127
+    y 0.340 0.595 0.070 0.3290
+
+
+#图源是其他图像格式
+#不改变color space
+It is not recommended that datastream format converters attempt to convert supplied images to a different RGB color space.
+    The data should be stored in the PNG datastream without conversion, and the source primary chromaticities should be recorded if they are known.
+    Color space transformation at datastream conversion time is a bad idea because of gamut mismatches and rounding errors.
+    As with gamma conversions, it is better to store the data losslessly and incur at most one conversion when the image is finally displayed.
+See 13.14 Decoder color handling.
+
+
+]]
+
+
+[[
+12.3 Alpha channel creation
+原文:
+透明度的用途:
+  * 临时性隐藏
+  * 非矩形区域
+The alpha channel can be regarded either as a mask that temporarily hides transparent parts of the image, or as a means for constructing a non-rectangular image.
+    In the first case, the color values of fully transparent pixels should be preserved for future use.
+    In the second case, the transparent pixels carry no useful data and are simply there to fill out the rectangular image area required by PNG. In this case, fully transparent pixels should all be assigned the same color value for best compression.
+
+#完全透明的像素的颜色 应当选 背景色
+Image authors should keep in mind the possibility that a decoder will not support transparency control in full (see 13.16 Alpha channel processing).
+    Hence, the colors assigned to transparent pixels should be reasonable background colors whenever feasible.
+
+#单色透明:tRNS
+For applications that do not require a full alpha channel, or cannot afford the price in compression efficiency, the tRNS transparency chunk is also available.
+
+#背景色:bKGD
+If the image has a known background color, this color should be written in the bKGD chunk.
+    Even decoders that ignore transparency may use the bKGD color to fill unused screen area.
+
+#png不支持 预先透明
+  #premultiplied --> non-premultiplied
+  # [non_premultiplied_RGB == BLACK_RGB if alpha_value==0 else premultiplied_RGB / (alpha_value/max4alpha_value)]
+  #
+  # [premultiplied_RGB == non_premultiplied_RGB * alpha_value/max4alpha_value]
+  # [final_RGB == non_premultiplied_RGB * alpha_value/max4alpha_value + background_RGB * (1.0 -alpha_value/max4alpha_value)]
+If the original image has premultiplied (also called "associated") alpha data, it can be converted to PNG's non-premultiplied format by dividing each sample value by the corresponding alpha value, then multiplying by the maximum value for the image bit depth, and rounding to the nearest integer.
+    In valid premultiplied data, the sample values never exceed their corresponding alpha values, so the result of the division should always be in the range 0 to 1.
+    If the alpha value is zero, output black (zeroes).
+]]
+
+
+
+
+
+
+
+
+
+
+
+[[
+12.4 Sample depth scaling
+#必要约束:[rescaling 只需进行 右移]即[原值 居于 放大后的存储值 的 高端]#[低端随意填充]
+    #标准放大方法:线性放大linear scaling
+    #拟标准放大方法:周期延拓left bit replication
+    #不精确的放大方法{稍暗}:简单左移simply left-shifting/零填充放大zero-fill scaling{但是由于白点常作为特殊值，全一特殊处理放大后依旧全一}
+
+
+#标准放大方法:线性放大linear scaling
+When encoding input samples that have a sample depth that cannot be directly represented in PNG, the encoder shall scale the samples up to a sample depth that is allowed by PNG.
+    The most accurate scaling method is the linear equation:
+  [output := floor((input * MAXOUTSAMPLE / MAXINSAMPLE) + 0.5)]
+      where the input samples range from 0 to MAXINSAMPLE and the outputs range from 0 to MAXOUTSAMPLE (which is 2**sample_depth-1).
+
+A close approximation to the linear scaling method is achieved by "left bit replication", which is shifting the valid bits to begin in the most significant bit and repeating the most significant bits into the open bits.
+    This method is often faster to compute than linear scaling.
+
+#拟标准放大方法:周期延拓left bit replication
+Assume that 5-bit samples are being scaled up to 8 bits.
+    If the source sample value is 27 (in the range from 0-31), then the original bits are:
+        4 3 2 1 0
+        ---------
+        1 1 0 1 1
+        Left bit replication gives a value of 222:
+        7 6 5 4 3  2 1 0
+        ----------------
+        1 1 0 1 1  1 1 0
+        |=======|  |===|
+            |      Leftmost Bits Repeated to Fill Open Bits
+            |
+        Original Bits
+    which matches the value computed by the linear equation.
+    Left bit replication usually gives the same value as linear scaling, and is never off by more than one.
+
+#不精确的放大方法{稍暗}:简单左移simply left-shifting/零填充放大zero-fill scaling{但是由于白点常作为特殊值，全一特殊处理放大后依旧全一}
+A distinctly less accurate approximation is obtained by simply left-shifting the input value and filling the low order bits with zeroes.
+    This scheme cannot reproduce white exactly, since it does not generate an all-ones maximum value; the net effect is to darken the image slightly.
+    This method is not recommended in general, but it does have the effect of improving compression, particularly when dealing with greater-than-8-bit sample depths.
+    Since the relative error introduced by zero-fill scaling is small at high sample depths, some encoders may choose to use it.
+    Zero-fill shall not be used for alpha channel data, however, since many decoders will treat alpha values of all zeroes and all ones as special cases.
+    It is important to represent both those values exactly in the scaled data.
+
+#sBIT:sample_depths7XXX4src
+#   => 放大约束:[存储的数值的高端是原值]即[解码时只需简单右移]
+#       『the high-order bits of the stored samples match the original data』『allows decoders to recover the original data by shifting right』
+When the encoder writes an sBIT chunk, it is required to do the scaling in such a way that the high-order bits of the stored samples match the original data.
+    That is, if the sBIT chunk specifies a sample depth of S, the high-order S bits of the stored data shall agree with the original S-bit data values.
+    This allows decoders to recover the original data by shifting right.
+    The added low-order bits are not constrained.
+    All the above scaling methods meet this restriction.
+    When scaling up source image data, it is recommended that the low-order bits be filled consistently for all samples; that is, the same source value should generate the same sample value at any pixel position.
+    This improves compression by reducing the number of distinct sample values.
+    This is not a mandatory requirement, and some encoders may choose not to follow it.
+    For example, an encoder might instead dither the low-order bits, improving displayed image quality at the price of increasing file size.
+
+#原图非二幂取值范围则禁用sBIT
+#   png不支持 非二幂取值范围@sBIT
+In some applications the original source data may have a range that is not a power of 2.
+    The linear scaling equation still works for this case, although the shifting methods do not.
+    It is recommended that an sBIT chunk not be written for such images, since sBIT suggests that the original data range was exactly 0..2**S-1.
+
+
+]]
+
+
+
+
+
+
+
+
+
+
+12.5 Suggested palettes
+12.6 Interlacing
+12.7 Filter selection
+12.8 Compression
+[[
+原文:
+12.5 Suggested palettes
+
+#sPLT用于 不支持真彩的设备
+Suggested palettes may appear as sPLT chunks in any PNG datastream, or as a PLTE chunk in truecolor PNG datastreams.
+    In either case, the suggested palette is not an essential part of the image data, but it may be used to present the image on indexed-color display hardware.
+    Suggested palettes are of no interest to viewers running on truecolor hardware.
+
+#sPLT => 推荐使用 非零频度(0 表示 未定义)
+#   频度计算:最近邻颜色人口nearest neighbor counts
+#       ???最近邻搜索:感觉并不容易
+#       见下面:『Numerous implementations of color quantization are available. The PNG sample implementation, libpng (http://www.libpng.org/pub/png/libpng.html), includes code for the purpose.』@13.11 Truecolor image handling
+When an sPLT chunk is used to provide a suggested palette, it is recommended that the encoder use the frequency fields to indicate the relative importance of the palette entries, rather than leave them all zero (meaning undefined).
+    The frequency values are most easily computed as "nearest neighbor" counts, that is, the approximate usage of each RGBA palette entry if no dithering is applied.
+    (These counts will often be available "for free" as a consequence of developing the suggested palette.)
+    Because the suggested palette includes transparency information, it should be computed for the un-composited image.
+
+#sPLT@Indexed_color用于 支持更少彩设备
+#   RGBA{alpha_channel}&&PLTE{as:sPLT} => 最好有bKGD{否则:无法确定透明度被如何整合到调色板里},最好有hIST{否则:相当于频度全零即未定义}
+#       bKGD改变=>重算PLTE
+#   RGB{no:alpha_channel}&&PLTE{as:sPLT} => PLTE&hIST不考虑任何透明度信息{tRNS}
+Even for indexed-color images, sPLT can be used to define alternative reduced palettes for viewers that are unable to display all the colors present in the PLTE chunk.
+    If the PLTE chunk appears without the bKGD chunk in an image of color type 6, the circumstances under which the palette was computed are unspecified.
+An older method for including a suggested palette in a truecolor PNG datastream uses the PLTE chunk.
+    If this method is used, the histogram (frequencies) should appear in a separate hIST chunk.
+    The PLTE chunk does not include transparency information.
+    Hence for images of color type 6 (truecolor with alpha), it is recommended that a bKGD chunk appear and that the palette and histogram be computed with reference to the image as it would appear after compositing against the specified background color.
+    This definition is necessary to ensure that useful palette entries are generated for pixels having fractional alpha values.
+    The resulting palette will probably be useful only to viewers that present the image against the same background color.
+    It is recommended that PNG editors delete or recompute the palette if they alter or remove the bKGD chunk in an image of color type 6.
+For images of color type 2 (truecolor), it is recommended that the PLTE and hIST chunks be computed with reference to the RGB data only, ignoring any transparent-color specification.
+    If the datastream uses transparency (has a tRNS chunk), viewers can easily adapt the resulting palette for use with their intended background color (see 13.17 Histogram and suggested palette usage).
+
+#多个具名示样调色板可供选择
+#示样调色板可适配任何背景色
+#示样调色板属于辅助性数据块其改动不导致丢弃非安全复制型数据块
+#示样调色板可用于支持更少彩设备@(L|LA|P)
+#示样调色板允许超多条目{允许超过256项}
+For providing suggested palettes, the sPLT chunk is more flexible than the PLTE chunk in the following ways:
+    #1:
+    + With sPLT multiple suggested palettes may be provided.
+        A PNG decoder may choose an appropriate palette based on name or number of entries.
+
+    #2:
+    + In a PNG datastream of color type 6 (truecolor with alpha channel), the PLTE chunk represents a palette already composited against the bKGD color, so it is useful only for display against that background color.
+        The sPLT chunk provides an un-composited palette, which is useful for display against backgrounds chosen by the PNG decoder.
+
+    #3:
+    + Since the sPLT chunk is an ancillary chunk, a PNG editor may add or modify suggested palettes without being forced to discard unknown unsafe-to-copy chunks.
+
+    #4:
+    + Whereas the sPLT chunk is allowed in PNG datastreams for color types 0, 3, and 4 (greyscale and indexed-color), the PLTE chunk cannot be used to provide reduced palettes in these cases.
+
+    #5:
+    + More than 256 entries may appear in the sPLT chunk.
+
+A PNG encoder that uses the sPLT chunk may choose to write a suggested palette represented by PLTE and hIST chunks as well, for compatibility with decoders that do not recognize the sPLT chunk.
+
+
+12.6 Interlacing
+... ...
+用途:gressively display
+转至: --> 13.10 Interlacing and progressive display
+
+
+
+12.7 Filter selection
+For images of color type 3 (indexed-color), filter type 0 (None) is usually the most effective.
+    Color images with 256 or fewer colors should almost always be stored in indexed-color format; truecolor format is likely to be much larger.
+Filter type 0 is also recommended for images of bit depths less than 8.
+    For low-bit-depth greyscale images, in rare cases, better compression may be obtained by first expanding the image to 8-bit representation and then applying filtering.
+        #???『expanding』
+        #边界问题:字节型过滤操作 显然不能很好地作用于非字节整型(比如:16bit,4bit)#16bit原来差值，拆成2字节后:0x1100-0x10FF=0x00_01-->0x01,0x01
+
+For truecolor and greyscale images, any of the five filters may prove the most effective.
+    If an encoder uses a fixed filter, the Paeth filter type is most likely to be the best.
+
+For best compression of truecolor and greyscale images, and if compression efficiency is valued over speed of compression, the recommended approach is adaptive filtering in which a filter type is chosen for each scanline.
+      Each unique image will have a different set of filters which perform best for it.
+      An encoder could try every combination of filters to find what compresses best for a given image.
+      However, when an exhaustive search is unacceptable, here are some general heuristics which may perform well enough:
+      compute the output scanline using all five filters, and select the filter that gives the smallest sum of absolute values of outputs.
+          (Consider the output bytes as signed differences for this test.)
+      This method usually outperforms any single fixed filter type choice.
+
+Filtering according to these recommendations is effective in conjunction with either of the two interlace methods defined in this specification.
+
+
+
+
+12.8 Compression
+The encoder may divide the compressed datastream into IDAT chunks however it wishes.
+      (Multiple IDAT chunks are allowed so that encoders may work in a fixed amount of memory; typically the chunk size will correspond to the encoder's buffer size.)
+          #??? 压缩后的数据分段规模 对应于 编码器的缓冲区规模
+          #不对！应该是 压缩前的数据分段规模 对应于 解码器的缓冲区规模
+      A PNG datastream in which each IDAT chunk contains only one data byte is valid, though remarkably wasteful of space.
+      (Zero-length IDAT chunks are also valid, though even more wasteful.)
+
+
+]]
+
+
+
+
+
+
+
+
+
+
+12.9 Text chunk processing
+12.10 Chunking
+12.10.3 Ancillary chunks
+[[
+12.9 Text chunk processing
+不知用什么keyword则用『Comment』
+utf8@iTXt
+建议:1024字节以下 条目 无需压缩
+建议:标题、作者 等 基础条目 无需压缩
+建议:大文本 条目 布置于 IDAT 之后
+建议:小文本 条目 布置于 IDAT 之前
+
+Encoders should discourage the creation of single lines of text longer than 79 Unicode code points, in order to facilitate easy reading.
+    ##纯属放屁，内容偏要考虑适配特定输出场合，变成定制版，反而加大阅读器的调整难度
+
+
+
+
+
+
+原文:
+12.10 Chunking
+12.10.1 Use of private chunks
+Encoders MAY use private chunks to carry information that need not be understood by other applications.
+
+12.10.2 Use of non-reserved field values
+Encoders MAY use non-reserved field values for experimental or private use.
+    ##???private_value???
+
+
+
+
+
+
+
+
+12.10.3 Ancillary chunks
+All ancillary chunks are optional, encoders need not write them.
+    However, encoders are encouraged to write the standard ancillary chunks when the information is available.
+
+
+
+
+]]
+
+
+
+
+
+]]]]]]]
+
+
+
+[[
+13. PNG decoders and viewers
+
+PNG decoders shall support all valid combinations of bit depth, color type, compression method, filter method, and interlace method that are explicitly defined in this International Standard.
+
+
+13.1 Error handling
+#数据块分类:
+#   * 解码器已知并且想要处理的数据块
+#   * 解码器未知的紧要数据块
+#   * 解码器未知或不想要处理的非紧要数据块
+
+#错误分两类:传输错误vs语法错误
+Examples of transmission errors are
+    transmission in "text" or "ascii" mode, in which byte codes 13 and/or 10 may be added, removed, or converted throughout the datastream;
+    unexpected termination, in which the datastream is truncated;
+    or a physical error on a storage device, in which one or more blocks (typically 512 bytes each) will have garbled or random values.
+Some examples of syntax errors are
+    an invalid value for a row filter,
+    an invalid compression method,
+    an invalid chunk length,
+    the absence of a PLTE chunk before the first IDAT chunk in an indexed image,
+    or the presence of multiple gAMA chunks.
+
+#尽早排错:文件格式签名+头部+各数据块校验码
+Detect errors as early as possible using the PNG signature bytes and CRCs on each chunk.
+
+#若不进行CRC检查，则语法错误大概率意味着数据有误。
+Decoders that do not compute CRCs should interpret apparent syntax errors as indications of corruption (see also 13.2 Error checking).
+
+#解码时要求动画帧必须顺次；编辑器则还原帧次序
+Decoders shall treat out-of-order APNG chunks as an error.
+    APNG-aware PNG editors should restore them to correct order, using the sequence numbers.
+
+
+13.6 Pixel dimensions
+
+# 一种合理应用宽高比的方法:单轴放大
+# 另一种合理应用宽高比的方法:面积守恒
+One reasonable way for viewers to handle a difference between the pixel aspect ratios of the image and the display is to expand the image either horizontally or vertically, but not both. The scale factors could be obtained using the following floating-point calculations:
+    #???pixel_aspect_ratio = (ppu_Y/ppu_X) 是 宽高比 还是 高宽比???
+    # !! [ppu{X} := num_pixels{X}/physical_length{X}] # ppu:num_pixels_per_unit
+    # [ppu{X} == 1pixel{X}/physical_length_per_pixel{X}]
+    # [pixel_aspect_ratio == ppu_Y/ppu_X == (1pixel_Y/physical_length_per_pixel_Y)/(1pixel_X/physical_length_per_pixel_X) == physical_length_per_pixel_X/physical_length_per_pixel_Y == width4pixel/height4pixel == 像素宽高比]
+    [image_ratio := pHYs_ppuY / pHYs_ppuX]
+    [display_ratio := display_ppuY / display_ppuX]
+    [scale_factor_X := max(1.0, image_ratio/display_ratio)]
+    [scale_factor_Y := max(1.0, display_ratio/image_ratio)]
+    Because other methods such as maintaining the image area are also reasonable, and because ignoring the pHYs chunk is permissible, authors should not assume that all viewing applications will use this scaling method.
+
+]]
+
+
+[[
+# [:Adam7_interlace相关数据丶代码]:here
+原文:
+13.10 Interlacing and progressive display
+Decoders are required to be able to read interlaced images.
+    If the reference image contains fewer than five columns or fewer than five rows, some passes will be empty.
+    Encoders and decoders shall handle this case correctly.
+    In particular, filter type bytes are associated only with nonempty scanlines; no filter type bytes are present in an empty reduced image.
+When receiving images over slow transmission links, viewers can improve perceived performance by displaying interlaced images progressively.
+    This means that as each reduced image is received, an approximation to the complete image is displayed based on the data received so far.
+    One simple yet pleasing effect can be obtained by expanding each received pixel to fill a rectangle covering the yet-to-be-transmitted pixel positions below and to the right of the received pixel.
+    This process can be described by the following ISO C code [ISO_9899]:
+/*
+    variables declared and initialized elsewhere in the code:
+        height, width
+    functions or macros defined elsewhere in the code:
+        visit(), min()
+ */
+
+int starting_row[7]  = { 0, 0, 4, 0, 2, 0, 1 };
+int starting_col[7]  = { 0, 4, 0, 2, 0, 1, 0 };
+int row_increment[7] = { 8, 8, 8, 4, 4, 2, 2 };
+int col_increment[7] = { 8, 8, 4, 4, 2, 2, 1 };
+int block_height[7]  = { 8, 8, 4, 4, 2, 2, 1 };
+int block_width[7]   = { 8, 4, 4, 2, 2, 1, 1 };
+
+int pass;
+long row, col;
+
+pass = 0;
+while (pass < 7)
+{
+    row = starting_row[pass];
+    while (row < height)
+    {
+        col = starting_col[pass];
+        while (col < width)
+        {
+            visit(row, col,
+                  min(block_height[pass], height - row),
+                  min(block_width[pass], width - col));
+            col = col + col_increment[pass];
+        }
+        row = row + row_increment[pass];
+    }
+    pass = pass + 1;
+}
+The function visit(row,column,height,width) obtains the next transmitted pixel and paints a rectangle of the specified height and width, whose upper-left corner is at the specified row and column, using the color indicated by the pixel.
+    Note that row and column are measured from 0,0 at the upper left corner.
+If the viewer is merging the received image with a background image, it may be more convenient just to paint the received pixel positions (the visit() function sets only the pixel at the specified row and column, not the whole rectangle).
+    This produces a "fade-in" effect as the new image gradually replaces the old.
+    An advantage of this approach is that proper alpha or transparency processing can be done as each pixel is replaced.
+    Painting a rectangle as described above will overwrite background-image pixels that may be needed later, if the pixels eventually received for those positions turn out to be wholly or partially transparent.
+    This is a problem only if the background image is not stored anywhere offscreen.
+
+
+]]
+
+
+
+[[
+13.12 Sample depth rescaling
+#透明像素判定必须使用放大后的存储值
+When comparing pixel values to tRNS chunk values to detect transparent pixels, the comparison shall be done exactly. Therefore, transparent pixel detection shall be done before reducing sample precision.
+]]
+
+
+
+
+
+[[
+13.13 Decoder gamma handling
+See C. Gamma and chromaticity for a brief introduction to gamma issues.
+Viewers capable of full color management will perform more sophisticated calculations than those described here.
+For an image display program to produce correct tone reproduction, it is necessary to take into account the relationship between samples and display output, and the transfer function of the display system. This can be done by calculating:
+    # [:def__gamma_value]:goto
+    # 显示屏的输入丶输出！！
+    [sample := integer_sample / (2**sample_depth - 1.0)]
+    [display_output := sample**(1.0/gamma)]
+    [display_input := inverse_display_transfer(display_output)]
+        # display_transfer ~= [display_output := display_input**display_I2O_exponent]
+    [framebuf_sample := floor((display_input * MAX_FRAMEBUF_SAMPLE)+0.5)]
+
+    where
+        integer_sample is the sample value from the datastream,
+        framebuf_sample is the value to write into the frame buffer,
+        and MAX_FRAMEBUF_SAMPLE is the maximum value of a frame buffer sample (255 for 8-bit, 31 for 5-bit, etc).
+    The first line converts an integer sample into a normalized floating point value (in the range 0.0 to 1.0),
+    the second converts to a value proportional to the desired display output intensity,
+    the third accounts for the display system's transfer function,
+    and the fourth converts to an integer frame buffer sample.
+    Zero raised to any positive power is zero.
+
+A step could be inserted between the second and third to adjust display_output to account for the difference between the actual viewing conditions and the reference viewing conditions.
+    However, this adjustment requires accounting for veiling glare, black mapping, and color appearance models, none of which can be well approximated by power functions.
+    Such calculations are not described here.
+    If viewing conditions are ignored, the error will usually be small.
+The display transfer function can typically be approximated by a power function with exponent display_exponent{改名:display_I2O_exponent}, in which case the second and third lines can be merged into:
+    [display_input := sample**(1.0/(gamma * display_I2O_exponent)) = sample**decoding_U2I_exponent]
+    [decoding_U2I_exponent == gamma * display_I2O_exponent]
+    so as to perform only one power calculation.
+    For color images, the entire calculation is performed separately for R, G, and B values.
+
+The gamma value can be taken directly from the gAMA chunk. Alternatively, an application may wish to allow the user to adjust the appearance of the displayed image by influencing the gamma value.
+  For example, the user could manually set a parameter user_exponent which defaults to 1.0, and the application could set:
+    [gamma = gamma_from_file / user_exponent]
+    [decoding_U2I_exponent = 1.0 / (gamma * display_I2O_exponent) = user_exponent / (gamma_from_file * display_I2O_exponent)]
+    The user would set user_exponent greater than 1 to darken the mid-level tones, or less than 1 to lighten them.
+
+A gAMA chunk containing zero is meaningless but could appear by mistake. Decoders should ignore it, and editors may discard it and issue a warning to the user.
+
+# cache
+It is not necessary to perform a transcendental mathematical computation for every pixel.
+    Instead, a lookup table can be computed that gives the correct output value for every possible sample value.
+    This requires only 256 calculations per image (for 8-bit accuracy), not one or three calculations per pixel.
+    For an indexed-color image, a one-time correction of the palette is sufficient, unless the image uses transparency and is being displayed against a nonuniform background.
+
+If floating-point calculations are not possible, gamma correction tables can be computed using integer arithmetic and a precomputed table of logarithms. Example code appears in [PNG-EXTENSIONS].
+
+When the incoming image has unknown gamma value (gAMA, sRGB, and iCCP all absent), standalone image viewers should choose a likely default gamma value, but allow the user to select a new one if the result proves too dark or too light.
+    The default gamma value may depend on other knowledge about the image, for example whether it came from the Internet or from the local system.
+    For consistency, viewers for document formats such as HTML, or vector graphics such as SVG, should treat embedded or linked PNG images with unknown gamma value in the same way that they treat other untagged images.
+
+In practice, it is often difficult to determine what value of display exponent should be used.
+    In systems with no built-in gamma correction, the display exponent is determined entirely by the CRT.
+    A display exponent of 2.2 should be used unless detailed calibration measurements are available for the particular CRT used.
+
+Many modern frame buffers have lookup tables that are used to perform gamma correction, and on these systems the display exponent value should be the exponent of the lookup table and CRT combined.
+    It may not be possible to find out what the lookup table contains from within the viewer application, in which case it may be necessary to ask the user to supply the display system's exponent value.
+    Unfortunately, different manufacturers use different ways of specifying what should go into the lookup table, so interpretation of the system gamma value is system-dependent.
+
+The response of real displays is actually more complex than can be described by a single number (the display exponent).
+    If actual measurements of the monitor's light output as a function of voltage input are available, the third and fourth lines of the computation above can be replaced by a lookup in these measurements, to find the actual frame buffer value that most nearly gives the desired brightness.
+
+
+
+]]
+
+
+
+
+
+
+
+13.14 Decoder color handling
+13.15 Background color
+13.16 Alpha channel processing
+13.17 Histogram and suggested palette usage
+[[
+原文:
+13.14 Decoder color handling
+See C. Gamma and chromaticity for references to color issues.
+#png的定位 相当于 源文件编译生成的可执行二进制代码文件？
+In many cases, the image data in PNG datastreams will be treated as device-dependent RGB values and displayed without modification (except for appropriate gamma correction).
+    This provides the fastest display of PNG images.
+    But unless the viewer uses exactly the same display hardware as that used by the author of the original image, the colors will not be exactly the same as those seen by the original author, particularly for darker or near-neutral colors.
+    The cHRM chunk provides information that allows closer color matching than that provided by gamma correction alone.
+
+# RGB --[cHRM]-> XYZ, CIE_LAB; ==>> palette
+The cHRM data can be used to transform the image data from RGB to XYZ and thence into a perceptually linear color space such as CIE LAB.
+    The colors can be partitioned to generate an optimal palette, because the geometric distance between two colors in CIE LAB is strongly related to how different those colors appear (unlike, for example, RGB or XYZ spaces).
+    The resulting palette of colors, once transformed back into RGB color space, could be used for display or written into a PLTE chunk.
+Decoders that are part of image processing applications might also transform image data into CIE LAB space for analysis.
+
+# matrix4RGB7src -> matrix4XYZ; matrix4XYZ -> matrix4RGB7dst
+In applications where color fidelity is critical, such as product design, scientific visualization, medicine, architecture, or advertising, PNG decoders can transform the image data from source RGB to the display RGB space of the monitor used to view the image.
+    This involves calculating the matrix to go from source RGB to XYZ and the matrix to go from XYZ to display RGB, then combining them to produce the overall transformation.
+    The PNG decoder is responsible for implementing gamut mapping.
+
+Decoders running on platforms that have a Color Management System (CMS) can pass the image data, gAMA, and cHRM values to the CMS for display or further processing.
+PNG decoders that provide color printing facilities can use the facilities in Level 2 PostScript to specify image data in calibrated RGB space or in a device-independent color space such as XYZ.
+    This will provide better color fidelity than a simple RGB to CMYK conversion.
+    The PostScript Language Reference manual [PostScript] gives examples.
+    Such decoders are responsible for implementing gamut mapping between source RGB (specified in the cHRM chunk) and the target printer.
+    The PostScript interpreter is then responsible for producing the required colors.
+PNG decoders can use the cHRM data to calculate an accurate greyscale representation of a color image.
+    Conversion from RGB to grey is simply a case of calculating the Y (luminance) component of XYZ, which is a weighted sum of R, G, and B values.
+    The weights depend upon the monitor type, i.e. the values in the cHRM chunk.
+    PNG decoders may wish to do this for PNG datastreams with no cHRM chunk.
+    In this case, a reasonable default would be the CCIR 709 primaries [ITU-R-BT.709].
+    The original NTSC primaries should not be used unless the PNG image really was color-balanced for such a monitor.
+
+
+
+
+13.15 Background color
+
+#背景色 不仅用在 透明区，也可用在 未被使用的屏幕区域(因此，即使png完全不透明，背景色也有效)
+The background color given by the bKGD chunk will typically be used to fill unused screen space around the image, as well as any transparent pixels within the image.
+    (Thus, bKGD is valid and useful even when the image does not use transparency.) If no bKGD chunk is present, the viewer will need to decide upon a suitable background color.
+    When no other information is available, a medium grey such as 153 in the 8-bit sRGB color space would be a reasonable choice.
+    Transparent black or white text and dark drop shadows, which are common, would all be legible against this background.
+
+#png自带的背景色 优先度 低于 浏览器 的 背景色 设置
+Viewers that have a specific background against which to present the image (such as web browsers) should ignore the bKGD chunk, in effect overriding bKGD with their preferred background color or background image.
+
+#背景色 不透明(即使刚好是tRNS指定的透明色，实际上为了让不支持透明度的浏览器的显示结果 没有太大不同，透明色、背景色 通常都是一样的)
+The background color given by the bKGD chunk is not to be considered transparent, even if it happens to match the color given by the tRNS chunk (or, in the case of an indexed-color image, refers to a palette index that is marked as transparent by the tRNS chunk).
+    Otherwise one would have to imagine something "behind the background" to composite against.
+    The background color is either used as background or ignored; it is not an intermediate layer between the PNG image and some other background.
+Indeed, it will be common that the bKGD and tRNS chunks specify the same color, since then a decoder that does not implement transparency processing will give the intended display, at least when no partially-transparent pixels are present.
+
+
+
+
+13.16 Alpha channel processing
+The alpha channel can be used to composite a foreground image against a background image.
+    The PNG datastream defines the foreground image and the transparency mask, but not the background image.
+    PNG decoders are not required to support this most general case.
+    It is expected that most will be able to support compositing against a single background color.
+The equation for computing a composited sample value is:
+    [output := alpha * foreground + (1-alpha) * background]
+    [output_intensity_sample{X} := alpha_value/max4alpha_value * foreground_intensity_sample{X} + (1-alpha_value)/max4alpha_value * background_intensity_sample{X}]
+    where alpha and the input and output sample values are expressed as fractions in the range 0 to 1.
+    This computation should be performed with intensity samples (not gamma-encoded samples).
+    For color images, the computation is done separately for R, G, and B samples.
+
+The following code illustrates the general case of compositing a foreground image against a background image.
+    It assumes that the original pixel data are available for the background image, and that output is to a frame buffer for display.
+    Other variants are possible; see the comments below the code.
+    The code allows the sample depths and gamma values of foreground image and background image all to be different and not necessarily suited to the display system.
+    In practice no assumptions about equality should be made without first checking.
+This code is ISO C [ISO_9899], with line numbers added for reference in the comments below.
+01  int foreground[4];  /* image pixel: R, G, B, A */
+02  int background[3];  /* background pixel: R, G, B */
+03  int fbpix[3];       /* frame buffer pixel */
+04  int fg_maxsample;   /* foreground max sample */
+05  int bg_maxsample;   /* background max sample */
+06  int fb_maxsample;   /* frame buffer max sample */
+07  int ialpha;
+08  float alpha, compalpha;
+09  float gamfg, linfg, gambg, linbg, comppix, gcvideo;
+
+    /* Get max sample values in data and frame buffer */
+10  fg_maxsample = (1 << fg_sample_depth) - 1;
+11  bg_maxsample = (1 << bg_sample_depth) - 1;
+12  fb_maxsample = (1 << frame_buffer_sample_depth) - 1;
+    /*
+     * Get integer version of alpha.
+     * Check for opaque and transparent special cases;
+     * no compositing needed if so.
+     *
+     * We show the whole gamma decode/correct process in
+     * floating point, but it would more likely be done
+     * with lookup tables.
+     */
+13  ialpha = foreground[3];
+
+14  if (ialpha == 0) {
+        /*
+         * Foreground image is transparent here.
+         * If the background image is already in the frame
+         * buffer, there is nothing to do.
+         */
+15      ;
+16  } else if (ialpha == fg_maxsample) {
+        /*
+         * Copy foreground pixel to frame buffer.
+         */
+17      for (i = 0; i < 3; i++) {
+18          gamfg = (float) foreground[i] / fg_maxsample;
+19          linfg = pow(gamfg, 1.0 / fg_gamma);
+20          comppix = linfg;
+21          gcvideo = pow(comppix, 1.0 / display_exponent);
+22          fbpix[i] = (int) (gcvideo * fb_maxsample + 0.5);
+23      }
+24  } else {
+        /*
+         * Compositing is necessary.
+         * Get floating-point alpha and its complement.
+         * Note: alpha is always linear; gamma does not
+         * affect it.
+         */
+25      alpha = (float) ialpha / fg_maxsample;
+26      compalpha = 1.0 - alpha;
+
+27      for (i = 0; i < 3; i++) {
+            /*
+             * Convert foreground and background to floating
+             * point, then undo gamma encoding.
+             */
+28          gamfg = (float) foreground[i] / fg_maxsample;
+29          linfg = pow(gamfg, 1.0 / fg_gamma);
+30          gambg = (float) background[i] / bg_maxsample;
+31          linbg = pow(gambg, 1.0 / bg_gamma);
+            /*
+             * Composite.
+             */
+32          comppix = linfg * alpha + linbg * compalpha;
+            /*
+             * Gamma correct for display.
+             * Convert to integer frame buffer pixel.
+             */
+33          gcvideo = pow(comppix, 1.0 / display_exponent);
+34          fbpix[i] = (int) (gcvideo * fb_maxsample + 0.5);
+35      }
+36  }
+
+Variations:
+    If output is to another PNG datastream instead of a frame buffer, lines 21, 22, 33, and 34 should be changed along the following lines
+
+        /*
+         * Gamma encode for storage in output datastream.
+         * Convert to integer sample value.
+         */
+        gamout = pow(comppix, outfile_gamma);
+        outpix[i] = (int) (gamout * out_maxsample + 0.5);
+
+Also, it becomes necessary to process background pixels when alpha is zero, rather than just skipping pixels.
+    Thus, line 15 will need to be replaced by copies of lines 17-23, but processing background instead of foreground pixel values.
+
+If the sample depths of the output file, foreground file, and background file are all the same, and the three gamma values also match, then the no-compositing code in lines 14-23 reduces to copying pixel values from the input file to the output file if alpha is one, or copying pixel values from background to output file if alpha is zero.
+    Since alpha is typically either zero or one for the vast majority of pixels in an image, this is a significant saving.
+    No gamma computations are needed for most pixels.
+
+When the sample depths and gamma values all match, it may appear attractive to skip the gamma decoding and encoding (lines 28-31, 33-34) and just perform line 32 using gamma-encoded sample values.
+    Although this does not have too bad an effect on image quality, the time savings are small if alpha values of zero and one are treated as special cases as recommended here.
+
+If the original pixel values of the background image are no longer available, only processed frame buffer pixels left by display of the background image, then lines 30 and 31 need to extract intensity from the frame buffer pixel values using code such as
+        /*
+         * Convert frame buffer value into intensity sample.
+         */
+        gcvideo = (float) fbpix[i] / fb_maxsample;
+        linbg = pow(gcvideo, display_exponent);
+    However, some roundoff error can result, so it is better to have the original background pixels available if at all possible.
+
+Note that lines 18-22 are performing exactly the same gamma computation that is done when no alpha channel is present.
+    If the no-alpha case is handled with a lookup table, the same lookup table can be used here.
+    Lines 28-31 and 33-34 can also be done with (different) lookup tables.
+
+Integer arithmetic can be used instead of floating point, providing care is taken to maintain sufficient precision throughout.
+
+NOTE In floating point, no overflow or underflow checks are needed, because the input sample values are guaranteed to be between 0 and 1, and compositing always yields a result that is in between the input values (inclusive).
+    With integer arithmetic, some roundoff-error analysis might be needed to guarantee no overflow or underflow.
+
+
+
+When displaying a PNG image with full alpha channel, it is important to be able to composite the image against some background, even if it is only black.
+    Ignoring the alpha channel will cause PNG images that have been converted from an associated-alpha representation to look wrong.
+    (Of course, if the alpha channel is a separate transparency mask, then ignoring alpha is a useful option: it allows the hidden parts of the image to be recovered.)
+
+Even if the decoder does not implement true compositing logic, it is simple to deal with images that contain only zero and one alpha values.
+    (This is implicitly true for greyscale and truecolor PNG datastreams that use a tRNS chunk; for indexed-color PNG datastreams it is easy to check whether the tRNS chunk contains any values other than 0 and 255.) In this simple case, transparent pixels are replaced by the background color, while others are unchanged.
+
+If a decoder contains only this much transparency capability, it should deal with a full alpha channel by treating all nonzero alpha values as fully opaque or by dithering.
+    Neither approach will yield very good results for images converted from associated-alpha formats, but this is preferable to doing nothing.
+    Dithering full alpha to binary alpha is very much like dithering greyscale to black-and-white, except that all fully transparent and fully opaque pixels should be left unchanged by the dither.
+
+
+
+
+
+
+
+
+
+13.17 Histogram and suggested palette usage
+For viewers running on indexed-color hardware attempting to display a truecolor image, or an indexed-color image whose palette is too large for the frame buffer, the encoder may have provided one or more suggested palettes in sPLT chunks.
+    If one of these is found to be suitable, based on size and perhaps name, the PNG decoder can use that palette.
+    Suggested palettes with a sample depth different from what the decoder needs can be converted using sample depth rescaling (see 13.12 Sample depth rescaling).
+
+When the background is a solid color, the viewer should composite the image and the suggested palette against that color, then quantize the resulting image to the resulting RGB palette.
+    When the image uses transparency and the background is not a solid color, no suggested palette is likely to be useful.
+
+For truecolor images, a suggested palette might also be provided in a PLTE chunk.
+    If the image has a tRNS chunk and the background is a solid color, the viewer will need to adapt the suggested palette for use with its desired background color.
+    To do this, the palette entry closest to the tRNS color should be replaced with the desired background color; or alternatively a palette entry for the background color can be added, if the viewer can handle more colors than there are PLTE entries.
+
+For images of color type 6 (truecolor with alpha), any PLTE chunk should have been designed for display of the image against a uniform background of the color specified by the bKGD chunk.
+    Viewers should probably ignore the palette if they intend to use a different background, or if the bKGD chunk is missing.
+    Viewers can use a suggested palette for display against a different background than it was intended for, but the results may not be very good.
+If the viewer presents a transparent truecolor image against a background that is more complex than a uniform color, it is unlikely that the suggested palette will be optimal for the composite image.
+    In this case it is best to perform a truecolor compositing step on the truecolor PNG image and background image, then color-quantize the resulting image.
+In truecolor PNG datastreams, if both PLTE and sPLT chunks appear, the PNG decoder may choose from among the palettes suggested by both, bearing in mind the different transparency semantics described above.
+The frequencies in the sPLT and hIST chunks are useful when the viewer cannot provide as many colors as are used in the palette in the PNG datastream.
+    If the viewer has a shortfall of only a few colors, it is usually adequate to drop the least-used colors from the palette.
+    To reduce the number of colors substantially, it is best to choose entirely new representative colors, rather than trying to use a subset of the existing palette.
+    This amounts to performing a new color quantization step; however, the existing palette and histogram can be used as the input data, thus avoiding a scan of the image data in the IDAT chunks.
+If no suggested palette is provided, a decoder can develop its own, at the cost of an extra pass over the image data in the IDAT chunks.
+    Alternatively, a default palette (probably a color cube) can be used.
+See also 12.5 Suggested palettes.
+
+
+
+]]
+
+
+
+
+
+
+
+
+
+
+[[
+原文:
+C. Gamma and chromaticity
+This section is non-normative.
+
+A gamma value is a numerical parameter used to describe approximations to certain non-linear transfer functions encountered in image capture and reproduction.
+    The gamma value is the exponent in a power law function.
+    For example the function:
+        [intensity = (voltage + constant)**exponent]
+    which is used to model the non-linearity of CRT displays.
+    It is often assumed, as in this International Standard, that the constant is zero.
+
+For the purposes of this specification, it is convenient to consider five places in a general image pipeline at which non-linear transfer functions may occur and which may be modelled by power laws.
+    The characteristic exponent associated with each is given a specific name.
+
+input_exponent
+    :the exponent of the image sensor.
+
+encoding_exponent
+    :the exponent of any transfer function performed by the process or device writing the datastream.
+
+decoding_exponent
+    :the exponent of any transfer function performed by the software reading the image datastream.
+
+LUT_exponent
+    :the exponent of the transfer function applied between the frame buffer and the display device (typically this is applied by a Look Up Table).
+
+output_exponent
+    :the exponent of the display device.
+    For a CRT, this is typically a value close to 2.2.
+
+
+It is convenient to define some additional entities that describe some composite transfer functions, or combinations of stages.
+
+display_exponent
+    :exponent of the transfer function applied between the frame buffer and the display surface of the display device.
+    [display_exponent := LUT_exponent * output_exponent]
+
+
+
+gamma
+    :exponent of the function mapping display output intensity to samples in the PNG datastream.
+    [gamma = 1.0 / (decoding_exponent * display_exponent)]
+    # [#奇怪:图片为啥要考虑输出条件？#]
+
+
+end_to_end_exponent
+    :the exponent of the function mapping image sensor input intensity to display output intensity.
+    This is generally a value in the range 1.0 to 1.5.
+
+
+The PNG gAMA chunk is used to record the gamma value.
+    This information may be used by decoders together with additional information about the display environment in order to achieve, or approximate, the desired display output.
+Additional information about this subject may be found [GAMMA-FAQ].
+Additional information on the impact of color space on image encoding may be found in [Kasson] and [Hill].
+Background information about chromaticity and color spaces may be found in [COLOR-FAQ].
+
+........
+G.2 Informative references
+[COLOR-FAQ]
+Color FAQ. Poynton, C.2009-10-19. URL: https://poynton.ca/ColorFAQ.html
+[GAMMA-FAQ]
+Gamma FAQ. Poynton, C.1998-08-04. URL: https://poynton.ca/GammaFAQ.html
+[Hill]
+Comparative analysis of the quantization of color spaces on the basis of the CIELAB color-difference formula. Hill, B.; Roger, Th.; Vorhagen, F.W.1997-04. URL: https://dl.acm.org/doi/10.1145/248210.248212
+[Kasson]
+An Analysis of Selected Computer Interchange Color Spaces. Kasson, J.; W. Plouffe. 1992. URL: https://dl.acm.org/doi/abs/10.1145/146443.146479
+
+view ../lots/NOTE/image/光谱相关冫三基色与电磁波频率的关系.txt
+]]
+[[
+E. Online resources
+This section is non-normative.
+Introduction
+This annex gives the locations of some Internet resources for PNG software developers. By the nature of the Internet, the list is incomplete and subject to change.
+
+E.1 ICC profile specifications
+ICC profile specifications are available at: https://www.color.org/
+
+E.2 PNG web site
+There is a World Wide Web site for PNG at http://www.libpng.org/pub/png/.
+    This page is a central location for current information about PNG and PNG-related tools.
+Additional documentation and portable C code for deflate, and an optimized implementation of the CRC algorithm are available from the zlib web site, https://www.zlib.net/.
+
+E.3 Sample implementation and test images
+A sample implementation in portable C, libpng, is available at http://www.libpng.org/pub/png/libpng.html.
+    Sample viewer and encoder applications of libpng are available at http://www.libpng.org/pub/png/book/sources.html
+    and are described in detail in PNG: The Definitive Guide [ROELOFS].
+    Test images can also be accessed from the PNG web site.
+
+
+]]
+
+
+
+
+
+
+[[
+view /sdcard/0my_files/unzip/png_specification/www.w3.org/TR/png-3/index.html
+grep '<section ' /sdcard/0my_files/unzip/png_specification/www.w3.org/TR/png-3/index.html   >  /sdcard/0my_files/tmp/00tmp
+view /sdcard/0my_files/tmp/00tmp
+%s/<\/section>//
+%s/^  *//
+%s/.\@<=<h/\r\0/g
+%s/\(<\/h[^>]*>\).*/\1/g
+%s/^\(<section [^>]*>\).*/\1/
+%s/^<h/:\0/
+%s/\(^:.*\)<[^>]*>/\1
+  重复多次
+%s/^<section.* id="\([^"]*\)".*/,\1/
+补完标题:
+  『:F.8 Changes since the W3C Recommendation of 10 November 2003 (PNG Second Edition)』
+
+==>>:
+  抽取目录:here
+
+,abstract
+:Abstract
+,sotd
+:Status of This Document
+,introduction
+:1. Introduction
+,scope
+:2. Scope
+,terms-definitions-and-abbreviated-terms
+:3. Terms, definitions, and abbreviated terms
+,concepts
+:4. Concepts
+,static-and-animated-images
+:4.1 Static and Animated images
+,images
+:4.2 Images
+,4Concepts.ColourSpaces
+:4.3 Color spaces
+,4Concepts.PNGImageTransformation
+:4.4 Reference image to PNG image transformation
+,4Concepts.Introduction
+:Introduction
+,4Concepts.Implied-alpha
+:4.4.1 Alpha separation
+,4Concepts.Indexing
+:4.4.2 Indexing
+,4Concepts.RGBMerging
+:4.4.3 RGB merging
+,4Concepts.Alpha-indexing
+:4.4.4 Alpha compaction
+,4Concepts.Scaling
+:4.4.5 Sample depth scaling
+,4Concepts.PNGImage
+:4.5 PNG image
+,4Concepts.Encoding
+:4.6 Encoding the PNG image
+,4Concepts.EncodingIntro
+:Introduction
+,4Concepts.EncodingPassAbs
+:4.6.1 Pass extraction
+,4Concepts.EncodingScanlineAbs
+:4.6.2 Scanline serialization
+,4Concepts.EncodingFiltering
+:4.6.3 Filtering
+,4Concepts.EncodingCompression
+:4.6.4 Compression
+,4Concepts.EncodingChunking
+:4.6.5 Chunking
+,4Concepts.AncillInfo
+:4.7 Additional information
+,4Concepts.Format
+:4.8 PNG datastream
+,4Concepts.FormatChunks
+:4.8.1 Chunks
+,4Concepts.FormatTypes
+:4.8.2 Chunk types
+,apng-frame-based-animation
+:4.9 APNG: frame-based animation
+,introduction-0
+:Introduction
+,structure
+:4.9.1 Structure
+,4Concepts.APNGSequence
+:4.9.2 Sequence numbers
+,apng-output-buffer
+:4.9.3 Output buffer
+,apng-canvas
+:4.9.4 Canvas
+,4Concepts.Errors
+:4.10 Error handling
+,4Concepts.Registration
+:4.11 Extensions
+,5DataRep
+:5. Datastream structure
+,5Introduction
+:5.1 PNG datastream
+,5PNG-file-signature
+:5.2 PNG signature
+,5Chunk-layout
+:5.3 Chunk layout
+,5Chunk-naming-conventions
+:5.4 Chunk naming conventions
+,5CRC-algorithm
+:5.5 CRC algorithm
+,5ChunkOrdering
+:5.6 Chunk ordering
+,sec-defining-new-chunks
+:5.7 Defining chunks
+,sec-defining-public-chunks-general
+:5.7.1 General
+,sec-defining-public-chunks
+:5.7.2 Defining public chunks
+,sec-defining-private-chunks
+:5.7.3 Defining private chunks
+,sec-field-value-extensibility
+:5.8 Private field values
+,6Transformation
+:6. Reference image to PNG image transformation
+,6Colour-values
+:6.1 Color types and values
+,6AlphaRepresentation
+:6.2 Alpha representation
+,7Transformation
+:7. Encoding the PNG image as a PNG datastream
+,7Integers-and-byte-order
+:7.1 Integers and byte order
+,7Scanline
+:7.2 Scanlines
+,7Filtering
+:7.3 Filtering
+,8Interlace
+:8. Interlacing and pass extraction
+,8InterlaceIntro
+:Introduction
+,8InterlaceMethods
+:8.1 Interlace methods
+,9Filters
+:9. Filtering
+,9FtIntro
+:9.1 Filter methods and filter types
+,9Filter-types
+:9.2 Filter types for filter method 0
+,9Filter-type-3-Average
+:9.3 Filter type 3: Average
+,9Filter-type-4-Paeth
+:9.4 Filter type 4: Paeth
+,10Compression
+:10. Compression
+,10CompressionCM0
+:10.1 Compression method 0
+,10CompressionFSL
+:10.2 Compression of the sequence of filtered scanlines
+,10CompressionOtherUses
+:10.3 Other uses of compression
+,11Chunks
+:11. Chunk specifications
+,11Introduction
+:11.1 General
+,11Critical-chunks
+:11.2 Critical chunks
+,11CcGen
+:Introduction
+,11IHDR
+:11.2.1 IHDR Image header
+,11PLTE
+:11.2.2 PLTE Palette
+,11IDAT
+:11.2.3 IDAT Image data
+,11IEND
+:11.2.4 IEND Image trailer
+,11Ancillary-chunks
+:11.3 Ancillary chunks
+,11AcGen
+:Introduction
+,11transinfo
+:11.3.1 Transparency information
+,11tRNS
+:11.3.1.1 tRNS Transparency
+,11addnlcolinfo
+:11.3.2 Color space information
+,11cHRM
+:11.3.2.1 cHRM Primary chromaticities and white point
+,11gAMA
+:11.3.2.2 gAMA Image gamma
+,11iCCP
+:11.3.2.3 iCCP Embedded ICC profile
+,11sBIT
+:11.3.2.4 sBIT Significant bits
+,11sRGB
+:11.3.2.5 sRGB Standard RGB color space
+,cICP-chunk
+:11.3.2.6 cICP Coding-independent code points for video signal type identification
+,mDCV-chunk
+:11.3.2.7 mDCV Mastering Display Color Volume
+,cLLI-chunk
+:11.3.2.8 cLLI Content Light Level Information
+,11textinfo
+:11.3.3 Textual information
+,11textIntro
+:Introduction
+,11keywords
+:11.3.3.1 Keywords and text strings
+,11tEXt
+:11.3.3.2 tEXt Textual data
+,11zTXt
+:11.3.3.3 zTXt Compressed textual data
+,11iTXt
+:11.3.3.4 iTXt International textual data
+,11addnlsiinfo
+:11.3.4 Miscellaneous information
+,11bKGD
+:11.3.4.1 bKGD Background color
+,11hIST
+:11.3.4.2 hIST Image histogram
+,11pHYs
+:11.3.4.3 pHYs Physical pixel dimensions
+,11sPLT
+:11.3.4.4 sPLT Suggested palette
+,eXIf
+:11.3.4.5 eXIf Exchangeable Image File (Exif) Profile
+,exif-general-recommendations
+:11.3.4.5.1 eXIf General Recommendations
+,exif-recommendations-for-decoders
+:11.3.4.5.2 eXIf Recommendations for Decoders
+,exif-recommendations-for-encoders
+:11.3.4.5.3 eXIf Recommendations for Encoders
+,11timestampinfo
+:11.3.5 Time stamp information
+,11tIME
+:11.3.5.1 tIME Image last-modification time
+,animation-information
+:11.3.6 Animation information
+,acTL-chunk
+:11.3.6.1 acTL Animation Control Chunk
+,fcTL-chunk
+:11.3.6.2 fcTL Frame Control Chunk
+,fdAT-chunk
+:11.3.6.3 fdAT Frame Data Chunk
+,12Encoders
+:12. PNG Encoders
+,12Introduction
+:Introduction
+,12Encoder-gamma-handling
+:12.1 Encoder gamma handling
+,12Encoder-colour-handling
+:12.2 Encoder color handling
+,12Alpha-channel-creation
+:12.3 Alpha channel creation
+,12Sample-depth-scaling
+:12.4 Sample depth scaling
+,12Suggested-palettes
+:12.5 Suggested palettes
+,12Interlacing
+:12.6 Interlacing
+,12Filter-selection
+:12.7 Filter selection
+,12Compression
+:12.8 Compression
+,12Text-chunk-processing
+:12.9 Text chunk processing
+,12Chunk-processing
+:12.10 Chunking
+,12Use-of-private-chunks
+:12.10.1 Use of private chunks
+,12Private-type-and-method-codes
+:12.10.2 Use of non-reserved field values
+,12Ancillary
+:12.10.3 Ancillary chunks
+,13Decoders
+:13. PNG decoders and viewers
+,13Introduction
+:Introduction
+,error-handling
+:13.1 Error handling
+,13Error-checking
+:13.2 Error checking
+,13Security-considerations
+:13.3 Security considerations
+,Privacy-considerations
+:13.4 Privacy considerations
+,13Chunking
+:13.5 Chunking
+,13Pixel-dimensions
+:13.6 Pixel dimensions
+,13Text-chunk-processing
+:13.7 Text chunk processing
+,13Decompression
+:13.8 Decompression
+,13Filtering
+:13.9 Filtering
+,13Progressive-display
+:13.10 Interlacing and progressive display
+,13Truecolour-image-handling
+:13.11 Truecolor image handling
+,13Sample-depth-rescaling
+:13.12 Sample depth rescaling
+,13Decoder-gamma-handling
+:13.13 Decoder gamma handling
+,13Decoder-colour-handling
+:13.14 Decoder color handling
+,13Background-colour
+:13.15 Background color
+,13Alpha-channel-processing
+:13.16 Alpha channel processing
+,13Histogram-and-suggested-palette-usage
+:13.17 Histogram and suggested palette usage
+,14EditorsExt
+:14. Editors
+,14Additional-chunk-types
+:14.1 Additional chunk types
+,14Ordering
+:14.2 Behavior of PNG editors
+,14Ordering-of-chunks
+:14.3 Ordering of chunks
+,14Ordering-of-critical-chunks
+:14.3.1 Ordering of critical chunks
+,14Ordering-of-ancillary-chunks
+:14.3.2 Ordering of ancillary chunks
+,conformance
+:15. Conformance
+,conformance-0
+:15.1 Conformance
+,15ConfIntro
+:15.2 Introduction
+,15ConfObjectives
+:15.2.1 Objectives
+,15ConfScope
+:15.2.2 Scope
+,15ConformanceConf
+:15.3 Conformance conditions
+,15FileConformance
+:15.3.1 Conformance of PNG datastreams
+,15ConformanceEncoder
+:15.3.2 Conformance of PNG encoders
+,15ConformanceDecoder
+:15.3.3 Conformance of PNG decoders
+,15ConformanceEditor
+:15.3.4 Conformance of PNG editors
+,A-Conventions
+:A. Internet Media Types
+,image-png
+:A.1 image/png
+,image-apng
+:A.2 image/apng
+,B-NewChunksAppendix
+:B. Guidelines for private chunk types
+,C-GammaAppendix
+:C. Gamma and chromaticity
+,D-CRCAppendix
+:D. Sample CRC implementation
+,E-Resources
+:E. Online resources
+,E-Intro
+:Introduction
+,E-icc-profile-specs
+:E.1 ICC profile specifications
+,E-PNG-home-page
+:E.2 PNG web site
+,E-Sample-implementation
+:E.3 Sample implementation and test images
+,F-ChangeList
+:F. Changes
+,changes-since-the-proposed-recommendation-of-15-may-2025
+:F.1 Changes since the Proposed Recommendation of 15 May 2025
+,changes-since-the-candidate-recommendation-snapshot-of-13-march-2025
+:F.2 Changes since the Candidate Recommendation Snapshot of 13 March 2025
+,changes-since-the-candidate-recommendation-draft-of-21-january-2025-third-edition
+:F.3 Changes since the Candidate Recommendation Draft of 21 January 2025 (Third Edition)
+,changes-since-the-candidate-recommendation-draft-of-18-july-2024-third-edition
+:F.4 Changes since the Candidate Recommendation Draft of 18 July 2024 (Third Edition)
+,changes-since-the-candidate-recommendation-snapshot-of-21-september-2023-third-edition
+:F.5 Changes since the Candidate Recommendation Snapshot of 21 September 2023 (Third Edition)
+,changes-since-the-working-draft-of-20-july-2023-third-edition
+:F.6 Changes since the 
+,changes-since-the-first-public-working-draft-of-25-october-2022-third-edition
+:F.7 Changes since the 
+,changes-since-the-w3c-recommendation-of-10-november-2003-png-second-edition
+:F.8 Changes since the W3C Recommendation of 10 November 2003 (PNG Second Edition)
+,changes-between-first-and-second-editions
+:F.9 Changes between First and Second Editions
+,references
+:G. References
+,normative-references
+:G.1 Normative references
+,informative-references
+:G.2 Informative references
+
+
+
+
+===发现原文已有:
+  原文目录:here
+Table of Contents
+Abstract
+Status of This Document
+1. Introduction
+2. Scope
+3. Terms, definitions, and abbreviated terms
+4. Concepts
+4.1 Static and Animated images
+4.2 Images
+4.3 Color spaces
+4.4 Reference image to PNG image transformation
+Introduction
+4.4.1 Alpha separation
+4.4.2 Indexing
+4.4.3 RGB merging
+4.4.4 Alpha compaction
+4.4.5 Sample depth scaling
+4.5 PNG image
+4.6 Encoding the PNG image
+Introduction
+4.6.1 Pass extraction
+4.6.2 Scanline serialization
+4.6.3 Filtering
+4.6.4 Compression
+4.6.5 Chunking
+4.7 Additional information
+4.8 PNG datastream
+4.8.1 Chunks
+4.8.2 Chunk types
+4.9 APNG: frame-based animation
+Introduction
+4.9.1 Structure
+4.9.2 Sequence numbers
+4.9.3 Output buffer
+4.9.4 Canvas
+4.10 Error handling
+4.11 Extensions
+5. Datastream structure
+5.1 PNG datastream
+5.2 PNG signature
+5.3 Chunk layout
+5.4 Chunk naming conventions
+5.5 CRC algorithm
+5.6 Chunk ordering
+5.7 Defining chunks
+5.7.1 General
+5.7.2 Defining public chunks
+5.7.3 Defining private chunks
+5.8 Private field values
+6. Reference image to PNG image transformation
+6.1 Color types and values
+6.2 Alpha representation
+7. Encoding the PNG image as a PNG datastream
+7.1 Integers and byte order
+7.2 Scanlines
+7.3 Filtering
+8. Interlacing and pass extraction
+Introduction
+8.1 Interlace methods
+9. Filtering
+9.1 Filter methods and filter types
+9.2 Filter types for filter method 09.3 Filter type 3: Average
+9.4 Filter type 4: Paeth
+10. Compression
+10.1 Compression method 010.2 Compression of the sequence of filtered scanlines
+10.3 Other uses of compression
+11. Chunk specifications
+11.1 General
+11.2 Critical chunks
+Introduction
+11.2.1 IHDR Image header
+11.2.2 PLTE Palette
+11.2.3 IDAT Image data
+11.2.4 IEND Image trailer
+11.3 Ancillary chunks
+Introduction
+11.3.1 Transparency information
+11.3.1.1 tRNS Transparency
+11.3.2 Color space information
+11.3.2.1 cHRM Primary chromaticities and white point
+11.3.2.2 gAMA Image gamma
+11.3.2.3 iCCP Embedded ICC profile
+11.3.2.4 sBIT Significant bits
+11.3.2.5 sRGB Standard RGB color space
+11.3.2.6 cICP Coding-independent code points for video signal type identification
+11.3.2.7 mDCV Mastering Display Color Volume
+11.3.2.8 cLLI Content Light Level Information
+11.3.3 Textual information
+Introduction
+11.3.3.1 Keywords and text strings
+11.3.3.2 tEXt Textual data
+11.3.3.3 zTXt Compressed textual data
+11.3.3.4 iTXt International textual data
+11.3.4 Miscellaneous information
+11.3.4.1 bKGD Background color
+11.3.4.2 hIST Image histogram
+11.3.4.3 pHYs Physical pixel dimensions
+11.3.4.4 sPLT Suggested palette
+11.3.4.5 eXIf Exchangeable Image File (Exif) Profile
+11.3.4.5.1 eXIf General Recommendations
+11.3.4.5.2 eXIf Recommendations for Decoders
+11.3.4.5.3 eXIf Recommendations for Encoders
+11.3.5 Time stamp information
+11.3.5.1 tIME Image last-modification time
+11.3.6 Animation information
+11.3.6.1 acTL Animation Control Chunk
+11.3.6.2 fcTL Frame Control Chunk
+11.3.6.3 fdAT Frame Data Chunk
+12. PNG Encoders
+Introduction
+12.1 Encoder gamma handling
+12.2 Encoder color handling
+12.3 Alpha channel creation
+12.4 Sample depth scaling
+12.5 Suggested palettes
+12.6 Interlacing
+12.7 Filter selection
+12.8 Compression
+12.9 Text chunk processing
+12.10 Chunking
+12.10.1 Use of private chunks
+12.10.2 Use of non-reserved field values
+12.10.3 Ancillary chunks
+13. PNG decoders and viewers
+Introduction
+13.1 Error handling
+13.2 Error checking
+13.3 Security considerations
+13.4 Privacy considerations
+13.5 Chunking
+13.6 Pixel dimensions
+13.7 Text chunk processing
+13.8 Decompression
+13.9 Filtering
+13.10 Interlacing and progressive display
+13.11 Truecolor image handling
+13.12 Sample depth rescaling
+13.13 Decoder gamma handling
+13.14 Decoder color handling
+13.15 Background color
+13.16 Alpha channel processing
+13.17 Histogram and suggested palette usage
+14. Editors
+14.1 Additional chunk types
+14.2 Behavior of PNG editors
+14.3 Ordering of chunks
+14.3.1 Ordering of critical chunks
+14.3.2 Ordering of ancillary chunks
+15. Conformance
+15.1 Conformance
+15.2 Introduction
+15.2.1 Objectives
+15.2.2 Scope
+15.3 Conformance conditions
+15.3.1 Conformance of PNG datastreams
+15.3.2 Conformance of PNG encoders
+15.3.3 Conformance of PNG decoders
+15.3.4 Conformance of PNG editors
+A. Internet Media Types
+A.1 image/png
+A.2 image/apng
+B. Guidelines for private chunk types
+C. Gamma and chromaticity
+D. Sample CRC implementation
+E. Online resources
+Introduction
+E.1 ICC profile specifications
+E.2 PNG web site
+E.3 Sample implementation and test images
+F. Changes
+F.1 Changes since the Proposed Recommendation  of 15 May 2025
+F.2 Changes since the Candidate Recommendation Snapshot of 13 March 2025
+F.3 Changes since the Candidate Recommendation Draft of 21 January 2025 (Third Edition)
+F.4 Changes since the Candidate Recommendation Draft of 18 July 2024 (Third Edition)
+F.5 Changes since the Candidate Recommendation Snapshot of 21 September 2023 (Third Edition)
+F.6 Changes since the Working Draft of 20 July 2023 (Third Edition)
+F.7 Changes since the First Public Working Draft of 25 October 2022 (Third Edition)
+F.8 Changes since the W3C Recommendation of 10 November 2003 (PNG Second Edition)
+F.9 Changes between First and Second Editions
+G. References
+G.1 Normative references
+G.2 Informative references
+
+]]
+

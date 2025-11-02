@@ -1,0 +1,107 @@
+
+e others/数学/编程/设计/偏序关系的属性坐标表达.txt
+view others/数学/编程/设计/偏序关系的紧凑表达.txt
+view others/数学/编程/设计/偏序关系的坐标表达.txt
+
+@20251021
+目标:优于{偏序关系的集合型表达}
+  偏序关系的集合型表达:
+    比如:偏序关系:{a<b,a<c,b<d,c<d}
+      [A,B,C,D::Symbol]
+      [a:={A}]
+      [b:={B,A}]
+      [c:={C,A}]
+      [d:={D,C,B,A}]
+    最坏情况出现在 [给定的偏序关系 其实是 全序关系]
+    为了 避免 超长全序链 带来的 表达耗费空间的平方增长速率，用 属性 来容纳 一条 全序链:
+        [... < a < b < {c,d} < e < f < ...]
+        使用:词典序艹元组
+          (全序整数, 偏序类型)
+          [b:=(-1, None)]
+          [c:=(0, (+1,-1))]
+          [d:=(0, (-1,+1))]
+          [e:=(+1, None)]
+            #首项=> [b<c<e][b<d<e]
+            #次项=> [c<!>b]
+
+Ord 全序数据类型 实例:
+  模数字/定长剩余数
+  词典序艹元组
+  词典序艹数组
+    #可表达:自然数#长度前置的编码
+    #可表达:整数#词典序艹元组(符号,自然数)
+    #可表达:有理数#连分数 隔位取反
+
+
+鸟瞰:
+  全局:属性名讠值类型: {nm:Type}
+      let Key{nm} := 属性名讠值类型[nm]
+        #nm2Key
+  全局:属性名讠扩增后缺失值: {nm:(Ex Key{nm})}
+        即 {nm:(-oo|+oo|default{Key{nm}}|null)}
+        #nm2ex_default
+  单点:偏序属性坐标/属性名讠值: {nm:((Ord Key{nm}) => Key{nm})}
+        #虽然可以是:{nm:((PartialOrd Key{nm}) => Key{nm})}
+        #nm2k
+
+
+
+data PartialOrdering
+  = LT
+  | EQ
+  | GT
+  | NA
+class PartialOrd k where
+  partial_cmp :: k -> k -> PartialOrdering
+
+data Ex k
+  = Min
+  | Just k
+  | Max
+  | None
+
+
+
+instance Ord k =>  PartialOrd k where
+  ...
+  或者:
+  class PartialOrd k => Ord k where
+    ...
+
+instance PartialOrd k =>  PartialOrd (Ex k) where
+  partial_cmp None None = EQ
+  partial_cmp None _ = NA
+  partial_cmp _ None = NA
+
+  partial_cmp Max Max = EQ
+  partial_cmp Max _ = GT
+  partial_cmp _ Max = LT
+
+  partial_cmp Min Min = EQ
+  partial_cmp Min _ = LT
+  partial_cmp _ Min = GT
+
+  partial_cmp (Just a) (Just b) = partial_cmp a b
+
+
+combine_PartialOrdering_ :: PartialOrdering -> PartialOrdering -> PartialOrdering
+combine_PartialOrdering_ NA _ = NA
+combine_PartialOrdering_ _ NA = NA
+combine_PartialOrdering_ EQ a = a
+combine_PartialOrdering_ a EQ = a
+combine_PartialOrdering_ LT LT = LT
+combine_PartialOrdering_ GT GT = GT
+combine_PartialOrdering_ _ _ = NA
+
+
+combines_PartialOrdering_ :: [PartialOrdering] -> PartialOrdering
+combines_PartialOrdering_ = foldr combine_PartialOrdering_ EQ
+
+newtype PartialOrdVertex (nm::Type) (nm2Key :: Map nm Type) (nm2ex_default :: DependentMap nm (\nm->Ex nm2Key[nm])) = POV (DependentMap nm nm2Key)
+
+instance (Ord nm, [@[nm:<-nm2Key] -> [Ord nm2Key[nm]]]) => PartialOrd (PartialOrdVertex nm nm2Key nm2ex_default) where
+  partial_cmp nm2ka nm2kb = combines_PartialOrdering_ rs where
+    nms = nm2ka.keys() \-/ nm2ka.keys()
+    rs = [(partial_cmp ex_ka ex_kb) | [nm:<-nms][ex_ka:=lookup_ex nm nm2ka][ex_kb:=lookup_ex nm nm2kb]]
+    lookup_ex nm nm2kx = if nm in nm2kx then (Just nm2kx[nm]) else nm2ex_default[nm]
+

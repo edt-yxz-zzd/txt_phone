@@ -1273,17 +1273,37 @@ view others/app/termux/help/awk-see-gawk.txt
 平行识别器/投喂型识别器
   注意:忽略庇护 的出现 必然是 由于 其输出值 被用作 后续识别器 的 语境参数。语境参数的递送 由 串联式 内部定义，所以 忽略庇护 只作用于 串联式 的 子部件。
   区分:后处理系统
-    * 内禀硬编码牜不可忽略:不影响识别成败流程
+    * 内禀硬编码牜不可忽略:影响识别成败流程#同时也是:此处及内部 递归 禁用 用户外赋 后处理
     * 可忽略:不影响识别成败流程
       * 用户外赋:每次识别过程附加不同后处理
       * 内禀硬编码牜可忽略:所有识别过程一致
+  区分:后处理系统
+    * 即时后处理 -> Raw
+    * 惰性后处理 -> LazyRaw
+      因为某些分支最终被放弃，其之前的中间结果 没有计算的必要性
+      节省时间，但空间开销大
   封装所有输出值:
     #只有 键值{词典/记录},况态{Union,Cased}是简单数据？
     #惰性求值
     #欤可忽略-->忽略深度-->筛选输出值，但是 要能够 递归向下递送，还需要 额外考虑:该参数的类型 可能需要 对应于 识别器 的 嵌套循环模式。
     #外赋后处理
-    Raw:任意类型
+    #欤禁用外赋后处理
+    # .unlazy/cached_property
+    # .is_raw/bool
+    Raw/LazyRaw:任意类型
       忽略:指 忽略 Raw的内容，其余结构依然保持
+      外赋后处理:要么fmap保形深入修改，要么修改后变成Raw
+        e ../../python3_src/seed/algo/almost_graph/tree/conformal_transformation.py
+        保形变换:conformal transformation:
+          (post4enter, post4exit; env, ctx, st4acc)
+          post4enter(env, ctx, st4acc, x) -> ((Raw, st4acc) | args4into/(_ctx, _st4acc))
+          post4exit(env, ctx, st4acc, x, _x, _ctx, _st4acc) -> ((Raw, st4acc) | st4acc)
+          <==>
+          (post4enter, post4exit; st)
+          post4enter(st, x) -> ((Raw, st) | args4into/_st)
+          post4exit(st, x, _x, _st) -> ((Raw, st) | st)
+      内禀后处理:不涉及Raw
+      即:Raw是 用户自留地
     Unpack{Tuple/Array/Union/...}
       解包:只用作 子部件的输出
     Tuple:定长串
@@ -1336,10 +1356,88 @@ view others/app/termux/help/awk-see-gawk.txt
       外用不内用
     料符位次信息:内禀:uint:识别过程内部使用，可用作外部提示(虽然不保证语义)
       内用不外用
+interactive - stepping - feed_in
+.start_(interned_kwds7pure, env8bg, ctx8fg, interned_args8remnant) -> GI{[st]}
+.feed_tkns_(env8bg, ctx8fg, st, required_tkns) -> GI{[st]}
+.feed_subcall_(env8bg, ctx8fg, st, oresult7subcall, interned_args8remnant7subcall) -> GI{[st]}
+st7final:
+  .oresult
+  .interned_args8remnant
+  #总输出:(oresult, interned_args8remnant)
+st7loop:
+  .state7loop
+  .required_kind :: tkey
+  .required_size :: pint
+st7subcall:
+  .state7subcall
+  .callee :: (rgnr, interned_kwds7pure, ctx8fg, interned_args8remnant)
+st7tailcall:
+  .callee :: (rgnr, interned_kwds7pure, ctx8fg, interned_args8remnant)
+
+oresult:
+  .unlazy
+  .whether_raw
+  .whether_lazy_raw
+  .whether_unlazy
+
+e ../../python3_src/seed/abc/IInterned.py
+
 
 
 @20251010
-e script/trial_impl___lazy_import__with.py
+mv:e script/trial_impl___lazy_import__with.py
     with ctx4lazy_import4funcs:
         from seed.tiny_.types5py import mk_MapView,curry1,kwargs2Attrs #,MapView
+-->:
+e ../../python3_src/seed/helper/lazy_import__func7context.py
 
+
+
+@20251016
+e script/九宫泛化.py
+def 求冫格值巛位置牜标准泛九宫牜周期延拓版扌(n, i, j, /):
+    _check_nij(n, i, j)
+    h = n >> 1
+    d = i-j
+    # !! 值为:((d+h)%n *n +1) +(j-d)%n
+    return ((d+h)%n *n +1) +(j-d)%n
+
+
+
+
+@20251017
+改进:尸方法：w**(2**k-1)%N
+  效率分析:
+    [N%p==0]
+    [gcd((w**(2**k-1)-1)%N, N) == p]
+    [(w**(2**k-1)-1)%p == 0]
+    [w**(2**k-1)%p==1] <<==:
+        [(2**k-1)%(p-1)==0]
+          若是(p-1)含有较大的素因子，则k也很可能同样较大。
+
+
+@20251020
+png格式 读写
+
+###e ../../python3_src/nn_ns/fileformat/image_png_writer.py
+e script/png/image_png_writer.py
+e ../lots/NOTE/image/png-format.txt
+
+
+
+@20251021
+e ../../python3_src/nn_ns/app/copy6root_cmd.py
+e ../../python3_src/seed/filesys/copy6root.py
+
+
+
+
+@20251021
+++lazy_obj
+  lazy_obj() -> obj
+  with ...(prefix='lazy_'):
+    #neednot:?__name__?
+    from xxx.yyy import lazy_aaa
+      # _Lazy('xxx.yyy', 'aaa')
+e ../../python3_src/seed/helper/lazy_import__func.py
+e ../../python3_src/seed/helper/lazy_import__func7context.py

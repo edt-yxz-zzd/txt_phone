@@ -1,0 +1,386 @@
+
+e ../lots/NOTE/image/png-format.txt
+#e ../../python3_src/nn_ns/fileformat/image_png_writer.py
+mv -iv ../../python3_src/nn_ns/fileformat/image_png_writer.py script/png/
+e script/png/image_png_writer.py
+
+
+pkg:purepng:
+  cp -iv -r ~/../usr/lib/python3.10/site-packages/png/ /sdcard/0my_files/tmp/out4py/py_src/site-packages/
+  view /sdcard/0my_files/tmp/out4py/py_src/site-packages/png/png.py
+
+
+[[
+[tag :: str{len==4}{ord(char) < 256}]
+grep 'write_chunk([^,]*, *\([^ ,]*\)' /sdcard/0my_files/tmp/out4py/py_src/site-packages/png/png.py -o | grep "'[^']*'" -o | sort -u
+  #15:
+'IDAT'
+'IEND'
+'IHDR'
+'PLTE'
+'bKGD'
+'cHRM'
+'gAMA'
+'iCCP'
+'iTXt'
+'pHYs'
+'sBIT'
+'sRGB'
+'tEXt'
+'tIME'
+'tRNS'
+
+#Reader
+grep 'def _process_\w*' /sdcard/0my_files/tmp/out4py/py_src/site-packages/png/png.py -o | sort -u
+  #14:
+IHDR
+PLTE
+bKGD
+cHRM
+gAMA
+iCCP
+iTXt
+pHYs
+sBIT
+sRGB
+tEXt
+tIME
+tRNS
+zTXt
+  #no:IDAT
+  #no:IEND:break loop
+  #more:zTXt:跟iTXt一样，读到text
+
+]]
+
+
+
+
+块次序:
+    :chunk:order:
+        Without a palette (PLTE chunk), ordering is relatively relaxed.
+        With one, gamma info must precede PLTE chunk which must precede tRNS and bKGD.
+        # See http://www.w3.org/TR/PNG/#5ChunkOrdering
+
+    view ../../python3_src/py_stdlib_api.txt
+        『!』『>』 都是 大端序，没有隐性填充(没有对齐性填充)
+        1: c,b,B,?
+        2: e,h,H
+        4: f,i,I,l,L
+        8: d,q,Q
+
+    #def write_chunk(outfile, tag, data=bytes()):
+        [layout4chunk == (len_payload, tag, payload, crc32_checksum4taged_payload)]
+        [len_payload :: big_endian_uint_32bit]
+        [tag :: bytes{len==4}/str{len==4}{ord(char) < 256}{encoding='iso8859-1'}]
+        [payload :: bytes{len==len_payload}]
+        [crc32_checksum4taged_payload :: big_endian_uint_32bit]
+        [crc32_checksum4taged_payload == 0xFF_FF_FF_FF&zlib.crc32(tag++payload)]
+        [crc32_checksum4taged_payload == 0xFF_FF_FF_FF&zlib.crc32(payload, zlib.crc32(tag))]
+
+参数:Writer:
+    [size == (width, height)] #(in pixels)
+    [bitdepth <- {1,2,4,8,16}]
+        缺省值:8
+        [value_per_pixel_channel :: uint%2**bitdepth]
+    [greyscale, alpha :: bool]
+        i.e. [RGB_vs_L, None_vs_A :: bool]
+        L:Lightness/Luminance/Luma
+        A:Alpha#opacity{not-transparency}
+    [palette :: may ([RGBA/(R,G,B,A)/[byte]{len=4}]++[RGB/(R,G,B)/[byte]{len=3}])] # 4-tuple 先于 3-tuple 这是因为 A通道将被分离
+        #ColourValue_vs_PaletteIndex
+        palette => colour_mapped_image
+        palette => [not greyscale][not alpha][not bitdepth==16][transparent is None]
+        palette => RGBX # mixed RGB/RGBA-pixel are ok
+        palette => [bitdepth <- {1,2,4,8}]
+        [PLTE_chunk :: [byte/(R|G|B)]{len<=3*2**bitdepth}]
+            #PLTE:PaLetTE/palette
+        [tRNS_chunk :: [byte/A]{len<=len(PLTE_chunk)///3}]
+            #tRNS:tRaNSparency/transparency
+            #即 RGBA像素数量 为 len(tRNS): zip(reshape(PLTE_chunk)[:len(tRNS)], tRNS_chunk)
+            #即 RGB 像素数量 为 len(PLTE)-len(tRNS): reshape(PLTE_chunk)[len(tRNS):]
+        #########
+        colormap = bool(palette)
+        color_type = 4 * alpha + 2 * (not greyscale) + 1 * colormap
+        assert 0 <= color_type < 8 and color_type not in (1,5,7)
+            # 0b111
+            # 0b101
+            # 0b001
+            # <==>
+            # 0b1?1
+            # 0b?01
+            # <==>
+            # palette => [not greyscale]
+            # palette => [not alpha]
+            #
+        color_planes = 1 if greyscale or colormap else 3
+            # --> num_color_planes
+            # --> num_color_channels
+        planes = color_planes + alpha
+            # --> num_planes
+            # --> num_channels
+
+        #########
+        #########
+        #########
+        colour_model:L,LA,RGB,RGBA, Indexed_RGBX; {#1/2/3/4/1 channel#}
+        bit depth / colour model combinations the PNG file format supports
+          1/2/4 ~ only:greyscale/colour_mapped_image # 看代码:only L/palette???
+          no:16 ~ colour_mapped_image
+
+        #########
+        input format:
+            * "flat row flat pixel"
+              RGBA => [mx :: [(R|G|B|A)]{4*width*height}]
+            * "boxed row flat pixel"
+              RGBA => [mx :: [[(R|G|B|A)]{4*width}]{height}]
+            * "boxed row boxed pixel"
+              RGBA => [mx :: [[RGBA/(R,G,B,A)]{width}]{height}]
+        #########
+        #########
+        #########
+
+    [transparent, background :: may colour{greyscale}]
+        指某一个颜色 为 透明色/背景色
+          ???有何不同？透明 不就看到了 背景？
+        transparent => [not alpha]
+        [colour{greyscale} :: ((L|(L,)) if greyscale else (R,G,B))]
+    [gamma :: may float{>0}]
+    [compression :: (the_default_level_of_zlib_compession/(None|-1) | zlib_compession_level/uint%10)]
+    [chunk_limit :: uint]
+        缺省值:2 ** 20
+        压缩时使用的内存空间限制
+    [filter_type :: may (uint%5|name)]
+        [filter_type := _filter_names.index(nm)]
+        压缩相关
+    [interlace :: bool]
+        即 存储时 缩略图先行，逐步细化，运行低速网络提前预览概略图。
+        def write(self, outfile, rows):
+            If `interlace` is specified (when creating the instance), then an interlaced PNG file will be written.  Supply the rows in the normal image order; the interlacing is carried out internally.
+            NOTE: Interlacing will require the entire image to be in working memory.
+
+    ##其他:
+    icc_profile :: may bytes
+        icc_profile=None
+        icc_profile => [rendering_intent is None][bool(icc_profile_name)]
+    icc_profile_name :: (bytes|str{encoding='iso8859-1'})
+        icc_profile_name="ICC Profile"
+        icc_profile
+            Write ICC Profile
+        icc_profile_name
+            Name for ICC Profile
+
+    Extra keywords:
+        #see :`set_<xxx>`
+        text :: {nm:?(str|bytes)?}
+        modification_time :: may (True/'write'|time.struct_time)
+        resolution :: may ((ppu4x,ppu4y), unit_type)
+          ???xxx:resolution :: may ((ppu4row,ppu4column), unit_type)
+          resolution :: may ((ppu4width,ppu4height), unit_type)
+            # !! (x,y) see:usage{_adam7}
+            # [pixels_per_unit/ppu :: pint]
+            # [unit_type/unit_specifier :: (0|1)]
+            # [non_std-unit_type/unit_specifier :: (0{#no unit_specifier#}|1/'m'/'meter'|'cm'/'centimeter'|'i'/'in'/'inch')]
+            # [1inch==0.0254m==2.54cm]
+            #
+            # * resolution = ((1, 4), )  # wide pixels (4:1) without unit specifier
+            # * resolution = (300, 'inch')  # 300dpi in both dimensions
+            # * resolution = (4, 1, 0)  # tall pixels (1:4) without unit specifier
+            #
+        rendering_intent :: may uint%4 # may (PERCEPTUAL|RELATIVE_COLORIMETRIC|SATURATION|ABSOLUTE_COLORIMETRIC)
+        white_point :: may point
+        rgb_points :: may (point,point,point)
+            [point :: (float, float)]
+            [(white_point is None) == (rgb_points is None)]
+            => [wrgb_points :: may [point]{len=4}{~=[float{0<=.<42949.672955}]{len=8}}]
+            float => big_endian_uint_32bit:round(flt * 1e5)
+
+
+
+
+# registered keywords
+# http://www.w3.org/TR/2003/REC-PNG-20031110/#11keywords
+_registered_kw = r'''
+Title
+Author
+Description
+Copyright
+Software
+Disclaimer
+Warning
+Source
+Comment
+Creation Time
+'''.strip().split('\n')#'''
+
+_filter_names = r'''
+none
+sub
+up
+average
+paeth
+'''.strip().split('\n')#'''
+#filter_type = _filter_names.index(nm)
+
+# rendering_intent
+# rendering intent
+PERCEPTUAL = 0
+RELATIVE_COLORIMETRIC = 1
+SATURATION = 2
+ABSOLUTE_COLORIMETRIC = 3
+
+
+# The PNG signature.
+# http://www.w3.org/TR/PNG/#5PNG-file-signature
+png_signature = struct.pack('8B', 137, 80, 78, 71, 13, 10, 26, 10)
+
+#see:def array_scanlines_interlace(self, pixels):
+#       for xstart, ystart, xstep, ystep in _adam7:
+#           if xstart >= self.width: continue
+#           # Pixels per row (reduced pass image)
+#           ppr = math.ceil((self.width-xstart)/float(xstep))
+#
+_adam7 = ((0, 0, 8, 8),
+          (4, 0, 8, 8),
+          (0, 4, 4, 8),
+          (2, 0, 4, 4),
+          (0, 2, 2, 4),
+          (1, 0, 2, 2),
+          (0, 1, 1, 2))
+assert len(_adam7) == 7
+#bug:_mx = mx[xstart::xstep, ystart::ystep]
+# => _mx = mx[ystart::ystep, xstart::xstep]
+# :> (0, 0, 8, 8)
+# mx[0+8*i,0+8*j] # 1/8*1/8 # acc:1/64
+# => acc:mx[0+8*i,0+8*j]
+#
+# :> (4, 0, 8, 8)
+# mx[0+8*i,4+8*j] # 1/8*1/8 # acc:1/32
+# => acc:mx[0+8*i,0+4*j]
+#
+# :> (0, 4, 4, 8)
+# mx[4+8*i,0+4*j] # 1/8*1/4 # acc:1/16
+# => acc:mx[0+4*i,0+4*j]
+#
+# :> (2, 0, 4, 4)
+# mx[0+4*i,2+4*j] # 1/4*1/4 # acc:1/8
+# => acc:mx[0+4*i,0+2*j]
+#
+# :> (0, 2, 2, 4)
+# mx[2+4*i,0+2*j] # 1/4*1/2 # acc:1/4
+# => acc:mx[0+2*i,0+2*j]
+#
+# :> (1, 0, 2, 2)
+# mx[0+2*i,1+2*j] # 1/2*1/2 # acc:1/2
+# => acc:mx[0+2*i,0+1*j]
+#
+# :> (0, 1, 1, 2)
+# mx[1+2*i,0+1*j] # 1/2*1/1 # acc:1/1
+# => acc:mx[0+1*i,0+1*j]
+#
+# 总输出行数/原行数{height} ~= (1/8+1/8+1/4+1/4+1/2+1/2+1/1)==3/4+2==2.75 倍
+#
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
