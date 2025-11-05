@@ -8,6 +8,7 @@ e ../lots/NOTE/graph/svg/trials/README.txt
 尝试五:组件
 片段:标题丶描述
 尝试六:裁剪显示区
+猜测:有相当把握:线性变换矩阵
 
 [[
 @20251105
@@ -425,11 +426,14 @@ viewBox="-400 -400 800 800"
 "id" 作为 组件名
 use: 不支持 scale rotate
   transform="matrix(1,2,3,4,5,6)"
-  恒等变换？transform="matrix(1,0,0,1,0,0)
-    ??? [a,b;c,d]*[x;y] + [c;d]
+  恒等变换？transform="matrix(1,0,0,1,0,0)"
+    ??? [a,b;c,d]*[x;y] + [e;f]
     但是 坐标变换 很难预料 跑到哪里去
     !! 先 矩阵外部偏移，再 旋转缩放，最后 矩阵内部偏移
     => 矩阵外部偏移 xy 应当将 原组件中心 摆到 原点，矩阵内部偏移 将 靶组件 摆到 目的地
+transform="matrix(a,b,c,d,e,f)"
+点坐标:[x;y;1]
+线性变换矩阵:[a,b,e;c,d,f;0,0,1]
 -->
 <defs>
   <path id="path_1__rect" stroke-width="1" d="M 0 0 h 100 v 100 h -100 z"/>
@@ -521,6 +525,17 @@ viewBox="-400 -400 800 800"
 </g>
 </svg>
 
+
+]]
+[[
+猜测:有相当把握:线性变换矩阵
+transform="scale(1 -1)"
+transform="scale(.5)"
+transform="matrix(1,0,0,1,0,0)"
+
+transform="matrix(a,b,c,d,e,f)"
+点坐标:[x;y;1]
+线性变换矩阵:[a,b,e;c,d,f;0,0,1]
 
 ]]
 
