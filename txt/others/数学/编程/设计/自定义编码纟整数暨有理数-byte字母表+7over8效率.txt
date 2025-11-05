@@ -1,0 +1,589 @@
+
+e others/数学/编程/设计/自定义编码纟整数暨有理数-byte字母表+7over8效率.txt
+view others/数学/编程/设计/自定义编码之要点.txt
+
+[[
+目录:
+lexical_ordered_symmetric_encoded_int{byte}
+  用途:连分数整数部分
+lexical_ordered_encoded_uint{7bit}
+  用途:连分数部分分母
+lexical_ordered_symmetric_encoded_continued_fraction{byte}
+    用途:表达有理数
+]]
+
+TODO:参数化:半成品
+  TODO:e ../../python3_src/seed/int_tools/IStepDecoder__ver2.py
+TODO:异常解码结果:err/undefined 细化
+TODO:异常解码结果:eof 细化
+
+DONE:异常解码结果:non_std 细化
+DONE:lexical_ordered_symmetric_encoded_continued_fraction{byte}:解码结果
+
+[[
+lexical_ordered_symmetric_encoded_int{byte}
+  用途:连分数整数部分
+    或者说:兼容 连分数表达
+
+@20251103
+较于本文之前的编码方案的优点是:
+  + 预先准备好兼容连分数编码{末位爻元 用作 非整数提示标志}
+  + 简化算法{动态胞元累计编码法}
+  + 预先考虑到所有解码结果{未定义,非标准,保留区,特殊值}
+较于本文之前的编码方案的共同点是:
+  +支持词典序
+  +正负值编码对称
+理据rationale:
+  头躯字节区设置:以non_ASCII开头 以避免被误识
+
+
+===
+lexical_ordered_symmetric_encoded_int
+  异常解码结果:(NaN|+reserved|-reserved|+oo|-oo|undefined(???)|eof(???)|non_std(case,sign,uint,b_fractional))
+      内部先解码成:xstd(case,sign,uint,b_fractional)
+        解码之后，再编码一次 已确认 欤标准
+        也就是说，解码器 依赖于 编码器
+
+  正常解码结果:(0|sign4fractional|(sign, pint, b_fractional))
+    0 : 整数0
+    False : +0.xxx 带非零分数
+    True  : -0.xxx 带非零分数
+    (False, p, False) : 正整数+p
+    (True, p, False)  : 负整数-p
+    (False, p, True) : +p.xxx
+    (True, p, True)  : -p.xxx
+  <==>或:正常解码结果:(sign, uint, b_fractional)但禁用(True, 0, False)
+    (True, 0, False)  : 禁用
+    (False, 0, False) : 整数0
+    (False, 0, True)  : +0.xxx
+    (True, 0, True)   : -0.xxx
+  <==>或:正常解码结果:(Either (sign,uint) int)
+    (Left (False,u)) : +u.xxx
+    (Left (True,u))  : -u.xxx
+    (Right, i)       : 整数i
+
+
+===
+参数化:
+[decoder <: decoder_mkr7rHrB]
+[decoder_mkr7rHrB :: radixH -> radixB -> decoder]
+  # [decoder :: radixH -> radixB -> self/decoder{validate:(radixH,radixB)}]
+
+TODO:添加non_std.case信息:半成品
+[decoder{lexical_ordered_symmetric_encoded_int} :=
+    header_partition(radixH:=128, radixB:=128, (
+        [1:special(NaN)
+        ,127:symmetric(center:=special(0) ,bigger_half:=decoder7positive_part)
+        ])
+    )
+]
+
+[decoder7positive_part :=
+    header_partition(radixH:=63, radixB:=128, (
+        [33:half_down4cf(offset(+1, fixed_num_layers(num_layers:=1, num_digits4zeroth_layer:=0, head_extra:=True)))
+
+        #case0,%3: (0,[0..<3])
+        #num_layers:=1
+        ,8:half_down4cf(fixed_num_layers(num_layers:=1, num_digits4zeroth_layer:=1, head_extra:=True))
+        ,8:half_down4cf(fixed_num_layers(num_layers:=1, num_digits4zeroth_layer:=2, head_extra:=True))
+        ,2:half_down4cf(fixed_num_layers(num_layers:=1, num_digits4zeroth_layer:=3, head_extra:=True))
+
+        #case1,%8: (1,[0..<8])
+        #num_layers:=2
+        ,8:half_down4cf(fixed_num_layers(num_layers:=2, num_digits4zeroth_layer:=0, head_extra:=True, offset4uint4zeroth_layer:=+4))
+
+        #case2,%128: (2,[0..<128])
+        #num_layers:=2
+        ,1:half_down4cf(fixed_num_layers(num_layers:=2, num_digits4zeroth_layer:=1, head_extra:=True, offset4uint4zeroth_layer:=+12))
+
+        #case3,%+oo: (3,[0..])
+        #num_layers:=dynamic
+        ,1:deep1(half_down4cf(dynamic_num_layers(decoder4num_layers:=dynamic_cell_accumulator(radixH:=128, radixB:=128, ceiling_line:=([],[64])), num_digits4zeroth_layer:=1, offset4uint4zeroth_layer:=+0)))
+
+        ,1:special(+oo)
+        ,1:special(+reserved)
+        ])
+    )
+]
+
+===
+lexical_ordered_symmetric_encoded_int
+  ##################
+  regex: [128..<256] [0..<128]*
+  ##################
+  128=128+0 -> NaN
+  129=128+1 -> +reserved
+  255=128+127 -> -reserved
+
+  130=128+2 -> -oo
+  254=128+126 -> +oo
+
+  131=128+3 -> continue
+  253=128+125 -> continue
+
+  129=128+64 -> 0
+  ##################
+  128+.[4..=63]   -> negative #60
+    #mirroring:positive
+    ... ...
+  ##################
+  128+.[65..=124] -> positive #60
+    #60 = (16+17) + (8+8+2+8+1)
+    #60 = 33 + 27
+    16:128+.[66,68,..=96]/even -> [1..=16] #16
+    17:128+.[65,67..=97]/odd -> [0..=16]/int_part4cf7non_int #17# 非整数的连分数 的 整数部分
+      128+65 -> +0.xxx
+      128+67 -> +1.xxx
+      ...
+      128+97 -> +16.xxx
+    #27=60-16-17
+    27:128+.[98..=124] -> positive
+      ###
+      #方案一:27 = 16+8+2+1 #更换方案:见下面:『效率低导致更换方案一』
+      ###
+      方案二:27 = 8+8+2+8+1
+      ###
+      128+.[98..=105]
+      8 -> 2byte:(3+7-1)bit:[0..<512]
+          『-1bit』用作non_int提示爻元:int_part4cf{int,non_int}
+          non_std(case=(0,0), +, [1..=16], WHOLE)
+          non_std(case=(0,0), +, [0..=16], FRACTION)
+      ###
+      128+.[106..=113]
+      8 -> 3byte:(3+7+7-1)bit:[0..<2**16]
+        0x1_00_00-unicode_BMP (2**16) 16bit
+          non_std(case=(0,1), +, [0..<512], b_fractional)
+      ###
+      128+.[114..=115]
+      2 -> 4byte:(1+7+7+7-1)bit:[0..<2**21]
+        0x11_00_00-unicode (2**20+2**16) 21bit
+          头胞60不足6bit,3byte最多(5+7+7-1)bit==18<21bit
+          =>21bit至少要4byte
+          non_std(case=(0,2), +, [0..<2**16], b_fractional)
+      ###
+      128+.[116..=123]
+      8{后续字节数{offset:+4}} ->:
+        {0->4}:5byte:(0+7+7+7+7-1)bit:[0..<2**27]
+            non_std(case=(1,0), +, [0..<2**21], b_fractional)
+        {1->5}:6byte:(0+7*5-1)bit:[0..<2**34]
+            non_std(case=(1,1), +, [0..<2**27], b_fractional)
+            6byte -> 32bit/4byte
+            [ceil((32-5)/7 +1) == 5]
+              [4+7*4 == 32]
+            若要5byte编码32bit，则 需占用 16格 头胞空间
+            头胞空间60格，其中 BMP占8，unicode占2，byte占4，hex占16+17:合16+8+2+4+16+17==63，剩-3
+              去掉hex:换成oct
+              头胞空间60格，其中 BMP占8，unicode占2，byte占4，oct占8+9:合16+8+2+4+8+9==47，剩13
+              但是 hex可能是高频词，32bit低频词 并且 5byte相较于6byte也不算多大优化
+        {2->6}:7byte:(0+7*6-1)bit:[0..<2**41]
+            non_std(case=(1,2), +, [0..<2**34], b_fractional)
+        ... ...
+        {6->10}:11byte:(0+7*10-1)bit:[0..<2**69]
+            non_std(case=(1,6), +, [0..<2**62], b_fractional)
+            11byte -> 64bit/8byte
+              额外3字节:头胞1字节,躯胞前缀爻元1字节多一点
+        {7->11}:12byte:(0+7*11-1)bit:[0..<2**76]
+            non_std(case=(1,7), +, [0..<2**69], b_fractional)
+      ###
+      128+.[124..=124]
+      1 -> 7bit{后续字节数{offset:+12}} ->:
+        124 {0->12} 12byte: 14byte:(0+7*12-1)bit:[0..<2**83]
+            non_std(case=(2,0), +, [0..<2**76], b_fractional)
+        ... ...
+        124 {127->139} 139byte: 141byte:(0+7*139-1)bit:[0..<2**972]
+            non_std(case=(2,127), +, [0..<2**965], b_fractional)
+      ###
+  ##################
+  #此前:最多141byte，有效972bit
+  ##################
+  253=128+125 -> continue
+      超凡层:
+      #取消[不必要的复杂]:方案甲:128 = 64+32+16+8+4+2+1+1{continue}
+      方案乙:253 {<凡层数>} 凡层序列/[凡层]{len=凡层数}{num_bytes_of(凡层序列[0])==1}
+      ###
+      ###
+      凡层数 使用 动态胞元累计编码法:
+        #.regex:[0..=127]+
+        #. [0..=126] -> [0..=126]
+        #. [127..=127] -> continue#累计
+        #. 127 [0..=126] -> [127..<254]
+        #. 127{n} [0..=126] -> [127*n..<127*(n+1)]
+        #
+        regex: 64* [0..<64]
+        [0..<64] -> [0..<64]
+        64 [0..<64] -> [64..<128]
+        ... ...
+        64{n} [0..<64] -> [n*64 ..< (n+1)*64]
+        64* [65..=127] -> undefined(???)
+          64{n} u@[65..=127] -> undefined(+,253,(64,n),u)
+      ###
+      ###
+      253 0 -> non_std(+,0)#非标准,重复值，最大的毛病在于 lexical_ordered 被破坏
+        non_std(case=(3,0), +, 0, INT)
+      253 1 [0..<128] -> 非标准[0..<2**6==64]
+        non_std(case=(3,1), +, [0..<2**6], b_fractional)
+      253 2 sz1@[0..<128] [0..<128]{sz1} -> 非标准[0..<2**(0+0+0+7*sz1-1)<=2**888]
+        non_std(case=(3,2), +, [0..<2**888], b_fractional)
+        最多130byte,有效888
+        被前面完全涵盖
+      253 3 sz1@[0..<128] sz2@[0..<128]{sz1} [0..<128]{sz2} -> 部分非标准[0..<2**(0+0+0+0*sz1+7*(2**889-1)-1)]
+        non_std(case=(3,3), +, [0..<2**972], b_fractional)
+        此致足敷实用
+      ... ...
+      ###
+  ##################
+
+
+]]
+<<==:
+[[
+被更新:更换:头胞、躯胞 的 字节区{以non_ASCII开头 以避免被误识}
+被更新:删除弃置方案{此处保留当作历史参考}
+
+@20251103
+较于本文之前的编码方案的优点是:简化算法{动态胞元累计编码法}，预先准备好兼容连分数编码
+old:
+#:lexical_ordered_symmetric_encoded_int
+#:  regex: [0..<128] [128..<256]*
+#:  0 -> NaN
+#:  1 -> reserved
+#:  127 -> reserved
+#:
+#:  2 -> -oo
+#:  126 -> +oo
+#:
+#:  3 -> continue
+#:  125 -> continue
+#:
+#:  64 -> 0
+#:  [4..=63]   -> negative #60
+#:    #mirroring:positive
+#:  [65..=124] -> positive #60
+#:    16:[66,68,..=96]/even -> [1..=16] #16
+#:    17:[65,67..=97]/odd -> [0..=16]/int_part4cf7non_int #17# 非整数的连分数 的 整数部分
+#:      65 -> +0.xxx
+#:      67 -> +1.xxx
+#:      ...
+#:      97 -> +16.xxx
+#:    [98..=124] -> positive #27=60-16-17
+#:      ###
+#:      #方案一:27 = 16+8+2+1 #更换方案:见下面:『效率低导致更换方案一』
+#:      ###
+#:      方案二:27 = 8+8+2+8+1
+#:      ###
+#:      [98..=105]
+#:      8 -> 2byte:(3+7-1)bit:[0..<512] int_part4cf{int,non_int}#『-1』用作non_int提示爻元
+#:      ###
+#:      [106..=113]
+#:      8 -> 3byte:(3+7+7-1)bit:[0..<2**16]
+#:        0x1_00_00-unicode_BMP (2**16) 16bit
+#:      ###
+#:      [114..=115]
+#:      2 -> 4byte:(1+7+7+7-1)bit:[0..<2**21]
+#:        0x11_00_00-unicode (2**20+2**16) 21bit
+#:          头胞60不足6bit,3byte最多(5+7+7-1)bit==18<21bit
+#:          =>21bit至少要4byte
+#:      ###
+#:      更换方案:见下面:『效率低导致更换方案一』
+#:      [116..=123]
+#:      8{后续字节数{offset:+4}} ->:
+#:        {0->4}:5byte:(0+7+7+7+7-1)bit:[0..<2**27]
+#:        {1->5}:6byte:(0+7*5-1)bit:[0..<2**34]
+#:            6byte -> 32bit/4byte
+#:            [ceil((32-5)/7 +1) == 5]
+#:              [4+7*4 == 32]
+#:            若要5byte编码32bit，则 需占用 16格 头胞空间
+#:            头胞空间60格，其中 BMP占8，unicode占2，byte占4，hex占16+17:合16+8+2+4+16+17==63，剩-3
+#:              去掉hex:换成oct
+#:              头胞空间60格，其中 BMP占8，unicode占2，byte占4，oct占8+9:合16+8+2+4+8+9==47，剩13
+#:              但是 hex可能是高频词，32bit低频词 并且 5byte相较于6byte也不算多大优化
+#:        {2->6}:7byte:(0+7*6-1)bit:[0..<2**41]
+#:        ... ...
+#:        {6->10}:11byte:(0+7*10-1)bit:[0..<2**69]
+#:            11byte -> 64bit/8byte
+#:              额外3字节:头胞1字节,躯胞前缀爻元1字节多一点
+#:        {7->11}:12byte:(0+7*11-1)bit:[0..<2**76]
+#:      ###
+#:      [124..=124]
+#:      1 -> 7bit{后续字节数{offset:+12}} ->:
+#:        124 {0->12} 12byte: 14byte:(0+7*12-1)bit:[0..<2**83]
+#:        ... ...
+#:        124 {127->139} 139byte: 141byte:(0+7*139-1)bit:[0..<2**972]
+#:      ###
+#:      <<==:
+#:      #.#效率低导致更换方案一:
+#:      #.  方案一[27 = 16+8+2+1]:最后之『1』:
+#:      #.  [124..=124]
+#:      #.  1 -> 5byte:(0+7+7+7+7-1)bit:[0..<2**27]
+#:      #.    #效率低，取消:
+#:      #.    125 -> continue
+#:      #.      128 = 64+32+16+8+4+2+1+1
+#:      #.      64:125 [128..<192] -> 6byte:(0+6+7+7+7+7-1)bit:[0..<2**33]
+#:      #.      32:125 [192..<224] -> 7byte:(0+5+7+7+7+7+7-1)bit:[0..<2**39]
+#:      #.      ... ...
+#:      #.      每次 增长 6bit:
+#:      #.        [num_bits4payload == -3+6*num_bytes4whole]
+#:      #.        4byte -> 21bit
+#:      #.        5byte -> 27bit
+#:      #.        6byte -> 33bit
+#:      #.        7byte -> 39bit
+#:      #.        8byte -> 45bit
+#:      #.        9byte -> 51bit
+#:      #.        10byte -> 57bit
+#:      #.        11byte -> 63bit
+#:      #.        12byte -> 69bit
+#:      #.          效率太低:多了4byte:64bit 8byte
+#:      ###
+#:
+#:  #此前:最多141byte
+#:  125 -> continue
+#:      超凡层:
+#:      #取消[不必要的复杂]:方案甲:128 = 64+32+16+8+4+2+1+1{continue}
+#:      方案乙:125 {<凡层数>} 凡层序列/[凡层]{len=凡层数}{num_bytes_of(凡层序列[0])==1}
+#:      凡层数 使用 动态胞元累计编码法:
+#:        regex:[128..=255]+
+#:        #. [128..=254] -> [0..=126]
+#:        #. [255..=255] -> continue#累计
+#:        #. 255 [128..=254] -> [127..<254]
+#:        regex: 192* [128..<192]
+#:        [128..<192] -> [0..<64]
+#:        192 [128..<192] -> [64..<128]
+#:        ... ...
+#:        192{n} [128..<192] -> [n*64 ..< (n+1)*64]
+#:
+#:
+]]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[[
+@20251103
+lexical_ordered_encoded_uint{7bit}
+  用途:连分数部分分母
+
+===
+另一方案: uint_ex/uint{+oo}，整体只使用1byte终止
+  比较:
+    * 本方案/方案牜尾爻提示:
+        每一部分分母都比 uint_ex方案 多耗费1bit，若 连分数超长 将导致 浪费许多空间
+    * uint_ex方案/方案牜无穷大提示:
+        每一个 非整连分数 都需要 1byte终止
+
+===
+lexical_ordered_encoded_uint{7bit}
+  异常解码结果:(undefined(???)|eof(???)|non_std(case,uint,b_fractional))
+      内部先解码成:xstd(case,uint,b_fractional)
+        解码之后，再编码一次 已确认 欤标准
+        也就是说，解码器 依赖于 编码器
+
+  正常解码结果:(uint, b_fractional)
+    (u, False) : 整数u
+    (u, True)  : +u.xxx 带非零分数
+
+
+
+===
+参数化:
+TODO:添加non_std.case信息:半成品
+[decoder{lexical_ordered_encoded_uint} :=
+    header_partition(radixH:=128, radixB:=128, (
+        [64:half_down4cf(fixed_num_layers(num_layers:=1, num_digits4zeroth_layer:=0, head_extra:=True))
+
+        #case0,%4: (0,[0..<4])
+        #num_layers:=1
+        ,8:half_down4cf(fixed_num_layers(num_layers:=1, num_digits4zeroth_layer:=1, head_extra:=True))
+        ,8:half_down4cf(fixed_num_layers(num_layers:=1, num_digits4zeroth_layer:=2, head_extra:=True))
+        ,8:half_down4cf(fixed_num_layers(num_layers:=1, num_digits4zeroth_layer:=3, head_extra:=True))
+        ,32:half_down4cf(fixed_num_layers(num_layers:=1, num_digits4zeroth_layer:=4, head_extra:=True))
+
+        #case1,%6: (1,[0..<6])
+        #num_layers:=2
+        ,6:half_down4cf(fixed_num_layers(num_layers:=2, num_digits4zeroth_layer:=0, head_extra:=True, offset4uint4zeroth_layer:=+4))
+
+        #case2,%128: (2,[0..<128])
+        #num_layers:=2
+        ,1:half_down4cf(fixed_num_layers(num_layers:=2, num_digits4zeroth_layer:=1, head_extra:=True, offset4uint4zeroth_layer:=+12))
+
+        #case3,%+oo: (3,[0..])
+        #num_layers:=dynamic
+        ,1:deep1(half_down4cf(dynamic_num_layers(decoder4num_layers:=dynamic_cell_accumulator(radixH:=128, radixB:=128, ceiling_line:=([],[64])), num_digits4zeroth_layer:=1, offset4uint4zeroth_layer:=+0)))
+
+        ])
+    )
+]
+
+
+
+===
+lexical_ordered_encoded_uint{7bit}
+  ##################
+  !! 仅用于连分数内部
+  => 头胞躯胞并不需要使用不同字母表
+  regex: [0..<128]+
+  ##################
+  #128 = 64+32+16+8+4+2+1+1{continue}
+  #128 = (64+8+8+8+32)+6+1+1{continue}
+  128 = 120+6+1+1{continue}
+  ##################
+  #####
+  [0..<120]
+  120 ->:
+    ###
+    #120 = 64+8+8+8+32
+    ###
+    [0..<64]
+    64 -> 1byte:(6-1)bit:[0..<2**5==32]
+        『-1bit』用作 非终止提示:partial_denominator4cf{last,non_last}
+        『-1bit』用作 non_uint提示:uint_part4cf{uint,non_uint}
+    ###
+    [64..<72]
+    8 -> 2byte:(3+7-1)bit:[0..<2**9==512]
+        non_std(case=(0,0), [0..<2**5], b_fractional)
+    ###
+    [72..<80]
+    8 -> 3byte:(3+7+7-1)bit:[0..<2**16]
+        non_std(case=(0,1), [0..<2**12], b_fractional)
+    ###
+    [80..<88]
+    8 -> 4byte:(3+7+7+7-1)bit:[0..<2**23]
+        non_std(case=(0,2), [0..<2**16], b_fractional)
+    ###
+    [88..<120]
+    32 -> 5byte:(5+7*4-1)bit:[0..<2**32]
+        5byte -> 32bit/4byte
+        non_std(case=(0,3), [0..<2**23], b_fractional)
+    ###
+  #####
+  [120..<126]
+  6{后续字节数{offset:+5}} ->:
+      {0->5}:6byte:(0+7*5-1)bit:[0..<2**34]
+          non_std(case=(1,0), [0..<2**32], b_fractional)
+      {1->6}:7byte:(0+7*6-1)bit:[0..<2**41]
+          non_std(case=(1,1), [0..<2**34], b_fractional)
+      ... ...
+      {5->10}:11byte:(0+7*10-1)bit:[0..<2**69]
+          non_std(case=(1,5), [0..<2**62], b_fractional)
+      ###.{6->11}:12byte:(0+7*11-1)bit:[0..<2**76]
+  #####
+  [126..<127]
+  1 -> 7bit{后续字节数{offset:+11}} ->:
+    126 {0->11} 11byte: 13byte:(0+7*11-1)bit:[0..<2**76]
+          non_std(case=(2,0), [0..<2**69], b_fractional)
+    ... ...
+    126 {127->138} 138byte: 140byte:(0+7*138-1)bit:[0..<2**965]
+          non_std(case=(2,127), [0..<2**958], b_fractional)
+  #####
+  ##################
+  #此前:最多140byte，有效965bit
+  ##################
+  127 -> continue
+      超凡层:
+      方案:127 {<凡层数>} 凡层序列/[凡层]{len=凡层数}{num_bytes_of(凡层序列[0])==1}
+      ###
+      凡层数 使用 动态胞元累计编码法:
+        regex: 64* [0..<64]
+        同上
+        ^undefined
+      ###
+      127 0 -> non_std(+,0)#非标准,重复值，最大的毛病在于 lexical_ordered 被破坏
+        non_std(case=(3,0), 0, False)
+      127 1 [0..<128] -> 非标准[0..<2**6==64]
+        non_std(case=(3,1), [0..<2**6], b_fractional)
+      127 2 sz1@[0..<128] [0..<128]{sz1} -> 非标准[0..<2**(0+0+0+7*sz1-1)<=2**888]
+        non_std(case=(3,2), [0..<2**888], b_fractional)
+        最多130byte,有效888
+        被前面完全涵盖
+      127 3 sz1@[0..<128] sz2@[0..<128]{sz1} [0..<128]{sz2} -> 部分非标准[0..<2**(0+0+0+0*sz1+7*(2**889-1)-1)]
+        non_std(case=(3,3), [0..<2**965], b_fractional)
+        此致足敷实用
+      ... ...
+      ###
+  ##################
+
+]]
+
+
+
+
+
+
+
+
+
+
+[[
+@20251103
+lexical_ordered_symmetric_encoded_continued_fraction{byte}
+    用途:表达有理数
+    理据:使用 连分数 形式 是为了 支持词典序
+===
+方案:见:
+  view others/数学/编程/设计/自定义编码之要点.txt
+    ?
+      view others/数学/编程/设计/自定义编码纟有理数.txt
+===
+使用的组件:
+  lexical_ordered_symmetric_encoded_int{byte}
+    用途:连分数整数部分
+  lexical_ordered_encoded_uint{7bit}
+    用途:连分数部分分母
+===
+！！！注意！！！
+虽然 非整连分数 标准形式 末尾 部分分母 大于等于二，但 不能 偏移二，所有 部分分母 偏移量必须相同 以保证 词典序
+  详见:view others/数学/编程/设计/自定义编码之要点.txt
+
+
+cf[int;]
+cf[int; uint{>=1}..., uint{>=2}]
+
+<->偏移一:#禁止冫尾偏移二
+shifted_cf[int;]
+shifted_cf[int; uint{>=0}..., uint{>=1}]
+
+<->偏移一&&附加尾爻提示:
+tagged_shifted_cf[int{even};]
+tagged_shifted_cf[int{odd}; uint{>=1}{odd}..., uint{>=2}{even}]
+
+<->偏移一&&附加尾爻提示&&编码交替取反:
+alternatively_flipped_tagged_shifted_cf[int{even};]
+alternatively_flipped_tagged_shifted_cf[int{odd}; (uint{>=1}{odd}{编码取反}, uint{>=1}{odd})..., uint{>=2}{even}{编码取反}]
+alternatively_flipped_tagged_shifted_cf[int{odd}; (uint{>=1}{odd}{编码取反}, uint{>=1}{odd})..., uint{>=1}{odd}{编码取反}, uint{>=2}{even}]
+
+===
+!! [负有理数编码 := 取反 正有理数编码]
+=> 只考虑:非负有理数
+
+!! [整型有理数编码 := 整数编码{!!兼容}]
+=> 只考虑:非整有理数
+=> 只考虑:非整非负有理数
+=> 只考虑:非整的正有理数
+===
+lexical_ordered_symmetric_encoded_continued_fraction
+  正常解码结果:
+    cf[int;]
+    cf[int; uint{>=1}..., uint{>=2}]
+  异常解码结果:
+    cf[int; uint{>=1}..., 1]
+    整数.异常解码结果
+    [int; uint{>=1}..., 自然数.异常解码结果]
+
+===
+]]
+

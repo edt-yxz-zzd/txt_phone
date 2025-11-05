@@ -1,0 +1,165 @@
+
+e others/数学/编程/设计/设计冫图纸格式.txt
+相关:svg:goto
+
+
+
+[[
+@20251103
+源起:
+  view ../../python3_src/nn_ns/fileformat/png/simple_reader_writer4png__draw.py
+]]
+[[
+图纸源文件:用途类似svg:
+  TODO:xy box 集合操作 (exclude_vs_include, box)
+  TODO:sample,alpha_ratio:幺归一化无单位float{0~~~1}
+  TODO:x,y:幺归一化无单位float{0~~~1}
+    归一化比值:normalized ratio
+    normalized:正火的;规范化;规范化的;规格化的
+    nondimensionalized:无量纲化的
+    幺正:unitary:adj. 单位的；单一的；统一的
+
+  [drawing_paper :: (drawing_paper_settings, [drawing_layer])]
+      # later drawing_layer on top
+  [drawing_layer :: (drawing_layer_settings, [drawing_entry])]
+      # later drawing_entry overwrite prev
+
+  [drawing_entry :: (may offsetted_scaled_xy_box4entry, oos_effective_area4entry, oos_xy2qpixel_, ((4, key5oos_xy_, ok5keys4oos_xy_corners4pixel_)|(1, may_radius4dot, oos_xy2distance_)|(2, may_radius4dot, ok5radius4dot_and_oos_xy_)))]
+  #xxx:ver1:[drawing_entry :: (xy2ok_, oos_xy2qpixel_, ?may radius4dot?)]
+
+
+  [oos_effective_area4entry :: [exclude_vs_include,oos_xy_box4part4entry)]]
+      # 从左到右依次 应用 exclude_vs_include
+      # 若 第零元素 是 exclude 则 缺省 插入 全区
+      #     ???使用 比例性区域 怎样？
+
+  [oos_xy_box4part4entry == (oos_xy_offset4part4entry, scaled_wh_size4part4entry)]
+  [offsetted_scaled_xy_box4entry == (offsetted_scaled_xy_offset4entry, scaled_wh_size4entry)]
+  [oos_xy2distance_ :: oos_xy->distance/float{>=0}]
+  [ok5radius4dot_and_oos_xy_ :: (bool | (radius4dot->oos_xy->bool))]
+
+  #弃置:[xy2ok_ :: (bool | (xy->bool))]
+      #改用:ok5keys4oos_xy_corners4pixel_,ok5radius4dot_and_oos_xy_
+  [ok5keys4oos_xy_corners4pixel_ :: (bool | (keys4oos_xy_corners4pixel->bool))]
+      注意:粗度/线条宽度 #或者 使用:radius4dot
+      如何实现线宽呢？
+      格子+粗线条判定xy2ok_ 容易 具现，但 xy2ok_ 函数体复杂
+      格子+细线判定xy2ok_+线宽radius4dot 如何 具现?
+        格子坐标 落在 细线 之外，但在 细线 的 线宽 范围之内，怎么判定？
+        启用:oos_xy2distance_，弃置ver1
+  [xy_corners4pixel == (xy_topleft4pixel, xy_topright4pixel, xy_bottomleft, xy_bottomright4pixel)]
+  [oos_xy_corners4pixel == (oos_xy_topleft4pixel, oos_xy_topright4pixel, oos_xy_bottomleft, oos_xy_bottomright4pixel)]
+  [keys4oos_xy_corners4pixel == (key4oos_xy_topleft4pixel, key4oos_xy_topright4pixel, key4oos_xy_bottomleft, key4oos_xy_bottomright4pixel)]
+  [key5oos_xy_ :: oos_xy -> key4oos_xy]
+  [xy == (x,y)]
+  [oos_xy == (offsetted_offsetted_scaled_x,offsetted_offsetted_scaled_y)]
+
+
+  [oos_xy2qpixel_ :: (qpixel | (oos_xy->qpixel))]
+      [qpixel :: may ([palette_used]=>Q|pixel)]
+          [palette_index :: uint%len(palette7RGBA)]
+          None <==> fully_transparent_black/透明黑/(0,0,0,0) 橡皮擦
+      [Q == (-1-P|str(P)|nm4P)]
+          [P == palette_index]
+          [P == name2palette_index[nm4P]]
+      [pixel :: ((L,)|LA|RGB|RGBA)]
+      [LA == (L,A)]
+          <==> (L,L,L,A)
+      [RGB == (R,G,B)]
+          <==> (R,G,B,max_sample4A)
+      [RGBA == (R,G,B,A)]
+
+      [R == sample4Red]
+      [G == sample4Green]
+      [B == sample4Blue]
+      [A == sample4Alpha]
+      [L == sample4Greyscale]
+
+      [sample :: uint%2**sample_depth]
+
+
+  [drawing_paper_settings :: (wh_size4canvas, radius4dot, sample_depths4RGBA, may palette7RGBA, may name2palette_index, may pixel7RGB8background_color)]
+      NOTE:bg:RGB:no『A』
+          but P contains A => only pixel instead pixel
+  [drawing_layer_settings :: (xy_scale4layer,scaled_xy_box4layer,    emay_radius4dot, emay_sample_depths4RGBA, emay_may_palette7RGBA, emay_may_name2palette_index, may qpixel7RGBA8background_color4layer, may alpha8mask4layer)]
+      NOTE:bg:RGBA:has『A』
+      emay => default value from drawing_paper_settings
+      [alpha8mask4layer{layer} :: sample4A/uint%(1+max_sample4A{layer})]
+          # 处理次序:每一图层内，从左到右依次 将 图元/drawing_entry 画在 图层 上，最后 得到 图层; 得到所有图层后，从左到右依次 将 图层 蒙上/融入 背景图层，最后 得到 图像。
+          #     蒙上图层 即 使用 alpha8mask4layer
+
+  [sample_depths4RGBA{layer} :: [sample_depth]{len==4}]
+      [sample_depth <- [1,2,4,8,16]]
+      [max_sample4A{layer} := -1+2**sample_depths4RGBA{layer}[3]]
+  [palette7RGBA{layer} :: [RGBA]]
+      [palette_used{layer} := not may_palette7RGBA is None]
+  [name2palette_index{layer} :: {nm4P:palette_index}]
+      [nm4P :: str]
+  [pixel7RGB8background_color :: RGB]
+  [qpixel7RGBA8background_color4layer{layer} :: qpixel]
+
+  [radius4dot :: float{>0}]
+  [wh_size4canvas == (width4canvas, height4canvas)]
+  [scaled_xy_box4layer == (scaled_xy_offset4layer, scaled_wh_size4layer)]
+  [scaled_wh_size4layer == (scaled_width4layer, scaled_height4layer)]
+  [scaled_xy_offset4layer == (scaled_offset7X4layer, scaled_offset7Y4layer)]
+  [xy_scale4layer == (scale7X4layer, scale7Y4layer)]
+  [scaled_wh_size4entry == (scaled_width4entry, scaled_height4entry)]
+      # not:offsetted_scaled_wh_size4entry
+  [offsetted_scaled_xy_offset4entry == (offsetted_scaled_offset7X4entry, offsetted_scaled_offset7Y4entry)]
+  [scaled_wh_size4part4entry == (scaled_width4part4entry, scaled_height4part4entry)]
+  [oos_xy_offset4part4entry == (oos_offset7X4part4entry, oos_offset7Y4part4entry)]
+      [width4canvas, height4canvas :: float]
+      [scaled_width4layer, scaled_height4layer :: float]
+      [scaled_offset7X4layer, scaled_offset7Y4layer :: float]
+      [scale7X4layer, scale7Y4layer :: float]
+      [scaled_width4entry, scaled_height4entry :: float]
+      [offsetted_scaled_offset7X4entry, offsetted_scaled_offset7Y4entry :: float]
+      [x, y, offsetted_scaled_x, offsetted_scaled_y :: float]
+      [offsetted_scaled_x == ((x*scale7X4layer) -scaled_offset7X4layer -offsetted_scaled_offset7X4entry)]
+      [offsetted_scaled_y == ((y*scale7Y4layer) -scaled_offset7Y4layer -offsetted_scaled_offset7Y4entry)]
+
+      [scaled_x == x*scale7X4layer <- [0~~~width4canvas*scale7X4layer]  /-\ [scaled_offset7X4layer~~~scaled_offset7X4layer+scaled_width4layer]  /-\ [scaled_offset7X4layer+offsetted_scaled_offset7X4entry~~~scaled_offset7X4layer+offsetted_scaled_offset7X4entry+scaled_width4entry] /-\ ...???{oos_effective_area4entry}]
+      [scaled_y == y*scale7Y4layer <- [0~~~height4canvas*scale7Y4layer] /-\ [scaled_offset7Y4layer~~~scaled_offset7Y4layer+scaled_height4layer] /-\ [scaled_offset7Y4layer+offsetted_scaled_offset7Y4entry~~~scaled_offset7Y4layer+offsetted_scaled_offset7Y4entry+scaled_height4entry] /-\ ...???{oos_effective_area4entry}]
+          浮点数？可按比例伸缩？
+  [draw :: drawing_paper -> xy_grid_size -> png_image/pixel_matrix7RGBA{wh_size4canvas:=xy_grid_size,drawing_paper.drawing_paper_settings.{sample_depths4RGBA,???may_pixel7RGB8background_color???}}]
+      缩放wh_size4canvas以匹配xy_grid_size
+      pixel7RGB8background_color 不该被 整合到 pixel_matrix7RGBA，否则就没有A
+  [xy_grid_size == (num_grids7X, num_grids7Y)]
+      [num_grids7X, num_grids7Y :: pint]
+
+]]
+
+
+
+
+
+[[其他:
+相关:svg
+
+copy from:
+  view ../lots/NOTE/graph/svg/shape_tags6svg.txt
+===
+pip install cairosvg
+py -m nn_ns.app.svg2png -i xxx.svg -o xxx.svg.png
+
+===
+view /sdcard/0my_files/tmp/out4py/py_src/site-packages/cairosvg/shapes.py
+  circle:r,cx,cy
+  ellipse:rx,ry,cx,cy
+  line:x1,y1,x2,y2
+  polyline:points
+  polygon: #polyline&&close_path
+  rect:x,y,width,height,rx,ry
+    * [rx==0]or[ry==0]:矩形
+    * [rx>0][ry>0]:？圆角矩形/椭圆角矩形？
+        rx = min(rx, width/2)
+        ry = min(ry, height/2)
+  eg:<circle cx="30" cy="30" r="30"/>
+  eg:<line x1="30" y1="30" x2="30" y2="60"/>
+  eg:<polyline fill="none" vector-effect="non-scaling-stroke" points="87,23 87,55 " />
+
+view /sdcard/0my_files/tmp/out4py/py_src/site-packages/cairosvg/svg.py
+    width, height, viewbox
+    eg:<svg xmlns="http://www.w3.org/2000/svg" xmlns:lc="http://www.librecad.org" xmlns:xlink="http://www.w3.org/1999/xlink" width="60mm" height="60mm" viewBox="0 0 60 60">
+]]
