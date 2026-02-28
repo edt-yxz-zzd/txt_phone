@@ -1,0 +1,68 @@
+
+#@20251112
+#e script/clean_w3schools_pages--httpd.conf--w3schools-tmp-output
+#   view script/clean_w3schools_pages--py_adhoc_call.py
+#   网址: http://127.0.0.1:8080/graphics/default.asp
+#       #注意:『-f <配置文件>』不能使用 相对路径
+#       启动:httpd -f /sdcard/0my_files/git_repos/txt_phone/txt/script/clean_w3schools_pages--httpd.conf--w3schools-tmp-output -k start
+#       关闭:httpd -f /sdcard/0my_files/git_repos/txt_phone/txt/script/clean_w3schools_pages--httpd.conf--w3schools-tmp-output -k stop
+# :!cp -iv script/clean_w3schools_pages--httpd.conf--w3schools-tmp-output others/app/termux/help/httpd.conf-simplified
+
+# 保持一致:『httpd -d <ServerRoot> ...』
+#   根目录:任何相对路径(包括 上面的-f{配置文件}, 下面的LoadModule,ErrorLog,DocumentRoot)
+#   要求最好不以『/』结尾
+ServerRoot "/data/data/com.termux/files/usr"
+
+LoadModule mpm_worker_module libexec/apache2/mod_mpm_worker.so
+  #AH00534: httpd: Configuration error: No MPM loaded.
+  #必要
+LoadModule unixd_module libexec/apache2/mod_unixd.so
+  # -k stop : httpd (no pid file) not running
+  # 进程启动
+LoadModule authz_core_module libexec/apache2/mod_authz_core.so
+  #Invalid command 'Require', perhaps misspelled or defined by a module not included in the server configuration
+  #见下面:『Require』指令:没有该指令，浏览器没有访问权限，打不开网页
+ErrorLog "var/log/apache2/error_log"
+  #(2)No such file or directory: AH02291: Cannot access directory '/data/data/com.termux/files/usr/logs/' for main error log
+  #AH00014: Configuration check failed
+ServerName localhost
+  #AH00558: httpd: Could not reliably determine the server's fully qualified domain name, using 127.0.0.1. Set the 'ServerName' directive globally to suppress this message
+
+Listen 127.0.0.1:8080
+  # 『80』fail, 『8080』ok!
+#Listen 127.0.0.1:80
+  #(13)Permission denied: AH00072: make_sock: could not bind to address 127.0.0.1:80
+  #no listening sockets available, shutting down
+  #AH00015: Unable to open logs
+  #不知道为啥，反正端口『80』就是绑定不了
+
+#######################
+#这部分虽然可省略，但安全起见，还是保留吧。
+<Directory / >
+    AllowOverride none
+    Require all denied
+</Directory>
+<Files ".ht*">
+    Require all denied
+</Files>
+#######################
+
+
+<VirtualHost *:8080>
+    ServerName "localhost-w3schools.com-tmp-output"
+    DocumentRoot "/sdcard/0my_files/tmp/wget_/www.w3schools.com-tmp-output"
+</VirtualHost>
+<Directory "/sdcard/0my_files/tmp/wget_/www.w3schools.com-tmp-output">
+    Options Indexes FollowSymLinks
+    AllowOverride None
+    Require all granted
+</Directory>
+#
+
+#cp -iv /sdcard/0my_files/tmp/wget_/www.w3schools.com-tmp-output/graphics/index.html /sdcard/0my_files/tmp/wget_/www.w3schools.com-tmp-output/
+#rm -iv /sdcard/0my_files/tmp/wget_/www.w3schools.com-tmp-output/index.html
+#.LoadModule dir_module libexec/apache2/mod_dir.so
+#.<IfModule dir_module>
+#.    DirectoryIndex index.html
+#.</IfModule>
+

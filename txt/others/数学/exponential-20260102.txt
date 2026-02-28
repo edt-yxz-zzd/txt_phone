@@ -1,0 +1,119 @@
+
+e others/数学/exponential-20260102.txt
+
+view others/数学/power.txt
+view others/数学/power-ladder.txt
+view others/数学/exponential.txt
+
+
+
+求任意固定精度的幂方:
+[exp :: real -> real]
+[pow :: real -> real -> real]
+
+[[
+不考虑误差 或者说 使用区间套表达的实践性误差:
+  #nested interval
+[x::real]:
+  [exp(x) =[def]= let [(q,r) := (x/%ln(RADIX))] in exp_halfdown_ge0_(r) << q]
+    #但是，{q,q+1}可能是个严重问题。
+    #     或许应该避免 [r==0]或者说避免[r<10**-4]或者说令[10**-4<=r<ln(RADIX)+10**-4]
+    #常用浮点数进位制基数:[RADIX<-{2,10}]:ln2,ln10
+        [ln2 ~= 0.6931471805599453]
+        [ln10 ~= 2.302585092994046]
+[x::real]:
+  [exp_halfdown_(x) =[def]= exp_halfdown_ge0_(abs(x))**(sign(x))]
+[x::real{>=0}]:
+  [exp_halfdown_ge0_(x) =[def]= let [ez:=ceil_log2(x*256)] in [exp_ge0_leTINY_(x>>ez)**2**ez]]
+      # 平方运算 可考虑使用:square_m1_1p
+      # [0 <= x*256 <= 2**ez]
+      # [0 <= (x>>ez) <= 1/256]
+[x::real{>=0}{<=1/256}]:
+  !! [[0<xL<=x<=xU<1] -> [k:<-[1..]] -> [config_tail4exp_(k;xL;(1+xL/k);1) < exp(x) < config_tail4exp_(k;xU;k/(k-xU);1)]]
+  [exp_ge0_leTINY_(x) =[def]= ???]
+
+TODO:[RADIX<-{2,10}]
+TODO:expm1,square_m1_1p
+[for x near zero]:
+  [expm1(x) =[def]= exp(x)-1]
+  [log1p(x) =[def]= ln(1+x)]
+  [square_m1_1p(x) =[def]= (1+x)**2 -1 == x**2+2*x]
+]]
+[[
+幂方:基础公式:
+    [exp(x) == exp(x/2**k)**2**k]
+        # see:『man bc』
+    [exp(x) == 1+x+x**2/2+...x**k/k!+...==1+(x/1)*(1+(x/2)*(1+(x/3)*(1+(x/4)*(1+(x/5)*(...)))))]
+    另:
+    [exp(x) == exp(x%ln2)*2**(x//ln2)]
+        !! [1 < 2 < e < 3 < 4==2**2]
+        [0 < ln2 < ln(e)==1 < ln4==2*ln2]
+        [1/2 < ln2 < 1]
+        [ln2 ~= 0.6931471805599453]
+        [e**e ~= 15.154262241479259 < 16==2**4==4**2 < 3**3==27]
+        [e ~= 2.718281828459045]
+        [[u**u==16] -> [u ~= 2.745368023567...]]
+幂方误差估计::
+    [k::complex][(-k) !<- [0..]]:
+        [tail4exp_(k;x) =[def]= (1+(x/k)*tail4exp_(k+1;x))]
+    [exp(x) == tail4exp_(1;x)]
+
+    [k::complex][k=!=0][abs(x/k) < 1]:
+        [upper4tail4exp_(k;x) =[def]= (1+(x/k)*upper4tail4exp_(k;x))]
+    [[abs(x/k) < 1] -> [upper4tail4exp_(k;x) == (1/(1-x/k)) == k/(k-x)]]
+    [k::complex][k=!=0]:
+        [lower4tail4exp_(k;x) =[def]= (1+(x/k)*1)]
+    [[0<x<k] -> [lower4tail4exp_(k;x) < tail4exp_(k;x) < upper4tail4exp_(k;x)]]
+    [[0<x<k] -> [(1+x/k) < tail4exp_(k;x) < k/(k-x)]]
+    [[0<x<k] -> [0 < k*k-tail4exp_(k;x)*k*(k-x) < x*x]]
+
+    !! [exp(x) ==1+(x/1)*(1+(x/2)*(1+(x/3)*(1+(x/4)*(1+(x/5)*(...)))))]
+    [[x>0] -> [1+(x/1)*(1+(x/2)*(1+(x/3)*(1+(x/4)*(1+(x/5)*1)))) < exp(x) < 1+(x/1)*(1+(x/2)*(1+(x/3)*(1+(x/4)*upper4tail4exp_(5;x))))]]
+
+    [k,j::complex][(-k) !<- [0..]][(k-j)<-[0..]]:
+        [config_tail4exp_(k;x;tail;j) =[def]= if k==j then tail else (1+(x/j)*config_tail4exp_(k;x;tail;j+1))]
+    [exp(x) == config_tail4exp_(k;x;tail4exp_(k;x);1)]
+    [[0<x<1] -> [k:<-[1..]] -> [config_tail4exp_(k;x;(1+x/k);1) < exp(x) < config_tail4exp_(k;x;k/(k-x);1)]]
+    [[0<xL<=x<=xU<1] -> [k:<-[1..]] -> [config_tail4exp_(k;xL;(1+xL/k);1) < exp(x) < config_tail4exp_(k;xU;k/(k-xU);1)]]
+
+    #误差估计:
+    [k:<-[1..]][0<x<1]:
+        [err4expA(k;x) =[def]= (config_tail4exp_(k;x;k/(k-x);1) -config_tail4exp_(k;x;(1+x/k);1)) /exp(x)]
+        [err4expB(k;x) =[def]= (config_tail4exp_(k;x;k/(k-x);1) -config_tail4exp_(k;x;(1+x/k);1)) /config_tail4exp_(k;x;(1+x/k);1)]
+        [err4expB1(k;x) =[def]= (config_tail4exp_(k;x;k/(k-x);1)) /config_tail4exp_(k;x;(1+x/k);1)]
+        [err4expC(k;x) =[def]= (config_tail4exp_(k;x;k/(k-x);1) -config_tail4exp_(k;x;(1+x/k);1)) /1]
+        [err4expA(k;x) <= err4expB(k;x) == -1+err4expB1(k;x) <= err4expC(k;x)]
+        [err4expC(k;x)
+        == (config_tail4exp_(k;x;k/(k-x);1) -config_tail4exp_(k;x;(1+x/k);1))
+        == x**(k-1)/(k-1)! * (k/(k-x) -(1+x/k))
+        == x**(k-1)/(k-1)! * (k*k -(k+x)*(k-x))/(k-x)/k
+        == x**(k-1)/(k-1)! * x*x/(k-x)/k
+        == x**k/k! * x/(k-x)
+        == x**(k+1)/(k+1)! * (k+1)/(k-x)
+        ]
+    #误差估计{考虑x的截断误差}:
+    [k:<-[1..]][0<xL<=x<=xU<1]:
+        [err4expLU_A(k;xL,xU;x) =[def]= (config_tail4exp_(k;xU;k/(k-xU);1) -config_tail4exp_(k;xL;(1+xL/k);1)) /exp(x)]
+        [err4expLU_C(k;xL,xU;x) =[def]= (config_tail4exp_(k;xU;k/(k-xU);1) -config_tail4exp_(k;xL;(1+xL/k);1)) /1]
+        [err4expA(k;x) <= err4expLU_A(k;xL,xU;x) <= err4expLU_C(k;xL,xU;x)]
+        [err4expA(k;x) <= err4expC(k;x) <= err4expLU_C(k;xL,xU;x)]
+        [err4expLU_C(k;xL,xU;x)
+        == (config_tail4exp_(k;xU;k/(k-xU);1) -config_tail4exp_(k;xL;(1+xL/k);1))
+        == sum[(xU**j - xL**j)/j! | [j:<-[1..<k-1]]]
+         + xU**(k-1)/(k-1)! * k/(k-xU)
+         - xL**(k-1)/(k-1)! * (1+xL/k)
+         ###
+         - xU**(k-1)/(k-1)! * (1+xL/k)
+         + xU**(k-1)/(k-1)! * (1+xL/k)
+        == sum...
+         + xU**(k-1)/(k-1)! * (k/(k-xU) -(1+xL/k))
+         + (xU**(k-1)-xL**(k-1))/(k-1)! * (1+xL/k)
+        == ???
+        ]
+
+]]
+
+
+
+
+

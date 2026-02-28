@@ -1,0 +1,111 @@
+
+e others/数学/编程/设计/流式文本编辑器.txt
+
+考虑一下如何扩展gawk
+数据驱动，从数据模型上看:
+  [FILE]
+  [[LINE]]
+  [[(...field...)]]
+  [[tuple{field...}]]
+
+从高层看，gawk其实是使用了正则表达式'({RS}.*?)*.*?'进行流程状态控制
+扩展:LL1高层状态控制
+  [FILE]
+  [[BLOCK{st}/tuple{st_line...}]]
+  [[tuple{LINE/tuple{...field...}}]]
+
+
+字符串操作:
+  zip 合并 几个字符串:
+    最简单的形式:ABCABC...
+    其他形式:指定一个周期延拓方式:(AAABCCCCCBA)*...
+    类似图像处理，透明度，蒙透
+
+[[
+定位{划出工作范围+不断缩小工作范围}+基本操作
+  修改后 如何 启动下一个 工作流程？
+  假设 特定 工作区间/行 其 子区间/栏/字段 不得后退 => 驻足|向前|更灵活的由修改器返回定位结果 作为下一个子区间的起点
+    但是 由于 父层 的 驻足 代表 子层 的 后退 => 缓存 压力
+<<==:
+源起:『grep -n -T』将空格填充改为零填充
+xxx:grep -n -T -E -- '^ *[A-Z0-9]\w*( [A-Z0-9]\w*)*$' others/app/termux/help/bash.man.width-1000.txt | head
+怎么将 开头的空格 替换成 『0』？
+  sed 流程控制
+  echo $'  ab\n 12\n\n.' | sed ':START ; s/^\( *\) /\10/ ; t START'
+  00ab
+  012
+  <BLANK>
+  .
+怎么求 最大行号 所需 字段宽度？
+  echo $'  ab\n 12\n\n.' | wc -l
+    4
+  echo $'  ab\n 12\n\n.' | wc -l | wc -L
+  cat others/app/termux/help/bash.man.width-1000.txt | wc -l | wc -L
+    4
+
+cat others/app/termux/help/bash.man.width-1000.txt | grep -n -T -E -- '^ *[A-Z0-9]\w*( [A-Z0-9]\w*)*$' | sed ':START ; s/^\( *\) /\10/ ; t START' | head -n 3
+  000003: NAME
+  000006: SYNOPSIS
+  000009: COPYRIGHT
+
+cat others/app/termux/help/bash.man.width-1000.txt | nl -d '' -p -b a -h a -f a -i 1 -l 1 -n rz -s : -v 1 -w 4 | grep -E -- $'^ *[0-9]+: *[A-Z0-9]\w*( [A-Z0-9]\w*)*$' > others/app/termux/help/bash.man.width-1000.outlines.txt
+
+(ipath='others/app/termux/help/bash.man.width-1000.txt' ; width="$(cat "${ipath}" | wc -l | wc -L)"  ;   cat "${ipath}" | nl -d '' -p -b a -h a -f a -i 1 -l 1 -n rz -s : -v 1 -w "$width" | grep -E -- $'^ *[0-9]+: *[A-Z0-9]\w*( [A-Z0-9]\w*)*$' ) | head -n 3
+  0003:NAME
+  0006:SYNOPSIS
+  0009:COPYRIGHT
+
+
+
+info sed
+    see:『7.11 Numbering Lines』
+
+sed '=' 打印行号 但 自带换行
+seq 11 | sed '='
+  1
+  1
+  ... ...
+  11
+  11
+seq 101 111 | sed -e '='
+  1
+  101
+  ... ...
+  11
+  111
+seq 101 111 | sed -e '=' | sed -e 'N ; s/^\([0-9]\+\)\n\(.*\)/\1:\2/'
+  1:101
+  ... ...
+  11:111
+seq 101 111 | sed -e '=' | sed -e ':START ; s/^.\{0,3\}$/0\0/ ; t START; N ; s/^\([0-9]\+\)\n\(.*\)/\1:\2/'
+  0001:101
+  ... ...
+  0011:111
+seq 101 111 | sed -e '=' | sed -e 's/$/:/ ; :START ; s/^.\{0,4\}$/0\0/ ; t START; N ; s/^\(.*\)\n\(.*\)/\1\2/'
+  0001:101
+  ... ...
+  0011:111
+    #输出同上，但 将『3』改为『4』，方便直接使用 所需 字段宽度
+
+(ipath='others/app/termux/help/bash.man.width-1000.txt' ; width="$(cat "${ipath}" | wc -l | wc -L)"  ;   cat "${ipath}" | sed -e '=' | sed -e 's/$/:/ ; :START ; s/^.\{0,'"$width"'\}$/0\0/ ; t START; N ; s/^\(.*\)\n\(.*\)/\1\2/' | grep -E -- $'^ *[0-9]+: *[A-Z0-9]\w*( [A-Z0-9]\w*)*$') | head -n 3
+  0003:NAME
+  0006:SYNOPSIS
+  0009:COPYRIGHT
+
+可以先超量填充，再截取子串
+printf %04d 0
+  0000
+w=4 ; printf %0"$w"d 0
+  0000
+(ipath='others/app/termux/help/bash.man.width-1000.txt' ; width="$(cat "${ipath}" | wc -l | wc -L)"  ; zeros="$(printf %0"$width"d 0)" ;   cat "${ipath}" | sed -e '=' | sed -e 's/^.*$/'"$zeros"'\0/ ; s/^.*\(.\{'"$width"'\}\)$/\1/ ; s/^.*$/\0:/ ; N ; s/^\(.*\)\n\(.*\)/\1\2/' | grep -E -- $'^ *[0-9]+: *[A-Z0-9]\w*( [A-Z0-9]\w*)*$') | head -n 3
+  0003:NAME
+  0006:SYNOPSIS
+  0009:COPYRIGHT
+
+
+
+
+e others/app/termux/help/sed-workflow.txt
+e others/app/termux/help/文本处理-grep-sed-gawk.txt
+]]
+

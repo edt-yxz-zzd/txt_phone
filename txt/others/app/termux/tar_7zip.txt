@@ -2,6 +2,59 @@
 tar_7zip.txt
 	see: TODO_list/upload_book.txt
 
+[[
+@20260227
+『-C』使得shell_pattern只能用相对路径而且不是基于 工作目录，导致shell_pattern不能起作用
+==>>:
+txz $my_tmp/test/abcd2.txz   $my_tmp/test/tar/ -find -type f
+txz $my_tmp/test/abcd2.txz   $my_tmp/test/tar/ -ipaths $(find $my_tmp/test/tar/ -type f)
+<<==:
+
+tree $my_tmp/test/tar
+  ├── a.txt
+  ├── b.txt
+  └── c-d
+      ├── c.txt
+      └── d.txt
+  2 directories, 4 files
+
+realpath -e --relative-to=$my_tmp/test/tar  $my_tmp/test/tar/*
+  a.txt
+  b.txt
+  c-d
+
+find $my_tmp/test/tar/ -type f
+  /sdcard/0my_files/tmp//test/tar/a.txt
+  /sdcard/0my_files/tmp//test/tar/b.txt
+  /sdcard/0my_files/tmp//test/tar/c-d/c.txt
+  /sdcard/0my_files/tmp//test/tar/c-d/d.txt
+
+#xxx:find $my_tmp/test/tar/ -type f | realpath -e --relative-to=$my_tmp/test/tar
+realpath -m --relative-to=$my_tmp/test/tar  $(find $my_tmp/test/tar/ -type f)
+  a.txt
+  b.txt
+  c-d/c.txt
+  c-d/d.txt
+
+tar -cJvf $my_tmp/test/abcd.txz   -C $my_tmp/test/tar/  $(realpath -m --relative-to=$my_tmp/test/tar  $(find $my_tmp/test/tar/ -type f))
+tar -tf $my_tmp/test/abcd.txz
+
+e ../../python3_src/bash_script/app/txz
+txz $my_tmp/test/abcd.txz   $my_tmp/test/tar/  $(find $my_tmp/test/tar/ -type f)
+  exists: /sdcard/0my_files/tmp//test/abcd.txz
+txz $my_tmp/test/abcd2.txz   $my_tmp/test/tar/
+  #USAGE:txz opath idir ipaopathths...
+  USAGE:txz opath idir args4find...
+txz $my_tmp/test/abcd2.tx   $my_tmp/test/tar/  $(find $my_tmp/test/tar/ -type f)
+  not '*.txz': /sdcard/0my_files/tmp//test/abcd2.tx
+txz $my_tmp/test/abcd2.txz   $my_tmp/test/tar/  $(find $my_tmp/test/tar/ -type f)
+  not option: /sdcard/0my_files/tmp//test/tar/a.txt
+txz $my_tmp/test/abcd2.txz   $my_tmp/test/ta/  -type f
+  not dir: /sdcard/0my_files/tmp//test/ta/
+
+txz $my_tmp/test/abcd2.txz   $my_tmp/test/tar/ -find -type f
+txz $my_tmp/test/abcd2.txz   $my_tmp/test/tar/ -ipaths $(find $my_tmp/test/tar/ -type f)
+]]
 
 [[
 @20251022

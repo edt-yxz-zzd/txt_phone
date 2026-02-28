@@ -1,0 +1,168 @@
+
+e others/数学/最短加链/最短加链-论文-概览.txt
+
+笔记于:
+e others/数学/最短加链/最短加链-论文-向量链.txt
+e others/数学/最短加链/最短加链-论文-批量处理.txt
+e others/数学/最短加链/最短加链-论文-良序-实数版总小步数.txt
+e others/数学/最短加链/次优加链-论文-连分数-批量处理.txt
+
+[[
+ls /sdcard/0my_files/book/math/addition_chains/
+:.+1,.+11s/.*(\(\d\{4}\)).*/\1:\0
+:.+1,.+11sort
+'[additionchains.com]st.cpp'
+1989:'Addition chains using continued fractions(1989)(Bergeron).pdf'
+  x**a --> x**a*y**b
+    即:求:加列链{[向量.维度==2]}#二维向量链
+  辗转相除法-连分数
+    简单地说，就是归组:
+      # (*^)类型:系数向量 *^ 单位向量
+      [(a,b) *^ (1,1)
+      == (a,b)
+      == (b*q+r,b)
+      == (b*q,b)+(r,0)
+      == b*(q,1)+r*(1,0)
+      == (b,r) *^ ((q,1),(1,0))
+        #归组，更换单位
+      ]
+      [x**a * y**b
+      == x**(b*q+r) * y**b
+      == (x**(b*q) * y**b) * (x**r * y**0)
+      == (x**q * y**1)**b * (x**1 * y**0)**r
+      == X**b * Y**r
+        #归组，更换基变量
+      ]
+      加列链{[a,b]} -[递降归结为]-> (加链{q},加列链{[b,r]})
+1994:'Efficient-computation-of-addition-chains(1994)(Bergeron).pdf'
+  允许直接求 次优加靶链:cf_chain__many_{策略}(靶集)
+  『short addition chain』而非『shortest addition chain』
+  当作 优化问题，搜索 尽量短的加链/次优解
+    sub-optimal addition chain
+    只考虑star_chain#加星链
+    [加辗链 <: 加星链==加贪链 <: 加链]
+        #辗转相除/连分数
+    [cf_chain <: star_chain <: addition_chain]
+        [11 == ℓ*(367) < ℓ{cf:θ}(367) == 12]
+          即:最优cf_chain不一定是最优star_chain
+        [ℓ(12509) < ℓ*(12509)]
+          即:最优star_chain不一定是最优addition_chain
+  cf_chain{continued fraction addition chain}
+    [D:<-[2..<N]]:
+      [g:=gcd(N,D)]
+      [cf:=(N/D)的连分数展开]
+  [TIME(批量计算(cf_chain_{γ_}, [1..=N])) <= O(N*(lnN**2+Tγ{策略;N}))*TIME(__mul__{N})]
+      缓存 γ_@[1..=N]
+      缓存:cf_chain_{γ_}@[1..=N]
+    单点计算，无缓存&&分支不唯一时 很慢...
+  ===
+  重要界限公式:
+    [[u:<-[1..]] -> [ℓ(u) >= log2(u) +log2(ν(u)) -2.13]]
+    [[u:<-[1..]] -> [ℓ(u) <= (λ(u) +ν(u) -1)]]
+    #窗式拆分:
+    简版:[[u:<-[1..]] -> [k:<-[1..]] -> [ℓ(u) <= λ(u)+1-k +λ(u)//k +(2**(k-1))]]
+      ==>>:
+    [limit{ℓ(u)/λ(u) | [u-->+oo]} == 1]
+      不是2，不是1.xxx，而是 1
+      也就是 binary_strategy 的表现会越来越糟糕
+  ===
+  笔记于:view others/数学/最短加链/次优加链-论文-连分数-批量处理.txt
+  ===
+1999:'Efficient generation of minimal length addition chains(1999)(Edward G. Thurber).pdf'
+  修剪用下界估计:seqA,seqC,seqE
+  #此1999年论文包含不少数据:[ℓ(2*n)==ℓ(n)],[ℓ(4*n)==ℓ(2*n)],c(r:<-[19..=27])
+2006:'Differential addition chains(2006)(Bernstein).pdf'
+  每一次加法还需要额外参数:
+    add{a-b}(a,b)
+  也就是说，做加法时，俩加数之差 也必须已然存在，就如 俩加数必须已然存在
+  用于 椭圆曲线 ...
+2011:'Calculating Optimal Addition Chains(2011)(Clift).pdf'
+  主要用于批量计算:某个靶值范围 #而非 单点计算
+    有向无环图:关键节点/叉点:出度大于2:消除介点
+      我命名为:末点{出度==0},介点{出度==1},叉点{出度>=2}
+  耗时1月 计算 显链长{[靶值:<-[1..=32]]} : 通过 枚举 所有靶值最短加链@[s(靶值)<=7] 以及部分[s(靶值)==8]
+  笔记于:view others/数学/最短加链/最短加链-论文-批量处理.txt
+  e others/数学/编程/设计/命题命名格式.txt
+
+2013:'An-Efficient-Algorithm-for-Finding-Optimal-Addition-Chains(2013)(Daxin Zhu,Xiaodong Wang).pdf'
+  还不如国外1999的论文
+  使用了 修剪用下界猜想 初始化 修剪用下界，这是个bug
+  逐步升级算法 还行，但是 代码没有缩进 不堪入目
+2014:'Internal Structure of Addition Chains--Well-Ordering(2014)(Altman).pdf'
+  良序: (显链长(靶值)-log2(靶值))
+    #实为:实数版num_small_steps_of_(靶值)
+    #vs:num_small_steps_of_(靶值)==s(靶值)==(显链长(靶值)-floor_log2(靶值))
+  有趣而简单的一个定理:[(显链长(2**k*靶值) -k) 存在极限值]
+    极简证明:!! 单调递减 && 有界{必是正整数}
+    <==>[@靶值 -> ?K{靶值} -> @[k:<-[K{靶值}..]] -> [显链长(2**(k+1)*靶值) == 1+显链长(2**k*靶值)]]
+      也就是 靶值翻倍到一定程度后，每次翻倍 其显链长增加一
+  笔记于:view others/数学/最短加链/最短加链-论文-良序-实数版总小步数.txt
+2020:'An Evolutionary Algorithm for Short Addition Chains(2020)(Hazem M. Bahig).pdf'
+  『short addition chain』而非『shortest addition chain』
+  当作 优化问题，搜索 尽量短的加链
+  当作 优化问题，搜索 尽量短的加链
+  进化算法:但是十分简单，只能说有 进化算法 的 框架 而无其精神
+    1. 基因表达:有效加链#长度不固定
+    2. 初始化群体:每个逐步随机生成，每一次 根据当前尾数与靶值的差距 随机选择 一种方案 选择两个加数 进行增长，但感觉只有star_step，生成结果也只是star_chain#加星链
+    3. 变体操作:没有 多体基因重组，只有 单体基因突变，所谓突变，就是 随机选点 切除尾部，依照初始化的方法 填充，多次填充选最优
+    4. 存活操作/生存竞争/人工选择:两代融合 挑选出来最短的一批加链，不含 重复项，每代人口固定
+    5. 迭代运行指定代数
+2021:'Addition chains, vector chains, and efficient computation(2021)(Edward G.Thurber).pdf'
+  修剪用下界估计:seqF,seqG #强化:seqA,seqC,seqE
+  笔记于:view others/数学/最短加链/最短加链-论文-向量链.txt
+2021:'On the shortest addition chain of numbers of special forms(2021)(T. AGAMA).pdf'
+  (2**n-1) 不感兴趣
+]]
+[[
+@20260117
+===
+mv -iv /sdcard/0my_files/tmp/wget_/lower_bound_schoenhage_1973.pdf /sdcard/0my_files/book/math/addition_chains/'A lower bound for the length of addition chains(1973-1975)(A. Schoenhage)[ge-2.13].pdf'
+  ===
+  [最小显链长纟(n) >= log2(n) +log2(阳爻数纟(n)) -2.13]
+  ===
+  1974版论文 怎么得来2.13?
+    非常复杂的计算，算了...
+  ===
+  [17] A. Schönhage, A lower bound for the length of addition chains, Theoret.  Comput.  Sci.  1 (1975) 1–12.
+  ===
+  wget http://wwwhomes.uni-bielefeld.de/achim/lower_bound_schoenhage_1973.pdf
+  ===
+===
+mv -iv /sdcard/Download/0-387-34805-0_37.pdf /sdcard/0my_files/book/math/addition_chains/'Addition Chain Heuristics(1990)(Jurjen Bos)(Matthijs Coster).pdf'
+  window-method#窗式拆分
+  有几条非精确的最小显链长的下上界估值公式
+===
+mv -iv /sdcard/Download/content.pdf /sdcard/0my_files/book/math/addition_chains/'a lower bound for length of addition chains(2022)(T. AGAMA).pdf'
+  下界纟最小显链长纟(2**e-1)
+  [最小显链长纟(2**n-1) >= n +floor_log2(n-1)]
+
+===
+mv -iv /sdcard/Download/Brauer_on_addition_chains_1939.pdf /sdcard/0my_files/book/math/addition_chains/'on addition chains(1939)(Alfred Brauer)[下载不完整只有4页].pdf'
+  只有4页，下载不完整！
+  ===
+  [[n:<-[1..]] -> [最小显链长纟(2**n-1) <= 显链长纟最短加星链纟(2**n-1) <= n-1 +显链长纟最短加星链纟(n)]]
+    #上界牜全阳爻靶值
+    有趣的加星链构造过程
+
+  ===
+  [[n:<-[1..]] -> [lw:<-[1..]] -> [nw := 首爻位纟(n)//lw] -> [最小显链长纟(n) <= (2**lw-2) + (1+lw)*nw]]
+    #上界牜窗式拆分牜单值形态
+    ===
+    # lw - num_bits4window==len(window)
+    # nw - num_windows==len(windows)
+  ===
+  [[lw:<-[1..]] -> [nw:<-[0..]] -> [n:<-[2**(lw*nw)..<2**(lw*(1+nw))]] -> [最小显链长纟(n) <= (2**lw-2) + (1+lw)*nw]]
+    #上界牜窗式拆分牜批量形态
+    ===
+  ===
+  [[n:<-[3..]] -> [最小显链长纟(n) < log2(n)*(1+1/lnln(n) + 2*ln2/ln(n)**(1-ln2))]]
+    ===
+    #vs:见下面:私版一:[[en::real][en>1][n>2**2**en] -> [最小显链长纟(n) <= (-2 +log2(n)**/en + (1+1/floor(log2log2(n)/en))*log2(n))]]
+    #vs:见下面:私版二:[[b::real][b>2][n >= b**b] -> [最小显链长纟(n) <= (-2 +(1 +1/floor_logBlogB(n) +logB(2)/logB(n)**(1-logB(2)))*log2(n))]]
+  ===
+  笔记于:view others/数学/最短加链/最短加链-论文-全阳爻靶值+上界纟最小显链长纟.txt
+  ===
+
+===
+]]
+

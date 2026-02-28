@@ -1,0 +1,360 @@
+e others/数学/最短加链/次优加链-论文-连分数-批量处理.txt
+
+1994:'Efficient-computation-of-addition-chains(1994)(Bergeron).pdf'
+  允许直接求 次优加靶链:cf_chain__many_{策略}(靶集)
+  『short addition chain』而非『shortest addition chain』
+  当作 优化问题，搜索 尽量短的加链/次优解
+    sub-optimal addition chain
+    只考虑star_chain#加星链
+    [加辗链 <: 加星链==加贪链 <: 加链]
+        #辗转相除/连分数
+    [cf_chain <: star_chain <: addition_chain]
+        [11 == ℓ*(367) < ℓ{cf:θ}(367) == 12]
+          即:最优cf_chain不一定是最优star_chain
+        [ℓ(12509) < ℓ*(12509)]
+          即:最优star_chain不一定是最优addition_chain
+  ===
+  [TIME(批量计算(cf_chain_{γ_}, [1..=N])) <= O(N*(lnN**2+Tγ{策略;N}))*TIME(__mul__{N})]
+      缓存 γ_@[1..=N]
+      缓存:cf_chain_{γ_}@[1..=N]
+    单点计算，无缓存&&分支不唯一时 很慢...
+  ===
+  重要界限公式:
+    [[u:<-[1..]] -> [ℓ(u) >= log2(u) +log2(ν(u)) -2.13]]
+    [[u:<-[1..]] -> [ℓ(u) <= (λ(u) +ν(u) -1)]]
+    #窗式拆分:
+    简版:[[u:<-[1..]] -> [k:<-[1..]] -> [ℓ(u) <= λ(u)+1-k +λ(u)//k +(2**(k-1))]]
+      取[k:=f(u)] 要求:
+        [1/f(u) --> 0]
+        [2**f(u)/λ(u) --> 0]
+      可取:[f(u):=1+λ(1+λ(u))//2]
+        [f(u) / λ(λ(u)) --> 1/2]
+        [1/f(u) ~ 2/λ(λ(u)) --> 0]
+        [2**f(u)/λ(u) <= 2**(1+λ(1+λ(u))/2)/λ(u) <= sqrt(2*(1+λ(u)))/λ(u) ~ sqrt(2/λ(u)) --> 0]
+      ==>>:
+    [limit{ℓ(u)/λ(u) | [u-->+oo]} == 1]
+      不是2，不是1.xxx，而是 1
+      也就是 binary_strategy 的最坏表现会越来越糟糕
+  ===
+
+  cf_chain{continued fraction addition chain}
+    [D:<-[2..<N]]:
+      [g:=gcd(N,D)]
+      [cf:=(N/D)的连分数展开]
+      [TIME(『(N/D)的连分数展开』) == O(lnD*(1+lnN-ln(gcd(N,D))))]
+      批量计算:缓存此前所有结果，所以递归计算变成查表操作{cf_chain_}
+      [TIME(批量计算(cf_chain_{γ_}, [1..=N]))
+      == TIME(批量计算(γ_, [1..=N]))
+        +sum [TIME(『cf_chain_{递归计算变成查表操作{cf_chain_}}{γ_}(n)』) | [n:<-[1..=N]]]
+      <= N*Tγ{策略;N}*TIME(__mul__{N})
+        +sum [TIME(『cf_chain__{递归计算变成查表操作{cf_chain_}}{γ_}(n,d)』) | [n:<-[1..=N]][d:<-γ_(n)]]
+      !! [TIME(『(N/D)的连分数展开』) == O(lnD*(1+lnN-ln(gcd(N,D))))]
+      <= N*Tγ{策略;N}*TIME(__mul__{N})
+        +sum [O(ln(d)*(1+ln(n)-ln(gcd(n,d)))) * TIME(『n/%d』) | [n:<-[1..=N]][d:<-γ_(n)]]
+      <= N*Tγ{策略;N}*TIME(__mul__{N})
+        +N*O(lnN**2) * TIME(『N*N』)
+      <= O(N*(lnN**2+Tγ{策略;N})) * TIME(__mul__{N})
+      ]
+      [TIME(批量计算(cf_chain_{γ_}, [1..=N])) <= O(N*(lnN**2+Tγ{策略;N}))*TIME(__mul__{N})]
+      [TIME(单点计算『cf_chain_{γ_}(N)』)
+      # [d0:=D]
+      # [q[K]:=gcd(N,D)]
+      # [cf_chain__{γ_}(N,D) == (((...((cf_chain_{γ_}(qK)*>cf_chain_{γ_}(q[K-1])+>r[K-1]))...)*>cf_chain_{γ_}(q1)+>r1)*>cf_chain_{γ_}(q0)+>r0)]
+      #     !! [N == (d0)*q0+r0 == (((...((gcd(N,d0)*q[K-1]+r[K-1]))...)*q1+r1)*q0+r0)]
+      # [N >= II [q[j] | [q:<-[0..=K]]]]
+      # [N/2 >= max[q[j] | [q:<-[0..=K]]]]
+      # [K == O(lnN -ln(gcd(N,d0)))]
+      # [K >= 1]
+      # [K <= log_((1+sqrt(5))/2;N) == log2(N)/log2((1+sqrt(5))/2) ~= log2(N)*1.4404200904125564]
+      # [f(x) 单调递增] => [sum[f(q[j]) | [q:<-[0..=K]]] <= O(max{(K+1)*f(N**/(K+1)), f(N/2)})]
+      # [f(x) 单调递增][K<log2(N)][O(lnN) < O(f(N))] => [sum[f(q[j]) | [q:<-[0..=K]]] <= O(f(N/2))]
+      <= O(γ_(N)*(sum(TIME(『cf_chain_{γ_}(q[j])』) for j in [0..=K])+K*TIME(『N/%D』)+TIME(all『*>』)+TIME(all『+>』)))
+      <= O(γ_(N)*(TIME(『cf_chain_{γ_}(N/2)』)+K*TIME(__mul__{N})+log2N*TIME(__mul__{N})))
+      <= O(γ_(N)*(TIME(『cf_chain_{γ_}(N/2)』)+log2N*TIME(__mul__{N})))
+      <= O(γ_(N)*((γ_(N/2)*(TIME(『cf_chain_{γ_}(N/2/2)』)+(log2N-1)*TIME(__mul__{N/2})))+log2N*TIME(__mul__{N})))
+      <= O(Tγ{策略;N}**log2N * lnN**2 * TIME(__mul__{N}))
+        ...超大...
+      ]
+      [TIME(单点计算『cf_chain_{γ_}(N)』) <= O(Tγ{策略;N}**log2N * lnN**2*TIME(__mul__{N}))]
+  ==>>:
+  [TIME(批量计算(cf_chain_{γ_}, [1..=N])) <= O(N*(lnN**2+Tγ{策略;N}))*TIME(__mul__{N})]
+      缓存 γ_@[1..=N]
+      缓存:cf_chain_{γ_}@[1..=N]
+  [TIME(单点计算『cf_chain_{γ_}(N)』) <= O(Tγ{策略;N}**log2N * lnN**2*TIME(__mul__{N}))]
+      单点计算，无缓存&&分支不唯一时 很慢...
+
+  ===
+  连分数方法
+    [cf_chain__(N,D,γ_) =[def]= let [(q,r):=N/%D] in (_cf_chain__(D,r,γ_) *> cf_chain_(q,γ_) +> r)]
+      前置条件:分子N{[N.bit_count()>=2][N>3]} #非二幂且非三 #即 排除 最短加链唯一 的 N
+      前置条件:分母D<-[2..=N-1]
+      后置条件:[返回 加链{靶D}{含D}]
+        『含D』==>>『*>』的俩操作数次序
+    [_cf_chain__(D,r,γ_) =[def]= if [r <- {0,1}] then cf_chain_(D,γ_) else cf_chain__(D,r,γ_)]
+      前置条件:分母D<-[2..]
+      前置条件:余数r<-[0..=D-1]
+      后置条件:[返回 加链{靶D}][[r=!=0] -> [返回 加链{靶D}{含r}]]
+      # [gcd(D,r)==gcd(N{最高层},D{最高层})]
+      #     [r==0] => [D==gcd(N{最高层},D{最高层})]
+      #     [r==1] => [1==gcd(N{最高层},D{最高层})]
+    [cf_chain_(N,γ_) =[def]= if 欤最短加链唯一扌(N) then 唯一最短加链纟(N) else min([cf_chain__(N,D,γ_) for D in γ_(N)],key=len)]
+      前置条件:N<-[1..]
+    [chain8prefix *> chain7lifted =[def]= chain8prefix ++ map (chain8prefix[-1].__mul__) chain7lifted[1:]]
+    [chain8prefix +> r =[def]= if r==0 then chain8prefix else assert [r <- chain8prefix] (chain8prefix ++ [chain8prefix[-1]+r])
+      前置条件:r<-[0..]
+      前置条件:[[r>0] -> [r<-chain8prefix]]
+  批量计算ℓ{cf:策略}([1..=N]):耗时O(N*lnN**2*Tγ{策略;N})
+    此耗时 源自 原文:未缓存 γ_@[1..=N]
+    ===
+    # Tγ{策略;N} 计算候选分母集合的耗时，依赖于所选策略
+    [Tγ{策略;N} =[def]= max{TIME(『γ_{策略}(n)』) | [n:<-[1..=N]]} / TIME(__mul__{N})]
+    ===
+    [γ_{策略} :: @[N:<-{u|[u:<-[5..]][u.bit_count()>=2]}] -> 2**{2..<N}/集合纟分母]#N分子
+    ===
+    [Tγ{total_strategy;N} == O(N)]
+    [Tγ{dyadic_strategy;N} == O(lnN)]
+    [Tγ{Fermat_strategy;N} == O(lnlnN)]
+    [Tγ{binary_strategy;N} == O(1)]
+    ===
+    ###
+    [θ(N)=γ_{total_strategy}(N) =[def]= {2..<N}]
+      最慢策略&&最优策略
+      [11 == ℓ*(367) < ℓ{cf:θ}(367) == 12]
+      [ℓ*(N) <= ℓ{cf:θ}(N) <= ℓ{cf:_}(N)]
+    ###
+    [β(N)=γ_{binary_strategy}(N) =[def]= {N//2}]
+      批量综合表现最糟
+      singleton_choice_set=>deterministic without backtrack
+      二进制拆分牜甲型
+      [(q,r) <- {(2,0), (2,1)}]
+      模式: (D << 1) + (0|1)
+      N-->D
+    ###
+    [α(N)=γ_{co_binary_strategy}(N) =[def]= {(N+1)//2}]
+      singleton_choice_set=>deterministic without backtrack
+      二进制拆分牜乙型
+      [(q,r) <- {(2,0), (1,D-1)}]
+      模式: (D << 1)
+      模式: (D << 0) + (D-1)
+        深入:模式: ((D-1)*1 +1) + (D-1)
+        N-->(D-1)
+    ###
+    [π(N)=γ_{factor_strategy}(N) =[def]= {N-1,min_prime_factor_of(N)}\-\{N}]
+      性价比最低
+      不过 批量计算 时，素数筛 很快，并不会 拖后腿
+    ###
+    [δ(N)=γ_{dyadic_strategy}(N) =[def]= {N//2**ez | [ez:<-[1..=-1+ceil_log2(N)=-1+floor_log2(N)]]}]#注意:[N非二幂]
+      性价比次高牜慢
+    ###
+    [F(N)=γ_{Fermat_strategy}(N) =[def]= {N//2**2**ez | [ez:<-[0..=floor_log2(-1+ceil_log2(N))=floor_log2(-1+floor_log2(N))]]}]#注意:[N非二幂]
+      [[N:<-[1..=1000]] -> [ℓ{cf:F}(N) -ℓ(N) <= 1]]
+      性价比最高
+    ###
+    [σ(N)=γ_{dichotomic_strategy}(N) =[def]= {N//2**((floor_log2(N)+1)//2)}]
+      性价比次高牜快
+      [σ(N)/floor_sqrt(N) ~= 1]
+        # [λ(N) <= ((λ(N)+1)//2 * 2) <= 1+λ(N)]
+        # [N/2 <= 2**λ(N) <= (2**((λ(N)+1)//2 * 2)) <= 2**(1+λ(N)) <= 2*N]
+        # [sqrtN/sqrt2 <= (2**((λ(N)+1)//2)) <= sqrt2*sqrtN]
+        # [sqrt2*sqrtN >= N/(2**((λ(N)+1)//2)) >= sqrtN/sqrt2]
+        # [sqrtN/sqrt2 <= σ(N) <= sqrt2*sqrtN]
+        #   [[N>=8] <-> [σ(N) >= 2]]
+        #   为了避免无效d:我补丁:[[ν(N)<=3] -> [σ(N) := β(N)]]
+        # [1/sqrt2 <= σ(N)/sqrtN <= sqrt2]
+        #连分数拆分牜二幂冃平方根策略
+        # [σ(N)~=平方根]
+        #   若取:[D:=floor_sqrt(N)], 则 [q<-{D,D+1,D+2}]
+        #立方根呢？其他有理数幂呢？ceil(N**(a/b))
+      singleton_choice_set=>deterministic without backtrack
+      the dichotomic strategy provides much shorter chains than the binary one for a large family of integers.
+    ###
+    下文还有一个:m-ary strategy
+      但是 并非如上的γ_()，而是 直接求 加靶链
+      直接求加靶链:cf_chain__many_(靶集:=({N}\-/τ(N)), γ_:=σ) #使用:γ_{dichotomic_strategy}
+        原文版 确实如此，但感觉不太对
+          我认为应该是 直接求 窗式拆分框架x制表{加靶链{二进制切分片段序列.奇数部}}
+            #后来发现没大错！两点:
+            #   1. 大端片段完整，低位片段可能不完整#但仍然小概率可能偏离预期@收尾阶段
+            #   2. 除数 都是 头部
+            #   [N == 0b1aaBbbCc]
+            #   [d0 := 0b1aaBbb][q0:=0b100=N/d0][r0:=0bCc<0b1aaBbb==d0]
+            #   [d1 := 0b1aa]:
+            #       预期:[q1:=0b1000=d0/d1][r1:=0bBbb<0b1aa==d1]
+            #       偏离:[q1:=0b1001=d0/d1][r1:=(0bBbb-0b1aa)<0b1aa==d1]
+          见下面 窗式拆分
+    [τ(N)=新增靶集{m_ary_strategy}(N) =[def]= let [k:=λ(λ(N))//2][bsz:=1+λ(N)][rem:=1+(-1+bsz)%k][nwbk:=bsz//k] in {n//2**(j*k+rem) | [j:<-[0..<nwbk]]}]
+      #拟囜进制:m_ary((2**k)-ary):vs:binary(2-ary)#『拟』:尾片段可能不完整
+      #nwbk-number of whole blocks
+      #bsz-bit size
+      #[1 <= rem == bsz%k + [bsz%k==0]k]
+      #原文-命名:[p:=k][m:=bsz][Δ:=rem][t:=nwbk-1]
+      [cf_chain__many_(Ns,γ_) =[def]= let [ge2:=any (>2) Ns][_Ns:=sorted({n | [n:<-Ns][n>=2+ge2]},reverse=True)] in
+        #移除{0,1}或者{0,1,2}，然后 降序排列
+        case _Ns of
+          [] -> [1]
+          [N] -> cf_chain_(N,γ_)
+          [N,2] -> cf_chain_(N,γ_)
+          [N,D,*ls] -> let [(q,r):=N/%D] in
+            (cf_chain__many_({D,r,*ls},γ_) *> cf_chain_(q,γ_) +> r)
+      ]
+
+    ###
+  ===
+  策略性能比较:
+    理论上比较:
+      [ℓ(N) <= ℓ*(N) <= ℓ{cf:θ}(N) <= ℓ{cf:_}(N)]
+      [ℓ(N) <= ℓ*(N) <= ℓ{cf:θ}(N) <= ℓ{cf:π}(N)]
+      [ℓ(N) <= ℓ*(N) <= ℓ{cf:θ}(N) <= ℓ{cf:δ}(N) <= ℓ{cf:σ}(N)]
+      [ℓ(N) <= ℓ*(N) <= ℓ{cf:θ}(N) <= ℓ{cf:δ}(N) <= ℓ{cf:F}(N) <= ℓ{cf:β}(N) == (λ(N) +ν(N) -1) == ℓ{cf:α}(N)]
+      虽然 [ℓ{cf:β}(N) == ℓ{cf:α}(N)]，但 它俩生成的候选分母集合并不相同
+      而其他『<=』情形，都是由于右操作数生成的候选分母集合是左操作数生成的候选分母集合的子集。
+    批量小数据实际比较:
+      [total_size_under_(y_;maxN) =[def]= sum [ℓ{cf:y_}(N) | [N:<-[1..=maxN]]]]
+      [total_size_under_(OPTIMAL;maxN) =[def]= sum [ℓ(N) | [N:<-[1..=maxN]]]]
+      [diff_total_size_under_(y_;maxN) =[def]= total_size_under_(y_;maxN) -total_size_under_(OPTIMAL;maxN)]
+      ===
+      [maxN := 1000]
+      [total_size_under_(OPTIMAL;1000) == 10808]
+      [diff_total_size_under_(θ;1000) == 13]#total_strategy
+          最慢策略&&最优策略
+      [diff_total_size_under_(δ;1000) == 29]#dyadic_strategy
+          性价比次高牜慢
+      [diff_total_size_under_(F;1000) == 119]#Fermat_strategy
+          性价比最高
+      [diff_total_size_under_(σ;1000) == 256]#dichotomic_strategy
+          性价比次高牜快
+      [diff_total_size_under_(π;1000) == 280]#factor_strategy
+          性价比最低
+      [diff_total_size_under_(β;1000) == 1117]#α##binary_strategy|co_binary_strategy
+          批量综合表现最糟
+      ===
+
+  ===
+
+不等式:
+  [[u:<-[1..]] -> [ℓ(u) >= log2(u) +log2(ν(u)) -2.13]]
+  [[u:<-[1..]] -> [ℓ(u) <= (λ(u) +ν(u) -1)]]
+  [[u:<-[Ku..]] -> [k:<-[1..]] -> [ℓ(u) <= λ(u) +λ(u)/k +2**k -2]]
+    ???[[u:<-[1..]] -> [x::real{>=1}] -> [ℓ(u) <= λ(u) +λ(u)/x +2**x -2]]
+      原文写得不清楚，到底k是否必须是整数，Ku可否为1，下一版 窗式拆分 就很清楚:
+    ==>>:
+  [limit{ℓ(u)/λ(u) | [u-->+oo]} == 1]
+    不是2，不是1.xxx，而是 1
+    也就是 binary_strategy 的表现会越来越糟糕
+
+  #窗式拆分:
+  原版{可能有毛病}:[[u:<-[1..]] -> [k:<-[1..]] -> [ℓ(u) <= λ(u) -(k-1) +λ(u)//k +ℓ{加靶链}({odd | [w:<-二进制切分片段序列{k;u}][w>0][?(ez,odd):=>[ez,odd::uint][odd%2==1][2**ez*odd==w]]}) <= λ(u) -(k-1) +λ(u)//k +(2**(k-1))]]
+  修正版:[[u:<-[1..]] -> [k:<-[1..]] -> [ℓ(u) <= [(1+λ(u))>k](λ(u) -(k-1) +λ(u)//k) +ℓ{加靶链}({odd | [w:<-二进制切分片段序列{k;u}][w>0][?(ez,odd):=>[ez,odd::uint][odd%2==1][2**ez*odd==w]]}) <= λ(u) -(k-1) +λ(u)//k +(2**(k-1))]]
+    where:[[u:<-[1..]] -> [k:<-[1..]] -> [二进制切分片段序列{k;u} =[def]= let [(q,r):=(1+floor_log2(u))/%k][v:=((u>>r)<<k) + (u%2**r)] in [(v>>(k*(q-j)))%2**k | [j:<-[0..<ceil((1+floor_log2(u))/k)]]]]]
+    或者:头片段完整:
+      [片段奇部集牜头片段完整{k;u} =[def]= {odd | [w:<-二进制切分片段序列牜头片段完整{k;u}][w>0][?(ez,odd):=>[ez,odd::uint][odd%2==1][2**ez*odd==w]]}]
+      [二进制切分片段序列牜头片段完整{k;u} =[def]= let [bsz:=(1+floor_log2(u))][(q,r):=bsz/%k][(qw,rk):=if r==0 then (q-1,k) else (q,r)] in [(u>>(0 if j==0 else rk+j*k))%2**(rk if j==0 else k) | [j:<-[0..=qw]]]]
+  推导证明:
+    #{一开始结果稍有不同，后来发现相同}
+    #   但是 原版 确实可能有毛病:『2**(k-1)』因为足够大，所以才无视条件『[(1+λ(u))>k]』，而 加靶链 版 可就未必了
+    [u:<-[1..]][k:<-[1..]][u%2==1][ws:=二进制切分片段序列{k;u}][bsz:=(1+floor_log2(u))][(q,r):=bsz/%k]:
+      [ws |<=| [0..<2**k]]
+      [{odd | [w:<-ws][w>0][?(ez,odd):=>[ez,odd::uint][odd%2==1][2**ez*odd==w]]} == [1,3..<2**k]]
+      !! 只取窗口片段的奇数部分#融入时刻需微调
+      [制表所需加次
+      == ℓ{加靶链}([1,3..<2**k])
+      !! [k >= 1]
+      :> [2**k >= 2]
+      <= ℓ{加靶链}([2,3..<2**k])
+      !! #『-1』<<==值1『+1』<<==值2
+      <= (2**(k-1)) -1+1
+      == (2**(k-1))
+      ]
+      [制表所需加次 <= (2**(k-1))]
+      [ns[0] := ws[0]]
+        #所需加次:0
+      [[j:<-[1..<(len(ws)-[r>0])]] -> [ns[j] := ns[j-1]*2**k +ws[j]]]
+        #所需加次:(k + [ws[j] =!= 0]) <= k+1
+      [[bsz>=k][r>0] -> [ns[len(ws)-1] := ns[len(ws)-2]*2**r +ws[len(ws)-1]]]
+        #所需加次:(r + [ws[-1] =!= 0]) <= r+1 <= k
+      [len(ns) == len(ws) > 1]
+      [ns[-1] == u]
+      [位移辻累计所需加次
+      == 头部位移+非头且非零片段的依次融入
+      == [bsz>k](bsz-k) + sum(map(bool, ws[1:]))
+      <= [bsz>k](bsz-k) + [bsz>k](len(ws)-1)
+      == [bsz>k](bsz-k -1+ceil(bsz/k))
+      ]
+      [位移辻累计所需加次 <= [bsz>k](bsz-k -1+ceil(bsz/k))]
+      [ℓ(u)
+      == 总加次
+      == 制表所需加次 + 位移辻累计所需加次
+      !! [制表所需加次 <= (2**(k-1))]
+      <= (2**(k-1)) + [bsz>k](bsz-k -1+ceil(bsz/k))
+      !! [bsz:=(1+floor_log2(u))]
+      :> [bsz == (1+λ(u))]
+      == (2**(k-1)) + [(1+λ(u))>k]((1+λ(u))-k -1+ceil((1+λ(u))/k))
+      == (2**(k-1)) + [(1+λ(u))>k]((1+λ(u))-k -1+(1+λ(u)+k-1)//k)
+      == (2**(k-1)) + [(1+λ(u))>k](λ(u)+1-k +λ(u)//k)
+        # =>我版
+      ]
+      #我版:[[u:<-[1..]] -> [k:<-[1..]] -> [ℓ(u) <= [(1+λ(u))>k](λ(u)+1-k +λ(u)//k) +(2**(k-1))]]
+        #比原文多了个『[(1+λ(u))>k]』
+      .
+      * [(1+λ(u))<=k]:
+        [λ(u)//k == 0]
+        [(2**(k-1)) + (λ(u)+1-k +λ(u)//k) -(λ(u) +ν(u) -1)
+        !! [λ(u)//k == 0]
+        == (2**(k-1)) + (1-k) -(ν(u) -1)
+        !! [ν(u) <= λ(u)+1]
+        >= (2**(k-1)) + (1-k) -λ(u)
+        !! [(1+λ(u))<=k]
+        >= (2**(k-1)) + (1-k)*2
+        !! [k>=1]
+        >= 0
+        ]
+        [(2**(k-1)) + (λ(u)+1-k +λ(u)//k)
+        >= (λ(u) +ν(u) -1)
+        >= ℓ(u)
+        ]
+        [ℓ(u) <= (2**(k-1)) + (λ(u)+1-k +λ(u)//k)]
+      * [(1+λ(u))>k]:
+        [(λ(u)+1-k) > 0]
+        [(λ(u)+1-k +λ(u)//k) > 0]
+        !! 我版:[ℓ(u) <= [(1+λ(u))>k](λ(u)+1-k +λ(u)//k) +(2**(k-1))]
+        [ℓ(u) <= (λ(u)+1-k +λ(u)//k) +(2**(k-1))]
+      综上:[ℓ(u) <= (λ(u)+1-k +λ(u)//k) +(2**(k-1))]
+        #即:原版
+  简版:[[u:<-[1..]] -> [k:<-[1..]] -> [ℓ(u) <= λ(u)+1-k +λ(u)//k +(2**(k-1))]]
+    {上面证明正确性}
+  综合版:[[u:<-[1..]] -> [ℓ(u) <= min{(λ(u)+1-k +λ(u)//k +(2**(k-1))) | [k:<-[1..=1+λ(u)]]}]]
+    此上界最小值在哪？
+      哪个k使得(λ(u)+1-k +λ(u)//k +2**(k-1))最小？
+      哪个k使得(-2*k +A//k *2 +2**k)最小？
+        [A:=λ(u)]
+      ~= 哪个k使得(-2*k +2*A/k +2**k)最小？
+        ?? [k =?= λ(λ(u))//2 = λ(A)//2 ~= log2(A)/2]
+        [k:= log2(A)/2]:
+          [(-2*k +2*A/k +2**k)
+          == -log2(A) +2*A/log2(A) + A**/2
+          ]
+      [h(A;x) := (-2*x +2*A/x +2**x)]
+      [A > 0]
+      [D{x} h(A;x)
+      == (-2 -2*A/x**2 +2**x * ln2)
+        !! [A > 0]
+        单调递增
+        [x>0]存在零点
+      * [x := log2(A)/2]:
+        == (-2 -2*A/(log2(A)/2)**2 +2**(log2(A)/2) * ln2)
+        == (-2 -8*A/log2(A)**2 +A**/2 * ln2)
+        不为0
+      ]
+      ?x0 :=> [x0>0][(-2 -2*A/x0**2 +2**x0 * ln2) == 0]
+      ?x1 :=> [x1>0][(-2*A/x1**2 +2**x1 * ln2) == 0]
+      [A足够大]:
+        [x1 ~= x0]
+        [2*A/x1**2 == (2**x1 * ln2)]
+        [ln2+lnA-2*ln(x1) == (ln2 * x1 +lnln2)]
+        [C:=log2(2*A/ln2)]
+        [B:=(2/ln2)]
+        [C:=log2(B*A)]
+        [x1 == C -B*ln(x1)]
+        [x1 == C -B*ln(C -B*ln(C -B*ln(...)))]
+        [x1 ??~= C -B*ln(C -B*ln(C -B*ln(C)))]
+        ...TODO

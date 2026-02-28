@@ -2,6 +2,212 @@
 e others/app/termux/shell_conditional-string-and_var.txt
 view others/app/termux/help/bash.man.txt
 
+前置环境:
+set_result 3 ; echo_result ; echo_result
+  3
+  3
+
+注意:小心:算术运算 用作 真值测试
+  总之 不要直接使用『$?』，而是 要将其放在 真值式/比较式 中，不论是 [[ ]] 还是 (( ))，都得 使用 真值测试操作 才正常
+    !! [[ ]] 将 参数 当作 字符串，直接使用 相当于 判定 非空串
+    !! (( )) 将 参数 当作 整数，直接使用 相当于 判定 非零
+(( r= ! 1 == 1 )) ; echo_result ; echo $r
+  1
+  0
+set_result 0 ; echo_result ; (( $? )) || echo false
+  0
+  false
+set_result 3 ; echo_result ; (( $? )) && echo true
+  3
+  true
+set_result 3 ; echo_result ; (( $? == 0 )) || echo false
+  3
+  false
+set_result 3 ; echo_result ; (( $? != 0 )) && echo true
+  3
+  true
+set_result 0 ; echo_result ; [[ $? ]] && echo true
+  0
+  true
+set_result 1 ; echo_result ; [[ $? ]] && echo true
+  1
+  true
+set_result 0 ; echo_result ; [[ $? -eq 0 ]] && echo true
+  0
+  true
+set_result 1 ; echo_result ; [[ $? -eq 0 ]] || echo false
+  1
+  false
+
+
+
+$ 注意:『==』之类 都是 字符串词典序比较
+# 整数比较:
+[[ $# -ne 2 ]]
+
+# 使用引号/$变量引用:字面值比较
+# 不使用引号:『=~』正则表达式;『==』shell_pattern
+if [[ a =~ . ]] ; then echo matched ; fi
+if [[ ! a =~ '.' ]] ; then echo unmatched ; fi
+if [[ a == ? ]] ; then echo matched ; fi
+if [[ ! a == '?' ]] ; then echo unmatched ; fi
+
+#######
+#ERE:
+#######
+#注意:无引号
+#注意:部分匹配# 完全匹配 必须加上:^ $
+#注意:分支不允许为空
+#注意:超符无需『\』
+  ===extended (ERE) #egrep
+  meta-characters ?, +, {, |, (, and )
+    view others/app/termux/help/grep.man.txt
+       Basic vs Extended Regular Expressions
+不同于grep.ERE:
+  #...一开始以为是: 《不是 『\w』而是『\\w』，因为 正则表达式 必须不在引号内，所以『\』得变成『\\』》;谁知真的不行
+  #
+  但『[[ str =~ ERE ]]』不支持『\w』#必须『[_[:alnum:]]』
+  但『[[ str =~ ERE ]]』不支持『a{,8}』#必须『a{0,8}』
+
+[[ aaa =~ \w ]] ; echo $?
+  => 1
+[[ aaa =~ \\w ]] ; echo $?
+  => 1
+[[ aaa =~ \\\w ]] ; echo $?
+  => 1
+[[ aaa =~ \\\\w ]] ; echo $?
+  => 1
+  都不行！
+grep '\w' <<<aaa
+  aaa
+grep -E '\w' <<<aaa
+  aaa
+grep -G '\w' <<<aaa
+  aaa
+  都行
+[[ w =~ \w ]] ; echo $?
+  => 0
+[[ w =~ \\w ]] ; echo $?
+  => 1
+[[ '\w' =~ \\w ]] ; echo $?
+  => 0
+[[ '\w' =~ \\\w ]] ; echo $?
+  => 0
+[[ '\w' =~ \\\\w ]] ; echo $?
+  => 1
+[[ '\\w' =~ \\\\w ]] ; echo $?
+  => 0
+echo \\\\w
+  \\w
+echo \\\w
+  \w
+echo \\w
+  \w
+echo \w
+  w
+echo w
+  w
+
+
+[[ aaa =~ [_[:alnum:]] ]] ; echo $?
+  => 0
+[[ aaa =~ . ]] ; echo $?
+  => 0
+x='.' ; [[ aaa =~ ${x} ]] ; echo $?
+  => 0
+    匹配成功
+      #注意:无引号
+x='.' ; [[ aaa =~ "${x}" ]] ; echo $?
+  => 1
+    匹配失败
+      #注意:引号内 被当作 常量 而非 正则表达式
+x='.|' ; [[ aaa =~ ${x} ]] ; echo $?
+  => 2
+    模式有误
+      #注意:分支不允许为空！
+x='.?' ; [[ aaa =~ ${x} ]] ; echo $?
+  => 0
+x='(.|.)+' ; [[ aaa =~ ${x} ]] ; echo $?
+  => 0
+      #注意:超符无需『\』
+
+#######
+#shell pattern:
+#######
+view others/app/termux/help/bash.man.txt
+  :1991
+      :2029
+  Pathname Expansion
+      Pattern Matching
+shopt -p extglob
+  =>『shopt -s extglob』
+    already turnon
+    -s:on
+    -u:off
+不同于case.shell_pattern:
+  * 『[[ str == shell_pattern ]]』允许字面量『()』
+  * case.shell_pattern使用『()』作为 起始符/结束符，中间不再允许出现字面量『()』#必须: 『'()'』 『"()"』 『\(\)』 #或者 作为 零件纟超符: 『?()』『*()』『+()』『@()』『!()』
+x='.' ; [[ aaa == ${x} ]] ; echo $?
+  => 1
+    匹配失败
+x='?' ; [[ aaa == ${x} ]] ; echo $?
+  => 1
+    匹配失败
+x='*' ; [[ aaa == ${x} ]] ; echo $?
+  => 0
+    匹配成功
+x='(aaa)' ; [[ aaa == ${x} ]] ; echo $?
+  => 1
+    匹配失败
+x='(aaa)' ; [[ "(aaa)" == ${x} ]] ; echo $?
+  => 0
+    匹配成功
+x='+(a)' ; [[ aaa == ${x} ]] ; echo $?
+  => 0
+x='aaa' ; [[ aaa == ${x} ]] ; echo $?
+  => 0
+  <==>:
+x='@(aaa)' ; [[ aaa == ${x} ]] ; echo $?
+  => 0
+x='@(aaa|)' ; [[ aaa == ${x} ]] ; echo $?
+  => 0
+  <==>:
+x='?(aaa)' ; [[ aaa == ${x} ]] ; echo $?
+  => 0
+case $'xxx\n' in ($'xxx\n') echo ok ;; esac
+case xxx in ($(echo xxx)) echo ok ;; esac
+  case usage:view ../../python3_src/bash_script/app/echo7safe.def.sh
+case xxx in (*(x)) echo ok ;; esac
+case xxx in (+(x)) echo ok ;; esac
+case xxx in (?(xxx)) echo ok ;; esac
+case xxx in (@(xxx)) echo ok ;; esac
+case xxx in (!(xx)) echo ok ;; esac
+case xxx in (@(xxx|yyy)) echo ok ;; esac
+case ++ in (@(++|--)) echo ok ;; esac
+f(){ case ++kw%+:vv in (++|+|-) echo ... ;; (@(--|++)[^%:=+-]*([^%:=])?(%+)[:=]*) echo ok ;; esac ; }
+
+
+[[
+我总结的case.shell_pattern语法:
+[case.shell_pattern.outer ::= "(" {<pattern_list>} ")" ]
+  [pattern_list ::= {<atom>}* ( "|" {<atom>}* )* ]
+  [atom ::= {<plain_chars>} | {<quoted_string>} | {<escaped_char>} | {<bracket_charset>} | {<wild_chars>} | {<grouped>} ]
+  # [plain_chars ::=  regex/[^$\'\"\\()?*+@!]\|[+@!]\($\|[(]\@!\)/ ]
+  [plain_chars ::=  regex/[^$\'\"\\()?*]\($\|[(]\@!\)/ ]
+      #排除『()』只在『case』分支模板
+  [quoted_string ::=  『"..."』 | 『'...'』 ]
+      #任何 展开式 包括 命令 $'...' $"..." $(...) 提前展开，不在此处
+  [escaped_char ::=  regex/\\./ ]
+  [bracket_charset ::=  『[...]』 ]
+  [wild_chars ::=  regex/[?*]\($\|[(]\@!\)/ ]
+
+  #only:『extglob:on』
+    [grouped ::=  regex/[?*+@!]/ "(" {<pattern_list>} ")" ]
+]]
+
+
+
+
 inside [[  ]]
    When used with [[, the < and > operators sort lexicographically using the current locale.  The test command sorts using ASCII ordering.
    -o optname

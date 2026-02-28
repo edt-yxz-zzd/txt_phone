@@ -1,0 +1,550 @@
+
+e ../lots/NOTE/database/SQL/sql_note.txt
+
+
+
+www.w3schools.com
+http://127.0.0.1:8080/sql/sql_create_db.asp
+
+
+
+
+@20251114
+===
+Some of The Most Important SQL Commands
+    #元数据:
+    CREATE DATABASE - creates a new database
+    ALTER DATABASE - modifies a database
+    CREATE TABLE - creates a new table
+    ALTER TABLE - modifies a table
+    DROP TABLE - deletes a table
+    CREATE INDEX - creates an index (search key)
+    DROP INDEX - deletes an index
+
+    #负载数据:
+    SELECT - extracts data from a database
+    INSERT INTO - inserts new data into a database
+    UPDATE - updates data in a database
+    DELETE - deletes data from a database
+
+===
+不同系统使用不同语法:
+datatype = int | varchar(255) | ...
+name = abc | 'abc 123' | [abc 123]
+columns|column_exprs = * | column_name | ([DISTINCT] column_name, ...) | expr | (expr, ...) | aggregate_function(expr) | expr AS alias_name | ...
+values = (value, ...)
+value = column_name | table_name.column_name | NULL | ...
+expr = value | value * value | case_expr | ...
+case_expr =
+  CASE
+      WHEN condition1 THEN result1
+      WHEN condition2 THEN result2
+      ...
+      WHEN conditionN THEN resultN
+      ELSE result
+  END;
+pattern.wildcard characters:"_%" # <==> shell "?*" <==> regex"..*"
+result_set = table_name | view_name | (SELECT ...) | (result_set [INNER | (LEFT|RIGHT|FULL) OUTER] JOIN result_set  ON condition) | (VALUES values, ...) | ...
+    subquery
+    selection
+
+condition
+    = condition AND condition
+    | condition OR condition
+    | NOT condition
+    | ( condition )
+    | value NOT LIKE pattern
+    | value NOT IN values
+    | value IS NOT NULL
+    | EXISTS result_set
+constraint:
+    NOT NULL
+    UNIQUE
+    PRIMARY KEY # 涵盖:NOT NULL && UNIQUE
+    FOREIGN KEY
+    CHECK (condition)
+    DEFAULT value
+    CREATE INDEX - Used to create and retrieve data from the database very quickly
+
+[:SQL_Operators]:goto
+Operator{WHERE clause}:
+  =
+  >
+  <
+  >=
+  <=
+  <>
+    value `op` (value | ANY result_set | ALL result_set)
+  NOT LIKE pattern
+  NOT IN values
+  NOT IN result_set
+  #Wildcard:
+  NOT BETWEEN text_value
+  NOT BETWEEN min_date_value and max_date_value
+  NOT BETWEEN min_numeric_value and max_numeric_value
+
+result_set
+SQL Aggregate Functions:
+    # Aggregate functions are often used with the GROUP BY clause of the SELECT statement. The GROUP BY clause splits the result-set into groups of values and the aggregate function can be used to return a single value for each group.
+
+    MIN() - returns the smallest value within the selected column
+    MAX() - returns the largest value within the selected column
+    COUNT() - returns the number of rows in a set
+    SUM() - returns the total sum of a numerical column
+    AVG() - returns the average value of a numerical column
+某些常用函数:
+    COALESCE(val1, val2, ...., val_n) -> Return the first non-null value in a list
+    IFNULL(a,b) === COALESCE(a,b)
+注释:
+    -- Single Line Comments
+    /* Multi-line Comments */
+Different Types of SQL JOINs
+    (INNER) JOIN: Returns records that have matching values in both tables
+    LEFT (OUTER) JOIN: Returns all records from the left table, and the matched records from the right table
+    RIGHT (OUTER) JOIN: Returns all records from the right table, and the matched records from the left table
+    FULL (OUTER) JOIN: Returns all records when there is a match in either left or right table
+
+
+===
+创建/删除:数据库
+CREATE DATABASE database_name;
+SHOW DATABASES;
+DROP DATABASE database_name;
+
+
+===
+备份:数据库
+BACKUP DATABASE database_name
+    TO DISK = 'filepath';
+BACKUP DATABASE database_name
+    TO DISK = 'filepath'
+    WITH DIFFERENTIAL;
+    # 备份增量
+
+
+
+===
+创建/删除:表
+
+TRUNCATE TABLE table_name;
+    #clear => empty table
+
+DROP TABLE table_name;
+    #delete => no table
+
+CREATE TABLE table_name (
+    column_name datatype column_level_constraint,
+    ...
+   table_level_constraint,
+   ...
+   CONSTRAINT constraint_name table_level_constraint,
+   ...
+   );
+CREATE TABLE new_table_name AS result_set;
+<<==:
+
+
+
+
+
+CREATE TABLE table_name (
+    column1 datatype column_level_constraint,
+    column2 datatype column_level_constraint,
+    column3 datatype column_level_constraint,
+        #eg:column_name datatype PRIMARY KEY,
+        #eg:column_name varchar(255)   NOT NULL   UNIQUE,
+   ....
+   # 匿名约束:
+   table_level_constraint,
+        #eg:PRIMARY KEY (column_name),
+        #eg:FOREIGN KEY (column_name) REFERENCES table_nameX(column_nameY6X)
+        #eg:UNIQUE (column_name)
+   ...
+   # 具名约束:
+   CONSTRAINT constraint_name table_level_constraint,
+        #eg:CONSTRAINT PK_name PRIMARY KEY (a,b)
+   ...
+);
+    #new => empty table
+
+
+CREATE TABLE new_table_name AS
+    SELECT column1, column2,...
+    FROM existing_table_name
+    WHERE ....;
+    #vs:SELECT * INTO newtable FROM oldtable WHERE 1 = 0;
+
+===
+创建/调用:过程
+#Stored Procedure Syntax
+CREATE PROCEDURE procedure_name @parameter_name datatype, ...
+    AS
+        sql_statement{@parameter_name,...}
+    GO;
+#Execute a Stored Procedure
+EXEC procedure_name @parameter_name=value;
+
+Example:
+CREATE PROCEDURE SelectAllCustomers @City nvarchar(30), @PostalCode nvarchar(10)
+    AS
+        SELECT * FROM Customers WHERE City = @City AND PostalCode = @PostalCode
+    GO;
+EXEC SelectAllCustomers @City = 'London', @PostalCode = 'WA1 1DP';
+===
+更改设定{元数据}:表设定/列设定
+
+#列名、数据类型:
+ALTER TABLE table_name
+    ADD column_name datatype;
+ALTER TABLE table_name
+    DROP COLUMN column_name;
+ALTER TABLE table_name
+    RENAME COLUMN old_name to new_name;
+ALTER TABLE table_name
+    MODIFY COLUMN column_name datatype;
+
+#索引:
+CREATE INDEX index_name
+    ON table_name (column1, column2, ...);
+CREATE UNIQUE INDEX index_name
+    ON table_name (column1, column2, ...);
+
+#不同语法:
+DROP INDEX index_name ON table_name;
+ALTER TABLE table_name
+    DROP INDEX index_name;
+
+#约束:
+ALTER TABLE table_name
+    ADD table_level_constraint;
+      #eg:ADD UNIQUE (a,b);
+ALTER TABLE table_name
+    ADD CONSTRAINT constraint_name table_level_constraint;
+ALTER TABLE Persons
+    DROP CONSTRAINT constraint_name;
+
+
+
+===
+创建/覆盖/删除:视图
+DROP VIEW view_name;
+CREATE [OR REPLACE] VIEW view_name AS result_set;
+<<==:
+
+
+
+CREATE VIEW view_name AS
+    SELECT column1, column2, ...
+    FROM table_name
+    WHERE condition;
+CREATE OR REPLACE VIEW view_name AS
+    SELECT column1, column2, ...
+    FROM table_name
+    WHERE condition;
+
+
+
+===
+#另外:[:SELECT_INTO]:goto
+SELECT [TOP number|percent] column_exprs
+    FROM result_set [AS alias_name], ...
+    UNION [ALL] result_set
+    WHERE condition
+    LIMIT number
+    GROUP BY columns
+        HAVING condition7allow_aggregate_function
+    ORDER BY column_expr [ASC|DESC], ...
+    ;
+<<==:
+
+
+
+
+SELECT columns
+    FROM table_name;
+SELECT DISTINCT columns
+    FROM table_name;
+SELECT columns
+    FROM table_name
+    WHERE condition;
+SELECT columns
+    #or:SELECT expr, ...
+    FROM table_name
+    ORDER BY column1, column2, ... ASC|DESC;
+      #or:ORDER BY column1 ASC|DESC, column2 ASC|DESC, ...;
+      #ORDER BY expr ASC|DESC, ...
+
+#不同语法:
+SELECT TOP number|percent column_name(s)
+    FROM table_name
+    WHERE condition;
+SELECT column_name(s)
+    FROM table_name
+    WHERE condition
+    LIMIT number;
+    # ROWNUM <= number;
+    # FETCH FIRST number ROWS ONLY;
+
+
+SELECT aggregate_function(column_name)
+    FROM table_name
+    WHERE condition;
+SELECT ..., aggregate_function(expr) AS alias_name, columns...
+    FROM table_name
+    LEFT JOIN table_nameX ON condition
+    WHERE condition
+    GROUP BY columns
+    ORDER BY columns;
+
+#Ignore Duplicates
+SELECT COUNT(DISTINCT columns) FROM table_name;
+  <==>:
+SELECT Count(*) AS DistinctXXXs
+    FROM (SELECT DISTINCT columns FROM table_name);
+
+SELECT ...
+    FROM ((((table_nameX
+    #允许多次，需要括号:
+    INNER JOIN table_nameY on condition)
+    ...
+    LEFT OUTER JOIN table_nameY on condition)
+    ...
+    RIGHT OUTER JOIN table_nameY on condition)
+    ...
+    FULL OUTER JOIN table_nameY on condition)
+    ...
+    WHERE condition;
+???怎么实现，这合理吗？:靠插入NULL
+    Note: The LEFT JOIN keyword returns all records from the left table, even if there are no matches in the right table.
+    Note: The RIGHT JOIN keyword returns all records from the right table, even if there are no matches in the left table.
+    Note: The FULL OUTER JOIN keyword returns all matching records from both tables whether the other table matches or not. So, if there are rows in left table that do not have matches in right table, or if there are rows in right table that do not have matches in left table, those rows will be listed as well.
+#Self Join Syntax
+SELECT column_name(s)
+    FROM tableX AS x1, tableX AS x2
+    WHERE condition{x1,x2};
+    #同一个表，两个别名
+
+
+
+
+AS - alias
+SELECT ..., expr AS alias_name, ...
+    FROM table_name AS alias_name;
+
+SELECT ..., y.column_nameB6Y, ..., x.column_nameA6X, ...
+    FROM table_nameX AS x, table_nameY AS y
+    WHERE condition{x,y};
+
+# It might seem useless to use aliases on tables, but when you are using more than one table in your queries, it can make the SQL statements shorter.
+Aliases can be useful when:
+    + There are more than one table involved in a query
+    + Functions are used in the query
+    + Column names are big or not very readable
+    + Two or more columns are combined together
+
+
+
+#UNION Syntax
+#排除重复项
+SELECT column_name(s) FROM table1 ...
+  UNION
+    SELECT column_name(s) FROM table2 ...;
+  #Note: The column names in the result-set are usually equal to the column names in the first SELECT statement.
+  #The UNION operator automatically removes duplicate rows from the result set.
+  #     Use 『UNION ALL』 to also select duplicate values!
+  #两个结果集的每行记录的类型 必须匹配:列数相同、相应列的数据类型相同、？各列的次序相同|还是说 记录的属性次序相同？
+#不排除重复项
+SELECT column_name(s) FROM table1 ...
+  UNION ALL
+    SELECT column_name(s) FROM table2 ...;
+
+
+
+#The HAVING clause was added to SQL because the WHERE keyword cannot be used with aggregate functions.
+
+SELECT column_name(s)
+    FROM table_name
+    WHERE condition
+    GROUP BY column_name(s)
+    HAVING condition7allow_aggregate_function
+        #允许使用aggregate_function
+        #eg:HAVING COUNT(CustomerID) > 5
+    ORDER BY column_name(s);
+        #eg:ORDER BY COUNT(CustomerID) DESC
+
+
+#The EXISTS operator returns TRUE if the subquery returns one or more records.
+SELECT column_name(s)
+    FROM table_name
+    WHERE EXISTS (SELECT column_name FROM table_name WHERE condition);
+
+
+
+===
+#[:SELECT_INTO]:here
+SELECT columns
+    INTO newtable [IN externaldb]
+    FROM oldtable
+    WHERE condition;
+
+===
+INSERT INTO table_name [columns] result_set;
+<<==:
+
+
+INSERT INTO table_name
+    VALUES (value1, value2, value3, ...);
+INSERT INTO table_name (column1, column2, column3, ...)
+    VALUES (value1, value2, value3, ...);
+INSERT INTO table_name (column1, column2, column3, ...)
+    VALUES
+    (value1, value2, value3, ...),
+    (value1, value2, value3, ...),
+    ...
+    (value1, value2, value3, ...);
+
+INSERT INTO table2 [columns]
+    SELECT columns FROM table1
+    WHERE condition;
+
+===
+UPDATE table_name
+    SET column1 = value1, column2 = value2, ...
+    WHERE condition;
+
+DELETE FROM table_name WHERE condition;
+DELETE FROM table_name;
+    # ?岂非 <==> TRUNCATE TABLE table_name;
+===
+
+
+===
+[:SQL_Operators]:here
+SQL Operators
+
+SQL Arithmetic Operators
+Operator	Description	Example
+  +	Add
+  -	Subtract
+  *	Multiply
+  /	Divide
+  %	Modulo
+
+SQL Bitwise Operators
+Operator	Description
+  &	Bitwise AND
+  |	Bitwise OR
+  ^	Bitwise exclusive OR
+
+SQL Comparison Operators
+Operator	Description	Example
+  =	Equal to
+  >	Greater than
+  <	Less than
+  >=	Greater than or equal to
+  <=	Less than or equal to
+  <>	Not equal to
+
+SQL Compound Operators
+Operator	Description
+  +=	Add equals
+  -=	Subtract equals
+  *=	Multiply equals
+  /=	Divide equals
+  %=	Modulo equals
+  &=	Bitwise AND equals
+  ^=	Bitwise exclusive equals
+  |=	Bitwise OR equals
+
+SQL Logical Operators
+Operator	Description	Example
+  ALL	TRUE if all of the subquery values meet the condition
+  AND	TRUE if all the conditions separated by AND is TRUE
+  ANY	TRUE if any of the subquery values meet the condition
+  BETWEEN	TRUE if the operand is within the range of comparisons
+  EXISTS	TRUE if the subquery returns one or more records
+  IN	TRUE if the operand is equal to one of a list of expressions
+  LIKE	TRUE if the operand matches a pattern
+  NOT	Displays a record if the condition(s) is NOT TRUE
+  OR	TRUE if any of the conditions separated by OR is TRUE
+  SOME	TRUE if any of the subquery values meet the condition
+
+
+===
+
+
+===
+
+
+===
+
+
+===
+
+
+===
+
+
+===
+
+
+===
+
+
+===
+
+
+===
+
+
+===
+
+
+===
+
+
+===
+
+
+===
+
+
+===
+
+
+===
+
+
+===
+
+
+===
+
+
+===
+
+
+===
+
+
+===
+
+
+===
+
+
+===
+
+
+===
+
+
+===
+
+
+===
+
+
+===
+
+

@@ -2,6 +2,16 @@
 e others/app/termux/shell_string_expansion.txt
 view others/app/termux/shell_string_quoting.txt
 
+
+[[
+printf '=%d\n' 12 13  781  12509
+  =12
+  =13
+  =781
+  =12509
+]]
+
+
 [[
 view others/app/termux/help/bash.man.txt
 copy from:view others/app/termux/help/bash.man.outlines.txt
@@ -36,6 +46,40 @@ Brace Expansion
     00 01 ... ... FE FF
       #copy from: view script/搜索冫某进制表达数乊多种进制解读皆为素数.py
       #see below
+  [[
+  @20251130
+  Brace Expansion
+    Patterns to be brace expanded take the form of an optional preamble, followed by either a series of comma-separated strings or a sequence expression between a pair of braces, followed by an optional postscript.
+    # preamble{body}postscript
+    # body=(str(,str)+|{body}*)
+    注意:必须是一个word，即 空格 必须 在引号内 或者 『\ 』
+    『"-O "{a,b,c}』-->『-O a -O b -O c』
+        echo "-O "{a,b,c}
+          『-O a -O b -O c』
+        !! 先于其他展开
+        s="a,b,c"; eval "echo '-O '{${s}}"
+          『-O a -O b -O c』
+    『a{d,c,b}e』-->『ade ace abe』
+    『{1..4}』-->『1 2 3 4』
+    『{1..4..2}』-->『1 3』
+        # [1..=4][::2]
+    『{a..e..2}』-->『a c e』
+        #单字符
+    『{01..2000..500}』-->『0001 0501 1001 1501』
+      『{1..0200..50}』-->『0001 0051 0101 0151』
+      『{01..2000..2000}』-->『0001』
+        #前导0=>零填充
+    『{4..1}』-->『4 3 2 1』
+    『{4..1..-2}』-->『4 2』
+    echo a{d,c,b}e {1..4} {1..4..2} {a..e..2} {01..2000..500} {1..0200..50} {01..2000..2000} {4..1} {4..1..-2}
+      ade ace abe 1 2 3 4 1 3 a c e 0001 0501 1001 1501 0001 0051 0101 0151 0001 4 3 2 1 4 2
+    # {}展开 先于其他展开; 当作纯文本对待
+    Brace expansion is performed before any other expansions, and any characters special to other expansions are preserved in the result.
+      It is strictly textual.
+      Bash does not apply any syntactic interpretation to the context of the expansion or the text between the braces.
+    # 必须: {,} 或者 {x..x}
+    A correctly-formed brace expansion must contain unquoted opening and closing braces, and at least one unquoted comma or a valid sequence expression.
+  ]]
 Tilde Expansion
   ~/xxx
 Parameter Expansion
@@ -45,9 +89,117 @@ Parameter Expansion
   "$1"
   "$#"
   "$?"
+  ${xxx:offset}
+  ${xxx:offset:length}
+  ${xxx:${#xxx}-len4long_suffix:${#xxx}-len4short_suffix}
+    #substr
+
+  ${parameter#shell_pattern4shortest_prefix}
+  ${parameter##shell_pattern4longest_prefix}
+    remove matching prefix pattern.
+  ${parameter%shell_pattern4shortest_suffix}
+  ${parameter%%shell_pattern4longest_suffix}
+    remove matching suffix pattern.
+
+  ${parameter/pattern/string}
+    pattern substitution
+    不是 正则表达式
+
+  ${parameter^pattern}
+  ${parameter^^pattern}
+  ${parameter,pattern}
+  ${parameter,,pattern}
+    case modification
+    #只匹配字符
+    首匹配vs所有匹配
+      『^』『,』vs『^^』『,,』
+    『^』大写化
+    『,』小写化
+
+  ${parameter@operator}
+    parameter transformation
+    [operator <- regex"[UuLQEPAKa]"]
+    U:全体大写化
+    u:首字符大写化
+    L:全体小写化
+    Q:编码/转义/格式化:quoted in a format that can be reused as input
+      $' \t \n ' -> 『$' \t \n '』
+      即:
+      y=$' \t \n ' ; echo "${y@Q}"
+        => 『$' \t \n '』
+      y=$' \t \n ' ; printf '%q\n' "$y"
+        => 『$' \t \n '』
+      [[ "$(printf '%q' $' \t \n ')" ==  '$'"'"' \t \n '"'" ]] ; echo $?
+        => 0
+      printf '%q' "$(printf '%q' $' \t \n ')"
+        => 『\$\'\ \\t\ \\n\ \'』
+    E:解码:with backslash escape sequences => expanded as with the $'...' quoting mechanism.
+      ' \t \n ' -> $' \t \n '
+      即:
+      z=' \t \n ' ; [[ "${z@E}" ==  $' \t \n ' ]] ; echo $?
+        => 0
+      [[ "$(printf '%b' ' \t \n ')" ==  $' \t \n ' ]] ; echo $?
+        => 0
+    P:解码展开提示串转义序列(内含 转义序列 诸如 日期时刻):as if it were a prompt string (see PROMPTING below).
+      '\t' -> '23:59:59'
+    A:编码为定义式
+      y=$' \t \n '
+      ${y@A} -> "y=$' \t \n '"
+      『echo ${IFS@A}』=>『IFS=$' \t\n'』
+      但是 函数 并非 通过 declare定义，函数名 与 变量名 的 命名空间 不同！！所以 用于 函数名 无效
+      ===
+      #bug:saved_IFS=${IFS@Q} ; echo $(IFS='' ; echo $'x y \n a ' ) ; IFS=${saved_IFS@Q} ;
+      saved_IFS="${IFS}" ; IFS='' ; echo $(echo $'x y \n a ' ) ; IFS="${saved_IFS}" ; echo ${IFS@A}
+          x y
+           a 
+          IFS=$' \t\n'
+      ===
+      echo "$(echo $'x y \n a ' )"
+          x y
+           a 
+      ===
+      for v in "$(echo $'x y \n a ' )" ; do echo "${v@A}" ; done
+          v=$'x y \n a '
+      ===
+      saved_IFS="${IFS}" ; IFS=$'\n' ; for v in $(echo $'x y \n a ' ) ; do echo "${v@A}" ; done ; IFS="${saved_IFS}" ; echo ${IFS@A}
+          v='x y '
+          v=' a '
+          IFS=$' \t\n'
+      ===
+      function f0
+      {
+        local IFS=$'\n' ;
+            for v in $(echo $'x y \n a ' ) ; do echo "${v@A}" ; done ;
+        return
+      }
+      f0
+          v='x y '
+          v=' a '
+      ===
+      ( IFS=$'\n' ; for v in $(echo $'x y \n a ' ) ; do echo "${v@A}" ; done ; ) ; echo ${IFS@A}
+          v='x y '
+          v=' a '
+          IFS=$' \t\n'
+        # !! (list) 拥有独立变量空间
+        # vs { list ; } 共享shell变量空间
+      ===
+    K:Produces a possibly-quoted version of the value of parameter, except that it prints the values of indexed and associative arrays as a sequence of quoted key-value pairs (see Arrays above).
+      ls=(x y z) ; echo "${ls[@]@K}"
+        => 『0 "x" 1 "y" 2 "z"』
+          加上括号 就是 定义体
+    a:The expansion is a string consisting of flag values representing parameter's attributes.
+      ls=(x y z) ; echo "${ls[@]@a}"
+        =>『a a a』
+      ls=(x y z) ; echo "${ls@a}"
+        =>『a』
+          # a:array:『declare -a』
+
+
+
 Command Substitution
   `command`
     旧式
+    the old-style backquote form of substitution
     『\\』-->『\』
     『\$』-->『$』
     『\`』-->『`』
@@ -61,6 +213,7 @@ Command Substitution
 Arithmetic Expansion
   $((expression))
 Process Substitution
+  ？进程~特设文件
   <ipath
   >opath
 Word Splitting
@@ -79,6 +232,7 @@ Quote Removal
   『"』-->『』
 
 ]]
+
 
 [[
 copy from: view script/搜索冫某进制表达数乊多种进制解读皆为素数.py
@@ -120,4 +274,121 @@ view /sdcard/0my_files/tmp/0tmp
 
 ===
 ]]
+
+[[[
+copy from:
+    view ../../python3_src/bash_script/app/cat5mv__myfiles
+===
+
+#########
+#读文件到数组
+#########
+
+#数组巛文件行牜带换行符
+mapfile z < cat5mv__myfiles.conf
+declare -p z
+  declare -a z=([0]=$'../lots/NOTE/abbr/software.txt\n' [1]=$'others/我的叶子/囿于.txt\n' [2]=$'/sdcard/0my_files/tmp/0 tmp.txt\n')
+
+#数组巛文件行牜不带换行符
+mapfile -t z < cat5mv__myfiles.conf
+declare -p z
+  declare -a z=([0]="../lots/NOTE/abbr/software.txt" [1]="others/我的叶子/囿于.txt" [2]="/sdcard/0my_files/tmp/0 tmp.txt")
+
+echo ${z[*]@Q}
+<==>
+echo ${z[@]@Q}
+<==>
+echo "${z[*]@Q}"
+<==>
+echo "${z[@]@Q}"
+'../lots/NOTE/abbr/software.txt' 'others/我的叶子/囿于.txt' '/sdcard/0my_files/tmp/0 tmp.txt'
+
+echo ${z[*]}
+<==>
+echo ${z[@]}
+<==>
+echo "${z[*]}"
+<==>
+echo "${z[@]}"
+../lots/NOTE/abbr/software.txt others/我的叶子/囿于.txt /sdcard/0my_files/tmp/0 tmp.txt
+
+args ${z[*]@Q}
+<==>
+args ${z[@]@Q}
+['/sdcard/0my_files/git_repos/python3_src/nn_ns/app/args.py', "'../lots/NOTE/abbr/software.txt'", "'others/我的叶子/囿于.txt'", "'/sdcard/0my_files/tmp/0", "tmp.txt'"]
+
+args "${z[*]@Q}"
+['/sdcard/0my_files/git_repos/python3_src/nn_ns/app/args.py', "'../lots/NOTE/abbr/software.txt' 'others/我的叶子/囿于.txt' '/sdcard/0my_files/tmp/0 tmp.txt'"]
+
+args "${z[@]@Q}"
+['/sdcard/0my_files/git_repos/python3_src/nn_ns/app/args.py', "'../lots/NOTE/abbr/software.txt'", "'others/我的叶子/囿于.txt'", "'/sdcard/0my_files/tmp/0 tmp.txt'"]
+
+args ${z[*]}
+<==>
+args ${z[@]}
+['/sdcard/0my_files/git_repos/python3_src/nn_ns/app/args.py', '../lots/NOTE/abbr/software.txt', 'others/我的叶子/囿于.txt', '/sdcard/0my_files/tmp/0', 'tmp.txt']
+
+args "${z[*]}"
+['/sdcard/0my_files/git_repos/python3_src/nn_ns/app/args.py', '../lots/NOTE/abbr/software.txt others/我的叶子/囿于.txt /sdcard/0my_files/tmp/0 tmp.txt']
+
+args "${z[@]}"
+['/sdcard/0my_files/git_repos/python3_src/nn_ns/app/args.py', '../lots/NOTE/abbr/software.txt', 'others/我的叶子/囿于.txt', '/sdcard/0my_files/tmp/0 tmp.txt']
+
+===
+function cat5mv__myfile__conf_
+{
+  case 5 in
+    5)
+      ########ok:5
+      [[ "${IFS}" == $' \t\n' ]] || { echo 1>&2 "pre-assert fail: IFS" ; exit 69 ; }
+      ( IFS=$'\n' ; bash "$1" -- $(< "$2") )
+          # !! (list) 拥有独立变量空间
+          # vs { list ; } 共享shell变量空间
+          ans=$?
+      [[ "${IFS}" == $' \t\n' ]] || { echo 1>&2 "post-assert fail: IFS" ; exit 96 ; }
+      return $ans
+      ;;
+    4)
+      ########ok:4
+      local -a lines
+      mapfile -t lines < "$2"
+      bash "$1" -- "${lines[@]}"
+      return
+      ;;
+    3)
+      ########ok:3
+      local IFS=$'\n'
+          bash "$1" -- $(< "$2")
+      return
+      ;;
+    2)
+      ########ok:2
+      saved_IFS="${IFS}" ; IFS=$'\n' ;
+          #.echo $(echo $'x y \n a ' ) ;
+          #.for my_textfile_txt in $(< "$2") ; do bash "$1" -- "$my_textfile_txt" ; done
+          #echo -- "$1" -- $(< "$2") ;
+          bash "$1" -- $(< "$2") ;
+          ans=$?
+      IFS="${saved_IFS}" ;
+          #.echo ${IFS@A}
+      return $ans
+      ;;
+    1)
+      ########ok:1
+      xargs --arg-file="$2" -- bash "$1" --
+      return
+      ;;
+    *)
+      echo 1>&2 'bad case'
+      exit 555
+      ;;
+      ########fail:
+      #.xargs --arg-file="$2" -- "$1"
+      #.  #xargs: /sdcard/0my_files//git_repos//python3_src//bash_script//app/cat5mv__myfiles: Permission denied
+  esac
+}
+
+
+===
+]]]
 

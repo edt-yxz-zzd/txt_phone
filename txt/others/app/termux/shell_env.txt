@@ -1,0 +1,288 @@
+
+e others/app/termux/shell_env.txt
+view others/app/termux/help/help.glob-pattern-star.txt
+
+#########
+#变量名与函数名处于不同空间，允许并存:
+#########
+f() { : ; }
+f=333
+declare -p f
+  declare -- f="333"
+declare -p -f f
+  f ()
+  {
+      :
+  }
+#########
+#被调用函数 自动 继承 调用处的变量环境
+#   若没有local/declare 提前声明，则 赋值 直接 修改 外部变量{@被声明处}
+#被调用脚本文件 自动 继承 『declare -x』调用处的选择性输出的的变量环境
+  『export 变量名』
+  『export -f 函数名』
+#########
+export f ; declare -p f
+  declare -x f="333"
+
+declare -p -f f #还是原样
+  f ()
+  {
+      :
+  }
+
+export -f f ; declare -p -f f
+  f ()
+  {
+      :
+  }
+  declare -fx f
+
+#########
+# 数组名 后面 必须 加 『[@]』
+#########
+: | : ; declare -p PIPESTATUS
+  =>『declare -a PIPESTATUS=([0]="0" [1]="0")』
+  定义式
+: | : ; echo ${PIPESTATUS[@]@A}
+  =>『declare -a PIPESTATUS=([0]="0" [1]="0")』
+  同上
+: | : ; echo ${PIPESTATUS[@]@Q}
+  =>『'0' '0'』
+  .values()
+: | : ; echo "${!PIPESTATUS[@]}"
+  =>『0 1』
+  .keys()
+: | : ; echo ${#PIPESTATUS[@]}
+  =>『2』
+  len()
+
+declare -p IFS
+echo ${IFS@Q}
+echo ${@@Q}
+printf '%s\n' "$*"
+echo $?
+  exit status
+  字节[0..<256]
+    太大 => n%256
+  但是 [128..<256] 用作 中断退出值 128+n
+  ?125?之后 shell 保留使用
+  最好不要使用太大的值
+echo $#
+  num_args#not count "$0"
+  ${$#}
+  ${1}
+  ${0}
+echo "$0"
+
+
+
+
+#########
+#局部环境变量:
+#########
+info env
+  <<== info printf
+  运行命令于局部被修改环境
+    LC_CTYPE=zh_TW.big5 env printf '\u4e2d\u6587\n' | recode BIG5..JAVA | sed -e "s|^|env printf '|" -e "s|%|%%|g" -e "s|$|\\\\n'|"
+    echo "${LC_CTYPE@Q}"
+
+定义局部环境变量给命令行:
+  xxx=ss
+  echo "${xxx@Q}"
+    # =>『'ss'』
+  f(){ echo "${xxx@Q}" ; }
+  xxx=zz  f
+    # =>『'zz'』
+  echo "${xxx@Q}"
+    # =>『'ss'』
+    xxx 不变
+vs:函数体内的局部变量:
+  function f
+  {
+    local xxx ;
+  }
+
+#########
+#shell builtins:
+#########
+enable -a
+enable -n
+enable -p
+enable -s
+  -a
+      print a list of builtins showing whether or not each is enabled
+  -n
+      disable each NAME or display a list of disabled builtins
+  -p
+      print the list of builtins in a reusable format
+  -s
+      print only the names of Posix `special' builtins
+
+#########
+#shell resource limits:
+#########
+$ ulimit -a
+real-time non-blocking time  (microseconds, -R) unlimited
+core file size              (blocks, -c) 0
+data seg size               (kbytes, -d) unlimited
+scheduling priority                 (-e) 40
+file size                   (blocks, -f) unlimited
+pending signals                     (-i) 12123
+max locked memory           (kbytes, -l) unlimited
+max memory size             (kbytes, -m) unlimited
+open files                          (-n) 32768
+pipe size                (512 bytes, -p) 8
+POSIX message queues         (bytes, -q) 819200
+real-time priority                  (-r) 0
+stack size                  (kbytes, -s) 8192
+cpu time                   (seconds, -t) unlimited
+max user processes                  (-u) 12123
+virtual memory              (kbytes, -v) unlimited
+file locks                          (-x) unlimited
+
+
+#########
+#cmd/executable type:
+#########
+$ type -a xxx
+  #多重覆盖:executable==alias|function|builtin|keyword|disk_file8executable
+可能有:
+  $ type -a ls
+    ls is aliased to `ls --color=auto'
+    ls is /bin/ls
+
+If the -t option is used, type prints a string which is one of
+        alias, keyword, function, builtin, or file
+    if name is an
+        alias, shell reserved word, function, builtin, or disk file
+    , respectively.
+
+$ type do
+do is a shell keyword
+type !
+! is a shell keyword
+
+# cd echo read true :
+$ type true
+true is a shell builtin
+$ type :
+: is a shell builtin
+
+$ type man
+man is hashed (/data/data/com.termux/files/usr/bin/man)
+
+$ type cat5mv
+cat5mv is /data/data/com.termux/files/usr/bin/my_sh/cat5mv
+
+$ type py
+py is aliased to `python'
+
+$ type quote
+quote is a function
+quote ()
+{
+    local quoted=${1//\'/\'\\\'\'};
+    printf "'%s'" "$quoted"
+}
+
+#########
+#cmd history:
+#########
+fc -l 500 600
+
+#########
+#shell options:
+#########
+shopt | more
+  extquote        on
+  failglob        off
+shopt -p | more
+  shopt -s extquote
+  shopt -u failglob
+
+#########
+#env:
+#########
+printenv | more
+help variables
+  Common shell variable names and usage.
+  非命令，止于此汇集显示常用变量
+  view others/app/termux/help/help.glob-pattern-star.txt
+    BASH_VERSION
+    CDPATH
+    GLOBIGNORE
+    HISTFILE
+    HISTFILESIZE
+    HISTSIZE
+    HOME
+    HOSTNAME
+    HOSTTYPE
+    IGNOREEOF
+    MACHTYPE
+    MAILCHECK
+    MAILPATH
+    OSTYPE
+    PATH
+    PROMPT_COMMAND
+    PS1
+    PS2
+    PWD
+    SHELLOPTS
+    TERM
+    TIMEFORMAT
+    auto_resume
+    histchars
+    HISTIGNORE
+printenv BASH_VERSION CDPATH GLOBIGNORE HISTFILE HISTFILESIZE HISTSIZE HOME HOSTNAME HOSTTYPE IGNOREEOF MACHTYPE MAILCHECK MAILPATH OSTYPE PATH PROMPT_COMMAND PS1 PS2 PWD SHELLOPTS TERM TIMEFORMAT auto_resume histchars HISTIGNORE
+  #看来很多缺省
+  =>:
+    /data/data/com.termux/files/home
+    /data/data/com.termux/files/usr/bin/my_sh/:/data/data/com.termux/files/usr/bin
+    /sdcard/0my_files/git_repos/txt_phone/txt
+    xterm-256color
+
+#########
+#def:
+#########
+alias -p | more
+  alias py='python'
+export | more
+  show 『declare -x ...』
+readonly -p | more
+  show 『declare -*r* ...』
+declare -p | more
+set | more
+  包括 函数体
+
+xxx=$'value'
+array[4]=$'value'
+
+
+echo ${IFS@Q}
+    $' \t\n'
+
+echo ${IFS@A}
+    IFS=$' \t\n'
+declare -p IFS
+declare -p PIPESTATUS
+
+[[
+
+pushd, popd, dirs, cd, pwd
+
+.../txt_phone/txt $ dirs
+    /sdcard/0my_files/git_repos/txt_phone/txt
+.../txt_phone/txt $ cd script/
+.../txt/script $ dirs
+    /sdcard/0my_files/git_repos/txt_phone/txt/script
+.../txt/script $ pushd ..
+    /sdcard/0my_files/git_repos/txt_phone/txt /sdcard/0my_files/git_repos/txt_phone/txt/script
+.../txt_phone/txt $ dirs
+    /sdcard/0my_files/git_repos/txt_phone/txt /sdcard/0my_files/git_repos/txt_phone/txt/script
+.../txt_phone/txt $ popd
+    /sdcard/0my_files/git_repos/txt_phone/txt/script
+.../txt/script $ cd ..
+.../txt_phone/txt $
+
+]]
+

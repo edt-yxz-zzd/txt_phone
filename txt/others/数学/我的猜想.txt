@@ -348,3 +348,155 @@ view /sdcard/0my_files/tmp/out4py/seed.math.GaussInteger..iter_right_angled_tria
 ===
 ]]]
 
+
+
+[[[
+最短加链相关
+源起:
+  view others/数学/最短加链/最短加链牜简并态.txt
+===
+@20260209
+猜想:任何一个正整数都存在相应递归最短婪溟链
+    简并态{递归婪溟链}
+      目前为止，通过检验[1..=16016]
+      vs:下面失败版:简并态{递归加星链}
+      [递归加星链<:递归婪溟链]
+        婪溟链 使用 内点的溟化值 作为 支线/跳线，除了 支线，主线 类似于 加星链:『递归』是指『主线递归』
+view ../../python3_src/seed/math/power/addition_chain/shortest/rewrite.py
+view script/min_add_ver5__mixed_recursive_greedy_zpow_addition_chain.py
+    简并态{递归婪溟链}
+
+===
+错:猜想:任何一个正整数都存在相应递归最短加链
+  ???若真，岂非 贪婪算法 即 带星号版 就成了 原版？
+  实锤:猜想错误:
+    view script/min_add_ver4__pseudo_addition_chain.py
+      @20251214
+      重启计算:
+        最后 成功点 是 12508
+        首个 失败点 是 12509
+===
+[12509 == min{n | [n:<-[1..]][ℓ(n) < ℓ*(n)]}]
+  见于下面:〖Scholz-Brauer-Conjecture of 1937〗
+  view ../../python3_src/nn_ns/math_nn/numbers/shortest_recursive_addition_chain__the_min_and_max_if_revered.py..data.le12021.tar.lzma
+  刚好少了点！！要是当时多算些，可能就直接否定本猜想。
+===
+定义:加链、最短加链、递归最短加链
+[u :: uint][us :: [uint]]:
+  [欤加链扌(u;us) =[def]= [[L:=len(us)][u >= 1][L >= 1][us[0] == 1][us[-1] == u][欤严格递增扌(us)][@[i<-[1..<L]] -> ?[j,k :<- [0..<i]] -> [us[i] == us[j] + us[k]]]]]
+      #原版
+      # [i > j >= k]
+  [欤加星链扌(u;us) =[def]= [[L:=len(us)][u >= 1][L >= 1][us[0] == 1][us[-1] == u][欤严格递增扌(us)][@[i<-[1..<L]] -> ?[k :<- [0..<i]] -> [us[i] == us[i-1] + us[k]]]]]
+      #<<== [j:=i-1]
+      #带星号版#贪婪算法
+[@[u :: uint{>=1}] -> [欤加链扌(u;[1..=u])]]
+[u :: uint{>=1}]:
+  [加链集纟(u) =[def]= {us | [us :: [uint]][欤加链扌(u;us)]}]
+  [[1..=u] <- 加链集纟(u)]
+  [len(加链集纟(u)) >= 1]
+  [长度纟最短加链纟(u) =[def]= min(map(len, 加链集纟(u)))]
+  #=>:
+  [最短加链集纟(u) =[def]= {us | [us :<- 加链集纟(u)][len(us) == 长度纟最短加链纟(u)]}]
+  [len(最短加链集纟(u)) >= 1]
+
+  [递归最短加链集纟(u) =[def]= {us | [us :<- 最短加链集纟(u)][[len(us) == 1]or[us[:-1] <- 递归最短加链集纟(us[-2])]]}]
+    #???:[len(递归最短加链集纟(u)) >= 1]
+猜想:[[u :: uint{>=1}] -> [len(递归最短加链集纟(u)) >= 1]]
+
+===
+view others/数学/最小加法链.txt
+  http://wwwhomes.uni-bielefeld.de/achim/addition_chain.html
+    Shortest Addition Chains
+[ℓ(n) := 长度纟最短加链纟(n)-1]
+  #不含 首『1』
+  #即 真实 应用加法的次数#[ℓ(n) := 最少加法次数(n)]
+  #见上面:欤加链扌
+  #原版
+[ℓ*(n) := 长度纟最短加星链纟(n)-1]
+  #带星号版#贪婪算法
+  #见上面:欤加星链扌
+[v(n) := n.bit_count()]
+[λ(n) := floor(log2(n))]
+[s(n) := ℓ(n)-λ(n)]
+  the number of small steps of n
+
+上界:[ℓ(n) <= λ(n) + v(n) - 1]
+下界猜想:[ℓ(n) >= λ(n) + log2(v(n))]
+  即:[ℓ(n) >= λ(n) + ceil_log2(v(n))]
+
+>>> ceil_log2 = lambda n: (n-1).bit_length()
+>>> λ = floor_log2 = lambda n: n.bit_length() -1
+>>> v = int.bit_count
+
+>>> n = 0b100 # [1,2,4]
+>>> λ(n) + v(n) - 1
+(2, 1, 2)
+
+>>> n = 0b11 # [1,2,3]
+>>> (λ(n), v(n), λ(n) + v(n) - 1)
+(1, 2, 2)
+
+
+Doubling step
+  [us[i] == 2*us[i-1]]
+Star step
+  [us[i] == us[i-1] + us[k]]
+    #带星号版
+Small step
+  [λ(us[i]) == λ(us[i-1])]
+    xx:???但是，与s(n)的定义 并无明显关系
+    xx:除了:[λ(us[i]) == λ(us[i-1])][λ(us[i]) == 1+λ(us[i-1])]
+    xx:也有可能:[λ(us[i]) < λ(us[i-1])]
+    xx:也有可能:[λ(us[i]) > 1+λ(us[i-1])]
+    <<==:
+    注意:是『λ』而不是『ℓ』
+    ===
+    !! [us[i-1] < us[i] <= 2*us[i-1]]
+    [log2(us[i-1]) < log2(us[i]) <= log2(2*us[i-1]) == 1+log2(us[i-1])]
+    [0 < log2(us[i]) -log2(us[i-1]) <= 1]
+    [0 <= floor_log2(us[i]) -floor_log2(us[i-1]) <= 1]
+    !! [λ(n) := floor(log2(n))]
+    [0 <= λ(us[i]) -λ(us[i-1]) <= 1]
+    ===
+Standard step
+  [us[i] == us[j] + us[k]][i>j>k]
+    互斥:Doubling step
+[L(r) := {u | [u:<-[1..=2**r]][ℓ(u) == r]}]
+  the set of numbers which have a shortest addition chain of length r
+[d(r) := len(L(r))]
+[c(r) := min(L(r))]
+[(2**r) == max(L(r))]
+  #holds trivally
+[m(r) := med(L(r))]
+  the median of numbers which have a shortest addition chain of length r
+  ???中位数???难道d(r)必是奇数？非是，后面的表格附注:偶数d(r)时中位数有两个
+[μ(r) := sum(L(r))/d(r)]
+  the arithmetric average of numbers which have a shortest addition chain of length r
+[g(r) := exp(sum(map(ln_, L(r)))/d(r))]
+  the geometric average of numbers which have a shortest addition chain of length r
+[p(r) := max([1..=2**r], key=fr)] where fr:
+  [fr(i) := sum[len{u | [u:<-L(r)][abs(i-u) == n]}/4**n | [n:<-[0..]]]]
+    ??? 除零-->幂方
+  or:
+  [fr(i) := sum[(4-abs(i-u)) | [u:<-L(r)]]]
+  ###p(r) = j: fr(j) = maxh fr(h) with fr(i) = ∑k ∈ N |{ j ∈ L(r): |i-j|=k }|/4k = ∑j ∈ L(r) 4-|i-j|
+  the "most probable" number which has a shortest addition chain of length r
+  The base 4 of the power in the preceeding formula can be replaced by every C >= 2, but if C < 2 a different value for p(r) could be achieved.
+  Moreover for all i and for all C > 1 holds fr(i) < (C+1)/(C-1) .
+    Furthermore p(r) equals the median of a maximal subset of L(r) which is convex, compact or connected, i.e. it is an interval.
+      For the values r <= 43 but r ∈ {8,12,17,37,41,...} this maximal interval is unique.
+      Of cource in the case the number of elements of the interval is even, p(r) may be the upper-median or the lower-median.
+[σ(r) = sqrt(sum(map(square_, L(r)))/d(r) - μ(r)**2)]
+  the standard deviation of the numbers which have a shortest addition chain of length r
+Table of Characterizing Values
+...
+
+===
+https://oeis.org/A003313
+view ../../python3_src/nn_ns/math_nn/numbers/shortest_addition_chain_length.py
+  前十万个
+===
+
+]]]
+
+

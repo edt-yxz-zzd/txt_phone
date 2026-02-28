@@ -24,6 +24,77 @@ echo $PYTHONPATH
   echo $'aaa\nbbb' | take_lines_ 1
     aaa
 
+  head
+  tail
+  [[
+head ~/../usr/share/lua-language-server/meta/spell/dictionary.txt
+  the 23135851162
+  of 13151942776
+  and 12997637966
+  to 12136980858
+  a 9081174698
+  in 8469404971
+  for 5933321709
+  is 4705743816
+  on 3750423199
+  that 3400031103
+du -h ~/../usr/share/lua-language-server/meta/spell/dictionary.txt
+  1.3M
+cut -d' ' -f1 ~/../usr/share/lua-language-server/meta/spell/dictionary.txt | head
+cut -d' ' -f1 ~/../usr/share/lua-language-server/meta/spell/dictionary.txt > words5share-lua-spell-dict.txt
+  the
+  of
+  and
+  to
+  a
+  in
+  for
+  is
+  on
+  that
+du -h words5share-lua-spell-dict.txt
+  736K
+tail words5share-lua-spell-dict.txt
+  who's
+  why'd
+  why're
+  why's
+  you'd
+  you'll
+  you're
+  you'v
+  covid
+  hi
+view words5share-lua-spell-dict.txt
+  82834行
+nl - number lines of files
+  每行冠以行号
+nl --starting-line-number=1 --number-width=6 --number-format=rz --number-separator=':' words5share-lua-spell-dict.txt | head
+nl -v 1 -w 6 -n rz -s ':' words5share-lua-spell-dict.txt | head
+000001:the
+000002:of
+000003:and
+000004:to
+000005:a
+000006:in
+000007:for
+000008:is
+000009:on
+000010:that
+nl -v 1 -w 6 -n rz -s ':' words5share-lua-spell-dict.txt | tail
+082825:who's
+082826:why'd
+082827:why're
+082828:why's
+082829:you'd
+082830:you'll
+082831:you're
+082832:you'v
+082833:covid
+082834:hi
+
+  ]]
+
 文本编码转换:
   man iconv
   iconv -l
@@ -33,6 +104,36 @@ echo $PYTHONPATH
     # 输出
   iconv -f gbk -t utf-8  ipath | grep ... -o
     # 搜索
+  字节串编码为字符串:
+    base64
+    base32
+    basenc --z85
+    basenc --base64
+    $ printf '\376\117\202' | basenc --base64
+    /k+C
+
+    $ printf '\376\117\202' | basenc --base64url
+    _k-C
+
+    $ printf '\376\117\202' | basenc --base32
+    7ZHYE===
+
+    $ printf '\376\117\202' | basenc --base32hex
+    VP7O4===
+
+    $ printf '\376\117\202' | basenc --base16
+    FE4F82
+
+    $ printf '\376\117\202' | basenc --base2lsbf
+    011111111111001001000001
+
+    $ printf '\376\117\202' | basenc --base2msbf
+    111111100100111110000010
+
+    $ printf '\376\117\202\000' | basenc --z85
+    @.FaC
+
+
 文本文件操作:
   man colrm
       #SEE ALSO awk(1p), column(1), expand(1), paste(1)
@@ -42,6 +143,7 @@ echo $PYTHONPATH
         man unexpand
     man paste
 我的:lineno每行冠以行号
+  见上面:nl
 逆操作: column -s: -o $'\t' -t < /sdcard/0my_files/tmp/08tmp | colrm 1 8
   1:629
   342:99891629
@@ -66,6 +168,7 @@ paste 栏组合
     #不填充 空格 + '\t'
 
 
+
 math eval 数学运算
 $ echo $[1+1]
 2
@@ -82,6 +185,80 @@ $ factor 20160 -h
 20160: 2^6 3^2 5 7
 
 [[
+任意固定精度数值运算器/脚本语言:bc,dc
+===
+bc
+  bc is a language that supports arbitrary precision numbers with interactive execution of statements.
+  2006
+  语法:类似C语言
+    #原版 依赖于dc
+===
+dc
+  dc is a reverse-polish desk calculator which supports unlimited precision arithmetic.
+  2008
+  语法:逆波兰表达式
+===
+view others/app/termux/help/bc.man.txt
+view others/app/termux/help/dc.man.txt
+
+===
+man bc
+  示例定义『e (x)』 # exp(x)
+===
+bc 没有 选项输入表达式#必须通过文件输入
+bc 用例:
+shell变量:
+  pi=$(echo "scale=10; 4*a(1)" | bc -l)
+bc -i -l #交换模式+导入数学模块
+  scale=10; 4*a(1)
+  =>:3.1415926532
+
+  scale=200;e(1)
+  =>:
+  2.718281828459045235360287471352662497757247093699959574966967627724\
+  07663035354759457138217852516642742746639193200305992181741359662904\
+  357290033429526059563073813232862794349076323382988075319525101901
+    #每行最多显示68+1字符？
+
+echo 'scale=9; e(l(2)*3.14445)' | bc -l
+  =>:8.842473542
+    # == exp(ln(2)*3.14445) == 2**3.14445
+x=2.745368023567; echo "scale=9; e(l($x)*$x)" | bc -l
+  =>:15.999999978
+  ^^^^^^^^^^^^^xxxxxxxxx
+x=2.745368023567; echo "scale=20; e(l($x)*$x)" | bc -l
+  =>:15.99999999998509496081
+  ^^^^^^^^^^^^^xxxxxxxxx
+  ^^^^^^^^^^^^^^^^^^^^^^^xxxxxxxxx
+x=2.745368023567; echo "scale=40; e(l($x)*$x)" | bc -l
+  =>:15.9999999999850949610582742737950322403319
+  ^^^^^^^^^^^^^^^^^^^^^^^xxxxxxxxx
+x=2.745368023568; echo "scale=40; e(l($x)*$x)" | bc -l
+  =>:16.0000000000172536032421364569540088247387
+
+===
+pkg files bc
+  ...bc,dc,相关man...
+  『-l』mathlib没有独立文件!
+===
+dc 没有 交换模式
+dc 用例:
+dc -e '40k 1.41421356237309504881 2^p'
+  =>:2.0000000000000000000235078378865362824161
+解读:
+  『40k』设置精度
+  『x n ^』 => (x**trunc(n))
+  『p』打印
+dc -e '9k 2 0 2 - ^p'
+  =>: .250000000
+    # == 2**(0-2) == 1/4 == 0.25
+
+===
+]]
+
+
+[[
+view others/app/termux/help/coreutils.help.txt
 coreutils --help
   Built-in programs:
    [ b2sum base32 base64 basename basenc cat chcon chgrp chmod chown chroot cksum comm cp csplit cut date dd dir dircolors dirname du echo env expand expr factor false fmt fold ginstall groups head id join kill link ln logname ls md5sum mkdir mkfifo mknod mktemp mv nice nl nohup nproc numfmt od paste pathchk pr printenv printf ptx pwd readlink realpath rm rmdir runcon seq sha1sum sha224sum sha256sum sha384sum sha512sum shred shuf sleep sort split stat stdbuf stty sum sync tac tail tee test timeout touch tr true truncate tsort tty uname unexpand uniq unlink vdir wc whoami yes
@@ -89,6 +266,34 @@ coreutils --help
   Use: 'coreutils --coreutils-prog=PROGRAM_NAME --help' for individual program help.
 #]#补偿
 ]]
+[[
+man comm | head -n 4 | tail -n 1
+       comm - compare two sorted files line by line
+
+for nm in base32 base64 ; do man "$nm" | head -n 4 | tail -n 1 ; done
+       base32 - base32 encode/decode data and print to standard output
+       base64 - base64 encode/decode data and print to standard output
+
+coreutils --help | grep '^ *\[ '
+for nm in $(coreutils --help | grep '^ *\[ ') ; do man "$nm" | head -n 4 | tail -n 1 ; done >> others/app/termux/cmd-coreutils.txt
+  man: No entry for [ in the manual.
+  man: No entry for ginstall in the manual.
+    "[" <==> test
+    但是 ginstall 是真的没有
+e others/app/termux/cmd-coreutils.txt
+info__save_to_file coreutils
+:view others/app/termux/help/coreutils.info.txt
+expr : 真值运算、整数运算、字符串操作
+* String expressions::           ‘+ : match substr index length’
+* Numeric expressions::          ‘+ - * / %’
+* Relations for expr::           ‘| & < <= = == != >= >’
+* Examples of expr::             Examples of using ‘expr’
+
+
+
+#]#补偿
+]]
+
 
 
 ##有没有 类似py::hex() 的 命令??未找到
@@ -103,12 +308,144 @@ coreutils --help
   info
     未安装
 man fmt
+  Reformat each paragraph
 man numfmt
+  Convert numbers from/to human-readable strings
+numfmt --to=iec-i 1024
+  1.0Ki
 
 整数格式化
 printf $'%X\n%x\n' 0x4e00 0x9FA5
 4E00
 9fa5
+
+info printf
+  信息量大于:man printf,help printf，但 并非 超集
+    man版 包含 C 选项:『diouxXfeEgGcs』
+  mimic:man__save_to_file
+  e ../../python3_src/bash_script/app/info__save_to_file
+实现hex(ord(ch)):chr2hex,chr2dec#hex5chr,dec5chr
+  注意:参数必须是:regex'[\'\"].'
+printf '%X\n%X\n%d\n' '"一' "''" '""'
+4E00
+27
+34
+
+e ../../python3_src/bash_script/app/chr5hex.sh
+实现chr(int(s))#chr5hex#hex2chr
+echo $'\u4E00'
+    # =>『一』
+printf '\u4E00\n'
+    # =>『一』
+#bug:xxx=4E00  printf '\u'"${xxx}\n"
+  # *可能是因为 ${xxx}展开 先于 局部赋值
+  # *可能是因为 printf 是 builtin 而非 function
+xxx=ss ; env xxx=4E00 echo '\u'"${xxx}\n"
+  => 『\uss\n』
+  #应当是因为 ${xxx}展开 先于 局部赋值
+xxx=ss ; xxx=4E00 eval 'echo \u"${xxx}\n"'
+  => 『u4E00\n』
+xxx=ss ; xxx=4E00 eval 'printf \\u"${xxx}\n"'
+    # =>『一』
+xxx=ss ; xxx=04E00 eval 'echo "\U$(printf %08s "${xxx}")\n"'
+  => 『\U00004E00\n』
+xxx=ss ; xxx=04E00 eval 'printf "\U$(printf %08s "${xxx}")\n"'
+xxx=ss ; (xxx=04E00 ; printf "\U$(printf %08s "${xxx}")\n") ; echo $xxx
+    # =>『一』
+    # =>『ss』
+
+info env
+  <<== info printf
+  运行命令于局部被修改环境
+    LC_CTYPE=zh_TW.big5 env printf '\u4e2d\u6587\n' | recode BIG5..JAVA | sed -e "s|^|env printf '|" -e "s|%|%%|g" -e "s|$|\\\\n'|"
+    echo "${LC_CTYPE@Q}"
+view others/app/termux/help/printf.info.txt
+view others/app/termux/help/env.info.txt
+  => shebang
+    『the first line of scripts (the shebang line, ‘#!’).』
+猜:shebang==『shell bang』
+bang:<<感叹词>>砰! 轰 Bang! went the gun.
+  shebang
+    <<名词>>
+    [the whole ~] ((美口语))一切,全部 (事情) ,全盘; 陋屋; 赌场; 妓院
+    在线英汉－汉英词典
+    n. 事情,工作,陋屋,住所,赌场,酒馆,妓院,全部家当
+
+:h bang<tab>搜索选择
+  g:rust_bang_comment_leader
+    using the /*! syntax
+  :h :command-bang
+    『!』如:『:w!』
+  感觉:bang==感叹号
+  感叹号:exclamation mark
+
+定义局部变量给命令行:
+  xxx=ss
+  echo "${xxx@Q}"
+    # =>『'ss'』
+  f(){ echo "${xxx@Q}" ; }
+  xxx=zz  f
+    # =>『'zz'』
+  echo "${xxx@Q}"
+    # =>『'ss'』
+    xxx 不变
+DONE:
+  e ../../python3_src/bash_script/app/chr5hex.sh
+  e ../../python3_src/bash_script/app/chr2hex.sh
+
+[[
+尝试『#! source』注入shell，但是不行
+===
+link
+  #『man ln』提及link,symlink，但symlink没找到
+readlink
+ln --symbolic -iv -t
+
+e ../../python3_src/bash_script/app/_testing.sh
+  using:shebang
+########
+#_testing.sh:内容如下:
+########
+#! source
+echo $?
+########
+#bug:ln --symbolic -iv -t "$my_sh" ../../python3_src/bash_script/app/_testing.sh
+  #直接保存 相对路径！导致 引用悬空失联
+ln --symbolic -iv -t "$my_sh" "$(realpath ../../python3_src/bash_script/app/_testing.sh)"
+  /sdcard/0my_files/git_repos/python3_src/bash_script/app/_testing.sh
+  "$my_git_sh/app/_testing.sh"
+ls -l "$my_sh/_testing.sh"
+chmod +x "$my_sh/_testing.sh"
+false ; _testing.sh
+    bash: /data/data/com.termux/files/usr/bin/my_sh/_testing.sh: Permission denied
+    #失败！
+echo $'#! source\n source "$my_git_sh/app/_testing.sh"\n' > "$my_sh/_testing.sh"
+  ls -l "$my_sh/_testing.sh"
+    卧槽！竟然还是 符号链接文件！
+    修改的是 源文件！
+
+rm
+unlink
+rm -i  "$my_sh/_testing.sh"
+    rm: remove symbolic link '/data/data/com.termux/files/usr/bin/my_sh//_testing.sh'? y
+  echo $'#! source\n source "/sdcard/0my_files/git_repos/python3_src/bash_script/app/_testing.sh"\n' > "$my_sh/_testing.sh"
+    cat "$my_sh/_testing.sh"
+    chmod +x "$my_sh/_testing.sh"
+    ls -l "$my_sh/_testing.sh"
+    false ; _testing.sh
+      bash: /data/data/com.termux/files/usr/bin/my_sh/_testing.sh: cannot execute: required file not found
+      应该是找不到『#! source』
+        type -a source
+          => 『source is a shell builtin』
+echo $'source "$my_git_sh/app/_testing.sh"\n' > $my_sh/_testing.sh
+  => 0
+  不能自动 调用 shell.source，无法 得到 父shell的 $?
+
+BASHOPT
+declare -p BASHOPTS
+  => declare -r BASHOPTS="checkwinsize:cmdhist:complete_fullquote:expand_aliases:extglob:extquote:force_fignore:globasciiranges:globskipdots:histappend:histverify:interactive_comments:login_shell:patsub_replacement:progcomp:promptvars:sourcepath"
+  无用
+]]
 
 
 日历#打印 公历本月，反白显示 今日
@@ -179,6 +516,12 @@ sudo killall
 stat # display file or file system status
   # show file time
   # show file size
+stat -c '%y %n %s' <文件名>
+  2025-11-16 07:35:30.470779626 +0800 <文件名> <字节数>
+      最后修改时间+文件名+字节数
+$ man__save_to_file stat
+view others/app/termux/help/stat.man.txt
+
 date
   # show/set now/date/time
   # formot datetime
@@ -206,4 +549,32 @@ see:
   view others/app/手机卡顿.txt
   view others/app/app_data_path.txt
 
+
+[[
+http://www.w3schools.com/bash/index.php
+head,tail 很有用
+grep - g? rep{regexp}
+    #Global Regular Expression Print (grep)
+      command line tool used to search globally (across all the lines in a file) and print the result to STDOUT. The search string is a regular expression.
+awk - ?三个作者
+       The AWK Programming Language, by Aho, Kernighan, and Weinberger.
+       Gawk is the GNU Project's implementation of the AWK programming language.
+sed - Stream Editor
+perl - Practical Extraction and Reporting Language
+===
+Basic Commands
+Bash Commands Bash List (ls) Bash Change Dir (cd) Bash Print Dir (pwd) Bash Echo (echo) Bash Concatenate (cat) Bash Copy (cp) Bash Move (mv) Bash Remove (rm) Bash Timestamp (touch) Bash Make Dir (mkdir) Bash Manual (man) Bash Alias
+Text Processing
+Bash Search Text (grep) Bash Pattern Scan (awk) Bash Stream Editor (sed) Bash Remove Section (cut) Bash Sort Lines (sort) Bash View End (tail) Bash View Start (head)
+System Monitoring
+Bash Process Status (ps) Bash List Processes (top) Bash Disk Space (df) Bash Directory Usage (du) Bash Memory Usage (free) Bash Terminate (kill) Bash Uptime
+Networking
+Bash Ping Bash URL Transfer (curl) Bash Downloader (wget) Bash Remote Connect (ssh) Bash Secure Copy (scp) Bash File Sync (rsync)
+File Compression
+Bash Compress (zip) Bash Extract (unzip) Bash TAR Archive
+File Permissions
+Bash Ownership Bash Modify (chmod) Bash Ownership (chown) Bash Group (chgrp)
+Scripting
+Bash Syntax Bash Script Bash Variables Bash Data Types Bash Operators Bash If...Else Bash Loops Bash Functions Bash Arrays Bash Schedule (cron)
+]]
 

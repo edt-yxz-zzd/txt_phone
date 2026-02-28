@@ -9,6 +9,8 @@ e ../lots/NOTE/graph/svg/trials/README.txt
 片段:标题丶描述
 尝试六:裁剪显示区
 猜测:有相当把握:线性变换矩阵
+片段:定义箭头形状
+尝试七:手动换行:{确认"font-size"就是行距}
 
 [[
 @20251105
@@ -27,6 +29,11 @@ du -h ../lots/NOTE/graph/svg/trials/saved_svg/
 du -h ../lots/NOTE/graph/svg/trials/README.txt
   16K
 ]]
+[[
+cp -iv -t ../lots/NOTE/graph/svg/trials/saved_svg/  /sdcard/0my_files/tmp/graph/svg/trial_6.svg
+view ../lots/NOTE/graph/svg/trials/saved_svg/trial_6.svg
+]]
+
 
 [[
 尝试一:无单位化宽高坐标
@@ -79,9 +86,9 @@ NumberedEquation1.svg
   ？某种泛连分式？
 
 grep '<\w\+' /sdcard/Download/可能有用/*.svg -o -h | sort -u
-    <clipPath
+    <clipPath   #裁剪显示区
     <defs
-    <g
+    <g          #?group?
     <path
     <svg
     <symbol
@@ -538,4 +545,188 @@ transform="matrix(a,b,c,d,e,f)"
 线性变换矩阵:[a,b,e;c,d,f;0,0,1]
 
 ]]
+[[
+du -h /sdcard/0my_files/unzip/png_specification/www.w3.org/TR/png-3/figures/
+  184K
+ls -1 /sdcard/0my_files/unzip/png_specification/www.w3.org/TR/png-3/figures/
+  chunk-parts.svg
+  compression.svg
+  encoding-png-image.svg
+  filter-bytes.svg
+  image-relationships.svg
+  indexed-colour-image.svg
+  integer-representation-in-png.svg
+  lattice-diagram-apng-static-first-with-plte.svg
+  lattice-diagram-apng-static-first-without-plte.svg
+  lattice-diagram-apng-static-notfirst-with-plte.svg
+  lattice-diagram-apng-static-notfirst-without-plte.svg
+  lattice-diagram-with-plte.svg
+  lattice-diagram-without-plte.svg
+  paethpredictor-function.svg
+  pass-extraction.svg
+  possible-pixel-types.svg
+  reference-to-png-transformation.svg
+  sample-pixel-channel-relationship.svg
+  scaling-sample-values.svg
+  serializing-and-filtering-scanline.svg
+
+tar -cJvf ../lots/NOTE/graph/svg/trials/some_svg5png_spec3-20251105.txz   -C  /sdcard/0my_files/unzip/  png_specification/www.w3.org/TR/png-3/figures/
+tar -tvf ../lots/NOTE/graph/svg/trials/some_svg5png_spec3-20251105.txz
+du -h ../lots/NOTE/graph/svg/trials/some_svg5png_spec3-20251105.txz
+  12K
+tar -xvf ../lots/NOTE/graph/svg/trials/some_svg5png_spec3-20251105.txz -C /sdcard/0my_files/tmp/graph/svg/
+view /sdcard/0my_files/tmp/graph/svg/png_specification/www.w3.org/TR/png-3/figures/chunk-parts.svg
+grep '<\w\+' /sdcard/0my_files/tmp/graph/svg/png_specification/www.w3.org/TR/png-3/figures/*.svg -o -h | sort -u
+    <defs
+    <g
+    <line
+    <marker  #定义箭头形状
+    <path
+    <polyline
+    <rect
+    <style
+    <svg
+    <symbol
+    <text
+    <use
+
+]]
+
+[[
+===
+view /sdcard/0my_files/unzip/png_specification/www.w3.org/TR/png-3/figures/chunk-parts.svg
+新见:
+  <style type="text/css">
+    text-anchor:start
+
+  <g transform="translate(10,20)">
+    整体偏移
+  <rect width="120" height="40" />
+    无需x,y
+  <text x="5" y="23">LENGTH</text>
+===
+view /sdcard/0my_files/unzip/png_specification/www.w3.org/TR/png-3/figures/paethpredictor-function.svg
+新见:
+<style>
+  text {
+    font-family: OS_Cond_Med;
+    font-size:16pt;
+    text-anchor:middle
+    }
+  text.ljust {
+    text-anchor:start
+    }
+  text.rjust {
+    text-anchor:end
+    }
+<text class="rjust" x="-45" y="5">Pr = a</text>
+===
+view /sdcard/0my_files/unzip/png_specification/www.w3.org/TR/png-3/figures/filter-bytes.svg
+    显示:四个字节的位置关系:
+      c b
+      a x
+
+<?xml version="1.0"?>
+<svg viewBox="0 0 125 150" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<style>
+  @font-face {
+        font-family: OS_Cond_Med;
+        src: url(./fonts/OS_Cond_Med.woff2);
+    }
+  rect {
+    stroke:#777;
+    fill:white;
+    }
+  text {
+    font-family: OS_Cond_Med;
+    font-size:14pt;
+    text-anchor:middle
+    }
+    rect.current {
+        fill: #EBF
+    }
+</style>
+
+<!-- <rect width="100%" height="100%" style="fill:#f06"/> -->
+
+<g transform="scale(2) translate (10,25)">
+  <g>
+    <rect width="20" height="20"/>
+    <text x="10" y="17">c</text>
+  </g>
+  <g transform="translate(25,0)">
+    <rect width="20" height="20"/>
+    <text x="10" y="17">b</text>
+  </g>
+  <g transform="translate(0,25)">
+    <rect width="20" height="20"/>
+    <text x="10" y="17">a</text>
+  </g>
+  <g transform="translate(25,25)">
+    <rect width="20" height="20" class="current"/>
+    <text x="10" y="17">x</text>
+  </g>
+  <text x="22.5" y="-6">Bytes</text>
+</g>
+</svg>
+]]
+[[
+片段:定义箭头形状
+view /sdcard/0my_files/unzip/png_specification/www.w3.org/TR/png-3/figures/compression.svg
+===
+新见:
+#定义箭头形状#竟然在<defs>之外
+#   应该等价于:<path d="M 1 1 L 8 4   1 7 z"/>
+#   即 无需 首点/等腰三角形的底线中点
+<marker id="arrend" refX="8" refY="4" markerWidth="8" markerHeight="8" orient="auto">
+  <path d="M 1 4 L 1 1 8 4 1 7z"/>
+</marker>
+#引用:
+<g transform="translate(95,14)">
+  <polyline marker-end="url(#arrend)" points="-80,11 -80,6 10,6 10,0 0,0" />
+</g>
+
+#层叠连用:transform
+<g transform="translate(200,0)">
+  <g transform="scale(2)">
+    <use transform="translate(2,10)" xlink:href="#filter1" />
+
+===
+view /sdcard/0my_files/unzip/png_specification/www.w3.org/TR/png-3/figures/image-relationships.svg
+
+#line,polyline:有属性:marker-end
+<line marker-end="url(#arrend)" x1="125" y1="100" x2="165" y2="100"/>
+
+#text-anchor:end,start,middle
+  <g style="font-size:16px; fill:black; text-anchor:start">
+  <g style="font-size:16px; fill:black; text-anchor:end">
+  <g style="font-size:18px; text-anchor: middle;
+
+]]
+[[
+尝试七:手动换行:{确认"font-size"就是行距}
+
+<svg
+viewBox="-400 -400 800 800"
+    xmlns="http://www.w3.org/2000/svg"
+    xmlns:xlink="http://www.w3.org/1999/xlink"
+    >
+<title>尝试:手动换行+字号</title>
+<!--
+  font-family="SimSun" font-size="80" font-weight="100" font-style="normal" >
+
+-->
+<g stroke="white" stroke-width="3" fill="green" >
+  <rect x="-400" y="-400" width="800" height="800" />
+</g>
+
+<g stroke="red" stroke-width="1" fill="black" font-size="60" >
+  <text x="0" y="0" text-anchor="start" >{line}</text>
+  <text x="-300" y="60" text-anchor="start" >{确认"font-size"就是行距}</text>
+  <text x="0" y="120" text-anchor="start" >{line}</text>
+</g>
+</svg>
+
+]]
+
 

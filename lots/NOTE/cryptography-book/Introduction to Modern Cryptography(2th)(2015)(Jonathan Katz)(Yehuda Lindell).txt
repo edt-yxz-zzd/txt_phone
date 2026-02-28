@@ -1,6 +1,11 @@
 
 e ../lots/NOTE/cryptography-book/Introduction to Modern Cryptography(2th)(2015)(Jonathan Katz)(Yehuda Lindell).txt
 
+@20260119
+『Pr[Var{space}==val]』理应有更简洁的语法:『Pr[val<@space]』
+[SP :: space][PD :: probability_distribution{SP}][x :<- SP]:
+  [Pr[X==x | [X :<~ PD]] =[def]= PD[x]]
+
 释义纟常用符号:goto
 附录:goto
 建模:乸全体离散概率分布:goto
@@ -87,10 +92,12 @@ e others/数学/编程/密码学/加密框架之其他可能.txt
 
 “:=” to denote deterministic assignment
 eavesdropping adversary
-eavesdropper 窃听者
-adversary,对手/敌方
+eavesdropper:窃听者
+adversary:对手/敌方
 attacker
-expired到期，期满
+expired:到期，期满
+priori_probability:先验概率
+posteriori_probability:后验概率
 
 [[
 
@@ -99,16 +106,43 @@ the principle of open cryptographic design == Kerckhoffs’ principle
   要么任意通信双方拥有私密加密系统，则共享私密信息太复杂难以构造以保证安全性丶共享私密信息太大泄露后或期满后难以更新
   要么不确定数人拥有该加密系统，则副本多易泄露。
   vs:密钥短，结构简单，随机生成较容易。
-private-key encryption scheme == (message_space MM, key_space KK, three algorithms (Gen,Enc,Dec), correctness_requirement)
+
+[:private_key_encryption_scheme]:here
+private-key encryption scheme == (message_space MM, key_space KK, three_algorithms (Gen,Enc,Dec), correctness_requirement)
   [MM :: {message}]
     # [plaintext :: message]
     # [ciphertext :: message]
+    #消息空间:明文空间:MM
+    #密文空间:CC
+    [CC :: {message}]
+    [CC{EncXr} =[def]= {c | [m:<-MM][k:<-KK][c:-<-EncXr k m]}]
+    ===
+    公设冫消息空间有限:[len(MM) < +oo]
+    公设冫消息空间非空:[len(MM) >= 1]
+    => [1 == sum[Pr[M==m] | [m:<-MM]]]
+    公设冫消息空间非空亦非孤:[len(MM) >= 2]
+        !! 孤消息无需通信
+        => 孤消息无需加密
+    => 公设冫消息非必然亦非必不然:[[m:<-MM] -> [0 < Pr[M==m] < 1]]
+    # 消息生成概率分布未必匀称
   [KK :: {key}]
   [Gen :: () -> probabilistic key/KK]
-    # [Gen :: () -> uniform-probabilistic key/KK]
+    公设冫密钥空间有限:[len(KK) < +oo]
+    公设冫密钥生成概率分布匀称:[Gen :: () -> uniform-probabilistic key/KK]
+    => 公设冫密钥非必然亦非必不然:[[m:<-MM] -> [0 < Pr[M==m] < 1]]
+    公设冫密钥生成概率分布独立于消息生成概率分布
+        !! 消息生成于加密系统之外
+        !! 密钥生成于加密系统之内
   [Enc :: key/KK -> plaintext/MM -> ciphertext/MM]
   [Dec :: key/KK -> ciphertext/MM -> plaintext/MM]
   [correctness_requirement == [[k:<-KK] -> [m:<-MM] -> [Dec[k](Enc[k](m)) == m]]]
+  ===非确定性算法:
+  [EncPr :: Probabilistic m => key/KK -> plaintext/MM -> m ciphertext/MM]
+  vs{usage}:
+    [ciphertext := Enc key plaintext]
+    [ciphertext :<- EncPr key plaintext]
+    统一形式:
+    [ciphertext :-<- EncXr key plaintext]
 
 ===
 message space MM, key space KK, three algorithms (Gen,Enc,Dec):
@@ -499,6 +533,9 @@ General notation:
 • (xxx:『x++y』x||y)『(x,x++y)』 denotes umambiguous concatenation of the strings x and y (“unambiguous” means that x and y can be recovered from x||y)
 • Pr[X] denotes the probability of event X
 • 『log2(x)』log(x) denotes the base-2 logarithm of x
+    # [log2(10) ~= 3.321928094887362]
+    # [ln(10) ~= 2.302585092994046]
+    # [ln(2) ~= 0.6931471805599453]
 ]]
 [[
 Crypto-specific notation:
@@ -1178,14 +1215,152 @@ Chapter 2 Perfectly Secret Encryption
 ]]
 
 [[
+[:generating_randomness]:here
+Generating randomness
+[assume that parties have access to an unlimited supply of independent, unbiased random bits.]
+random-number generation:
+  + step1:a “pool” of high-entropy data is collected.
+    #think of entropy as a measure of unpredictability
+  + step2:this high-entropy data is processed to yield a sequence of nearly independent and unbiased bits.
+    !! [high-entropy data is not necessarily uniform.]
+
+===
+step1=>some source of unpredictable data is needed.
+  * to rely on external inputs:
+      * delays between network events
+      * hard-disk access times
+      * keystrokes or mouse movements made by the user
+      * ... ...
+      Such data is likely to be far from uniform
+          , but if enough measurements are taken the resulting pool of data is expected to have sufficient entropy.
+  * incorporate random-number generation more tightly into the system at the hardware level:
+      These rely on physical phenomena such as thermal/shot noise or radioactive decay.
+===
+step2=>The processing needed to “smooth” the high-entropy data to obtain (nearly) uniform bits is a non-trivial one
+  # discussed briefly in Section 5.6.4.
+  #     5.6.4 Key Derivation @page186[207/598]
+Here, we just give a simple example to give an idea of what is done.
+示例:
+[bs::biased_independent_random_bits][p::real][0<p<1][Pr[1:<-bs] == p]:
+  #重点:前置条件:独立无关性#实践中不太可能
+    (We do assume, however, that the result of any coin flip is independent of all other coin flips. In practice this assumption is typically not valid.)
+  #每次处理一对爻元牜不重叠，而非鳞叠{py.pairwise()}
+  [f (0:1:bs) := 1:(f bs)]
+    #[概率== p*(1-p)]
+  [f (1:0:bs) := 0:(f bs)]
+    #[概率== p*(1-p)]
+  [f (0:0:bs) := (f bs)]
+    #[概率== (1-p)*(1-p)]
+  [f (1:1:bs) := (f bs)]
+    #[概率== p*p]
+  [uniformly_distributed_independent_random_bits := f bs]
+    #输出
+
+===
+]]
+[[
 Perfectly Secret Encryption
 [perfectly secret  encryption scheme =[def]= encryption schemes that are provably secure even against an adversary with unbounded computational power.]
 unbounded computational power
 it has inherent limitations to avoid unproven computational assumptions.
+[:generating_randomness]:goto
+[:private_key_encryption_scheme]:goto
+
+[...][CC{Enc}==MM][[k:<-KK] -> [Enc{k}::bijection]][c:<-CC][C:=Var{output{Enc}}][K:=Var{output{Gen}}][M:=Var{output{MM}}]:
+  !! [CC{Enc}==MM][[k:<-KK] -> [Enc{k}::bijection]]
+  #『?!』:存在唯一
+  => [@[c:<-CC] -> @[k:<-KK] -> ?![m:<-MM] -> [[_c:=Enc k m][_c==c]]]
+  :> [m_(c;k) := m{[[_c:=Enc k m][_c==c]]}]
+
+  [Pr[C==c]
+  == sum[Pr[[M==m][K==k]] | [[m:<-MM][k:<-KK][_c:=Enc k m][_c==c]]]
+  !! 公设冫密钥生成概率分布独立于消息生成概率分布
+  == sum[Pr[M==m]*Pr[K==k] | [[m:<-MM][k:<-KK][_c:=Enc k m][_c==c]]]
+  == sum[Pr[K==k]*sum[Pr[M==m] | [[m:<-MM][_c:=Enc k m][_c==c]]] | [k:<-KK]]
+  == sum[Pr[K==k]*Pr[M==m_(c;k)] | [k:<-KK]]
+  !! 公设冫密钥生成概率分布匀称
+  !! 公设冫密钥空间有限
+  => [Pr[K==k] == 1/len(KK)]
+  == 1/len(KK) * sum[Pr[M==m_(c;k)] | [k:<-KK]]
+  == ???感觉不能再简化???
+
+  bug:
+  xxx:== sum[Pr[M==m]*1/len(KK) | [[m:<-MM][k:<-KK][_c:=Enc k m][_c==c]]]
+  xxx:== 1/len(KK)*sum[Pr[M==m] | [[m:<-MM][k:<-KK][_c:=Enc k m][_c==c]]]
+  xxx:== 1/len(KK)*sum[Pr[M==m] | [m:<-MM]]
+  xxx:!! 公设冫消息空间非空
+  xxx:=> [1 == sum[Pr[M==m] | [m:<-MM]]]
+  xxx:== 1/len(KK) * 1
+  xxx:== 1/len(KK)
+  ]
+  xxx:[Pr[C==c] == 1/len(KK)]
+  [Pr[C==c] == 1/len(KK) * sum[Pr[M==m_(c;k)] | [k:<-KK]]]
+
+[...][CC{Enc}==MM][[k:<-KK] -> [Enc{k}::bijection]][m:<-MM][c:<-CC][C:=Var{output{Enc}}][K:=Var{output{Gen}}][M:=Var{output{MM}}]:
+
+  !! [CC{Enc}==MM][[k:<-KK] -> [Enc{k}::bijection]]
+  :> [m_(c;k) := m{[[_c:=Enc k m][_c==c]]}]
+  :> [c_(m;k) := c{[[_c:=Enc k m][_c==c]]}]
+  [Pr[C==c] == 1/len(KK) * sum[Pr[M==m_(c;k)] | [k:<-KK]]] #见上面
+  [Pr[C==c | M==m]
+  == sum[Pr[K==k] | [[k:<-KK][_c:=Enc k m][_c==c]]]
+  !! [Pr[K==k] == 1/len(KK)]
+  == 1/len(KK) * len[k | [[k:<-KK][_c:=Enc k m][_c==c]]]
+  ]
+  [Pr[C==c | M==m] == 1/len(KK) * len[k | [[k:<-KK][_c:=Enc k m][_c==c]]]]
+
+  !! 公设冫消息非必然亦非必不然
+  !! [CC{Enc}==MM][[k:<-KK] -> [Enc{k}::bijection]]
+  => [Pr[C==c] > 0]
+
+  #条件概率
+  [Pr[M==m | C==c]
+  !! [Pr[C==c] > 0]
+  == Pr[C==c | M==m] * Pr[M==m] / Pr[C==c]
+  == ??? * Pr[M==m] / ???
+  == (1/len(KK) * len[k | [[k:<-KK][_c:=Enc k m][_c==c]]]) * Pr[M==m] / (1/len(KK) * sum[Pr[M==m_(c;k)] | [k:<-KK]])
+  == Pr[M==m] * len[k | [[k:<-KK][_c:=Enc k m][_c==c]]] / sum[Pr[M==m_(c;k)] | [k:<-KK]]
+  == ???感觉不能再简化???
+  ]
+
+@20260119
+『Pr[Var{space}==val]』理应有更简洁的语法:『Pr[val<@space]』
+[SP :: space][PD :: probability_distribution{SP}][x :<- SP]:
+  [Pr[X==x | [X :<~ PD]] =[def]= PD[x]]
+
+
+攻击牜仅有密文#ciphertext-only attack
+  + adversary unknows:
+    + 密钥#the key shared by the parties
+    + 消息/明文#message is chosen by one of the honest parties and encrypted
+  + adversary knows:
+    + 消息生成概率分布#the probability distribution over M
+    + 所用加密系统#the encryption scheme being used
+    + 密文#ciphertext
+perfect_secrecy:
+perfectly_secret_scheme{攻击牜仅有密文}:
+  要求:密文不能增加窃听方对明文的了解
+    即:窃听方得到密文耂明文后验概率分布必须等同于先验概率分布
+    [posteriori probability == priori probability]
+
+DEFINITION_2_3__perfectly_secret_encryption_scheme
+DEFINITION 2.3 An encryption scheme (Gen,Enc,Dec) with message space MM is perfectly secret if for every probability distribution over M, every message m ∈ M, and every ciphertext c ∈ C for which [Pr[C = c] > 0]: [Pr[M==m | C==c] == Pr[M==m]].
+[schm@(MM, KK, CC, (Gen,Enc,Dec), {}) :: private_key_encryption_scheme][PD4MM :: probability_distribution{MM}][m:<-MM][c:<-CC][PD4MM.Pr[c<@CC] > 0]:
+  [is_perfectly_secret_private_key_encryption_scheme_(schm) =[def]= [Pr[M==m | C==c] == Pr[M==m]]]
+  #where [PD4MM.Pr[c<@CC] =[def]= sum[Pr[[M==m][C==c]] | [[M:<~MM][K:<~KK][C:<-Enc K M]]]]
+  #     ???感觉很糟糕:不清不楚不明不白还复杂
+
+reading@page29[50/598]
 ]]
 [[
-]]
-[[
+提前看:
+5.6.4 Key Derivation @page186[207/598]
+hash function
+min-entropy
+  computational min-entropy
+    computational indistinguishability
+key-derivation function provides a way to obtain a uniformly distributed string from any distribution with high (computational) min-entropy.
+keyed hash functions called (strong) extractors.  The key for the extractor must be uniform, but need not be kept secret.  One standard for this is called HKDF;
 ]]
 [[
 ]]

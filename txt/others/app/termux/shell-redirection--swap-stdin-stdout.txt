@@ -1,0 +1,42 @@
+
+e others/app/termux/shell-redirection--swap-stdin-stdout.txt
+
+
+f(){ echo $'a\nb' ; echo >&2 $'c\nd' ; }
+
+f | sed 's/^/1:/'
+  c
+  d
+  1:a
+  1:b
+
+f 3>&1 1>&2 2>&3 | sed 's/^/1:/'
+  a
+  b
+  1:c
+  1:d
+
+(f | sed 's/^/1:/') 3>&1 1>&2 2>&3 | sed 's/^/2:/'
+  1:a
+  1:b
+  2:c
+  2:d
+  #由于缓存刷出次序随机，也可能是:
+  2:c
+  2:d
+  1:a
+  1:b
+((f | sed 's/^/1:/') {tmp}>&1 1>&2 2>&${tmp} | sed 's/^/2:/') {tmp}>&1 1>&2 2>&${tmp}
+
+unset tmp; (f | sed 's/^/1:/') {tmp}>&1 1>&2 2>&${tmp} | sed 's/^/2:/'; echo "tmp=${tmp@Q}"
+  2:c
+  2:d
+  1:a
+  1:b
+  tmp=
+    # tmp 外部不可见
+
+unset tmp; (f | sed 's/^/1:/') {tmp}>&1 1>&2 2>&${tmp} | sed 's/^/2:/' 2>&1; echo "tmp=${tmp@Q}"
+  同上
+    即使 最终 统一成 stdout，但内部依旧分流，缓存刷新存在竞争
+

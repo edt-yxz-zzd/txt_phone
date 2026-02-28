@@ -3,6 +3,39 @@ e others/app/termux/shell_string_quoting.txt
 view others/app/termux/shell_string_expansion.txt
 
 [[
+escape:
+  'literal'
+  $'C-style'
+    not 『$""』
+    『\0』断尾:
+      $'C-style\0kkkkkk'
+        <==>$'C-style'
+
+  单字符串vs词切分展开
+      "${x}" vs ${x}
+      "$(cmd)" vs $(cmd)
+
+  echo ${IFS@A}
+      IFS=$' \t\n'
+  echo $(echo $'x y \n a ' )
+      x y a
+  echo "$(echo $'x y \n a ' )"
+      x y
+       a 
+
+字符串常量 无法包含 NUL character
+字符串展式 不允许包含 NUL character
+$ z="$(printf '\x01 55')"
+$ echo "${z@Q}"
+  =>『$'\001 55'』
+$ z="$(printf '\x00 55')"
+  =>『bash: warning: command substitution: ignored null byte in input』
+$ echo "${z@Q}"
+  =>『' 55'』
+
+]]
+
+[[
 "!" --> '!'"" otherwise maybe history expansion
 '\' <==> "\\"
 

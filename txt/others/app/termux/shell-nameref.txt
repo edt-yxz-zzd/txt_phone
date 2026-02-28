@@ -1,0 +1,120 @@
+
+e others/app/termux/shell-nameref.txt
+
+f() { local +x a=xxx; g a; echo "f.a: ${a@A}"; bash -c 'echo "...f.a: ${a@A}"'; declare -p a; }
+g() { local +x -n b="$1"; echo "g.b: ${b@A}"; bash -c 'echo "...g.b: ${b@A}"'; declare -p b; declare -p a; b=yyy; }
+unset a b; f; echo ":${a@Q},${b@Q}";
+  =>:
+    g.b: a='xxx'
+    ...g.b:
+    declare -n b="a"
+    declare -- a="xxx"
+    f.a: a='yyy'
+    ...f.a:
+    declare -- a="yyy"
+    :,
+
+f() { local -x a=xxx; g a; echo "f.a: ${a@A}"; bash -c 'echo "...f.a: ${a@A}"'; declare -p a; }
+g() { local -x -n b="$1"; echo "g.b: ${b@A}"; bash -c 'echo "...g.b: ${b@A}"'; declare -p b; declare -p a; b=yyy; }
+unset a b; f; echo ":${a@Q},${b@Q}";
+  =>:
+    g.b: declare -x a='xxx'
+    ...g.b: declare -x b='a'
+    declare -nx b="a"
+    declare -x a="xxx"
+    f.a: declare -x a='yyy'
+    ...f.a: declare -x a='yyy'
+    declare -x a="yyy"
+    :,
+
+
+猜测:f 调用 g 时，f的局域变量环境对g而言可见
+  同一个shell，所有函数共享同一个环境
+    [实际变量环境 :: {nm:stk/[may str]}]
+    [可见变量环境 :: {nm:str}]
+  +g/local 声明相当于 压栈，栈顶为None
+  +x/export 则是 传播到 子进程
+
+
+
+
+
+
+unset a; declare -p a;
+  =>:
+    bash: declare: a: not found
+
+函数体内:declare <==> local 除非 -p
+f() { local a=xxx; local -p a; } ; unset a; f; echo ":${a@Q}";
+  =>:
+    declare -- a="xxx"
+    :
+f() { local a=xxx; declare -p a; } ; unset a; f; echo ":${a@Q}";
+  =>:同上
+f() { declare a=xxx; declare -p a; } ; unset a; f; echo ":${a@Q}";
+  =>:同上
+f() { declare a=xxx; local -p a; } ; unset a; f; echo ":${a@Q}";
+  =>:同上
+
+未声明:则 外部变量/最近祖先的变量否则全局变量
+f() { a=xxx; local -p a; } ; unset a; f; echo ":${a@Q}";
+  =>:
+    bash: local: a: not found
+    :'xxx'
+f() { a=xxx; declare -p a; } ; unset a; f; echo ":${a@Q}";
+  =>:
+    declare -- a="xxx"
+    :'xxx'
+f() { local a=xxx; g a; declare -p a; } ; g() { a=yyy; } ; unset a; f; echo ":${a@Q}";
+  =>:
+    declare -- a="yyy"
+    :
+
+f() { local a=xxx; local -p a; a=yyy; local -p a; } ; unset a; f; echo ":${a@Q}";
+  =>:
+    declare -- a="xxx"
+    declare -- a="yyy"
+    :
+f() { a=uuu; local -p a; local a=xxx; local -p a; a=yyy; local -p a; } ; unset a; f; echo ":${a@Q}";
+  =>:
+    bash: local: a: not found
+    declare -- a="xxx"
+    declare -- a="yyy"
+    :'uuu'
+
+
+
+
+
+
+
+局部变量牜继承属性丶值(但不包括[+-]g，强制+g):『declare -I a』
+  父局部变量-->子局部变量
+  全局变量-->子局部变量
+
+父局部变量-->子局部变量
+f() { local a=xxx; g a; echo "f.a: ${a@A}"; declare -p a; }
+g() { declare -I a; echo "g.a: ${a@A}"; declare -p a; a=yyy; declare -p a; }
+unset a b; f; echo ":${a@Q},${b@Q}";
+  =>:
+    g.a: a='xxx'
+    declare -- a="xxx"
+    declare -- a="yyy"
+    f.a: a='xxx'
+    declare -- a="xxx"
+    :,
+
+全局变量-->子局部变量
+f() { a=xxx; g a; echo "f.a: ${a@A}"; declare -p a; }
+g() { declare -I a; echo "g.a: ${a@A}"; declare -p a; a=yyy; declare -p a; }
+unset a b; f; echo ":${a@Q},${b@Q}";
+  =>:
+    g.a: a='xxx'
+    declare -- a="xxx"
+    declare -- a="yyy"
+    f.a: a='xxx'
+    declare -- a="xxx"
+    :'xxx',
+
+
+

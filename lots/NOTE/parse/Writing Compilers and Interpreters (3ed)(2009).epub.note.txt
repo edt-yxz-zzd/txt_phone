@@ -1,0 +1,139 @@
+
+e ../lots/NOTE/parse/Writing Compilers and Interpreters (3ed)(2009).epub.note.txt
+'/sdcard/0my_files/book/lang/编译/Writing Compilers and Interpreters (3ed)(2009).epub'
+
+[[
+cmd:
+  httpd__localhost__all_in_one
+Tint Browser:
+  http://127.0.0.1:9900/Writing_Compilers_and_Interpreters-index.html
+
+<<==:
+book='/sdcard/0my_files/book/lang/编译/Writing Compilers and Interpreters (3ed)(2009).epub'
+head "${book}" -c 100
+tail "${book}" -c 100
+7z l "${book}"
+!mkdir /sdcard/0my_files/unzip/epub/
+!mkdir /sdcard/0my_files/unzip/epub/Writing_Compilers_and_Interpreters-3ed
+7z x "${book}" -o/sdcard/0my_files/unzip/epub/Writing_Compilers_and_Interpreters-3ed
+view /sdcard/0my_files/unzip/epub/Writing_Compilers_and_Interpreters-3ed/META-INF/container.xml
+view /sdcard/0my_files/unzip/epub/Writing_Compilers_and_Interpreters-3ed/OEBPS/content.opf
+view /sdcard/0my_files/unzip/epub/Writing_Compilers_and_Interpreters-3ed/OEBPS/toc.ncx
+e others/app/termux/httpd-confs/all_in_one--httpd.conf
+cp -iv /sdcard/0my_files/unzip/epub/Writing_Compilers_and_Interpreters-3ed/OEBPS/toc.ncx /sdcard/0my_files/unzip/epub/Writing_Compilers_and_Interpreters-3ed/-toc.ncx.html
+e /sdcard/0my_files/unzip/epub/Writing_Compilers_and_Interpreters-3ed/-toc.ncx.html
+
+xxx:有的含子节点:.+1,$s/<navPoint id="navpoint-\(\d\+\)" playOrder="\1">\n<navLabel>\n<text>\([^<>]*\)<[/]text>\n<[/]navLabel>\n<content src="\([^<>"]*\)"[/]>\n<[/]navPoint>/<div id="navpoint-\1"><a href="\3">\2<\/a><\/div>
+
+.+1,$s/<navPoint id="navpoint-\(\d\+\)" playOrder="\1">/<div id="navpoint-\1">
+.+1,$s/<[/]navPoint>/<\/div>
+.+1,$s/<navLabel>\n<text>\(\)\([^<>]*\)<[/]text>\n<[/]navLabel>\n<content src="\([^<>"]*\)"[/]>/<a href="\3">\2<\/a>
+
+]]
+
+
+
+尽快运行整个框架全流程:
+  1.设计组件，通过中介、转包，减少耦合
+  2.虚搭零功能框架，尽快运行测试
+  3.逐步添加功能，保持可运行性
+  end-to-end test
+  Always build on code that already works.
+      adding subclasses to the working framework
+
+封装隔离:
+  编译框架:
+      减弱耦合隔离出前端=>介码(中介码+符号表)
+      =>前端+介码+后端 + 料符源/词法分析器#各色 料符
+      隔离消息记录=>消息产源+消息收靶 # 登记、注销、委托转包给 消息处理器、错误处理器
+      =>[前端,后端,料符源<:消息产源]
+      =>[前端.消息处理器][后端.消息处理器]
+      前端{源语言}{解析方式:自上而下vs自下而上}
+      后端{处理方式:编译成机器码vs当作脚本运行}
+      隔离出 前端参数、后端参数:工厂模式
+          工厂 构建、装配 款型登对的各色组件
+              组件子类:前端、介码、后端、料符源、料符、前端消息收靶、后端消息收靶、料符源消息收靶
+          =>前端构造器(源语言,解析方式)
+          =>后端构造器(处理方式)
+      策略设计模式:随意增删家族成员:通过 子类/插件 处理不同情况
+      将所有变量隔离封装
+    Therefore, to manage change, apply the software engineering principle that says to encapsulate the code that will vary in order to isolate it from the code that won’t.
+        In the front end, the parser and scanner can vary, so encapsulate them in the implementation subclasses.
+        The back end compiler and interpreter are also subclasses.
+        These varying subclasses are isolated from the unvarying framework classes.
+封装隔离:
+  工厂模式:也就是 构造器{接口类型} 隔离 构造器{具象类型}:?有益于C++之类的 分离编译模式?不太对，类型可以提前声明！但总的来说，只看到 接口类型 更佳。
+    对于脚本语言而言，优化点在于 惰性加载插件模块
+  class IXxx:...
+  mk_IXxx_(Strategy) -> IXxx
+  mk_IXxx__impl_() -> IXxx
+
+  class Xxx_impl(IXxx):...
+  mk_Xxx_impl_() -> Xxx_impl
+
+
+
+the important design concepts:
+    coding to the interfaces
+    loose coupling
+      #highly cohesive, loosely coupled classes
+      #只做一件事:内耦性强
+
+Strategy Design Pattern
+    分派任务:插件、子类...
+
+Observer Design Pattern
+    This pattern allows message producers and message listeners to remain loosely coupled.
+
+producer:
+  add/remove listener
+  send message:
+    notify all listeners
+listener:
+  receive message
+辅助类:
+MessageHandler:
+  也是producer接口
+  producer直接转包给handler
+    ...为何不使用继承？可能就是为了避免继承，太多基类可能概念上麻烦，而且Java只允许继承一个具象类(虽允许实现多个接口)
+      组合委托 胜过 继承:更具弹性:flexible
+        但是 产生更多垃圾代码，最后多数情况还是得继承以避免重复代码
+      Delegation also limits a class’s responsibilities and supports loose coupling, and the delegate (the MessageHandler class in this case) can be used by other classes. This is more flexible than implementing the task in a superclass and forcing the producer classes to extend the superclass. In general, favor composition (with a delegate) over inheritance.
+我觉得可以改进:
+  producer:
+    + add/remove listener
+      public
+    # send message
+      protected
+  subclass_producer(producer):
+    + add/remove listener
+    # send message
+    - message_handler
+  message_handler:
+    + add/remove listener
+    + notify_listeners message
+
+
+Message: (type/case/head, body/payload/value)
+
+the delegate := the handler
+  delegate:n.(会、组织的) 代表,使节,特派员 vt/vi 指派派遣，委托授权
+delegation:转包任务给 经理人/处理者
+    This is an example of delegation, a software engineering technique where one class asks another class to handle some task.
+
+intermediate tier:中介层，居间层，中间层
+  frontend,backend
+
+factory class
+工厂模式 到底是啥:
+  #工厂 :: 方案名 -> 统一参数 -> 匴包/匹配的一群对象
+  工厂 :: 方案名 -> 统一参数 -> 匴包/对外整体适配指定规范接口而内部组件型号登对{构造器...,实例,...}
+      动态加载插件？
+      这个形式 只是 下面形式 的 一个构造器
+  工厂{特色参数} :: 匴包/对外整体适配指定规范接口而内部组件型号登对{构造器...,实例,...}
+
+
+
+
+
+

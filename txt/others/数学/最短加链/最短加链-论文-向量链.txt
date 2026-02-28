@@ -1,0 +1,536 @@
+
+e others/数学/最短加链/最短加链-论文-向量链.txt
+
+/sdcard/0my_files/book/math/addition_chains/'Addition chains, vector chains, and efficient computation(2021)(Edward G.Thurber).pdf'
+  {seqF,seqG}vs{seqA,seqC,seqE}
+    /sdcard/0my_files/book/math/addition_chains/Efficient generation of minimal length addition chains(1999)(Edward G. Thurber).pdf
+
+
+
+
+[[
+twofold
+unwinding
+unwinding an addition chain
+new pruning bounds
+  slant bounds
+W-dimensional vector
+a rather striking result
+aforementioned properties
+<branch> emanating from <node> can be pruned from the search tree.
+===
+/sdcard/0my_files/book/math/addition_chains/'Addition chains, vector chains, and efficient computation(2021)(Edward G.Thurber).pdf'
+概览:本文提出的:seqF,seqG:通篇就在证明这两者用作裁剪下界的正确性
+  证明梗概: 在seqF,seqG裁剪下 被裁剪分支如若生成 最短加链 则该加链 unwinding倒退至裁剪点，拆分成 零件x权重向量(倍数、重复数) 后，[s{加列链}(权重向量)<=1] 即 权重向量 只能是 14种况态(维数至多是4)，接着 各况态 推出 矛盾，由此 反证
+  优点:{seqF,seqG}vs{seqA,seqC,seqE}
+    性能提高只在况态:[靶值u被某些(2**e+1){e>=1}整除]#这类靶值占1/2正整数#Proposition_2
+
+===
+# [:重要等式牜关联加靶链丶加列链两者之最少加次]:goto
+  #注意:『再减』
+Definition_1:search_tree:goto
+Definition_2:addition_sequence:goto
+Definition_3:vector_chain:goto
+===
+The purpose of the paper is twofold.
+  The first is to establish the validity of the two new sets of pruning bounds
+  , and the second is to show how the somewhat surprising relationship between addition chains and vector chains accomplishes this.
+
+
+Establishing the validity of the new bounds uses a discovery by Clift of a relationship between addition chains and vector chains.
+  This relation comes about from unwinding an addition chain, which involves tracing an addition chain backwards to write the target number as a combination of several intermediaries.
+===
+star_chain => Brauer_number
+Hansen_chain => Hansen_number
+  即 某正整数的某条最短加链符合某种形式 则 称之为 某数
+
+[star_chain <: Hansen_chain <: addition_chain]
+[Brauer_number <: Hansen_number <: positive_integer]
+
+# [12509 == min{n | [n:<-[1..]][ℓ(n) < ℓ*(n)]}]
+  view script/min_add_ver4__pseudo_addition_chain.py..枚举冫相关信息纟最短短程加链牜简并态算法扌.RT.无缺精深.out.txt
+    @20251214居前: [..=12345] : 27M
+[12509 == min(positive_integer\-\Brauer_number)]
+[5784689 == min(positive_integer\-\Hansen_number)]
+
+通用形式的上界:[[u:<-[1..]] -> [减一长度纟最短加链纟(u) <= floor_log2(u) + u.bit_count() -1]]
+  即:[[u:<-[1..]] -> [ℓ(u) <= λ(u) + ν(u) -1]]
+Scholz–Brauer conjecture:特殊形式的上界猜想:[[u:<-[1..]] -> [减一长度纟最短加链纟(2**u -1) <= u + 减一长度纟最短加链纟(u) -1]]
+  即:[[u:<-[1..]] -> [ℓ(2**u -1) <= u + ℓ(u) -1]]
+[u:<-[1..]]:
+  [Scholz_Brauer_conjecture_at_(u) =[def]= [ℓ(2**u -1) <= u + ℓ(u) -1]]
+  [Equality4Scholz_Brauer_conjecture_at_(u) =[def]= [ℓ(2**u -1) == u + ℓ(u) -1]]
+[[u::Hansen_number] -> [Scholz_Brauer_conjecture_at_(u)]]
+
+[[u:<-[1..]] -> [ℓ(u) <= 9] -> [Equality4Scholz_Brauer_conjecture_at_(u)]]
+  见于下文
+
+===
+depth first (iterative deepening) search
+
+ℓ:'SCRIPT SMALL L' : '0x2113'
+λ:'GREEK SMALL LETTER LAMDA' : '0x3bb'
+ν:'GREEK SMALL LETTER NU' : '0x3bd'
+
+[u:<-[1..]]:
+  [ℓ(u) == 减一长度纟最短加链纟(u)]
+    #不计首『1』的长度
+  [ν(u) == u.bit_count()]
+  [λ(u) == floor_log2(u) == u.bit_length()-1]
+    # [num_big_steps_(u) := λ(u)]
+    # big_step:跨越二幂
+  [s(u) =[def]= ℓ(u) -λ(u)]
+    # [num_small_steps_(u) := s(u)]
+    # small_step:未跨越二幂
+
+lower bound : lb
+Knuth–Stolarsky conjecture:通用形式的下界猜想:[[u:<-[1..]] -> [减一长度纟最短加链纟(u) >= floor_log2(u) + ceil_log2(u.bit_count())]]
+  即:[[u:<-[1..]] -> [ℓ(u) >= λ(u) + ceil_log2(ν(u))]]
+[u:<-[1..]]:
+  [Knuth_Stolarsky_conjecture_at_(u) =[def]= [ℓ(u) >= λ(u) + ceil_log2(ν(u))]]
+[[m:<-[0..=3]] -> [u:<-[1..]] -> [ν(u) >= 2**m+1] -> [ℓ(u) >= λ(u) + m+1]]
+  => [[u:<-[1..]] -> [ν(u)<-[1..=16]] -> [Knuth_Stolarsky_conjecture_at_(u)]]
+
+[[u:<-[1..=2**64]] -> [Knuth_Stolarsky_conjecture_at_(u)]]
+[[u:<-[1..]] -> [s(u) <= 5] -> [Knuth_Stolarsky_conjecture_at_(u)]]
+    # [num_small_steps_(u) <= 5]
+
+[ℓ(u) >= ceil(log2(u*ν(u)) -2.13)]
+#用作lb初始值:
+[ℓ(u) >= ceil_log2(u*ν(u) /4.356485163789796)]
+  <= [ℓ(u) >= log2(u)+log2(ν(u))-2.123164629...]
+  ===
+  !! [log2(4.356485163789796) ~= 2.12316463 > 2.123164629]
+  [(4.356485163789796) > 2**2.123164629]
+  [ℓ(u)
+  >= log2(u)+log2(ν(u))-2.123164629...
+  > log2(u)+log2(ν(u))-log2(4.356485163789796)
+  == log2(u*ν(u) /4.356485163789796)
+  ]
+  [ℓ(u) >= ceil_log2(u*ν(u) /4.356485163789796)]
+  ===
+
+===
+Definition_1:search_tree:here
+  search_tree{finding minimal-length addition chains for a positive integer u}
+
+lower_bound : lb
+[pruning_bounds == (vertical_bounds,slant_bounds)]
+[u:<-[1..]]:
+  [lower_bound{u} :: uint]
+    as_if 最少加次纟最短加链纟(u)
+    as_if 减一长度纟最短加链纟(u)
+  [lower_bound{u} <- [ceil_log2(u*ν(u) /4.356485163789796)..=(λ(u) + ν(u) -1)]]
+  [vertical_bounds{u;lb} :: [uint]{len==1+lb}]
+  [slant_bounds{u;lb} :: [uint]{len==1+lb}]
+
+[u:<-[1..]]:
+  [search_tree{u;lb} == Node{u;lb;level:=0,ancestors:=[],payload:=1}]
+  [level == len(ancestors)]
+  [Node.level <= lb]
+    !! [Node.level+1 == len(Node.ancestors++[Node.payload]) <= 1+lb]
+  [Node{u;lb;level,ancestors,payload} == (level,ancestors,payload,children{u;lb;level+1,ancestors++[payload]})]
+  [children.level <= 1+lb]
+    !! [Node.level <= lb]
+  [children{u;lb;level,ancestors} := if pruning_{u;lb;level,ancestors} then [] else [Node{u;level,ancestors,payload} | [payload | [a,b:<-ancestors][payload:=a+b]]]]
+  [pruning_{u;lb;level,ancestors} := (level > 1+lb || (u <= ancestors[level-1]) || (ancestors[level-1] < vertical_bounds{u;lb}[level-1]) || ((level < (lb+2-ez{u}) || ancestors[level-2]*2**(lb+2-level) != u) && ancestors[level-3]+ancestors[level-2] < slant_bounds{u;lb}[level-1]))]
+    #这里不太对{??因为 推迟一步，导致 Node{level-2}已然出现??但是Node{level-1}还没出现，应该是对吧...}，slant_bounds的正确用法应该是:[[j < (lb+1-ez{u})]or[us[j-1]*2**(lb+1-j) =!= u]]=>[[us[j-2]+us[j-1] < slant_bounds[j]] => [us[:j] 无效][us[j]不必出现]]
+      #打补丁『slant_bounds前提条件』
+    #相应地，vertical_bounds的正确用法是:[[us[j] < vertical_bounds[j]] => [us[:j+1] 无效][us[j+1]不必出现]]
+    #这两个『正确用法』才是 这两种裁剪下界的定义，具现可以有多种
+    #感觉slant_bounds作用不大，前提条件用于排除 翻倍，而接下来 子节点候选的最大的可行值 就是 当前前缀末尾两个之和，还不是一样用vertical_bounds判定？
+
+===
+定义:多种具现:vertical_bounds{u;lb}
+
+!! [us::加链][i>=1] => [us[i] == us[j]+us[k] <= 2*us[i-1]]
+[j:<-[0..<len(us)]] => [u == us[-1] <= 2*us[-2] <= ... <= 2**(len(us)-1-j)*us[j]]
+[j:<-[0..<len(us)]] => [us[j] >= ceil(u/2**(len(us)-1-j))]
+
+!! 假设 [lb == -1+len(us)]
+[j:<-[0..=lb]] => [us[j] >= ceil(u/2**(lb-j))]
+[seqA{u;lb} := [ceil(u/2**(lb-j)) | [j:<-[0..=lb]]]]
+版本一:[vertical_bounds{u;lb} := seqA{u;lb}]
+版本一:[slant_bounds{u;lb} := seqA{u;lb}]
+  why??『This sequence can be used for both a vertical bounding sequence and a slant bounding sequence without restriction.』
+  看不出来为啥seqA可以用作slant_bounds:
+    毕竟有可能:
+      [次次大+次大 < slant_bound <= 2*次大]
+      即:[us[j-2]+us[j-1] < slant_bounds[j] <= 2*us[j-1]]
+  根据下文seqG的用法的前提条件，打补丁『slant_bounds前提条件』
+
+?(ez{u},odd{u}) :=> [u==2**ez*odd][odd%2==1]
+[seqC{u;lb} := ([ceil(u/3/2**(lb-2-j)) | [j :<- [0..=(lb-2-ez{u})]]] ++ [ceil(u/2**(lb-j)) | [j :<- [max(0,lb-1-ez{u})..=lb]]])]
+  # 部分 放大:(4/3)
+  #<==>:
+[seqC{u;lb} := [ceil((1+[j<=(lb-2-ez{u})]/3)*u/2**(lb-j)) | [j :<- [0..=lb]]]]
+版本二:[vertical_bounds{u;lb} := seqC{u;lb}]
+版本二:[[u%5=!=0][j>=lb-ez{u}][not [[us[j]%odd{u} == 0][u%us[j] == 0]]]] => [slant_bounds{u;lb} := seqC{u;lb}]
+  #有限制使用
+  #(4/3)的提升 来自于 [不能通过不断翻倍us[j] 得到 us[-1]]=>[必然需要一次 非翻倍加法]=>[允许更细致的分析]
+
+[seqE{u;lb} := ([ceil(u/(2**(lb-1-j)+2**ez{u})) | [j :<- [0..=(lb-2-ez{u})]]] ++ [ceil(u/2**(lb-j)) | [j :<- [max(0,lb-1-ez{u})..=lb]]])]
+版本三:[@[e:<-[1..]] -> [u%(1+2**e) =!= 0]] => [vertical_bounds{u;lb} := seqE{u;lb}]
+  #有限制使用
+  #不能用作slant_bounds
+
+===
+{seqA,seqC,seqE}出自:
+    [21] E. Thurber, Efficient generation of minimal length addition chains, SIAM J. Comput. 28 (4) (1999) 1247–1263.
+    /sdcard/0my_files/book/math/addition_chains/Efficient generation of minimal length addition chains(1999)(Edward G. Thurber).pdf
+
+===
+#本文提出的:seqF,seqG:通篇就在证明这两者用作裁剪下界的正确性
+[seqF{u;lb} := ([ceil(u/(2**(lb-1-j)+2**(ez{u}+dezF{u;lb;j}))) | [j :<- [0..=(lb-2-ez{u})]]] ++ [ceil(u/2**(lb-j)) | [j :<- [max(0,lb-1-ez{u})..=lb]]])] where [dezF{u;lb;j} := [j <= (lb-3-ez{u})][u%(1+2**(lb-2-j-ez{u}))==0]]
+  #seqF泛化seqE
+  #就比seqE多了个dezF{u;lb;j} <- {0,1}
+[seqG{u;lb} := ([ceil(3*u/(2**(lb+1-j)+2**(ez{u}+dezG{u;lb;j}))) | [j :<- [0..=(lb-1-ez{u})]]] ++ [ceil(u/2**(lb-j)) | [j :<- [max(0,lb-ez{u})..=lb]]])] where [dezG{u;lb;j} := [u%(1+2**(lb-j-ez{u}))==0]]
+版本四:[vertical_bounds{u;lb} := seqF{u;lb}]
+版本四:[slant_bounds{u;lb} := seqG{u;lb}]
+
+优点:{seqF,seqG}vs{seqA,seqC,seqE}
+  性能提高只在况态:[靶值u被某些(2**e+1){e>=1}整除]#这类靶值占1/2正整数
+Proposition_2. The set of whole numbers not divisible by an integer of the form (2**e+1) for [e>=1] has natural density 1/2.
+  [[proof:
+  [[odd:<-[1,3..]] -> [(1+2**(odd*2**ee))%(1+2**2**ee) == 0]]
+  [[u:<-[1..]] -> [odd:<-[1,3..]] -> [u % (1+2**(odd*2**ee)) == 0] -> [u % (1+2**2**ee) == 0]]
+
+  [E:<-[1..]]:
+    [f(E) =[def]= [II[(1-1/(1+2**2**ee)) | [ee:<-[0..<E]]] == (2**(-1+2**E)/(-1+2**2**E))]]
+  !! [E:=1] => [II[(1-1/(1+2**2**ee)) | [ee:<-[0..<E]]] == (1-1/(1+2**2**0)) == 2/3 == (2**(-1+2**E)/(-1+2**2**E))]
+  [f(1)]
+  归纳法:
+  [E:<-[2..]][[e:<-[1..<E]] -> [f(e)]]:
+    [f(E-1)]
+    [II[(1-1/(1+2**2**ee)) | [ee:<-[0..<(E-1)]]] == (2**(-1+2**(E-1))/(-1+2**2**(E-1)))]
+
+    [II[(1-1/(1+2**2**ee)) | [ee:<-[0..<E]]]
+    == II[(1-1/(1+2**2**ee)) | [ee:<-[0..<(E-1)]]]*(1-1/(1+2**2**(E-1)))
+    == (2**(-1+2**(E-1))/(-1+2**2**(E-1)))*(1-1/(1+2**2**(E-1)))
+    == (2**(-1+2**(E-1))/(-1+2**2**(E-1)))*(2**2**(E-1)/(1+2**2**(E-1)))
+    == (2**(-1+2**(E-1)) * 2**2**(E-1)) / ((-1+2**2**(E-1)) * (1+2**2**(E-1)))
+    == (2**(-1+2**E)) / (-1+2**2**E)
+
+    == (2**(-1+2**E)/(-1+2**2**E))
+    ]
+
+    [II[(1-1/(1+2**2**ee)) | [ee:<-[0..<E]]] == (2**(-1+2**E)/(-1+2**2**E))]
+    [f(E)]
+  [[E:<-[1..]] -> [f(E)]]
+  [[E:<-[1..]] -> [II[(1-1/(1+2**2**ee)) | [ee:<-[0..<E]]] == (2**(-1+2**E)/(-1+2**2**E))]]
+
+  [density{[[u:<-[1..]] | [@[e:<-[1..]] -> [u%(1+2**e) =!= 0]]]}
+  !! [[u:<-[1..]] -> [odd:<-[1,3..]] -> [u % (1+2**(odd*2**ee)) == 0] -> [u % (1+2**2**ee) == 0]]
+  == limit{II[(1-1/(1+2**2**ee)) | [ee:<-[0..<E]]] | [E:[1.~>.+oo]]}
+  !! [[E:<-[1..]] -> [II[(1-1/(1+2**2**ee)) | [ee:<-[0..<E]]] == (2**(-1+2**E)/(-1+2**2**E))]]
+  == limit{(2**(-1+2**E)/(-1+2**2**E)) | [E:[1.~>.+oo]]}
+  == 1/2
+  ]
+  !DONE
+  ]]
+
+===
+[c(46)==257_661_019_487==257661019487==2576_6101_9487]
+  即:[257661019487 == min{u | [u:<-[1..]][46==ℓ(u)]}]
+  #首个正整数牜最少加次纟最短加链达到四十六
+[375_494_703==375494703==3_7549_4703==min{u | [u:<-[1..]][ℓ(2*u) < ℓ(u)]}]
+[30_958_077==30958077==3095_8077==min{u | [u:<-[1..]][ℓ(4*u) == ℓ(2*u) == ℓ(u)]}]
+[[u:<-[1..]] -> [ℓ(u) <= 9] -> [Equality4Scholz_Brauer_conjecture_at_(u)]]
+
+===
+泛化:
+  加链addition_chain --> 加靶链/加序列addition_sequence
+    #批量加链/多头加链/复靶加链
+    #加多链
+  加链addition_chain --> 加列链/向量加链/向量链vector_chain
+      associated_vector_chain{addition_chain}
+
+# [:重要等式牜关联加靶链丶加列链两者之最少加次]:goto
+Definition_2:addition_sequence:goto
+Definition_3:vector_chain:goto
+===
+定义:加链、加星链、最短加链、最少加次纟最短加链纟
+[u :: uint][us :: [uint]]:
+  [欤加链扌(u;us) =[def]= [[L:=len(us)][u >= 1][L >= 1][us[0] == 1][us[-1] == u][欤严格递增扌(us)][@[i<-[1..<L]] -> ?[j,k :<- [0..<i]] -> [us[i] == us[j] + us[k]]]]]
+      #原版
+      # [i > j >= k]
+  [欤加星链扌(u;us) =[def]= [[L:=len(us)][u >= 1][L >= 1][us[0] == 1][us[-1] == u][欤严格递增扌(us)][@[i<-[1..<L]] -> ?[k :<- [0..<i]] -> [us[i] == us[i-1] + us[k]]]]]
+      #<<== [j:=i-1]
+      #带星号版#贪婪算法
+[@[u :: uint{>=1}] -> [欤加链扌(u;[1..=u])]]
+  #加链存在性
+  #=>加链集非空
+  #=>最短加链存在性
+[u :: uint{>=1}]:
+  [加链集纟(u) =[def]= {us | [us :: [uint]][欤加链扌(u;us)]}]
+  [[1..=u] <- 加链集纟(u)]
+  [len(加链集纟(u)) >= 1]
+    #加链集非空
+    #最短加链存在性
+  [长度纟最短加链纟(u) =[def]= min(map(len, 加链集纟(u)))]
+  #=>:
+  [最短加链集纟(u) =[def]= {us | [us :<- 加链集纟(u)][len(us) == 长度纟最短加链纟(u)]}]
+  [len(最短加链集纟(u)) >= 1]
+
+
+[u :: uint{>=1}]:
+  [最少加次纟最短加链纟(u)=减一长度纟最短加链纟(u) =[def]= -1+长度纟最短加链纟(u)]
+  [ℓ(u)=ℓ{加链}(u):=最少加次纟最短加靶链纟(u)]
+  [λ(u)=λ{加链}(u):=floor_log2(u)]
+  [s(u)=s{加链}(u):=ℓ{加链}(u) -λ{加链}(u)]
+
+===
+Definition_2:addition_sequence:here
+定义:加靶链、最短加靶链、最少加次纟最短加靶链纟
+[ns :: [uint]][us :: [uint]]:
+  [欤加靶链扌(ns;us) =[def]= [[N:=len(ns)][N >= 1][ns[0] >= 1][欤严格递增扌(ns)][n:=ns[-1]][ns |<=| us][L:=len(us)][us[0] == 1][us[-1] == n][欤严格递增扌(us)][@[i<-[1..<L]] -> ?[j,k :<- [0..<i]] -> [us[i] == us[j] + us[k]]]]]
+[@[ns :: 严格递增[uint{>=1}]{len>=1}] -> [欤加靶链扌(ns;[1..=ns[-1]])]]
+  #加靶链存在性
+  #=>加靶链集非空
+  #=>最短加靶链存在性
+[ns :: 严格递增[uint{>=1}]{len>=1}]:
+  [加靶链集纟(ns) =[def]= {us | [us :: [uint]][欤加靶链扌(ns;us)]}]
+  [[1..=ns[-1]] <- 加靶链集纟(ns)]
+  [len(加靶链集纟(ns)) >= 1]
+    #加靶链集非空
+    #最短加靶链存在性
+  [长度纟最短加靶链纟(ns) =[def]= min(map(len, 加靶链集纟(ns)))]
+  #=>:
+  [最短加靶链集纟(ns) =[def]= {us | [us :<- 加靶链集纟(ns)][len(us) == 长度纟最短加靶链纟(ns)]}]
+  [len(最短加靶链集纟(ns)) >= 1]
+
+
+[ns :: 严格递增[uint{>=1}]{len>=1}]:
+  [最少加次纟最短加靶链纟(ns)=减一长度纟最短加靶链纟(ns) =[def]= -1+长度纟最短加靶链纟(ns)]
+  [ℓ{加靶链}(ns):=最少加次纟最短加靶链纟(ns)]
+  [λ{加靶链}(ns):=λ{加链}(ns[-1])=floor_log2(ns[-1])]
+  [s{加靶链}(ns):=ℓ{加靶链}(ns) -λ{加靶链}(ns)]
+
+===
+Definition_3:vector_chain:here
+定义:加列链、最短加列链、最少加次纟最短加列链纟
+W-dimensional vector
+[W :: uint][vs :: [uint]]:
+  #bug:[欤正整列扌(W;vs) =[def]= [[W>=1][len(vs)==W][@[v:<-vs] -> [v>=1]]]]
+  [欤正整列扌(W;vs) =[def]= [[W>=1][len(vs)==W][sum(vs)>=1]]]
+[W :: uint]:
+  [幺正整列阵扌(W) =[def]= eye_matrix(W) = Matrix(\i,j->[i==j])]
+    #unit vectors
+[W :: uint][vss :: [[uint]]]:
+  [欤正整列阵扌(W;vss) =[def]= [[W>=1][@[vs:<-vss] -> [欤正整列扌(W;vs)]]]]
+  [欤首幺正整列阵扌(W;vss) =[def]= [[欤正整列阵扌(W;vss)][len(vss)>=W][vss[:W]==幺正整列阵扌(W)]]]
+[ws :: [uint]]:
+  [后重权衡扌(ws) =[def]= ws[::-1]]
+  [先总和再后重权衡扌(ws) =[def]= (sum(ws), 后重权衡扌(ws))]
+[vss :: [[uint]]]:
+  #xxx:[欤严格递增牜加列链扌(vss) =[def]= 欤严格递增扌(vss,key=???(后重权衡扌|先总和再后重权衡扌))]
+  [欤严格递增牜加列链扌(vss) =[def]= 欤严格递增扌(vss,key=先总和再后重权衡扌)]
+  #！！！不太对！！！
+  # 从下文看，每个 单元列向量/幺列 vss[j]{[j <- [0..<W]]} 对应于 某个 us[k{j}]:
+  # [j <- [0..=W-2]]:
+  #     [k{j} < k{j+1}]
+  #     [us[k{j}] < us[k{j+1}]]
+  #     #权重递增:幺列越靠后则权重越大
+  # [key(ws) := sum[ws[j]*us[k{j}] | [j :<- [0..<W]]]]
+  #     key应当是 加权求和，但这样 就需要 权重系数...
+  #
+[ws :: [uint]][vss :: [[uint]]]:
+  [欤加列链扌(ws;vss) =[def]= [[W:=len(ws)][欤正整列扌(W;ws)][欤首幺正整列阵扌(W;vss)][L:=len(vss)][[L>W][ws == vss[-1]]or[L==W][ws <- vss]][欤严格递增牜加列链扌(vss)][@[i<-[W..<L]] -> ?[j,k :<- [0..<i]] -> [vss[i] == vss[j] + vss[k]]]]]
+    #???或取消『欤严格递增牜加列链扌(vss)』???
+    #unit vectors
+    #each vector is the sum of two preceding vectors in the chain.
+    #The first step in the vector chain is considered to be the first vector after the unit vectors.
+[W:<-[1..]][t:<-[1..]]:
+  [递增正整列阵扌(W;t) =[def]= sorted({vs | [[vs :: [uint]][欤正整列扌(W;vs)][sum(vs)==t]]}, key=先总和再后重权衡扌)]
+[ws :: [uint]{欤正整列扌}]:
+  [首幺正整列阵牜逐步递增至扌(ws) =[def]= let [W:=len(ws)][hss:=幺正整列阵扌(W)][T:=sum(ws)] in (if [T==1] then hss else let [tail_:=递增正整列阵扌(W;T)][j:=tail_.index(ws)][tail:=tail_[:1+j]] in (foldr (++) tail [递增正整列阵扌(W;t) | [t:<-[1..<T]]]))]
+[@[ws :: [uint]] -> [欤正整列扌(len(ws);ws)] -> [欤加列链扌(ws;首幺正整列阵牜逐步递增至扌(ws))]]
+  #加列链存在性
+  #=>加列链集非空
+  #=>最短加列链存在性
+[ws :: [uint]][欤正整列扌(len(ws);ws)]:
+  [加列链集纟(ws) =[def]= {vss | [vss :: [[uint]]][欤加列链扌(ws;vss)]}]
+  [首幺正整列阵牜逐步递增至扌(ws) <- 加列链集纟(ws)]
+  [len(加列链集纟(ws)) >= 1]
+    #加列链集非空
+    #最短加列链存在性
+  [长度纟最短加列链纟(ws) =[def]= min(map(len, 加列链集纟(ws)))]
+  #=>:
+  [最短加列链集纟(ws) =[def]= {vss | [vss :<- 加列链集纟(ws)][len(vss) == 长度纟最短加列链纟(ws)]}]
+  [len(最短加列链集纟(ws)) >= 1]
+
+
+[ws :: [uint]][欤正整列扌(len(ws);ws)]:
+  [最少加次纟最短加列链纟(ws)=减维长度纟最短加列链纟(ws) =[def]= -len(ws)+长度纟最短加列链纟(ws)]
+  [ℓ{加列链}(ws):=最少加次纟最短加列链纟(ws)]
+  [λ{加列链}(ws):=λ{加链}(sum(ws))=floor_log2(sum(ws))]
+  [s{加列链}(ws):=ℓ{加列链}(ws) -λ{加列链}(ws)]
+
+===
+a rather striking result
+aforementioned properties
+A rather striking result in [15] is that ℓ([c1,c2,...,cz])=ℓ({c1,c2,...,cz})+z−1.
+  This relation which involves addition sequences and vector chains provides a link between addition chains and vector chains.
+  The following example in [15], illustrates some of the aforementioned properties.
+[15] J. Olivos, On vectorial addition chains, J. Algorithms 2 (1) (1981) 13–21.
+  http://refhub.elsevier.com/S0012-365X(20)30386-1/sb15
+
+# 没有明显的对应关系:
+#不行{下文用法中，是:非严格递增}:[@[ns :: 严格递增[uint{>=1}]{len>=1}] -> [-1+ℓ{加靶链}(ns) == -len(ns)+ℓ{加列链}(ns)]]
+[@[ms :: 非严格递增[uint{>=1}]{len>=1}] -> [-1+ℓ{加靶链}(删除重复项扌(ms)) == -len(ms)+ℓ{加列链}(ms)]]
+  # [:重要等式牜关联加靶链丶加列链两者之最少加次]:here
+  # xxx:原文:[ℓ{加列链}(ws) == ℓ{加靶链}(ws) + len(ws) -1]
+  #     !! [ws 没有 ns 严格][ws允许0，当避免][ns要求严格递增，当放宽]
+  # 错误理解:等式左右的形态:
+  #     xx:+ 减去 首『1』
+  #     xx:+ 减去 头部 幺正整列阵扌
+  # 正确理解:等式左右的形态:
+  #     + 再减去 首『1』
+  #     + 再减去 头部 幺正整列阵扌
+  #     #注意:ℓ/最少加次纟最短加囜链纟本身 已经 减去一次 固化头部的长度，所以 这里是 『再减』
+  #     [ℓ{加链}(23) == 6 == -1+7]
+  #     [ℓ{加靶链}({7,15,23}) == 7 == -1+8]
+  #     [ℓ{加列链}([7,15,23]) == 9 == -3+12]
+  #     [6 == -1+ℓ{加靶链}({7,15,23}) == -1+7 == -1*2+8]
+  #     [6 == -3+ℓ{加列链}([7,15,23]) == -3+9 == -3*2+12]
+  #     [-1+ℓ{加靶链}({7,15,23}) == -1*2+8 == 6 == -3*2+12 == -3+ℓ{加列链}([7,15,23])]
+  #
+
+原文示例:
+For E={7,15,23}, [1,  2,3,6,7, 8,15,23] is a minimal-length addition sequence for n=23
+    # 这里应当是『for E={7,15,23}』而非『for n=23』
+    # (1+7)==8
+  while [[1,0,0],[0,1,0],[0,0,1],  [0,1,1],[1,1,1],[0,1,2], [1,2,3],[1,3,5],[2,4,6],[3,7,11],[4,8,12],[7,15,23]] is a minimal-length vector chain for [7,15,23].
+    # (3+9)==12
+  A minimal-length addition chain for n=23 has six steps.
+    # [ℓ{加链}(23) == 6]
+    # [ℓ{加靶链}({7,15,23}) == 7 == -1+8]
+    # [ℓ{加列链}([7,15,23]) == 9 == -3+12]
+  We have ℓ({7,15,23})=7, and ℓ([7,15,23])=9.  Since z=3, the relation ℓ([7,15,23])=ℓ({7,15,23})+3−1 is satisfied.
+    # [-1+ℓ{加靶链}({7,15,23}) == -1*2+8 == 6 == -3*2+12 == -3+ℓ{加列链}([7,15,23])]
+    #   见上面:『再减』
+
+===
+u=23 ; ipath='../../python3_src/nn_ns/math_nn/numbers/shortest_addition_chain_length.py' ; head -n $[$u + 50] $ipath | tail -n 7
+e ../../python3_src/bash_script/app/szmm4shortest_addition_chain
+szmm4shortest_addition_chain 23 103
+  [ℓ(23) == 6]
+  [ℓ(103) == 9]
+===
+unwinding an addition chain
+
+103的某条加链:
+  [1,2,3,5,10,20,25,50,100,103]
+    # (1+9)==10
+  倒退成 零件拆分:
+  [103
+  # 格式: 重复数*零件
+  ==1*103
+  ==1*(3+100)
+  ==1*3 +1*100
+  ==1*3 +1*(2*50)
+  ==1*3 +2*50
+  ==1*3 +4*25
+  ==1*3 +4*(5+20)
+  ==1*3 +4*5 +4*20
+  ==1*3 +4*5 +8*10
+  ==1*3 +4*5 +8*(2*5)
+  ==1*3 +20*5
+  ==1*3 +20*(2+3)
+  ==20*2 +21*3
+  ==20*2 +21*(1+2)
+  ==21*1 +41*2
+  ==21*1 +41*(2*1)
+  ==103*1
+  ]
+  associated_vector:
+  关联向量{即:上面的 重复数} 后附 权重系数:
+    [1] # [103]
+    [1,1] # [3,100]
+    [1,2] # [3,50]
+    [1,4] # [3,25]
+    [1,4,4] # [3,5,20]
+    [1,4,8] # [3,5,10]
+    [1,20] # [3,5]
+    [20,21] # [2,3]
+    [21,41] # [1,2]
+    [103] # [1]
+  以 某个 关联向量 为 靶:
+    例如:[1,4,4]
+      幺列 权重分别是 [3,5,20]
+      [1,0,0] # 3
+      [0,1,0] # 5
+      [0,0,1] # 20
+      [0,1,1] # 25
+      [0,2,2] # 50
+      [0,4,4] # 100
+      [1,4,4] # 103
+
+
+[u :: uint][us :: [uint]][欤加链扌(u;us)][L:=len(us)]:
+  #将 整条加链us{u{靶值}} 进行 加权求和
+  #待定权重系数:c[i,j]:假设 倒退到 第i步
+  [[i:<-[0..<L]] -> [u == us[-1] == sum[c[i,j]*us[j] | [j:<-[0..<L]]]]]
+
+  #定义:(f,g) => c[i,j]
+  #     where [i:<-[0..<L]][j:<-[0..<L]]
+  ?f,g :=> [[f,g :: [1..<L] -> [0..<L-1]][[j:<-[1..<L]] -> [0 <= f(j) <= g(j) < j]][[j:<-[1..<L]] -> [us[j] == us[f(j)]+us[g(j)]]]]
+  [[i:<-[0..<L]] -> [j:<-[0..<L]] -> [c[i,j] ==
+    if [i==L-1] then [j==L-1]
+    elif [i < j] then 0
+    else c[i+1,j] + ([j==f(i+1)]+[j==g(i+1)])*c[i+1,i+1]
+  ]]
+
+===
+性能比较:
+
+靶值丶整数分解
+  总数纟最短加链纟靶值
+  耗时牜旧裁剪下界{seqA,seqC,seqE}#E,C#C,A#C,C#
+  耗时牜新裁剪下界{seqF,seqG}#F,G
+  耗时降低比例
+u
+  NMC(u)
+  Old_time
+  New_time
+  Decrease
+1903=11·173
+  68810
+  4.47s E,C
+  4.094s F,G
+  8.4
+18287=prime
+  665583
+  1576.13s E,C
+  1513.48s F,G
+  4.0
+441439=17·23·1129
+  132
+  786.86s C,C
+  564.044s F,G
+  28.3
+798765=3·5·11·47·103
+  1299
+  13.334s C,A
+  5.797s F,G
+  56.5
+860225=52·19·1811
+  216
+  8.215s C,A
+  2.484s F,G
+  69.8
+1000005=3·5·163·409
+  3506
+  682.739s C,A
+  344.78s F,G
+  49.5
+1000008=23·32·17·19·43
+  1202
+  2.344s C,C
+  2.203s F,G
+  6.0
+
+===
+===
+
+]]

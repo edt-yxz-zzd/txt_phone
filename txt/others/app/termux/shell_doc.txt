@@ -1,8 +1,11 @@
 
 e others/app/termux/shell_doc.txt
 view others/app/termux/help/bash.man.txt
-`Here Documents`
-`Here Strings`
+用例:
+  view ../../python3_src/bash_script/app/parse_options_.def.sh
+
+Here Documents
+Here Strings
 
 #no show, doc
 echo <<gg
@@ -18,6 +21,92 @@ xxxxx
 less <<yyy
 ...content...
 yyy
+
+
+#########
+here_string 无需分行
+echo $'a\nb'
+<==>
+echo $'a\nb' | cat
+#<==> fail: 『1<<<$'a\nb' | cat -』
+<==>
+cat - 0<<<$'a\nb'
+<==>
+cat <<<$'a\nb'
+  =>:
+    a
+    b
+
+#########
+#『label』:win.bat
+#no:goto start
+
+相当于 注释:
+: <<'EOF'
+"x
+'y
+EOF
+
+相当于 文档:
+# cat 不能省略
+# 必须多行
+__doc__="$(cat <<'EOF'
+"x
+'y
+EOF
+)"
+
+相当于 打印文档:
+declare USAGE; USAGE () { cat <<<"${__doc__}" ; }
+declare USAGE; USAGE () { echo "${__doc__}" ; }
+declare -p USAGE
+
+: || echo "${__doc__}"
+! : && echo "${__doc__}"
+if false ; then # : ; else
+  echo "${__doc__}"
+  #   => "x
+  #   => 'y
+  #   ok!
+  echo "${__doc__@Q}"
+  #   => $'"x\n\'y'
+  echo "${#__doc__}"
+  #   => 5
+fi
+
+#########
+
+
+
+#########
+function buggy__doc__
+{
+  cat <<EOF
+#. $(cat ../../python3_src/bash_script/app/cat5mv__myfiles)
+EOF
+}
+__="$(buggy__doc__)"
+#.echo "${__@A}"
+#.echo "${__}"
+echo "${__@Q}"
+echo "${#__}"
+  # bug:inner:『$(cat ../../python3_src/bash_script/app/cat5mv__myfiles)』 be exec!!
+  exit 777
+#########
+function __doc__
+{
+  cat <<'EOF'
+#. $(cat ../../python3_src/bash_script/app/cat5mv__myfiles)
+EOF
+}
+__="$(__doc__)"
+#.echo "${__@A}"
+#.echo "${__}"
+echo "${__@Q}"
+echo "${#__}"
+  # 区别在于:是否加引号『<<'EOF'』vs『<<EOF』
+
+#########
 
 
 

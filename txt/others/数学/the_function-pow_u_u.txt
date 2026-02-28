@@ -1,0 +1,242 @@
+
+e others/数学/the_function-pow_u_u.txt
+
+[[
+源起:
+view others/数学/exponential-20260102.txt
+    [exp(x) == exp(x%ln2)*2**(x//ln2)]
+        !! [1 < 2 < e < 3 < 4==2**2]
+        [0 < ln2 < ln(e)==1 < ln4==2*ln2]
+        [1/2 < ln2 < 1]
+        [ln2 ~= 0.6931471805599453]
+        [e**e ~= 15.154262241479259 < 16==2**4==4**2 < 3**3==27]
+        [e ~= 2.718281828459045]
+        [[u**u==16] -> [u ~= 2.745368023567...]]
+]]
+
+[[
+u**u
+    [y(x):=(1+x)**(1+x)]
+    [ln y == (1+x)*ln(1+x)]
+    [(1/y)dy == (1+ln(1+x))dx]
+    [dy/dx == (1+ln(1+x))*y]
+    [D(1;y) == (1+ln(1+x))*y]
+    [D(2;y) == (1+ln(1+x))*D(1;y) + y*(1+x)**-1]
+
+    泰勒展开:
+    [y(x) == sum[c[j]*x**j | [j:<-[0..]]]]
+    !! [y(0) == (1+0)**(1+0) == 1]
+    [c[0] == y(0) == 1]
+    [c[1] == D(1;y){x:=0}/1! == (1+ln(1+0))*y(0) == 1]
+    [c[2] == D(2;y){x:=0}/2! == ((1+ln(1+0))*D(1;y){x:=0} + y(0)*(1+0)**-1)/2 == 1]
+
+    !! [dy/dx == (1+ln(1+x))*y]
+    !! [ln(1+x) == sum[(-x)**j/-j | [j:<-[1..]]]]
+    [sum[(j+1)*c[j+1]*x**j | [j:<-[0..]]] == (1+sum[(-x)**j/-j | [j:<-[1..]]]) * sum[c[j]*x**j | [j:<-[0..]]]]
+    [j:<-[0..]]:
+        [(j+1)*c[j+1] == c[j] + sum[c[j-k]*(-1)**k/-k | [k:<-[1..=j]]]]
+        [c[j+1] == (c[j] - sum[c[j-k]*(-1)**k/k | [k:<-[1..=j]]])/(j+1)]
+    [c[1] == (c[0] - sum[c[0-k]*(-1)**k/k | [k:<-[1..=0]]])/(0+1) == c[0] == 1]
+    [c[2] == c[1+1] == (c[1] - sum[c[1-k]*(-1)**k/k | [k:<-[1..=1]]])/(1+1) == (c[1] -(c[0]*(-1)))/2 == 1]
+    [j:<-[0..]]:
+        [(j+1)!*c[j+1] == j!*c[j] - sum[(j-k)!*c[j-k]*(-1)**k*(k-1)!*j!/(j-k)!/k! | [k:<-[1..=j]]]]
+        [Q[j] =[def]= j!*c[j]]
+        [Q[j+1] == Q[j] - sum[Q[j-k]*(-1)**k*(k-1)!*C(j;k) | [k:<-[1..=j]]]]
+        [Q[j+1] == Q[j] - sum[Q[j-k]*(-1)**k*(k-1)!*C(j;k) | [k:<-[1..=j]]]]
+    [j:<-[1..]]:
+        [Q[j] == Q[j-1] - sum[Q[j-1-k]*(-1)**k*(k-1)!*C(j-1;k) | [k:<-[1..<j]]]]
+        # [i:=j-1-k]
+        # [k==j-1-i]
+        [Q[j] == Q[j-1] + sum[Q[i]*(-1)**(j-i)*(j-2-i)!*C(j-1;i) | [i:<-[0..<j-1]]]]
+    [Q[0] == 0!*c[0] == 1]
+    [Q[1] == 1!*c[1] == 1]
+    [Q[2] == 2!*c[2] == 2]
+    [(1+x)**(1+x) == y(x) == sum[Q[j]/j!*x**j | [j:<-[0..]]]]
+
+==>>:
+e script/pow_u_u.py
+
+]]
+[[
+排序算法的复杂度NlnN#(私谓)线对性函数
+[(1+x)*ln(1+x) == ln((1+x)**(1+x))]
+泰勒展开:
+  [(1+x)*ln(1+x)
+  !! [ln(1+x) == sum[(-x)**j/-j | [j:<-[1..]]]]
+  == (1+x)*sum[(-x)**j/-j | [j:<-[1..]]]
+  == sum[(-x)**j/-j | [j:<-[1..]]]
+   + sum[(-x)**(1+j)/-j | [j:<-[1..]]]
+  == x + sum[(-x)**j/-j | [j:<-[2..]]]
+   + sum[(-x)**j/(1-j) | [j:<-[2..]]]
+  == x + sum[(-x)**j * (1/(1-j) -1/j) | [j:<-[2..]]]
+  == x + sum[(-x)**j * (1-2*j)/(j-1)/j | [j:<-[2..]]]
+  == x/1! * 1 + sum[x**j/j! * (-1)**(j+1) * (2*j-1)*(j-2)! | [j:<-[2..]]]
+  ]
+
+]]
+[[
+xxx:((1+x)**(1+x))的反函数 的 泰勒展开？
+((1+x)**(1+x) -1)的反函数 的 泰勒展开？
+[z==((1+x)**(1+x) -1)]
+[1+z==((1+x)**(1+x))==y]
+!! [dy/dx == (1+ln(1+x))*y]
+[dz/dx == (1+ln(1+x))*(1+z)]
+[dx/dz
+== 1/(1+z)/(1+ln(1+x(z)))
+== ???
+]
+
+]]
+[[[
+oeis:
+  1,1,2,3,8,10,54,-42,944,-5112,47160,-419760
+    e others/数学/the_function-pow_u_u.txt
+    e script/pow_u_u.py
+===
+[[
+https://oeis.org/A005727
+https://oeis.org/A005727/b005727.txt
+wget https://oeis.org/A005727/b005727.txt
+mv -iv /sdcard/0my_files/tmp/wget_/b005727.txt ../../python3_src/nn_ns/math_nn/numbers/b005727-Lehmer_Comtet_numbers-Nth_derivative_of_pow_u_u_at_u_EQ_1__fst_401.txt
+du -h ../../python3_src/nn_ns/math_nn/numbers/b005727-Lehmer_Comtet_numbers-Nth_derivative_of_pow_u_u_at_u_EQ_1__fst_401.txt
+  156K
+view ../../python3_src/nn_ns/math_nn/numbers/b005727-Lehmer_Comtet_numbers-Nth_derivative_of_pow_u_u_at_u_EQ_1__fst_401.txt
+===
+A005727 - OEIS
+(Greetings from The On-Line Encyclopedia of Integer Sequences!)
+A005727
+n-th derivative of x^x at x=1. Also called Lehmer-Comtet numbers.
+(Formerly M0868)
+41
+1, 1, 2, 3, 8, 10, 54, -42, 944, -5112, 47160, -419760, 4297512, -47607144, 575023344, -7500202920, 105180931200, -1578296510400, 25238664189504, -428528786243904, 7700297625889920, -146004847062359040, 2913398154375730560, -61031188196889482880
+(list; graph; refs; listen; history; text; internal format)
+OFFSET
+0,3
+REFERENCES
+L. Comtet, Advanced Combinatorics, Reidel, 1974, p. 139, table at foot of page.
+G. H. Hardy, A Course of Pure Mathematics, 10th ed., Cambridge University Press, 1960, p. 428.
+N. J. A. Sloane and Simon Plouffe, The Encyclopedia of Integer Sequences, Academic Press, 1995 (includes this sequence).
+LINKS
+Alois P. Heinz, Table of n, a(n) for n = 0..400 (first 101 terms from T. D. Noe)
+Joerg Arndt, Matters Computational (The Fxtbook), section 36.5, "The function x^x"
+H. W. Gould, A Set of Polynomials Associated with the Higher Derivatives of y=xxy=x^x, Rocky Mountain J. Math. 26(2) 1996.
+R. K. Guy, Letter to N. J. A. Sloane, 1986
+R. K. Guy, The strong law of small numbers. Amer. Math. Monthly 95 (1988), no. 8, 697-712.
+R. K. Guy, The strong law of small numbers. Amer. Math. Monthly 95 (1988), no. 8, 697-712. [Annotated scanned copy]
+G. H. Hardy, A Course of Pure Mathematics, Cambridge, The University Press, 1908.
+D. H. Lehmer, Numbers associated with Stirling Numbers and x^x, Rocky Mountain J. Math., 15(2) 1985, p. 461.
+R. R. Patterson and G. Suri, The derivatives of x^x, date unknown. Preprint. [Annotated scanned copy]
+FORMULA
+For n>0, a(n) = Sum_{k=0..n} b(n, k), where b(n, k) is a Lehmer-Comtet number of the first kind (see A008296).
+E.g.f.: (1+x)^(1+x). a(n) = Sum_{k=0..n} Stirling1(n, k)*A000248(k). - Vladeta Jovovic, Oct 02 2003
+From  Mélika Tebni, May 22 2022: (Start)
+a(0) = 1, a(n) = a(n-1)+Sum_{k=0..n-2} (-1)^(n-k)*(n-2-k)!*binomial(n-1, k)*a(k).
+a(n) = Sum_{k=0..n} (-1)^(n-k)*A293297(k)*binomial(n, k).
+a(n) = Sum_{k=0..n} (-1)^k*A203852(k)*binomial(n, k). (End)
+MAPLE
+A005727 := proc(n) option remember; `if`(n=0, 1, A005727(n-1)+add((-1)^(n-k)*(n-2-k)!*binomial(n-1, k)*A005727(k), k=0..n-2)) end:
+seq(A005727(n), n=0..23); # Mélika Tebni, May 22 2022
+MATHEMATICA
+NestList[ Factor[ D[ #1, x ] ]&, x^x, n ] /. (x->1)
+Range[0, 22]! CoefficientList[ Series[(1 + x)^(1 + x), {x, 0, 22}], x] (* Robert G. Wilson v, Feb 03 2013 *)
+PROG
+(PARI) a(n)=if(n<0, 0, n!*polcoeff((1+x+x*O(x^n))^(1+x), n))
+CROSSREFS
+Row sums of A008296. Column k=2 of A215703 and of A277537.
+Cf. A005168, A176118, A293297, A203852.
+Sequence in context: A320843 A010786 A248822 * A354756 A361324 A118089
+Adjacent sequences:  A005724 A005725 A005726 * A005728 A005729 A005730
+KEYWORD
+sign,easy,nice
+AUTHOR
+N. J. A. Sloane
+STATUS
+approved
+Lookup Welcome Wiki Register Music Plot 2 Demos Index WebCam Contribute Format Style Sheet Transforms Superseeker Recents
+The OEIS Community
+Maintained by The OEIS Foundation Inc.
+Last modified January 17 07:33 EST 2026. Contains 392107 sequences.
+License Agreements, Terms of Use, Privacy Policy
+]]
+[[
+===
+https://oeis.org/A008296
+A008296 - OEIS
+(Greetings from The On-Line Encyclopedia of Integer Sequences!)
+A008296
+Triangle of Lehmer-Comtet numbers of the first kind.
+14
+1, 1, 1, -1, 3, 1, 2, -1, 6, 1, -6, 0, 5, 10, 1, 24, 4, -15, 25, 15, 1, -120, -28, 49, -35, 70, 21, 1, 720, 188, -196, 49, 0, 154, 28, 1, -5040, -1368, 944, 0, -231, 252, 294, 36, 1, 40320, 11016, -5340, -820, 1365, -987, 1050, 510, 45, 1, -362880, -98208, 34716, 9020, -7645, 3003, -1617, 2970, 825, 55, 1, 3628800
+(list; table; graph; refs; listen; history; text; internal format)
+OFFSET
+1,5
+COMMENTS
+Triangle arising in the expansion of ((1+x)*log(1+x))^n.
+Also the Bell transform of (-1)^(n-1)*(n-1)! if n>1 else 1 adding 1,0,0,0,... as column 0. For the definition of the Bell transform see A264428. - Peter Luschny, Jan 16 2016
+REFERENCES
+L. Comtet, Advanced Combinatorics, Reidel, 1974, p. 139.
+LINKS
+Alois P. Heinz, Rows n = 1..141, flattened
+H. W. Gould, A Set of Polynomials Associated with the Higher Derivatives of y = x^x, Rocky Mountain J. Math. Volume 26, Number 2 (1996), 615-625.
+Tian-Xiao He and Yuanziyi Zhang, Centralizers of the Riordan Group, arXiv:2105.07262 [math.CO], 2021.
+D. H. Lehmer, Numbers Associated with Stirling Numbers and x^x, Rocky Mountain J. Math., 15(2) 1985, pp. 461-475.
+FORMULA
+E.g.f. for a(n, k): (1/k!)[ (1+x)*log(1+x) ]^k. - Len Smiley
+Left edge is (-1)*n!, for n >= 2. Right edge is all 1's.
+a(n+1, k) = n*a(n-1, k-1) + a(n, k-1) + (k-n)*a(n, k).
+a(n, k) = Sum_{m} binomial(m, k)*k^(m-k)*Stirling1(n, m).
+From Peter Bala, Mar 14 2012: (Start)
+E.g.f.: exp(t*(1 + x)*log(1 + x)) = Sum_{n>=0} R(n,t)*x^n/n! = 1 + t*x + (t+t^2)x^2/2! + (-t+3*t^2+t^3)x^3/3! + .... Cf. A185164. The row polynomials R(n,t) are of binomial type and satisfy the recurrence R(n+1,t) = (t-n)*R(n,t) + t*d/dt(R(n,t)) + n*t*R(n-1,t) with R(0,t) = 1 and R(1,t) = t. Inverse array is A039621.
+(End)
+Sum_{k=0..n} (-1)^k * a(n,k) = A176118(n). - Alois P. Heinz, Aug 25 2021
+EXAMPLE
+Triangle begins:
+   1;
+   1,  1;
+  -1,  3,   1;
+   2, -1,   6,  1;
+  -6,  0,   5, 10,  1;
+  24,  4, -15, 25, 15, 1;
+  ...
+MAPLE
+for n from 1 to 20 do for k from 1 to n do
+printf(`%d, `, add(binomial(l, k)*k^(l-k)*Stirling1(n, l), l=k..n)) od: od:
+# second program:
+A008296 := proc(n, k) option remember; if k=1 and n>1 then (-1)^n*(n-2)! elif n=k then 1 else (n-1)*procname(n-2, k-1) + (k-n+1)*procname(n-1, k) + procname(n-1, k-1) end if end proc:
+seq(print(seq(A008296(n, k), k=1..n)), n=1..7); # Mélika Tebni, Aug 22 2021
+MATHEMATICA
+a[1, 1] = a[2, 1] = 1; a[n_, 1] = (-1)^n (n-2)!;
+a[n_, n_] = 1; a[n_, k_] := a[n, k] = (n-1) a[n-2, k-1] + a[n-1, k-1] + (k-n+1) a[n-1, k]; Flatten[Table[a[n, k], {n, 1, 12}, {k, 1, n}]][[1 ;; 67]]
+(* Jean-François Alcover, Apr 29 2011 *)
+PROG
+(PARI) {T(n, k) = if( k<1 || k>n, 0, n! * polcoeff(((1 + x) * log(1 + x + x * O(x^n)))^k / k!, n))}; /* Michael Somos, Nov 15 2002 */
+(SageMath) # uses[bell_matrix from A264428]
+# Adds 1, 0, 0, 0, ... as column 0 at the left side of the triangle.
+bell_matrix(lambda n: (-1)^(n-1)*factorial(n-1) if n>1 else 1, 7) # Peter Luschny, Jan 16 2016
+CROSSREFS
+Cf. A039621 (second kind), A354795 (variant), A185164, A005727 (row sums), A298511 (central).
+Columns: A045406 (column 2), A347276 (column 3), A345651 (column 4).
+Diagonals: A000142, A000217, A059302.
+Cf. A176118.
+Sequence in context: A131918 A010123 A039620 * A351397 A140185 A229341
+Adjacent sequences:  A008293 A008294 A008295 * A008297 A008298 A008299
+KEYWORD
+sign,tabl,easy,nice
+AUTHOR
+N. J. A. Sloane
+EXTENSIONS
+More terms from James Sellers, Jan 26 2001
+Edited by N. J. A. Sloane at the suggestion of Andrew Robbins, Dec 11 2007
+STATUS
+approved
+Lookup Welcome Wiki Register Music Plot 2 Demos Index WebCam Contribute Format Style Sheet Transforms Superseeker Recents
+The OEIS Community
+Maintained by The OEIS Foundation Inc.
+Last modified January 17 08:36 EST 2026. Contains 392107 sequences.
+License Agreements, Terms of Use, Privacy Policy
+]]
+
+
+]]]
+
+

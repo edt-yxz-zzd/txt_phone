@@ -1,4 +1,670 @@
 e others/app/termux/help/awk-see-gawk.txt
+工作循环模式:goto
+提前定义变量:goto
+注意事项牜杂项:goto
+  格式化打印不一致:goto
+  显示字符的统合码编号:goto
+    gawk字符的统合码表达型:goto
+    #print_unicode5char_#还有gawk附带的但非内置的很旧的ord(),chr()
+注意事项牜正则表达式:goto
+内置变量:goto
+
+[[
+注意事项牜杂项:here
+
+『$0』  not  『"$0"』
+『RS』  not  『$RS』
+『print RS "aa"』 not  『print RS"aa"』
+    #py:print(f'{RS}aa')
+『print RS "aa", $0』 <==> 『print(RS "aa", $0)』
+    <==> py.print(f'{RS}aa', VAR0, sep=OFS, end=ORS)
+    <==> py.print(f'{RS}aa{OFS}{VAR0}{ORS}', , sep='', end='')
+
+数组/字符串 址引 从1开始
+
+数组 都是 词典/映射 # {str:obj}
+  多维数组:
+    mx[i,j] <==> mx[f'{i}{SUBSEP}{j}'] 这里假设使用py.formatting_str
+
+数组 无需声明，也没有 数据式构造器:
+  d[0] = '' #直接开始赋值
+  d[1] = '' #通过赋值进行构造
+  真难看
+  #split(...)->array
+
+『s t』空格 是一个操作符，即 文本串联
+sub(r, s [, t]) vs gsub(r, s [, t]) -> num_substitutions  #num_matches
+  :s/r/s/
+  :s/r/s/g
+  注意:异于match()的参数次序
+match(s, r [, a]) -> zmay_idxpp/(0|idxpp)
+  # (s ~ r)
+  # RSTART := zmay_idxpp
+  # RLENGTH
+index(s, t) -> zmay_idxpp/(0|idxpp)
+length([s]) -> uint
+substr(s, i [, n]) -> s[i-1:]/s[i-1:i-1+n]
+
+格式化打印不一致:here
+# [gawk.printf === C.printf =!= bash.printf]
+printf %s 'z' | gawk -- '{ printf "%c" , substr($0, 1) }'
+  z
+printf %s 'z' | gawk -- '{ printf "%c" , "\"" substr($0, 1) }'
+  "
+printf %s 'z' | gawk -- '{ printf "%X" , "\"" substr($0, 1) }'
+  0
+    #vs:bash:
+    printf %X '"z'
+      7A
+echo | gawk -- '{ printf "%q" , "\"" }'
+  %q
+    #vs:bash:
+    printf %q '"'
+      \"
+
+printf %s 'z' | gawk -- '{ printf "%X" , substr($0, 1) }'
+  0
+    #why 『0』?
+    #   ??? 非十进制数???
+printf %s 'z' | gawk -- '{ system("printf %X "  substr($0, 1)) }'
+  ERROR:『printf: ‘z’: expected a numeric value』
+printf %s 'z' | gawk -- '{ system("printf %X \\\"\\"  substr($0, 1)) }'
+  7A
+
+显示字符的统合码编号:here
+  见下面:print_unicode5char_#还有gawk附带的但非内置的很旧的ord(),chr()
+  但是此方法对于『\0』不成立
+
+  #第一版:但是此方法对于『\n』『\0』不成立
+    C => 『\0』 字符串中不含『\0』即 『\0』不可见
+    bash => 『\\\n』变成续行动作 即『\n』不可见
+      fixed:见下面:版本二
+echo | gawk -- '{ system("printf %X \\\"\\"  "\"") }'
+  22
+echo | gawk -- '{ system("printf %X \\\"\\"  "一") }'
+  4E00
+echo | gawk -- '{ system("printf U+%04X \\\"\\"  "\"") }'
+  U+0022
+echo | gawk -- '{ system("printf U+%04X \\\"\\"  "\u0010FFff") }'
+  U+10FFFF
+    #gawk字符的统合码表达型:here
+echo | gawk -- '{ system("printf U+%04X \\\"\\"  " ") }'
+  U+0020
+echo | gawk -- '{ system("printf U+%04X \\\"\\"  "\t") }'
+  U+0009
+echo | gawk -- '{ system("printf U+%04X \\\"\\"  "\r") }'
+  U+000D
+echo | gawk -- '{ system("printf U+%04X \\\"\\"  "\0") }'
+  printf: ‘"’: expected a numeric value
+  U+0000
+    失败『\0』
+echo | gawk -- '{ system("printf U+%04X \\\"\\"  "\n") }'
+  printf: ‘"’: expected a numeric value
+  U+0000
+    失败『\n』
+printf U+%04X $'"\n'
+  U+000A
+printf U+%04X \"$'\n'
+  U+000A
+printf U+%04X $'"\0'
+  U+0000
+printf U+%04X \"$'\0'
+  U+0000
+    #奇怪，竟然可以，到底是真的可以，还是 越界访问结尾『\0』 还是 出错？
+printf %q \"$'\n'
+  『$'"\n'』
+printf %q \"$'\0'
+  『\"』
+    #也就是说『\0』不可见，所以前面是 越界访问
+
+版本二:
+    ++$'\n'
+    ++quoted_newline
+    至此，除了gawk字符串本来就不包含的『\0』外，其他字符都得以显示编码位次
+echo a\
+> b
+  #输出: 『ab』不含空格
+echo | gawk -v quoted_newline="\$'\\n'" -- '{ print quoted_newline }'
+  $'
+  '
+echo | gawk -v quoted_newline="\$'\\\\n'" -- '{ print quoted_newline }'
+  $'\n'
+echo | gawk -v quoted_newline="\$'\\n'" -- '{ system("printf U+%04X \\\"\\"  "\n"  quoted_newline ) }'
+  U+000A
+    #可行
+echo | gawk -v quoted_newline="\$'\\\\n'" -- '{ system("printf U+%04X \\\"\\"  "\n"  quoted_newline ) }'
+  U+000A
+    #也可行
+echo | gawk -v quoted_newline="\$'\\\\n'" -- '{ system("printf U+%04X \\\"\\"  "\0"  quoted_newline ) }'
+  printf: ‘"’: expected a numeric value
+  U+0000
+    #『\0』不可见
+
+echo | gawk -v quoted_newline="\$'\\\\n'" -- 'function print_unicode5char_(c){ system("printf U+%04X \\\"\\"  c  quoted_newline ) } ; {print_unicode5char_("\n")}'
+  U+000A
+
+]]
+[[
+===
+ls ~/../usr/share/awk/ -1
+  assert.awk
+  bits2str.awk
+  cliff_rand.awk
+  ctime.awk
+  ftrans.awk
+  getopt.awk
+  gettime.awk
+  group.awk
+  have_mpfr.awk
+  inplace.awk
+  intdiv0.awk
+  isnumeric.awk
+  join.awk
+  libintl.awk
+  noassign.awk
+  ns_passwd.awk
+  ord.awk
+  passwd.awk
+  processarray.awk
+  quicksort.awk
+  readable.awk
+  readfile.awk
+  rewind.awk
+  round.awk
+  shellquote.awk
+  strtonum.awk
+  tocsv.awk
+  walkarray.awk
+  zerofile.awk
+===
+du -h ~/../usr/share/awk/
+  120K
+mkdir /sdcard/0my_files/tmp/out4gawk/gawk_src/
+view /sdcard/0my_files/tmp/out4gawk/gawk_src/
+cp -iv -r ~/../usr/share/awk/ /sdcard/0my_files/tmp/out4gawk/gawk_src/
+ls /sdcard/0my_files/tmp/out4gawk/gawk_src/awk
+===
+]]
+[[
+cat ~/../usr/share/awk/ord.awk
+view /sdcard/0my_files/tmp/out4gawk/gawk_src/awk/ord.awk
+===
+# ord.awk --- do ord and chr
+
+# Global identifiers:
+#    _ord_:        numerical values indexed by characters
+#    _ord_init:    function to initialize _ord_
+#
+# Arnold Robbins, arnold@skeeve.com, Public Domain
+# 16 January, 1992
+# 20 July, 1992, revised
+
+BEGIN    { _ord_init() }
+
+function _ord_init(    low, high, i, t)
+{
+    low = sprintf("%c", 7) # BEL is ascii 7
+    if (low == "\a") {    # regular ascii
+        low = 0
+        high = 127
+    } else if (sprintf("%c", 128 + 7) == "\a") {
+        # ascii, mark parity
+        low = 128
+        high = 255
+    } else {        # ebcdic(!)
+        low = 0
+        high = 255
+    }
+
+    for (i = low; i <= high; i++) {
+        t = sprintf("%c", i)
+        _ord_[t] = i
+    }
+}
+function ord(str,    c)
+{
+    # only first character is of interest
+    c = substr(str, 1, 1)
+    return _ord_[c]
+}
+
+function chr(c)
+{
+    # force c to be numeric by adding 0
+    return sprintf("%c", c + 0)
+}
+===
+]]
+
+
+
+
+
+[[
+工作循环模式:here
+简单地说:数据驱动
+  ===
+  BEGIN         { <ACTION> }
+  <PREDICATE>   { <ACTION> }
+  <PREDICATE>   { <ACTION> }
+  ...
+  <PREDICATE>   { <ACTION> }
+  <PREDICATE>   { <ACTION> }
+    #其实:还有 函数定义
+  END           { <ACTION> }
+  ===
+  起始动作
+    自定义啥是行#line
+        #使用正则表达式:应该是ERE(egrep) 基本无需『\\』
+        #但是 有了 行 才有 ^$
+        #所以 此时未有『^』『$』#也许是 全文件起讫？
+    自定义啥是词#field
+        #称之为：词<<==感觉跟shell.word差不多，是个 基础对象类型
+  ===
+  处理每一行
+    应用所有:
+      <PREDICATE> { <ACTION> }
+    注意:就地修改:'{ gsub("\\s+", " "); print($0) }'
+      $0 : 当前行{就地修改进行中}
+      $1 : 当前行首词{就地修改进行中}
+      $2 : 当前行次词{就地修改进行中}
+  ===
+  结束动作
+  ===
+
+view others/app/termux/help/gawk.man.txt
+PATTERNS AND ACTIONS
+  pattern-action pair
+    pattern-action statements
+Patterns
+  AWK patterns may be one of the following:
+    BEGIN
+    END
+    BEGINFILE
+    ENDFILE
+    /regular expression/
+    relational expression
+    pattern && pattern
+    pattern || pattern
+    pattern ? pattern : pattern
+    (pattern)
+    ! pattern
+    pattern1, pattern2
+BEGIN,END:所有输入文件
+  BEGINFILE,ENDFILE:当前文件
+
+  ===
+  <PREDICATE>   { <ACTION> } ::=
+    (<BOOL_EXPR>)   { <ACTION> }
+      gawk '  $1 == "xx" { print $2 }'
+      gawk '  $1 ~ /xx/ { print $2 }'
+      gawk '  /aa/ && /xx/ { print $2 }'
+        #因为是 部分搜索 而非 整行匹配
+      gawk '  /aa/ || /xx/ { print $2 }'
+      gawk '  ! /xx/ { print $2 }'
+
+    /<PATTERN>/     { <ACTION> }
+      echo $'   a:b  cc  \n  d  e' | gawk -F: ' /\s+/ { gsub("\\s+", " "); print($0) }  '
+        =>『 a:b cc 』\n『 d e』
+        #注意:『\s』vs『\\s』
+      echo $'   a:b  cc  \n  d  e' | sed -n 's/\s\+/ /gp'
+      vim『:s/\s\+/ /g』
+
+    <PREDICATE>,<PREDICATE>
+      #range 首尾(包含两端，也可能 首 暨 尾)
+
+    <省略判定器即必然真> <省略动作即打印当前行 但 空的『{ }』是 无动作>
+
+
+
+]]
+
+[[
+提前定义变量:here
+
+提前定义变量以方便使用shell变量:
+  gawk -v var6awk="...$var6shell" ...
+
+
+gawk -v r=$? '' <<<$'a\nbb\nccc'
+  <NONE>
+gawk -v r=$? '1' <<<$'a\nbb\nccc'
+  a
+  bb
+  ccc
+false; gawk -v r=$? 'r == 1' <<<$'a\nbb\nccc'
+  a
+  bb
+  ccc
+false; gawk -v r=$? 'r == length($0)' <<<$'a\nbb\nccc'
+  a
+false; gawk -v r=$? 'r == length($0)-2 ; r == length($0)' <<<$'a\nbb\nccc'
+  a
+  ccc
+false; gawk -v r=$? '1 ; 1 ' <<<$'a\nbb\nccc'
+  a
+  a
+  bb
+  bb
+  ccc
+  ccc
+]]
+
+[[
+注意事项牜正则表达式:here
+
+注意:『.』含『\n』
+  即:(?a)DOTALL: 『.』含『\n』
+  需要不含，则改用『/[^\n]/』或『"[^\\n]"』或『"[^\n]"』
+
+注意:不支持『"\\d"』『/\d/』
+  但允许『"\\w"』『/\w/』
+  但允许『"\\s"』『/\s/』
+  ERE/egrep
+  #gawk: warning: regexp escape sequence `\d' is not a known regexp operator
+
+注意:全文模式:『^』 『$』是 『\A』 『\Z』 全文起讫，不受 『\n』 影响
+  vs:(?m)MULTILINE: 『^』 『$』 受 『\n』 影响 而 不再是 『\A』 『\Z』 全文起讫
+
+注意: bash 『... <<<'here_string'』相当于 『echo 'here_string' | ...』，即 后附个『\n』
+
+注意:不支持『\U』
+  使用『\u』表达所有字符，负载长度不固定
+
+注意:RS的情形很复杂
+  虽然很多正则表达式有效，但有的又无效
+  单『.』无效
+  其他情形尚未发现无效
+
+古怪:
+  可行:"[\\0-\\u10FFFF]"
+  可行:"[\\0-\\x7f]"
+  可行:"[\\0-\\u80]"
+  不行: "[\\0-\\x80]"
+    #难道是 从(?a)ASCII 切换到 (?u)UNICODE
+
+RS缺省值为『\n』而非 任意空格，也非 连续多个换行符
+  FS缺省值 至少 包含 空格、TAB、NEWLINE
+  FS缺省值为『[[:space:]]+』而非单个空格
+
+古怪:不一致:
+  空的RS=>全文单行 而非 每字符一行，也非使用缺省值
+  空的FS=>每字符一栏 而非 全行单栏，也非使用缺省值
+
+RS更新有效
+  RS RT
+    行起讫
+    RS是正则表达式，每一次读取下一行前，取用其更新值
+    RT是当前行的结束串/换行串，即前一次使用RS的匹配串
+
+===
+
+>>> help(re)
+>>> re.compile(r'(?a)')
+re.compile('(?a)', re.ASCII)
+>>> re.compile(r'(?m)')
+re.compile('(?m)', re.MULTILINE)
+>>> re.compile(r'(?s)')
+re.compile('(?s)', re.DOTALL)
+>>> re.compile(r'(?u)')
+re.compile('(?u)')
+>>> re.compile(r'(?ua)')
+re.error: bad inline flags: flags 'a', 'u' and 'L' are incompatible at position 4
+
+gawk -v RS='a' '{ print length($0) }' <<<$''
+  1
+    #输入似乎变成『$'\n'』
+gawk -v RS='' '{ print length($0) }' <<<$''
+  <None>
+    #???
+gawk '{ print length($0) }' <<<$''
+  0
+gawk '"a" == "." { print "matched" }' <<<$''
+  <None>
+gawk '"a" ~ /./ { print "matched" }' <<<$''
+  matched
+gawk '"a" ~ "." { print "matched" }' <<<$''
+  matched
+gawk '"ab" ~ "." { print "matched" }' <<<$''
+  matched
+    #不是 全文匹配，而是 搜索
+gawk '"\n" ~ "." { print "matched" }' <<<$''
+  matched
+    # 证明:DOTALL (?a)DOTALL: 『.』含『\n』
+gawk '"\n" ~ "[.]" { print "matched" }' <<<$''
+  <None>
+    #失效
+gawk '"\n" ~ "[^n]" { print "matched" }' <<<$''
+  matched
+gawk '"\n" ~ "[^\n]" { print "matched" }' <<<$''
+  <None>
+    #可以
+gawk '"\n" ~ "[^\\n]" { print "matched" }' <<<$''
+  <None>
+    #也可以
+
+
+gawk -v RS='a' --  '/^\w\w$/ { print length($0), $0, RT }' <<<$'66a99a22\n44\n77\na55'
+  2 66 a
+  2 99 a
+    #证明:非(?m)MULTILINE模式，即 全文模式:『^』 『$』是 『\A』 『\Z』 全文起讫，不受 『\n』 影响
+    #但 为何没有『55』？
+    # 难道是因为『$』行讫 不匹配 EOF全文讫？其实是因为 多了个『\n』
+gawk -v RS='[a-z]' --  '/^\w\w$/ { print length($0), $0, RT }' <<<$'66a99b22\n44\n77\nc55'
+  2 66 a
+  2 99 b
+gawk -v RS='[a-z]' --  '{ print length($0), $0, RT }' <<<$'66a99b22\n44\n77\nc55'
+  2 66 a
+  2 99 b
+  9 22
+  44
+  77
+   c
+  3 55
+  <BLANK>
+    #『3』=>『55\n』
+gawk -v RS='[a-z]' --  '/^\w\w\n?$/ { print length($0), $0, RT }' <<<$'66a99b22\n44\n77\nc55'
+  2 66 a
+  2 99 b
+  3 55
+  <BLANK>
+    #证明:全文确实多了个『\n』
+gawk -v RS='[a-z]' --  '/^\w\w(\n\n)?$/ { print length($0), $0, RT }' <<<$'66a99b22\n44\n77\nc55\n'
+  2 66 a
+  2 99 b
+  4 55
+  <BLANK>
+  <BLANK>
+    #证明:全文确实多了个『\n』，不论是否原文最后有个『\n』
+echo $'66a99b22\n44\n77\nc55\n' | gawk -v RS='[a-z]' --  '/^\w\w(\n\n)?$/ { print length($0), $0, RT }'
+  同上
+echo -n $'66a99b22\n44\n77\nc55\n' | gawk -v RS='[a-z]' --  '/^\w\w(\n\n)?$/ { print length($0), $0, RT }'
+  2 66 a
+  2 99 b
+echo -n $'66a99b22\n44\n77\nc55\n' | gawk -v RS='[a-z]' --  '/^\w\w\n?$/ { print length($0), $0, RT }'
+  2 66 a
+  2 99 b
+  3 55
+  <BLANK>
+    #证明:是bash的锅
+
+
+echo -n 'a;;b' | gawk -v RS=';' OFS='%' --  '{ print length($0), $0, RT }'
+  gawk: cmd. line:1: OFS=%
+  gawk: cmd. line:1:     ^ syntax error
+echo -n 'a;;b' | gawk -v RS=';' -v OFS='%' --  '{ print length($0), $0, RT }'
+  1%a%;
+  0%%;
+  1%b%
+echo -n 'a;;b' | gawk -v RS='.' -v OFS='%' --  '{ print length($0), $0, RT }'
+  4%a;;b%
+echo -n 'a..b' | gawk -v RS='.' -v OFS='%' --  '{ print length($0), $0, RT }'
+  1%a%.
+  0%%.
+  1%b%
+    #证明:RS中单『.』无效化
+echo -n 'a..b' | gawk -v RS='..' -v OFS='%' --  '{ print length($0), $0, RT }'
+  0%%a.
+  0%%.b
+    #证明:RS中非单『.』依旧有效
+echo -n 'a..b' | gawk -v RS='[-]' -v OFS='%' --  '{ print length($0), $0, RT }'
+  4%a..b%
+echo -n 'a0b' | gawk -v RS='[\u10000]' -v OFS='%' --  '{ print length($0), $0, RT }'
+  3%a0b%
+echo -n $'a\U0010FFFFb' | gawk -v RS='[\U0010FFFF]' -v OFS='%' --  '{ print length($0), $0, RT }'
+  gawk: warning: escape sequence `\U' treated as plain `U'
+echo -n $'a9b' | gawk -v RS='[\u39]' -v OFS='%' --  '{ print length($0), $0, RT }'
+  1%a%9
+  1%b%
+echo -n $'a\U0010FFFFb' | gawk -v RS='[\u10FFFF]' -v OFS='%' --  '{ print length($0), $0, RT }'
+  1%a%�
+  1%b%
+    #证明:gawk使用『\u』表达所有字符，负载长度不固定
+
+
+echo -n $'azb' | gawk -v RS='[z-\x7F]' -v OFS='%' --  '{ print length($0), $0, RT }'
+  1%a%z
+  1%b%
+echo -n $'azb' | gawk -v RS='[z-\u10FFFF]' -v OFS='%' --  '{ print length($0), $0, RT }'
+  1%a%z
+  1%b%
+echo -n $'azb' | gawk -v RS='[z-\u80]' -v OFS='%' --  '{ print length($0), $0, RT }'
+  1%a%z
+  1%b%
+echo -n $'azb' | gawk -v RS='[z-\x80]' -v OFS='%' --  '{ print length($0), $0, RT }'
+  gawk: fatal: invalid regexp: Invalid collation character: /[z-�]/
+  发现:古怪:
+    可行:"[\\0-\\u10FFFF]"
+    可行:"[\\0-\\x7f]"
+    可行:"[\\0-\\u80]"
+    不行: "[\\0-\\x80]"
+      #难道是 从(?a)ASCII 切换到 (?u)UNICODE
+
+
+====
+echo -n $'a\n\nb \tc' | gawk --  '{ print length($0), $0 }'
+  1 a
+  0
+  4 b     c
+    #证明:RS缺省值为『\n』而非 任意空格，也非 连续多个换行符
+echo -n $'a\nb \tc' | gawk -v RS='x' -v FS='\\s+' --  '{ print length($0), $0  "#" NF "--" length($1) "-" $1 "--" length($2) "-" $2  "--" length($3) "-" $3 }'
+  #输出同下{[[:space:]]+}
+echo -n $'a\nb \tc' | gawk -v RS='x' -v FS='[[:space:]]+' --  '{ print length($0), $0  "#" NF "--" length($1) "-" $1 "--" length($2) "-" $2  "--" length($3) "-" $3 }'
+  6 a
+  b       c#3--1-a--1-b--1-c
+    输出同下{缺省}
+echo -n $'a\nb \tc' | gawk -v RS='x' --  '{ print length($0), $0  "#" NF "--" length($1) "-" $1 "--" length($2) "-" $2  "--" length($3) "-" $3 }'
+  6 a
+  b       c#3--1-a--1-b--1-c
+    #证明:FS缺省值 至少 包含 空格、TAB、NEWLINE
+    #证明:FS缺省值为『[[:space:]]+』而非单个空格
+
+====
+echo -n $'abcabcabc' | gawk -v RS='' -v FS='' -v OFS='%' --  '{ print length($0), $0, RT "--$1=" $1 }'
+  9%abcabcabc%--$1=a
+    #发现:古怪:不一致:
+    #???:空的RS=>全文单行 而非 每字符一行
+      #怀疑:也许RS使用缺省值『\n』
+    #???:空的FS=>每字符一栏 而非 全行单栏
+      #怀疑:也许FS使用缺省值『[[:space:]]+』
+echo -n $'a\nb \tc' | gawk -v RS='' --  '{ print length($0), $0 }'
+  6 a
+  b     c
+    #证明:空的RS=>全文单行 而非 每字符一行，也非使用缺省值
+echo -n $'a\nb \tc' | gawk -v RS='x' -v FS='' --  '{ print length($0), $0  "#" NF }'
+  6 a
+  b       c#6
+    #证明:空的FS=>每字符一栏 而非 全行单栏，也非使用缺省值
+
+====
+echo -n $'abcabcabc' | gawk -v RS='b' -v FS='' -v OFS='%' --  '{ RS=$1; print length($0), $0, RT "--$1=" $1 }'
+  1%a%b--$1=a
+  1%c%a--$1=c
+  1%b%c--$1=b
+  1%a%b--$1=a
+  1%c%--$1=c
+    #证明:RS更新有效
+
+====
+]]
+[[
+view others/app/termux/help/gawk.man.txt
+数组 址引 从1开始
+数组 都是 词典/映射 # {str:obj}
+  多维数组:
+    mx[i,j] <==> mx[f'{i}{SUBSEP}{j}'] 这里假设使用py.formatting_str
+
+===
+内置变量:here
+Built-in Variables
+  ===
+  行胞相关:
+    FNR:行号乊当前文件#已见行数#即从1开始
+        NR:行号乊所有输入文件#累计
+    NF:胞数纟当前行
+    OFS:换胞符纟输出
+    ORS:换行符纟输出
+        相当于py.print(...,sep=OFS,end=ORS)
+    RS:正则表达式纟换行符纟输入/记录分隔符/record separator
+      #line / row
+      缺省值『\n』
+      RT:换行符纟当前行
+        ===RS所匹配的字符串 或者 空串乊文件结束
+        是 当前行 与 下一行 之间的换行串
+      没有对应的:『FT:换胞符纟当前胞』
+    FS:正则表达式纟换胞符纟输入/栏目分隔符/field separator
+      #cell / column segment
+      缺省值『[[:space:]]+』『"\\s+"』『/\s+/』
+      FPAT 正则表达式 #优先度高于FS
+      FIELDWIDTHS 长度数组 => 定长 #优先度高于FS
+        胞数固化，各胞定长
+        regex'\d+(\s+\d+)*'
+        regex'(\d+:)?\d+(\s+(\d+:)?\d+)*'
+          可选:忽略的前导符的长度
+    RSTART, RLENGTH:结果纟正则表达式搜索match() #由于 址引 从1开始，所以0表示失败/无匹配
+  ===
+  数组相关:
+      SUBSEP     The string used to separate multiple subscripts in array elements, by default "\034".
+  ===
+  文本相关:
+      IGNORECASE 欤忽略大小写{字符串操作}
+  ===
+  文件名相关:
+      ARGV 命令行参数:即:数组纟输入文件
+          ARGC     数量纟输入文件
+          ARGIND 址引纟当前文件
+          FILENAME:当前文件名
+              === ARGV[ARGIND] if ARGC > 0 else '-'
+              但是 BEGIN 时 FILENAME 未定义
+  ===
+  浮点数相关:
+      CONVFMT    The conversion format for numbers, "%.6g", by default.
+      OFMT       The output format for numbers, "%.6g", by default.
+      PREC       The working precision of arbitrary precision floating-point numbers, 53 by default.
+          任意固定的浮点数精度
+      ROUNDMODE  The rounding mode to use for arbitrary precision arithmetic on numbers, by default "N" (IEEE-754 roundTiesToEven mode).
+  ===
+  其他:
+      ERRNO   系统调用错误代码
+      ENVIRON 词典纟环境变量
+      FUNCTAB 词典纟用户自定义函数
+      PROCINFO:词典{AWK程序本身信息}
+      SYMTAB   词典纟全局变量
+      TEXTDOMAIN:The text domain of the AWK program; used to find the localized translations for the program's strings.
+          #本地化翻译
+      BINMODE: On non-POSIX systems, specifies use of "binary" mode for all file I/O.
+      LINT:    Provides dynamic control of the --lint option from within an AWK program.
+  ===
+
+]]
+
+
+
+
+[[[[[[[[[
+旧日:
+===
+
 
 man gawk
 
@@ -241,9 +907,17 @@ view others/app/termux/help/gawk.man.txt
 
 [[
 ！字符串 址引 从一开始 而非 从零开始！
-sub(r, s [, t]), gsub(r, s [, t])
-match(s, r [, a]) # (s~r) # RSTART RLENGTH
-index(s, t), length([s])
+sub(r, s [, t]) vs gsub(r, s [, t]) -> num_substitutions  #num_matches
+  :s/r/s/
+  :s/r/s/g
+  注意:异于match()的参数次序
+match(s, r [, a]) -> zmay_idxpp/(0|idxpp)
+  # (s ~ r)
+  # RSTART := zmay_idxpp
+  # RLENGTH
+index(s, t) -> zmay_idxpp/(0|idxpp)
+length([s]) -> uint
+substr(s, i [, n]) -> s[i-1:]/s[i-1:i-1+n]
 
 ===
        sub(r, s [, t])        Just like gsub(), but replace only the first
@@ -284,5 +958,11 @@ index(s, t), length([s])
                               elements in the array.
 
 
+       substr(s, i [, n])     Return the at most n-character substring of s
+                              starting at i.  If n is omitted, use the rest of
+                              s.
+
 ]]
 
+===
+]]]]]]]]]

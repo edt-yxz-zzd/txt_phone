@@ -1,0 +1,265 @@
+
+e ../lots/NOTE/Rust/The_Rust_Programming_Language-note.txt
+
+[[
+Rust内存管理:感觉不太行:真的不能构建强引用循环吗？
+由于强引用即是『独占拥有』，所以 要么是单根树，要么是环根树
+考虑构建环:
+  Option
+
+struct C {
+    may_c: Option<C>,
+}
+fn f() {
+    C c0 = C{ may_c:None, };
+    C c1 = C{ may_c:Some(c0), };
+      #c0无效
+    &C c0_ = c1.may_c.??? ;
+    c0_.may_c = Some(c1);
+      #c0_ 时限 受制于 c1，赋值导致 c1先于c0_完蛋，应该编译失败
+}
+  ==>>似乎没毛病
+  那就是说，时限的作用是确保环形根不能出现
+  得到一丛生长于栈上的树林
+  可这样一来，像是 双向链表之类的动态链接运用 应该很难实现吧？
+
+对象与子部件之间的时限关系是怎么的？
+  子部件可以被覆写，所以子部件时限更短
+  父对象完蛋，子部件也跟着完蛋，所以父对象时限更长
+  子部件 应当不可以被移出，否则 父对象 处于 不完整的状态
+    则所有可以移动的对象 都是 移动自于栈上
+    但是 是否 有swap操作？
+      若有，则 子部件 可以脱离父对象而存活
+
+第二种可能的毛病:
+  C& c_ = a.b.c;
+  a.b = ...;
+  c_ 悬空
+
+『a.b = d;』要求证明:[不存在[d -*-> a]][不存在[外链借用c_ <-*- b]]
+
+===
+《The Rust Programming Language》
+Rust the book:
+  http://127.0.0.1:1257/book/ch04-01-what-is-ownership.html
+
+shallow copy
+deep copy
+
+move
+  Rust will never automatically create “deep” copies of your data. Therefore, any automatic copying can be assumed to be inexpensive in terms of runtime performance.
+
+Ownership Rules
+  + Each value in Rust has an owner.
+  + There can only be one owner at a time.
+  + When the owner goes out of scope, the value will be dropped.
+    赋值是移动，而非复制{深、浅}
+      .clone()
+      Copy trait:任何部件不含Drop trait
+        整数:自动复制
+        Stack-Only Data: Copy
+        The reason is that types such as integers that have a known size at compile time are stored entirely on the stack, so copies of the actual values are quick to make.
+
+borrowing
+  Returning ownership of parameters
+    But this is too much ceremony and a lot of work for a concept that should be common. Luckily for us, Rust has a feature for using a value without transferring ownership, called references.
+  Unlike a pointer, a reference is guaranteed to point to a valid value of a particular type for the life of that reference.
+  Just as variables are immutable by default, so are references.
+    默认不可修改
+    let mut x=...
+    &mut x
+  Mutable references have one big restriction: if you have a mutable reference to a value, you can have no other references to that value.
+  It’s something that new Rustaceans struggle with because most languages let you mutate whenever you’d like.
+    使用 子作用域 区分开来
+    As always, we can use curly brackets to create a new scope, allowing for multiple mutable references, just not simultaneous ones
+    Note that a reference’s scope starts from where it is introduced and continues through the last time that reference is used.
+      自动化最小作用域纟引用
+      #???所以，所有引用 只能出现在栈中？
+  The benefit of having this restriction is that Rust can prevent data races at compile time.
+data race
+  A data race is similar to a race condition and happens when these three behaviors occur:
+    + Two or more pointers access the same data at the same time.
+    + At least one of the pointers is being used to write to the data.
+    + There’s no mechanism being used to synchronize access to the data.
+
+Dangling References
+  In languages with pointers, it’s easy to erroneously create a dangling pointer—a pointer that references a location in memory that may have been given to someone else—by freeing some memory while preserving a pointer to that memory.
+  In Rust, by contrast, the compiler guarantees that references will never be dangling references
+lifetime
+  missing lifetime specifier
+    函数返回引用
+    『for (i, &item) in bytes.iter().enumerate() { ... }』
+
+
+The Rules of References
+  + At any given time, you can have either one mutable reference or any number of immutable references.
+  + References must always be valid.
+
+The Slice Type
+  Slices let you reference a contiguous sequence of elements in a collection rather than the whole collection. A slice is a kind of reference, so it does not have ownership.
+  Now we’re tracking a starting and an ending index, and we have even more values that were calculated from data in a particular state but aren’t tied to that state at all. 
+    数据有效性依赖于其他数据，比如说，址引
+
+  A string slice is a reference to part of a String
+    entire
+    a reference to a portion of the String, specified in the extra [0..5] bit.
+
+输入类型:&String 改为 &str #i.e. string_slice
+  This flexibility takes advantage of deref coercions
+
+
+
+Rather than ensuring that a type has the behavior we want, lifetimes ensure that references are valid as long as we need them to be.
+  时间有效性:存活性、数据不变性/或者更宽泛些:理矩关系维持性
+  空间有效性:空间结构、数目
+The Rust compiler has a borrow checker that compares scopes to determine whether all borrows are valid.
+  借用=?=引用
+Ultimately, lifetime syntax is about connecting the lifetimes of various parameters and return values of functions.
+
+We’ve told Rust that the lifetime of the reference returned by the "longest" function is the same as the smaller of the lifetimes of the references passed in.
+  输出引用的时限 是 同名时限的输入中的最短时限
+fn longest<'a>(x: &'a str, y: &'a str) -> &'a str {
+    if x.len() > y.len() {
+        x
+    } else {
+        y
+    }
+}
+
+Lifetime Annotations in Struct Definitions
+
+This annotation means an instance of ImportantExcerpt can’t outlive the reference it holds in its part field.
+struct ImportantExcerpt<'a> {
+    part: &'a str,
+}
+
+fn main() {
+    let novel = String::from("Call me Ishmael. Some years ago...");
+    let first_sentence = novel.split('.').next().expect("Could not find a '.'");
+    let i = ImportantExcerpt {
+        part: first_sentence,
+    };
+}
+
+
+lifetime elision rules
+  允许引用时限缺省的情景:虽然可以缺省，但不代表正确，不能通过检查还是得手动写
+  + The first rule is that the compiler assigns a lifetime parameter to each parameter that’s a reference.
+    假设输入引用时限各不同
+  + The second rule is that, if there is exactly one input lifetime parameter, that lifetime is assigned to all output lifetime
+    输入引用时限唯一则赋予作为输出引用的时限
+  + The third rule is that, if there are multiple input lifetime parameters, but one of them is &self or &mut self because this is a method, the lifetime of self is assigned to all output lifetime parameters.
+    对象方法的输出引用的时限被赋予对象的时限
+      #这显然不保证正确
+
+
+
+Lifetime Annotations in Method Definitions
+impl<'a> ImportantExcerpt<'a> {
+    fn announce_and_return_part(&self, announcement: &str) -> &str {
+        println!("Attention please: {announcement}");
+        self.part
+    }
+}
+
+The Static Lifetime
+  One special lifetime we need to discuss is 'static, which denotes that the affected reference can live for the entire duration of the program.
+let s: &'static str = "I have a static lifetime.";
+
+
+Generic Type Parameters, Trait Bounds, and Lifetimes Together
+    Trait Bound:『where T: Display』
+    Generic Type Parameters:『<'a, T>』
+    generic lifetime parameter:『'a』
+    ===
+    Generic type parameters let you apply the code to different types.
+    ===
+    Traits and trait bounds ensure that even though the types are generic, they’ll have the behavior the code needs.
+    ===
+    You learned how to use lifetime annotations to ensure that this flexible code won’t have any dangling references.
+    ===
+use std::fmt::Display;
+fn longest_with_an_announcement<'a, T>(
+    x: &'a str,
+    y: &'a str,
+    ann: T,
+) -> &'a str
+where
+    T: Display,
+{
+    println!("Announcement! {ann}");
+    if x.len() > y.len() {
+        x
+    } else {
+        y
+    }
+}
+
+
+===
+
+Generic Types, Traits, and Lifetimes
+消除重复型冗余
+  重复的指令序列-->函数{参数}
+    数据形参/占位符:代表不特定的某些值
+  形似的函数-->类型泛化
+    类型形参/占位符:代表不特定的某些类型
+  重复的框架-->
+    静态适配接口:适配局部差异
+duplicating code is tedious and error prone.
+eliminate duplication
+
+特化/具现化
+Monomorphization is the process of turning generic code into specific code by filling in the concrete types that are used when compiled. I
+monomorphized version of the code
+
+
+
+
+Traits: Defining Shared Behavior
+A trait defines functionality a particular type has and can share with other types.
+
+pub trait Summary {
+    fn summarize(&self) -> String;
+}
+pub struct NewsArticle {
+    pub headline: String,
+    pub location: String,
+    pub author: String,
+    pub content: String,
+}
+impl Summary for NewsArticle {
+    fn summarize(&self) -> String {
+        format!("{}, by {} ({})", self.headline, self.author, self.location)
+    }
+}
+
+users of the crate
+One restriction to note is that we can implement a trait on a type only if at least one of the trait or the type is local to our crate.
+  we can’t implement external traits on external types.
+  This restriction is part of a property called coherence, and more specifically the orphan rule, so named because the parent type is not present.
+    This rule ensures that other people’s code can’t break your code and vice versa.
+    Without the rule, two crates could implement the same trait for the same type, and Rust wouldn’t know which implementation to use.
+
+Traits as Parameters
+pub fn notify(item: &impl Summary) {
+    println!("Breaking news! {}", item.summarize());
+}
+Trait Bound Syntax
+pub fn notify<T: Summary>(item: &T) {
+    println!("Breaking news! {}", item.summarize());
+}
+pub fn notify(item: &(impl Summary + Display)) {}
+pub fn notify<T: Summary + Display>(item: &T) {}
+fn some_function<T: Display + Clone, U: Clone + Debug>(t: &T, u: &U) -> i32 {}
+fn some_function<T, U>(t: &T, u: &U) -> i32
+where
+    T: Display + Clone,
+    U: Clone + Debug,
+{}
+fn returns_summarizable() -> impl Summary {}
+impl<T: Display> ToString for T {
+    // --snip--
+}
+===
+]]

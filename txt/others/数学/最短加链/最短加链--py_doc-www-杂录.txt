@@ -1,5 +1,41 @@
-最小加法链
+最短加链
+  old name:最小加法链
 www_download_pdf:goto
+推导定理:goto
+    [存在反例513=171*3,最少加法(513)==10==最少加法(171)]
+    [存在反例382==191*2,最少加法(382)==11==最少加法(191)]
+    ###:
+    view script/搜索冫首个特例纟最短加链牜查表.py
+    [191==min{u | [u:<-[1..]][ℓ(2*u) == ℓ(u)]}]
+    [171==min{u | [u:<-[1..]][ℓ(3*u) == ℓ(u)]}]
+    [3277==min{u | [u:<-[1..]][ℓ(5*u) == ℓ(u)]}]
+    [2731==min{u | [u:<-[1..]][ℓ(6*u) == ℓ(u)]}]
+后来再次前移{前附于{推导定理}}:
+  新发现:公式:
+    @20251213
+    [12509 == min{n | [n:<-[1..]][ℓ(n) < ℓ*(n)]}]
+    @20251214
+    [375_494_703==375494703==3_7549_4703==min{u | [u:<-[1..]][ℓ(2*u) < ℓ(u)]}]
+      [34 == ℓ(2*375494703) < ℓ(375494703) == 35]
+      [2**28 < 375494703 < 2**29]
+    [30_958_077==30958077==3095_8077==min{u | [u:<-[1..]][ℓ(4*u) == ℓ(2*u) == ℓ(u)]}]
+  [[
+  ===
+  ####@20251213:发现: [12509 == min{n | [n:<-[1..]][ℓ(n) < ℓ*(n)]}]
+  ===
+  ####@20251214:发现:
+  /sdcard/0my_files/book/math/addition_chains/'Addition chains, vector chains, and efficient computation(2021)(Edward G.Thurber).pdf'
+  ==>>:
+  [c(46)==257_661_019_487==257661019487==2576_6101_9487]
+    即:[257_661_019_487==257661019487==2576_6101_9487 == min{u | [u:<-[1..]][46==ℓ(u)]}]
+    #首个正整数牜最少加次纟最短加链达到四十六
+  [375_494_703==375494703==3_7549_4703==min{u | [u:<-[1..]][ℓ(2*u) < ℓ(u)]}]
+  [30_958_077==30958077==3095_8077==min{u | [u:<-[1..]][ℓ(4*u) == ℓ(2*u) == ℓ(u)]}]
+  [[u:<-[1..]] -> [ℓ(u) <= 9] -> [Equality4Scholz_Brauer_conjecture_at_(u)]]
+  ===
+  ]]
+
+
 
 [[[[[ver1:buggy...
 view script/min_add.py
@@ -749,8 +785,8 @@ view /sdcard/0my_files/tmp/out4py/min_add_ver2.py.加载下载的数据并调用
 
 
 
-
 [[[[[推导定理:
+
 [是加法链 :: [int] -> bool]
 [最少加法 :: pint -> uint]
 [最小加法链集 :: pint -> {加法链}]
@@ -2176,11 +2212,11 @@ https://oeis.org/A003313
     >>> q**100 < 2**213*10**1500 < (q+1)**100
     True
 
-    [2.123164629 < e < 2.123164630]
+    [2.123164629 < et < 2.123164630]
     ce8 = 212316463
 from seed.math.floor_ceil import floor_log2, floor_log_, ceil_log2, floor_kth_root_, ceil_kth_root_
     ]]
-[ceil(10**k*pow(2**(ceil(e*10**8)), 1/10**8))
+[ceil(10**k*pow(2**(ceil(et*10**8)), 1/10**8))
 == ceil(10**k*pow(2**ce8, 1/10**8))
 == ceil(pow((10**k)**(10**8)*2**ce8, 1/10**8))
 == ceil(pow(10**(k*10**8)*2**ce8, 1/10**8))
@@ -2233,24 +2269,45 @@ http://wwwhomes.uni-bielefeld.de/achim/addition_chain.html
 ===
 Shortest Addition Chains
 Introduction
-A finite sequence of positive integers a0, a1, ..., ar is called an addition chain iff for each element ai, but the first a0 which equals 1, there exist elements in the sequence with smaller indices j and k such that ai = aj + ak [1].
-Preciser this is called an addition chain of length r for its last number ar. It can be interpreted like calculating n = ar starting from 1 by addition of only previous calculated numbers. Let us restrict the definition a bit more: addition chains should be strictly monotonic increasing. This can be achieved by reordering and dropping multiple numbers. As a consequence a1=2 and a2=3 or 4 always (as long as r > 1). Now ask for the minimal length of an addition chain for a given number n and call this value ℓ(n). If we demand that j or k equals i-1 for all positive indices i -- each ai in the chain requires the previous ai-1, we call such a chain a star-chain and denote its minimal length by ℓ*(n) [2]. All addition chains for a given number n which have minimal length are called shortest addition chains (for its last/largest number).
+A finite sequence of positive integers a0, a1, ..., a[r] is called an addition chain iff for each element ai, but the first a0 which equals 1, there exist elements in the sequence with smaller indices j and k such that ai = aj + ak [1].
+Preciser this is called an addition chain of length r for its last number a[r]. It can be interpreted like calculating n = a[r] starting from 1 by addition of only previous calculated numbers. Let us restrict the definition a bit more: addition chains should be strictly monotonic increasing. This can be achieved by reordering and dropping multiple numbers. As a consequence a1=2 and a2=3 or 4 always (as long as r > 1). Now ask for the minimal length of an addition chain for a given number n and call this value ℓ(n). If we demand that j or k equals i-1 for all positive indices i -- each ai in the chain requires the previous ai-1, we call such a chain a star-chain and denote its minimal length by ℓ*(n) [2]. All addition chains for a given number n which have minimal length are called shortest addition chains (for its last/largest number).
+  #[ℓ(n) := 最少加法次数(n)]
+  #[ℓ(n) := 长度纟最短加链纟(n)-1]
+    #不含 首『1』
+    #即 真实 应用加法的次数
 I highly recommand Knuth's survey in section 4.6.3, "Evaluation of Powers", of The Art of Computer Programming, Volume 2: Seminumerical Algorithmus (3. edition appeared 1997, 2nd. ed. 1981, 1st ed. 1968) [6]. To illustrate shortest addition chains for each n < 149 one may track the path from the root 1 to the corresponding node n in the following tree:
 Addition Chain Tree
 Such a tree can't be extended gapless to larger n because in the triple 43, 77, 149 any two numbers exclude the third for a shortest addition chain representation in a common tree.
 Lower and Upper Bounds of ℓ(n)
 Write n in its binary representation and denote by v(n) the number of ones in this representation and by λ(n) the binary logarithm of n rounded to the next integer down in the case it is not already integer (floor-function). Then it is obvious through construction of an addition chain according by the russian multiplication, that ℓ(n) <= λ(n) + v(n) - 1. An open conjecture states a lower limit of λ(n) + log2(v(n)).
+  [[
+[v(n) := n.bit_count()]
+[λ(n) := floor(log2(n))]
+[s(n) := ℓ(n)-λ(n)]
+  the number of small steps of n
+
+上界:[ℓ(n) <= λ(n) + v(n) - 1]
+下界猜想:[ℓ(n) >= λ(n) + log2(v(n))]
+  即:[ℓ(n) >= λ(n) + ceil_log2(v(n))]
+
+>>> ceil_log2 = lambda n: (n-1).bit_length()
+>>> λ = floor_log2 = lambda n: n.bit_length() -1
+>>> v = int.bit_count
+
+
+  ]]
+
 Notation
 Notice: The definitions of v(n) and λ(n) are given in the previous paragraph.
 s(n)
 the number of small steps of n defined as the difference of the length of its shortest addition chain and the binary logarithm (rounded down).
 s(n) = ℓ(n)-λ(n)
 Doubling step
-ai = ai-1 + ai-1
+ai = a[i-1] + a[i-1]
 Star step
-ai = ai-1 + aj with j < i
+ai = a[i-1] + aj with j < i
 Small step
-λ(ai) = λ(ai-1)
+λ(ai) = λ(a[i-1])
 Standard step
 ai = aj + ak with i > j > k
 L(r)
@@ -2277,11 +2334,67 @@ g(r) = exp( 1/d(r) ∑i ∈ L(r) ln i )
 p(r)
 the "most probable" number which has a shortest addition chain of length r
 p(r) = j: fr(j) = maxh fr(h) with fr(i) = ∑k ∈ N |{ j ∈ L(r): |i-j|=k }|/4k = ∑j ∈ L(r) 4-|i-j|
+  # ??? 4k --> 4^k
 The base 4 of the power in the preceeding formula can be replaced by every C >= 2, but if C < 2 a different value for p(r) could be achieved.
 Moreover for all i and for all C > 1 holds fr(i) < (C+1)/(C-1) . Furthermore p(r) equals the median of a maximal subset of L(r) which is convex, compact or connected, i.e. it is an interval. For the values r <= 43 but r ∈ {8,12,17,37,41,...} this maximal interval is unique. Of cource in the case the number of elements of the interval is even, p(r) may be the upper-median or the lower-median.
 σ(r)
 the standard deviation of the numbers which have a shortest addition chain of length r
 σ2(r) = 1/d(r) ∑i ∈ L(r) i2 - μ(r)2
+  [[
+Doubling step
+  [us[i] == 2*us[i-1]]
+Star step
+  [us[i] == us[i-1] + us[k]]
+    #带星号版
+Small step
+  [λ(us[i]) == λ(us[i-1])]
+    xx:???但是，与s(n)的定义 并无明显关系
+    xx:除了:[λ(us[i]) == λ(us[i-1])][λ(us[i]) == 1+λ(us[i-1])]
+    xx:也有可能:[λ(us[i]) < λ(us[i-1])]
+    xx:也有可能:[λ(us[i]) > 1+λ(us[i-1])]
+    <<==:
+    注意:是『λ』而不是『ℓ』
+    ===
+    !! [us[i-1] < us[i] <= 2*us[i-1]]
+    [log2(us[i-1]) < log2(us[i]) <= log2(2*us[i-1]) == 1+log2(us[i-1])]
+    [0 < log2(us[i]) -log2(us[i-1]) <= 1]
+    [0 <= floor_log2(us[i]) -floor_log2(us[i-1]) <= 1]
+    !! [λ(n) := floor(log2(n))]
+    [0 <= λ(us[i]) -λ(us[i-1]) <= 1]
+    ===
+Standard step
+  [us[i] == us[j] + us[k]][i>j>k]
+    互斥:Doubling step
+[L(r) := {u | [u:<-[1..=2**r]][ℓ(u) == r]}]
+  the set of numbers which have a shortest addition chain of length r
+[d(r) := len(L(r))]
+[c(r) := min(L(r))]
+[(2**r) == max(L(r))]
+  #holds trivally
+[m(r) := med(L(r))]
+  the median of numbers which have a shortest addition chain of length r
+  ???中位数???难道d(r)必是奇数？非是，后面的表格附注:偶数d(r)时中位数有两个
+[μ(r) := sum(L(r))/d(r)]
+  the arithmetric average of numbers which have a shortest addition chain of length r
+[g(r) := exp(sum(map(ln_, L(r)))/d(r))]
+  the geometric average of numbers which have a shortest addition chain of length r
+[p(r) := max([1..=2**r], key=fr)] where fr:
+  [fr(i) := sum[len{u | [u:<-L(r)][abs(i-u) == n]}/4**n | [n:<-[0..]]]]
+    ??? 除零-->幂方
+  or:
+  [fr(i) := sum[(4-abs(i-u)) | [u:<-L(r)]]]
+  ###p(r) = j: fr(j) = maxh fr(h) with fr(i) = ∑k ∈ N |{ j ∈ L(r): |i-j|=k }|/4k = ∑j ∈ L(r) 4-|i-j|
+  the "most probable" number which has a shortest addition chain of length r
+  The base 4 of the power in the preceeding formula can be replaced by every C >= 2, but if C < 2 a different value for p(r) could be achieved.
+  Moreover for all i and for all C > 1 holds fr(i) < (C+1)/(C-1) .
+    Furthermore p(r) equals the median of a maximal subset of L(r) which is convex, compact or connected, i.e. it is an interval.
+      For the values r <= 43 but r ∈ {8,12,17,37,41,...} this maximal interval is unique.
+      Of cource in the case the number of elements of the interval is even, p(r) may be the upper-median or the lower-median.
+[σ(r) = sqrt(sum(map(square_, L(r)))/d(r) - μ(r)**2)]
+  the standard deviation of the numbers which have a shortest addition chain of length r
+
+  ]]
+
 Table of Characterizing Values
 r	c(r)	s(c(r))	v(c(r))	μ(r)	g(r)	m(r)	p(r)	σ(r)	d(r)	L(r)
 0	1	0	1	1.0	1.0	1=	1	0	1	{1}
@@ -2365,7 +2478,7 @@ shortest chains for 3-small-step numbers
 History: What was calculated When and by Whom
 ℓ(i) with i <= 50 or v(i) <=4 , and d(r) with r <=6
 calculated March 1957 by W. Hansen [3]
-ℓ(i) with i <= 210 and d(r) with r <=11
+ℓ(i) with i <= 2^10 and d(r) with r <=11
 reported December 1963 by D. E. Knuth
 ℓ(i) with i < 2000 and d(r) with r <= 12
 reported October 1968 by D. E. Knuth
@@ -2373,83 +2486,83 @@ reported October 1968 by D. E. Knuth
 reported May 1969 by D. E. Knuth [6]
 ℓ(i) with i < 120000 and c(r) with r <= 22
 computed until August 1988 by Achim
-ℓ(i) with i < 217 and d(r) with r <= 20
+ℓ(i) with i < 2^17 and d(r) with r <= 20
 computed April 1991 by Achim
-ℓ(i) with i < 218 and d(21) and c(23)
+ℓ(i) with i < 2^18 and d(21) and c(23)
 computed until October 1991 by Achim
 ℓ(i) with i <= 500000 and c(24)
 computed until November 1995 by D. Bleichensbacher
 ℓ(i) with i <= 720000 including c(25)
 computed until end of March 1997 by Achim.
-ℓ(i) with i <= 222 including c(28) and d(r) with r <= 25
+ℓ(i) with i <= 2^22 including c(28) and d(r) with r <= 25
 computed until August 1997 by Achim.
-ℓ(i) with i <= 222 and d(25) and d(26)
+ℓ(i) with i <= 2^22 and d(25) and d(26)
 computed until August 2004 by Neill Clift
-ℓ(i) with i <= 223 and d(27) and c(29) and c(30)
+ℓ(i) with i <= 2^23 and d(27) and c(29) and c(30)
 computed until September 2004 by Neill Clift
-ℓ(i) with i <= 224
+ℓ(i) with i <= 2^24
 computed until December 2004 by Neill Clift
 c(31)
 computed December 2005 by Neill Clift
-ℓ(i) with i <= 225
+ℓ(i) with i <= 2^25
 computed until April 2006 by Neill Clift
 d(29), d(30) and c(32)
 computed until June 2007 by Neill Clift
-ℓ(229-1) = 29 + ℓ(29) - 1
+ℓ(2^29-1) = 29 + ℓ(29) - 1
 proved in December 2007 by Neill Clift
-ℓ(i) with i <= 226
+ℓ(i) with i <= 2^26
 computed until May 2008 by Neill Clift
 d(31), d(32) and c(33)
 computed until May 2008 by Neill Clift
-ℓ(i) with i <= 227 and ℓ(i) with i <= 228 and ℓ(i) with i <= 229
+ℓ(i) with i <= 2^27 and ℓ(i) with i <= 2^28 and ℓ(i) with i <= 2^29
 computed in May 2008 by Neill Clift
 d(33), c(34) and c(35)
 computed in May 2008 by Neill Clift
-ℓ(2n-1) = n + ℓ(n) - 1, with n ∈ {31,33,...,46,48,49,50,51,52,54,56,60}
+ℓ(2^n-1) = n + ℓ(n) - 1, with n ∈ {31,33,...,46,48,49,50,51,52,54,56,60}
 proved in May 2008 by Neill Clift
 c(36), d(34) and d(35)
 computed June 2008 by Neill Clift
-c(37) and ℓ(i) with i <= 230
+c(37) and ℓ(i) with i <= 2^30
 computed until July 2008 by Neill Clift
 d(36)
 computed in July 2008 by Neill Clift
 c(38)
 computed in July 2008 by Neill Clift
-ℓ(i) with i <= 231
+ℓ(i) with i <= 2^31
 computed until August 2008 by Neill Clift
 d(37)
 computed in August 2008 by Neill Clift
 c(39)
 computed in September 2008 by Neill Clift
-ℓ(i) with i <= 232
+ℓ(i) with i <= 2^32
 computed until October 2008 by Neill Clift
-ℓ(2n-1) = n + ℓ(n) - 1 with n ∈ {64,47}
+ℓ(2^n-1) = n + ℓ(n) - 1 with n ∈ {64,47}
 proved in October 2008 by Neill Clift
 d(36), d(37) and d(38)
 computed in November 2008 by Neill Clift
-ℓ(2n-1) = n + ℓ(n) - 1 with n ∈ {53,55}
+ℓ(2^n-1) = n + ℓ(n) - 1 with n ∈ {53,55}
 proved in November 2008 by Neill Clift
-(2n-1) = n + ℓ(n) - 1 with n ∈ {57}
+(2^n-1) = n + ℓ(n) - 1 with n ∈ {57}
 proved in December 2008 by Neill Clift
-ℓ(2n-1) = n + ℓ(n) - 1 with n ∈ {58,59}
+ℓ(2^n-1) = n + ℓ(n) - 1 with n ∈ {58,59}
 proved in January 2009 by Neill Clift
-ℓ(2n-1) = n + ℓ(n) - 1 with n ∈ {61}
+ℓ(2^n-1) = n + ℓ(n) - 1 with n ∈ {61}
 proved in February 2009 by Neill Clift
-ℓ(2n-1) = n + ℓ(n) - 1 with n ∈ {62,63}
+ℓ(2^n-1) = n + ℓ(n) - 1 with n ∈ {62,63}
 proved until May 2009 by Neill Clift
 c(40)
 computed in September 2009 by Neill Clift
-ℓ(i) with i <= 233
+ℓ(i) with i <= 2^33
 computed until October 2009 by Neill Clift
 c(41)
 computed in November 2009 by Neill Clift
-ℓ(i) with i <= 234
+ℓ(i) with i <= 2^34
 computed until December 2009 by Neill Clift
 c(42)
 computed in May 2016 by Neill Clift
-ℓ(2n-1) = n + ℓ(n) - 1 with n ∈ {65,66,68,72,80,96}
+ℓ(2^n-1) = n + ℓ(n) - 1 with n ∈ {65,66,68,72,80,96}
 proved in May 2016 by Neill Clift
-ℓ(i) with i <= 235
+ℓ(i) with i <= 2^35
 computed until May 2016 by Neill Clift
 d(39)
 computed in May 2016 by Neill Clift
@@ -2457,19 +2570,19 @@ d(40)
 computed in May 2016 by Neill Clift
 c(43)
 computed in September 2016 by Neill Clift
-ℓ(i) with i <= 236
+ℓ(i) with i <= 2^36
 computed until October 2016 by Neill Clift
-ℓ(2n-1) = n + ℓ(n) - 1, if ℓ(n) <= 8
+ℓ(2^n-1) = n + ℓ(n) - 1, if ℓ(n) <= 8
 computed in July 2018 by Neill Clift
 d(41)
 computed in July 2019 by Neill Clift
 c(44)
 computed in July 2019 by Neill Clift
-ℓ(i) with i <= 237
+ℓ(i) with i <= 2^37
 computed until July 2019 by Neill Clift
-ℓ(2n-1) = n + ℓ(n) - 1, with n <= 134 and ℓ(n)=9
+ℓ(2^n-1) = n + ℓ(n) - 1, with n <= 134 and ℓ(n)=9
 computed in July 2019 by Neill Clift
-ℓ(2n-1) = n + ℓ(n) - 1, if ℓ(n) <= 9
+ℓ(2^n-1) = n + ℓ(n) - 1, if ℓ(n) <= 9
 computed in September 2019 by Neill Clift
 s(n) = ℓ(n) - λ(n) >= log2(v(n)), if s(n) <= 5
 computed in September 2019 by Neill Clift
@@ -2479,7 +2592,7 @@ c(46)
 computed in February 2020 by Neill Clift
 d(42)
 computed in March 2020 by Neill Clift
-ℓ(i) with i <= 238
+ℓ(i) with i <= 2^38
 computed until March 2020 by Neill Clift
 d(43)
 computed in March 2020 by Neill Clift
@@ -2487,28 +2600,42 @@ d(44)
 computed in April 2020 by Neill Clift
  c(47)
 computed in January 2021 by Neill Clift
- ℓ(i) with i <= 239
+ ℓ(i) with i <= 2^39
 computed until September 2022 by Neill Clift
  d(45)
 computed in September 2022 by Neill Clift
 In July 2004 the data calculated 1997 by Flammenkamp was completely and independently checked. Hereby Neill Clift uncovered four ℓ(n)-errors, which he attributed to a typo in Flammenkamp's program effecting only n-values > 2500000.
 On 30th May 2008, Neill Clift discovered the first and smallest n such that ℓ(n) > ℓ(2n).
+
+  [[
+
+似乎可以自选更小:下载 最短加链长度数据包 + 解压代码:ddt.c + 直读代码:l.c,ddt4l.c
+  #[2**24*2/8 == 2**22 Byte == 2**2 MB == 4MB]
+  #[2**20*2/8 == 2**18 Byte == 2**-2 MB == 0.25MB == 256KB]
+  add20.4ln.bz2
+===
+下载 最短加链长度数据包210MB + 解压代码:ddt.c + 直读代码:l.c
+  #[2**31*2/8 == 2**29 Byte == 2**9 MB == 512MB]
+  #[2**30 < 2135101487 < 2**31]#首次偏离猜想下界+4
+
+  ]]
+
 Data Access
-Thanks to Neill Clift's computations you can download the lengths of all shortest additions chains for n up to n=231 as bziped2 binary data of 210 MB size. The uncompressed values are coded as ℓ(n)-λ(n)-ceil(log2(v(n))) into 2 bits each which the exception of ℓ(2135101487) #. To decipher this you can download ddt.c compile it and run it as ddt inputfile linelength. You will get all values starting from 1 and broken into lines each containing linelength values onto your stdout from the base-36 alphabet (0,1,2,..,9,a,b,c,..,z) or as a 1 or 2 digit decimal value. A second helper l.c outputs ℓ(n), λ(n), s(n) and v(n) for each given input n which data is in the datafile.
-You can also download all ℓ(n) with n <= 233 as bziped2 binary data of 820 MB size. Here datafile indicates the downloaded and then uncompressed data file. To display these you must also download ddt4l.c, compile it and run it as ddt4l datafile [first n [total number [linelength] ] ]. You will get all or total number-many values starting from 1 or first n and broken into lines each containing linelength values onto your stdout from the base-42 alphabet (0,1,2,..,9,a,b,c,..,z,A,B,C,..,F).
+Thanks to Neill Clift's computations you can download the lengths of all shortest additions chains for n up to n=2^31 as bziped2 binary data of 210 MB size. The uncompressed values are coded as ℓ(n)-λ(n)-ceil(log2(v(n))) into 2 bits each which the exception of ℓ(2135101487) #. To decipher this you can download ddt.c compile it and run it as ddt inputfile linelength. You will get all values starting from 1 and broken into lines each containing linelength values onto your stdout from the base-36 alphabet (0,1,2,..,9,a,b,c,..,z) or as a 1 or 2 digit decimal value. A second helper l.c outputs ℓ(n), λ(n), s(n) and v(n) for each given input n which data is in the datafile.
+You can also download all ℓ(n) with n <= 2^33 as bziped2 binary data of 820 MB size. Here datafile indicates the downloaded and then uncompressed data file. To display these you must also download ddt4l.c, compile it and run it as ddt4l datafile [first n [total number [linelength] ] ]. You will get all or total number-many values starting from 1 or first n and broken into lines each containing linelength values onto your stdout from the base-42 alphabet (0,1,2,..,9,a,b,c,..,z,A,B,C,..,F).
 Now you can download all ℓ(n) with n <= 2expo as bziped2 binary data. Choose expo depending on your disk storage capabilities of your computer system from the following table:
 max n	binary data file	compressed size	uncompressed size	online since
-232	add32.4ln.bz2	417 MB	1073742360 bytes	?
-233	add33.4ln.bz2	820 MB	2147484256 bytes	?
-234	add34.4ln.bz2	1612 MB	4294967964 bytes	?
-235	add35.4ln.bz2	3197 MB	8589935360 bytes	May 2016
-236	add36.4ln.bz2	6397 MB	17179869992 bytes	Oct 2016
-237	add37.4ln.bz2	12863 MB	34359739200 bytes	Jul 2019
-238	add38.4ln.bz2	25854 MB	68719477576 bytes	Mar 2020
-239	add39.4ln.bz2	51662 MB	137438954328 bytes	Sep 2022
+2^32	add32.4ln.bz2	417 MB	1073742360 bytes	?
+2^33	add33.4ln.bz2	820 MB	2147484256 bytes	?
+2^34	add34.4ln.bz2	1612 MB	4294967964 bytes	?
+2^35	add35.4ln.bz2	3197 MB	8589935360 bytes	May 2016
+2^36	add36.4ln.bz2	6397 MB	17179869992 bytes	Oct 2016
+2^37	add37.4ln.bz2	12863 MB	34359739200 bytes	Jul 2019
+2^38	add38.4ln.bz2	25854 MB	68719477576 bytes	Mar 2020
+2^39	add39.4ln.bz2	51662 MB	137438954328 bytes	Sep 2022
 To display the ℓ(n)-values you must also download ddt4ln.c, compile it and run it as ddt4ln datafile [-O?] [first n [total number [linelength] ] ]. Here datafile indicates the downloaded and then uncompressed data file. You will get all or total number-many values starting from 1 or first n and broken into lines (or pages) each containing linelength values onto your stdout. This ? after the -O controls the output format and must take values ∈ {0,1,2,3,4}. The default is 0 and means no output, but data integrity check only. Thus in generally you will need this output-option. The options -O1 and -O2 are the old formats known from ddt and ddt4l.The parameter -O4 produces a format very similar to this of the above old helper-program l.
 In the case you need fast (and also random) access to ℓ(n) values it is very announing to have to calculate v(n) and λ(n) for each n. Thus here is a C-source-code to generate from add3?.4ln a new file containing either a table of s(n) values each represented by a half-byte (bits 0-3 of a byte hold the value for odd n and bits 4-7 of a byte hold it for even n) or a table of ℓ(n) values each represented by 1 byte. Of cource the new file will be of doubled size in the first case and of 4-times the size in the last case.
-Look up in the database of the first 231 many ℓ(n) values
+Look up in the database of the first 2^31 many ℓ(n) values
 starting from index 
 1
  the following 
@@ -2516,19 +2643,73 @@ starting from index
  values
  Table  Raw  
 
-The effort to compute these values up to n=220 is here visible. The number of cases checked to get ℓ(n) is plotted in red against λ(n) for each number 28 <= n < 220. In blue the number of cases are marked to compute n=c(r) and finally in dark green the average number of cases is drawn which is needed to calculate ℓ(n) for all numbers from 1 up to n (the last gives a good estimate of the average run time of the algorithm).
-Generate a Shortest Addition Chain for any given number < 227
+The effort to compute these values up to n=2^20 is here visible. The number of cases checked to get ℓ(n) is plotted in red against λ(n) for each number 2^8 <= n < 2^20. In blue the number of cases are marked to compute n=c(r) and finally in dark green the average number of cases is drawn which is needed to calculate ℓ(n) for all numbers from 1 up to n (the last gives a good estimate of the average run time of the algorithm).
+Generate a Shortest Addition Chain for any given number < 2^27
 
 n=
 1
   fast  difficult 
 # The smallest n such that ℓ(n)-λ(n)-ceil(log2(v(n))) equals 0,1,2,3,4,... are 1, 29, 3691, 919627, 2135101487, ... .
+    #[2**30 < 2135101487 < 2**31]#首次偏离猜想下界+4
 A remark for the simple upper bound λ(n)-v(n)+1 of ℓ(n): The smallest n such that ℓ(n)-λ(n)+1=v(n) equals 1,2,3,4,5,... are 1, 3, 7, 29, 465, 24745, 12591273, 51544066569, ... .
+  [[
+    # 无错！xxx??? bug:『λ(n)-v(n)+1』『ℓ(n)-λ(n)+1=v(n)』『1, 3, 7, 29, 465, 24745, 12591273, 51544066569』
+    # 无错！xxx订正:(λ(n)+v(n)-1), (ℓ(n)-λ(n)+1-v(n)), [1:15,2:63,4:255,5:1023,6:3071,7:4095,8:16383,9:32767,11:65535]
+    # 依旧:[ℓ(n)-λ(n)+1==v(n) <- [1..]] ==>> [1:1,2:3,3:7,4:29,5:465,6:24745,7:12591273,8:51544066569]
+        # [12591273 == min{[n:<-[1..]] | [ℓ(n)-λ(n)+1==v(n) == 7]}]
+        #[2**23 < 12591273 < 2**24]#不偏离上界下最小靶值牜阳爻数达到7
+        #[2**35 < 51544066569 < 2**36]#不偏离上界下最小靶值牜阳爻数达到8
+===
+λ = floor_log2 = lambda n: n.bit_length() -1
+v = int.bit_count
+upbound_ = lambda n:floor_log2(n)+v(n)-1
+from nn_ns.math_nn.numbers.shortest_addition_chain_length import pint2shortest_addition_chain_length__first_100000_terms
+it = enumerate(pint2shortest_addition_chain_length__first_100000_terms)
+777; __ = next(it)
+t = 1
+for u, sz in it:
+  d = upbound_(u) -sz
+  assert d >= 0, (u,sz, d,t)
+  #assert d <= t, (u,sz, d,t)
+  if d >= t:
+    print(f'{d}:{u}:{sz}')
+    t = d+1
+1:15:5
+2:63:8
+4:255:10
+5:1023:13
+6:3071:15
+7:4095:15
+8:16383:18
+9:32767:19
+11:65535:19
+
+it = enumerate(pint2shortest_addition_chain_length__first_100000_terms)
+777; __ = next(it)
+t = 1
+for u, sz in it:
+  if v(u) == t and upbound_(u) == sz:
+    print(f'{t}:{u}:{sz}')
+    t = t+1
+1:1:0
+2:3:2
+3:7:4
+4:29:7
+5:465:12
+6:24745:19
+
+===
+
+
+  ]]
+
 For every n with ℓ(n) <=22 the number of shortest addition chains as a gziped ASCII-file of 1.8 MB size, as a sorted by n list which consists of three columns. In each row of this list are given the values for the corresponding n, ℓ(n) and number of shortest addition chains for this n. Neill Clift extended this data and put it into a file of almost 250 MB size. Thus you can download the number of shortest addition chains with ℓ(n) <=28 as a gziped ASCII-file of 74 MB.
 
 Conjectures
 ℓ(2^n-1) <= n + ℓ(n) - 1
 The outstanding Scholz-Brauer-Conjecture of 1937. If ℓ(n) is achievable by a star chain then it holds. Therefore only values of n need to be considered with ℓ(n) < ℓ*(n). But the smallest of these numbers is 12509. In August 2005 Clift reported to have confirmed the Scholz-Brauer inequality for all n < 5784689. +
+  # [12509 == min{n | [n:<-[1..]][ℓ(n) < ℓ*(n)]}]
+  #     推导定理:goto
 ℓ(2^n-1) = n + ℓ(n) - 1
 This narrow related equation is proved to hold at least for all n with ℓ(n) <= 9  *.
 ℓ(n) >= λ(n)+log2(v(n))

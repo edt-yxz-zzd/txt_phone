@@ -34,6 +34,22 @@ py -m nn_ns.app.doctest_cmd script.min_add_ver4__pseudo_addition_chain:__doc__ -
 pseudo_shortest_addition_chain
 all prefix are pseudo_shortest_addition_chain
 ]]
+[[
+@20251218
+别名:
+    [递归加链==短程加链==加星链]
+
+===
+首不匹对点{最短加星链vs最短加链}/首失败点:12509
+[最短递归加链<:递归加链==加星链<:加链]
+    最短递归加链:必定存在，但未必是 最短加链
+[递归最短加链<:(最短加链\-/加星链)<:加链]
+    递归最短加链:不一定存在
+[显链长纟最短递归加链==显链长纟最短加星链<=显链长纟最短加链]
+?递归最短加链 -> [显链长纟最短递归加链==显链长纟最短加星链==显链长纟最短加链==显链长纟递归最短加链]
+[[靶值:<-[1..<12509]] -> [显链长纟最短递归加链{靶值}==显链长纟最短加星链{靶值}==显链长纟最短加链{靶值}==显链长纟递归最短加链{靶值}]]
+[[靶值:=12509] -> [递归最短加链{靶值}不存在][显链长纟最短递归加链{靶值}==显链长纟最短加星链{靶值}<显链长纟最短加链{靶值}]]
+]]
 
 
 py_adhoc_call   script.min_add_ver4__pseudo_addition_chain   ,50:枚举冫长度下限估计相关信息纟最短加链牜简并态算法扌
@@ -1037,6 +1053,70 @@ du -h script/min_add_ver4__pseudo_addition_chain.py..枚举冫相关信息纟最
     3.6M
 
 
+]]
+
+[[
+===
+@20251214
+重启计算:精确简并态:直至 预期失败12509{带星号版贪婪算法.首个失败点}
+  此前12345-->预期12509
+源起:新发现公式:
+  [12509 == min{n | [n:<-[1..]][ℓ(n) < ℓ*(n)]}]
+===
+此前计算历史:
+view script/min_add_ver4__pseudo_addition_chain.py
+view script/min_add_ver4__pseudo_addition_chain.py..枚举冫相关信息纟最短短程加链牜简并态算法扌.RT.无缺精深.out.txt
+  view script/min_add_ver4__pseudo_addition_chain.py..枚举冫相关信息纟最短短程加链牜简并态算法扌.RT.无缺精深.le12345.out.txt.tar.lzma
+  @20251214居前: [..=12345] : 27M : lzma:3.6M
+===
+py_adhoc_call { +to_postpone_KeyboardInterrupt_until_yield +to_show_timedelta --may_args4PeriodicToilLeisureTime='(30,30)' --may_prompt_string6resting:$'\n\n    resting...\n\n' }  script.min_add_ver4__pseudo_addition_chain   ,500:枚举冫相关信息纟最短短程加链牜简并态算法扌  +rename_NonTouchRanges +尝试补充缺失 +精确简并态 --le=12600 +要点生成 +要点生成牜精确 --path:script/min_add_ver4__pseudo_addition_chain.py..枚举冫相关信息纟最短短程加链牜简并态算法扌.RT.无缺精深.out.txt
+... ...
+... ...
+161:duration: 0.6475116179999532 *(unit: 0:00:01)
+162: ... ...
+(12508, 18, 33, 367, [6254, 6260, 6262, 6266, 6268, 6350, 6356, 6362, 6364, 7092, 7120, 7502, 7516, 7608, 8178, 8338, 8340, 8344, 8660, 9800, 10012, 10392, 10424, 10776, 10832, 11544, 11648, 12096, 12316, 12484, 12492, 12496, 12504], RT({1: 10, ... ..., 12504: 1, 12508: 1}), [1, 2, 3, 6, 12, 24, 48, 96, 99, 195, 390, 391, 781, 1562, 1565, 3127, 6254, 12508], [1, 2, 4, 8, 16, 24, 48, 96, 192, 384, 768, 1536, 3072, 6144, 12288, 12480, 12504, 12508])
+162:duration: 2.6192416940000385 *(unit: 0:00:01)
+163: ... ...
+163:duration: 0.06268092300001626 *(unit: 0:00:01)
+Traceback (most recent call last):
+  ...
+  File "/storage/emulated/0/0my_files/git_repos/txt_phone/txt/script/min_add_ver4__pseudo_addition_chain.py", line 2064, in _罓枚举冫相关信息纟最短短程加链牜简并 态算法扌
+    if not _sz4chain <= _n2sz[m]:raise Exception('not found:@', _sz4chain, _n2sz[m])
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Exception: ('not found:@', 18, 17)
+==>>:
+果然:
+  最后 成功点 是 12508
+  首个 失败点 是 12509
+===
+tail -n 1 script/min_add_ver4__pseudo_addition_chain.py..枚举冫相关信息纟最短短程加链牜简并态算法扌.RT.无缺精深.out.txt
+du -h script/min_add_ver4__pseudo_addition_chain.py..枚举冫相关信息纟最短短程加链牜简并态算法扌.RT.无缺精深.out.txt
+  27M#没啥明显增长
+===
+tar -cvf script/min_add_ver4__pseudo_addition_chain.py..枚举冫相关信息纟最短短程加链牜简并态算法扌.RT.无缺精深.lt12509-until_fst_failure.out.txt.tar.lzma  --lzma script/min_add_ver4__pseudo_addition_chain.py..枚举冫相关信息纟最短短程加链牜简并态算法扌.RT.无缺精深.out.txt
+du -h script/min_add_ver4__pseudo_addition_chain.py..枚举冫相关信息纟最短短程加链牜简并态算法扌.RT.无缺精深.lt12509-until_fst_failure.out.txt.tar.lzma
+  3.6M#没啥明显增长
+tar -tvf script/min_add_ver4__pseudo_addition_chain.py..枚举冫相关信息纟最短短程加链牜简并态算法扌.RT.无缺精深.lt12509-until_fst_failure.out.txt.tar.lzma
+===
+py_adhoc_call   script.min_add_ver4__pseudo_addition_chain   ,str._提取另档冫加链扌 --路径纟无缺版:script/min_add_ver4__pseudo_addition_chain.py..枚举冫相关信息纟最短短程加链牜简并态算法扌.RT.无缺精深.out.txt >> script/min_add_ver4__pseudo_addition_chain.py.._提取另档冫加链扌.无缺精深.lt12509-until_fst_failure.out.txt
+du -h script/min_add_ver4__pseudo_addition_chain.py.._提取另档冫加链扌.无缺精深.lt12509-until_fst_failure.out.txt
+    1.8M
+file_startswith_ script/min_add_ver4__pseudo_addition_chain.py.._提取另档冫加链扌.无缺深一.le12321.out.txt script/min_add_ver4__pseudo_addition_chain.py.._提取另档冫加链扌.无缺精深.lt12509-until_fst_failure.out.txt
+    => same
+diff script/min_add_ver4__pseudo_addition_chain.py.._提取另档冫加链扌.无缺深一.le12321.out.txt script/min_add_ver4__pseudo_addition_chain.py.._提取另档冫加链扌.无缺精深.lt12509-until_fst_failure.out.txt
+    #只多，无不同
+    24644a24645,25018
+    > [1, 2, 3, 6, 12, 24, 48, 96, 192, 193, 385, 770, 1540, 3080, 3081, 6161, 12322]
+    ... ...
+    ... ...
+    > [1, 2, 4, 8, 16, 24, 48, 96, 192, 384, 768, 1536, 3072, 6144, 12288, 12480, 12504, 12508]
+
+===
+py_adhoc_call   script.min_add_ver4__pseudo_addition_chain   ,str._提取另档冫次大数集扌 --路径纟压缩包纟无缺版:script/min_add_ver4__pseudo_addition_chain.py..枚举冫相关信息纟最短短程加链牜简并态算法扌.RT.无缺精深.lt12509-until_fst_failure.out.txt.tar.lzma  >> script/min_add_ver4__pseudo_addition_chain.py.._提取另档冫次大数集扌.无缺精深.lt12509-until_fst_failure.out.txt
+file_startswith_ script/min_add_ver4__pseudo_addition_chain.py.._提取另档冫次大数集扌.无缺深一.le12321.out.txt script/min_add_ver4__pseudo_addition_chain.py.._提取另档冫次大数集扌.无缺精深.lt12509-until_fst_failure.out.txt
+    => same
+view script/min_add_ver4__pseudo_addition_chain.py.._提取另档冫次大数集扌.无缺精深.lt12509-until_fst_failure.out.txt
+e ../.gitignore
 ]]
 
 

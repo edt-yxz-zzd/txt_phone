@@ -1271,6 +1271,56 @@ view others/app/termux/help/awk-see-gawk.txt
 
 @20251008
 平行识别器/投喂型识别器
+  为了 收集信息:
+    枚举 子节点 信息提供器:识别器|构造器...
+      收集 所有 料符.型号/款型
+      收集 所有 料符.头符集+欤允空
+      收集 所有 料符.首料符集
+  为了 加速:
+    识别器.欤允空
+    识别器.头符集::全序范围序列 :: [(边界,边界)]
+    边界 == (just_lt a, gt a, +oo, -oo)
+    #slightly_lt
+    (just_lt a, just_gt b) == [a..=b]
+    (just_lt a, just_lt b) == [a..<b]
+    (just_gt a, just_lt b) == [a<..<b]
+    (just_gt a, just_gt b) == [a<..=b]
+  区分:净识别器vs脏识别器:
+    脏识别器:使用token.tkey,token.tdat #比如:end_tag匹配start_tag
+        也许可以 归脏于:脏判定器&脏后处理，虚拟运行时直接跳过
+        脏判定器 效果 区分出 tkey子类
+            脏判定器(tkn0.tkey,tkn0.tdat,...) -> bool/或者 某个有限枚举集
+              应当说:其余tkn参数 也只是 参与 对 tkn0的区分
+        也许可以 遇到 脏判定器 时 给tkey 附加 子类标签，将 一个 混沌状态包 分割成为 多个 [平行]混沌状态包，同一混沌状态包 内部 歧义导致出错，不同混沌状态包 之间 则 不产生交叉歧义
+    净识别器:只使用token.tkey
+        允许 虚拟运行，类似LR1或regex，tkey有限而tdat无限
+  区分:关窍展符vs皮毛展符:
+    皮毛展符:后处理被推迟？，允许 歧义性{LR1:reduce-reduce,reduce-shift}
+    关窍展符:reduce时，不允许其余展符reduce/shift，即reduce排他性
+  为了避免麻烦，不如直接批量传入不同参数？
+      识别器{参数} --> 识别器{Set 参数}
+        构型参数:不可整合#或许 前缀整合？
+            __new__(构型参数) -> rgnr
+        输出控制参数:可整合:eg:输出值被提取的属性...
+            #start_recognize_(背景参数, 语境参数, 输出控制参数) -> st
+            {kwd:sym}背景参数 重命名/链接:符号->id
+            start_recognize_(kwds{被挑选的背景参数}, 语境参数, 输出控制参数) -> st{可以含有:被挑选的背景参数，但是已然避免 包含 整个 背景参数包}
+            reqired_fields.__or__ 用户自定义#大部分情况raise NotImplementedError
+            reqired_fields{output} = tribool|{(index|attr):reqired_fields}|(识别器->(index|attr)->reqired_fields)
+                False=>忽略/不输出
+                True=>输出{后处理实时应用}
+                ...=>输出{后处理推迟:即:输出(输出值,[后处理])}
+                但是 数组怎么办？
+            tuple(..., 启后(识别器, {nm:reqired_fields}...), ..., 承前(承前识别器,[nm]...;输出(nm...;具名{nm...}))
+        识别器.整合参数集(参数集)->Iter (统一参数, 被整合参数集)
+        --> Iter 识别器{统一参数{被整合参数集}}
+      输出值 --> {参数:输出值}
+        识别器{统一参数{被整合参数集}}.解释输出值扌(输出值{统一参数},被整合参数)->输出值{被整合参数}
+      Iter 输出值 --> Iter (参数,输出值)
+      输入需求 --> {参数:输入需求}
+      投喂(被需求的输入串) --> ???
+      规范化参数扌(参数)->标准参数包冃可散列值{可能归一化拘留}
+          欤避免散列:大对象 或者 不可散列对象
   注意:忽略庇护 的出现 必然是 由于 其输出值 被用作 后续识别器 的 语境参数。语境参数的递送 由 串联式 内部定义，所以 忽略庇护 只作用于 串联式 的 子部件。
   区分:后处理系统
     * 内禀硬编码牜不可忽略:影响识别成败流程#同时也是:此处及内部 递归 禁用 用户外赋 后处理
@@ -1380,8 +1430,82 @@ oresult:
   .whether_lazy_raw
   .whether_unlazy
 
-e ../../python3_src/seed/abc/IInterned.py
+===
+e ../../python3_src/seed/recognize/step_recognizer/IStepRecognizer.py
+fixed_ops@env8bg:
+  ops4aps8oc:
+    ignore
+    full
+    lazy_full
+    or_/union_(aps8oc, aps8oc) -> aps8oc
+    mk5key2aps8oc
+    mk5callable_(key2aps8oc_) -> aps8oc{~=(offset,key2aps8oc_)}
+      难点:tuple子部件解包:aps8oc的index究竟是指 解包前的子部件址引还是解包后的输出的址引？
+        要求:idx型aps8oc 允许附加偏移量
+  ops4rope
+    mk_rope_
+      附加 定位后处理{idx:[fpost]}
+    mk_element_(x, *fposts)->boxed 延迟
+      附加 后处理
+    ??rope+fpost->elem 延迟??
+      毕竟经过后处理，就不再是rope
+      除非是fmap...
+  ops4ctx:
+    #工厂模式:匴
+    因为 保存于 st中，必须是 固化版
+    #ctx8fg :: seq/finger_tree|TreeMap|LookupList
+    ops4queue:
+    ops4assoc_list:
+    ops4stack:
+ops@cfg4rgnr:
+  #权限管理
+  ops4tkn:
+      '{tkey}@{super_tkey}/{sub_tkey}:{tdat}'
+      '{tkey}@*/*:*'
+    may tkn2super_tkey_   #范畴:op,kw,『.com』
+    may tkn2sub_tkey_     #副标题:...『www.』
+        '{tkey}:*'
+    may tkn2tkey_
+    may tkn2tkey_
+      read__len_eq_
+      skip__len_eq_
+    may tkn2tdat_
+      净识别器=>None:ni tkn2tdat_
+aps8oc
+  reqired_fields8output_control
+  reqired_field_name_tree8output_control
+  reqired_field_paths8output_control
+  reqired_access_paths8output_control
+  attr_path_set8output_control
+    ===aps8oc
+step_recognizer__level1:
+  .mk1_cfg4recognizer_(sf, *args, ops) -> cfg4rgnr
+  .start1_recognize_(sf, cfg4rgnr, ops) -> Iter st_ex
+  .feed__token_(sf, st, token, *, ops) -> Iter st_ex
+  .feed__oresult_(sf, st, oresult, *, ops) -> Iter st_ex
+  st_ex == (Either st eresult)
+  eresult = ((OK/FINAL, oresult)|(ERR, case4err, payload4err, lazy_msg4err, neg_idx4err:=-1))
+  st = ((FEED_MORE, payload4st{sf})|(CALL1, payload4st{sf}, sub_rgnr/step_recognizer__level1, args{sub_rgnr}))
+      外部调用框架中，ops 自动绑定 sf，根据 sub_rgnr的声明，构造 受更严格限制的ops，并调用sub_rgnr.start_recognize_...
+      也就是 st的完整状态，应当是:(cfg4rgnr,ops,st)
+  cfg4rgnr{+sf 用作 标识{@起点}；st虽然是固化量，但无用于 标识{中间态无用}}
+    #xxx:tokens8remainder
+step_recognizer__level2:
+  #fixed_cfg=(env8bg, ops, aps8oc)
+  .mk2_cfg4recognizer_(sf, *args, kwds6ctx8fg, fixed_cfg) -> cfg4rgnr
+  .start2_recognize_(sf, cfg4rgnr, fixed_cfg) -> Iter st_ex
+  .feed2__token_(sf, cfg4rgnr, st, token, *, fixed_cfg) -> Iter st_ex
+  .feed__oresult_(sf, cfg4rgnr, st, oresult, *, fixed_cfg) -> Iter st_ex
+  st = ((FEED_MORE, payload4st{sf})|(CALL2, payload4st{sf}, sub_rgnr/step_recognizer__level2, args{sub_rgnr}, getters6ctx8fg, aps8oc))
+      st的完整状态，应当是:(单过程全程不变env8bg,初始固化(ops,aps8oc),cfg4rgnr{初始固化:kwds6ctx8fg/selected-ctx8fg;},st)
+step_recognizer__level3(info_collector, IInterned):
+  # Ord tkey
+  .iter_nullable_conditions_() -> Iter {rgnr} # any(all(rgnrs nullable))
+  .iter_first_set_() -> Iter (rgnr|tkey)
 
+
+e ../../python3_src/seed/abc/IInterned.py
+  DONE!
 
 
 @20251010
@@ -1390,6 +1514,7 @@ mv:e script/trial_impl___lazy_import__with.py
         from seed.tiny_.types5py import mk_MapView,curry1,kwargs2Attrs #,MapView
 -->:
 e ../../python3_src/seed/helper/lazy_import__func7context.py
+DONE!
 
 
 
@@ -1401,6 +1526,7 @@ def 求冫格值巛位置牜标准泛九宫牜周期延拓版扌(n, i, j, /):
     d = i-j
     # !! 值为:((d+h)%n *n +1) +(j-d)%n
     return ((d+h)%n *n +1) +(j-d)%n
+DONE!
 
 
 
@@ -1420,14 +1546,17 @@ def 求冫格值巛位置牜标准泛九宫牜周期延拓版扌(n, i, j, /):
 png格式 读写
 
 ###e ../../python3_src/nn_ns/fileformat/image_png_writer.py
-e script/png/image_png_writer.py
+#e script/png/image_png_writer.py
 e ../lots/NOTE/image/png-format.txt
+view ../../python3_src/nn_ns/fileformat/png/simple_reader_writer4png.py
+DONE!
 
 
 
 @20251021
 e ../../python3_src/nn_ns/app/copy6root_cmd.py
 e ../../python3_src/seed/filesys/copy6root.py
+DONE!
 
 
 
@@ -1441,6 +1570,7 @@ e ../../python3_src/seed/filesys/copy6root.py
       # _Lazy('xxx.yyy', 'aaa')
 e ../../python3_src/seed/helper/lazy_import__func.py
 e ../../python3_src/seed/helper/lazy_import__func7context.py
+DONE!
 
 
 
@@ -1478,7 +1608,9 @@ from:e ../../python3_src/nn_ns/fileformat/png/simple_reader_writer4png__draw.py
 from:e ../../python3_src/nn_ns/fileformat/png/simple_reader_writer4png__draw.py
 图纸源文件:用途类似svg:
 e others/数学/编程/设计/设计冫图纸格式.txt
-
+或:
+svg组件 系统:py函数化
+ TODO
 
 
 @20251103
@@ -1487,10 +1619,913 @@ dynamic_encoded_int
 lexical_ordered_symmetric_encoded_int
 e others/数学/编程/设计/自定义编码纟整数暨有理数-byte字母表+7over8效率.txt
 e ../../python3_src/seed/int_tools/IStepDecoder__ver2.py
+ TODO
+
+
+
+
+
+@20251105
+e TODO_www.txt
+已下载 待整理:
+  ogg doc #失误:缺:RFC
+    e ../lots/NOTE/sound/ogg/ogg_doc6xiph.org/ogg-www.txt
+        TODO:
+          wget https://www.xiph.org/ogg/doc/rfc5334.txt
+          wget https://www.xiph.org/ogg/doc/rfc3533.txt
+  部分 色度学
+    e /sdcard/0my_files/book/color色度学/色度学-www.txt
+        TODO:
+            ICC profile specifications are available at: https://www.color.org/
+  sympy.whl
+        TODO:
+          pip install mpmath
+        grep sympy others/app/termux/  -r
+          无效
+        e TODO_www.txt
+          e others/app/termux/pip.txt
+
+DONE:e script/clean_w3schools_pages.py
+  html-graphics html(含:svg html)
+  bash html
+  SQL html
+view script/clean_w3schools_pages--py_adhoc_call.py
+
+
+
+
+@20251106
+view ../lots/NOTE/image/color色度学-note.txt
+e ../../python3_src/seed/for_libs/for_colorsys/calibrated_RGB/color_systems.py
+#DONE:画成svg
+#   view ../lots/NOTE/graph/svg/trials/README.txt
+#TODO:画成png每色一像素
+    uv->rng4L
+    ab->rng4L
+view ../../python3_src/seed/for_libs/for_colorsys/calibrated_RGB/color_gridding--py_adhoc_call.py
+
+
+
+
+
+@20251108
+TODO
+e ../../python3_src/seed/math/matrix/naive_mx__tuple_tuple.py
+  inv_mx_
+  LU分解
+    pivot
+    pivotal row log(系数) 最接近 0
+      这是因为 浮点数 指数 范围 在 1 时 上下最大
+        abs之后:
+          [a < 1 < b]:
+            * [ab <= 1]:
+              选b
+            * [ab > 1]:
+              选a
+
+@20251108
+矩阵之类 大容器
+copy_as_immutable
+  内禀型固化
+copy_to_mutable
+with ctx4view_as_immutable() as xxx:
+    # 临时性外赋型固化 #vs 内禀型固化
+    inside as the view will keep unchanged
+    outside del the view
+静态类型，动态类型
+内禀型固化,临时性外赋型固化{假设使用期间观察不到修改},只读视图{使用期间可能观察到修改},读写,只写挥发区
+  更新通知
+
+
+@20251109
+ops:
+  check inject ...
+    check_subops_of()...
+      cache the result
+      check run on ops at most once
+      eqv ops be merged or intern@new:
+        ops.underlying be same
+          intern@hash/eq
+ops:
+  ops[sym]
+    if __missing__:
+      lookup f:=ops[META:meta4miss][sym]
+          ops[sym] := f(ops,sym)
+
+
+
+@20251109
+class method static dispatcher
+sf.f(a,b,c)
+  f reset to type(sf) version
+class X:
+    @static_dispatcher
+    def f(cls, /):
+        def f(sf, a, b, c, /):
+            ...
+        return f
+
+
+@20251113
+DONE
+e script/统计冫各字符数目.py
+
+
+@20251114
+TODO
+语法设计:串联式解包并联式子部件:增加 导入名:
+c =:
+  | F = e f
+  | G = g
+a = b *>c d
+  a.F (b, e, f, d)
+  a.G (b, g, d)
+
+
+@20251115
+'/sdcard/0my_files/book/lang/编译/Writing Compilers and Interpreters (3ed)(2009).epub'
+e ../lots/NOTE/parse/Writing Compilers and Interpreters (3ed)(2009).epub.note.txt
+
+
+
+静态依凭完整性#静态链接库
+动态依凭完整性#动态链接库、插件、FK/数据库外来键值
+key钥？
+写时复制:
+  啥是我？
+  哪些数据是我的一部分？
+  哪些修改算作对我的修改？
+  ===
+  哪些数据是我的一部分？
+    内引用vs外引用
+    vs:独占引用vs群粒引用vs时限裸引用vs强引用vs弱引用
+      ?独占引用?只是所有权？不允许 别人拥有 强引用，弱引用 只能 解读成:
+        群粒引用==(群引用{保证存在性;强引用},群内址引/裸引用)
+        时限裸引用:『with』时限有效性
+  ===
+  限制:隔离出 运行环境
+    读限制:只能读哪些对象，禁止读取全局变量、隐变量 #除了 系统函数...
+    写限制:只能修改哪些对象，禁止修改全局变量、隐参数
+    时限
+  ===
+
+
+类型不变:
+  ... -> (R -> R)
+类型改变:
+  ... -> (a -> b)
+类型部分改变:
+  (a -> b) -> (F a -> F b)
+  (a -> M b) -> (M a -> M b)
+  ... -> (arr a b -> arr c d)
+
+
+py idea:
+  不同构造器的match:
+  class ...:
+    def XXX(a,b,c):
+    def YYY(d,e):
+    def MK(args...,/,kwds...,alias:key):
+      args[i] == obj[i]
+      kwds[nm] == obj.nm
+      alias == obj[key]
+
+
+@20251126
+e others/我的叶子/待办事项牜短期.fragment.txt
+cat5mv__myfiles -f cat5mv__myfiles.conf
+
+
+DONE:
+自己的选项解析器:
+  !! bash: getopts只支持短选项/单字符选项
+#移出自:e ../../python3_src/bash_script/app/echo7safe.def.sh
+e ../../python3_src/bash_script/app/parse_options_.def.sh
+  支持:短选项拆解
+e ../../python3_src/bash_script/app/parse_args_kwds_.def.sh
+  parse_args_kwds_
+    类似:py_adhoc_call
+    -kw
+    +kw
+    --kw:v
+    --kw=v
+    ++kw:v
+    ++kw=v
+    --
+    :v
+    =v
+@20251129
+TODO:doctest4bash
+e ../../python3_src/bash_script/app/doctest4bash
+失败:bash本身机制有毛病！
+
+
+TODO:check_args_kwds_:check<type>,default,requred,nargs<delimiter>
+  extra_kw::{pattern:constraint}
+  known_kw::{kw:constraint}
+  constraint::regex'(#=(?P<nargs>[?*+]|\d+|\[\d*..([<=]\d+)?\]|-[?]?)(@=\{(?P<delimiter4cmd>\[\w+\])(?P<cmd4check>.+?)(?P=delimiter)\})?)?(_=(?P<default>.*))?'
+    nargs=『-』/『-?』[#1个/0或1个#] 不需应用 delimiter4args 切分
+      其他情形 应用delimiter4args切分后 确认 数量
+
+
+[[
+TODO
+e others/app/termux/help/cmd_intro.README.txt
+  收集命令简介
+类似:for nm in $(coreutils --help | grep '^ *\[ ') ; do man "$nm" | head -n 4 | tail -n 1 ; done >> others/app/termux/cmd-coreutils.txt
+    see:e others/app/termux/cmd.txt
+half-DONE:
+输出简介
+view others/app/termux/help/cmd_intro.man1.txt
+view others/app/termux/help/cmd_intro.man1.20251130-group.txt.py
+]]
+@20251128
+空间长名::无穷大端待定 类似 p-adic
+  timestamp
+  低端 匹配
+  高端 等待 未来 需求驱动
+e others/数学/编程/设计/标识全局唯一性如何保证.txt
+
+@20251128
+甲型:
+对象保持 shell ls+dict
+  ls:地址空间:每个对象一个地址
+  ls[addr]=regex':(?P<string8value>.*)|#(?P<size4array>\d*)|[.](?P<smay_addr4last_key4dict>\d*)#(?P<size4dict>\d*)'
+
+  d[addr4map.addr4key]=addr4value7key
+  #d[#addr4map]=size
+  d[addr4map.pseudo_addr4key<]=pseudo_addr4prev_key
+  d[addr4map.pseudo_addr4key>]=pseudo_addr4succ_key
+  d[&key]=addr4key
+  ls[addr4string]=
+    ls[addr4value]=:value
+    ls[addr4key]=:key
+  ls[addr4map]=
+    ls[addr4ls]=#size4ls
+    ls[addr4d]=#size4d.
+      pseudo_addr4pseudo_head_key=0
+      all normal addr{key|ls|d|value > 0}
+
+
+对象保持 shell ls+dict
+乙型:
+  二进制文件:随机访问
+  ls[idx8addr]=rng6bytes
+  bs[begin:end]=typed_bytes
+丙型:
+  字节串:内存传递
+  ls[idx8addr]=typed_bytes
+    定长对象好办，变长对象？#数组，词典
+    变长对象-->链表 或 sized_bytes...
+
+[[
+linux的自带单词本在哪？
+  没找到
+words | dict
+find ~/../usr/etc/ -name '*dict*'
+find ~/../usr/share/ -name '*dict*'
+  ~/../usr/share/doc/docs/html/embedded-book/design-patterns/hal/predictability.html
+  ~/../usr/share/lua-language-server/meta/spell/dictionary.txt
+===
+less ~/../usr/share/doc/docs/html/embedded-book/design-patterns/hal/predictability.html
+
+ls ~/../usr/share/doc/docs/html/
+man realpath
+realpath --relative-base=DIR
+e others/app/termux/httpd-confs/all_in_one--httpd.conf
+TODO
+  httpd__localhost__all_in_one
+  http://127.0.0.1:1257/rust-by-example/index.html
+
+===
+head ~/../usr/share/lua-language-server/meta/spell/dictionary.txt
+
+e others/app/termux/cmd.txt
+du -h ~/../usr/share/lua-language-server/meta/spell/dictionary.txt
+  1.3M
+cut -d' ' -f1 ~/../usr/share/lua-language-server/meta/spell/dictionary.txt > words5share-lua-spell-dict.txt
+du -h words5share-lua-spell-dict.txt
+  736K
+view words5share-lua-spell-dict.txt
+  82834行
+
+numfmt --to=iec-i 1024
+]]
+[[
+@20251206
+计算器:
+  POSIX:bc/C运算 依赖于 dc/逆波兰
+要不写个计算器？
+整数计算器:
+  唯一类型:整数
+    # 字符串 也编码成 单个整数
+  内置整数运算: 加法、乘法、基数位移
+    怎么实现 除模？divmod
+实数区间计算器:
+  #依赖于:整数计算器
+  唯一类型:实数区间
+
+机器模型:
+  主栈 :: [(变量帧,表达式栈)]
+    拆成两个 => (帧栈,表达式栈)
+    表达式栈:指令流水线执行...
+    函数帧:局部变量 随机访问 区分私用区
+  因为类型唯一，所以...不需要 填充对齐...
+xxx:...改进:不同类型 使用不同的栈
+xxx:...改进:
+xxx:  变量vs固化:
+xxx:    定长结构:
+xxx:      * 基础类型
+xxx:      * 指针
+xxx:        * 独占/移动
+xxx:        * 借用
+xxx:        * 共享
+xxx:      * 元组结构
+xxx:    容器{某一指定的定长结构/容器}:
+xxx:      * 定长数组
+xxx:        * 静态定长数组
+xxx:        * 动态定长数组#大整数、字符串...
+xxx:      * 栈
+xxx:所有 指令 汇编成 紧致整数
+xxx:  内置指令
+xxx:  宏指令#指令序列的地址
+xxx:  短字符串常量
+xxx:  长字符串常量的地址
+xxx:  小整数常量
+xxx:  大整数常量的地址
+xxx:    #私用变量的址引#[私用变量==栈顶{私用栈}]
+xxx:    #公用变量的址引#[公用变量==栈顶{公用栈}]
+xxx:    #私用栈的址引
+xxx:    #公用栈的址引
+
+想来想去，能够依靠 机器字+栈 实现 大整数运算吗？乘法都够呛，指令流 还是太低级，很难直接手写处理大对象。
+  只适合 数据类型唯一、所有函数参数数目固化
+===
+POSIX:bc/C运算 依赖于 dc/逆波兰
+:view others/app/termux/help/bc.man.txt
+:view others/app/termux/help/dc.man.txt
+dc is a reverse-polish desk calculator which supports unlimited precision arithmetic.
+  dc:desk calculator
+bc is a language that supports arbitrary precision numbers with interactive execution of statements.  There are some similarities in the syntax to the C programming language.
+  bc:???#??better??
+  It is not implemented in the traditional way using dc(1).  This version is a single process which parses and runs a byte code translation of the program.
+  There is an "undocumented" option (-c) that causes the program to output the byte code to the standard output instead of running it.  It was mainly used for debugging the parser and preparing the math library.
+
+
+
+
+dc实例:
+dc -e 2vp
+  1
+    # !! [精度==0] => 整数结果
+dc -e Kp
+  0
+dc -e 20kKp
+  20
+dc -e 20k2vp
+  1.41421356237309504880
+dc -e '40k 1.41421356237309504880 2^p'
+1.9999999999999999999952235666390743814400
+dc -e '40k 1.41421356237309504881 2^p'
+2.0000000000000000000235078378865362824161
+===
+===
+
+]]
+[[
+最优化重排栈顶序列的指令，假设有另外两个辅助栈
+  若是 允许 目标序列 复制/删除，而不仅限于 移动，又如何最优化？
+  若是由栈改为二叉树又如何？
+比如:反序:
+  A[-N:] pop to B
+    u~v         v~u
+  B[-N:] pop to C
+    v~u         u~v
+  C[-N:] pop to A
+    u~v         v~u
+比如:循环位移:
+  A[-N:] pop to B
+    s~tu~v
+    s~t         v~u
+  A[-M:] pop to C
+    s~t         t~s
+  B[-N:] pop to A
+    v~u         u~v
+  C[-M:] pop to A
+    t~s         u~vs~t
+不论重排如何复杂，总是可以分而治之，先对半分开，各自重排，再合并，O(N*logN)指令
+  目标排列 可以编号为 [0..<N]
+  起始排列 依据 目标排列 重新编号
+允许复制的话...有点麻烦，首先，目标排列不能再简单地编号为[0..<N]，因为重复项必须有相同编码
+  其实也容易，复制足够数量 再编号不同就行
+
+]]
+
+
+e ../lots/NOTE/Rust/The_Rust_Programming_Language-note.txt
+『a.b = d;』要求证明:[不存在[d -*-> a]][不存在[外链借用c_ <-*- b]]
+
+
+
+e ../lots/NOTE/cryptography-book/Introduction to Modern Cryptography(2th)(2015)(Jonathan Katz)(Yehuda Lindell).txt
+    /sdcard/0my_files/book/cryptography/Introduction to Modern Cryptography(2th)(2015)(Jonathan Katz)(Yehuda Lindell).pdf
+    /sdcard/0my_files/book/cryptography/Foundations of Cryptography(2001)[PRF].pdf
+      也是 严格方法，但是 比较旧
+
+
+@20260102
+浮点数
+view others/数学/exponential-20260102.txt
+view others/数学/编程/设计/浮点数模型与表达.txt
+view ../../python3_src/seed/math/binary_float/binary_float_ops____using_LazyList.py
+view ../../python3_src/seed/math/float/IFloatNumber.py
+
+
+
+@20251213
+泛化:最短加链
+  原:1->pint
+  向量化:幺向量基组->向量
+    比如:素数序列 通过乘法 达成指定整数
+  允许更多权重:...
+    允许减法:权重{+1} --> 权重{+1,-1}
+    允许二幂权重:权重{+1} --> 权重{+2**kv| [k:<-[0..]]}
+        感觉好像也不容易计算...
+
+
+
+@20251213
+view others/数学/最短加链/最短加链--py_doc-www-杂录.txt
+  #<--:view others/数学/最小加法链.txt
+view ../../python3_src/nn_ns/math_nn/numbers/shortest_addition_chain_length.py
+  压缩:差分牜上界
+  分层:num_small_steps_of_
+view script/搜索冫最短加链长度.py
+蛮力搜索+关键节点
+
+e others/数学/最短加链/最短加链-论文-概览.txt
+  DONE
+e script/搜索冫首个特例纟最短加链牜查表.py
+  DONE
+e script/蛮力搜索冫最短加链牜修剪搜索树.py
+  TODO
+e script/搜索冫最短加链牜除模降解牜查表.py
+  TODO
+
+
+总小步数=>靶值分类
+靶值况型牜未必最优{总小步数}
+  ==末点况型牜未必最优{总小步数}
+节点况型牜未必最优{末点况型牜未必最优{总小步数}}
+{总小步数:{末点况型牜未必最优:{节点况型牜未必最优}}}
+{总小步数:{链型牜未必最优{翻倍缩略}}}
+末点况型牜未必最优{总小步数} =:
+  * (@次末点:<-末点况型牜未必最优{-1+总小步数} -+> 节点况型牜未必最优{次末点}) \-\次末点最高位进位
+  * (@次末点:<-末点况型牜未必最优{总小步数} -+> 节点况型牜未必最优{次末点}) \-\次末点最高位未进位
+    #必然含:『2 .* 末点况型牜未必最优{总小步数}』
+2**(a,b,c) + 2**(x,y,z,...)
+  [a>b>c]
+  [x>y>z]
+  * [c > x]:
+      ... == 2**(a,b,c, x,y,z,...)
+  * [c == x]:
+    * [b > c+1]:
+      ... == 2**(a,b,c+1,y,z,...)
+    * [b == c+1]:
+      * [a > b+1]:
+        ... == 2**(a,b+1,y,z,...)
+      * [a == b+1]:
+        ... == 2**(b+2,y,z,...)
+  * [x > c]:
+    (a,b)+(x,)  +  (c,)+(y,z,...)
+    递归深入
+翻倍缩略=>可能出现多变量:
+  2**t * 2**(a,b,c)
+  [t>=0]
+  [a>b>c>=0]
+  2**(a+s,b+t+3,c)
+  [s,t>=0]
+  [a+s>b+t+3>c>=0]
+
+
+0=>2**ez
+  1,2,4,...,2**ez
+1=>2**a+2**b [a>b>=0]
+  1,2,4,...,2**b,...,2**a,(2**a+2**b),2*(2**a+2**b),...,,2**k*(2**a+2**b)
+2=>
+  必然前导:[a>b>=1]:1,2,4,...,2**b,...,2**a,(2**a+2**b),???
+  下一值分成七种况态:
+  #最大*2
+  * ...,2**a,(2**a+2**b),2*(2**a+2**b),???
+    ...,2**a,(2**a+2**b),2*(2**a+2**b),...,2**x*(2**a+2**b),???
+    [x>=1]
+    * ...,2**a,(2**a+2**b),2*(2**a+2**b),...,2**x*(2**a+2**b),(2**x+2**z)*(2**a+2**b),???
+      [x>z>=1]
+      [小步数==2==总小步数]
+      !DONE
+    * ...,2**a,(2**a+2**b),2*(2**a+2**b),...,2**x*(2**a+2**b),2**x*(2**a+2**b)+2**g,???
+      [a>=g>=1]
+      !! [x>=1]
+      [g < x+a]
+        即:最高位(2**(x+a))不会直接进位
+      * [g =!= x+b]:
+        最高位(2**(x+a))不会进位
+        小步数 增一
+        [小步数==2==总小步数]
+        !DONE
+      * [g == x+b]:
+        * [g == x+b][b+1 < a]:
+          最高位(2**(x+a))不会进位
+          小步数 增一
+          [小步数==2==总小步数]
+          !DONE
+        * [g == x+b][b+1 == a]:
+          最高位(2**(x+a))进位
+          小步数 不变
+          !! [a>=g>=1]
+          [a>=x+b]
+          [x==1]
+          [g==a==b+1]
+          ...,2**b,2**a,(2**a+2**b),2*(2**a+2**b),2*(2**a+2**b)+2**a,???
+          ...,2**b,2**a,(2**a+2**b),3*2**a,4*2**a,???
+          ...,2**b,2*2**b,3*2**b,6*2**b,8*2**b,???
+          ...,B,2*B,3*B,6*B,8*B,???
+          [小步数==4-3==1<2==总小步数]
+          ==>> [(3*B).剩余义务出度+(6*B).剩余义务出度>=1]
+          * ...,B,2*B,3*B,6*B,8*B,...,2**z*8*B+3*B,???
+            [小步数==2==总小步数]
+            !DONE
+          * ...,B,2*B,3*B,6*B,8*B,...,2**z*8*B+6*B,???
+            [小步数==2==总小步数]
+            !DONE
+          !DONE
+        !DONE
+      !DONE
+    !DONE
+  #最大+次大/原大加数
+  * ...,2**a,(2**a+2**b),(2**a+2**b)+2**a,???
+    ...,2**a,(2**a+2**b),(2**(1+a)+2**b),???
+    最高位(2**(x+a))进位
+    小步数 不变
+    [小步数==1<2==总小步数]
+    <==> ...,2**a,2**(a+1),2**(a+1),???
+  #最大+原加数间数
+  * ...,2**a,(2**a+2**b),(2**a+2**b)+2**y,???
+    [a>y>b=0]
+  #最大+原小加数
+  * ...,2**a,(2**a+2**b),(2**a+2**b)+2**b,???
+    <==> ...,2**a,(2**a+2**b),(2**a+2**(b+1)),???
+    ==>> [(2**a+2**b).剩余义务出度>=1]
+  #最大+原小加数更小数
+  * ...,2**a,(2**a+2**b),(2**a+2**b)+2**c,???
+    [a>b>c=0]
+  #次大*2
+  * ...,2**a,(2**a+2**b),2**(a+1),???
+  #次大+原加数间数
+  * ...,2**a,(2**a+2**b),(2**a+2**y),???
+    [a>y>b=0]
+    不等式组...判定有解与否...
+
+
+2**aj,...,2**bj*(2**a2+2**a1),...
+  2**cj*(2**a3+2**b1*(2**a2+2**a1))
+  2**cj*(2**b2*(2**a4+2**a3)+2**b1*(2**a2+2**a1))
+  2**cj*(2**b2+2**b1)*(2**a2+2**a1)
+
+加一型、因数分解型
+靶值牜阳爻数<=4
+
+  阳爻数4=>总小步数:2,3
+    #4:{2: 644, 3: 1686}/100001
+    ,2:[15, 23, 27, 30, 39, 43, 45, 46, 51, 54, ...]#644
+    ,3:[29, 53, 57, 58, 71, 89, 101, 105, 106, 113, ...]#1686
+>>> from nn_ns.math_nn.numbers.shortest_addition_chain__the_max_one import pint2max_shortest_addition_chain, pint2arbitrary_shortest_addition_chain
+>>> ls=pint2max_shortest_addition_chain
+>>> ls[29] # 29==2*14+1
+(1, 2, 4, 8, 16, 24, 28, 29)
+>>> ls[53] # 53==2*26+1
+(1, 2, 4, 8, 16, 32, 48, 52, 53)
+>>> ls[14]
+(1, 2, 4, 8, 12, 14)
+>>> ls[26]
+(1, 2, 4, 8, 16, 24, 26)
+
+>>> ls[15] # 15==5*3; 27==9*3; 30==10*3; 39==13*3
+(1, 2, 4, 5, 10, 15)
+>>> ls[23]
+(1, 2, 4, 5, 9, 18, 23)
+>>> ls[43]
+(1, 2, 4, 8, 9, 17, 34, 43)
+>>> bin(43) # 43==2**(0<1<3<5{==1+1+3})
+'0b101011'
+>>> bin(23) # 23==2**(0<1<2<4{==1+1+2})
+'0b10111'
+==>>:
+TODO:debugging:
+#xx:非因数分解型:两小步四阳爻:1,...,2**a,[小步]2**a+2**b,2**(a+1)+2**b,...,[小步]2**x*(2**(a+1)+2**b)+(2**a+2**b),...
+#xx:  2**x*(2**(d+1)+1)+(2**d+1)
+#xx:  2**k*2**(0<d<x<1+x+d) or 2**k*2**(0<x<d<1+x+d)
+#xx:  即 2**k*2**(0<u<v<1+u+v)
+#xx:  即 2**(i<j<k<1+j+k-i)
+#xx:因数分解型:两小步四阳爻:1,...,2**a,[小步]2**a+2**b,...,[小步](2**x+1)*(2**a+2**b),...
+#xx:  2**k*(2**x+1)*(2**y+1)
+#xx:  2**k*2**(0<u<v<u+v)
+#xx:  即 2**(i<j<k<j+k-i)
+#xx:#vs:非因数分解型:两小步三阳爻:1,...,2**a,[小步]2**a+2**b,...,[小步]2**x*(2**a+2**b)+2**c,...
+#xx:  即 2**(i<j<k)
+#xx:#vs:因数分解型:两小步三阳爻:1,...,2**a,[小步]2**a+2**b,...,[小步]2**x*(2**a+2**b)**2,...
+#xx:  2**k*2**(0<1+u<2*u)
+#xx:  即 2**(i<j<2*j-2-i)
+#xx:#vs:因数分解型:一小步两阳爻:1,...,2**a,[小步]2**a+2**b,...,[小步]2**x*(2**a+2**b)**2,...
+#xx:  2**k*2**(0<1+u==2*u)
+#xx:  2**k*2**(0<2+u{==2*u+1==3})
+#xx:  即 2**k*9
+
+<<==:
+TODO:debugging:
+e script/最短加链相关牜数据统计巛靶值讠最小显链长.py
+  view /sdcard/0my_files/tmp/out4py/script.最短加链相关牜数据统计巛靶值讠最小显链长..识别冫靶值讠种型牜加一型丶加二型丶因数分解型丶阳爻数小于四扌.out.txt
+  view /sdcard/0my_files/tmp/out4py/script.最短加链相关牜数据统计巛靶值讠最小显链长..识别冫靶值讠种型牜加一型丶加二型丶因数分解型丶阳爻数小于四扌.out.grep-只有加二型.txt
+  view /sdcard/0my_files/tmp/out4py/script.最短加链相关牜数据统计巛靶值讠最小显链长..识别冫靶值讠种型牜加一型丶加二型丶因数分解型丶阳爻数小于四扌.out.grep-empty.txt
+TODO:debugging:
+e ../../python3_src/seed/math/power/addition_chain/common/README-formula.txt
+
+
+[[
+感觉不太行，暂停:
+===
+view others/数学/我的猜想.txt
+===
+递归最短加链vs最短递归加链
+  [递归最短加链<:最短加链]
+    递归最短加链{u}不一定存在
+  [最短递归加链<:递归加链]
+    最短递归加链{u}一定存在
+  指导节点集/必需节点集
+  [靶数讠必需闭包讠次靶讠必需闭包纟最短递归加链 :: {目标整数{>=2} : {整数冃爻元串冃闭包纟必需节点集 : {次大整数:整数冃爻元串冃闭包纟必需节点集}}}]
+  [靶数讠共享闭包纟最短递归加链 :: {目标整数{>=2} : 整数冃爻元串冃闭包纟共享节点集}]
+  [靶数讠简并闭包纟最短递归加链 :: {目标整数{>=2} : 整数冃爻元串冃可行节点集}]
+  [靶数讠最小长度纟递归加链 :: {目标整数{>=2} : 最小长度纟递归加链}]
+    比较:最小长度纟递归加链vs最小长度纟加链==长度纟最短加链
+  #改名如下:[靶数集巛最小长度纟递归加链 :: {最小长度纟递归加链 : {目标整数{>=2}}}]
+  [靶数升列巛最小长度纟递归加链 :: [strict_sorted[目标整数{>=2}]]]
+  ==>>:[g :: 目标整数{>=2} -> 整数冃爻元串冃必需节点集{未必是闭包} -> (整数冃爻元串冃闭包纟必需节点集, {次大整数:整数冃爻元串冃闭包纟必需节点集})]
+
+===
+
+for 靶数 in count(2):
+  found = False
+  for 最小长度纟递归加链,靶数升列 in enumerate(靶数升列巛最小长度纟递归加链):
+    for 次靶 in reversed(靶数升列):
+      必需节点 = 靶数 -次靶
+      if 必需节点 > 次靶:break
+      简并闭包纟次靶 = 靶数讠简并闭包纟最短递归加链[次靶]
+      if not 欤置位彑(必需节点,简并闭包纟次靶):continue
+      共享闭包纟次靶 = 靶数讠共享闭包纟最短递归加链[次靶]
+      if 欤置位彑(必需节点,共享闭包纟次靶):
+        found = True
+        ok..
+      else:
+        深入..求:必需闭包..次大..
+        ..
+    if found:break
+  if not found:raise ..
+
+
+===
+]]
+
+
+TODO:
+ABC:提前排除冫最短加链牜加一型丶因数分解型
+e ../../python3_src/seed/math/power/addition_chain/shortest/search7contracted_chain.py
+rewrite2:二幂倍环...贪婪型？
+  [(base_u, max_ez4out, [(j, ez4in)])]
+    出度大于一
+  文本: 劫: u^e=j^e+j^e
+TODO:py内置LazyModule是啥？类型可变
+  py.types.ModuleType
+  py.importlib.util._LazyModule,LazyLoader
+DONE:types.LazyDict8Array:
+  LazyDict(key2val_)
+  Dict8Array(len, d)
+DONE:e ../../python3_src/nn_ns/math_nn/numbers/shortest_addition_chain_length__ver3.py
+TODO:抽出框架:e ../../python3_src/nn_ns/math_nn/numbers/shortest_addition_chain_length__ver2.py
+
+@20260130
+识别器:平行世界
+  全局背景参数:
+    比如:全文文本 用于 解读 起址/讫址 于 错误处理
+    比如:识别器或相关参数的递归定义...
+    比如:后处理函数注册处...
+    比如:识别系统所需虚函数...
+    比如:缓存...
+    定义为:映射/{符号:对象}
+  yield 识别扌(全局背景, 识别器, 鬽参数牜识别牜语境无关, 鬽参数牜识别牜语境相关, 参数牜后处理牜融合前) #return 乸尾递归(it)/yield TailRecursionIteration(it)
+    『融合前』
+    vs:
+    『融合后』
+    [参数牜后处理牜融合后 :: Set 参数牜后处理牜融合前]
+  识别器.启动扌(全局背景, 鬽参数牜识别牜语境无关, 鬽参数牜识别牜语境相关, 参数牜后处理牜融合后) -> (共通状态/局部背景, 状态)
+  识别器.分流扌(共通状态/局部背景, 状态, 工作现场/瞬态背景{.槑料符串当前位置快照,.取冫料符串巛位置快照扌}) -> Iter (错|果|(支态{况态纟子部件所在分支;保存料符串当前位置快照},子部件))
+      子部件==(识别器辻参数|料符识别器)
+  识别器.步进扌(共通状态/局部背景, 状态, 支态,子部件, 果) -> Iter 状态
+    乸状态(状态) # 全部打上类型标签
+    乸状态(状态, 欤保存料符=True)
+    (欤保存料符+槑料符串牜保存)或:(槑料符串当前位置快照+取冫料符串巛位置快照扌)
+    工作现场/瞬态背景.槑料符串当前位置快照{分流扌 返回后 失效}
+      双向链表节点-自动删除
+      双向队列-保存料符串
+      数组片段视图-提取料符串 #如何无效化？
+        view ../../python3_src/seed/types/Deque.py
+        view ../../python3_src/seed/types/view/View.py
+          SeqView
+        view ../../python3_src/seed/types/view/SeqSliceView.py
+    可以提出要求:自此保存所有料符
+      毕竟全局统一保存更合理,否则平行世界 得 保存多少重复片段？
+        * LazyList...
+        * txt/seq+idx
+        * ifile+addr
+  参数分成两部分:Esc(具名递归参数)
+    * 识别相关:语法树
+      * 语境无关:(识别器+参数) 作 唯一标识
+      * 语境相关:(识别器+参数+id语境) 作 唯一标识
+    * 后处理相关:忽略、选择性输出、用户自定义结果
+      后处理视图：第二遍：额外参数传递系统
+      {识别用标识:{后处理参数:{父节点/来源}}}
+        ==>>{识别用标识:融合后的后处理参数}
+          偏择函数(融合后的后处理参数, 统一输出, 后处理参数)-->偏择输出
+            所有输入输出都是 不可修改对象
+      具名式:用途:
+        * 递归引用
+        * 后处理函数附加处
+          输出为 Userdefined(value)对外不透明:即:不透明声明:
+            vs:透明声明:允许内置偏择器
+              定长元组:
+                具名定长元组-->...
+              定长数组
+              变长数组-->忽略为:长度
+                view ../../python3_src/seed/data_funcs/finger_tree/ft23_7sized_seq.py
+              具名分流-->忽略为:标签/址引/序列号
+view ../../python3_src/seed/recognize/step_recognizer/IStepRecognizer.py
+
+@20260206
+DONE:e ../../python3_src/seed/recognize/text_recognizer/ITextRecognizer.py
+  用于:解读冫某某某巛文本表达扌#表述冫某某某讠文本表达扌
+
+
+
+
+DONE:ft23_7sized_seq.ipushsX
+DONE:ft23_7sized_seq.vpopsX
+TODO:ft23_7sized_ascend_mapping
+
+DONE:列表视图丷双侧展翅树、趃状态、位置讠丮列表纟更小位置牜更小入选值丶列表纟更小位置牜更大入选值厈
+  或者:位置讠列表纟其余位置牜更小入选值
+  e ../../python3_src/seed/math/combination__parts.py
+
+
+
+
+DONE:溟隘链-->简并态算法牜加溟链
+  DONE:分裂文件
+  DONE:由 自顶向下搜索 改为 自底向上注册
+  DONE:kw:鬽最大靶值
+  DONE:kw:彣匹配模板纟前置文件路径冃靶值讠简并记录
+e script/min_add_ver5__mixed_recursive_greedy_zpow_addition_chain.py
+    简并态{递归婪溟链}
+echo $(ls script/min_add_ver5__mixed_recursive_greedy_zpow_addition_chain.py..枚举生成冫文件后续简并记录纟递归婪溟链扌.ver2.part* | sort)
+!du -h script/min_add_ver5__mixed_recursive_greedy_zpow_addition_chain.py..枚举生成冫文件后续简并记录纟递归婪溟链扌.ver2.part0001.1-6017.out.txt
+
+num_small_steps4shortest_addition_chain 12 13  781  12509  17010  18030  18146  18180
+
+TODO:递归婪溟链:有没有可能存在介点？毕竟主线节点所处位置都是本身最小显链长，若是存在主线介点，则意味着调整加法次序会得到？另一条递归婪溟链(不太对，可能不是)？max介点数量
+TODO:递归婪溟链:右侧最小:次大数/靶值 最大比率是？但是...除非是翻倍，否则 次大数越小，内点溟化值越大，内点也大概率更大...黄金比率下降？那又太慢
+DONE:递归婪溟链:最大纟最小主线距离纟次大数辻内点乊靶值==max{min{址引纟次大数-址引纟内点 | [us:<-最短加链/-\递归婪溟链][主线:=递归婪溟链主线纟(us)][次大数:=主线[-2]][内点:=max{n | [ez:<-[0..]][n:=(靶值-次大数)/2**ez][n<-us]}][址引纟次大数:=主线.index(次大数)][址引纟内点:=主线.index(内点)]} | [靶值:<-[2..]]}
+
+
+mkdir /sdcard/0my_files/zip/addition_chain/靶值讠简并记录纟递归婪溟链
+mkdir /sdcard/0my_files/zip/addition_chain/靶值讠简并记录纟递归婪溟链/txt
+mkdir /sdcard/0my_files/zip/addition_chain/靶值讠简并记录纟递归婪溟链/tar
+tree /sdcard/0my_files/zip/addition_chain/靶值讠简并记录纟递归婪溟链
+cp -iv -u -t /sdcard/0my_files/zip/addition_chain/靶值讠简并记录纟递归婪溟链/txt/  script/min_add_ver5__mixed_recursive_greedy_zpow_addition_chain.py..枚举生成冫文件后续简并记录纟递归婪溟链扌.ver2.part00*.out.txt
+du -bh /sdcard/0my_files/zip/addition_chain/靶值讠简并记录纟递归婪溟链/txt
+
+tail -n 1 /sdcard/0my_files/zip/addition_chain/靶值讠简并记录纟递归婪溟链/txt/min_add_ver5__mixed_recursive_greedy_zpow_addition_chain.py..枚举生成冫文件后续简并记录纟递归婪溟链扌.ver2.part0009.29030-32032.bottomup.out.txt
+
+
+e ../../python3_src/seed/int_tools/int_repr7lex_order7base.py
+e ../../python3_src/seed/math/power/addition_chain/shortest/mixed_recursive_greedy_zpow_addition_chain__doc__py_adhoc_call.py
+view ../../python3_src/seed/math/power/addition_chain/shortest/mixed_recursive_greedy_zpow_addition_chain__doc__py_adhoc_call.py
+###不再继续:py_adhoc_call   seed.math.power.addition_chain.shortest.mixed_recursive_greedy_zpow_addition_chain   ,str.枚举生成冫文件后续简并记录纟递归婪溟链扌  --鬽最大靶值=...  -自顶向下搜索丷自底向上注册 +verbose  --ver=2  --休眠期:auto      --彣匹配模板纟前置文件路径冃靶值讠简并记录:'script/min_add_ver5__mixed_recursive_greedy_zpow_addition_chain.py..枚举生成冫文件后续简并记录纟递归婪溟链扌.ver2.part00*.out.txt'     :script/min_add_ver5__mixed_recursive_greedy_zpow_addition_chain.py..枚举生成冫文件后续简并记录纟递归婪溟链扌.ver2.part0013.39364-???.topdown.out.txt
+
+
+12509,5784689
+  [2**22<5784689<2**23]
+:echo pow(2,15)
+  32768
+  33333
+  34225==185**2
+  36481==191**2
+估计:2**16==65536六万靶值输出得20M*5==100M,压缩包得25M
+  十万=>200M/txt,50M/lzma
+
+list(range(20, 70, 3))
+  [20, 23, 26, 29, 32, 35, 38, 41, 44, 47, 50, 53, 56, 59, 62, 65, 68]
+[u*1000+u for u in range(20, 70, 3)]
+  [20020, 23023, 26026, 29029, 32032, 35035, 38038, 41041, 44044, 47047, 50050, 53053, 56056, 59059, 62062, 65065, 68068]
+  #17
+  #重要目标:50215
+[u*1000+u for u in range(20, 102, 3)]
+  [20020, 23023, 26026, 29029, 32032, 35035, 38038, 41041, 44044, 47047, 50050, 53053, 56056, 59059, 62062, 65065, 68068, 71071, 74074, 77077, 80080, 83083, 86086, 89089, 92092, 95095, 98098, 101101]
+  #28
+
+
+DONE:最大靶值x自底向上:丢弃越界
+DONE:
+  转换冫尾六表纟简并记录纟递归婪溟链扌
+    ver2-->ver3
+    ++kw:欤删除中段数据
+    ++kw:欤允许输入输出是同版本
+  另档冫尾六表纟简并记录纟递归婪溟链扌
+    ver3
+
+失败:加强猜测约束牜极简次大数集:
+  [靶值 == 次大数 + (内点<<溟次)]
+  [内点 in {次大数, 2, 1, *靶值讠极简次大数集[次大数].极简次大数讠溟次}]
+
+
+DONE:py.input() has no timeout:
+e ../../python3_src/seed/lang/input7timeout.py
+e ../../python3_src/seed/for_libs/for_time.py
+from seed.for_libs.for_time import sleep9KeyboardInterrupt_
+
+
+
+@20260206
+e ../../python3_src/seed/math/polynomial/对称多项式讠基表达.py
+#cp -iv script/对称多项式讠基表达.py ../../python3_src/seed/math/polynomial/
+#mv -iv script/对称多项式讠基表达.py script/对称多项式讠基表达-20260221.py
+#e script/对称多项式讠基表达.py
+DONE:整数拆分 -->  幂次讠重数
+half-DONE{单文件同步}:缓存冃...-->保存文件，分裂文件
+DONE{随机}:eval 随机校验:变量值=2,3,5,7...或2**2,3**3,5**5,...
+
+分裂文件:自动化命名:IStepRecognizer
+  view ../../python3_src/seed/int_tools/step_decoder/IStepDecoder__ver2.py
+from seed.int_tools.int_repr7human7alnum7lex_order import encode_int2txt7human7alnum7lex_order_, decode_int5txt7human7alnum7lex_order_
+TODO:class 表述解读无分支基类:(字母表牜头胞, 多种体胞....)#越靠前，位元偏移量越大
+  趃文本,趃位元串
+TODO:class 紧凑整数列表:bytes,str...
+  e ../../python3_src/seed/types/WordSeq.py
+TODO:human版:5头胞->1-9 双胞表述
+  e ../../python3_src/seed/int_tools/int_repr7lex_order7base.py
+e ../../python3_src/seed/int_tools/int_repr7human7alnum7lex_order.py
+e ../../python3_src/seed/int_tools/int_repr7compact7baseGA7lex_order.py
+from seed.int_tools.int_repr7compact7baseGA7lex_order import 表述冫整数讠文本表达牜紧凑牜词典序牜基表六七扌, 解读冫整数巛文本表达牜紧凑牜词典序牜基表六七扌
+保存:
+  多文件名格式模板
+  encoding
+  newline='\n'
+  二进制模式:非空文件=>确保:末字符必是换行符
+    确保 换行符 编码后 是 b'\n'
+  区分:key,val:_repr_, _eval_,_locals_,_eq_
+    s=_repr_{T}(x)
+    y=_eval_{T}(s, _locals_)
+    t=_repr_{T}(y)
+    assert s == t
+    assert _eq_{T}(x,y)
+  每条记录有几个条目？
+    单条目:无需:前缀符纟条目
+    多条目:需:前缀符纟条目:比如:『,key :val』
+    各条目:是否可能含 换行符？
+      无=>无需:前缀字符纟行首:
+      有=>需:前缀字符纟行首:比如:『= > ...』
+    若:既无:前缀符纟条目,也无:前缀字符纟首行:
+        =>这样一来，也不允许 注释、指令、空行
+  指令:『?』
+  注释:『#』
+  单行:『[,:]=』
+  多行:『[,:]> /换行非末行 %换行且末行 +续行非末行 -续行且末行』
+e ../../python3_src/seed/io/savefile__record.py
+  view ../../python3_src/seed/io/savefile__str_tuple.py
+from seed.io.savefile__record import Config4RecordFile, Config4Record, Config4Field6Record
+from seed.io.savefile__record import iter_records5binary_file_, write_cased_records2binary_file_
 
 
 
 
 
 
+
+
+@20260211
+TODO:registered_imports for tiny...
+with lazy_...
+  from ... import ...
+cls4ALL.__getattribute__
+  if globals()[nm] is LazyImport...:
+ALL = cls4ALL()
+with ...set(__name__):
+    from seed.pkg_tools.registered_imports.ALL import ...fst, check...
 
