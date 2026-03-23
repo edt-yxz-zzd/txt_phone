@@ -1,0 +1,74 @@
+
+e ../lots/NOTE/Python/lang/except_star-usage.txt
+try:
+  ...
+except* TypeError:
+  ...
+except* ValueError:
+  ...
+
+[[[[[
+httpd__localhost__all_in_one
+http://127.0.0.1:31204/reference/compound_stmts.html#except-star
+===
+8.4.2. except* clause
+The except* clause(s) are used for handling ExceptionGroups. The exception type for matching is interpreted as in the case of except, but in the case of exception groups we can have partial matches when the type matches some of the exceptions in the group. This means that multiple except* clauses can execute, each handling part of the exception group. Each clause executes at most once and handles an exception group of all matching exceptions. Each exception in the group is handled by at most one except* clause, the first that matches it.
+
+[[
+>>> try:
+...    raise ExceptionGroup("eg",
+...        [ValueError(1), TypeError(2), OSError(3), OSError(4)])
+...except* TypeError as e:
+...    print(f'caught {type(e)} with nested {e.exceptions}')
+...except* OSError as e:
+...    print(f'caught {type(e)} with nested {e.exceptions}')
+...
+caught <class 'ExceptionGroup'> with nested (TypeError(2),)
+caught <class 'ExceptionGroup'> with nested (OSError(3), OSError(4))
+  + Exception Group Traceback (most recent call last):
+  |   File "<stdin>", line 2, in <module>
+  | ExceptionGroup: eg
+  +-+---------------- 1 ----------------
+    | ValueError: 1
+    +------------------------------------
+]]
+Any remaining exceptions that were not handled by any except* clause are re-raised at the end, along with all exceptions that were raised from within the except* clauses. If this list contains more than one exception to reraise, they are combined into an exception group.
+
+If the raised exception is not an exception group and its type matches one of the except* clauses, it is caught and wrapped by an exception group with an empty message string.
+
+[[
+>>> try:
+...    raise BlockingIOError
+...except* BlockingIOError as e:
+...    print(repr(e))
+...
+ExceptionGroup('', (BlockingIOError()))
+]]
+
+An except* clause must have a matching expression; it cannot be except*:. Furthermore, this expression cannot contain exception group types, because that would have ambiguous semantics.
+
+It is not possible to mix except and except* in the same try. break, continue and return cannot appear in an except* clause.
+
+]]]]]
+[[[[[
+httpd__localhost__all_in_one
+http://127.0.0.1:31204/library/exceptions.html#BaseExceptionGroup
+http://127.0.0.1:31204/library/exceptions.html#exception-groups
+===
+Exception groups
+    Added in version 3.11.
+The following are used when it is necessary to raise multiple unrelated exceptions. They are part of the exception hierarchy so they can be handled with except like all other exceptions. In addition, they are recognised by except*, which matches their subgroups based on the types of the contained exceptions.
+
+exception ExceptionGroup(msg, excs)
+exception BaseExceptionGroup(msg, excs)
+Both of these exception types wrap the exceptions in the sequence excs. The msg parameter must be a string. The difference between the two classes is that BaseExceptionGroup extends BaseException and it can wrap any exception, while ExceptionGroup extends Exception and it can only wrap subclasses of Exception. This design is so that except Exception catches an ExceptionGroup but not BaseExceptionGroup.
+
+The BaseExceptionGroup constructor returns an ExceptionGroup rather than a BaseExceptionGroup if all contained exceptions are Exception instances, so it can be used to make the selection automatic. The ExceptionGroup constructor, on the other hand, raises a TypeError if any contained exception is not an Exception subclass.
+
+.message
+    The msg argument to the constructor. This is a read-only attribute.
+
+.exceptions
+    A tuple of the exceptions in the excs sequence given to the constructor. This is a read-only attribute.
+
+]]]]]
