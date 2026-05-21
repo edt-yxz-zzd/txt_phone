@@ -1,0 +1,922 @@
+
+e others/数学/prime/APR_primality_test.txt
+  更早期的素性判定算法
+  (lnN)**(c*lnlnlnN)
+
+vs:
+  view others/数学/prime/AKS_primality_test.txt
+    首个多项式时间的素性判定算法
+    但是太慢不实用
+
+
+view script/辅助冫素性判定牜高斯和.py
+
+
+
+Lemma__4_4_1:goto
+Lemma__4_4_2:goto
+Lemma__4_4_3:goto
+Definition__4_4_4:goto
+Algorithm__4_4_5:goto
+Theorem__4_4_6:goto
+
+小毛病:goto
+疑难解答甲:goto
+
+#不行:优化:用素域替代复数域又如何呢？
+
+
+
+
+APR_primality_test:1983:
+  * Gauss sums test
+    ZZ[Rt{p},Rt{q}]
+    多项式:(p-1)*(q-1) 项
+
+  * Jacobi sums test
+    ZZ[Rt{p}]
+    更短的多项式，更实用
+    但是本文没有多讲，得看论文
+
+[[
+'Prime numbers-A Computational Perspective(2ed)(2005)(Pomerance).pdf'
+page194[206/604]
+4.4 Gauss and Jacobi sums
+  In 1983, Adleman, Pomerance, and Rumely [Adleman et al. 1983] published a primality test with the running-time bound of (lnN)**(c*lnlnlnN) for prime inputs n and some positive constant c.
+4.4.1 Gauss sums test
+
+Dirichlet characters:
+If q is a prime with primitive root g and
+  if ζ is a complex number with ζ**(q-1)=1,
+  then we can “construct” a character χ to the modulus q via
+    χ(g**k) = ζ**k for every integer k
+    (and of course, χ(m) = 0 if m is a multiple of q).
+
+
+
+[q::prime]:
+  [Mg{q} =[def]= min(primitive_roots_mod_(q))]
+[k::uint{>=1}]:
+  [Rt{k} =[def]= exp(2*pi*1j/k)]
+    # a primitive n-th root of 1
+  # 用素域替代复数域又如何呢？
+  [Pth{k} =[def]= min{p | [p::prime][(p-1)%k==0]}]
+  [RtM{k} =[def]= let [p:=Pth{k}] in (Mg{p}**((p-1)///k)%p)]
+  # for:ZZ[Rt{p},Rt{q}]
+  [RtsM{*ks} =[def]= let [k:=lcm(*ks)][p:=Pth{k}][_r:=(Mg{p}**((p-1)///k)%p)] in [(_r**(k///kj)%p) | [kj:<-ks]]]
+
+[q::prime][_g:<-primitive_roots_mod_(q)][m::int][m%q =!= 0]:
+  [Lg{q,_g}(m)=Lg(q,_g;m) =[def]= k where [m=[%q]=_g**k}]
+[q::prime][_g:<-primitive_roots_mod_(q)][_r::complex][_r**(q-1)==1][m::int]:
+    [Dirichlet_character{q,_g,_r}(m)
+    =Dirichlet_character(q,_g,_r;m)
+    =[def]= if [m%q==0] then 0 else _r**Lg(q,_g;m)]
+
+[q::prime]:
+  [DX1{q} =[def]= Dirichlet_character{q,Mg{q},Rt{q-1}}]
+    #注意:不是Rt{q}
+
+[p,q::prime][(q-1)%p == 0]:
+  [DX2{p,q} =[def]= Dirichlet_character{q,Mg{q},Rt{p}}]
+  [DX1{q} === DX2{q,q-1}]
+  [Rt{p}**(q-1) == 1]
+  [@[k::int] -> [DX2{p,q}(Mg{q}**k) == Rt{p}**k]]
+  [@[m::int] -> [m%q =!= 0] -> [DX2{p,q}(m)**p == 1]]
+    !! [@[k::int] -> [DX2{p,q}(Mg{q}**k) == Rt{p}**k]]
+    [[k:=Lg(q,Mg{q};m)] -> [DX2{p,q}(m)**p == DX2{p,q}(Mg{q}**k)**p == (Rt{p}**k)**p == (Rt{p}**p)**k == 1]]
+  [DX2{p,q}(Mg{q}) =!= 1]
+    !! [DX2{p,q}(Mg{q}**k) == Rt{p}**k]
+    [DX2{p,q}(Mg{q}) == Rt{p} =!= 1]
+  [order_of(DX2{p,q}) == p]
+    !! [@[m::int] -> [m%q =!= 0] -> [DX2{p,q}(m)**p == 1]]
+    !! [DX2{p,q}(Mg{q}) =!= 1]
+    !! [p::prime]
+
+[q::prime][_g:<-primitive_roots_mod_(q)][_r::complex][_r**(q-1)==1]:
+  [Tt(X_:=Dirichlet_character{q,_g,_r}) =[def]= sum[X_(m)*Rt{q}**m | [m:<-[1..<q]]]]
+    #注意:不是Rt{q-1}
+  [Tt(X_:=Dirichlet_character{q,_g,_r})
+  == sum[X_(m)*Rt{q}**m | [m:<-[1..<q]]]
+  # [k:=Lg(q,_g;m)]
+  # [m:=_g**k]
+  == sum[X_(_g**k)*Rt{q}**_g**k | [k:<-[1..<q]]]
+  == sum[_r**k * Rt{q}**_g**k | [k:<-[1..<q]]]
+  ]
+
+[p,q::prime][(q-1)%p == 0]:
+  #定义:高斯和:
+  [Gs(p,q) =[def]= Tt(DX2{p,q})]
+  [Gs(p,q)
+  == sum[Rt{p}**k * Rt{q}**Mg{q}**k | [k:<-[1..<q]]]
+  == sum[Rt{p}**(k%p) * Rt{q}**(Mg{q}**k%q) | [k:<-[1..<q]]]
+  ]
+  [Gs(p,q) <- ZZ[Rt{p},Rt{q}]]
+    #最多有 (p-1)*(q-1) 项
+    # == sum{coeff[j,k]*Rt{p}**j*Rt{q}**k | [j:<-[0..=p-2]][k:<-[0..=q-2]]}
+  [Gs(X,Y) <- ZZ[X,Y]%{(X**p-1)///(X-1),(Y**q-1)///(Y-1)}]
+    #即:[X**(p-1) == -sum[X**k | [k:<-[0..=p-2]]]][Y**(q-1) == -sum[Y**k | [k:<-[0..=q-2]]]]
+    #使用 多项式符号运算，而非 高精度复数浮点数运算
+[X,Z::Var][X**p == 1]:
+  @k. [(X**k)**p == 1]
+  @k. [(X**k) <- roots_of(Z**p-1)]
+  [{(X**k) | [k:<-[0..<p]]} |<=| roots_of(Z**p-1)]
+  [X =!= 1][p::prime]:
+    [len{(X**k) | [k:<-[0..<p]]} == p]
+    [roots_of(Z**p-1) == {(X**k) | [k:<-[0..<p]]}]
+
+    [II[(Z-X**k) | [k:<-[0..<p]]] == (Z**p-1)]
+    [II[(Z-X**k) | [k:<-[1..<p]]] == (Z**p-1)///(Z-1)]
+    [roots_of((Z**p-1)///(Z-1)) == {(X**k) | [k:<-[1..<p]]}]
+[[[X,Z::Var][X**p == 1][X =!= 1][p::prime]] -> [roots_of((Z**p-1)) == {(X**k) | [k:<-[0..<p]]}]]
+[[[X,Z::Var][X**p == 1][X =!= 1][p::prime]] -> [roots_of((Z**p-1)///(Z-1)) == {(X**k) | [k:<-[1..<p]]}]]
+
+]]
+[[
+Lemma__4_4_1:here
+Lemma 4.4.1.
+  If p,q are primes with p | (q-1), then Gs(p,q)*conj_(Gs(p,q)) == q.
+<==>:
+[@[p,q::prime] -> [(q-1)%p == 0] -> [norm_(Gs(p,q)) == q]]
+  # [norm_(x) =[def]= x*conj_(x)]
+
+proof:
+  [norm_(Gs(p,q))
+  == Gs(p,q)*conj_(Gs(p,q))
+  :> [X_:=DX2{p,q}]
+  == sum[X_(m)*Rt{q}**m | [m:<-[1..<q]]]
+   * conj_(sum[X_(m)*Rt{q}**m | [m:<-[1..<q]]])
+  == sum[X_(m)*Rt{q}**m | [m:<-[1..<q]]]
+   * sum[conj_(X_(m))*conj_(Rt{q})**m | [m:<-[1..<q]]]
+  == sum[X_(m)*Rt{q}**m | [m:<-[1..<q]]]
+   * sum[X_(m**-1%q)*(Rt{q}**-1)**m | [m:<-[1..<q]]]
+  == sum[X_(m1)*X_(m2**-1%q)*Rt{q}**(m1-m2) | [m1:<-[1..<q]][m2:<-[1..<q]]]
+  == sum[X_(m1*(m2**-1%q))*Rt{q}**(m1-m2) | [m1:<-[1..<q]][m2:<-[1..<q]]]
+  :> [mm := (m1*(m2**-1%q))]
+  => [m1 =[%q]= mm*m2]
+  => [m1-m2 =[%q]= mm*m2 -m2 =[%q]= (mm-1)*m2]
+  == sum[X_(mm)*Rt{q}**((mm-1)*m2) | [mm:<-[1..<q]][m2:<-[1..<q]]]
+  == sum[X_(mm)*sum[Rt{q}**((mm-1)*m2) | [m2:<-[1..<q]]] | [mm:<-[1..<q]]]
+  == sum[X_(mm)*sum[Rt{q}**((mm-1)*m2) | [m2:<-[1..<q]]] | [mm:<-[1..<2]]]
+   + sum[X_(mm)*sum[Rt{q}**((mm-1)*m2) | [m2:<-[1..<q]]] | [mm:<-[2..<q]]]
+  == X_(1)*(q-1)
+   + sum[X_(mm)*sum[Rt{q}**m | [m:<-[1..<q]]] | [mm:<-[2..<q]]]
+  == X_(1)*(q-1)
+   + sum[X_(mm)*(-1) | [mm:<-[2..<q]]]
+  == X_(1)*q
+   - sum[X_(mm) | [mm:<-[1..<q]]]
+  == 1*q -0
+  == q
+  ]
+end-proof
+]]
+[[
+The next result begins to show a possible relevance of Gauss sums to primality testing.
+  It may be viewed as an analogue to Fermat’s little theorem.
+
+Lemma__4_4_2:here
+Lemma 4.4.2.
+  Suppose p,q,n are primes with p|(q-1) and gcd(p*q,n) == 1.
+  Then Gs(p,q)**(n**(p-1)-1) ≡ χ{p,q}(n) (mod n).
+<==>:
+[@[n,p,q::prime] -> [(q-1)%p == 0] -> [gcd(p*q,n) == 1] -> [Gs(p,q)**(n**(p-1)-1) =[%n]= DX2{p,q}(n)]]
+proof:
+  [Gs(p,q)**(n**(p-1))
+  :> [X_:=DX2{p,q}]
+  == sum[X_(m)*Rt{q}**m | [m:<-[1..<q]]]**(n**(p-1))
+  !! [n::prime]
+  =[%n]= sum[X_(m)**(n**(p-1)) * (Rt{q}**m)**(n**(p-1)) | [m:<-[1..<q]]]
+  !! [order_of(DX2{p,q}) == p]
+  == sum[X_(m)**(n**(p-1) %p) * Rt{q}**(m*(n**(p-1))) | [m:<-[1..<q]]]
+  !! [p::prime]
+  !! [n%p =!= 0]
+  => [n**(p-1) =[%p]= 1]
+  == sum[X_(m) * Rt{q}**(m*(n**(p-1))) | [m:<-[1..<q]]]
+  == sum[X_(m*(n**(p-1)) * (n**-1%q)**(p-1)) * Rt{q}**(m*(n**(p-1))) | [m:<-[1..<q]]]
+  == sum[X_(m*(n**(p-1))) * X_((n**-1%q)**(p-1)) * Rt{q}**(m*(n**(p-1))) | [m:<-[1..<q]]]
+  == X_((n**-1%q)**(p-1)) * sum[X_(m*(n**(p-1))) * Rt{q}**(m*(n**(p-1))) | [m:<-[1..<q]]]
+  !! [n%q =!= 0]
+  => [n**(p-1)%q =!= 0]
+  == X_((n**-1%q)**(p-1)) * sum[X_(j) * Rt{q}**j | [j:<-[1..<q]]]
+  == X_((n**-1%q)**(p-1)) * Gs(p,q)
+  == X_((n**-1%q)**p * n) * Gs(p,q)
+  == X_(n**-1%q)**p * X_(n) * Gs(p,q)
+  !! [order_of(DX2{p,q}) == p]
+  == 1 * X_(n) * Gs(p,q)
+  == X_(n) * Gs(p,q)
+  ]
+  [Gs(p,q)**(n**(p-1)) =[%n]= DX2{p,q}(n) * Gs(p,q)]
+  [Gs(p,q)**(n**(p-1))*conj_(Gs(p,q)) =[%n]= DX2{p,q}(n) * Gs(p,q)*conj_(Gs(p,q))]
+  [Gs(p,q)**(n**(p-1)-1)*norm_(Gs(p,q)) =[%n]= DX2{p,q}(n) *norm_(Gs(p,q))]
+  !! [@[p,q::prime] -> [(q-1)%p == 0] -> [norm_(Gs(p,q)) == q]]
+  [Gs(p,q)**(n**(p-1)-1)*q =[%n]= DX2{p,q}(n) *q]
+  !! [gcd(q,n) == 1]
+  [Gs(p,q)**(n**(p-1)-1) =[%n]= DX2{p,q}(n)]
+end-proof
+]]
+[[
+Lemma__4_4_3:here
+Lemma 4.4.3.
+  If m,n are natural numbers with m not divisible by n and ζ{m}**j ≡ ζ{m}**k (mod n), then ζ{m}**j == ζ{m}**k.
+    # 同余 变成 等号
+<==>:
+[@[m,n::uint] -> [m%n =!= 0] -> @[j,k::int] -> [Rt{m}**j =[%n]= Rt{m}**k] -> [Rt{m}**j == Rt{m}**k]]
+<==>:
+[@[m,n::uint] -> [m%n =!= 0] -> @[j::int] -> [Rt{m}**j =[%n]= 1] -> [Rt{m}**j == 1]]
+proof:
+  [II[(1-Rt{m}**i)| [i:<-[1..<m]]]
+  !! [II[(X-Rt{m}**i)| [i:<-[1..<m]]] == (X**m-1)///(X-1)]
+  => [II[(X-Rt{m}**i)| [i:<-[1..<m]]] == sum[X**e | [e:<-[0..<m]]]]
+  # [X:=1]
+  == sum[1**e | [e:<-[0..<m]]]
+  == m
+  !! [m%n =!= 0]
+  =![%n]!= 0
+  ]
+  [II[(1-Rt{m}**i)| [i:<-[1..<m]]] %n =!= 0]
+  [@[i:<-[1..<m]] -> [(1-Rt{m}**i) %n =!= 0]]
+  [@[i:<-[1..<m]] -> [Rt{m}**i %n =!= 1]]
+  [@[i::int] -> [i%m =!= 0] -> [Rt{m}**i %n =!= 1]]
+  [@[i::int] -> [Rt{m}**i %n == 1] -> [i%m == 0]]
+  [@[i::int] -> [Rt{m}**i %n == 1] -> [[i%m == 0][Rt{m}**i == 1]]]
+  [@[i::int] -> [Rt{m}**i =[%n]= 1] -> [Rt{m}**i == 1]]
+end-proof
+]]
+[[
+Definition__4_4_4:here
+Definition 4.4.4.
+  Suppose p,q are distinct primes.
+  If α ∈ Z[ζp,ζq] \ {0}, where
+    α = sum[coeff[i,k]*ζp**i*ζq**k | [i:<-[0..=p-2]][k:<-[0..=q-2]]]
+  denote by c(α) the greatest common divisor of the coefficients coeff[i,k].
+  Further, let c(0) = 0.
+
+[p,q::prime][p=!=q][z:<-ZZ[Rt{p},Rt{q}]]:
+  [gcd4coeffs_(z) =[def]= if [z==0] then 0 else gcd(z.coeffs)]
+]]
+
+
+
+
+[[
+===
+Algorithm__4_4_5:here
+Algorithm 4.4.5 (Gauss sums primality test).
+  We are given an integer n > 1.
+  This deterministic algorithm decides whether n is prime or composite,
+  returning “n is prime” or “n is composite” in the appropriate case.
+
+1. [Initialize]
+  I = -2;
+
+2. [Preparation]
+  I = I + 4;
+  Find the prime factors of I by trial division, but if I is not squarefree, goto [Preparation];
+  Set F equal to the product of the primes q with (q-1)|I, but if F**2 ≤ n goto [Preparation];
+  // Now I,F are squarefree, and F > √n.
+  If n is a prime factor of I*F, return “n is prime”;
+  If gcd(n,I*F) > 1, return “n is composite”;
+  for (prime q|F) find the least positive primitive root Mg{q} for q;
+
+3. [Probable-prime computation]
+  for(prime p|I) factor n**(p-1)-1 == p**sp*up where p does not divide up;
+  for(primes p,q with p|I, q|F, p|(q-1)) {
+    改版:Find the first natural number w(p,q) ≤ sp with ...
+    原版:Find the first positive integer w(p,q) ≤ sp with
+      Gs(p,q)**(p**w(p,q)*up) ≡ ζp**j (mod n) for some integer j,
+      but if no such number w(p,q) is found, return “n is composite”;
+      # !! Lemma__4_4_2
+      #     但为何w(p,q)不能是0？
+      #         下面『p**(w(p)-1)』要求[w(p)>=1]，
+      #         但是这样一来，若是实际上应当是[w(p)==0]，即实际上应当是[{w(p,q)|@q} == {0}]，那么下面就有毛病...
+  }
+  // Compute symbolically in the ring ZZ[ζp,ζq] (see text).
+  #???优化:用素域替代复数域又如何呢？
+  #     感觉不太行:[%n]是作用于系数
+
+4. [Maximal order search]
+  for(prime p|I)
+    set w(p) equal to the maximum of w(p,q) over all primes q|F with p|(q-1), and
+    set q0(p) equal to the least such prime q with w(p) = w(p,q);
+  for(primes p,q with p|I, q|F, p|(q-1))
+    find an integer l(p,q) ∈ [0..=p-1] with
+      Gs(p,q)**(p**w(p)*up) ≡ ζp**l(p,q) (mod n);
+
+5. [Coprime check]
+  for(primes p with p|I) {
+    改版:if w(p) == 0:continue
+    原版:pass
+    #now:[w(p) =!= 0]
+    H = Gs(p,q0(p))**(p**(w(p)-1)*up) mod n;
+    # [H::ZZ[ζp,ζq]%n]
+    # !! [w(p) == w(p,q0{p})]
+    # @j. [H =!= ζp**j] #这一步有毛病:可能实际上应当是[{w(p,q)|@q} == {0}][w(p)==0]
+    # @j. [1 <= gcd(n,gcd4coeffs_(H - ζp**j)) < n]
+    for(0 ≤ j ≤ p - 1) {
+      if(gcd(n,gcd4coeffs_(H - ζp**j)) > 1) return “n is composite”;
+        # ?j. [1 < gcd(n,gcd4coeffs_(H - ζp**j))]
+        # ?j. [1 < gcd(n,gcd4coeffs_(H - ζp**j)) < n]
+        #   发现非凡因子
+    }
+    // Notation as in Definition__4_4_4
+    #原版: [@j. [1 == gcd(n,gcd4coeffs_(H - ζp**j))]]
+    #改版: [[w(p) =!= 0] -> [@j. [1 == gcd(n,gcd4coeffs_(H - ζp**j))]]]
+  }
+
+6. [Divisor search]
+  l(2) = 0;
+  for(odd prime q|F) use the Chinese remainder theorem (see Theorem 2.1.6) to construct an integer l(q) with l(q) ≡ l(p,q) (mod p) for each prime p|(q-1);
+
+  Use the Chinese remainder theorem to construct an integer l with l ≡ Mg{q}**l(q) (mod q) for each prime q|F;
+  原版:for(1 ≤ j < I) if l**j mod F is a nontrivial factor of n, return “n is composite”;
+  #xxx:{r未知=>_a_{r}未知}:改版一:t:=(l0**_a_{r} %F); if [2<=t<n][n%t == 0]: return “n is composite”;
+    #_a_{r}.定义 见下面
+  return “n is prime”;
+
+Remark.
+  We may omit the condition F ≥ √n and use Algorithm 4.2.11 for the divisor search.
+    The algorithm will remain fast if F ≥ n**/3.
+    [[
+    见下面:F_3_1
+    ===
+    view ../../python3_src/seed/math/divisors_in_residue_classes.py
+    view others/数学/prime/finite_field_primality_test.txt
+      Theorem__4_2_12:goto
+      Algorithm__4_2_11:goto
+        #算法牜快速找出所有因子乊特定剩余类:goto
+    ]]
+尾声:
+  With some extra work one can extend the Gauss sums primality test to the case where I is not assumed squarefree.
+    This extra degree of freedom allows for a speedier test.
+    In addition, there are speed-ups that use randomness, thus eschewing the deterministic aspect of the test.
+    For a reasonably fast version of the Gauss sums primality test, one might consult the new paper [Schoof 2004].
+===
+
+
+
+Theorem__4_4_6:here
+Theorem 4.4.6.
+  Algorithm 4.4.5 correctly identifies prime and composite inputs.
+  The running time is bounded by (lnN)**(c*lnlnlnN) for some positive constant c.
+
+==>>:
+[@[n,I,F :: uint]
+  -> [n >= 2]
+  -> [I >= 2]
+  -> [is_squarefree_(I)]
+  # [q%2==1][I%(q-1) == 0]:
+  #     [I%2 == 0]
+  #     !! [is_squarefree_(I)]
+  #     [I%4 == 2]
+  -> [I%4 == 2]
+  -> [F := II[q | [q::prime][I%(q-1) == 0]]]
+  # !! [I%(q-1) == 0][is_squarefree_(I)]
+  # => [is_squarefree_(q-1)]
+  # => [is_squarefree_(F)]
+  -> [gcd(n,I*F) == 1]
+  -> [@[p::prime] -> [I%p == 0] -> [[sp{p} := gde_(p;(-1+n**(p-1)))][up{p} := (-1+n**(p-1))///p**sp{p}]]]
+  # [gcd(p, up{p}) == 1]
+  -> 原版:[min_w2:=1]
+    #改版:[min_w2:=0]
+  -> [@[p,q::prime] -> [I%p == 0] -> [F%q == 0] -> [(q-1)%p == 0] -> [(w2(p,q),jw(p,q)) := min{(_w,_j) | [_w:<-[min_w2..=sp{p}]][Gs(p,q)**(p**_w*up{p}) =[%n]= Rt{p}**_j]}]]
+  #     Lemma__4_4_2:goto
+  # 改版:[0 <= w2(p,q) <= sp{p}]
+  # 原版:[1 <= w2(p,q) <= sp{p}]
+  # 有毛病:[w2(p,q) == 0]???
+        #小毛病:here
+        #感觉应当允许[w2(p,q) == 0]，后续使用(w1(p)-1)时跳过[w1(p)==0]
+  -> [@[p::prime] -> [I%p == 0] -> [w1(p) := max{w2(p,q) | [q::prime][F%q == 0][(q-1)%p == 0]}]]
+  # 改版:[0 <= w1(p) <= sp{p}]
+  # 原版:[1 <= w1(p) <= sp{p}]
+  # 有毛病:[w1(p) == 0]???
+  -> [@[p::prime] -> [I%p == 0] -> [q0(p) := min{q | [q::prime][F%q == 0][(q-1)%p == 0][w1(p) == w2(p,q)]}]]
+  # [w1(p) == w2(p,q0{p})]
+  -> [@[p,q::prime] -> [I%p == 0] -> [F%q == 0] -> [(q-1)%p == 0] -> ?[l2(p,q) :: int] -> [[0 <= l2(p,q) <= p-1][Gs(p,q)**(p**w1(p)*up{p}) =[%n]= Rt{p}**l2(p,q)]]]
+  # [0 <= l2(p,q) <= p-1]
+  -> [@[p::prime] -> [I%p == 0] -> [w1(p) =!= 0] -> [H := Gs(p,q0(p))**(p**(w1(p)-1)*up{p}) %n] -> @[j:<-[0..<p]] -> [gcd(n,gcd4coeffs_(H - Rt{p}**j)) == 1]]
+  #改版: [[w1(p) =!= 0] -> [@j. [gcd(n,gcd4coeffs_(H - Rt{p}**j)) == 1]]]
+  -> [@[q::prime] -> [F%q == 0] -> [l1(q) := if q==2 then 0 else Chinese_remainder_theorem{%(q-1)}(l2(p,q) : %p : @[p::prime][(q-1)%p == 0])]]
+  # [l1(q) %p == l2(p,q)]
+  # [0 <= l1(q) <= q-2]
+  -> [l0 := Chinese_remainder_theorem{%F}(Mg{q}**l1(q) : %q : @[q::prime][F%q == 0])]
+  # [l0 =[%q]= Mg{q}**l1(q)]
+  # [1 <= l0 <= F-1]
+
+  #{r未知=>_a_{r}未知}
+  #xx:#改版所需中间变量:
+  #xx:-> [@[p::prime] -> [I%p == 0] -> [cp := up{p}**-1 %p] -> [ap := (r**(p-1)-1)///p**w1(p) *cp] -> [_a{p} := ap{p}%p]]
+  #xx:-> [_a_{r} := Chinese_remainder_theorem{%I}(_a{p} : %p : @[p::prime][I%p == 0])]
+
+  -> [
+    原版:[[F**2 > n] -> [@[j:<-[1..<I]] -> [t:=l0**j%F] -> [2 <= t < n] -> [n%t =!= 0]] -> [is_prime_(n)]]
+    #xx:改版一:[[F**2 > n] -> [[t := l0**_a_{r} %F] -> [[[t<-{0,1,n}]or[n%t =!= 0]] -> [is_prime_(n)]]]]
+    #xx:  # !! 感觉 原算法 搜索因子的方法 不够直接
+
+    #xx:改版二:[@[r::prime] -> [n%r == 0] -> [r =[%F]= (l0**_a_{r})]]
+    改版二:[@[r::prime] -> [n%r == 0] -> [?[j:<-[1..<I]] -> [r =[%F]= (l0**j)]]]
+      # 改版二:用于 [F**3 > n] 甚或 (F***3/n)不太小
+      #     Algorithm__4_2_11@view others/数学/prime/finite_field_primality_test.txt
+      #         view ../../python3_src/seed/math/divisors_in_residue_classes.py
+  ]]
+===
+proof:
+  [r::prime][n%r == 0]:
+    !! [gcd(n,I*F) == 1]
+    !! [n%r == 0]
+    [gcd(r,I*F) == 1]
+    [p::prime][I%p == 0]:
+      !! [gcd(r,I*F) == 1]
+      !! [I%p == 0]
+      [gcd(r,p) == 1]
+      [r%p =!= 0]
+
+      !! [p::prime]
+      [@[u::int] -> [u%p =!= 0] -> [u**(p-1) %p == 1]]
+      !! [r%p =!= 0]
+      [r**(p-1) %p == 1]
+
+      !! 改版:[0 <= w1(p) <= sp{p}]
+      !! 原版:[1 <= w1(p) <= sp{p}]
+      * 改版:[w1(p) == 0]:
+        [(r**(p-1)-1)%p**0 == 0]
+        !! [w1(p) == 0]
+        [(r**(p-1)-1)%p**w1(p) == 0]
+      * [w1(p) == 1]:
+        !! [r**(p-1) %p == 1]
+        !! [w1(p) == 1]
+        [(r**(p-1)-1)%p**w1(p) == 0]
+      * [2 <= w1(p) <= sp{p}]:
+        [h := order_mod_(r; Gs(p,q))]
+        * [?q. [l2(p,q) =!= 0]]:
+          !! [0 <= l2(p,q) <= p-1]
+          !! [l2(p,q) =!= 0]
+          [1 <= l2(p,q) <= p-1]
+          [Rt{p}**l2(p,q) =!= 1]
+          !! Lemma__4_4_3
+          [Rt{p}**l2(p,q) %n =!= 1]
+          [Rt{p}**l2(p,q) %r =!= 1]
+          !! [Gs(p,q)**(p**w1(p)*up{p}) =[%n]= Rt{p}**l2(p,q)]
+          [Gs(p,q)**(p**w1(p)*up{p}) =[%r]= Rt{p}**l2(p,q)]
+          !! [Rt{p}**l2(p,q) %r =!= 1]
+          [Gs(p,q)**(p**w1(p)*up{p}) %r =!= 1]
+
+          [Gs(p,q)**(p**(1+w1(p))*up{p})
+          == (Gs(p,q)**(p**w1(p)*up{p}))**p
+          !! [Gs(p,q)**(p**w1(p)*up{p}) =[%r]= Rt{p}**l2(p,q)]
+          =[%r]= (Rt{p}**l2(p,q))**p
+          == (Rt{p}**p)**l2(p,q)
+          == 1**l2(p,q)
+          == 1
+          ]
+          [Gs(p,q)**(p**(1+w1(p))*up{p}) %r == 1]
+          !! [h := order_mod_(r; Gs(p,q))]
+          !! [Gs(p,q)**(p**w1(p)*up{p}) %r =!= 1]
+          [gde_(p; h) == (1+w1(p))]
+          [h%p**(1+w1(p)) == 0]
+
+          [Gs(p,q)**(p*(r**(p-1)-1))
+          !! Lemma__4_4_2
+          => [Gs(p,q)**(r**(p-1)-1) =[%r]= DX2{p,q}(r)]
+          =[%r]= (DX2{p,q}(r))**p
+          !! [order_of(DX2{p,q}) == p]
+          == 1
+          ]
+          [Gs(p,q)**(p*(r**(p-1)-1)) =[%r]= 1]
+          !! h.定义
+          [(p*(r**(p-1)-1)) %h == 0]
+          !! [h%p**(1+w1(p)) == 0]
+          [(p*(r**(p-1)-1)) %p**(1+w1(p)) == 0]
+          [(r**(p-1)-1) %p**w1(p) == 0]
+        * [@q. [l2(p,q) == 0]]:
+          [l2(p,q0{p}) == 0]
+          # !! [w1(p) == w2(p,q0{p})]
+          # [w2(p,q0{p}) >= 2]
+          !! [Gs(p,q)**(p**w1(p)*up{p}) =[%n]= Rt{p}**l2(p,q)]
+          [Gs(p,q0{p})**(p**w1(p)*up{p}) =[%n]= Rt{p}**l2(p,q0{p})]
+          !! [l2(p,q0{p}) == 0]
+          [Gs(p,q0{p})**(p**w1(p)*up{p}) =[%n]= 1]
+          [Gs(p,q0{p})**(p**w1(p)*up{p}) =[%r]= 1]
+
+          !! 改版: [[w1(p) =!= 0] -> [@j. [gcd(n,gcd4coeffs_(H - Rt{p}**j)) == 1]]]
+          !! [2 <= w1(p)]
+          !! [H := Gs(p,q0(p))**(p**(w1(p)-1)*up{p}) %n]
+          !! @j. [gcd(n,gcd4coeffs_(H - Rt{p}**j)) == 1]
+          !! [n%r == 0]
+          @j. [gcd(r,gcd4coeffs_(H - Rt{p}**j)) == 1]
+          @j. [H %r =!= Rt{p}**j]
+          @j. [Gs(p,q0(p))**(p**(w1(p)-1)*up{p}) %r =!= Rt{p}**j]
+          !! [Gs(p,q0{p})**(p**w1(p)*up{p}) =[%r]= 1]
+          !! [复数域上多项式(Z**p-1)的根只能是{Rt{p}**j | [j:<-[1..<p]]}]
+          _L
+            # 为啥原文不以悖论直接未停于此处？莫非不能这样？
+            # 虽然 Rt{p} 定义为 复数域中的幺元p阶本原根，但 从程序、证明中都没提及，实际上应当是任意环中的幺元p阶本原根，可能有很多，代数基本定理并不适用
+          !! @j. [Gs(p,q0(p))**(p**(w1(p)-1)*up{p}) %r =!= Rt{p}**j]
+          [Gs(p,q0(p))**(p**(w1(p)-1)*up{p}) %r =!= 1]
+          !! [h := order_mod_(r; Gs(p,q))]
+          [(p**(w1(p)-1)*up{p})%h =!= 0]
+          !! [Gs(p,q0{p})**(p**w1(p)*up{p}) =[%r]= 1]
+          !! [h := order_mod_(r; Gs(p,q))]
+          [(p**w1(p)*up{p})%h == 0]
+          !! [(p**(w1(p)-1)*up{p})%h =!= 0]
+          [gde_(p;h) == w1(p)]
+          [h%(p**w1(p)) == 0]
+          !! [(p**w1(p)*up{p})%h == 0]
+          [up{p}%(h///(p**w1(p))) == 0]
+          [gcd(up{p},h)
+          !! [gcd(p, up{p}) == 1]
+          == gcd(up{p},h///(p**w1(p)))
+          !! [up{p}%(h///(p**w1(p))) == 0]
+          == h///(p**w1(p))
+          ]
+          [gcd(up{p},h) == h///(p**w1(p))]
+          [order_mod_(r; Gs(p,q)**(p**(w1(p)-1)*up{p})) == p]
+
+
+          [mm,jj::int][Gs(p,q0(p))**mm =[%r]= Rt{p}**jj][Rt{p}**jj %r =!= 1]:
+              #疑难解答甲:here
+              [G1 := (Gs(p,q)%r)生成的循环群]
+              [G2 := (Rt{p}**jj%r)生成的循环群]
+              [G3 := ((Gs(p,q)**(p**(w1(p)-1)*up{p}))%r)生成的循环群]
+              !! [order_mod_(r; Gs(p,q)**(p**(w1(p)-1)*up{p})) == p]
+              [G3是G1的p阶子群]
+
+              [(Rt{p}**jj)**p %r == 1]
+              [p%order_mod_(r; Rt{p}**jj) == 0]
+              [order_mod_(r; Rt{p}**jj) <- {1,p}]
+              !! [Rt{p}**jj %r =!= 1]
+              [order_mod_(r; Rt{p}**jj) == p]
+              [len(G2) == p]
+              !! [Gs(p,q0(p))**mm =[%r]= Rt{p}**jj]
+              [(Rt{p}**jj%r) <- G1]
+              [G2是G1的p阶子群]
+              !! [G3是G1的p阶子群]
+              !! [G1是循环群]
+              [G2==G3]
+              !! [((Gs(p,q)**(p**(w1(p)-1)*up{p}))%r) <- G3]
+              [((Gs(p,q)**(p**(w1(p)-1)*up{p}))%r) <- G2]
+
+              !! @j. [Gs(p,q0(p))**(p**(w1(p)-1)*up{p}) %r =!= Rt{p}**j]
+              [((Gs(p,q)**(p**(w1(p)-1)*up{p}))%r) !<- G2]
+              _L
+          #==>>:
+          [@[mm,jj::int] -> [Gs(p,q0(p))**mm =[%r]= Rt{p}**jj] -> [1 =[%r]= Rt{p}**jj]]
+
+          !! Lemma__4_4_2
+          [Gs(p,q)**(r**(p-1)-1) =[%r]= DX2{p,q}(r)]
+          !! [@[mm,jj::int] -> [Gs(p,q0(p))**mm =[%r]= Rt{p}**jj] -> [1 =[%r]= Rt{p}**jj]]
+              #疑难解答甲:goto
+          [DX2{p,q}(r) =[%r]= 1]
+          [Gs(p,q)**(r**(p-1)-1) =[%r]= DX2{p,q}(r) =[%r]= 1]
+          [Gs(p,q)**(r**(p-1)-1) =[%r]= 1]
+          !! [h := order_mod_(r; Gs(p,q))]
+          [(r**(p-1)-1)%h == 0]
+          !! [h%(p**w1(p)) == 0]
+          [(r**(p-1)-1)%(p**w1(p)) == 0]
+        #==>>:
+        [(r**(p-1)-1)%p**w1(p) == 0]
+      #==>>:
+      [(r**(p-1)-1)%p**w1(p) == 0]
+    #==>>:
+    [@[p::prime] -> [I%p == 0] -> [(r**(p-1)-1)%p**w1(p) == 0]]
+
+
+    [p::prime][I%p == 0]:
+      !! [gcd(p, up{p}) == 1]
+      [cp := up{p}**-1 %p]
+      [bp := up{p} * cp]
+      [bp %p == 1]
+
+      !! [@[p::prime] -> [I%p == 0] -> [(r**(p-1)-1)%p**w1(p) == 0]]
+      [(r**(p-1)-1)%p**w1(p) == 0]
+      [ap := (r**(p-1)-1)///p**w1(p) *cp]
+      [ap =!= 0]
+      [(r**(p-1)-1)*bp
+      !! [bp := up{p} * cp]
+      == (r**(p-1)-1) * cp*up{p}
+      !! [ap := (r**(p-1)-1)///p**w1(p) *cp]
+      => [ap*p**w1(p) == (r**(p-1)-1)*cp]
+      == ap*p**w1(p)*up{p}
+      == (p**w1(p)*up{p} *ap)
+      ]
+      [(r**(p-1)-1)*bp == (p**w1(p)*up{p} *ap)]
+        # [ap/bp == (r**(p-1)-1)/(p**w1(p)*up{p})]
+      [_a{p} := ap{p}%p]
+    [_a_{r} := Chinese_remainder_theorem{%I}(_a{p} : %p : @[p::prime][I%p == 0])]
+      # _a_{r} 定义 无关 p
+      # _a_{r} 定义 依赖于 r
+    !! [_a_{r}%p == _a{p}]
+    !! [ap =!= 0]
+    [1 <= _a_{r} < I]
+
+    [p::prime][I%p == 0]:
+      [q::prime][F%q == 0][(q-1)%p == 0]:
+        [Gs(p,q)**(p**w1(p)*up{p})
+        !! [Gs(p,q)**(p**w1(p)*up{p}) =[%n]= Rt{p}**l2(p,q)]
+        =[%n]= Rt{p}**l2(p,q)
+        !! [n%r == 0]
+        =[%r]= Rt{p}**l2(p,q)
+        !! [l1(q) %p == l2(p,q)]
+        == Rt{p}**l1(q)
+        !! [@[k::int] -> [DX2{p,q}(Mg{q}**k) == Rt{p}**k]]
+        == DX2{p,q}(Mg{q}**l1(q))
+        !! [l0 =[%q]= Mg{q}**l1(q)]
+        == DX2{p,q}(l0)
+        ]
+        [Gs(p,q)**(p**w1(p)*up{p}) =[%r]= DX2{p,q}(l0)]
+      [@[q::prime] -> [F%q == 0] -> [(q-1)%p == 0] -> [Gs(p,q)**(p**w1(p)*up{p}) =[%r]= DX2{p,q}(l0)]]
+
+      [q::prime][F%q == 0][(q-1)%p == 0]:
+        [DX2{p,q}(r)
+        !! [bp %p == 1]
+        == DX2{p,q}(r)**(bp%p)
+        !! [order_of(DX2{p,q}) == p]
+        == DX2{p,q}(r)**bp
+        !! Lemma__4_4_2
+        => [Gs(p,q)**(r**(p-1)-1) =[%r]= DX2{p,q}(r)]
+        =[%r]= Gs(p,q)**((r**(p-1)-1)*bp)
+        !! [(r**(p-1)-1)*bp == (p**w1(p)*up{p} *ap)]
+        == Gs(p,q)**(p**w1(p)*up{p} *ap)
+        !! [Gs(p,q)**(p**w1(p)*up{p}) =[%r]= DX2{p,q}(l0)]
+        =[%r]= DX2{p,q}(l0)**ap
+        !! [order_of(DX2{p,q}) == p]
+        == DX2{p,q}(l0)**(ap%p)
+        == DX2{p,q}(l0**(ap%p))
+        ]
+        [DX2{p,q}(r) =[%r]= DX2{p,q}(l0**(ap%p))]
+        !! Lemma__4_4_3
+        !! [gcd(r,p) == 1]
+        [DX2{p,q}(r) == DX2{p,q}(l0**(ap%p))]
+      #==>>:
+      [@[q::prime] -> [F%q == 0] -> [(q-1)%p == 0] -> [DX2{p,q}(r) == DX2{p,q}(l0**(ap%p))]]
+    #==>>:
+    [@[p::prime] -> [I%p == 0] -> [cp{p} := up{p}**-1 %p] -> [ap{p} := (r**(p-1)-1)///p**w1(p) *cp{p}] -> [_a{p} := ap{p}%p] -> [@[q::prime] -> [F%q == 0] -> [(q-1)%p == 0] -> [DX2{p,q}(r) == DX2{p,q}(l0**_a{p})]]]
+    #==>>:
+    [@[q::prime] -> [F%q == 0] -> [@[p::prime] -> [I%p == 0] -> [(q-1)%p == 0] -> [cp{p} := up{p}**-1 %p] -> [ap{p} := (r**(p-1)-1)///p**w1(p) *cp{p}] -> [_a{p} := ap{p}%p] -> [DX2{p,q}(r) == DX2{p,q}(l0**_a{p})]]]
+
+    [q::prime][F%q == 0][m::int]:
+      [_Xq{q}(m) =[def]= II[DX2{p,q}(m) | [p::prime][I%p == 0][(q-1)%p == 0]]]
+      ?(_g,_r) :=> [_Xq{q} == Dirichlet_character{q,_g,_r}]
+      !! [is_squarefree_(q-1)]
+      [order_of(_Xq{q}) == (q-1)]
+      !! [@[q::prime] -> [a character mod q of order (q-1) is one-to-one on ZZ%q]]
+      [_Xq{q} is one-to-one on ZZ%q]
+
+      [_Xq{q}(r)
+      !! _Xq{q}.定义
+      == II[DX2{p,q}(r) | [p::prime][I%p == 0][(q-1)%p == 0]]
+      !! [DX2{p,q}(r) == DX2{p,q}(l0**_a{p})]
+      == II[DX2{p,q}(l0**_a{p}) | [p::prime][I%p == 0][(q-1)%p == 0]]
+      !! [_a_{r}%p == _a{p}]
+      == II[DX2{p,q}(l0**(_a_{r}%p)) | [p::prime][I%p == 0][(q-1)%p == 0]]
+      !! [order_of(DX2{p,q}) == p]
+      == II[DX2{p,q}(l0**_a_{r}) | [p::prime][I%p == 0][(q-1)%p == 0]]
+      !! _Xq{q}.定义
+      == _Xq{q}(l0**_a_{r})
+      ]
+      [_Xq{q}(r) == DX2{p,q}(l0**_a_{r})]
+      !! [_Xq{q} is one-to-one on ZZ%q]
+      [r =[%q]= (l0**_a_{r})]
+    #==>>:
+    [@[q::prime] -> [F%q == 0] -> [r =[%q]= (l0**_a_{r})]]
+    !! [is_squarefree_(F)]
+    [r =[%F]= (l0**_a_{r})]
+    !! [1 <= _a_{r} < I]
+    [?[j:<-[1..<I]] -> [r =[%F]= (l0**j)]]
+  #==>>:
+  #改版二:
+  #xxx:[@[r::prime] -> [n%r == 0] -> [r =[%F]= (l0**_a_{r})]]
+  [@[r::prime] -> [n%r == 0] -> [?[j:<-[1..<I]] -> [r =[%F]= (l0**j)]]]
+
+  [F**2 > n]:
+    [r::prime][n%r == 0]:
+      [r**2 <= n]:
+        !! [F**2 > n]
+        [r < F]
+        !! [r =[%F]= l0**_a_{r}]
+        [r == l0**_a_{r} %F]
+        !! [1 <= _a_{r} < I]
+      #xxx:[[r**2 <= n] -> [r == l0**_a_{r} %F]]
+      [[r**2 <= n] -> [?[j:<-[1..<I]] -> [r == (l0**j)%F]]]
+    #xxx:[@[r::prime] -> [n%r == 0] -> [[r**2 <= n] -> [r == l0**_a_{r} %F]]]
+    [@[r::prime] -> [n%r == 0] -> [[r**2 <= n] -> [?[j:<-[1..<I]] -> [r == (l0**j)%F]]]]
+
+    !! [[not$is_prime_(n)] -> ?[r::prime] -> [[n%r == 0][r**2 <= n]]]
+    #xxx:[[not$is_prime_(n)] -> ?[r::prime] -> [[n%r == 0][r == l0**_a_{r} %F]]]
+    [[not$is_prime_(n)] -> ?[r::prime] -> [[n%r == 0][?[j:<-[1..<I]] -> [r == (l0**j)%F]]]]
+
+    #xxx:[[t := l0**_a_{r} %F] -> [[not$is_prime_(n)] -> [[2 <= t < n][n%t == 0]]]]
+    #xxx:[[t := l0**_a_{r} %F] -> [[[t<-{0,1,n}]or[n%t =!= 0]] -> [is_prime_(n)]]]
+    [[@[j:<-[1..<I]] -> [t := (l0**j)%F] -> [2 <= t < n] -> [n%t =!= 0]] -> [is_prime_(n)]]
+  #==>>:
+  #xxx:[#改版一:
+  #xxx:[[F**2 > n] -> [[t := l0**_a_{r} %F] -> [[[t<-{0,1,n}]or[n%t =!= 0]] -> [is_prime_(n)]]]]
+  #xxx:  # _a_{r}是可以直接算出来了...
+  #xxx:  # 『6. [Divisor search]』感觉多余
+  原版:[[F**2 > n] -> [@[j:<-[1..<I]] -> [t:=l0**j%F] -> [2 <= t < n] -> [n%t =!= 0]] -> [is_prime_(n)]]
+  #########
+  #########
+  #########
+  It is clear that the running time is bounded by a fixed power of I, so the running time assertion follows immediately from Theorem 4.3.5.
+      # Theorem__4_3_5{I(x)递增速率}@view others/数学/prime/finite_field_primality_test.txt
+  #########
+end-proof
+
+
+
+]]
+
+
+#4.4.2 Jacobi sums test
+
+[[
+Jacobi sums test
+
+view others/数学/prime/Carmichael_numbers.txt
+view others/数学/Jacobi_symbol.txt
+
+'/sdcard/0my_files/book/math/factorint/Primality Testing and Jacobi Sums(1984)(Cohen).pdf'
+
+[#not bug#]:[Carmichael_numbers == {n | [[n:<-[2..]][not$is_prime_(n)][@[u::uint] -> [u**n =[%n]= u]]]} == {561,1105,1729,2465,...}]
+
+[n::prime][a::int]:
+  [a**n =[%n]= a]
+    # F_1_1
+
+[n::prime][n%2==1][a::int][gcd(a,n)==1]:
+  [a**((n-1)///2) =[%n]= Jacobi_symbol(n;a) <- {-1,+1}]
+    # F_1_2
+
+[@[n::int{>=3}][n%2==1] -> [@[a::int][gcd(a,n)==1] -> [a**((n-1)///2) %n <- {n-1,+1}]] -> [is_prime_(n)]]
+    # F_1_1.converse
+    #   [gcd(a,n)==1] => 最多一半的a使得同余式成立
+    proof:
+      * [p::prime][e::int{>=2}][n==p**e]:
+        非凡素幂=>[(p**e-1)%phi(p**e) == 0];_L
+      * [p,q::prime][p=!=q][ep,eq,m::int{>=1}][gcd(p*q,m) == 1][n==p**ep*q**eq*m]:
+        不同素数:Chinese_remainder_theorem:[(+1,-1)**2 == (+1,+1)]即:[Z**2 =[%p*q]= 1]的根未必是{-1,1}
+
+[n::prime][R::commutative_ring][a,b:<-R]:
+  [(n*R) :: ideal]
+  [(n*R) =[def]= ideal{n*c | [c:<-R]}]
+  #[(a+b)**n =[%{n,R}]= a**n+b**n]
+  [(a+b)**n =[%(n*R)]= a**n+b**n]
+    # F_1_3
+[@[n::int{>=2}] -> [@[R::commutative_ring] -> @[a,b:<-R] -> [(a+b)**n =[%(n*R)]= a**n+b**n]] -> [is_prime_(n)]]
+    # F_1_3.converse.1
+[@[n::int{>=2}] -> [@[X::Var] -> [R:=ZZ[X]] -> @[a,b:<-R] -> [(a+b)**n =[%(n*R)]= a**n+b**n]] -> [is_prime_(n)]]
+    # F_1_3.converse.2
+[@[n::int{>=2}] -> [@[X::Var] -> [R:=ZZ[X]] -> [(X+1)**n =[%(n*R)]= X**n+1]] -> [is_prime_(n)]]
+    # F_1_3.converse.3
+
+The primality test that we shall describe in this paper combines (1.2) and (1.3): the congruences on which our test is based are obtained from (1.3), and they generalize (1.2).
+... ...
+The final method is presently the only one that leads to rigorous primality proofs.
+  It consists of subjecting n to a series of tests, similar to those in (1.2) and (1.3), with the following two properties.
+    First, if n is prime then it passes the tests.
+    Secondly, if n passes the tests, then information is obtained about the possible divisors of n.
+      This information should eventually lead to the conclusion that 1 and n are the only divisors of n, so that n is prime.
+
+To describe the type of information that is obtained, we let
+  H be a group, and
+  Ψ a map from the set of divisors of n to H
+    with the property that
+      Ψ(r*r') = Ψ(r)*Ψ(r') if r*r' divides n.
+  If n passes the tests, then it follows that for suitable choices of H and Ψ we have
+    (1.4) Ψ(r) is a power of Ψ(n), for every divisor r of n.
+    [@[r:<-[1..] -> [n%r==0] -> ?[e4r::uint] -> [Ψ(r) == Ψ(n)**e4r]]]
+        # F_1_4
+
+primality criterion:
+  an integer n > 1 is prime if and only if all divisors of n are powers of n.
+  [@[n::int{>=2}] -> [[is_prime_(n)] <-> [@[r:<-[1..] -> [n%r==0] -> ?[e4r::uint] -> [r == n**e4r]]]]]
+        # F_1_5
+
+
+命名冫命题:
+stage1:找到合适的(s,t):
+  F_2_1 := [t small]
+  F_2_2 := [s**2 > n] # or [s**3 > n]
+    F_2_2__weak := [s**3 > n]
+  F_2_3 := [@[a::int] -> [gcd(a,s) == 1] -> [a**t =[%s]= 1]]
+    # [t%λ(s) == 0] # Carmichael_function(n)
+    # view others/数学/prime/Carmichael_numbers.txt
+  F_2_4 := [p2ep4t:=the_complete_prime_factorizations_of(t)][q2eq4s:=the_complete_prime_factorizations_of(s)]
+  F_2_4__extra := [gcd(s*t,n) == 1]
+    # otherwise F_2_4 => a prime factor of n
+stage2:测试
+  F_1_2 := [a**((n-1)///2) =[%n]= Jacobi_symbol(n;a) <- {-1,+1}]
+    # 尝试一些 合数判定测试
+    #     => 合数
+  F_2_5 := [@[r:<-[1..] -> [n%r==0] -> ?[e4r:<-[0..<t]] -> [r =[%s]= n**e4r]]]
+stage3:分解整数乊已通过测试
+    F_2_5&F_2_2 => factor n
+    不能用作整数分解算法，大部分合数倒在stage1.F_2_4__extra,stage2
+
+
+
+[F_2_5&F_2_2] => [the_complete_prime_factorizations_of(t)]
+[F_2_5&F_2_2__weak] => [the_complete_prime_factorizations_of(t)]
+[[d,s,n::uint{>0}] -> [gcd(d,s) == 1] -> [s**3 > n] -> [rs := {r | [r::uint{>0}][n%r == 0][r%s == d]}] -> [[len(rs) <= 11][存在高效算法以求出rs]]]
+  # F_3_1
+  # 见上面:divisors_in_residue_classes:Algorithm__4_2_11:goto
+
+
+e others/数学/p_adic_integer_ring.txt
+TODO...接下来是:Dirichlet_character...
+
+引导部:
+[[s::int{>=1}]]:
+  [max_order_mod_(s) =[def]= lcm{phi(p**ep) | [p::prime][s%p==0][ep:=gde_(p;s)]}]
+    #即:[λ(n) = Carmichael_function(n) =[def]= max{order_mod_(n;u) | [u:<-[0..<n]][gcd(u,n) == 1]}]
+
+[[t::int{>=1}]]:
+  # 对照上面的:[t : I][s : F]
+  [max_F5I_(t) = max_s5t_(t) =[def]= if [t%2==1] then 2 else 2*II{q**(1+eq4t) | [q::prime][t%(q-1)==0][eq4t:=gde_(q;t)]}]
+    # 注意:必含[q==2]
+    # [t%(q-1)==0] => [eq4s{q} == 1+eq4t{q}+[q==2]]
+
+    #重命名:
+    # 原文:『e(t)』-->这里『max_F5I_(t)』『max_s5t_(t)』
+    # 原文:『υ{p}(t)』-->这里『gde_(p;t)』
+
+
+[@[t::int{>=1}] -> [s:=max_s5t_(t)] -> [F_2_3]]
+  # F_2_3 := [@[a::int] -> [gcd(a,s) == 1] -> [a**t =[%s]= 1]]
+[@[t,s::int{>=1}] -> [[F_2_3] <-> [max_s5t_(t)%s == 0]]]
+  证明...
+  * [q::prime][m::int{>=1}][s==q**m]:
+    * [q==2][m>=3]:
+      [(ZZ%q**m){^*} ~=~ (ZZ%2, ZZ%2**(m-2))]
+    * [[q%2==1]or[m<=2]]:
+      [(ZZ%q**m){^*} ~=~ (ZZ%(q-1), ZZ%q**(m-1)) ~=~ ZZ%((q-1)*q**(m-1))]
+
+
+[[
+Table 1. Values of e(t)
+t:e(t)
+[2==2v1]:24
+[12==2v2x3v1]:65520
+[60==2v2x3v1x5v1]:0.6814x10v10
+[180==2v2x3v2x5v1]:0.2601x10v16
+[840==2v3x3v1x5v1x7v1]:0.8644x10v25
+[1260==2v2x3v2x5v1x7v1]:0.1147x10v32
+[1680==2v4x3v1x5v1x7v1]:0.2697x10v34
+[2520==2v3x3v2x5v1x7v1]:0.4866x10v41
+[5040==2v4x3v2x5v1x7v1]:0.1532x10v53
+[15120==2v4x3v3x5v1x7v1]:0.2254x10v80
+[55440==2v4x3v2x5v1x7v1x11v1]:0.4920x10v107
+[110880==2v5x3v2x5v1x7v1x11v1]:0.2109x10v138
+[720720==2v4x3v2x5v1x7v1x11v1x13v1]:0.2599x10v238
+[1441440==2v5x3v2x5v1x7v1x11v1x13v1]:0.1669x10v302
+[4324320==2v5x3v3x5v1x7v1x11v1x13v1]:0.7928x10v456
+[24504480==2v5x3v2x5v1x7v1x11v1x13v1x17v1]:0.4795x10v657
+[73513440==2v5x3v3x5v1x7v1x11v1x13v1x17v1]:0.7082x10v967
+[367567200==2v5x3v3x5v2x7v1x11v1x13v1x17v1]:0.6208x10v1502
+[1396755360==2v5x3v3x5v1x7v1x11v1x13v1x17v1x19v1]:0.4016x10v1914
+[6983776800==2v5x3v3x5v2x7v1x11v1x13v1x17v1x19v1]:0.7471x10v3011
+
+
+2 12 60 180 840 1260 1680 2520 5040 15120 55440 110880 720720 1441440 4324320 24504480 73513440 367567200 1396755360 6983776800
+view ../../python3_src/seed/math/primality_test/Jacobi_sums_test/selection_of_auxiliary_numbers.py
+py_adhoc_call   seed.math.primality_test.Jacobi_sums_test.selection_of_auxiliary_numbers   ,str.iter_repr_results4even_Ts_   '=(2,3,5,7,11,13,17,19)'   ='[2,12,60,180,840,1260,1680,2520,5040,15120,55440,110880,720720,1441440,4324320,24504480,73513440,367567200,1396755360,6983776800]'  >  /sdcard/0my_files/tmp/-1tmp
+
+%s/^\([^#]*#[^#]*#\)[^#]*#$/\1
+%s/\(==.*\)\[\(.*\)==.*\]/\1s\2
+.,$s/s\(\d\{4}\)\d*#.*:\(.*\)#$/0.\1x10v\2
+
+
+]]
+
+
+[@[n::int{>=2}]
+-> @[s::int{>n**/2}]
+  #or: @[s::int{>n**/3}]
+# [s**2 > n] # F_2_2
+# or:[s**3 > n]
+-> @[t::int{>=1}]
+# [t small] # F_2_1
+-> [t%max_order_mod_(s) == 0]
+  # eg: [t:=phi(s)]
+  # 最小化t
+  # 或反过来:最大化s:[max_F5I_(t)%s == 0]
+# [@[a::int] -> [gcd(a,s) == 1] -> [a**t =[%s]= 1]] # F_2_3
+-> [p2ep4t:=the_complete_prime_factorizations_of(t)]
+-> [q2eq4s:=the_complete_prime_factorizations_of(s)]
+# p2ep4t, q2eq4s # F_2_4
+-> [gcd(s*t,n) == 1]
+  # otherwise F_2_4 => a prime factor of n
+引导部:结束...
+TODO:填充...
+# []
+-> []
+-> []
+-> []
+-> []
+-> []
+-> []
+-> []
+    [@[r:<-[1..] -> [n%r==0] -> ?[e4r:<-[0..<t]] -> [r =[%s]= n**e4r]]] # F_2_5
+    # F_2_5&F_2_2 => factor n
+]
+
+]]
+

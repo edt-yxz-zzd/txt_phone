@@ -1,0 +1,143 @@
+
+e others/数学/编程/密码学/RSA_crypto_system.txt
+RSA crypto-system
+
+
+[[
+见于:
+    '/sdcard/0my_files/book/math/factorint/snd/The new book of prime number records(3ed)(1996)(Ribenboim).djvu'
+    Chapter2. How to Recognize Whether a Natural Number Is a Prime
+    XII. Factorization and Public Key Cryptography
+    B. Public Key Cryptography
+    page176[201/567]
+
+[(n,s) :: public_key{[?[p,q::prime] -> [n==p*q]][1 <= s < phi(n)][gcd(s,phi(n))==1]}][m5n{n} :: int][2 <= m5n{n} <= n][t:=(s**-1%phi(n))]:
+  [M :: message{[1 <= M < m5n{n}][gcd(M,n) == 1]}]:
+    [E{n,s}(M) =[def]= M**s%n]
+      #加密:公
+      #M:预处理:太大则切片，非互素则填充噪声
+      #   填充噪声=>[m5n{n} < n]
+      #       [签名~=直接解密] => ...可能得另行设计 加解密算法
+  [C :: encoded_message{[1 <= C < n][gcd(C,n) == 1]}]:
+    [D{n,s}(C) =[def]= C**t%n]
+      #解密:私
+===
+毛病:
+  [概率{[gcd(M,n) > 1]}可能不够小]
+  [order_mod_(n;M)/m5n{n}可能不够大]
+  [order_mod_(order_mod_(n;M);s)/order_mod_(n;M)可能不够大]
+
+#原文:[m:=order_mod_(phi(n);s)]
+# 原文定义m 为 『the iteration index of the message』
+#   为啥是『the message』而非『all messages』？感觉应当是m5M{n,s;M}:
+
+[m5s{n;s}:=order_mod_(phi(n);s)]
+[s**m5s{n;s}%phi(n) == 1]
+[(E{n,s}**m5s{n;s})(M) == M**s**m5s{n;s}%n == M**(s**m5s{n;s}%phi(n))%n == M]
+  #加密m5s{n;s}次=>重现明文
+[m5M{n,s;M}:=order_mod_(order_mod_(n;M);s)]
+  #即:下文k
+[phi(n)%order_mod_(n;M) == 0]
+[M**order_mod_(n;M)%n == 1]
+[s**m5M{n,s;M}%order_mod_(n;M) == 1]
+[(E{n,s}**m5M{n,s;M})(M) == M**s**m5M{n,s;M}%n == M**(s**m5M{n,s;M}%order_mod_(n;M))%n == M]
+  #加密m5M{n,s;M}次=>重现明文
+
+为避免上述毛病:
+[p,p',p" :: prime]
+[q,q',q" :: prime]
+[a,b,c,d :: uint{>=2}]
+[p  == 1+a*p']
+[p' == 1+b*p"]
+[q  == 1+c*q']
+[q' == 1+d*q"]
+[6 == len{p,p',p",q,q',q"}]
+[max{a,b,c,d} / min{p,p',p",q,q',q"} < 1/10000]
+===
+
+===
+view others/数学/整数分解/素数/safe_prime.txt
+[随机素数牜足够大 大概率满足要求]
+  !! 椭圆曲线整数分解 导致 没有特定形式的素数 保证安全
+  !! 足够大的整数大概率包含大的素因子
+
+]]
+[[
+... ... The value of m need not, and cannot, be computed [note that phi(N) is secret]. However this method is only efficient when m, the iteration index of the message, is small.
+It is therefore a good precaution to try to guarantee that, with high probability, the iteration index of any message rereceived by the user В is not small. Rivest (1978) suggested that p, q be chosen as follows:
+    p  = 1+a*p'
+    p' = 1+b*p"
+    q  = 1+c*q'
+    q' = 1+d*q"
+, where
+    p', p", q', q" are distinct primes and
+    a, b, c, d are small integers.
+The iteration exponent m of M is the following integer:
+  if k is the order of M mod n, then m is the order of s mod k.
+  # [k:=order_mod_(n;M)]
+  # [s:=order_mod_(k;s)]
+  # [s==order_mod_(order_mod_(n;M);s)]
+Let G be the multiplicative group of invertible residue classes modulo n == p*q; it has order phi(n) == (p-1)*(q-1) == a*c*p'*q'.
+  The group G is the direct product of cyclic groups, among those are the cyclic groups Cp', Cq' of orders p', q' respectively.
+  If aa <- G, denote by о(aa) its order in the multiplicative group.
+  Let H be the subset of G consisting of all aa such that o(aa) is not divisible by (p'*q').
+  G is the direct product of a group D of order (a*c) and the cyclic groups Cp', Cq' (note that а, с being small, then a*c, p'*q' are relatively prime).
+  The elements aa <- G correspond to triples (aa1, aa2, aa3) with aa1 <- D, aa2 <- Cp', aa3 <- Cq'. The elements of Я correcorrespond to those with aa2 == 1 or aa3 == 1.
+  Hence, H has a*c*p' + a*c*q' - ac == a*c*(p' + q' - 1) elements.
+  If M is a message, 1 <= M <= n, the probability that gcd(M, n) =!= 1 is
+    1 -phi(n)/n == (n///p + n///q -1)/n < 1/p + 1/q
+    so it is very small.
+  If gcd(M, n) == 1, then M mod n is in the group G; the probability that k == ord(M mod n) will not be a multiple of p'*q' is
+    1 -len(D)*(len(Cp')-1)*(len(Cq')-1)/phi(n)
+    == a*c*(p'*1+1*q'-1*1)/phi(n)
+    == a*c*(p'*1+1*q'-1*1)/(a*c*p'*q')
+    == (p'*1+1*q'-1*1)/(p'*q')
+    == (1/p'+1*1/q'-1/(p'*q'))
+    < (1/p'+1*1/q')
+    so again, it is very small.
+
+
+Now, let gcd(M, n) == 1 and assume that p'*q' divides k.
+  Let G' be the multiplicative group of invertible residue classes modulo p'*q'; it has phi(p'*q') == b*d*p"*q" elements; since gcd(s, p'*q') == 1, then s mod p'*q' belongs to G'.
+  The preceding argument shows that the probability for the order of s mod p'*q' to be not divisible by p"*q" is 
+    b*d*(p" + q" - 1)/phi(p'*q')
+    == b*d*(p" + q" - 1)/(b*d*p"*q")
+    == (p" + q" - 1)/(p"*q")
+    == (1/p" + 1/q" - 1/(p"*q"))
+    < (1/p" + 1/q")
+    and, once more, it is very small. 
+
+So, it is possible to assume, with very high probability, that gcd(M, n) == 1, (p'*q') divides k, and (p"*q") divides the order of s mod (p'*q'). 
+  #[概率{[gcd(M, n) == 1][order_mod_(n;M)%(p'*q') == 0][order_mod_((p'*q');s)%(p"*q") == 0]}足够大]
+
+Finally, m is the order of s mod k and p'q' divides k, hence the order of s mod p'q' divides m; therefore, p"q" divides m.
+  #『m』的使用有歧义:m5s{n;s} vs m5M{n,s;M}
+  Since p", q" were chosen to be large primes, then the iteration index m is large, with very large probability.
+
+There still remains the question of how to find, for each user, the pair of primes p, q that will be his most cherished possession.
+  How can we produce primes with, say, about 100 digits, and which are secure?
+Suppose I pick a number N, at random, of that size.
+  What is the probability that it will be a prime?
+  For this, I must know that the approximate number pi(N) of primes p < N.
+  By the result of Tschebycheff to be discussed in Chapter 4, Section I, the number pi(N) is approximately N/(ln N);
+    thus, the probability that N is a prime is about 1/(ln N),
+    which in this case turns out to be 1/230.
+  So, one would expect to try about 230 numbers N, each time testing for primality, until a prime is found. 
+It is better to proceed in a more intelligent way.
+  Pick any number N0 of the required size, about 10**100.
+  Then begin deleting all the numbers between N0 and N0 + 5000, which are multiples of 2, 3, 5, 7, 11,..., p,... (for all primes p < 1000, for example).
+  This is the method first discovered by Eratosthenes (discussed in Section I).
+  The numbers which remain are those having no prime factor less than 1000.
+  Each one of these numbers should then be tested for primality, until a prime is found.
+
+Proceeding in the above manner is indeed more economical. 
+  This can be shown by calculating the function phi(n, k), equal to the number of integers m<=n, such that m is not divisible by any one of the first k primes;
+    see Chapter 4, Section I, where I give some indications in connection with Meissel's formula. 
+
+
+
+The topic of secure keys is of importance and it is the object of much research. The paper by Maurer (1990) is a good place to get acquainted with these developments. 
+In this presentation of the RSA crypto-system, I have benefited from the article by Hoogendoorn (1982). 
+More detailed information may be obtained in the original paper by Rivest, Shamir, and Adleman, as well as in the book by Riesel (1985), where a numerical example is worked out in full detail. For a more complete treatment of cryptography in general, see the books by Konheim (1981), Koblitz (1987), and, for example, the lecture notes by Lemos (1989), which are written in Portuguese—it is like studying cryptography in an encrypted language. Perhaps all this on Copacabana Beach.
+]]
+

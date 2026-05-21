@@ -1,0 +1,1591 @@
+
+e others/数学/prime/AKS_primality_test.txt
+.+1,$s/−/-/g
+
+很可能有:[r < 2*log2(n)**2]:goto
+[[
+Theorem__4_5_2:goto
+  初版:(X**r-1)
+  Algorithm__4_5_1:goto
+    T(p) ≈ 1000*ln(p)**6 CPU operations
+    Thus for example, the Mersenne prime p = 2**31−1 requires about 10**11 operations (and so perhaps a minute on a modern PC) with this simplest AKS approach.
+    太慢了...
+buggy__Theorem_4_5_3:goto
+  #Theorem__4_5_3:goto
+  #证明答非所问
+Theorem__4_5_4:goto
+  泛化:(X**r-1) --> f(X)
+
+Theorem__4_5_7:goto
+  #最简版:(X**r-b)
+  #同余等式检查部分从循环计算多次缩减至只计算一次#但未必有相应参数:soft_O(lnN**4)
+
+  Theorem__4_5_8:goto
+    #泛化版:n-->n**d # ring (ZZ%n)[T]/(f(T))
+    #大概有soft_O(lnN**4)
+    Algorithm__4_5_9:goto
+]]
+
+
+AKS_primality_test
+  !! (X+c)**n这个幂方使用常规方法
+  耗时:O(r**2.5*lnN**4) bit_ops
+  !! [r == O(lnN**5)]
+  =>耗时:O(lnN**16.5) bit_ops
+  [N:=2**k][k**16.5 < 2**(k/2)*k**2]:
+    [k**14.5 < 2**(k/2)]
+    [k**29 < 2**k]
+    :> [ek:=log2(k)]
+    [2**(ek*29) < 2**2**ek]
+    [(ek*29) < 2**ek]
+    [ek > 7.82631398648...]
+    [k > 226.9631...]
+    [k**16.5 > 7.468990023601497e+38]
+      不实用
+
+  !! (X+c)**n这个幂方使用常规方法
+  # To obtain (X+c)**n modulo (X**r-1) and modulo n, we may employ a power ladder (of O(ln(n)) steps) with internal modular polynomial multiplies of degree less than r, and with coefficients always smaller than n.
+  # 循环次数O(r**0.5 * ln(n)) * 循环体O(ln(n) * r*ln(r) * M(ln(n))) bit operations, where M(b) is the bit complexity for multiplying two integers of b bits each
+  耗时: O(lnN**3*lnlnN*lnlnlnN... * R**1.5*lnR) bit_ops
+  耗时: soft_O(lnN**3 * R**1.5) bit_ops
+  !! [r == O(lnN**5)]
+  =>耗时:soft_O(lnN**10.5) bit_ops
+
+soft_O
+“soft O notation” page206[218/604]
+  (The notation ˜O(f(n)) implies an upper bound of the form c1*f(n)*ln(f(n))**c2, and is sometimes called “soft O notation.”
+
+
+
+
+
+
+
+
+'Prime numbers-A Computational Perspective(2ed)(2005)(Pomerance).pdf'
+Algorithm__4_5_1:goto
+Algorithm 4.5.1 (Agrawal–Kayal–Saxena (AKS) primality test).
+
+4.5.2 The complexity of Algorithm 4.5.1
+O(r**2.5 * lnN**4).
+Using r = O(lnN**5) from Theorem 4.5.3, we get a total bit complexity for the congruences of O(lnN**16.5).
+
+Theorem__4_5_3:goto
+Theorem 4.5.3.
+  Given an integer n ≥ 3, let r be the least integer with the order of n in ZZ*%r exceeding log2N**2.
+  Then r ≤ log2N**5.
+
+
+
+[[
+成功:
+===
+[[[n:<-[2..]][X :: Var]] -> [?[c :: ZZ] -> [[gcd(n,c) == 1][(X+c)**n =[%n]= (X**n+c)]]] -> [n :: prime]]
+  充分条件
+proof:
+  [p::prime][n%p == 0]:
+    !! [(X+c)**n =[%n]= (X**n+c)]
+    !! [[[n:<-[2..]][X :: Var]] -> [?[c :: ZZ] -> [[gcd(n,c) == 1][(X+c)**n =[%n]= (X**n+c)]]] -> [@[u::uint] -> [u**n =[%n]= u]]]
+    # [u:=p]
+    [p**n =[%n]= p]
+
+    [n%p**2 == 0]:
+      !! [p**n =[%n]= p]
+      !! [n%p**2 == 0]
+      [p**n =[%p**2]= p]
+
+      !! [n >= 2]
+      [p**n%p**2 == 0]
+      [p**n =[%p**2]= 0]
+      !! [p**n =[%p**2]= p]
+      [p =[%p**2]= 0]
+      _L
+    [n%p**2 =!= 0]
+    !! [n%p == 0]
+    [gde_(p;n) == 1]
+  [@[p::prime] -> [n%p == 0] -> [gde_(p;n) == 1]]
+
+
+  [p::prime][n%p == 0]:
+    [ep := gde_(p;n)]
+    [Rp := n///p**ep]
+    [Rp >= 1]
+    [Rp%p =!= 0]
+    [n == Rp*p**ep]
+
+    !! [Rp%p =!= 0]
+    !! [p::prime]
+    [gcd(p,Rp) == 1]
+
+    !! [gcd(n,c) == 1]
+    !! [n%p == 0]
+    [gcd(p,c) == 1]
+    !! [gcd(p,Rp) == 1]
+    [gcd(p,c*Rp) == 1]
+
+    !! [(X+c)**n =[%n]= (X**n+c)]
+    !! [n%p == 0]
+    [(X+c)**n =[%p]= (X**n+c)]
+
+    [(X**n+c)
+    !! [(X+c)**n =[%p]= (X**n+c)]
+    =[%p]= (X+c)**n
+    !! [n == Rp*p**ep]
+    == (X+c)**(Rp*p**ep)
+    =[%p]= (X**p**ep+c)**Rp
+    !! [Rp >= 1]
+    == (X**p**ep)**Rp +Rp*c*(X**p**ep)**(Rp-1) + fff(c,X){deg<n-p**ep}
+    == X**n +Rp*c*(X**p**ep)**(Rp-1) + fff(c,X){deg<n-p**ep}
+    ]
+    [(X**n+c) =[%p]= X**n +Rp*c*(X**p**ep)**(Rp-1) + fff(c,X){deg<n-p**ep}]
+    [c =[%p]= Rp*c*(X**p**ep)**(Rp-1) + fff(c,X){deg<n-p**ep}]
+
+    [0
+    !! [gcd(p,c) == 1]
+    == deg(c %p)
+    !! [c =[%p]= Rp*c*(X**p**ep)**(Rp-1) + fff(c,X){deg<n-p**ep}]
+    == deg(Rp*c*(X**p**ep)**(Rp-1) + fff(c,X){deg<n-p**ep} %p)
+    !! [gcd(p,c*Rp) == 1]
+    == p**ep*(Rp-1)
+    ]
+    [0 == p**ep*(Rp-1)]
+    [Rp == 1]
+    !! [n == Rp*p**ep]
+    [n == p**ep]
+    [n == p**gde_(p;n)]
+  [@[p::prime] -> [n%p == 0] -> [n == p**gde_(p;n)]]
+  !! [@[p::prime] -> [n%p == 0] -> [gde_(p;n) == 1]]
+  [@[p::prime] -> [n%p == 0] -> [n == p]]
+
+  !! [n >= 2]
+  [?[p::prime] -> [n%p == 0]]
+  !! [@[p::prime] -> [n%p == 0] -> [n == p]]
+  [is_prime(n)]
+end-proof
+===
+[[[n:<-[2..]][X :: Var]] -> [?[c :: ZZ] -> [[gcd(n,c) == 1][(X+c)**n =[%n]= (X**n+c)]]] -> [@[u::uint] -> [u**n =[%n]= u]]]
+proof:
+  !! [gcd(n,c) == 1]
+  [{0..<n} == {u*c%n | [u::uint]}]
+
+  # 归纳法::
+  * [u==0]:
+    [0**n =[%n]= 0]
+    [(u*c)**n =[%n]= (u*c)]
+  * [u>=1][((u-1)*c)**n =[%n]= (u-1)*c]:
+    [(u*c)**n
+    == (((u-1)*c)+c)**n
+    !! [(X+c)**n =[%n]= (X**n+c)]
+    # [X := ((u-1)*c)]
+    =[%n]= (((u-1)*c)**n+c)
+    !! [((u-1)*c)**n =[%n]= (u-1)*c]
+    =[%n]= (((u-1)*c))+c
+    == (u*c)
+    ]
+    [(u*c)**n =[%n]= (u*c)]
+  #==>>:
+  [@[u::uint] -> [(u*c)**n =[%n]= (u*c)]]
+  !! [{0..<n} == {u*c%n | [u::uint]}]
+  [@[u:<-{0..<n}] -> [u**n =[%n]= u]]
+  [@[u::uint] -> [u**n =[%n]= u]]
+end-proof
+===
+===
+]]
+[[
+#见上面:成功
+证明失败:[[n:<-[2..]] -> [@[u::uint] -> [u**n =[%n]= u]] -> [n :: prime]]
+  [#not bug#]:[Carmichael_numbers == {n | [[n:<-[2..]][not$is_prime_(n)][@[u::uint] -> [u**n =[%n]= u]]]} == {561,1105,1729,2465,...}]
+    '/sdcard/0my_files/book/math/factorint/Primality Testing and Jacobi Sums(1984)(Cohen).pdf'
+  [Carmichael_numbers == {n | [[n:<-[2..]][not$is_prime(n)][@[u:<-[2..<n]] -> [gcd(u,n) == 1] -> [u**(n-1) =[%n]= 1]]]} == {561,1105,1729,2465,...}]
+    '/sdcard/0my_files/book/math/factorint/snd/The new book of prime number records(3ed)(1996)(Ribenboim).djvu'
+      page118[143/567]
+#xx:失败:
+#xx:[[[n:<-[2..]][X :: Var]] -> [?[c :: ZZ] -> [[gcd(n,c) == 1][(X+c)**n =[%n]= (X**n+c)]]] -> [n :: prime]]
+#xx:  充分条件
+#xx:proof:
+#xx:  !! [[n:<-[2..]] -> [@[u::uint] -> [u**n =[%n]= u]] -> [n :: prime]]
+#xx:  !! [[[n:<-[2..]][X :: Var]] -> [?[c :: ZZ] -> [[gcd(n,c) == 1][(X+c)**n =[%n]= (X**n+c)]]] -> [@[u::uint] -> [u**n =[%n]= u]]]
+#xx:end-proof
+#xx:===
+#xx:[[n:<-[2..]] -> [@[u::uint] -> [u**n =[%n]= u]] -> [n :: prime]]
+#xx:proof:
+#xx:  [p::prime][n%p == 0]:
+#xx:    !! [@[u::uint] -> [u**n =[%n]= u]]
+#xx:    # [u:=p]
+#xx:    [p**n =[%n]= p]
+#xx:
+#xx:    [n%p**2 == 0]:
+#xx:      !! [p**n =[%n]= p]
+#xx:      !! [n%p**2 == 0]
+#xx:      [p**n =[%p**2]= p]
+#xx:
+#xx:      !! [n >= 2]
+#xx:      [p**n =[%p**2]= 0]
+#xx:      !! [p**n =[%p**2]= p]
+#xx:      [p =[%p**2]= 0]
+#xx:      _L
+#xx:    [n%p**2 =!= 0]
+#xx:  [@[p::prime] -> [n%p == 0] -> [n%p**2 =!= 0]]
+#xx:
+#xx:  [p::prime][n%p == 0]:
+#xx:    [u::uint][u%p =!= 0]:
+#xx:      !! [u%p =!= 0]
+#xx:      !! [p::prime]
+#xx:      [gcd(u,p) == 1]
+#xx:      !! [@[u::uint] -> [u**n =[%n]= u]]
+#xx:      [u**n =[%n]= u]
+#xx:      !! [n%p == 0]
+#xx:      [u**n =[%p]= u]
+#xx:      !! [gcd(u,p) == 1]
+#xx:      [u**(n-1) =[%p]= 1]
+#xx:    [@[u::uint] -> [u%p =!= 0] -> [u**(n-1) =[%p]= 1]]
+#xx:    !! [p::prime]
+#xx:    [(n-1)%(p-1) == 0]
+#xx:  # [@[p::prime] -> [n%p == 0] -> [@[u::uint] -> [u%p =!= 0] -> [u**(n-1) =[%p]= 1]]]
+#xx:  [@[p::prime] -> [n%p == 0] -> [(n-1)%(p-1) == 0]]
+#xx:
+#xx:
+#xx:  [p,q::prime][n%(p*q) == 0][p=!=q]:
+#xx:    !! [p,q::prime]
+#xx:    !! [p=!=q]
+#xx:    [gcd(p,q) == 1]
+#xx:
+#xx:    !! [n%(p*q) == 0]
+#xx:    [n%p == 0][n%q == 0]
+#xx:
+#xx:    !! [@[p::prime] -> [n%p == 0] -> [@[u::uint] -> [u%p =!= 0] -> [u**(n-1) =[%p]= 1]]]
+#xx:    !! [gcd(p,q) == 1]
+#xx:    [q**(n-1) =[%p]= 1]
+#xx:    [p**(n-1) =[%q]= 1]
+#xx:    ？？？失败！
+#xx:end-proof
+#xx:===
+===
+]]
+
+[[
+[[[p :: prime][X :: Var][g(X) :: ZZ[X]]] -> [g(X)**p =[%p]= g(X**p)]]
+特例:
+# [g(X):=X+c]
+[[[p :: prime][X :: Var][c :: ZZ]] -> [(X+c)**p =[%p]= (X**p+c)]]
+  必要条件
+[[[n:<-[2..]][X :: Var]] -> [?[c :: ZZ] -> [[gcd(n,c) == 1][(X+c)**n =[%n]= (X**n+c)]]] -> [n :: prime]]
+  充分条件
+==>>:
+[[[n:<-[2..]][X :: Var]] -> [[?[c :: ZZ] -> [[gcd(n,c) == 1][(X+c)**n =[%n]= (X**n+c)]]] <-> [n :: prime]]]
+  primality criterion
+  充要条件
+  但是 左侧展开计算过程中的项太多 O(n)
+特例:
+# [c:=1]
+[[[n:<-[2..]][X :: Var]] -> [[(X+1)**n =[%n]= (X**n+1)] <-> [n :: prime]]]
+
+
+!! [[[p :: prime][X :: Var][c :: ZZ]] -> [(X+c)**p =[%p]= (X**p+c)]]
+[[[p :: prime][X :: Var][c :: ZZ][f(X) :: ZZ[X]{monic:LC(f)==1}]] -> [(X+c)**p =[%{p,f(X)}]= (X**p+c)]]
+  #deg(f)足够小=>幂方展开式可以被快速求出
+特例:
+# [f(X):=X-1]
+[[[p :: prime][c :: ZZ]] -> [(1+c)**p =[%p]= 1+c]]
+  #[%f(X)]相当于[X:=1]
+# [c:=d-1][f(X):=X-1]
+[[[p :: prime][d :: ZZ]] -> [d**p =[%p]= d]]
+# [c:=1][f(X):=X-1]
+[[p :: prime] -> [2**p =[%p]= 2]]
+  #the Fermat congruence to the base 2
+  必要非充分
+
+特例:
+# [f(X):=X**r-1]
+#   #be implicitly dealing with the r-th roots of unity
+  #[%f(X)]相当于[X:=kth_roots_of_mod_(p;r;1)]
+
+]]
+[[
+page202[214/604]
+Algorithm__4_5_1:here
+Algorithm 4.5.1 (Agrawal–Kayal–Saxena (AKS) primality test).
+  We are given an integer n ≥ 2.
+  This deterministic algorithm decides whether n is prime or composite.
+  1.  [Power test]
+      If n is a square or higher power, return “n is composite”;
+        # if any(is_perfect_power_(e;n) for e in range(2, 1+floor_log2(n))):return “n is composite”;
+  2.  [Setup]
+      Find the least integer r with the order of n in ZZ∗%r exceeding lg(n)**2;
+          # ?? [r := min{r | [[r:<-[max(2,1+floor(log2(n)**2))..]][order_mod_(r;n) > log2(n)**2]]}]
+          # order_mod_(r;n)的存在性 要求:[gcd(r,n)==1]
+          # 搜索过程中，若发现 非平凡 gcd(r,n) 则...
+          #     => 没有因子@[1+floor(log2(n)**2)..=r]
+          # !! [r > ϕ(r)]
+          # !! [r > lg(n)**2]
+          # => [r**2 > ϕ(r)*lg(n)**2]
+          # => [r > (sqrt(ϕ(r))*lg(n))]
+      If n has a proper factor in [2, sqrt(ϕ(r))*lg(n)], return “n is composite”;
+          # ?? [2..=floor(sqrt(ϕ(r))*lg(n))]
+          # !! [r > (sqrt(ϕ(r))*lg(n))]
+          # !! 没有因子@[1+floor(log2(n)**2)..=r]
+          # 只需搜索 [2..=floor(log2(n)**2)]
+          # 若是 [r>=sqrt(n)] 则 本算法 应当直接退化为 平凡的除法素性测试
+      // ϕ is Euler’s function.
+  3.  [Binomial congruences]
+      # for c in range(1,1+floor(sqrt(ϕ(r))*lg(n))):...
+      for(1 ≤ c ≤ sqrt(ϕ(r))*lg(n)) {
+        if not ((X + c)**n ≡ X**n + c (mod X**r-1,n)) return “n is composite”;
+      }
+      Return “n is prime”;
+
+(Note too that from Exercise 4.28, Step [Power test] may actually be skipped entirely!)
+
+Exercise 4.28
+  page222[234/604]
+  4.28. By the same method as in Exercise 3.19,
+    show that if c**n ≡ c (mod n) for each positive integer c smaller than ln(n)**2, then n is squarefree.
+    Further show that the AKS congruence (X+c)**n ≡ X**n+c (mod X**r-1,n) implies that (c + 1)**n ≡ c + 1 (mod n).
+    Conclude that the hypotheses of Theorem 4.5.2 imply that if n is divisible by a prime larger than sqrt(ϕ(r))*lg(n), then n is equal to this prime.
+    Use this to establish a shorter version of Algorithm 4.5.1, where Step [Power test] may be skipped entirely.
+
+Exercise 3.19
+  page166[179/604]
+3.19.[Lenstra, Granville] Show that if an odd number n be divisible by the square of some prime, then W(n), the least witness for n, is less than ln(n)**2.
+    (Hint: Use (1.45).)
+    This exercise is re-visited in Exercise 4.28.
+    必要条件牜含平方因子
+    充分条件牜无平方因子
+    xxx:判定法牜无平方因子
+      e others/数学/prime/无平方因子耂充分条件.txt
+      mv -iv others/数学/prime/判定法牜无平方因子.txt others/数学/prime/无平方因子耂充分条件.txt
+[[[n:<-[3,5..]][@[base:<-[2..<min(n,ceil(ln(n)**2))]] -> [is_SPRP_(base;n)]]] -> [is_squarefree(n)]]
+
+定义 W(n)
+  #...强版素性测试
+  #强版合数测试
+  #最小证据纟强版合数测试
+  page140[153/604]
+  3.5.1 The least witness for n
+    We have seen in Theorem 3.5.4 that an odd composite number n has at least 3n/4 witnesses in the interval [1..=n-1].
+    Let W(n) denote the least of the witnesses for n.
+  page136[149/604]
+  For an odd composite integer n
+    let SS(n) = {a (mod n) : n is a strong pseudoprime base a}
+      #(3.5)
+    let S(n) = #SS(n)
+  Theorem 3.5.4. For each odd composite integer n > 9 we have S(n) ≤ ϕ(n)/4.
+
+公式 (1.45)
+  page49[63/604]
+  It is also possible to prove explicit inequalities for ψ(x,y).
+    For example, in [Konyagin and Pomerance 1997] it is shown that
+      for all x ≥ 4 and 2 ≤ x**(1/u) ≤ x,
+        ψ(x,x**(1/u)) ≥ x/ln(x)**u
+          #(1.45)
+      The implicit estimate here is reasonably good when x**(1/u) = ln(x)**c, with c > 1 fixed (see Exercises 1.72, 3.19, and 4.28).
+
+
+定义 ψ(x,y)
+  page48[62/604]
+  the counting function for smooth numbers
+    ψ(x,y) = len({1 ≤ n ≤ x : n is y-smooth})
+      # (1.42)
+
+定义 smooth
+  page48[62/604]
+  Definition 1.4.8.
+    A positive integer is said to be y-smooth if it does not have any prime factor exceeding y.
+
+
+
+
+定义 lg
+  page26[40/604]
+  (here and throughout the book, lg means log2).
+
+]]
+[[
+Theorem__4_5_2:here
+Theorem 4.5.2 (Agrawal, Kayal, Saxena).
+  Suppose n is an integer with n ≥ 2,
+    r is a positive integer coprime to n such that
+        the order of n in ZZ∗%r is larger than lg(n)**2, and
+        (X + c)**n ≡ X**n + c (mod X**r-1,n)
+          #(4.26)
+          holds for each integer c with 0 ≤ c ≤ (sqrt(ϕ(r))*lg(n)).
+  If n has a prime factor p > (sqrt(ϕ(r))*lg(n)), then n = p**m for some positive integer m.
+  In particular, if n has no prime factors in [1, (sqrt(ϕ(r))*lg(n))] and n is not a proper power, then n is prime.
+==>>:
+[[[X :: Var][n,r::uint][n>=2][r>=2+floor(log2(n)**2)][gcd(r,n) == 1][order_mod_(r;n) >= 1+floor(log2(n)**2)][@[c:<-[1..=floor(sqrt(ϕ(r))*log2(n))]] -> [(X+c)**n =[%n]= (X**n+c)]][?[p :: prime] -> [[n%p==0][p > floor(sqrt(ϕ(r))*log2(n))]:]]] -> [?[e:<-[1..]] -> [n == p**e]]]
+[[[X :: Var][n,r::uint][n>=2][r>=2+floor(log2(n)**2)][gcd(r,n) == 1][order_mod_(r;n) >= 1+floor(log2(n)**2)][@[c:<-[1..=floor(sqrt(ϕ(r))*log2(n))]] -> [(X+c)**n =[%n]= (X**n+c)]][@[k:<-[2..=floor(sqrt(ϕ(r))*log2(n))]] -> [n%k =!= 0]]] -> [n :: prime_power]]
+proof:
+  [L := floor(sqrt(ϕ(r))*log2(n))]
+  [p :: prime][n%p==0][p > L]:
+    [GG := {g(X) | [[g(X) :: (ZZ%p)[X]][g(X)**n =[%(X**r-1)]= g(X**n)]]}]
+    [0 <- GG]
+    [f(X),g(X) :<- GG]:
+      [h(X) := (f(X)*g(X))]
+      [h(X)**n == (f(X)*g(X))**n == (f(X)**n*g(X)**n) =[%(X**r-1)]= g(X**n)*g(X**n) == h(X**n)]
+      [h(X) :<- GG]
+      [(f(X)*g(X)) :<- GG]
+    [[f(X),g(X) :<- GG] -> [(f(X)*g(X)) :<- GG]]
+    [GG is closed under multiplication]
+
+    !! [@[c:<-[1..=floor(sqrt(ϕ(r))*log2(n))]] -> [(X+c)**n =[%n]= (X**n+c)]]
+    [@[c:<-[1..=L]] -> [(X+c) <- GG]]
+    !! [X :<- GG]
+    [@[c:<-[0..=L]] -> [(X+c) <- GG]]
+
+
+    [Fu := [f(X) | [c2ue :: [uint]{len=1+L}][f(X) := II[(X+c)**c2ue[c] | [c:<-[0..=L]]]]]]
+      #uint,L
+    !! [p > L]
+    [len(Fu) == len(set(Fu))]
+    [not$[0 <- Fu]]
+      # these polynomials are all distinct and nonzero in (ZZ%p)[X]
+
+    !! [GG is closed under multiplication]
+    !! [@[c:<-[0..=L]] -> [(X+c) <- GG]]
+    [@[f(X) :<- Fu] -> [f(X) <- GG]]
+    [Fu |<=| GG]
+
+
+    [g1(X), g2(X) :: (ZZ%p)[X]][g2(X) =[%(X**r-1)]= g1(X)][g1(X) <- GG]:
+      # [X:=Y**n]
+      [g2(Y**n) =[%((Y**n)**r-1)]= g1(Y**n)]
+      !! [((Y**n)**r-1) == ((Y**r)**n-1) == (Y**r-1)*sum[(Y**r)**j | [j:<-[0..<n]]]]
+      [g2(Y**n) =[%(Y**r-1)]= g1(Y**n)]
+      [g2(X**n) =[%(X**r-1)]= g1(X**n)]
+      [g2(X)**n =[%(X**r-1)]= g1(X)**n =[%(X**r-1)]= g1(X**n) =[%(X**r-1)]= g2(X**n)]
+      [g2(X)**n =[%(X**r-1)]= g2(X**n)]
+      [g2(X) <- GG]
+    [@[g1(X), g2(X) :: (ZZ%p)[X]][g2(X) =[%(X**r-1)]= g1(X)][g1(X) <- GG] -> [g2(X) <- GG]]
+    [GG is a union of residue classes modulo (X**r-1)]
+
+    [JJ := {j | [[j:<-[1..]][@[g(X) :<- GG] -> [g(X)**j =[%(X**r-1)]= g(X**j)]]]}]
+    [1 <- JJ]
+    !! GG.定义
+    [n <- JJ]
+    [g(X) :: (ZZ%p)[X]]:
+      [g(X)**p == g(X**p)]
+      [g(X)**p =[%(X**r-1)]= g(X**p)]
+    !! [GG |<=| (ZZ%p)[X]]
+    [p <- JJ]
+    [{1,p,n} |<=| JJ]
+
+    [g(X) :<- GG][j :<- JJ]:
+      !! JJ.定义
+      [g(X)**j =[%(X**r-1)]= g(X**j)]
+      !! [GG is closed under multiplication]
+      !! [g(X) <- GG]
+      [g(X)**j <- GG]
+      !! [g(X)**j =[%(X**r-1)]= g(X**j)]
+      !! [GG is a union of residue classes modulo (X**r-1)]
+      [g(X**j) <- GG]
+    [@[g(X) :<- GG] -> @[j :<- JJ] -> [g(X**j) <- GG]]
+    [a,b :<- JJ]:
+      [c:=a*b]
+      !! [a,b>=1]
+      [c >= 1]
+      [g(X) :<- GG]:
+        !! [@[g(X) :<- GG] -> @[j :<- JJ] -> [g(X**j) <- GG]]
+        [g(X**a) <- GG]
+        [g(X)**c == (g(X)**a)**b =[%(X**r-1)]= (g(X**a)**b) =[%(X**r-1)]= g((X**a)**b) == g(X**c)]
+        [g(X)**c =[%(X**r-1)]= g(X**c)]
+      [@[g(X) :<- GG] -> [g(X)**c =[%(X**r-1)]= g(X**c)]]
+      !! [c >= 1]
+      [c <- JJ]
+      [(a*b) <- JJ]
+    [[a,b :<- JJ] -> [(a*b) <- JJ]]
+    [JJ is closed under multiplication]
+    !! [{1,p,n} |<=| JJ]
+    [[a,b :: uint] -> [(n**a * p**b) <- JJ]]
+      #注意:并非:[[a,b :: uint] -> [(n**a * p**b)%r <- JJ]]
+
+    [KK := the splitting field for (X**r-1) over the finite field GF(p)]
+    [ζ := a primitive r-th root of 1; in KK]
+    [h(X) := the minimum polynomial for ζ; in GF(p)[X]]
+    [(X**r-1)%h(X) == 0]
+    [h(X) is irreducible polynomial over GF(p)]
+    [deg(h(X)) == order_mod_(r;p)]
+    [k := deg(h(X))]
+      #The degree k of h(X) is the multiplicative order of p in ZZ∗%r
+      !! [GF(p**k)的乘法群的规模 是 (p**k-1)]
+      !! [h(X)的根集规模 是 r]
+      !! [h(X)的根集 是 GF(p**k)的乘法群的子群]
+      [(p**k-1)%r == 0]
+      [p**k =[%r]= 1]
+      [k%order_mod_(r;p) == 0]
+      ??? [k == order_mod_(r;p)] ???
+        ???why???
+    !! [deg(h(X)) == order_mod_(r;p)]
+    [k == order_mod_(r;p)]
+    [p**k =[%r]= 1]
+    [(p**k - 1)%r == 0]
+
+    ==>>:
+    [(p**k - 1)%r == 0]
+      #这条可以保证
+
+    [KK === GF(p)(ζ) ~=~ GF(p)[X]/h(X)]
+    [KK is the homomorphic image of the ring (ZZ%p)[X]/(X**r-1) where the coset representing X is sent to ζ]
+    #
+    #Let __GG denote the image of GG under this homomorphism.
+    #__GG := {γ ∈ KK : γ = g(ζ) for some g(X) ∈ GG}.
+    #__GG := {γ | [γ:<-KK][?[g(X) :<- GG] -> [γ==g(ζ)]]}
+    [__GG := {g(ζ) | [g(X) :<- GG]}]
+
+    [g(X) :<- GG][j :<- JJ]:
+      [g(ζ)**j == g(ζ**j)]
+        # %(X**r-1) 相当于 [X:=ζ]
+        #   只不过 不同的本原根 可能有 不同的本原多项式 h(X)
+
+    #Let d denote the order of the subgroup of ZZ∗%r generated by n and p.
+    [Sj := {(n**a * p**b) | [a,b :: uint]}]
+    [Sr := {ζ**j | [j:<-Sj]}]
+    [Sd := {(n**a * p**b)%r | [a,b :: uint]}]
+      or:[Sd := {j%r | [j:<-Sj]}]
+    [d := len(Sd)]
+    !! [1 <- Sd]
+    [d > 0]
+
+    [Sdn := {(n**a)%r | [a :: uint]}]
+    [dn := len(Sdn)]
+    [dn == order_mod_(r;n)]
+    [Sdn |<=| Sd]
+    [dn <= d]
+    !! [order_mod_(r;n) >= 1+floor(log2(n)**2)]
+    [d >= dn == order_mod_(r;n) >= 1+floor(log2(n)**2)]
+    [d >= 1+floor(log2(n)**2)]
+    [d > (log2(n)**2)]
+    !! [d > 0]
+    [d*d > d*(log2(n)**2)]
+    [d > (sqrt(d)*log2(n))]
+    [d > floor(sqrt(d)*log2(n))]
+    #vs: [L := floor(sqrt(ϕ(r))*log2(n))]
+    [L2 := floor(sqrt(d)*log2(n))]
+    [L2 < d]
+
+    !! ζ.定义
+    [ζ.multiplicative_order == r]
+    !! [Sr := {ζ**j | [j:<-Sj]}]
+    [Sr := {ζ**(j%r) | [j:<-Sj]}]
+    [len(Sr) == len(Sj) == len(Sd) == d]
+    [len(Sr) == d]
+
+    !! [n%p==0]
+    !! [gcd(r,n) == 1]
+    [gcd(r,p) == 1]
+    [d <= ϕ(r) < r]
+    [d < r]
+
+    !! [d <= ϕ(r)]
+    !! [L := floor(sqrt(ϕ(r))*log2(n))]
+    !! [L2 := floor(sqrt(d)*log2(n))]
+    [L2 <= L]
+
+    [Fb := [0]++[f(X) | [c2be :: [bool]{len=1+L2}][f(X) := II[(X+c)**c2be[c] | [c:<-[0..=L2][not $ all c2be]]]]]]
+      #bool,L2,排除全一
+    !! [p > L >= L2]
+    [len(Fb) == len(set(Fb))]
+    [len(Fb) == 2**(1+L2)] # +1 -1
+    [@[f(X) :<- Fb] -> [f(X) =!= 0] -> [f(X) <- Fu]]
+    [(Fb \-\ {0}) |<=| Fu]
+    !! [Fu |<=| GG]
+    !! [0 <- GG]
+    [Fb |<=| GG]
+
+    !! Fb.定义
+    [max_deg(Fb\-\{0}) <= L2] # 排除全一
+    !! [L2 < d]
+    [max_deg(Fb\-\{0}) < d]
+
+
+    [Gd := {g(X) | [[g(X) :<- GG][[g(X) == 0]or[deg(g(X)) < d]]]}]
+    !! [max_deg(Fb\-\{0}) < d]
+    !! [Fb |<=| GG]
+    [Fb |<=| Gd]
+    !! [len(Fb) == 2**(1+L2)]
+    !! [L2 := floor(sqrt(d)*log2(n))]
+    [len(Gd) >= len(Fb) == 2**(1+L2) == 2**(1+floor(sqrt(d)*log2(n))) > 2**(sqrt(d)*log2(n)) == n**sqrt(d)]
+    [len(Gd) > n**sqrt(d)]
+
+    [@[g(X) :<- Gd] -> [g(X) =!= 0] -> [deg(g(X)) < d < r]]
+    [@[g1(X),g2(X) :<- Gd] -> [g1(X) =[%(X**r-1)]= g2(X)] -> [g1(X) == g2(X)]]
+    [the members of Gd are all distinct modulo (X**r-1)]
+
+    [g1(X),g2(X) :<- Gd][g1(ζ) == g2(ζ)]:
+      [h(X) := g1(X) -g2(X)]
+      !! [@[g(X) :<- Gd] -> [g(X) =!= 0] -> [deg(g(X)) < d < r]]
+      [[h(X) =!= 0] -> [deg(h(X)) < d]]
+
+      [a,b :: uint][j := (n**a * p**b)]:
+        !! [[a,b :: uint] -> [(n**a * p**b) <- JJ]]
+        [j <- JJ]
+        !! JJ.定义
+        [g1(ζ**j) == g1(ζ)**j == g2(ζ)**j == g2(ζ**j)]
+        [g1(ζ**j) == g2(ζ**j)]
+      [@[a,b :: uint] -> [j := (n**a * p**b)] -> [g1(ζ**j) == g2(ζ**j)]]
+      #bug: [@[j :<- Sd] -> [g1(ζ**j) == g2(ζ**j)]]
+          #注意:并非:[[a,b :: uint] -> [(n**a * p**b)%r <- JJ]]
+      [@[j :<- Sj] -> [g1(ζ**j) == g2(ζ**j)]]
+      [@[rj :<- Sr] -> [g1(rj) == g2(rj)]]
+      [@[rj :<- Sr] -> [h(rj) == g1(rj) - g2(rj) == 0]]
+      [Sr are all distinct roots of h(X)]
+      !! [len(Sr) == d]
+      [h(X) has at least d distinct roots in KK]
+      [[h(X) =!= 0] -> [deg(h(X)) >= d]]
+      !! [[h(X) =!= 0] -> [deg(h(X)) < d]]
+      [[h(X) =!= 0] -> _L]
+      [h(X) == 0]
+      [g1(X) == g2(X)]
+    [@[g1(X),g2(X) :<- Gd] -> [g1(ζ) == g2(ζ)] -> [g1(X) == g2(X)]]
+    [our homomorphism to KK is one-to-one when restricted to Gd]
+    [distinct polynomials in Gd correspond to distinct members of __GG]
+    [len(__GG) >= len(Gd)]
+    !! [len(Gd) > n**sqrt(d)]
+    [len(__GG) > n**sqrt(d)]
+
+
+
+    !! [h(X) is irreducible polynomial over GF(p)]
+    !! [KK === GF(p)(ζ) ~=~ GF(p)[X]/h(X)]
+    [KK ~=~ GF(p**k)]
+    !! 有限域乘法群 是 循环群
+    [@[j,j0 :: int] -> [j =[%(p**k-1)]= j0] -> @[β :<- KK] -> [β**j == β**j0]]
+    [JJzz := {(j,j0) | [[j:<-[1..]][j0:<-JJ][j =[%(p**k-1)]= j0]]}]
+    [JJ__ := {j | [[(j,j0):<-JJzz]]}]
+        #or:[JJ__ := {j | [[j:<-[1..]][j0:<-JJ][j =[%(p**k-1)]= j0]]}]
+    !! [JJ is closed under multiplication]
+    [JJ__ is closed under multiplication]
+    !! [JJ is closed under multiplication]
+    !! [{1,p,n} |<=| JJ]
+    [n*p**(k-1) <- JJ]
+    !! [n*(p**k-1) =[%(p**k-1)]= 0]
+    [n*p**k =[%(p**k-1)]= n]
+    !! [n%p == 0]
+    [n*p**(k-1) =[%(p**k-1)]= (n///p)]
+    !! [n*p**(k-1) <- JJ]
+    !! JJ__.定义
+    [(n///p) <- JJ__]
+    !! [{1,p,n} |<=| JJ]
+    [{1,p,(n///p)} |<=| JJ__]
+
+    !! [n*p**(k-1) =[%(p**k-1)]= (n///p)]
+    !! [(p**k - 1)%r == 0]
+    [n*p**(k-1) =[%r]= (n///p)]
+    !! Sd.定义
+    #bug:[(n///p) <- Sd]
+    #bug:[{p,(n///p)} |<=| Sd]
+    [(n///p)%r <- Sd]
+    [{p%r,(n///p)%r} |<=| Sd]
+    [a,b::uint]:
+      !! [{p%r,(n///p)%r} |<=| Sd]
+      !! Sd.定义
+      [(p**a * (n///p)**b)%r <- Sd]
+    [@[a,b::uint] -> [(p**a * (n///p)**b)%r <- Sd]]
+    [L3 := floor(sqrt(d))]
+    [@[a,b:<-[0..=L3]] -> [(p**a * (n///p)**b)%r <- Sd]]
+
+    [(j,j0):<-JJzz][g(X) :<- GG]:
+      !! [(p**k - 1)%r == 0]
+      [g(ζ**j0) == g(ζ**j)]
+      !! [@[j,j0 :: int] -> [j =[%(p**k-1)]= j0] -> @[β :<- KK] -> [β**j == β**j0]]
+      [g(ζ)**j == g(ζ)**j0]
+      !! GG.定义
+      [g(ζ)**j0 == g(ζ**j0)]
+
+      [g(ζ)**j == g(ζ)**j0 == g(ζ**j0) == g(ζ**j)]
+      [g(ζ)**j == g(ζ**j)]
+    [@[(j,j0):<-JJzz] -> @[g(X) :<- GG] -> [g(ζ)**j == g(ζ**j)]]
+    [@[j:<-JJ__] -> @[g(X) :<- GG] -> [g(ζ)**j == g(ζ**j)]]
+
+    [ZS := {(a,b) | [a,b:<-[0..=L3]]}]
+    !! [L3 := floor(sqrt(d))]
+    [1+L3 == 1+floor(sqrt(d)) > sqrt(d)]
+    [len(ZS) == (1+L3)**2 > sqrt(d)**2 == d]
+    [len(ZS) > d]
+    !! [d := len(Sd)]
+    [len(ZS) > len(Sd)]
+
+    [(a,b):<-ZS]:
+      [z1_((a,b)) := (p**a * (n///p)**b)]
+      [z1r_((a,b)) := z1_((a,b))%r]
+        #or:[z1r_((a,b)) := (p**a * (n///p)**b)%r]
+    !! [@[a,b:<-[0..=L3]] -> [(p**a * (n///p)**b)%r <- Sd]]
+    [@[(a,b):<-ZS] -> [z1r_((a,b)) <- Sd]]
+    [z1r_ :: ZS -> Sd]
+    !! [len(ZS) > len(Sd)]
+    ?[(a1,b1),(a2,b2):<-ZS] :=> [[(a1,b1) =!= (a2,b2)][z1r_((a1,b1)) == z1r_((a2,b2))]]
+    [j1 := z1_((a1,b1))]
+    [j2 := z1_((a2,b2))]
+    !! [{1,p,(n///p)} |<=| JJ__]
+    !! [JJ__ is closed under multiplication]
+    [j1,j2 :<- JJ__]
+
+    [j1%r == z1_((a1,b1))%r == z1r_((a1,b1))]
+    [j2%r == z1_((a2,b2))%r == z1r_((a2,b2))]
+    !! [z1r_((a1,b1)) == z1r_((a2,b2))]
+    [j1%r == j2%r]
+    [j1 =[%r]= j2]
+    !! ζ.定义
+    [ζ**j1 == ζ**j2]
+    [g(X) :<- GG]:
+      !! [j1,j2 :<- JJ__]
+      !! [@[j:<-JJ__] -> @[g(X) :<- GG] -> [g(ζ)**j == g(ζ**j)]]
+      !! [ζ**j1 == ζ**j2]
+      [g(ζ)**j1 == g(ζ**j1) == g(ζ**j2) == g(ζ)**j2]
+      [g(ζ)**j1 == g(ζ)**j2]
+    [@[g(X) :<- GG] -> [g(ζ)**j1 == g(ζ)**j2]]
+    [@[γ :<- __GG] -> [γ**j1 == γ**j2]]
+    [zf_(X) := X**j1 - X**j2]
+    [@[γ :<- __GG] -> [zf_(γ) == 0]]
+
+
+    !! [(a1,b1)<-ZS]
+    [a1,b1 <= L3]
+    [j1 == z1_((a1,b1)) == (p**a1 * (n///p)**b1) <= (p**L3 * (n///p)**L3) == n**L3 == n**floor(sqrt(d)) <= n**sqrt(d)]
+    [j1 <= n**sqrt(d)]
+    !! 同理
+    [j2 <= n**sqrt(d)]
+    [j1 =!= j2]:
+      !! [len(__GG) > n**sqrt(d)]
+      [deg(zf_(X)) == max(j1,j2) <= n**sqrt(d) < len(__GG)]
+      [deg(zf_(X)) < len(__GG)]
+      [len(zf_(X)的根集) < len(__GG)]
+      !! [@[γ :<- __GG] -> [zf_(γ) == 0]]
+      [len(zf_(X)的根集) >= len(__GG)]
+      _L
+    [j1 == j2]
+    [z1_((a1,b1)) == z1_((a2,b2))]
+    [(p**a1 * (n///p)**b1) == (p**a2 * (n///p)**b2)]
+    [n**(b1-b2) == p**(a2-a1 + b1-b2)]
+    [b1 == b2]:
+      !! [n**(b1-b2) == p**(a2-a1 + b1-b2)]
+      [1 == p**(a2-a1)]
+      [a2 == a1]
+      [(a1,b1) == (a2,b2)]
+      !! [(a1,b1) =!= (a2,b2)]
+      _L
+    [b1 =!= b2]
+    !! [n**(b1-b2) == p**(a2-a1 + b1-b2)]
+    [n == p**((a2-a1 + b1-b2)///(b1-b2))]
+    [n == p**((a2-a1)///(b1-b2) +1)]
+    [n is a power of p]
+    !DONE
+end-proof
+]]
+[[
+r的上界:有毛病！！！
+>>> from math import log2
+>>> log2(3)**2
+2.5121061286922606
+>>> log2(3)**5
+10.002186719029863
+
+buggy__Theorem_4_5_3:here
+Theorem__4_5_3:here
+Theorem 4.5.3.
+  Given an integer n ≥ 3,
+  let r be the least integer with the order of n in ZZ∗%r exceeding log2(n)**2.
+  Then r ≤ log2(n)**5.
+<==>:
+[@[n:<-[3..]] -> [r := min{r | [[r:<-[2..]][order_mod_(r;n) > log2(n)**2]]}] -> [r <= log2(n)**5]]
+proof:
+  原文:这份证明有毛病！page206[218/604]
+  [N := (n*II[(-1+n**e) | [e:<-[1..=floor(log2(n)**2)]]])]
+    # N := n*(n-1)(n**2-1)···(n**floor(log2(n)**2)-1)
+  !! [n >= 3]
+  [floor(log2(n)**2) >= floor(log2(3)**2) == 2]
+    # [floor(log2(3)**2) ~= 2.5121061286922606]
+  [N < (n*II[(-0+n**e) | [e:<-[1..=floor(log2(n)**2)]]]) == n**(1+sum[e | [e:<-[1..=floor(log2(n)**2)]]]) == n**(1+(1+floor(log2(n)**2))*floor(log2(n)**2)/2) < n**(log2(n)**4) == 2**(log2(n)**5)]
+  [N < 2**(log2(n)**5)]
+
+  [N0 := II{p | [[p::prime][N%p == 0]]}]
+  [N0 <= N < 2**(log2(n)**5)]
+
+  [r0 := min{p | [[p::prime][N%p =!= 0][order_mod_(p;n) > log2(n)**2]]}]
+  [r <= r0]
+
+  [r1 := min{p | [[p::prime][N%p =!= 0]]}]
+  [r1 <= r0]
+
+  !! [@[x::real] -> [x >= 31] -> [II{p | [p::prime][p <= x]} > 2**x]]
+    # More simply, and more strongly, the Chebyshev-type estimate of Exercise 1.28 gives II{p | p≤x} > 2**x when x ≥ 31.
+  !! [N0 <= N < 2**(log2(n)**5)]
+  [[(log2(n)**5) >= 31] -> [r1 <= (log2(n)**5)]]
+  !! [[n >= 4] -> [(log2(n)**5) >= 32]]
+  [[n >= 4] -> [r1 <= (log2(n)**5)]]
+    ???r1不是r0，这份证明有毛病！
+  [n == 3]:
+    [r == 5 < log2(3)**5 ~= 10.002186719029863]
+end-proof
+===
+page55[69/604]
+    [@[x::real] -> [x >= 31] -> [II{p | [p::prime][p <= x]} > 2**x]]
+
+1.28. We saw in Exercise 1.25 that
+    [@[x::real] -> [x > 0] -> [II{p | [p::prime][p <= x]} < 4**x]]
+  In this exercise we obtain an explicit lower bound for this product of primes:
+    [@[x::real] -> [x >= 31] -> [II{p | [p::prime][p <= x]} > 2**x]]
+  While the prime number theorem is equivalent to the assertion that
+    the product of the primes in [1,x] is e**((1+o(1))*x),
+    [@[x::real] -> [x > 0] -> [II{p | [p::prime][p <= x]} == e**((1+o(1))*x)]]
+  it is still of interest to have completely explicit inequalities as in this exercise and Exercise 1.25.
+  For a positive integer N,
+    let C(N) = (6N)!N! / ((3N)!(2N)!(2N)!).
+  (1) Show that C(N) is an integer.
+  (2) Show that if p is a prime with p > (6N)**(1/k), then p**k does not divide C(N).
+  (3) Using Exercise 1.25 and the idea in Exercise 1.27, show that
+    [@[N:<-[?..]] -> [II{p | [p::prime][p <= 6*N]} > C(N) / 4**((6*N)**(1/2) + (6*N)**(1/3)*log2(3*N/2))]]
+  (4) Use Stirling’s formula (or mathematical induction) to show that
+    [[N:<-[1..]] -> [C(N) > 108**N/(4*sqrt(N))]]
+  (5) Show that
+    [@[x::real] -> [x >= 2**12] -> [II{p | [p::prime][p <= x]} > 2**x]]
+  (6) Close the gap from 2**12 to 31 with a direct calculation.
+
+===
+page55[69/604]
+    [@[x::real] -> [x > 0] -> [II{p | [p::prime][p <= x]} < 4**x]]
+
+1.25. As a teenager, P. Erdos proved the following Chebyshev-type inequality:
+    [@[x::real] -> [x > 0] -> [II{p | [p::prime][p <= x]} < 4**x]]
+  Find a proof of this result, perhaps by first noting that it suffices to prove it for x an odd integer.
+  Then you might proceed by induction, using:
+    [@[n:<-[?..]] -> [II{p | [p::prime][n+1 < p <= 2*n+1]} <= C(2*n+1;n) <= 4**n]]
+===
+]]
+[[
+很可能有:[r < 2*log2(n)**2]:here
+
+page207[219/604]
+But in our never-ending quest for the best possible algorithm, we ask whether soft_O(lnN**6) can be achieved for all numbers n.
+  It seems as if this should be the case; that is, it seems as if we should be able to choose r = soft_O(lnN**2) always.
+  Such a result follows independently from strong forms of two different conjectures.
+      + One of these is the Artin conjecture asserting that if n is neither -1 nor a square (which is certainly an allowable hypothesis for us), then there are infinitely many primes r with n a primitive root for r.
+          Any such prime r with r > 1 + log2(n)**2 may be used in Algorithm 4.5.1, and it seems reasonable to assume that there is always such a prime smaller than 2*log2(n)**2 (for n > 2).
+          It is interesting that in [Hooley 1976] there is a proof of the Artin conjecture assuming the GRH (see the comments in Exercise 2.39), and it may be that this proof can be strengthened to show that there is good value for r < 2*log2(n)**2; see Exercise 4.38.
+          But if we are willing to assume the GRH, we might as well merely assume the ERH and use Theorem 3.5.13, and so obtain a deterministic primality test with bit complexity soft_O(lnN**4).
+      + In addition to the Artin conjecture, we also have a conjecture on Sophie Germain primes.
+          Recall that these are primes q with r = 2*q +1 also prime.
+          If there are not only infinitely many of them (which is not known), but they are fairly frequent, then there should be such a prime q > log2(n)**2 with q = soft_O(log2(n)**2) and r = 2*q + 1 not dividing n ± 1; see [Agrawal et al. 2004].
+          Such a value for r is valid in Algorithm 4.5.1.
+          Indeed, it would suffice if the order of n modulo r is either q or 2*q.
+          But otherwise, its order is 1 or 2, and we have stipulated that r does not divide n ± 1.
+  These conjectures strengthen our view that the complexity of Algorithm 4.5.1 should be soft_O(lnN**6).
+
+===
+]]
+[[
+泛化:(X**r-1) --> f(X)
+  避开用r，直接用d替代ϕ(r)
+  可以有:[d:=1+floor(log2(n)**2)]
+
+page208[220/604]
+===
+Theorem__4_5_4:here
+Theorem 4.5.4.
+  Suppose n is an integer with n ≥ 2,
+  f(x) is a monic polynomial in ZZ%n[x] of degree d, where d > log2(n)**2,
+  f(x**n) ≡ 0 (mod f(x)), x**n**d ≡ x (mod f(x)),
+      # (4.27)
+  (x**n**(d/q)-x) and f(x) are coprime for all primes q dividing d.
+      # (4.28)
+  (x + c)**n ≡ x**n+ c (mod f(x)) for each integer c with 0 ≤ c ≤ (sqrt(d)*log2(n)).
+      # (4.29)
+  Then if n is divisible by a prime p > (sqrt(d)*log2(n)), then n = p**m for some positive integer m.
+  # Note that reduction modulo n for polynomial coefficients is assumed, since the polynomials in Theorem 4.5.4 are assumed to be in (ZZ%n)[x].
+    # 隐含: (%n)
+<==>:
+[@[n:<-[2..]] -> [X :: Var] -> [f(X) :: (ZZ%n)[X]{monic:LC(f)==1}] -> [d := deg(f(X))] -> [d > floor(log2(n)**2)] -> [f(X**n) =[%{n,f(X)}]= 0] -> [(X**n**d) =[%{n,f(X)}]= X] -> [@[q::prime] -> [d%q==0] -> [gcd((X**n**(d///q)-X), f(X)) =[%n]= 1]] -> [@[c:<-[0..=floor(sqrt(d)*log2(n))]] -> [(X+c)**n =[%{n,f(X)}]= (X**n+c)]] -> [@[p::prime] -> [n%p==0] -> [p > floor(sqrt(d)*log2(n))] -> [?[m:<-[1..]] -> [n == p**m]]]]
+    # 实际计算:[gcd((X**n**(d/q)%{n,f(X)}-X), f(X))%n == 1]
+    # 显化: (%n)
+
+===
+proof:
+  # We largely follow the proof of Theorem 4.5.2.
+  [[p::prime][n%p==0][p > floor(sqrt(d)*log2(n))]]:
+    #-> [?[m:<-[1..]] -> [n == p**m]]
+    #As before, but with f(x) in place of x**r -1
+    [GG := {g(X) | [[g(X) :: (ZZ%p)[X]][g(X)**n =[%{p,f(X)}]= g(X**n)]]}]
+
+    #And as before, but this time by assumption (4.27), we have f(x)|f(xn) in (ZZ%p)[x].
+    !! [f(X**n) =[%{n,f(X)}]= 0]
+    [f(X**n) =[%{p,f(X)}]= 0]
+
+    #Thus, G is closed under multiplication and is a union of residue classes modulo f(x).
+    [GG is closed under multiplication]
+    [GG is a union of residue classes modulo f(X)]
+
+    #Thus, our proof that J = {j ∈ ZZ : j > 0, g(x)**j≡ g(x**j) (mod f(x)) for all g(x) ∈ G} is closed under multiplication is also as before.
+    [JJ := {j | [[j:<-[1..]][@[g(X) :<- GG] -> [g(X)**j =[%{p,f(X)}]= g(X**j)]]]}]
+    [JJ is closed under multiplication]
+
+    # Let h(x) be an irreducible factor of f(x) when considered modulo p, and denote by ζ a root of h(x) in the splitting field K of h(x) over GF(p).
+    [h(X) := an irreducible factor of f(X); in GF(p)[X]]
+    [ζ := a root of h(X)]
+    [KK := the splitting field of h(X) over the finite field GF(p)]
+
+    #Then the finite field K = GF(p)(ζ) is the homomorphic image of the ring (ZZ%p)[x]/f(x), where the coset representing x is sent to ζ.
+    [KK === GF(p)(ζ) ~=~ GF(p)[X]/h(X)]
+    [KK is the homomorphic image of the ring (ZZ%p)[X]/f(x) where the coset representing X is sent to ζ]
+
+
+    #By (4.28), x is coprime to f(x) in (ZZ%p)[x], so that ζ =!= 0 in K.
+    !! [@[q::prime] -> [d%q==0] -> [gcd((X**n**(d///q)-X), f(X)) == 1]]
+    [gcd(X, f(X)) =[%n]= 1]
+    [f(X)%X =!= 0]
+    [ζ =!= 0]
+
+    #Let r be the multiplicative order of ζ.
+    [r := multiplicative_order_of(ζ)]
+      #or: [r:=min{e | [e:<-[1..]][ζ**e == 1]}]
+
+    #By (4.28) we must have ζ**n**(d/q) =!= ζ for each prime q|d, so that ζ**(-1+n**(d/q)) =!= 1 for these q’s.
+    [[q::prime][d%q==0]]:
+      !! [@[q::prime] -> [d%q==0] -> [gcd((X**n**(d///q)-X), f(X)) =[%n]= 1]]
+      [gcd((X**n**(d/q)-X), f(X)) =[%n]= 1]
+      !! h(X).定义
+      [gcd((X**n**(d/q)-X), h(X)) =[%n]= 1]
+      [gcd((X**n**(d/q)-X), h(X)) =[%p]= 1]
+      [hq_(X) := (X**n**(d/q)-X)%{p,h(X)}]
+      [gcd(hq_(X), h(X)) =[%p]= 1]
+      [hq_(X) =!= 0]
+      [deg(hq_(X)) < deg(h(X))]
+      [hq_(X)%{p,h(X)} =!= 0]
+      !! h(X).定义
+      !! ζ.定义
+      [hq_(ζ) =!= 0]
+      [(ζ**n**(d/q)-ζ) =!= 0]
+      [(ζ**(-1+n**(d/q))-1)*ζ =!= 0]
+      !! [ζ =!= 0]
+      [(ζ**(-1+n**(d/q))-1) =!= 0]
+      [ζ**(-1+n**(d/q)) =!= 1]
+    [@[q::prime] -> [d%q==0] -> [ζ**(-1+n**(d///q)) =!= 1]]
+    !! r.定义
+    [@[q::prime] -> [d%q==0] -> [(-1+n**(d///q))%r =!= 0]]
+    [@[q::prime] -> [d%q==0] -> [(n**(d///q))%r =!= 1]]
+
+    #Also, by (4.27) and the fact that ζ is nonzero in K, we have ζ**(-1+n**d) = 1.
+    #Thus, the order of n in ZZ∗%r is exactly d.
+    !! [(X**n**d) =[%{n,f(X)}]= X]
+    [(ζ**n**d) == ζ]
+    !! [ζ =!= 0]
+    [ζ**(-1+n**d) == 1]
+    !! r.定义
+    [(-1+n**d)%r == 0]
+    [(n**d)%r == 1]
+    !! [@[q::prime] -> [d%q==0] -> [(n**(d///q))%r =!= 1]]
+    [order_mod_(r;n) == d]
+
+
+
+
+    #In the argument for Theorem 4.5.2 we had d equal to the order of the subgroup generated by n and p in ZZ∗%r, while now it is just the order of the subgroup generated by n.
+    #However, in our present context, the two subgroups are the same; that is, p ≡ n**e(mod r) for some nonnegative integer e.
+    #We see this as follows.
+    #First note that clearly we have f(x) ∈ G, since f(x**n) ≡ 0 ≡ f(x)**n(mod f(x)).
+    #Thus, f(ζ)**j = f(ζ**j) for all j ∈ J.
+    #But f(ζ) = 0, so that each ζ**j is a root of f in K.
+    #Now ζ has order r and f has degree d, so that the number of residue classes occupied by j mod r for j ∈ J is at most d; indeed, f cannot have more roots in the finite field K than its degree.
+    #However, the powers of n already occupy d residue classes modulo r, so every other member of J, in particular p, is congruent modulo r to some power of n.
+    #(The reader might note the similarity of this argument to Theorem 4.3.3.)
+    [_Sd := {(n**a * p**b)%r | [a,b :: uint]}]
+    [Sd := {(n**e)%r | [e :: uint]}]
+    #证明:[Sd == _Sd]
+    #<==>证明:[p%r <- Sd]
+    #<==>证明:[?[e:<-[1..]] -> [n**e =[%r]= p]]
+    !! [f(X**n) =[%{n,f(X)}]= 0]
+    [f(X**n) =[%{p,f(X)}]= 0]
+    [f(X)**n =[%f(X)]= 0 =[%{p,f(X)}]= f(X**n)]
+    [f(X)**n =[%{p,f(X)}]= f(X**n)]
+    !! GG.定义
+    [f(X) <- GG]
+
+    !! ζ.定义
+    [h(ζ) == 0]
+    !! h(X).定义
+    [f(ζ) == h(ζ) * (f(X)///h(X))(X:=ζ) == 0]
+    [f(ζ) == 0]
+
+    [j :<- JJ]:
+      !! JJ.定义
+      !! [f(X) <- GG]
+      [f(X)**j =[%{p,f(X)}]= f(X**j)]
+      !! [f(ζ) == 0]
+      [f(ζ**j) == f(ζ)**j == 0]
+      [(ζ**j) is a root of f(X); in KK]
+    [@[j :<- JJ] -> [(ζ**j) is a root of f(X); in KK]]
+    [Rj := {(ζ**j) | [j :<- JJ]}]
+    [Rj are roots of f(X); in KK]
+    !! d.定义
+    [len(Rj) <= d]
+
+    [Jr := {j%r | [j :<- JJ]}]
+    !! r.定义
+    [len(Rj) == len(Jr)]
+
+    !! Sd.定义
+    [n%r <- Sd]
+    !! JJ.定义
+    !! GG.定义
+    !! [n <- JJ]
+    [n%r <- Jr]
+    [Sd |<=| Jr]
+    !! [order_mod_(r;n) == d]
+    [order_mod_(r;n%r) == d]
+    [len(Jr) >= len(Sd) == d]
+
+    !! [len(Rj) <= d]
+    !! [len(Jr) >= len(Sd) == d]
+    !! [len(Rj) == len(Jr)]
+    [d >= len(Rj) == len(Jr) >= len(Sd) == d]
+    [d == len(Rj) == len(Jr) == len(Sd)]
+    !! [Sd |<=| Jr]
+    [Sd == Jr]
+
+    !! [@[g(X) :<- (ZZ%p)[X]] -> [g(X)**p =[%p]= g(X**p)]]
+    [@[g(X) :<- GG] -> [g(X)**p =[%{p,f(X)}]= g(X**p)]]
+    !! JJ.定义
+    [p <- JJ]
+    [p%r <- Jr]
+    !! [Sd == Jr]
+    [p%r <- Sd]
+    [Sd == _Sd]
+
+
+    #In the proof of Theorem 4.5.2 we have x + c ∈ G for each integer c with 0 ≤ c ≤ sqrt(ϕ(r))*log2(n), but all that we used is that this condition holds for 0 ≤ c ≤ sqrt(d)*log2(n).
+    #We certainly have this latter condition currently.
+    #So now everything matches up, and the proof may be concluded in exactly the same way as in Theorem 4.5.2.
+    剩下部分照搬前面Theorem 4.5.2 (Agrawal, Kayal, Saxena)的证明...
+
+end-proof
+===
+校验本身耗时少:可以有[d:=1+floor(log2(n)**2)]
+  但准备数据f(X){deg:=1+floor(log2(n)**2)}的算法 仍是 随机性算法
+===
+With Theorem 4.5.2 we were constrained by the fact that while we conjectured that there are suitable values of r that are fairly close to log2(n)**2, all that we could prove was that r ≤ log2(n)**5 (Theorem 4.5.3), though by ineffective methods this upper bound for r could be brought down to O(log2(n)**3).
+    But with Theorem 4.5.4 we are liberated from just looking at polynomials of the form x**r-1.
+    We now have the complete freedom of looking at any and all monic polynomials f(x), as long as the degree exceeds log2(n)**2 and (4.27) and (4.28) are satisfied.
+    Note that if n is prime, then by Theorem 2.2.8, a polynomial f(x) satisfies (4.27) and (4.28) if and only if f(x) is irreducible in (ZZ%n)[x].
+    And it is easy to show that there are plenty of monic irreducible polynomials of any given degree (see (2.5) and Exercise 2.12).
+    So why not just let d = 1+floor(log2(n)**2), choose a polynomial of degree d that would be irreducible if n were prime, and be done with it?
+Unfortunately, things are not so easy.
+    Irreducible polynomial construction over GF(p), where p is prime, can be done in expected polynomial time by the random algorithm of just choosing arbitrary polynomials of the desired degree and testing them.
+    This is exactly the approach of Algorithm 4.3.4.
+    But what if one wants a deterministic algorithm?
+    Already in the case of degree 2 we have a known hard problem, since finding an irreducible quadratic in GF(p)[x] is equivalent to finding a quadratic nonresidue modulo p.
+    Assuming the ERH, we know how to do this in deterministic polynomial time (using Theorem 1.4.5), but we know no unconditional polynomial-time method.
+    In [Adleman and Lenstra 1986] it is shown how to deterministically gind an irreducible polynomial of any given degree in time polynomial in ln(p) and the degree, again assuming the ERH.
+    They also consider an unconditional version of their theorem in which they allow a small “error”.
+    That is, if the target degree is d, they find unconditionally and in time polynomial in ln(p) and d an irreducible polynomial modulo p of degree D, where d ≤ D = O(d*ln(p)).
+    In the paper [Lenstra and Pomerance 2005] this last result is improved to finding an irreducible polynomial modulo p with degree in [d..=4*d], once p is sufficiently large (the bound is computable in principle), and assuming d > ln(p)**1.84.
+    (If one does not insist on effectivity, the lower bound for d may be relaxed somewhat.)
+    Further, the number of bit operations to find such a polynomial is bounded by soft_O(d**(8/5)*ln(n))
+    (the notation soft_O being introduced in the preceding subsection).
+
+===
+]]
+[[
+page213[225/604]
+4.5.4 A quartic time primality test
+  同余等式检查部分从循环计算多次缩减至只计算一次
+quartic ‘数’四次的
+同余:[Mathematics] congruence
+
+===
+Theorem__4_5_7:here
+Theorem 4.5.7.
+  Let n,r,b be integers with
+    n > 1,
+    r|(n-1),
+    r > log2(n)**2,
+    b**(n-1) ≡ 1 (mod n), and
+    gcd(-1+b**((n-1)///q)%n,n) == 1 for each prime q|r.
+  If (X-1)**n ≡ X**n -1 (mod X**r -b,n),
+    #(4.30)
+    then n is a prime or prime power.
+<==>:
+[[n,r,b :: uint] -> [n >= 2] -> [r >= 1+floor(log2(n)**2)] -> [(n-1)%r == 0] -> [b**(n-1)%n == 1] -> [@[q::prime] -> [r%q==0] -> [gcd((-1+b**((n-1)///q)%n),n) == 1]] -> [X :: Var] -> [(X-1)**n =[%{n,(-b+X**r)}]= -1+X**n] -> [?[p::prime] -> [?[m:<-[1..]] -> [n == p**m]]]]
+  # [(X-1)**n =[%{n,(-b+X**r)}]= -1+X**n]
+    #(4.30)
+    #作用处纟最重要的同余关系式:goto
+  #soft_O(r*ln(n)**2)
+    # 但未必有[r == soft_O(ln(n)**2)]
+  #注意:[r是(n-1)的已分解部分][(n-1)可能只含极少量小素数，或者说，稍微大点的因子必然包含大素数]即[满足条件的r可能很大，实际上找不到]
+  # =>泛化版:(n**I-1)
+  #     类似于 (n-1) test 泛化为finite_field_primality_test
+  #         view others/数学/prime/finite_field_primality_test.txt
+===
+proof:
+  !! [r >= 1+floor(log2(n)**2)]
+  [r > (log2(n)**2)]
+  [sqrt(r) > log2(n)]
+  [2**sqrt(r) > 2**log2(n) == n]
+  [2**sqrt(r)**2 > n**floor_sqrt(r)]
+  [2**r > n**floor_sqrt(r)]
+
+  !! [n >= 2]
+  [log2(n) >= 1]
+  !! [r >= 1+floor(log2(n)**2)]
+  [r >= 2]
+  !! [b**(n-1)%n == 1]
+  [gcd(b,n) == 1]
+
+  [p::prime][n%p==0]:
+    !! [gcd(b,n) == 1]
+    !! [n%p==0]
+    [gcd(b,p) == 1]
+
+    [A := b**((n-1)///r) %p]
+    !! [b**(n-1)%n == 1]
+    [A**r%n == 1]
+    [A**r%p == 1]
+
+    !! [@[q::prime] -> [r%q==0] -> [gcd((-1+b**((n-1)///q)%n),n) == 1]]
+    [@[q::prime] -> [r%q==0] -> [gcd((-1+A**(r///q)%n),n) == 1]]
+    [@[q::prime] -> [r%q==0] -> [gcd((-1+A**(r///q)%p),p) == 1]]
+    [@[q::prime] -> [r%q==0] -> [A**(r///q)%p =!= 1]]
+
+    !! [A**r%p == 1]
+    !! [@[q::prime] -> [r%q==0] -> [A**(r///q)%p =!= 1]]
+    [order_mod_(p;A) == r]
+    [(p-1)%r == 0]
+    [gcd(r,p) == 1]
+
+    [X**n
+    == X * X**(n-1)
+    !! [(n-1)%r == 0]
+    == X * (X**r)**((n-1)///r)
+    =[%(-b+X**r)]= X * (b)**((n-1)///r)
+    !! A.定义
+    =[%p]= X * A
+    ]
+    [X**n =[%{p,(-b+X**r)}]= A*X]
+
+    !! [(X-1)**n =[%{n,(-b+X**r)}]= -1+X**n]
+      #作用处纟最重要的同余关系式:here
+      #(4.30)
+    [(X-1)**n =[%{p,(-b+X**r)}]= -1+X**n]
+    !! [X**n =[%{p,(-b+X**r)}]= A*X]
+    [(X-1)**n =[%{p,(-b+X**r)}]= -1+A*X]
+
+    [i::uint][f(X),g(X) :: (ZZ%p)[X]][f(X) =[%{p,(-b+X**r)}]= g(X)]:
+      !! [A**r%p == 1]
+      [(A**i*X)**r == (A**r)**i*X**r =[%p]= X**r]
+      [(A**i*X)**r =[%p]= X**r]
+      [-b+(A**i*X)**r =[%p]= -b+X**r]
+
+      !! [f(X) =[%{p,(-b+X**r)}]= g(X)]
+      # [X:=(A**i*Y)]
+      [f(A**i*Y) =[%{p,(-b+(A**i*Y)**r)}]= g(A**i*Y)]
+      [f(A**i*X) =[%{p,(-b+(A**i*X)**r)}]= g(A**i*X)]
+      !! [-b+(A**i*X)**r =[%p]= -b+X**r]
+      [f(A**i*X) =[%{p,(-b+X**r)}]= g(A**i*X)]
+
+    [@[i::uint] -> @[f(X),g(X) :: (ZZ%p)[X]] -> [f(X) =[%{p,(-b+X**r)}]= g(X)] -> [f(A**i*X) =[%{p,(-b+X**r)}]= g(A**i*X)]]
+    # [f(X) := (X-1)**n]
+    # [g(X) := -1+A*X]
+    !! [(X-1)**n =[%{p,(-b+X**r)}]= -1+A*X]
+    [@[i::uint] -> [(-1+A**i*X)**n =[%{p,(-b+X**r)}]= -1+A*(A**i*X)]]
+    [@[i::uint] -> [(-1+A**i*X)**n =[%{p,(-b+X**r)}]= (-1+A**(i+1)*X)]]
+
+    [j::uint]:
+      #归纳法:
+      * [j==0]:
+        [(X-1)**n**0 == (X-1) == (-1+A**0*X)]
+        [(X-1)**n**0 =[%{p,(-b+X**r)}]= (-1+A**0*X)]
+        [(X-1)**n**j =[%{p,(-b+X**r)}]= (-1+A**j*X)]
+      * [j>=1][@[k:<-[0..<j]] -> [(X-1)**n**k =[%{p,(-b+X**r)}]= (-1+A**k*X)]]:
+        !! [j>=1]
+        [0 <= j-1 < j]
+        !! [@[k:<-[0..<j]] -> [(X-1)**n**k =[%{p,(-b+X**r)}]= (-1+A**k*X)]]
+        # [k:=(j-1)]
+        [(X-1)**n**(j-1) =[%{p,(-b+X**r)}]= (-1+A**(j-1)*X)]
+
+        !! [@[i::uint] -> [(-1+A**i*X)**n =[%{p,(-b+X**r)}]= (-1+A**(i+1)*X)]]
+        # [i:=(j-1)]
+        [(-1+A**(j-1)*X)**n =[%{p,(-b+X**r)}]= (-1+A**j*X)]
+
+        [(X-1)**n**j
+        == ((X-1)**n**(j-1))**n
+        !! [(X-1)**n**(j-1) =[%{p,(-b+X**r)}]= (-1+A**(j-1)*X)]
+        =[%{p,(-b+X**r)}]= (-1+A**(j-1)*X)**n
+        !! [(-1+A**(j-1)*X)**n =[%{p,(-b+X**r)}]= (-1+A**j*X)]
+        =[%{p,(-b+X**r)}]= (-1+A**j*X)
+        ]
+        [(X-1)**n**j =[%{p,(-b+X**r)}]= (-1+A**j*X)]
+      #==>>:
+      [(X-1)**n**j =[%{p,(-b+X**r)}]= (-1+A**j*X)]
+    !! induction
+    [@[j::uint] -> [(X-1)**n**j =[%{p,(-b+X**r)}]= (-1+A**j*X)]]
+
+
+    !! [p::prime]
+    !! [order_mod_(p;A) == r]
+    [roots_of([X**r =[%p]= 1]) == {A**k%p | [k:<-[0..<r]]}]
+
+    !! [p::prime]
+    [b**(p-1)%p == 1]
+    !! [(p-1)%r == 0]
+    [(b**((p-1)///r))**r%p == 1]
+    [(b**((p-1)///r)) <- roots_of([X**r =[%p]= 1])]
+    ?kb :=> [kb<-[0..<r]][A**kb =[%p]= (b**((p-1)///r))]
+
+    [X**p
+    == X * X**(p-1)
+    !! [(p-1)%r == 0]
+    == X * (X**r)**((p-1)///r)
+    =[%(-b+X**r)]= X * (b)**((p-1)///r)
+    !! kb.定义
+    =[%p]= X * A**kb
+    ]
+    [X**p =[%{p,(-b+X**r)}]= A**kb*X]
+    [j::uint]:
+      #归纳法:
+      * [j==0]:
+        [X**p**0 == X**1 == X == 1*X == A**(kb*0)*X]
+        [X**p**0 =[%{p,(-b+X**r)}]= A**(kb*0)*X]
+        [X**p**j =[%{p,(-b+X**r)}]= A**(kb*j)*X]
+      * [j>=1][X**p**(j-1) =[%{p,(-b+X**r)}]= A**(kb*(j-1))*X]:
+        [X**p**j
+        == (X**p**(j-1))**p
+        !! [X**p**(j-1) =[%{p,(-b+X**r)}]= A**(kb*(j-1))*X]
+        =[%{p,(-b+X**r)}]= (A**(kb*(j-1))*X)**p
+        == (A**p)**(kb*(j-1))*X**p
+        !! [p::prime]
+        => [A**p%p == A]
+        =[%p]= (A)**(kb*(j-1))*X**p
+        !! [X**p =[%{p,(-b+X**r)}]= A**kb*X]
+        =[%{p,(-b+X**r)}]= A**(kb*(j-1)) * A**kb*X
+        =[%{p,(-b+X**r)}]= A**(kb*j)*X
+        ]
+        [X**p**j =[%{p,(-b+X**r)}]= A**(kb*j)*X]
+      #==>>:
+      [X**p**j =[%{p,(-b+X**r)}]= A**(kb*j)*X]
+    !! induction
+    [@[j::uint] -> [X**p**j =[%{p,(-b+X**r)}]= A**(kb*j)*X]]
+
+
+
+
+    [gcd((-b+X**r), DERIVATIVE{(-b+X**r)})
+    !! [r >= 2]
+    => [r-1 >= 0]
+    == gcd((-b+X**r), r*X**(r-1))
+    !! [gcd(r,p) == 1]
+    =[%p]= gcd((-b+X**r) -(r**-1%p*X)*(r*X**(r-1)), r*X**(r-1))
+    =[%p]= gcd(-b, r*X**(r-1))
+    !! [gcd(b,p) == 1]
+    !! [gcd(r,p) == 1]
+    =[%p]= 1
+    ]
+    [gcd((-b+X**r), DERIVATIVE{(-b+X**r)}) =[%p]= 1]
+    [gcd((-b+X**r), DERIVATIVE{(-b+X**r)}) <- (ZZ%p)]
+    !! [@[f(X) :: (ZZ%p)[X]] -> [gcd(f(X), DERIVATIVE{f(X)}) <- (ZZ%p)] -> @[g1(X),g2(X) :: (ZZ%p)[X]/f(X)] -> [[g1(X)**p =[%{p,f(X)}]= g2(X)**p] <-> [g1(X) =[%{p,f(X)}]= g2(X)]]]
+      # [@[f(X) :: (ZZ%p)[X]] -> [1 =[%p]= gcd(f(X), DERIVATIVE{f(X)})] -> [Ring_f:=(ZZ%p)[X]/f(X)] -> [raising to the p-th power is one-to-one in Ring_f]]
+      # [@[f(X) :: (ZZ%p)[X]] -> [gcd(f(X), DERIVATIVE{f(X)}) <- (ZZ%p)] -> @[g1(X),g2(X) :: (ZZ%p)[X]] -> [[g1(X)**p =[%{p,f(X)}]= g2(X)**p] <-> [g1(X) =[%{p,f(X)}]= g2(X)]]]
+      # [f(x) does not have any repeated irreducible factors modulo p]
+    [raising to the p-th power is one-to-one in (ZZ%p)[X]/(-b+X**r)]
+    #==>>:
+    [[j::uint] -> [@[g1(X),g2(X) :: (ZZ%p)[X]/(-b+X**r)] -> [[g1(X)**p**j =[%{p,(-b+X**r)}]= g2(X)**p**j] <-> [g1(X) =[%{p,(-b+X**r)}]= g2(X)]]]]
+      # [[j::uint] -> [raising to the p**j-th power is one-to-one in (ZZ%p)[X]/(-b+X**r)]]
+
+
+    [i,j::uint]:
+      [(X-1)**(p**i*n**j)
+      == ((X-1)*n**j)**(p**i)
+      !! [@[j::uint] -> [(X-1)**n**j =[%{p,(-b+X**r)}]= (-1+A**j*X)]]
+      =[%{p,(-b+X**r)}]= (-1+A**j*X)**(p**i)
+      !! [@[i::uint] -> @[f(X) :: (ZZ%p)[X]] -> [f(X)**p**i =[%p]= f(X**p**i)]]
+      =[%p]= (-1+A**j*X**p**i)
+      !! [@[j::uint] -> [X**p**j =[%{p,(-b+X**r)}]= A**(kb*j)*X]]
+      =[%{p,(-b+X**r)}]= (-1+A**j*A**(kb*i)*X)
+      == -1+A**(j+i*kb)*X
+      ]
+      [(X-1)**(p**i*n**j) =[%{p,(-b+X**r)}]= -1+A**(j+i*kb)*X]
+
+      [(-1+A**(j*(1-kb)+i*kb)*X)**p**j
+      !! [@[i::uint] -> @[f(X) :: (ZZ%p)[X]] -> [f(X)**p**i =[%p]= f(X**p**i)]]
+      =[%p]= (-1+A**(j*(1-kb)+i*kb)*X**p**j)
+      !! [@[j::uint] -> [X**p**j =[%{p,(-b+X**r)}]= A**(kb*j)*X]]
+      =[%{p,(-b+X**r)}]= (-1+A**(j*(1-kb)+i*kb)*A**(kb*j)*X)
+      == (-1+A**(j+i*kb)*X)
+      !! [(X-1)**(p**i*n**j) =[%{p,(-b+X**r)}]= -1+A**(j+i*kb)*X]
+      == (X-1)**(p**i*n**j)
+      !! [n%p==0]
+      == ((X-1)**(p**i*(n///p)**j))**p**j
+      ]
+      [(-1+A**(j*(1-kb)+i*kb)*X)**p**j =[%{p,(-b+X**r)}]= ((X-1)**(p**i*(n///p)**j))**p**j]
+      !! [[j::uint] -> [@[g1(X),g2(X) :: (ZZ%p)[X]/(-b+X**r)] -> [[g1(X)**p**j =[%{p,(-b+X**r)}]= g2(X)**p**j] <-> [g1(X) =[%{p,(-b+X**r)}]= g2(X)]]]]
+        # [[j::uint] -> [raising to the p**j-th power is one-to-one in (ZZ%p)[X]/(-b+X**r)]]
+      [(-1+A**(j*(1-kb)+i*kb)*X) =[%{p,(-b+X**r)}]= ((X-1)**(p**i*(n///p)**j))]
+    #==>>:
+    [@[i,j::uint] -> [(X-1)**(p**i*(n///p)**j) =[%{p,(-b+X**r)}]= (-1+A**(j*(1-kb)+i*kb)*X)]]
+
+
+    [order_mod_(p;b)
+    !! A.定义
+    >= order_mod_(p;A)
+    !! [order_mod_(p;A) == r]
+    == r
+    !! [r >= 2]
+    >= 2
+    ]
+    [order_mod_(p;b) >= 2]
+    [b%p =!= 1]
+    [(1-b)%p =!= 0]
+
+    !! [r >= 2]
+    [(X**r-1)%(X-1) == 0]
+    [gcd((X-1), (-b+X**r))
+    !! [(X**r-1)%(X-1) == 0]
+    == gcd((X-1), (-b+X**r) -(X**r-1))
+    == gcd((X-1), (1-b))
+    !! [(1-b)%p =!= 0]
+
+    =[%p]= 1
+    ]
+    [gcd((X-1), (-b+X**r)) =[%p]= 1]
+    [(X-1) is a unit in ring (ZZ%p)[X]/(-b+X**r)]
+      #=>multiplicative_order存在性
+      #=>E
+    [E:=order_mod_({p,(-b+X**r)}; (X-1))]
+
+
+    [js :: {uint%r}]:
+      [fm_(js) =[def]= II[(-1+A**j*X) | [j:<-js]]; in ring (ZZ%p)[X]/(-b+X**r)]
+    [powerset_lt_r_except_full := {js | [js :: {uint%r}][js =!= {0..<r}]}]
+
+    [js :<- powerset_lt_r_except_full]:
+      [deg(fm_(js))
+      == deg(II[(-1+A**j*X) | [j:<-js]])
+      < r
+      ]
+      [deg(fm_(js)) < r]
+    [[js :<- powerset_lt_r_except_full] -> [deg(fm_(js)) < r]]
+
+    !! fm_.定义 # 完全分解
+    !! [[js :<- powerset_lt_r_except_full] -> [deg(fm_(js)) < r]]
+    [len({fm_(js) | [js :<- powerset_lt_r_except_full]}) == (-1+2**r)]
+        # distinct无重复
+
+    [js :<- powerset_lt_r_except_full]:
+      [fm_(js)
+      == II[(-1+A**j*X) | [j:<-js]]
+      !! [@[j::uint] -> [(X-1)**n**j =[%{p,(-b+X**r)}]= (-1+A**j*X)]]
+      =[%{p,(-b+X**r)}]= II[(X-1)**n**j | [j:<-js]]
+      == (X-1)**sum[n**j | [j:<-js]]
+      ]
+      [fm_(js) =[%{p,(-b+X**r)}]= (X-1)**sum[n**j | [j:<-js]]]
+    [[js :<- powerset_lt_r_except_full] -> [fm_(js) =[%{p,(-b+X**r)}]= (X-1)**sum[n**j | [j:<-js]]]]
+      # 注水后，fm_(js)是(X-1)的幂方
+    !! [len({fm_(js) | [js :<- powerset_lt_r_except_full]}) == (-1+2**r)]
+    [E >= (-1+2**r)]
+
+
+    [i,j::uint]:
+      [fij_(i,j) := (j*(1-kb)+i*kb)%r]
+      [gij_(i,j) := (p**i*(n///p)**j)]
+    !! [@[i,j::uint] -> [(X-1)**(p**i*(n///p)**j) =[%{p,(-b+X**r)}]= (-1+A**(j*(1-kb)+i*kb)*X)]]
+    !! [order_mod_(p;A) == r]
+    [@[i,j::uint] -> [(X-1)**gij_(i,j) =[%{p,(-b+X**r)}]= (-1+A**fij_(i,j)*X)]]
+
+    #bug:[ls4ij := {(i,j) | [i,j:<-[0..=ceil_sqrt(r)]]}]
+      #原文是:[0..<=sqrt(r)] == [0..<=floor_sqrt(r)]
+      #xxx:奇怪，似乎范围想取多大就取多大，不太对...
+        #限制处<<==见下面: 用到[2**r-1 > n**sqrt(r)]
+
+    !! [1+floor_sqrt(r) > sqrt(r)]
+    [ls4ij := {(i,j) | [i,j:<-[0..=floor_sqrt(r)]]}]
+    [set4ij := {fij_(i,j) | [(i,j):<-ls4ij]}]
+      #or:[set4ij := {(j*(1-kb)+i*kb)%r | [(i,j):<-ls4ij]}]
+      #or:[set4ij := {(j*(1-kb)+i*kb)%r | [i,j:<-[0..=floor_sqrt(r)]]}]
+
+    [len([0..=floor_sqrt(r)]) == 1+floor_sqrt(r) > sqrt(r)]
+    [len([0..=floor_sqrt(r)]) > sqrt(r)]
+    [len(ls4ij) == len([0..=floor_sqrt(r)])**2 > sqrt(r)**2 == r]
+    [len(ls4ij) > r]
+    [set4ij |<=| {0..<r}]
+    [len(set4ij) <= len({0..<r}) == r]
+    [len(set4ij) <= r < len(ls4ij)]
+    [len(set4ij) < len(ls4ij)]
+    ?(i1,j1,i2,j2) :=> [(i1,j1),(i2,j2) <- ls4ij][(i1,j1) =!= (i2,j2)][fij_(i1,j1) == fij_(i2,j2)]
+    !! [@[i,j::uint] -> [(X-1)**gij_(i,j) =[%{p,(-b+X**r)}]= (-1+A**fij_(i,j)*X)]]
+    [(X-1)**gij_(i1,j1) =[%{p,(-b+X**r)}]= (-1+A**fij_(i1,j1)*X)]
+    [(X-1)**gij_(i2,j2) =[%{p,(-b+X**r)}]= (-1+A**fij_(i2,j2)*X)]
+    !! [fij_(i1,j1) == fij_(i2,j2)]
+    [(X-1)**gij_(i1,j1) =[%{p,(-b+X**r)}]= (X-1)**gij_(i2,j2)]
+    !! E.定义
+    [gij_(i1,j1) =[%E]= gij_(i2,j2)]
+
+    [(i,j):<-ls4ij]:
+      !! ls4ij.定义
+      [i,j<-[0..=floor_sqrt(r)]]
+      [gij_(i,j)
+      !! gij_.定义
+      == (p**i*(n///p)**j)
+      !! [i,j<-[0..=floor_sqrt(r)]]
+      <= (p**floor_sqrt(r)*(n///p)**floor_sqrt(r))
+      == (n**floor_sqrt(r))
+      ]
+      [gij_(i,j)
+      !! gij_.定义
+      == (p**i*(n///p)**j)
+      !! [i,j<-[0..=floor_sqrt(r)]]
+      >= (p**0*(n///p)**0)
+      == 1
+      ]
+      [1 <= gij_(i,j) <= (n**floor_sqrt(r))]
+    [[(i,j):<-ls4ij] -> [1 <= gij_(i,j) <= (n**floor_sqrt(r))]]
+
+
+    !! [(i1,j1),(i2,j2) <- ls4ij]
+    [1 <= gij_(i1,j1) <= (n**floor_sqrt(r))]
+    [1 <= gij_(i2,j2) <= (n**floor_sqrt(r))]
+    [abs(gij_(i1,j1) -gij_(i2,j2))
+    <= n**floor_sqrt(r) -1
+    !! [2**r > n**floor_sqrt(r)]
+    < 2**r -1
+    !! [E >= (-1+2**r)]
+    <= E
+    ]
+    [abs(gij_(i1,j1) -gij_(i2,j2)) < E]
+    !! [gij_(i1,j1) =[%E]= gij_(i2,j2)]
+    [gij_(i1,j1) == gij_(i2,j2)]
+    !! gij_.定义
+    [(p**i1*(n///p)**j1) == (p**i2*(n///p)**j2)]
+    [n**(j1-j2) == p**(-i1+i2+j1-j2)]
+    [j1 == j2]:
+      !! [n**(j1-j2) == p**(-i1+i2+j1-j2)]
+      [n**0 == p**(-i1+i2+0)]
+      [1 == p**(-i1+i2)]
+      [i1 == i2]
+      !! [(i1,j1) =!= (i2,j2)]
+      _L
+    [j1 =!= j2]
+    !! [n**(j1-j2) == p**(-i1+i2+j1-j2)]
+    [n == p**((-i1+i2+j1-j2)/(j1-j2)) == p*p**((-i1+i2)/(j1-j2))]
+    !! [n,p::uint]
+    [(-i1+i2)%(j1-j2) == 0]
+    [m := 1+(-i1+i2)///(j1-j2)]
+    [n == p**m]
+end-proof
+===
+This theorem may be essentially found in [Bernstein 2003] and (indepen dently) [Mihailescu and Avanzi 2003].
+  It was originally proved in the case of r a power of 2 by Berrizbeitia and in the case of r a prime or prime power by Cheng.
+===
+Note that using fast polynomial and integer arithmetic, the congruence (4.30) can be checked in soft_O(r*ln(n)**2) bit operations, the notation soft_O having been introduced in Section 4.5.2.
+So if r can be chosen such that r = O(ln(n)**2), we thus would have the basis for a primality test of complexity soft_O(ln(n)**4).
+===
+There are two problems with this.
+First, not every prime n has a divisor r of n-1 with log2(n)**2 < r = O(ln(n)**2);
+  in fact, it can be shown that for most primes the number n-1 does not have such a divisor r.
+Second, even if we do have such a number r, there is a problem of what to choose for b.
+  Surely, if n is prime, then there are many numbers b that will work.
+  Indeed, just choose b as a primitive root for n, and there are other choices as well.
+  So, it would be easy to find a choice for b by a random search, but we still do not know how to solve a problem like this in deterministic polynomial time without some extra assumption such as the ERH.
+===
+]]
+[[
+TODO:
+page216[227/604]
+等等，这不就是 直接将n换成n**d，反正最后都是prime_power，只不过(N-1)变得更好分解...
+  唯一不同的是，构造了一个环:(ZZ%n)[T]/(f(T))
+    这可能是必要的，否则ZZ%(n**d)里可能找不到b
+    只有有限域的本原根 保证b大量可得
+===
+Theorem__4_5_8:here
+Theorem 4.5.8.
+  Suppose n,r,d are integers with
+    n > 1,
+    r|(-1+n**d),
+    r > (d*log2(n))**2.
+      #r > (log2(n**d))**2 #一模一样
+  Suppose too that
+    f(T) is a monic polynomial in (ZZ%n)[T] of degree d,
+    set R as the ring (ZZ%n)[T]/(f(T)),
+  and suppose that b = b(T) ∈ R is such that
+    b**(-1+n**d) = 1 and
+    -1+b**((-1+n**d)///q) is a unit in R for each prime q|r.
+  If (X-1)**n**d ≡ (X**n**d -1) (mod X**r -b) in R[X],
+    then n is either a prime or prime power.
+===
+The proof of Theorem 4.5.8 is very similar to that of Theorem 4.5.7, so we will give only a sketch.
+Let p be a prime factor of n and let h(T) be an irreducible factor of f(T) modulo p.
+Set KK as the finite field (ZZ%p)[T]/(h(T)), so that KK is a homomorphic image of the ring R.
+Set N = n**d and P = p**deg(h), so that P | p**d | N.
+We identify b with its image in KK and set A = b**((N-1)///r), so that A has order r by our hypothesis.
+Then, there is some integer kb such that for all nonnegative integers j,i,
+  (X-1)**N**j ≡ -1+A**j*X (mod -b+X**r),
+  原文:(X-1)**P**i ≡ (-1+A**(i*kb))*X (mod -b+X**r),
+  订正:(X-1)**P**i ≡ (-1+A**(i*kb)*X) (mod -b+X**r),
+  where we view these as polynomials in KK[X].
+This follows in exactly the same way as in the proof of Theorem 4.5.7, and further we get that
+  (X-1)**(P**i*(N///P)**j) ≡ -1+A**(i*kb+j*(1-kb))*X (mod -b+X**r).
+If E is the order of X-1 in KK[X]/(-b+X**r), then E ≥ -1+2**r by the same argument as before.
+But again as before, there are different pairs of integers i1,j1 and i2,j2 with Ul:= P**il*(N///P)**jl ∈ [1,N √r] for l = 1,2 and U1≡ U2 (mod E).
+This forces U1=U2, and so n is a power of p (since N is a power of n and P is a power of p).
+===
+The reader is invited to observe the remarkable similarity of Theorem 4.3.3 to Theorem 4.5.8, where I,F,g of the former theorem correspond to d,r,b, respectively, in the latter.
+===
+===
+===
+===
+===
+===
+===
+We may use Theorem 4.5.8 as the basis of a fast random algorithm that is expected to supply primes with proofs that they are primes:
+Algorithm__4_5_9:here
+Algorithm 4.5.9 (Quartic-time variant of AKS test).
+  We are given an integer n > 1.
+  This random algorithm attempts to decide whether n is prime or composite, and it decides this issue correctly whenever it terminates.
+1. [Setup]
+  If n is a square or higher power, return “n is composite”;
+  Find a pair r,d of positive integers with r*d**2 minimal such that
+    r|(-1+n**d) and
+    1 < r/(d*log2(n))**2 <= (1+d)
+  Choose random monic polynomials f(T) ∈ (ZZ%n)[T] of degree d until
+    either n is declared composite
+    or f(T) is found with
+      T**n**d ≡ T (mod f(T)) and
+      -T+T**n**(d///q) is coprime to f(T) for each prime q|d;
+  Choose random polynomials b(T) ∈ (ZZ%n)[T] of degree smaller than d until
+    either n is declared composite
+    or b(T) is found with
+      b(T)**(-1+n**d) ≡ 1 (mod f(T)) and
+      -1+b(T)**((-1+n**d)///q) is coprime to f(T) for each prime q|r.
+2. [Binomial congruence]
+  If not (X-1)**n**d ≡ -1+X**n**d (mod X**r-b(T),f(T),n):
+    return “n is composite”;
+  Return “n is prime”;
+
+===
+===
+Some comments are in order.
+The search for d,r may proceed deterministically, with Theorem 4.3.5 ensuring quick success as discussed above.
+The first random search asks for a polynomial f(T) with several properties.
+Using Algorithm 4.3.2 to attempt to prove coprimality may result in a proof that n is composite if n is indeed composite.
+If n is prime, then Algorithm 4.3.2 will not declare n composite, and we will be successful in finding a polynomial f with the desired properties as soon as we choose an irreducible one; see Algorithm 2.2.10.
+Assuming that n is prime and f(T) is irreducible modulo n, the ring (ZZ%n)[T]/(f(T)) is a finite field, and the search for b(T) will be successful as soon as a primitive generator for the multiplicative group of this finite field is found, and perhaps even sooner.
+Again, if n is composite, Algorithm 4.3.2 may discover this fact.
+If n is prime, the expected running time for each item in Step [Setup] is dominated by the single computation in Step [Binomial congruence], with time bound estimated as soft_O(r*d**2*ln(n)**2).
+With d bounded by (lnlnN)**O(lnlnlnlnN), the total expected complexity is (lnN)**4*(lnlnN)**O(lnlnlnlnN).
+This expression is not quite soft_O(lnN**4), but it is of the form (lnN)**(4+o(1)).
+For this reason, Bernstein refers to the algorithm as running in “essentially” quartic time.
+If one is interested in the practical use of the Agrawal–Kayal–Saxena circle of ideas for primality testing, at present one should start with Algorithm 4.5.9.
+And since the most favorable case of this algorithm is the case d = 1, it might be best to concentrate first on this case to see whether competitive numbers can be proved prime.
+===
+===
+===
+The reader contemplating an AKS implementation might find the following remarks useful.
+Whether one attempts an implementation of the original AKS Algorithm 4.5.1 or one of the more recent variants, various of our book algorithms may be of interest.
+For example, binary-segmentation multiply, Algorithm 9.6.1, is a good candidate for computing products of polynomials with modulus, in transforming such a product to a single, large-integer multiply.
+There is also the possibility of entirely parallel evaluations of the key polynomial powers for some variants of AKS.
+The reference [Crandall and Papadopoulos 2003] gives an implementor’s perspective, with most of the notions therein applicable to all AKS variants.
+In that treatment an empirical rule of thumb is established for the straightforward Algorithm 4.5.1: One may—using the right fast algorithms—prove primality of a prime p in roughly
+  T(p) ≈ 1000*ln(p)**6 CPU operations, over the range of resolvable p.
+This is a real-world empirical result that concurs with complexity estimates of the text.
+Thus for example, the Mersenne prime p = 2**31−1 requires about 10**11 operations (and so perhaps a minute on a modern PC) with this simplest AKS approach.
+Note that the operation complexity T rises nearly two orders of magnitude when the bits in p are doubled.
+Beyond this benchmark for the easiest AKS variant, implementation considerations appear in [Bernstein 2003], whereby one gets down to the aforementioned “essentially” quartic time, and this allows primes of several hundred decimal digits to be resolvable in a day or so.
+===
+]]
+

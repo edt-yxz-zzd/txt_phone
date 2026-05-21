@@ -1,6 +1,25 @@
 
 e ../lots/NOTE/math-book/prime/The_new_book_of_prime_number_records-note.txt
 /sdcard/0my_files/book/math/factorint/snd/The new book of prime number records(3ed)(1996)(Ribenboim).djvu
+数据纟素数数量牜内:goto
+数据纟素数数量牜外:goto
+估值冫素数数量巛素数上限:goto
+  #过气:素数数量估值:goto
+倒数求和估值:goto
+
+view ../../python3_src/seed/math/prime_pint/generate_primes.py
+  estimate_upper_bound4Kth_prime_
+  素数上限牜估算值
+  素数位次讠素数上限牜估算值扌
+view ../../python3_src/seed/math/prime_pint/num_primes_le.py
+  素数数量牜精确值
+  素数上限讠素数数量牜精确值扌
+view ../../python3_src/seed/math/prime_sieve/sieve_ge_le.py
+  素数筛牜适当大区间
+
+
+
+
 view others/数学/术语/费马大定理/费马大定理之第一子类.txt
 
 [[
@@ -304,7 +323,16 @@ let UUVV(n) := transpose[[U(P,Q;n),U(P,Q;n-1),V(P,Q;n),V(P,Q;n-1)]]
   [[n>=1] -> [PRIMES_S1[n] > n*ln(n)]]
   [[n>=2] -> [n*ln(n) + n*(lnln(n)-1.0072629) <= PRIMES_S1[n]]]
   [[n>=2] -> [PRIMES_S1[n] <= 10**11] -> [n*ln(n) + n*(lnln(n)-1) <= PRIMES_S1[n]]]
-  [[n>=7022] -> [PRIMES_S1[n] <= n*ln(n) + n*(lnln(n) -0.9385)]]
+    !! [num_primes_le(10**11) == 4118054813]
+    [PRIMES_S1[4118054813] < 10**11]
+    [[2<=n<=4118054813] -> [n*ln(n) + n*(lnln(n)-1) <= PRIMES_S1[n]]]
+  bug!!![[n>=7022] -> [PRIMES_S1[n] <= n*ln(n) + n*(lnln(n) -0.9385)]] # 应当是向上取值:(-0.9384) 而非 (-0.9385)
+    发现公式病蛊:
+    view ../../python3_src/seed/math/prime_pint/bounds4kth_prime.py
+    n -> (PRIMES_S1[n]/n -(ln(n) +lnln(n) -1))
+      (7012, 70841, Fraction(982349692781576617, 14789857194304345535), 0.06642049885105616)
+      (7022, 70919, Fraction(586245561946526104, 9523926479896484331), 0.0615550280846874)
+      (8597, 88789, Fraction(2119474861271528, 32627810429541485), 0.06495915090129793)
   [PRIMES_S1[7022] == PRIMES[7021] == 70919]
   view ../../python3_src/nn_ns/math_nn/numbers/_patch_prime_..b001918.b002233.out.txt
     0 2 1 1
@@ -484,9 +512,20 @@ let UUVV(n) := transpose[[U(P,Q;n),U(P,Q;n-1),V(P,Q;n),V(P,Q;n-1)]]
   [@[x :: real] -> [x>=11] -> [num_primes_le(2*x) < 2*num_primes_le(x)]]
 
   [[x :: real][x>1]]:
-    [main_ratio4num_primesLE =[def]= num_primes_le(x)/(x*ln(x))]
-  [@[x :: real] -> [x>1] -> [main_ratio4num_primesLE(x) <= main_ratio4num_primesLE(113) ~=1.25...]]
-  [@[x :: real] -> [x>1] -> [0.95695 < main_ratio4num_primesLE(x) < 1.04423]]
+    [main_ratio4num_primesLE =[def]= num_primes_le(x)/(x/ln(x))]
+  [@[x :: real] -> [x>1] -> [main_ratio4num_primesLE(x) <= main_ratio4num_primesLE(113) == 30/(113/ln(113)) ~=1.25...]]
+    #py=>[30/(113/ln(113)) ~= 1.25505871293248]
+  # bug:[@[x :: real] -> [x>1] -> [0.95695 < main_ratio4num_primesLE(x) < 1.04423]]
+  [?[T :: real{sufficiently large}] -> @[x :: real] -> [x>T] -> [0.95695 < main_ratio4num_primesLE(x) < 1.04423]] #无用
+  #[@[x::real] -> [x>=3] -> [1/2 < main_ratio4num_primesLE(x) < 2]] #Theorem__1_1_3__Chebyshev:goto
+    #下上界
+    #过气:素数数量估值:here:见:估值冫素数数量巛素数上限
+
+  [@[x :: real] -> [x>=11] -> [main_ratio4num_primesLE(x) >= 1]]
+    #py=>[5/(11/ln(11)) ~= 1.089952396726532]
+    #py=>[5/(12/ln(12)) ~= 1.0353777707450003]
+    #py=>[4/(10/ln(10)) ~= 0.9210340371976184]
+    #py=>[4/(7/ln(7)) ~= 1.111948656603036]
 
   the_prime_number_theorem
   the_fundamental_prime_number_theorem
@@ -496,7 +535,7 @@ let UUVV(n) := transpose[[U(P,Q;n),U(P,Q;n-1),V(P,Q;n),V(P,Q;n-1)]]
     [n == num_primes_le(PRIMES_S1[n]) /~/ PRIMES_S1[n]/ln(PRIMES_S1[n])]
     [n /~/ PRIMES_S1[n]/ln(PRIMES_S1[n])]
   [num_primes_le(x) /~/ Li(x) /~/ x/ln(x)]
-    #Li更佳:
+    #Li更佳:但可能更大可能更小
     #??? [(abs(Li(x) -num_primes_le(x))) = o(abs(x/ln(x) -num_primes_le(x)))]
   [[N>=1] -> [num_primes_le(N) == num_primes_le(floor_sqrt(N)) -1+sum[mu(d)*(N//d) | [[d:<-all_divisors_of(II[p | [[p::prime][p**2<=N]]])][d<=N]]]]]
     # !! Eratosthenes sieve
@@ -1308,6 +1347,7 @@ floor(Rm(x))-num_primes_le(x)
 -5773
 -19200
 end-Table26
+数据纟素数数量牜内:here
 Table27
 x
 1 * 10**15
@@ -1432,10 +1472,12 @@ end-Table27
 ===
 ]]]
 [[[
+数据纟素数数量牜外:here
 /sdcard/0my_files/book/math/factorint/202308/Prime numbers-A Computational Perspective(2ed)(2005)(Pomerance)/Prime numbers-A Computational Perspective(2ed)(2005)(Pomerance).pdf
 page12[26/604]
 Table 1.1 Values of the prime-counting function π(x).  In recent times, distributed computation on networks has been brought to bear on the π(x) counting problem.
 ===
+n:num_primes_le(n)
 x:π(x)
 10**2:25
 10**3:168
@@ -1455,4 +1497,127 @@ x:π(x)
 The most recent values in Table 1.1, namely π(10**22), π(4*10**22), are due to X.Gourdon and P.Sebah [Gourdon and Sebah 2004].  These researchers, while attempting to establish the value of π(10**23), recently discovered an inconsistency in their program, a numerical discrepancy in regard to local sieving.  Until this problem has been rectified or there has been a confirming independent calculation, their values for π(10**22) and π(4*10**22) should perhaps be considered tentative.
 ===
 ]]]
+
+[[
+倒数求和估值:here
+copy_from:
+    view ../../python3_src/seed/math/prime_sieve/sieve_ge_le.py
+===
+[product_of_the_coprime_rates_of_prime_numbers_le_(x):=sum[(1-1/p) | [p::prime][p <= x]]]
+    # [(1-1/p) == (p-1)/p == phi(p)/p]
+[sum_of_the_inverses_of_positive_integers_le_(x):=sum[1/n | [n:<-[1..]][n <= x]]]
+[sum_of_the_inverses_of_prime_numbers_le_(x):=sum[1/p | [p::prime][p <= x]]]
+    #sum of the reciprocals of all of the primes between ...
+[sum_of_the_inverses_of_4k1_prime_numbers_le_(x):=sum[1/p | [p::prime][p%4==1][p <= x]]]
+
+[sum_of_the_inverses_of_prime_powers_le_(x):=sum[1/p**e | [p::prime][e::uint][e>=1][p**e <= x]]]
+
+==>>:
+[sum_of_the_inverses_of_prime_numbers_le_(x) == lnln(x) +C +O(1/ln(x))] where [C~=0.2615...]
+    page228[253/567]@'/sdcard/0my_files/book/math/factorint/snd/The new book of prime number records(3ed)(1996)(Ribenboim).djvu'
+    I. The Growth of pi(x)
+        A. History Unfolding
+            Erdos and Selberg
+
+[the_Euler_constant =[def]= limit{sum_of_the_inverses_of_positive_integers_le_(n) -ln(n) | n-->+oo}]
+    ~= 0.577215665....
+    page222[247/567]@'/sdcard/0my_files/book/math/factorint/snd/The new book of prime number records(3ed)(1996)(Ribenboim).djvu'
+
+or:
+[sum[N/p | [p::prime][p <= N]] == N*lnln(N) +O(N)]
+    page121[134/604]@'Prime numbers-A Computational Perspective(2ed)(2005)(Pomerance).pdf'
+        3.2.1 Sieving to recognize primes
+            formula_3_1
+
+[limit{sum[1/p | [p::prime][sqrt(N) < p <= N]] | N-->+oo} == ln(2) ~= 0.6931471805599453]
+[sum_of_the_inverses_of_prime_numbers_le_(sqrt(x)) == lnln(x) +O(1)]
+[1/2+2*sum_of_the_inverses_of_4k1_prime_numbers_le_(x) == lnln(x) +O(1)]
+    page125[138/604]@'Prime numbers-A Computational Perspective(2ed)(2005)(Pomerance).pdf'
+
+[sum_of_the_inverses_of_prime_numbers_le_(x) == lnln(x) +B +o(1)] where [B:=the_Mertens_constant=the_Euler_constant+sum[(ln(1-1/p)+1/p) | [p::prime]]]
+    formula_1_21
+    <<==:
+[[x-->+oo] => [product_of_the_coprime_rates_of_prime_numbers_le_(x) ~ 1/e**the_Euler_constant/ln(x)]]
+    #<==>:
+    [limit{(product_of_the_coprime_rates_of_prime_numbers_le_(x) * ln(x)) | [x-->+oo]} == 1/e**the_Euler_constant]
+    page35[49/604]@'Prime numbers-A Computational Perspective(2ed)(2005)(Pomerance).pdf'
+    Theorem__1_4_2 (Mertens)
+    the Mertens Theorem 1.4.2
+    the_Mertens_Theorem__1_4_2
+        用于分析:轮子互素占比@Algorithm__3_2_2(Fancy Eratosthenes sieve)
+    !! [轮子最大素数{轮子规模:=M} ~ (ln(M))]
+    !! [下一个轮子规模{轮子规模:=M} == 轮子规模{筛子规模:=M} * 下一个素数{轮子最大素数{轮子规模:=M}}]
+    => [下一个轮子规模{轮子规模:=M} ~ 轮子规模{筛子规模:=M} * (ln(M))]
+    !! [轮子规模{筛子规模:=N} <= N/ln(N) < 下一个轮子规模{筛子规模:=N}]
+    => [轮子最大素数{筛子规模:=N} ~ (ln(轮子规模{筛子规模:=N})) ~ ln(N/ln(N)) ~ ln(N)]
+    => [轮子规模{筛子规模:=N} ~ (N/ln(N))]
+    => [轮子互素占比{筛子规模:=N} ~ product_of_the_coprime_rates_of_prime_numbers_le_(轮子最大素数{筛子规模:=N}) ~ 1/e**the_Euler_constant/ln(轮子最大素数{筛子规模:=N}) ~ 1/e**the_Euler_constant/ln(ln(N/ln(N))) == O(1/lnln(N))]
+    => [N*轮子互素占比{筛子规模:=N} == O(N/lnln(N))]
+
+[轮子最大素数{轮子规模:=M} ~ (ln(M))]
+    <<==:
+    view ../../python3_src/seed/math/prime_gens.py.note.txt
+        [@[x::real] -> [x > 0] -> [II{p | [p::prime][p <= x]} == e**((1+o(1))*x)]]
+
+
+===
+Algorithm__3_2_2
+Algorithm 3.2.2 (Fancy Eratosthenes sieve)
+    page126[139/604]@'Prime numbers-A Computational Perspective(2ed)(2005)(Pomerance).pdf'
+    优点:改进原筛效率:O(N*lnln(N)) --> O(N/lnln(N))
+
+
+==>>:
+我:[sum_of_the_inverses_of_prime_powers_le_(x) == O(lnln(x))]
+    #用于 _sieve_p_,_sieve_p_0_
+    <<==:
+我:[sum_of_the_inverses_of_prime_powers_le_(x) <= 2*lnln(x) +O(1)]
+    [[proof:
+    [f(p;x) := sum[1/p**e | [e::uint][e>=1][p**e <= x]]]
+    [p::prime][p <= x]:
+        [p >= 2]
+        [f(p;x)
+        :> [ep:=floor_log_(p;x)]
+        !! [p <= x]
+        => [ep >= 1]
+        == sum[1/p**e | [e:<-[1..=ep]]]
+        == 1/p*(1-1/p**ep)/(1-1/p)
+        !! [ep >= 1]
+        < 1/p*(1-0)/(1-1/p)
+        == 1/p *p/(p-1)
+        == 1/p *(1 +1/(p-1))
+        !! [p >= 2]
+        <= 1/p *(1 +1/(2-1))
+        == 2/p
+        ]
+        [f(p;x) < 2/p]
+    [@[p::prime][p <= x] -> [f(p;x) < 2/p]]
+
+    [sum_of_the_inverses_of_prime_powers_le_(x)
+    == sum[1/p**e | [p::prime][e::uint][e>=1][p**e <= x]]
+    == sum[sum[1/p**e | [e::uint][e>=1][p**e <= x]] | [p::prime]]
+    == sum[sum[1/p**e | [e::uint][e>=1][p**e <= x]] | [p::prime][p <= x]]
+    == sum[f(p;x) | [p::prime][p <= x]]
+    !! [@[p::prime][p <= x] -> [f(p;x) < 2/p]]
+    < sum[2/p | [p::prime][p <= x]]
+    == 2 *sum[1/p | [p::prime][p <= x]]
+    == 2 *sum_of_the_inverses_of_prime_numbers_le_(x)
+    !! [sum_of_the_inverses_of_prime_numbers_le_(x) == lnln(x) +C +O(1/ln(x))] where [C~=0.2615...]
+    == 2*lnln(x) +O(1)
+    ]
+    [sum_of_the_inverses_of_prime_powers_le_(x) <= 2*lnln(x) +O(1)]
+    ok
+    ]]
+
+]]
+[[
+过气:素数数量估值:here:again:
+Theorem 1.1.3 (Chebyshev). There are positive numbers A,B such that for all x ≥ 3, [1/2 <= A < π(x)/(x/ln(x)) < B <= 2]
+    page10[24/604]@'Prime numbers-A Computational Perspective(2ed)(2005)(Pomerance).pdf'
+    1.1.5 How primes are distributed
+[@[x::real] -> [x>=3] -> [1/2 < (num_primes_le(x)/(x/ln(x))) < 2]]
+    #Theorem__1_1_3__Chebyshev:here
+[@[x::real] -> [x>=3] -> [1/2 < main_ratio4num_primesLE(x) < 2]]
+
+]]
 

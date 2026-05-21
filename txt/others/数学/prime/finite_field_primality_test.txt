@@ -1,0 +1,726 @@
+
+e others/数学/prime/finite_field_primality_test.txt
+泛化: (n-1) test, (n+1) test --> (n**I-1) test
+  (n+1) test 近似于 (n**2-1) test
+
+
+[x**/y =[def]= x**(1/y)]
+[[
+目录:
+Theorem__4_2_12:goto
+  Algorithm__4_2_11:goto
+    #算法牜快速找出所有因子乊特定剩余类:goto
+Theorem__4_3_5:goto
+  #I(x)递增速率
+
+Theorem__4_3_3:goto
+  Algorithm__4_3_4:goto
+    #finite_field_primality_test
+]]
+
+TODO-halfDONE:算法牜快速找出所有因子乊特定剩余类:goto
+  改进:c取值范围
+    假设未必[s**3 >= n]
+    调整i2LB4c,i2UB4c @[i%2==0] 进而影响@[i%2==1]
+  见:改进版
+TODO-halfDONE:算法牜快速找出所有因子乊特定剩余类:goto
+e ../../python3_src/seed/math/divisors_in_residue_classes.py
+  iter_divisors_in_residue_class_(n, m, r) -> Iter d
+  DONE:++kX
+  TODO:原文cbrt vs 我版sqrt 是怎么回事？
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+'Prime numbers-A Computational Perspective(2ed)(2005)(Pomerance).pdf'
+
+.+1,$s/−/-/g
+[[
+I(x)
+===
+view script/辅助冫素性判定牜高斯和.py
+  I(x)
+===
+Theorem__4_3_5:goto#形式化here
+[?[c::real] -> [@[x::real] -> [x>16] -> [I(x) < ln(x)**(c*lnlnln(x))]]]
+  #耗时近乎多项式时间
+  #I(x)递增速率
+[x::real]:
+    [I(x) =[def]= min{I | [[I:<-[1..]][is_squarefree_(I)][II[p | [[p::prime][I%(p-1)==0]]] > x]]}]
+      # [I%(p-1)==0] <==> [I%phi(p)==0] ==>> [n**I %p == 1]
+
+===
+@20260423
+4.3 The finite field primality test
+  #This section is primarily theoretical and is not intended to supply a practical primality test.  The algorithm described has a favorable complexity estimate, but there are other, more complicated algorithms that majorize it in practice.  Some of these algorithms are discussed in the next section. 
+  #已有更快素性判定算法，这里摘录I(x)
+
+page193[205/604]
+An interesting observation is that we can pick up some small primes in (n**I-1) with very little work.
+  For example, suppose I = 12.
+  Then (n**I-1) is a multiple of 65520 = 24*32*5*7*13, provided that n is coprime to 65520.
+  In general, if q is a prime power that is coprime to n and ϕ(q)|I, then q|(n**I-1).
+    This is just an assertion of the Euler theorem;
+see (2.2).
+      (If q is a power of 2 higher than 4, then we need only (ϕ(q)/2)|I.)
+  Can such “cheap” divisors of (n**I-1) amount to much?
+    Indeed they can.
+  For example, say I = 7!  = 5040.
+    Then if n is not divisible by any prime up to 2521,
+    then (n**5040-1) is divisible by 15321986788854443284662612735663611380010431225771200 = (2**6*3**3*5**2*7**2*11*13*17*19*29*31*37*41*43*61*71*73*113*127*181*211*241*281*337*421*631*1009*2521).
+  So I = 5040 can be used in Algorithm 4.3.4 for primes n up to 3.5*10**156(and exceeding 2521).
+    # Step [Divisor search] => [F >= n**/3]而非[F >= n**/2]
+    # [15321986788854443284662612735663611380010431225771200.0**3 ~= 3.59703986176442e+156]
+From the above example with I = 5040 one might expect that in general a choice of I with enough “cheap” factors in (n**I-1) is a fairly small function of n.
+  Indeed, we have the following theorem, which appeared in [Adleman et al. 1983].
+  The proof uses some deep tools in analytic number theory.
+Theorem__4_3_5:here
+Theorem 4.3.5.
+  Let I(x) be the least positive squarefree integer I
+    such that the product of the primes p with (p-1)|I exceeds x.
+  Then there is a number c such that I(x) < ln(x)**(c*lnlnln(x)) for all x > 16.
+    # 『lnlnln(x)』 => 『x > 16』
+The reason for assuming x > 16 is to ensure that the triple-logarithm is positive.
+It is not necessary in the results so far that I be squarefree, but because of an algorithm in the next section, this condition is included in the above result.
+Corollary 4.3.6.
+  There is a positive number c_ such that the expected running time for Algorithm 4.3.4 to declare a prime input n to be prime is less than ln(n)**(c_*lnlnln(n)).
+    # 前文: (We make no assertion on the expected running time for composite inputs.)
+    # 素数输入则耗时近乎多项式
+Since the triple log function grows so slowly, this running-time bound is “almost” ln(n)**O(1), and so is “almost” polynomial time.
+4.4 Gauss and Jacobi sums
+===
+]]
+.+1,$s/qi/q[i]/g
+s/ai/a[i]/g
+.+1,$s/bi/b[i]/g
+s/ci/c[i]/g
+[[
+===
+page186[198/604]
+Chapter 4 PRIMALITY PROVING
+4.2 The n + 1 test
+4.2.3 Divisors in residue classes
+  #算法牜快速找出所有因子乊特定剩余类:here
+  #算法:快速找出形如(q*F+r)的因子
+  #用于 [n**/3 < F < n**/2]@Theorem 4.2.10
+  #     或者:when F/n**/3 is not too small.
+Algorithm__4_2_11:here
+Theorem__4_2_12:goto
+Algorithm 4.2.11 (Divisors in residue classes).
+  We are given positive integers n,r,s with r < s < n and gcd(r,s) = 1.#补丁:[n%s =!= 0]
+  This algorithm creates a list of all divisors of n that are congruent to r (mod s).
+  1. [Initialize]
+    rv := r**-1 mod s;
+      # 1/r %s
+    r_ := n*rv mod s;
+      # n/r %s
+    (a0,a1) := (s,r_*rv mod s);
+      # (s, n/r**2 %s)
+      # [a0 > a1 > 0]
+      #   这里得有:[n%s =!= 0] => [a1>0]
+      # [s > a1 >= a[t-1] == gcd(n,s)]
+      # [gcd(n,s)][r:=n**j%s for all j] => [min min_AB6odd == 1]
+    (b0,b1) := (0,1);
+    ???bug??? 原文: (c0,c1) := (0,(n*rv -r*a1)/s mod s);
+      # (0,(n/r%s -r*(n/r**2%s))///s %s)
+    改为 (c0,c1) := (0,(n*rv -r*r_*rv)///s mod s);
+  2. [Euclidean chains]
+    Develop the Euclidean sequences (a[i]),(q[i]), where
+      a[i] := a[i-2] -q[i]*a[i-1]
+      and
+        0 ≤ a[i] < a[i-1] for i even,
+        0 < a[i] ≤ a[i-1] for i odd,
+        terminating at a[t]= 0 with t even;
+      <==>:
+      * [a[i-1] == 0]:
+        [t := i-1]
+        [t%2==0]
+      * [a[i-1] =!= 0]:
+        [i-1 < t]
+        * [i%2==0]:
+          [(q[i],a[i]) := divmod(a[i-2],a[i-1])]
+          [0 <= a[i] < a[i-1]] # [i>=2]
+          [q[i] > 0] # [i>=2]
+        * [i%2==1]:
+          [(q[i],a[i]-1) := divmod(a[i-2]-1,a[i-1])]
+          [0 <= a[i]-1 < a[i-1]]
+          [0 < a[i] <= a[i-1]] # [i>=3]
+          !! [a0 > a1 > 0]
+          [0 < a[1] <= a[0]]
+          [0 < a[i] <= a[i-1]] # [i>=1]
+            # => [t%2==0]
+          [q[i] > 0] # [i>=3]
+        [q[i] > 0] # [i>=2]
+        [0 +[i%2==1] <= a[i] < a[i-1] +[i%2==1]] # [i>=1]
+    Develop the sequences (b[i]),(c[i]) for i = 0,1,...,t with the rules
+      b[i] := b[i-2] -q[i]*b[i-1],
+      c[i] := c[i-2] -q[i]*c[i-1];
+  3. [Loop]
+    for(0 ≤ i ≤ t) {
+      For each integer c ≡ c[i] (mod s) with
+          |c| < s if i is even,
+          ???bug??? 原文:2*a[i]*b[i] < c < a[i]*b[i] + n/s**2 if i is odd,
+          改为:2*a[i]*b[i] <= c <= a[i]*b[i] + n/s**2 if i is odd,
+        attempt to solve the following system for x,y:
+          x*a[i] +y*b[i] == c,
+          (x*s + r)*(y*s + r_) == n;
+            # (4.16)
+        If a nonnegative integral solution (x,y) is found, report (x*s + r) as a divisor of n that is also ≡ r (mod s);
+    }
+The theoretical justification for this algorithm is as follows:
+===
+page187[199/604]
+Theorem__4_2_12:here
+Algorithm__4_2_11:goto
+Theorem 4.2.12 (Lenstra).
+  Algorithm 4.2.11 creates the list of all divisors of n that are congruent to r (mod s).
+  Moreover, if s ≥ n**/3, then the running time is O(ln(n)) arithmetic operations on integers of size O(n) and O(ln(n)) evaluations of the integer part of square root for arguments of size O(n**7).
+
+===
+ie. Theorem__4_2_12 ==:
+  Algorithm__4_2_11 输出n的所有型如(x*s+r)的因子
+    [[s**3 > n] -> [耗时:O(ln(n)) * (__mul__{n} + sqrt{n**7})]]
+~~<==>:
+[@[n,s,r::uint] -> [0 < r < s < n] -> [gcd(r,s) = 1] -> [n%s =!= 0] -> []
+  -> [rv := r**-1%s]
+  -> [r_ := n*rv%s]
+  -> [(a[0],a[1]) := (s,r_*rv%s)]
+  -> [(b[0],b[1]) := (0,1)]
+  -> [(c[0],c[1]) := (0,(n*rv -r*r_*rv)///s%s)]
+  -> [(q[0],q[1]) := (-oo,-oo)]
+  -> [?[t::uint] -> [[t>=2][a[t]==0][@[i:<-2..=t] -> [(q[i],a[i]-[i%2==1]) := divmod(a[i-2]-[i%2==1],a[i-1])]]]]
+  -> [@[i:<-2..=t] -> [b[i] := b[i-2] -q[i]*b[i-1]][c[i] := c[i-2] -q[i]*c[i-1]]]
+  -> [B := max{abs(b[i]) | [i:<-[0..=t]]}]
+  -> @[kX::real{>0}]
+  -> [@[i:<-[0..=t]] -> [i2LB4c[i] := if [i%2==0] then -(ceil(kX*s)-1) else ceil(2*kX*a[i]*b[i])]]
+  -> [@[i:<-[0..=t]] -> [i2UB4c[i] := if [i%2==0] then +(ceil(kX*s)-1) else floor(kX*a[i]*b[i] + n/s**2/kX)]]
+  -> [@[i:<-[0..=t]] -> [i2cs[i] := range(c[i]+ceil_div(i2LB4c[i]-c[i],s)*s, 1+i2UB4c[i], s)]]
+    # [i2cs[i] := {c | [[c::int][c =[%s]= c[i]][i2LB4c[i] <= c <= i2UB4c[i]]]}]
+  -> [@[i:<-[0..=t]] -> @[j:<-[0..<len(i2cs[i])]] -> [ij2eqn_system4XY[i,j] := [[X*a[i] +Y*b[i] == i2cs[i][j]][(X*s + r)*(Y*s + r_) == n]]]]
+  -> [@[i:<-[0..=t]] -> @[j:<-[0..<len(i2cs[i])]] -> [ij2eqn4Z[i,j] := [z**2 -(i2cs[i][j]*s + r*a[i] + r_*b[i])*z +(n*a[i]*b[i]) == 0]]]
+  -> [@[i:<-[0..=t]] -> @[j:<-[0..<len(i2cs[i])]] -> [ij2DET4eqn4Z[i,j] := (i2cs[i][j]*s + r*a[i] + r_*b[i])**2 -4*n*a[i]*b[i]]] # def:DET{ij2eqn4Z[i,j]}
+  -> [
+    #bug:[t <= 1+log_((1+sqrt5)/2;s)]
+    [t <= 2+log_((1+sqrt5)/2;sqrt5*s)]
+    [t == O(ln(n))]
+    [t%2==0]
+    [b[t] < 0]
+    [B == -b[t]]
+    #bug:[s**(3/2) > 2**t]
+    [s**(3/2) > 2**(t-3.672276) > 2**t /12.748681]
+    [[s**3 >= n] -> [B <= 2**t*s < 12.748681*s**(5/2)]]
+
+    [[i:<-[1..=t]] -> [0 +[i%2==1] <= a[i] < a[i-1] +[i%2==1]]]
+    [[i:<-[2..=t]] -> [q[i] > 0]]
+    [[i:<-[0..=t]] -> [if i==t then [a[i] == 0] else [a[i] > 0]]]
+    [[i:<-[0..=t]] -> [sign_of(b[i]) == if i==0 then 0 else (-1)**(i+1)]]
+    [[i:<-[0..<t]] -> [b[i+1]*a[i] -a[i+1]*b[i] == s*(-1)**i]]
+
+    [[kX==1] -> @[i:<-[0..=t]] -> [len(i2cs[i]) <= [i%2==0]2 + [i%2==1](1+floor(n/s**3))]]
+    [[kX==1] -> [s**3 >= n] -> @[i:<-[0..=t]] -> [len(i2cs[i]) <= 2]]
+
+    [@[x::uint] -> [n%(x*s+r) == 0] -> [y := n///(x*s+r) %s]
+    -> [@[i:<-[0..=t]] -> [i2c6xy[i] := (x*a[i] +y*b[i])]] # def:c#c[i]的某个解压值
+    #bug: [@[i:<-[0..=t]] -> [i2eqn_system4xy[i] := [[x*a[i] +y*b[i] == i2c6xy[i]][(x*s + r)*(y*s + r_) == n]]]]
+    #bug: [i2eqn4z[i] := [z**2 -(c*s + r*a[i] + r_*b[i])*z +(n*a[i]*b[i]) == 0]]
+    #bug: [@[i:<-[0..=t]] -> [i2DET6z[i] := (i2c6xy[i]*s + r*a[i] + r_*b[i])**2 -4*n*a[i]*b[i]]] # def:DET{i2eqn4z[i]}
+    -> [
+      [@[i:<-[0..=t]] -> @[j:<-[0..<len(i2cs[i])]] -> [i2cs[i][j] == i2c6xy[i]] -> [[roots_of(ij2eqn4Z[i,j]) == {(x*s + r)*a[i], (y*s + r_)*b[i]}][sqrt(ij2DET4eqn4Z[i,j]) %1.0 == 0.0]]]
+      [@[i:<-[0..=t]] -> @[j:<-[0..<len(i2cs[i])]] -> [O(sqrt{ij2DET4eqn4Z[i,j]}) == O(sqrt{s**7}) == O(sqrt{n**7})]]
+
+      [?[k:<-[0..=t]] -> [i2c6xy[k] <- i2cs[k]]]
+        # [[@[i:<-[0..=t]] -> [i2c6xy[i] =[%s]= c[i]]][?[j:<-[0..=t]] -> [[[j%2==0][abs(i2c6xy[i]) < kX*s]]or[[j%2==1][2*kX*a[j]*b[j] <= i2c6xy[i] <= n/s**2/kX +kX*a[j]*b[j]]]]]]
+        # let [min_AB6odd := min{(a[1+2*j]*b[1+2*j]) | [j:<-[0..<t///2]]}]
+        # [min_AB6odd > 0]
+        # !! [2*kX*s == n/s**2/kX -kX*min_AB6odd] => [kX == sqrt(n/s**2/(s+min_AB6odd))]
+        # let [kX := sqrt(n/s**2/(2*s+min_AB6odd))]
+        # [len(i2cs[i]) <= 1+floor(2*kX)]
+        # [len(i2cs[i]) <= 1+floor(2*kX) == 1+floor_sqrt(4*n/s**2/(2*s+min_AB6odd))]
+        # !! [gcd(n,s)][r:=n**j%s for all j] => [min min_AB6odd == 1]
+        # [len(i2cs[i]) <= 1+floor_sqrt(4*n/s**2/(2*s+1))]
+        # [len(i2cs[i]) == O(sqrt(n/s**3))]
+      ]
+    ]
+  ]
+]
+  #原文:无[n%s =!= 0] 无法保证 [a1>0]
+  #原文:[(c0,c1) := (0,(n*rv -r*a1)///s%s)] 但是 [a1==r_*rv%s =[未必]= r_*rv%s**2 == r_*rv]
+  #原文:[2*a[j]*b[j] < (x*a[j] + y*b[j]) < n/s**2 +a[j]*b[j]] 使用『<』而非『<=』但是[a[t] == 0][b[0] == 0] #[j%2==1]:i2UB4c,i2LB4c
+  #原文:(n**/3/s)而非(n/s**3)
+===
+proof:
+  [[i:<-[1..=t]] -> [0 +[i%2==1] <= a[i] < a[i-1] +[i%2==1]]]
+  [[i:<-[2..=t]] -> [q[i] > 0]]
+
+  [a[t] == 0]
+  [[i:<-[0..<t]] -> [a[i] > 0]]
+
+  [[i:<-[0..=t]] -> [if i==t then [a[i] == 0] else [a[i] > 0]]]
+    # (4.17)
+
+  !! 归纳法:
+  * [i==0]:
+    [b[1]*a[0] -a[1]*b[0] == 1*s -a1*0 == s == s*(-1)**0]
+  * [i>0][b[i]*a[i-1] -a[i]*b[i-1] == s*(-1)**(i-1)]:
+    [b[i+1]*a[i] -a[i+1]*b[i] == (b[i-1] -q[i+1]*b[i])*a[i] -(a[i-1] -q[i+1]*a[i])*b[i] == b[i-1]*a[i] -a[i-1]*b[i] == -s*(-1)**(i-1) == s*(-1)**i]
+    [b[i+1]*a[i] -a[i+1]*b[i] == s*(-1)**i]
+  !! induction
+  [[i:<-[0..<t]] -> [b[i+1]*a[i] -a[i+1]*b[i] == s*(-1)**i]]
+    # (4.18)
+
+  * [i==0]:
+    [b0 == 0]
+    [sign_of(b[i]) == 0]
+  * [i==1]:
+    [b1 == 1]
+    [sign_of(b[i]) == +1 == (-1)**(i+1)]
+  * [i>=2][[j:<-[0..<i]] -> [sign_of(b[j]) == if j==0 then 0 else (-1)**(j+1)]]:
+    !! [[i:<-[2..=t]] -> [q[i] > 0]]
+    [q[i] > 0]
+
+    !! [[j:<-[0..<i]] -> [sign_of(b[j]) == if j==0 then 0 else (-1)**(j+1)]]
+    [sign_of(b[i-2]) == (-1)**(i-2+1) == -(-1)**i]
+    [sign_of(b[i-1]) == (-1)**(i-1+1) == (-1)**i]
+    !! [b[i] := b[i-2] -q[i]*b[i-1]]
+    !! [q[i] > 0]
+    [sign_of(b[i]) == sign_of(b[i-2]) == -(-1)**i]
+  !! induction
+  [[i:<-[0..=t]] -> [sign_of(b[i]) == if i==0 then 0 else (-1)**(i+1)]]
+    # (4.19)
+  !! [t%2==0]
+  !! [t > 0]
+  [t >= 2]
+  [sign_of(b[t]) == -1]
+  [b[t] < 0]
+
+  [x::uint][n%(x*s+r) == 0]:
+    ?y :=> [y::uint][n == (x*s+r)*(y*s+r_)]
+    [n == x*y*s**2 + (x*r_+y*r)*s + r*r_]
+    [n =[%s**2]= (x*r_+y*r)*s + r*r_]
+    [n - r*r_ =[%s**2]= (x*r_+y*r)%s*s]
+    [n*rv - r*r_*rv =[%s**2]= (x*r_*rv+y*r*rv)%s*s =[%s**2]= (x*n*rv**2+y*1)%s*s]
+    [(n*rv - r*r_*rv)///s =[%s]= (x*n*rv**2+y*1)]
+    ...原文c1定义 无法继续推导...
+    ...使用改动后的c1定义:
+    [c1 == (n*rv - r*r_*rv)///s =[%s]= (x*n*rv**2+y*1)]
+    [c1 =[%s]= (x*n*rv**2+y*1)]
+
+
+    * [i==0]:
+      [x*a[0] +y*b[0] == x*s +y*0 == x*s =[%s]= 0 == c[0]]
+      [x*a[i] +y*b[i] =[%s]= c[i]]
+    * [i==1]:
+      !! [c1 =[%s]= (x*n*rv**2+y*1)]
+      [x*a[1] +y*b[1] == x*(n*rv**2 %s) +y*1 =[%s]= c1]
+      [x*a[i] +y*b[i] =[%s]= c[i]]
+    * [i>=2][[j:<-[0..<i]] -> [x*a[j] +y*b[j] =[%s]= c[j]]]:
+      [x*a[i] +y*b[i]
+      == x*(a[i-2] -q[i]*a[i-1]) +y*(b[i-2] -q[i]*b[i-1])
+      == x*a[i-2] +y*b[i-2] -q[i]*(x*a[i-1] +y*q[i]*b[i-1])
+      =[%s]= c[i-2] -q[i]*c[i-1]
+      == c[i]
+      ]
+      [x*a[i] +y*b[i] =[%s]= c[i]]
+    !! induction
+    [[i:<-[0..=t]] -> [x*a[i] +y*b[i] =[%s]= c[i]]]
+        #接下来，找出c[i]的取值范围，以便去掉『%s』
+
+    !! [a0 == s]
+    !! [s > 0]
+    [a0 > 0]
+    !! [b0 == 0]
+    !! [x >= 0]
+    !! [a0 > 0]
+    [x*a[0] + y*b[0] == x*a0 >= 0]
+
+    !! [a[t] == 0]
+    !! [y >= 0]
+    !! [b[t] < 0]
+    [x*a[t] + y*b[t] == y*b[t] <= 0]
+
+    !! [t%2==0]
+    !! [t > 0]
+    ### ?j :=> [j:<-[0,2..<t]][j%2==0][x*a[j] + y*b[j] >= 0][x*a[j+2] + y*b[j+2] <= 0]
+    ?k :=> [k:<-[0..<t///2]][x*a[2*k] + y*b[2*k] >= 0][x*a[2*k+2] + y*b[2*k+2] <= 0]
+
+    [2*k+2 <= t]
+    [2*k+1 < t]
+    !! [[i:<-[0..=t]] -> [if i==t then [a[i] == 0] else [a[i] > 0]]]
+    [a[2*k+1] > 0]
+    [a[2*k] > 0]
+    [a[2*k+2] >= 0]
+
+    !! [[i:<-[0..=t]] -> [sign_of(b[i]) == if i==0 then 0 else (-1)**(i+1)]]
+    [b[2*k] <= 0]
+    [b[2*k+1] > 0]
+    [b[2*k+2] < 0]
+
+    !! [[i:<-[0..<t]] -> [b[i+1]*a[i] -a[i+1]*b[i] == s*(-1)**i]]
+    [b[2*k+1]*a[2*k] -a[2*k+1]*b[2*k] == s*(-1)**(2*k) == s]
+    [b[2*k+2]*a[2*k+1] -a[2*k+2]*b[2*k+1] == s*(-1)**(2*k+1) == -s]
+
+    [x*a[2*k] + y*b[2*k] >= +s][x*a[2*k+2] + y*b[2*k+2] <= -s]:
+      #改进版:『[x*a[2*k] + y*b[2*k] >= +sU == +s*kU][x*a[2*k+2] + y*b[2*k+2] <= -sL == -s*kL]:』
+      [x*a[2*k]
+      !! [y >= 0]
+      !! [b[2*k] <= 0]
+      >= x*a[2*k] + y*b[2*k]
+      !! [x*a[2*k] + y*b[2*k] >= +s]
+      #改进版:『[x*a[2*k] + y*b[2*k] >= +sU == +s*kU]』
+      >= +s
+      !! [b[2*k+1]*a[2*k] -a[2*k+1]*b[2*k] == s]
+      == b[2*k+1]*a[2*k] -a[2*k+1]*b[2*k]
+      !! [b[2*k] <= 0]
+      !! [a[2*k+1] > 0]
+      >= b[2*k+1]*a[2*k]
+      #改进版:『>= kU*b[2*k+1]*a[2*k]』
+      ]
+      [x*a[2*k] >= b[2*k+1]*a[2*k]]
+      !! [a[2*k] > 0]
+      [x >= b[2*k+1]]
+      #改进版:『[x >= kU*b[2*k+1]]』
+
+
+      [y*b[2*k+2]
+      !! [x >= 0]
+      !! [a[2*k+2] >= 0]
+      <= x*a[2*k+2] + y*b[2*k+2]
+      !! [x*a[2*k+2] + y*b[2*k+2] <= -s]
+      #改进版:『[x*a[2*k+2] + y*b[2*k+2] <= -sL == -s*kL]』
+      <= -s
+      !! [b[2*k+2]*a[2*k+1] -a[2*k+2]*b[2*k+1] == -s]
+      == b[2*k+2]*a[2*k+1] -a[2*k+2]*b[2*k+1]
+      !! [a[2*k+2] >= 0]
+      !! [b[2*k+1] > 0]
+      <= b[2*k+2]*a[2*k+1]
+      #改进版:『<= kL*b[2*k+2]*a[2*k+1]』
+      ]
+      [y*b[2*k+2] <= b[2*k+2]*a[2*k+1]]
+      !! [b[2*k+2] < 0]
+      [y >= a[2*k+1]]
+      #改进版:『[y >= kL*a[2*k+1]]』
+
+      !! [x >= b[2*k+1]]
+      !! [y >= a[2*k+1]]
+      !! [a[2*k+1] > 0]
+      !! [b[2*k+1] > 0]
+      [x*a[2*k+1] + y*b[2*k+1] >= 2*a[2*k+1]*b[2*k+1]]
+      #改进版:『[x*a[2*k+1] + y*b[2*k+1] >= (kU+kL)*a[2*k+1]*b[2*k+1]]』
+      #or:改进版:『[kL*x*a[2*k+1] + kU*y*b[2*k+1] >= 2*kL*kU*a[2*k+1]*b[2*k+1]]』
+
+      !! [x >= b[2*k+1]]
+      !! [y >= a[2*k+1]]
+      [(x -b[2*k+1])*(y -a[2*k+1]) >= 0]
+      #改进版:『[(x -kU*b[2*k+1])*(y -kL*a[2*k+1]) >= 0]』
+      [x*a[2*k+1] + y*b[2*k+1] <= x*y +a[2*k+1]*b[2*k+1]]
+      #改进版:『[kL*x*a[2*k+1] + kU*y*b[2*k+1] <= x*y +kL*kU*a[2*k+1]*b[2*k+1]]』
+      !
+      !! [n == x*y*s**2 + (x*r_+y*r)*s + r*r_]
+      [n >= x*y*s**2]
+      !! [s > 0]
+      [x*y <= n/s**2]
+      [x*a[2*k+1] + y*b[2*k+1] <= n/s**2 +a[2*k+1]*b[2*k+1]]
+      #改进版:『[kL*x*a[2*k+1] + kU*y*b[2*k+1] <= n/s**2 +kL*kU*a[2*k+1]*b[2*k+1]]』
+      [2*a[2*k+1]*b[2*k+1] <= x*a[2*k+1] + y*b[2*k+1] <= n/s**2 +a[2*k+1]*b[2*k+1]]
+      #改进版:『[2*kL*kU*a[2*k+1]*b[2*k+1] <= kL*x*a[2*k+1] + kU*y*b[2*k+1] <= n/s**2 +kL*kU*a[2*k+1]*b[2*k+1]]』
+        #c[k]解压范围:『<=』
+        #???bug???原文:『<』:[2*a[2*k+1]*b[2*k+1] < x*a[2*k+1] + y*b[2*k+1] < n/s**2 +a[2*k+1]*b[2*k+1]]
+    [[[x*a[2*k] + y*b[2*k] >= +s][x*a[2*k+2] + y*b[2*k+2] <= -s]] -> [2*a[2*k+1]*b[2*k+1] <= x*a[2*k+1] + y*b[2*k+1] <= n/s**2 +a[2*k+1]*b[2*k+1]]]
+    #改进版:『[kX==kL==kU] => [2*kX*a[2*k+1]*b[2*k+1] <= x*a[2*k+1] + y*b[2*k+1] <= n/s**2/kX +kX*a[2*k+1]*b[2*k+1]]』
+    [[?[j:<-[0..=t]] -> [[j%2==0][abs(x*a[j] + y*b[j]) < s]]]or[?[j:<-[0..=t]] -> [[j%2==1][2*a[j]*b[j] <= (x*a[j] + y*b[j]) <= n/s**2 +a[j]*b[j]]]]]
+    [?[j:<-[0..=t]] -> [[[j%2==0][abs(x*a[j] + y*b[j]) < s]]or[[j%2==1][2*a[j]*b[j] <= (x*a[j] + y*b[j]) <= n/s**2 +a[j]*b[j]]]]]
+    #改进版:『[kX==kL==kU] => [?[j:<-[0..=t]] -> [[[j%2==0][abs(x*a[j] + y*b[j]) < kX*s]]or[[j%2==1][2*kX*a[j]*b[j] <= (x*a[j] + y*b[j]) <= n/s**2/kX +kX*a[j]*b[j]]]]]』
+    [[i:<-[0..=t]] -> [x*a[i] +y*b[i] =[%s]= c[i]]]
+
+  [@[x::uint] -> [n%(x*s+r) == 0] -> [y := n///(x*s+r) %s] -> [[[i:<-[0..=t]] -> [x*a[i] +y*b[i] =[%s]= c[i]]][?[j:<-[0..=t]] -> [[[j%2==0][abs(x*a[j] + y*b[j]) < s]]or[[j%2==1][2*a[j]*b[j] <= (x*a[j] + y*b[j]) <= n/s**2 +a[j]*b[j]]]]]]]
+        #c[k]压缩值 暨 #c[k]解压范围
+  #改进版:『[@[x::uint] -> [n%(x*s+r) == 0] -> [y := n///(x*s+r) %s] -> @[kX::real] -> [kX > 0] -> [[[i:<-[0..=t]] -> [x*a[i] +y*b[i] =[%s]= c[i]]][?[j:<-[0..=t]] -> [[[j%2==0][abs(x*a[j] + y*b[j]) < kX*s]]or[[j%2==1][2*kX*a[j]*b[j] <= (x*a[j] + y*b[j]) <= n/s**2/kX +kX*a[j]*b[j]]]]]]]』
+      # let [min_AB6odd := min{(a[1+2*j]*b[1+2*j]) | [j:<-[0..<t///2]]}]
+      # [min_AB6odd > 0]
+      # !! [kX*s == n/s**2/kX -kX*min_AB6odd] => [kX == sqrt(n/s**2/(s+min_AB6odd))]
+      # let [kX := sqrt(n/s**2/(s+min_AB6odd))]
+      # [len(i2cs[i]) <= 1+floor(2*kX)]
+      # [len(i2cs[i]) <= 1+floor(2*kX) == 1+floor_sqrt(4*n/s**2/(2*s+min_AB6odd))]
+      # !! [gcd(n,s)][r:=n**j%s for all j] => [min min_AB6odd == 1]
+      # [len(i2cs[i]) <= 1+floor_sqrt(4*n/s**2/(2*s+1))]
+      # [len(i2cs[i]) == O(sqrt(n/s**3))]
+  #This completes the proof of correctness.
+  #以上是 正确性证明
+  #以下是 耗时:
+  #bug:[t <= 1+log_((1+sqrt5)/2;s)]
+  [t <= 2+log_((1+sqrt5)/2;sqrt5*s)]
+      # 『+1』: Fibonacci_number:交替大小 比之于 inv_golden_ratio**n/sqrt5
+      #     [fibonacci[n] == (inv_golden_ratio**n -neg_golden_ratio**n) / (inv_golden_ratio**1-neg_golden_ratio**1)]
+      # 再『+1』: odd_i调整，强行保证[t%2==0]#至多发生一次并且下一步结束
+  [t-1 <= log_(inv_golden_ratio;s) < ceil_log_(76;(sqrt5*s)**9) == ceil_log_(76;s**9 * 5**4*sqrt5) < ceil_log_(76;s**9 * 625*3)]
+      #view others/数学/math_constants/golden_ratio.txt
+          #[[x > 1] -> [floor_log_(47;x**8) < log_(inv_golden_ratio; x) < ceil_log_(76;x**9)]]
+            # [绝对误差{x} ~< 2+0.00032756*ln(x)]
+            # [相对误差{x} ~< 0.0006806944025241034 +2/ln(x)]
+  [t-1 < ceil_log_(76;s**9 * 1875)]
+  [t <= ceil_log_(76;1875*s**9)]
+
+  [t == O(ln(n))] # 辗转相除法 循环次数
+  !! [t <= 2+log_((1+sqrt5)/2;sqrt5*s)]
+  [t <= 2+log_((1+sqrt5)/2;sqrt5)+log_((1+sqrt5)/2;s) ~= 3.6722759381845549 +log_((1+sqrt5)/2;s) < 3.672276 +log_((1+sqrt5)/2;s)]
+  [t-3.672276 <= log2(s) / log2((1+sqrt5)/2) ~= log2(s) / 0.6942419136306174]
+  [2**((t-3.672276)*0.6942) <= s]
+  * [t-3.672276 > 0]:
+    [s**(3/2) >= 2**((t-3.672276)*0.6942*3/2) > 2**((t-3.672276)*1.0413) > 2**(t-3.672276)]
+    [s**(3/2) > 2**(t-3.672276)]
+  * [t-3.672276 <= 0]:
+    [s**(3/2) > 1 >= 2**(t-3.672276)]
+    [s**(3/2) > 2**(t-3.672276)]
+  [s**(3/2) > 2**(t-3.672276) > 2**t /12.748681]
+  #bug:[s**(3/2) > 2**t]
+
+  [(i,c[i],c) :=> 方程组(4.16)中的c取值(c[i]解压值) 存在]:
+    * [i%2==0]:
+      [abs(c) < s]
+      !! [c =[%s]= c[i]]
+      方程组(4.16)中的c取值(c[i]解压值) 至多2个
+
+    * [i%2==1]:
+      !! [i%2==1]
+      [a[i] > 0]
+      [b[i] > 0]
+      [a[i]*b[i] > 0]
+
+      [2*a[i]*b[i] <= c <= a[i]*b[i] + n/s**2]
+      [a[i]*b[i] <= n/s**2]
+      [0 < a[i]*b[i] <= n/s**2]
+      [0 <= n/s**2]
+      [c取值范围 <= a[i]*b[i] +n/s**2 -2*a[i]*b[i] == n/s**2 -a[i]*b[i] <= n/s**2]
+      !! [c =[%s]= c[i]]
+      方程组(4.16)中的c取值(c[i]解压值) 至多(1+floor(n/s**3))个
+        => O((n/s**3)*t)
+        => O((n/s**3)*ln(n))
+
+  [s**3 >= n]:
+    每个i => 方程组(4.16)中的c取值(c[i]解压值) 至多 2个
+    * [i%2==0]:
+      !! [abs(c) < s]
+      [abs(c) <= 2*s]
+    * [i%2==1]:
+      !! [s**3 >= n]
+      [s >= n/s**2]
+      !! [a[i]*b[i] <= n/s**2]
+      [0 < a[i]*b[i] <= s]
+      [0 < 2*a[i]*b[i] <= c <= a[i]*b[i] + n/s**2 <= s +s]
+      [0 < c <= 2*s]
+      [abs(c) <= 2*s]
+    [abs(c) <= 2*s]
+
+    [B := max{abs(b[i]) | [i:<-[0..=t]]}]
+    !! [q[i] > 0]
+    !! [t%2==0]
+    [B == -b[t]]
+    !! [b0 == 1]
+    !! [q[i] >= 1]
+    [B <= b0*II[(1+q[i]) | [i:<-[2..=t]]] <= 2**t * II[q[i] | [i:<-[2..=t]]]]
+    !! [0 <= a[i] == a[i-2] -q[i]*a[i-1]]
+    [a[i-2] >= q[i]*a[i-1]]
+    [s == a0 >= q2*a1 >= q2*q3*a2 >= ... >= q2*...*q[t]*a[t-1] >= II[q[i] | [i:<-[2..=t]]]]
+    [B <= 2**t*s]
+    #bug:[s**(3/2) > 2**t]
+            !! [s**(3/2) > 2**t]
+            [B < s**(5/2)]
+    !! [s**(3/2) > 2**(t-3.672276) > 2**t /12.748681]
+    [2**t < 12.748681*s**(3/2)]
+    [B <= 2**t*s < 12.748681*s**(3/2)*s == 12.748681*s**(5/2)]
+    [B < 12.748681*s**(5/2)]
+
+    解方程组:
+      # (4.16)
+      x*a[i] +y*b[i] == c
+      (x*s + r)*(y*s + r_) == n
+      ==>>:
+      x*s*a[i] +y*s*b[i] == c*s
+      ==>>:
+      (x*s*a[i] + r*a[i])*(y*s*b[i] + r_*b[i]) == n*a[i]*b[i]
+      (x*s*a[i] + r*a[i]) + (y*s*b[i] + r_*b[i]) == c*s + r*a[i] + r_*b[i]
+      [根集纟方程组:={(x*s*a[i] + r*a[i]), (y*s*b[i] + r_*b[i])}]
+      [根集纟方程组=={(x*s + r)*a[i], (y*s + r_)*b[i]}]
+      bug:原文:DET = (c*s + r*a[i] + r_*b[i])**2 -4*a[i]*b[i]
+      改为:DET = (c*s + r*a[i] + r_*b[i])**2 -4*n*a[i]*b[i]
+      !! [abs(c) <= 2*s]
+      !! [B < s**(5/2)]
+      [O(sqrt{DET}) == O(sqrt{s**7}) == O(sqrt{n**7})]
+end-proof
+===
+Remark.
+  If s < n**/3, Algorithm 4.2.11 still works, but the number of square root steps is then O(n**/3*s**-1*ln(n)).
+    # 应当是O((n/s**3)*ln(n))
+    #   ???bug??? 原文:O(cbrt(n/s**3)*ln(n))
+    #   我:改进版:最糟况态[min_AB6odd==1]=>最优kX=>O(sqrt(n/s**3)*ln(n))
+  Note that if F in Theorem 4.2.10 is such that F/n**/3 is not very small, we can use that theorem and Algorithm 4.2.11 as a speedy primality test.
+      In general, we can use Algorithm 4.2.11 in a primality test if we have learned that each prime factor of n is congruent to r[i](mod s) for some i ∈ [1,k], where each gcd(r[i],s) = 1, 0 < r[i] < s, and s ≥ n**/3.
+      Then with k calls to Algorithm 4.2.11 we will either find a nontrivial factor of n, or failing this, prove that n is prime.
+      However, if s ≥ √n, there is no need to use Algorithm 4.2.11.
+      Indeed, if none of the integers r[i] are proper factors of n, then every prime dividing n exceeds √n, so n is prime.
+
+===
+]]
+[[
+Theorem__4_3_3:goto
+Algorithm__4_3_4:goto
+===
+page191[203/604]
+
+The next theorem is the basis of the finite field primality test.
+Theorem__4_3_3:here
+Algorithm__4_3_4:goto
+Theorem 4.3.3 (Lenstra).
+  Suppose that n,I,F are positive integers with n > 1 and F|(n**I-1).
+  Suppose f,g ∈ (ZZ%n)[X] are such that
+    (1) (-1+g**(n**I-1)) is a multiple of f in (ZZ%n)[X],
+    (2) (-1+g**((n**I-1)///q)) and f are coprime in (ZZ%n)[X] for all primes q|F,
+    (3) each of the I elementary symmetric polynomials in g,g**n,...,g**n**(I-1) is congruent (mod f) to an element of (ZZ%n).
+  Then for each prime factor p of n there is some integer j ∈ [0,I-1] with p ≡ n**j (mod F).
+    #We remark that if we show that the hypotheses of Theorem 4.3.3 hold and if we also show that n has no proper divisors in the residue classes nj(mod F) for j = 0,1,...,I-1, then we have proved that n is prime.
+    #算法牜快速找出所有因子乊特定剩余类:goto
+<==>:
+[@[n,I,F::uint] -> [n>=2] -> [I,F>=1] -> [n**I %F == 1] -> @[X,Y :: Var] -> @[f(X),g(X):<-(ZZ%n)[X]] -> [g(X)**(n**I-1) %f(X) == 1] -> [@[q::prime] -> [F%q==0] -> [1 == gcd(f(X), -1 +g(X)**((n**I-1)///q) %f(X))]] -> [h(X,Y) := II[(Y-g(X)**n**j) | [j:<-[0..<I]]]] -> [h(X,Y) <- (ZZ%n)[Y]] -> [@[p::prime] -> [n%p==0] -> ?[j:<-[0..<I]] -> [n**j =[%F]= p]]]
+  #隐含需求:[deg(f(X)) == I][f(X) is irreducible over (ZZ%n)]
+
+===
+proof:
+  [p::prime][n%p==0][fp(X),f1(X) :<- (ZZ%p)[X]][fp(X) == f(X)%p][f1(X) is irreducible over (ZZ%p)][fp(X)%f1(X) == 0]:
+    [KK := (ZZ%p)[X]/f1(X)]
+    [KK is a finite field extension of (ZZ%p)]
+
+    [_g(X) := g(X) %f1(X)]
+      # or:[_g(X) := the image of g(X) in KK]
+
+    !! [g(X)**(n**I-1) %f(X) == 1]
+    [_g(X)**(n**I-1) %f1(X) == 1]
+
+    !! [@[q::prime] -> [F%q==0] -> [1 == gcd(f(X), -1 +g(X)**((n**I-1)///q) %f(X))]]
+    [@[q::prime] -> [F%q==0] -> [1 == gcd(f1(X), -1 +_g(X)**((n**I-1)///q) %f1(X))]]
+
+    [order_mod_(f1(X);_g(X)) %F == 0]
+      #or:[multiplicative_order_(KK∗;_g(X)) %F == 0]
+
+    !! [h(X,Y) <- (ZZ%n)[Y]]
+    [hY(Y) := h(X,Y)]
+    [hp(Y) := hY(Y)%p]
+    !! [h(X,Y) <- (ZZ%n)[Y]]
+    [hp(Y) <- (ZZ%p)[Y]]
+
+    !! h(X,Y).定义
+    [h(X,g(Y)) == 0]
+    [h(Y,g(X)) == 0]
+    [hY(g(X)) == 0]
+    [hp(g(X)) =[%{p,fp(X)}]= 0]
+    [hp(_g(X)) =[%{p,f1(X)}]= 0]
+    !! [@[fun(Y) <- (ZZ%p)[Y]] -> @[rt :: ???] -> [fun(rt) == 0] -> [fun(rt**p) == 0]]
+    [hp(_g(X)**p) == 0]
+
+    !! h(X,Y).定义
+    [roots_of(hY(Y)) == {g(X)**n**j %fp(X) | [j:<-[0..<I]]}]
+    [roots_of(hp(Y)) <= {_g(X)**n**j %f1(X) | [j:<-[0..<I]]}]
+    [_g(X)**p <- {_g(X)**n**j %f1(X) | [j:<-[0..<I]]}]
+    ?j :=> [j<-[0..<I]][_g(X)**p =[%f1(X)]= _g(X)**n**j]
+    [(n**j -p) %order_mod_(f1(X);_g(X)) == 0]
+    !! [order_mod_(f1(X);_g(X)) %F == 0]
+    [(n**j -p) %F == 0]
+    [n**j =[%F]= p]
+end-proof
+===
+A number of questions naturally present themselves:
+  If n is prime, will f,g as described in Theorem 4.3.3 exist?
+  If f,g exist, is it easy to find examples?
+  Can (1), (2), (3) in Theorem 4.3.3 be verified quickly?
+  ###
+  The first question is easy.
+  If n is prime, then
+    any polynomial f ∈ (ZZ%n)[X] that is irreducible with deg(f) = I, and
+    any polynomial g ∈ (ZZ%n)[X] that is not a multiple of f will together satisfy (1) and (3).
+  Indeed, if f is irreducible of degree I, then KK = (ZZ%n)[X]/(f) will be a finite field of order n**I, and so (1) just expresses the Lagrange theorem (a group element raised to the order of the group is the group identity) for the multiplicative group KK∗.
+  To see (3) note that the Galois group of KK is generated by the Frobenius automorphism: raising to the n-th power.
+    That is, the Galois group consists of the I functions from KK to KK, where the j-th function takes α ∈ KK and sends it to α**n**j for j = 0,1,...,I-1.
+    Each of these functions fixes an expression that is symmetric in g,g**n,...,g**n**(I-1), so such an expression must be in the fixed field (ZZ%n).
+    This is the assertion of (3).
+  It is not true that every choice for g with [g%f =!= 0] satisfies (2).
+    But the group KK∗is cyclic, and any cyclic generator satisfies (2).
+    Moreover, there are quite a few cyclic generators, so a random search for g should not take long to find one.
+    In particular, if g is chosen randomly as a nonzero polynomial in (ZZ%n)[X] of degree less than I, then the probability that g satisfies (2) is at least ϕ(n**I-1)/(n**I-1) (given that n is prime and f is irreducible of degree I), so the expected number of choices before a valid g is found is O(lnln(n**I)).
+  But what of f?  Are there irreducible polynomials in (ZZ%n)[X] of degree I, can we quickly recognize one when we have it, and can we find one quickly?  Yes, yes, yes.
+    In fact (2.5) shows that not only are there irreducible polynomials of degree I, but that there are plenty of them, so that a random degree I polynomial has about (a 1 in I)即(1/I) chance of being irreducible.
+    See Exercise 2.12 in this regard.
+    Further, Algorithm 2.2.9 or 2.2.10 provides an efficient way to test whether a polynomial is irreducible.
+===
+]]
+[[
+===
+page192[204/604]
+We now embody the above thoughts in the following explicit algorithm:
+Algorithm__4_3_4:here
+Theorem__4_3_3:goto
+Algorithm 4.3.4 ([probabilistic]finite field primality test).
+  # [n::prime] => O(I**c+ ln(n)**c)
+  # [n::composite] => O(???)
+  We are given positive integers n,I,F with F|(n**I-1), F ≥ n**/2 and we are given the complete prime factorization of F.
+  #This probabilistic algorithm decides whether n is prime or composite, returning “n is prime” in the former case and “n is composite” in the latter case.
+  1. [Find irreducible polynomial of degree I]
+      Via Algorithm 2.2.9 or 2.2.10, and using Algorithm 4.3.2 for the gcd steps, attempt to find a random monic polynomial f in (ZZ%n)[X] of degree I that is irreducible if n is prime.
+        That is, continue testing random polynomials until the irreducibility test used either returns YES, or its gcd step finds a nontrivial factorization of n.
+        In the latter case, return “n is composite”;
+      // The polynomial f is irreducible if n is prime.
+  2. [Find primitive element]
+    Choose g ∈ (ZZ%n)[X] at random with g monic, deg(g) < I;
+    if (1 =!= g**(n**I-1)%f) return “n is composite”;
+    for (prime q|F) {
+      Attempt to compute gcd(g**((n**I-1)///q) %f -1,f) via Algorithm 4.3.2,
+        but if a nontrivial factorization of n is found in this attempt, return “n is composite”;
+      if (1 =!= gcd(g**((n**I-1)///q) %f -1,f)) goto [Find primitive element];
+    }
+  3. [Symmetric expressions check]
+    Form the polynomial (T -g**n**0)*(T -g**n**1)···(T -g**n**(I-1)) = T**I +c[I-1]*T**(I-1)+ ... + c[0] in (ZZ%n)[X,T]/(f(X));
+    // The coefficients c[j] are in (ZZ%n)[X] and are reduced modulo f.
+    for (0 ≤ j < I)
+      if(deg(c[j]) > 0) return “n is composite”;
+  4. [Divisor search]
+    for(1 ≤ j < I) {
+      #If n**j mod F is a proper factor of n, return “n is composite”;
+      if (0 == n%(d:=n**j %F) and d < n) return “n is composite”;
+        # 注意:前提:[F >= n**/2] => 只需筛选出 小于F 的 因子
+        # 若 前提改为 [F >= n**/3] => 见上面『算法牜快速找出所有因子乊特定剩余类』
+    }
+    return “n is prime”;
+===
+If n is prime, the expected number of arithmetic operations, with integers the size of n,
+  for Algorithm 4.3.4 to declare n prime is O(I**c+ ln(n)**c) for some positive constant c.
+  (We make no assertion on the expected running time for composite inputs.)
+===
+Given a prime n, the question remains of how one is supposed to come up with the numbers I,F.
+The criteria are as follows:
+  that F is supposed to be large, namely, F ≥ n**/2,
+  we are supposed to know the prime factorization of F,
+  and F|(n**I-1),
+  with I not very large (since otherwise, the algorithm will not be very fast).
+For some numbers n we can choose I = 1 or 2; this was the subject of earlier sections in this chapter.
+It is clear as well that one might be content with merely F ≥ n**/3 if one were prepared to use Algorithm 4.2.11 as a subroutine in Step [Divisor search] to find all of the proper factors of n that are ≡ n**j(mod F) for some j with 1 ≤ j < I.
+So let us assume that Algorithm 4.3.4 is so amended.
+The question remains for the general case whether we can find I,F that i t the above criteria.
+An interesting observation is that we can pick up some small primes in (n**I-1) with very little work.
+  ...见上面
+===
+]]
+

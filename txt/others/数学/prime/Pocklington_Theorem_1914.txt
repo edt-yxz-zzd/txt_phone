@@ -1,0 +1,189 @@
+
+e others/数学/prime/Pocklington_Theorem_1914.txt
+!! Pocklington_Theorem_1914 是 『(n-1) test』 的 弱化版
+这里主要关注:变体{Pocklington_Theorem_1914}:用于生成大素数:但是由于未能证明R{q}存在性，故未必能无限放大:
+  [@[n::uint] -> @[q::prime] -> @[R::uint] -> [n >= 2] -> [2 <= R <= (1+2*q)] -> [n == 1+2*q*R] -> [[?[g:<-[2..<n]] -> [[gRn := g**R%n][gRn**q =[%n]= -1][gcd(n,1+gRn) == 1]]] <-> [is_prime_(n)]]]
+
+[[
+copy from:
+view others/数学/prime/primality_test.txt
+===
+Pocklington's Theorem (1914):  Let [n-1 = q**k *R] where q is a prime which does not divide R.  If there is an integer x such that [x**(n-1) %n == 1][gcd(x**((n-1)///q) %n -1,n) == 1], then each prime factor p of n has the form q**k*r+1.
+    # [:Pocklington_Theorem_1914]:here
+]]
+[[
+===
+重述:Pocklington_Theorem_1914
+[@[n::uint] -> @[q::prime] -> @[g::int] -> [n >= 2] -> [k := gde_(q;n-1)] -> [k >= 1] -> [g**(n-1) %n == 1] -> [gcd(n,-1+g**((n-1)///q) %n) == 1] -> [@[p::prime] -> [n%p == 0] -> [p%q**k == 1]]]
+[@[n::uint] -> @[q::prime] -> @[k::uint] -> @[g::int] -> [n >= 2] -> [1 <= k <= gde_(q;n-1)] -> [g**(n-1) %n == 1] -> [gcd(n,-1+g**((n-1)///q) %n) == 1] -> [@[p::prime] -> [n%p == 0] -> [p%q**k == 1]]]
+[@[n::uint] -> @[q::prime] -> @[k::uint] -> @[g::int] -> [n >= 2] -> [k >= 1] -> [(n-1)%q**k == 0] -> [g**(n-1) %n == 1] -> [gcd(n,-1+g**((n-1)///q) %n) == 1] -> [@[p::prime] -> [n%p == 0] -> [p%q**k == 1]]]
+  #########
+  # 不必:[1 == gcd(q,R)]
+  # 即:不必:[k==gde_(q;n-1)]
+  #     view ../../python3_src/seed/math/max_power_of_base_as_factor_of_.py
+  #########
+===
+#xxx弱化版
+变体{Pocklington_Theorem_1914}:
+[@[n::uint] -> @[q::prime] -> @[R::uint] -> [n >= 2] -> [2 <= R <= (1+2*q)] -> [n == 1+2*q*R] -> [[?[g:<-[2..<n]] -> [[gRn := g**R%n][gRn**q =[%n]= -1][gcd(n,1+gRn) == 1]]] <-> [is_prime_(n)]]]
+  # 不必:[1 == gcd(q,R)]
+  # 未必存在:R{q}
+见于:
+    '/sdcard/0my_files/book/math/factorint/snd/The new book of prime number records(3ed)(1996)(Ribenboim).djvu'
+    Chapter2. How to Recognize Whether a Natural Number Is a Prime
+    XI. Primality Testing and Large Primes
+    D. Fast Generation of Large Primes
+    page156[181/567]
+One method of generation of large primes, which works very well, is based on the old theorem of Pocklington 1914). For the present purpose, it is convenient to phrase it as follows:
+  Let p be an odd prime, and
+  let k be a positive integer, such that
+    p does not divide k and
+    1 < k < 2*(p + 1).
+  Let N = 2*k*p + 1.
+  Then the following conditions are equivalent:
+  A) N is a prime.
+  B) There exists an integer a,
+    2 <= a < N, such that
+    a**((N-1)///2) == -1 (mod N) and
+    gcd(N, +1+a**k%N) == 1.
+===
+]]
+
+[[
+{n,q,k,g}
+[@[n::uint] -> @[q::prime] -> @[k::uint] -> @[g::int] -> [n >= 2] -> [k >= 1] -> [(n-1)%q**k == 0] -> [g**(n-1) %n == 1] -> [gcd(n,-1+g**((n-1)///q) %n) == 1] -> [@[p::prime] -> [n%p == 0] -> [p%q**k == 1]]]
+proof:
+  !! [n >= 2]
+  [n-1 >= 1]
+  !! [k >= 1]
+  !! [(n-1)%q**k == 0]
+  [(n-1)%q == 0]
+  !! [n-1 >= 1]
+  [(n-1)///q >= 1]
+
+  !! [n-1 >= 1]
+  !! [g**(n-1) %n == 1]
+  !! [n%p == 0]
+  [g**(n-1) %p == 1]
+  [(n-1)%order_mod_(p;g) == 0]
+  !! [gcd(n,-1+g**((n-1)///q) %n) == 1]
+  [gcd(p,-1+g**((n-1)///q) %p) == 1]
+  !! [p::prime]
+  [g**((n-1)///q) %p =!= 1]
+  [(n-1)///q%order_mod_(p;g) =!= 0]
+  !! [(n-1)%order_mod_(p;g) == 0]
+  [gde_(q;order_mod_(p;g)) == gde_(q;n-1)]
+  !! [(n-1)%q**k == 0]
+  [k <= gde_(q;n-1)]
+  [gde_(q;order_mod_(p;g)) == gde_(q;n-1) >= k >= 1]
+  [max_k:=gde_(q;order_mod_(p;g))]
+  [max_k >= k >= 1]
+  [order_mod_(p;g)%q**max_k == 0]
+  !! [p::prime]
+  [(p-1)%order_mod_(p;g) == 0]
+  [(p-1)%q**max_k == 0]
+  [(p-1)%q**k == 0]
+  [p%q**k == 1]
+end-proof
+]]
+[[
+[@[n::uint] -> @[q::prime] -> @[R::uint] -> [n >= 2] -> [2 <= R <= (1+2*q)] -> [n == 1+2*q*R] -> [[?[g:<-[2..<n]] -> [[gRn := g**R%n][gRn**q =[%n]= -1][gcd(n,1+gRn) == 1]]] <-> [is_prime_(n)]]]
+proof:
+  证明:『<->』之『<-』
+    !! 定理牜素模本原根存在性
+    [所需g存在]
+  证明:『<->』之『->』
+    !! [gRn**q =[%n]= -1]
+    !! [gRn := g**R%n]
+    [g**(q*R) =[%n]= -1]
+    !! [n == 1+2*q*R]
+    [g**((n-1)///2) =[%n]= -1]
+    !! [n == 1+2*q*R]
+    [g**(q*R) =[%n]= -1]
+    [(1+g**(q*R)) %n == 0]
+
+    !! [g**((n-1)///2) %n =[%n]= -1]
+    [g**(n-1) %n == 1]
+    !! [n == 1+2*q*R]
+    [g**(2*q*R) %n == 1]
+    [(-1+g**(2*q*R)) %n == 0]
+    [(-1+g**(q*R))*(1+g**(q*R)) %n == 0]
+
+    [gcd((1+g**(q*R)),(-1+g**(q*R)))
+    == gcd((1+g**(q*R)),(-1+g**(q*R))-(1+g**(q*R)))
+    == gcd((1+g**(q*R)),-2)
+    <= 2
+    ]
+    [gcd((1+g**(q*R)),(-1+g**(q*R))) <= 2]
+
+    !! [n == 1+2*q*R]
+    [n%2 == 1]
+    [gcd(2,n) == 1]
+    [gcd(n,(-1+g**(q*R))) =!= 2]
+
+    !! [(1+g**(q*R)) %n == 0]
+    [gcd((1+g**(q*R)),(-1+g**(q*R))) %gcd(n,(-1+g**(q*R))) == 0]
+    !! [gcd((1+g**(q*R)),(-1+g**(q*R))) <= 2]
+    [gcd(n,(-1+g**(q*R))) <= 2]
+    !! [gcd(n,(-1+g**(q*R))) =!= 2]
+    [gcd(n,(-1+g**(q*R))) == 1]
+    !! [(-1+g**(q*R))%(-1+g**R) == 0]
+    [gcd(n,(-1+g**R)) == 1]
+
+    !! [gcd(n,1+gRn) == 1]
+    !! [gRn := g**R%n]
+    [gcd(n,(1+g**R)) == 1]
+    !! [gcd(n,(-1+g**R)) == 1]
+    [gcd(n,(1+g**R)*(-1+g**R)) == 1]
+    [gcd(n,(-1+g**(2*R))) == 1]
+    !! [n == 1+2*q*R]
+    [gcd(n,(-1+g**((n-1)///q))) == 1]
+    [gcd(n,-1+g**((n-1)///q)%n) == 1]
+
+    [gcd(n,-1+g**((n-1)///2)%n)
+    !! [g**((n-1)///2) =[%n]= -1]
+    == gcd(n,-2)
+    !! [gcd(2,n) == 1]
+    == 1
+    ]
+    [gcd(n,-1+g**((n-1)///2)%n) == 1]
+
+    #xxx:!! Pocklington_Theorem_1914[n:=n,F:=2*q,k:=1,g:=g]
+    #     多个素因子=>实际上并非:弱化版！！
+    !! [g**(n-1) %n == 1]
+    !! [n == 1+2*q*R]
+    !! [gcd(n,-1+g**((n-1)///q)%n) == 1]
+    !! [gcd(n,-1+g**((n-1)///2)%n) == 1]
+    !! 『(n-1) test』 [n:=n,F:=2*q,k:=1,g:=g]
+    [@[p::prime] -> [n%p == 0] -> [p%(2*q) == 1]]
+
+    [n
+    !! [2 <= R <= (1+2*q)]
+    !! [n == 1+2*q*R]
+    <= 1+2*q*(1+2*q)
+    == 1+2*q+4*q**2
+    <= 1+4*q+4*q**2
+    == (1+2*q)**2
+    ]
+    [n < (1+2*q)**2]
+
+    [p,_p::prime][n%(p*_p) == 0]:
+      !! [n%(p*_p) == 0]
+      !! [n >= 2]
+      [n >= p*_p]
+
+      !! [n%(p*_p) == 0]
+      [n%p == 0][n%_p == 0]
+      !! [@[p::prime] -> [n%p == 0] -> [p%(2*q) == 1]]
+      [p >= 1+2*q][_p >= 1+2*q]
+      !! [n < (1+2*q)**2]
+      [n < (1+2*q)**2 <= p*_p]
+      !! [n >= p*_p]
+      _L
+    [@[p,_p::prime] -> [n%(p*_p) =!= 0]]
+    [is_prime_(n)]
+
+end-proof
+]]
+
+

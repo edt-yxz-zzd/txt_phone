@@ -1,0 +1,246 @@
+e others/数学/Jacobi_symbol.txt
+view others/数学/二次互反律.txt
+  bug:Legendre_symbol二次互反律 缺失前提[p=!=q]
+  bug:Jacobi_symbol前提错误允许分母负整数 #未必算错误，当时大概直接从定义出发，分母的符号无关紧要
+
+###########################
+本文件给出Jacobi_symbol递归算法的正确性证明
+
+###########################
+[[
+目录:
+
+#定义:Legendre_symbol
+#分子分解@Legendre_symbol
+#求:Legendre_symbol(p;1)
+#求:Legendre_symbol(p;-1)
+#求:Legendre_symbol(p;2)
+#求:Legendre_symbol(p;q)
+  #二次互反律@Legendre_symbol
+
+#定义:Jacobi_symbol
+#分子分解@Jacobi_symbol
+#分母分解@Jacobi_symbol
+#求:Jacobi_symbol(1;a)
+#求:Jacobi_symbol(n;1)
+#求:Jacobi_symbol(n;-1)
+#求:Jacobi_symbol(n;2)
+#求:Jacobi_symbol(n;m)
+  #二次互反律@Jacobi_symbol
+#递归求:Jacobi_symbol(n;a)
+]]
+
+
+
+###########################
+#定义:Legendre_symbol
+[p::prime][p%2==1][a::int]:
+  [(a:/p) = Legendre_symbol(p;a) =[def]= if [a%p==0] then 0 else if [@[x:<-[1..<p]] -> [(x**2 -a)%p =!= 0]] then -1 else +1]
+  [Legendre_symbol(p;a) =[%p]= a**((p-1)///2)%p]
+  [Legendre_symbol(p;a) == Legendre_symbol(p;a%p)]
+
+
+#分子分解@Legendre_symbol
+[p::prime][p%2==1][a,b::int]:
+  [Legendre_symbol(p;a*b) == Legendre_symbol(p;a)*Legendre_symbol(p;b)]
+
+
+#求:Legendre_symbol(p;1)
+#求:Legendre_symbol(p;-1)
+#求:Legendre_symbol(p;2)
+[g{p} =[def]= 本原根模{p}]
+[p::prime][p%2==1]:
+  [Legendre_symbol(p;1) == +1]
+  [Legendre_symbol(p;-1) == if [p%4==1] then +1 else -1]
+    # !! [g{p}**((p-1)///2) =[%p]= -1]
+    # !! [((p-1)///2)%2 == if [p%4==1] then 0 else 1]
+    #<==>:
+  [Legendre_symbol(p;p-1) =[%4]= p%4]
+    #<==>:
+  [Legendre_symbol(p;-1) == (-1)**([p%4 == 3])]
+    #<==>:
+  [Legendre_symbol(p;-1) == (-1)**((p-1)///2)]
+    # [(d,r):=p/%4]
+    # [p==4*d+r][r<-{1,3}]
+    # [p-1=[%4]=r-1 <- {0,2}]
+    # [(p-1)///2=[%2]=(r-1)///2 <- {0,1}]
+
+  [Legendre_symbol(p;2) == if [p%8 <- {1,7}] then +1 else -1]
+    ???how
+      3**2%7
+      5**2%23
+      6**2%17
+      17**2%41
+    #<==>:
+  [Legendre_symbol(p;2) == (-1)**([p%8<-{3,5}])]
+    #<==>:
+  [Legendre_symbol(p;2) == (-1)**([(1+p)%8 >= 4])]
+    #<==>:
+  [Legendre_symbol(p;2) == (-1)**((p**2-1)///8)]
+    # [(d,r):=p/%8]
+    # [p==8*d+r][r<-{1,3,5,7}]
+    # [r**2%16<-{1,9,9,1}]
+    # [p**2==64*d**2+16*d*r+r**2]
+    # [p**2-1=[%16]=(r**2-1)%16 <- {0,8}]
+    # [(p**2-1)///8=[%2]=(r**2-1)///8%2 <- {0,1}]
+
+#求:Legendre_symbol(p;q)
+#二次互反律@Legendre_symbol
+[p,q::prime][p%2==1][q%2==1][p=!=q]:
+  [(p:/q)*(q:/p) == (-1)**(((p-1)*(q-1)///4))]
+    #quadratic reciprocity law
+    # 注意:[p=!=q]
+[@[p,q::prime][p%2==1][q%2==1] -> [Legendre_symbol(p;q) == (-1)**(((p-1)*(q-1)///4)) * Legendre_symbol(q;p)]]
+    # 允许:[p==q]
+
+
+###########################
+#定义:Jacobi_symbol
+#[n::int{>0}][a::int][gcd(2*a,n) == 1]:
+  # [gcd(a,n) == 1]似无必要
+[n::int{>0}][n%2==1][a::int]:
+  [(a::/n) = Jacobi_symbol(n;a) =[def]= II[Legendre_symbol(p;a)**gde_(p;n) | [p::prime][n%p == 0]]]
+
+
+#分子分解@Jacobi_symbol
+[n::int{>0}][n%2==1][a,b::int]:
+  !! [Legendre_symbol(p;a*b) == Legendre_symbol(p;a)*Legendre_symbol(p;b)]
+  [Jacobi_symbol(n;a*b) == Jacobi_symbol(n;a)*Jacobi_symbol(n;b)]
+
+#分母分解@Jacobi_symbol
+[u,v::int{>0}][u%2==1][v%2==1][a::int]:
+  [Jacobi_symbol(u*v;a) == Jacobi_symbol(u;a)*Jacobi_symbol(v;a)]
+
+
+#求:Jacobi_symbol(1;a)
+[a::int]:
+  [Jacobi_symbol(1;a)
+  == II[Legendre_symbol(p;a)**gde_(p;1) | [p::prime][1%p == 0]]
+  == II[]
+  == 1
+  ]
+  [Jacobi_symbol(1;a) == 1]
+
+#求:Jacobi_symbol(n;1)
+[n::int{>0}][n%2==1]:
+  [Jacobi_symbol(n;1)
+  == II[Legendre_symbol(p;1)**gde_(p;n) | [p::prime][n%p == 0]]
+  !! [Legendre_symbol(p;1) == +1]
+  == II[1**gde_(p;n) | [p::prime][n%p == 0]]
+  == 1
+  ]
+  [Jacobi_symbol(n;1) == 1]
+
+#求:Jacobi_symbol(n;-1)
+[u,v::int{>0}][u%2==1][v%2==1][Jacobi_symbol(u;-1) == (-1)**([u%4 == 3])][Jacobi_symbol(v;-1) == (-1)**([v%4 == 3])]:
+  [Jacobi_symbol(u*v;-1)
+  !! [Jacobi_symbol(u*v;a) == Jacobi_symbol(u;a)*Jacobi_symbol(v;a)]
+  == Jacobi_symbol(u;-1)*Jacobi_symbol(v;-1)
+  == (-1)**([u%4 == 3]) * (-1)**(([v%4 == 3])
+  == (-1)**([u%4 == 3] =!= [v%4 == 3])
+  == (-1)**([(u*v)%4 == 3])
+  ]
+  [Jacobi_symbol(u*v;-1) == (-1)**([(u*v)%4 == 3])]
+[n::int{>0}][n%2==1]:
+  !! [[p::prime] -> [Legendre_symbol(p;-1) == (-1)**([p%4 == 3])]]
+  !! [@[u,v::int{>0}][u%2==1][v%2==1][Jacobi_symbol(u;-1) == (-1)**([u%4 == 3])][Jacobi_symbol(v;-1) == (-1)**([v%4 == 3])] -> [Jacobi_symbol(u*v;-1) == (-1)**([(u*v)%4 == 3])]]
+  [Jacobi_symbol(n;-1) == (-1)**([n%4 == 3])]
+  [Jacobi_symbol(n;-1) == (-1)**((p-1)///2)]
+
+
+
+
+#求:Jacobi_symbol(n;2)
+[u,v::int{>0}][u%2==1][v%2==1][Jacobi_symbol(u;2) == (-1)**([u%8<-{3,5}])][Jacobi_symbol(v;2) == (-1)**([v%8<-{3,5}])]:
+  [Jacobi_symbol(u*v;2)
+  !! [Jacobi_symbol(u*v;a) == Jacobi_symbol(u;a)*Jacobi_symbol(v;a)]
+  == Jacobi_symbol(u;2)*Jacobi_symbol(v;2)
+  == (-1)**([u%8<-{3,5}]) * (-1)**(([v%8<-{3,5}])
+  == (-1)**([u%8<-{3,5}] =!= [v%8<-{3,5}])
+  == (-1)**([(u*v)%8<-{3,5}])
+  ]
+  [Jacobi_symbol(u*v;2) == (-1)**([(u*v)%8<-{3,5}])]
+[n::int{>0}][n%2==1]:
+  !! [[p::prime] -> [Legendre_symbol(p;2) == (-1)**([p%8<-{3,5}])]]
+  !! [@[u,v::int{>0}][u%2==1][v%2==1][Jacobi_symbol(u;2) == (-1)**([u%8<-{3,5}])][Jacobi_symbol(v;2) == (-1)**([v%8<-{3,5}])] -> [Jacobi_symbol(u*v;2) == (-1)**([(u*v)%8<-{3,5}])]]
+  [Jacobi_symbol(n;2) == (-1)**([n%8<-{3,5}])]
+  [Jacobi_symbol(n;2) == (-1)**((n**2-1)///8)]
+
+
+
+
+
+#求:Jacobi_symbol(n;m)
+#二次互反律@Jacobi_symbol
+[u,v,t::int{>0}][u%2==1][v%2==1][t%2==1][Jacobi_symbol(u;t) == (-1)**(((u-1)*(t-1)///4)) * Jacobi_symbol(t;u)][Jacobi_symbol(v;t) == (-1)**(((v-1)*(t-1)///4)) * Jacobi_symbol(t;v)]:
+  [u%4 <- {1,3}]
+  [v%4 <- {1,3}]
+  * [u%4 == v%4]:
+    [(u*v-1) =[%4]= (1-1) == 0]
+    [(u+v-2) =[%4]= (2-2) == 2]
+    [(u*v-1) =[%4]= (u+v-2)]
+  * [u%4 =!= v%4]:
+    [(u*v-1) =[%4]= (3-1) == 2]
+    [(u+v-2) =[%4]= (4-2) == 2]
+    [(u*v-1) =[%4]= (u+v-2)]
+  #==>>:
+  [(u*v-1) =[%4]= (u+v-2)]
+
+  [Jacobi_symbol(u*v;t)
+  !! [Jacobi_symbol(u*v;a) == Jacobi_symbol(u;a)*Jacobi_symbol(v;a)]
+  == Jacobi_symbol(u;t)*Jacobi_symbol(v;t)
+  == (-1)**(((u-1)*(t-1)///4)) * Jacobi_symbol(t;u)
+   * (-1)**(((v-1)*(t-1)///4)) * Jacobi_symbol(t;v)
+  !! [Jacobi_symbol(n;a*b) == Jacobi_symbol(n;a)*Jacobi_symbol(n;b)]
+  == (-1)**(((u-1+v-1)*(t-1)///4)) * Jacobi_symbol(t;u*v)
+  !! [(u*v-1) =[%4]= (u+v-2)]
+  == (-1)**(((u*v-1)*(t-1)///4)) * Jacobi_symbol(t;u*v)
+  ]
+  [Jacobi_symbol(u*v;t) == (-1)**(((u*v-1)*(t-1)///4)) * Jacobi_symbol(t;u*v)]
+[m,n::int{>0}][m%2==1][n%2==1]:
+  !! [@[p,q::prime][p%2==1][q%2==1] -> [Legendre_symbol(p;q) == (-1)**(((p-1)*(q-1)///4)) * Legendre_symbol(q;p)]]
+  !! [@[u,v,t::int{>0}][u%2==1][v%2==1][t%2==1][Jacobi_symbol(u;t) == (-1)**(((u-1)*(t-1)///4)) * Jacobi_symbol(t;u)][Jacobi_symbol(v;t) == (-1)**(((v-1)*(t-1)///4)) * Jacobi_symbol(t;v)] -> [Jacobi_symbol(u*v;t) == (-1)**(((u*v-1)*(t-1)///4)) * Jacobi_symbol(t;u*v)]]
+  [Jacobi_symbol(n;m) == (-1)**(((n-1)*(m-1)///4)) * Jacobi_symbol(m;n)]
+[@[m,n::int{>0}][m%2==1][n%2==1] -> [Jacobi_symbol(n;m) == (-1)**(((n-1)*(m-1)///4)) * Jacobi_symbol(m;n)]]
+
+
+
+
+
+
+
+#递归求:Jacobi_symbol(n;a)
+[n::int{>0}][n%2==1][a::int]:
+  [Jacobi_symbol(n;a) ==
+    # [n >= 1]
+    if [gcd(a,n) =!= 1] then 0 else
+        # !! [@[p::prime] -> [gcd(a,n)%p == 0] -> [Legendre_symbol(p;a) == 0]]
+    # [gcd(a,n) == 1]
+    if [n==1] then +1 else
+        # !! [II[] == +1]
+        # !! [Jacobi_symbol(1;a) == 1]
+    # [n >= 3]
+    # !! [gcd(a,n) == 1]
+    # [a%n =!= 0]
+    if [not$ 0 < a < n] then Jacobi_symbol(n;a%n) else
+        # !! [@[p::prime] -> [Legendre_symbol(p;a) == Legendre_symbol(p;a%p)]]
+    # [n >= 3][0 < a < n][gcd(a,n) == 1]
+    [optional]:if [2*a>n] then (-1)**((p-1)///2)*Jacobi_symbol(n;n-a) else
+        # !! [Jacobi_symbol(n;a*b) == Jacobi_symbol(n;a)*Jacobi_symbol(n;b)]
+        # !! [Jacobi_symbol(n;-1) == (-1)**((p-1)///2)]
+        # !! [2*a>n][0 < a < n] => [0 < n-a < a < n]
+    [optional]:if [a==1] then +1 else
+        # !! [Jacobi_symbol(n;1) == 1]
+    if [a==2] then (-1)**((n**2-1)///8) else
+      # !! [Jacobi_symbol(n;2) == (-1)**((n**2-1)///8)]
+    # [n >= 3][0 < a < n][gcd(a,n) == 1][a=!=2]
+    if [a%2==0] then let [a == 2**e * b][b%2==1] in Jacobi_symbol(n;2)**(e%2) * Jacobi_symbol(n; b) else
+    # [n >= 3][0 < a < n][gcd(a,n) == 1][a=!=2][a%2==1]
+    #   必要前提:[a>0][a%2==1]
+    (-1)**((a-1)*(n-1)///4) * Jacobi_symbol(a;n)
+      !! [@[m,n::int{>0}][m%2==1][n%2==1] -> [Jacobi_symbol(n;m) == (-1)**(((n-1)*(m-1)///4)) * Jacobi_symbol(m;n)]]
+      # 此时 可能有[a==1]: [Jacobi_symbol(1;n)==1]
+  ]
+
+
+###########################

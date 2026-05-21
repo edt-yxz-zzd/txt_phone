@@ -1,3 +1,6 @@
+e others/数学/p_adic_integer_ring.txt
+
+p-adic ? p-adique
 
 [[[
 e others/数学/p_adic_integer_ring.txt
@@ -15,3 +18,144 @@ p-adic integer
     [lift__int2p_adic p :: ZZ -> p_adic_integer p]
     [lift__int2p_adic p =[def]= \i -> \e -> i%p**e]
 ]]]
+
+
+
+view others/数学/prime/APR_primality_test.txt
+  Jacobi sums test
+[[
+启发自:
+  '/sdcard/0my_files/book/math/factorint/Primality Testing and Jacobi Sums(1984)(Cohen).pdf'
+此前一直觉得:很难泛化幂方的指数，难免整数，浮点数、复数 感觉不太自然，也难以精确表达计算...
+感觉:幂方的指数也可以是p_adic_integer
+  [G::有限群{规模为p**m}]:
+    [@[x<-G] -> [x**p**m==G.1]]
+  [G::有限交换群{规模为p**m}]:
+    @[k>=1]. [G**k :: 有限交换群]
+  [ZZ[**p] := ring of p-adic integers]
+  @[k>=1]. [ZZ[**p]%p**k ~=~ ZZ%p**k]
+  @[k>=1]. [ZZ[**p]%p**k :: 有限交换群]
+  @[k>=1]. [len(ZZ[**p]%p**k) == p**k]
+    ...规模是p幂方，但无用
+      !! 幂方=>应当考虑:乘法群
+  [ZZ[**p]{*} := mul group of units of ring of p-adic integers]
+  [ZZ[**p]{*} == ZZ[**p] \-\ p*ZZ[**p]]
+  @[k>=1]. [len(ZZ[**p]{*}%p**k) == p**(k-1) * (p-1)]
+    ...规模不是p幂方
+    尝试泛化:幂次{乘法群}:失败！
+  @[k>=1]. [len((1+p*ZZ[**p])%p**k) == p**(k-1)]
+    ...规模是p幂方
+    可行！见下面pow4IPA()
+]]
+
+[[
+# [p-adic integer =[def]= [uint%p**k | [k:<-[1..]]]]
+素幂模兼容序列
+幂兼列
+[p::prime]:
+  [ZZ[**p] = AdicIntegerType{p} =[def]= {us | [us::[uint%p**k | [k:<-[1..]]]][@[k:<-[1..]] -> [us[1+k]%p**k == us[k]]]}]
+    #环纟幂兼列
+    #forms a ring under coordinatewise addition and multiplication
+  [ZZ[**p]{*} =[def]= ZZ[**p] \-\ p*ZZ[**p]]
+    #乘法群纟幂兼列
+    !! [[us <- units_of(ZZ[**p])] <-> [us%p =!= 0]]
+  [ZZ[**p]{*} == {us | [us::ZZ[**p]][us[0] =!= 0]}]
+  [(1+p*ZZ[**p]) =[def]= {us | [us::ZZ[**p]][us[0] == 1]}]
+  [(1+p*ZZ[**p]) <- subgroups_of(ZZ[**p]{*})]
+    #bug:[p==2]:某个真子群纟乘法群纟幂兼列
+    #某个子群纟乘法群纟幂兼列
+  [m>=1]:
+    [(1+p**m*ZZ[**p]) =[def]= {us | [us::ZZ[**p]][us[0] == 1][us[1:m] == [0]*(m-1)]}]
+    [(1+p**m*ZZ[**p]) <- subgroups_of(ZZ[**p]{*})]
+      #某个子群纟乘法群纟幂兼列
+
+  # view ZZ as a subring of ZZ[**p]
+  [view_ZZ8adic(ZZ) |<=| ZZ[**p]]
+  [view_ZZ8adic i =[def]= [i%p**k | [k:<-[1..]]]]
+    # 注意:有效区分:负整数、正整数
+    #   正整数 尾部收敛
+    #   负整数 尾部发散
+
+[m::uint{>=0}]:
+  [ZZ%m =[def]= if m == 0 then ZZ else uint%m]
+    #环纟剩余类
+[p::prime][k::int{>=1}]:
+  [ZZ[**p]%p**k =[def]= {us[:k] | [us::ZZ[**p]]}]
+  [ZZ[**p]%p**k ~=~ ZZ%p**k]
+
+  [len((1+p*ZZ[**p])%p**k) == p**(k-1)]
+    # %9: {1,4,7}: [4**2=[%9]=7][4**3=[%9]=1]
+    # %27: {1,4,7,10,13,16,19,22,25}: [4**[0..<9] =[%27]= [1, 4, 16, 10, 13, 25, 19, 22, 7]]
+    # !! 奇素幂模=>存在本原根
+    # [p%2==1] => [((1+p*ZZ[**p])%p**k)存在本原根] #乘法群 而非 域
+    # [p%2==1][k>=2] => 数目纟本原根=p**(k-1)-p**(k-2) = p**(k-2)*(p-1)
+    # [p%2==1][k>=2] => 本原根特别容易找到，只要不是1%p***2，就都是本原根
+    # 注意:特殊情况:[p==2]or[k==1]
+
+[p::prime][us::ZZ[**p]][i::int]:
+  [i*us = mul4ius(i,us) =[def]= [i*u | [u:<-us]]]
+
+[p::prime][us::ZZ[**p]][k::int{>=1}]:
+  [us%p**k =[def]= us[k-1]]
+
+[p::prime][us::ZZ[**p]]:
+  [[us <- units_of(ZZ[**p])] <-> [us%p =!= 0]]
+
+[p::prime][us::ZZ[**p]][us =!= view_ZZ8adic(0)]:
+  [?[m::uint] -> ?[vs:<-units_of(ZZ[**p])] -> [us == p**m * vs]]
+[p::prime][us::ZZ[**p]]:
+  [gde_(p;us) =[def]= if [us == view_ZZ8adic(0)] then +oo else let [(m,vs) :=> [[m::uint][vs:<-units_of(ZZ[**p])][us == p**m * vs]]] in m]
+    #v{p}(us)
+
+[p::prime][m::int{>=1}][E::有限交换群][len(E) == p**m]:
+  # [E :: finite abelian group of p-power order]
+  # [m:=log_(p;len(E))][m <- ZZ]
+  [@[x:<-E] -> [x**p**m == E.1]]
+  [@[x:<-E] -> @[n::int{>=m}] -> [x**p**n == E.1]]
+  [@[x:<-E] -> @[i::int] -> @[n::int{>=m}] -> [x**i == x**(i%p**n)]]
+  [@[x:<-E] -> @[us::ZZ[**p]] -> [limit[x**us[k-1] | [k:<-[1..]]] == x**us[m-1]]]
+
+  [x:<-E][us::ZZ[**p]]:
+    [x**us = pow4FAG(x,us) =[def]= x**us[m-1]]
+      # operation of ZZ[**p] on E
+
+  [x,y:<-E][us,vs::ZZ[**p]]:
+    [(x*y)**us == x**us*y**us]
+    [x**(us+vs) == x**us*x**vs]
+    [x**(us*vs) == (x**us)**vs]
+    [x**(ZZ[**p].1) == x]
+    #==>>:
+    [pow4FAG/(**) makes E into a "module" over ZZ[**p]]
+      # a ZZ[**p]-module
+
+  #xxx:非有限:[E:=(1+p*ZZ[**p])]
+
+[xs:<-(1+p*ZZ[**p])][us::ZZ[**p]]:
+  [xs**us = pow4IPA(xs,us) =[def]= [pow4FAG(xs[k-1]%p**k,us) | [k:<-[1..]]]]
+    # operation of ZZ[**p] on (1+p*ZZ[**p])
+    # pow4IPA makes (1+p*ZZ[**p]) into a "ZZ[**p]]-module"
+  [pow4IPA(xs,us) == [if k==1 then 1%p else (xs[k-1]**us[k-2])%p**k | [k:<-[1..]]]]
+
+[xs:<-(1+p*ZZ[**p])]:
+  [xs**ZZ[**p] =[def]= {pow4IPA(xs,vs) | [vs:<-ZZ[**p]]}]
+
+??? [@[xs:<-(1+p*ZZ[**p])][m:=gde_(p;xs-1)][m>=1+[p==2]] -> [xs**ZZ[**p] == (1+p**m*ZZ[**p])]] # F_5_1
+    #感觉不太对
+group isomorphisms:
+[ZZ[**2]{*} == (1+2*ZZ[**2]) ~=~ ({-1,+1}, (1+4*ZZ[**2])) ~=~ (ZZ%2, ZZ[**2])] # F_5_3
+    #感觉不太对
+[@[p::prime][p=!=2] -> [ZZ[**p]{*} ~=~ (ZZ%(p-1), (1+p*ZZ[**p])) ~=~ (ZZ%(p-1), ZZ[**p])]] # F_5_2
+    #感觉不太对
+    #   还是说，(x,y) 使用了 不同的 乘法?
+    # [j*k%p=!=0]:
+    #   * [(k,1+p*us) ~ mul4ius(k,1+p*us)==(k+p*k*us)]:
+    #       !! 分解成俩因子，点点相乘，没毛病
+    #       (k,1+p*us)*(j,1+p*vs) = (k*j%p, (1+p*us)*(1+p*vs))
+    #
+    #   * [(k,us) ~ ???]:
+    #       !! 点点相乘
+    #       (k,us)*(j,vs) = (k*j,us*vs)
+    #       (k,us)*(j,0) = (k*j,0)
+    #       ！！不行！！
+]]
+
