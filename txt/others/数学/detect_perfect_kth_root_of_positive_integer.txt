@@ -1,0 +1,187 @@
+
+e others/数学/detect_perfect_kth_root_of_positive_integer.txt
+
+
+[[n:<-[1..]][k:<-[1..]]]:
+    [is_kth_power_(k;n) =[def]= [n**/k%1 == 0]]
+
+
+使用中国剩余定理确认:
+[[n:<-[1..]][k:<-[1..]]]:
+  [ez := floor_log2(n)]
+  [ez >= 0]
+  [ez <= log2(n) < 1+ez]
+  [ez/k <= log2(n)/k < (1+ez)/k]
+  [ez//k <= log2(n**/k) < 1+ez//k]
+  [ek := ez//k]
+  [ek <= log2(n**/k) < 1+ek]
+  [2**ek <= n**/k < 2**(1+ek)]
+  [2**(k*ek) <= n < 2**(k*(1+ek))]
+  [rt,M1::int][M1 >= 2**ek][rt**k == n]:
+    [rt**k =[%M1]= n]
+    !! [2**ek <= n**/k < 2**(1+ek)]
+    !! [rt**k == n]
+    [2**ek <= rt < 2**(1+ek) <= 2*M1]
+    [0 <= rt//M1 < 2]
+    [rt <- {rt%M1, rt%M1+M1}]
+    * [rt%M1 < 2**ek]:
+      [rt%M1 < 2**ek <= rt]
+      [rt == (rt%M1+M1)]
+    * [rt%M1 >= 2**ek]:
+      [rt%M1+M1 >= 2**ek+M1 >= 2**ek+2**ek >= 2**(1+ek) > rt]
+      [rt == (rt%M1)]
+    [rt == (rt%M1) +[rt%M1 < 2**ek]*M]
+      # 先求出(n**/k)唯一候选值
+
+  [rt,M2::int][2**ek <= rt < 2**(1+ek)][M2 >= 2**(k*(1+ek)) -2**(k*ek) == (-1+2**k)*2**(k*ek)][rt**k =[%M2]= n]:
+    !! [2**ek <= rt < 2**(1+ek)]
+    [2**(k*ek) <= rt**k < 2**(k*(1+ek))]
+    [0 <= rt**k -2**(k*ek) < 2**(k*(1+ek)) -2**(k*ek) <= M2]
+    !! [2**(k*ek) <= n < 2**(k*(1+ek))]
+    [0 <= n -2**(k*ek) < 2**(k*(1+ek)) -2**(k*ek) <= M2]
+    !! [rt**k =[%M2]= n]
+    [rt**k -2**(k*ek) =[%M2]= n -2**(k*ek)]
+    [rt**k -2**(k*ek) == n -2**(k*ek)]
+    [rt**k == n]
+      #只要M2足够大，就可确认唯一候选值rt是否真是(n**/k)
+
+
+[k::prime]:
+
+  * [k%2==0]:
+    [k==2]
+    [p::prime][p%4==3]:
+      [see:iter_sqrts_mod_prime_]
+      [see:_iter_sqrts_mod_odd_prime_]
+      if not Jacobi_symbol(p, xx_p) == 1:...
+      [sqrts_mod_(p;x**2) == (x**2)**((p+1)///4)%p == x**((p+1)///2)%p == x*x**((p-1)///2)%p == x*(-1)**e]
+        一次两根，多个p不太行
+      开平方:O(log2(p)**3)
+        效率倒数:(log2(p)**2) / 1有效爻元
+
+      [xx_p_ze := x**2%p**(2*e)]
+      [xx_p_e := x**2%p**e]
+      [x_p_e := x%p**e]
+      [x_p_ze := x%p**(2*e)]
+      [(qx,r) := x_p_ze/%p**e]
+      [x_p_ze == qx*p**e +r]
+      [r == x_p_e]
+      [xx_p_ze
+      == x_p_ze**2%p**(2*e)
+      == (qx*p**e +r)**2%p**(2*e)
+      == (2*r*qx*p**e +r**2)**2%p**(2*e)
+      ]
+      [qx == ((xx_p_ze-r**2)///p**e)*(2*r)**-1 %p**e]
+      [qx == ((xx_p_ze -x_p_e**2)///p**e)*(2*x_p_e)**-1 %p**e]
+        #根规模翻倍:O(log2(p)**2*e**2)
+        效率倒数:(log2(p)*e) / 1有效爻元
+    [p:=2]:
+      [x%2==1]:
+        [x**2%8 == 1]
+        [xx%2**e == x**2%2**e][e>=2]:
+          [xx%2**e == (b0*2**(e-1)+x*(-1)**b1)**2%2**e]
+            一次四根
+      [qx == ((xx_p_ze -x_p_e**2)///p**(1+e))*(x_p_e)**-1 %p**(e-1)]
+        #根规模翻倍:O(log2(p)**2*e**2)
+        效率倒数:(log2(p)*(e-1)) / 1有效爻元
+      求倒数:
+      [e>=2]:
+      [v_p_e := x_p_e**-1%p**e]
+      [v_p_ze := x_p_ze**-1%p**(2*e)]
+      [qv := v_p_ze//p**e]
+      [v_p_ze == qv*p**e + v_p_e]
+      [1
+      == v_p_ze*x_p_ze %p**(2*e)
+      == (qv*p**e + v_p_e)*(qx*p**e + x_p_e) %p**(2*e)
+      == (qv*x_p_e*p**e + v_p_e*xx_p_ze) %p**(2*e)
+      ]
+      [qv == ((1-v_p_e*xx_p_ze)//p**e)*x_p_e**-1 %p**e]
+      [qv == ((1-v_p_e*xx_p_ze)//p**e)*v_p_e %p**e]
+  * [k%2==1]:
+    [p::prime][(p-1)%k=!=0]:
+      !! [k::prime]
+      [gcd(k,p-1) == 1]
+      [w:=k**-1%(p-1)]
+      [((x**k)**w) %p == x]
+          一次一根，适合多p
+      开平方:O(log2(p)**3)
+        效率倒数:(log2(p)**2) / 1有效爻元
+
+[e,M,xj,xij,y,i,j::int][M>=2][f :: ZZ[X]][1 <= i <= j][f(xj) =[%M**j]= y][f(xij) =[%M**(i+j)]= y][xij =[%M**j]= xj][qi:=xij//M**j%M**i][gcd(y,M) == 1]:
+  # [qi == ???]
+  [Qij := (f(xj) -y) ///M**j %Mi]
+  [f(xj) %M**(i+j) == (Qij*M**j +y) %M**(i+j)]
+  [f(xij) %M**(i+j) == y %M**(i+j)]
+  [f(qi*M**j+xj) %M**(i+j) == y %M**(i+j)]
+  [(f(qi*M**j+xj) -f(xj))  %M**(i+j) == (-Qij*M**j) %M**(i+j)]
+  [sum[c[t]*((qi*M**j+xj)**t -(xj)**t) | [t:<-[0..]]]  %M**(i+j) == (-Qij*M**j) %M**(i+j)]
+  !! [1 <= i <= j]
+  [sum[c[t]*((t*qi*M**j*xj**(t-1)+xj**t) -(xj)**t) | [t:<-[0..]]]  %M**(i+j) == (-Qij*M**j) %M**(i+j)]
+  [sum[c[t]*(t*qi*M**j*xj**(t-1)) | [t:<-[0..]]] %M**(i+j) == (-Qij*M**j) %M**(i+j)]
+  [sum[(c[t]*t*qi*xj**(t-1)) | [t:<-[0..]]]  %M**i == (-Qij) %M**i]
+  [qi*Df(xj)  %M**i == (-Qij) %M**i]
+  [qi*Df(xj)  %M**i == (y -f(xj)) ///M**j %M**i]
+  [qi*Df(xj)  %M**i == (y -f(xj)%M**(i+j)) ///M**j %M**i]
+
+  [k::int][f(X) == X**k]:
+    [k==-1]:
+      [qi*(-xj**-2)  %M**i == (y -xj**-1%M**(i+j)) ///M**j %M**i]
+      [qi %M**i == (y -xj**-1%M**(i+j)) ///M**j *(-xj**2) %M**i]
+      [qi %M**i == (1 -y*xj %M**(i+j)) ///M**j *xj %M**i]
+
+    [k>=2]:
+      [qi*(k*xj**(k-1))  %M**i == (y -(xj**k)%M**(i+j)) ///M**j %M**i]
+      [qi*(k*xj**k*y**-1 %M**(i+j))  %M**i == (y -(xj**k)%M**(i+j)) ///M**j *xj*(y**-1 %M**(i+j)) %M**i]
+      [qi*(k*xj**k*y**-1 %M**j)  %M**i == (1 -(xj**k*y**-1)%M**(i+j)) ///M**j *xj %M**i]
+      [qi*k %M**i == (1 -(xj**k*y**-1)%M**(i+j)) ///M**j *xj %M**i]
+
+  [k::int][f(X) == X**k]:
+    [k>=2]:
+      [y %M**(i+j)
+      == xij**k %M**(i+j)
+      == (xij %M**(i+j))**k %M**(i+j)
+      == (qi*M**j +xj)**k %M**(i+j)
+      !! [1 <= i <= j]
+      => [i+j <= 2*j]
+      == (k*qi*M**j*xj**(k-1) +xj**k) %M**(i+j)
+      ]
+      [y %M**(i+j) == (k*qi*M**j*xj**(k-1) +xj**k) %M**(i+j)]
+      [1 == (k*qi*M**j*xj**(k-1)*y**-1 +y**-1*xj**k) %M**(i+j)]
+      [(k*qi*M**j*xj**(k-1)*y**-1) %M**(i+j) == (1 - y**-1*xj**k) %M**(i+j)]
+      [(k*qi*xj**(k-1)*(y**-1 %M**(i+j))) %M**i == (1 - (y**-1 %M**(i+j))*xj**k) ///M**j %M**i]
+      !! [j >= i]
+      [(k*qi*xj**k*(y**-1 %M**j)) %M**i == (1 - (y**-1 %M**(i+j))*(xj**k %M**(i+j))) ///M**j *xj %M**i]
+      [(k*qi*(1 %M**j)) %M**i == (1 - (y**-1 %M**(i+j))*(xj**k %M**(i+j))) ///M**j *xj %M**i]
+      [(k*qi) %M**i == (1 - (y**-1 %M**(i+j))*(xj**k %M**(i+j))) ///M**j *xj %M**i]
+      [em::int][em>=0][gcd(k,M) == M**em]:
+        [(k///M**em)*qi %M**(i-em) == (1 - (y**-1 %M**(i+j))*(xj**k %M**(i+j))) ///M**(j+em) *xj %M**(i-em)]
+        [qi %M**(i-em) == (1 - (y**-1 %M**(i+j))*(xj**k %M**(i+j))) ///M**(j+em) *xj*(k///M**em)**-1 %M**(i-em)]
+
+    [k==-1]:
+      [1
+      == y*xij %M**(i+j)
+      == y*(xij %M**(i+j)) %M**(i+j)
+      == y*(qi*M**j +xj) %M**(i+j)
+      ]
+      [(1 -y*xj) %M**(i+j) == y*(qi*M**j) %M**(i+j)]
+      [(1 -y*xj)///M**j %M**i == y*qi %M**i]
+      [qi %M**i == (1 -y*xj)///M**j (y**-1 %M**i) %M**i]
+      !! [j >= i]
+      [qi %M**i == (1 -y*xj)///M**j (y**-1 %M**j) %M**i]
+      [qi %M**i == (1 -y*xj %M**(i+j))///M**j *xj %M**i]
+
+[M:=2**ez][M > x > M/2][sqrts_mod_(M;x**2) == {x, M-x;-M/2+x, M/2+(M-x)}]
+  {x,(M/2+(M-x))} 同处一区，不好区分
+[M:=2**ez][x < M/2][sqrts_mod_(M;x**2) == {x, M-x;M/2+x, M/2-x}]
+  {x,(M/2-x)} 不同处一区，好区分
+    必要唯一一个在[M/4..<M/2]区
+    最好[x<M/4]以便更好检测是否完美幂根
+    [M:=2**(3+floor_log2(x))]
+
+e ../../python3_src/seed/math/factor_pint/perfect_power/detect_perfect_power.py
+e ../../python3_src/seed/math/factor_pint/perfect_power/lift_neg_kth_root_mod_coprime_power_.py
+  DONE:平方根提升 i+j coprime
+view ../../python3_src/seed/math/sqrts_mod_.py
+from seed.math.sqrts_mod_ import iter_sqrts_mod_prime_power_,  iter_sqrts_mod_prime_
+def iter_sqrts_mod_prime_(p, xx, /, *, _may_output4debug_=None, upperbound4apply_floor_sqrt=default_upperbound4apply_floor_sqrt, may_arbitrary_one_square_nonresidual_mod_odd_prime=None):
+    O((log2(p)+log2(p///odd4p)**(3/2))*log2(p)**2 +find_arbitrary_one_square_nonresidual_mod_odd_prime_)

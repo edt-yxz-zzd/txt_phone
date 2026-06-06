@@ -1,0 +1,198 @@
+
+e others/app/termux/git/gittutorial.txt
+
+
+man git-<SUB_CMD>
+  man git-add
+git help <SUB_CMD>
+
+man gittutorial
+man giteveryday
+
+
+[[
+man gittutorial
+===
+# 初始化:全局变量
+$ git config --global user.name "Your Name Comes Here"
+$ git config --global user.email you@yourdomain.example.com
+
+# 初始化:项目
+$ cd /xxx/project/
+$ git init      #建立空项目
+$ git add ./    #添加 整个工作目录 到一个临时区域/过渡追踪区/"index"
+                [#a temporary staging area which Git calls the "index"#]
+$ git commit    # index/过渡追踪区-->repository/永久性存储区
+
+
+# 更新:项目
+$ git diff      # 查看未在 过渡追踪区 的改动:每个文件列出改动文本
+$ git add file1 file2 file3
+                # 添加 已改动文件、已删除文件、新建文件 的 路径 到 过渡追踪区
+  #git add --dry-run --all
+$ git diff --cached # 查看已在 过渡追踪区 的改动
+$ git status    # 查看已在 过渡追踪区 的文件状态:修改、删除、新增
+
+$ git restore --staged <file> #to unstage #『git add』的逆操作#从 过渡追踪区 中排除
+  git add 'txt/others/app/termux/git/git-rm.txt'
+  git restore --staged 'txt/others/app/termux/git/git-rm.txt'
+$ git commit            # 提交
+  git commit -m <描述>
+  git commit -a
+    #which will automatically notice any modified (but not new) files,
+    (不包含未追踪的新建文件)
+    =!= git add --all ; git commit
+      添加整个工作目录(包含未追踪的新建文件)
+
+
+# 回顾:项目历史
+$ git log
+  自今至古:倒叙 提交时附带描述
+$ git log -p
+  自今至古:倒叙 各文件改动文本
+$ git log --stat --summary
+
+# 管理:分支
+$ git branch <分支名>   # 新建分支
+$ git branch            # 列出所有分支名
+                        # 带星号者 为 当前所在分支
+$ git switch <分支名>   # 切换至指定分支
+  git switch <分支名>
+  ...修改
+  git commit # 提交
+  git switch master #切换回主枝
+$ git merge <分支名>    #合并指定分支到当前分支
+  git diff # @有冲突时
+  git commit # 提交
+  pkg install git-gitk
+  $ gitk                  # 图形化历史
+  $ git branch -d <分支名>  #合并后删除分支 #会确认所有修改已被合并
+  $ git branch -D <分支名>  #强制删除分支，丢失所有修改
+
+# 协作:合并
+user-aaa:
+$ git clone /home/user-xxx/project-yyy/   /home/user-aaa/project-bbb/
+    # 新建文件夹『project-bbb/』，复制项目
+...修改副本...
+user-xxx:
+cd /home/user-xxx/project-yyy/
+git commit  # 合并前先提交
+git pull /home/user-xxx/project-bbb/  <分支名>
+    # 合并他人的指定分支版本到自己的当前分支
+
+# 协作:下载浏览而不合并
+user-xxx:
+cd /home/user-xxx/project-yyy/
+#无需git commit
+$ git fetch /home/user-xxx/project-bbb/  <分支名>
+$ git log -p HEAD..FETCH_HEAD
+  # 所有FETCH_HEAD相关 \-\ 所有HEAD相关
+    即:从 他人相关 中排除 自己已有相关
+  # 集合差:『两点』
+$ gitk HEAD..FETCH_HEAD
+  # 图形化
+  # 集合差:『两点』
+$ gitk HEAD...FETCH_HEAD
+  # 集合对称差:『三点』，类似xor
+
+# 协作:别名:支持更多操作
+user-xxx:
+cd /home/user-xxx/project-yyy/
+git remote add alias4xxx_bbb /home/user-xxx/project-bbb/
+$ git fetch alias4xxx_bbb
+$ git log -p master..alias4xxx_bbb/master
+$ git merge alias4xxx_bbb/master
+  <==> $ git pull . remotes/alias4xxx_bbb/master
+    #Note that git pull always merges into the current branch, regardless of what else is given on the
+   command line.
+
+
+
+$ git clone /home/user-xxx/project-yyy/   /home/user-aaa/project-bbb/
+... ...
+$ cd /home/user-aaa/project-bbb/
+$ git pull  # 下载更新自源址，无需显式路径
+$ git config --get remote.origin.url
+    => 『/home/user-xxx/project-yyy/』
+$ git config -l #列出所有设置
+
+
+
+# 历史:浏览、命名/贴标签、搜索...
+还挺丰富...
+
+===
+]]
+[[
+man giteveryday
+giteveryday - A useful minimum set of commands for
+   Everyday Git
+
+===
+INDIVIDUAL DEVELOPER (STANDALONE)
+    A standalone individual developer does not exchange patches with other people, and works alone in a single repository, using the following commands.
+
+o git-init(1) to create a new repository.
+o git-log(1) to see what happened.
+o git-switch(1) and git-branch(1) to switch branches.
+o git-add(1) to manage the index file.
+o git-diff(1) and git-status(1) to see what you are in the middle of doing.
+o git-commit(1) to advance the current branch.
+o git-restore(1) to undo changes.
+o git-merge(1) to merge between local branches.
+o git-rebase(1) to maintain topic branches.
+o git-tag(1) to mark a known point.
+
+
+Examples
+
+Use a tarball as a starting point for a new repository.
+$ tar zxf frotz.tar.gz
+$ cd frotz
+$ git init
+$ git add . (1)
+            # 1. add everything under the current directory.
+$ git commit -m "import of frotz source tree."
+$ git tag v2.43 (2)
+                # 2. make a lightweight, unannotated tag.
+
+
+Create a topic branch and develop.
+$ git switch -c alsa-audio (1)
+                # 1. create a new topic branch.
+$ edit/compile/test
+$ git restore curses/ux_audio_oss.c (2)
+                # 2. revert your botched changes in curses/ux_audio_oss.c.
+$ git add curses/ux_audio_alsa.c (3)
+                # 3. you need to tell Git if you added a new file; removal and modification will be caught if you do git commit -a later.
+$ edit/compile/test
+$ git diff HEAD (4)
+                # 4. to see what changes you are committing.
+$ git commit -a -s (5)
+                # 5. commit everything, as you have tested, with your sign-off.
+$ edit/compile/test
+$ git diff HEAD^ (6)
+                # 6. look at all your changes including the previous commit.
+$ git commit -a --amend (7)
+                # 7. amend the previous commit, adding all your new changes, using your original message.
+$ git switch master (8)
+                # 8. switch to the master branch.
+$ git merge alsa-audio (9)
+                # 9. merge a topic branch into your master branch.
+$ git log --since='3 days ago' (10)
+                # 10. review commit logs; other forms to limit output can be combined and include -10 (to show up to 10 commits), --until=2005-12-10, etc.
+$ git log v2.43.. curses/ (11)
+                # 11. view only the changes that touch what's in curses/ directory, since v2.43 tag.
+
+
+
+
+
+
+
+INDIVIDUAL DEVELOPER (PARTICIPANT)
+    A developer working as a participant in a group project needs to learn how to communicate with others, and uses these commands in addition to the ones needed by a standalone developer.
+===
+]]
+
+
