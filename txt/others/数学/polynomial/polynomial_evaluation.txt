@@ -1,0 +1,673 @@
+
+e others/数学/polynomial/polynomial_evaluation.txt
+
+
+
+@20260610
+{#后来发现:Nussbaumer_method/symbolic_DFT无需g或者说虚拟一个g#}
+  view ../../python3_src/seed/algo/FFT/convolution.py
+  view ../../python3_src/seed/math/polynomial/eval_polynomial/eval_polynomial_on_geometric_progression.py
+
+
+'Prime numbers-A Computational Perspective(2ed)(2005)(Pomerance).pdf'
+[[
+整数分解牜多项式求值:
+page238[249/604]
+5.5 Polynomial evaluation method
+the Pollard–Strassen polynomial evaluation method
+[f(N,B;x) := II[(x+j) | [j:<-[0..<B]]] %N]
+[ff(N,B;x) := II[f(N,B;x+j*B) | [j:<-[0..<B]]] %N]
+[ls_ff(N,B;x) := [f(N,B;x+j*B) | [j:<-[0..<B]]]]
+[ff(N,B;x) == f(N,B**2;x)]
+[ff(N,B;x) == II(ls_ff(N,B;x)) %N]
+
+[TIME{ls_ff(N,B;x)} == O(B*ln(B)**2)*TIME{__mul__{N}}]
+  !! Algorithm__9_6_7
+[B:=ceil(N**/4)]:
+  [TIME{ls_ff(N,B;x)} == O(N**/4*ln(N)**2)*TIME{__mul__{N}}]
+
+]]
+[[
+page514[523/604]
+9.6.3 Polynomial evaluation
+[poly_eval_(cs, x) := sum[(cj*x**j) | [(j,cj):<-enumerate(cs)]]]
+[poly_evals_(cs, xs) := [poly_eval_(cs, x) | [x:<-xs]]]
+
+[TIME{poly_evals_(cs, xs)} == O(len(xs)*ln(min(len(xs),len(cs)))**2)]
+  ??? 下面没有一个符合
+[n := len(xs)]
+  # num_points
+[D := len(cs)]
+  # 1+degree_of_polynomial
+[TIME{poly_evals_(cs{D}, xs{n})} == O(n*ln(min(n,D))**2)]
+  ??? 下面没有一个符合
+
+* 蛮力版:
+  O(D*n)
+* [xs :: arithmetic_progression]
+  Algorithm__9_6_5
+  [n>=D]:O(D*D*__mul__+D*n*__add__)
+  [n>=D]:O(D*n) 跟 蛮力版 类同，只是 后续计算 避免乘法
+* [xs :: geometric_progression]
+  Algorithm__9_6_6
+  [n==D]:O(D*ln(D)) # == O(n*ln(n))
+    # cyclic_convolution__len_eq_#DFT
+* [xs :: arbitrary]
+  Algorithm__9_6_7
+  [n<?>D]
+  O(max{D,n}*ln(max{D,n})*ln(min{D,n}))
+
+
+
+
+=================
+* [xs :: arithmetic_progression]:
+  Algorithm__9_6_5
+  Algorithm 9.6.5 (Evaluation of polynomial on arithmetic progression).
+    (The method attains its best efficiency when n is much greater than D.)
+  输入:(cs, x0, d, n)
+      [xs := range(x0, x0+d*n, d)]
+      or:
+      [xs := [x0+d*j | [j:<-[0..<n]]]]
+  输出:j2y/[y]{len==n}
+  耗时:O(D*(D+n))
+      [D ~= lnD**2] => [D ~= 16]
+
+
+
+#一：求前D个点 用于 初始化 差分表:
+  [j2y[:D] := [poly_eval_(cs, x) | [x:<-xs[:D]]]]
+    # 蛮力=>O(D**2)
+    # 无用:花哨=>O(D*lnD) # <<== "arbitrary" version
+#二：制差分表
+  [k2diff[:D] := j2y[:D]]
+  ... # O(D**2)
+#三：累加输出
+  ... # O(D*n)
+
+1. [Evaluate at first D points]
+    for (0 <= k < D)
+        k2diff[k] := f(x0 + k*d);
+          #初始化 差分表 而非 j2y[:D]
+2. [Create difference tableau]
+    for(1 ≤ j < D) {
+        for(D-1 ≥ k ≥ j)
+            k2diff[k] -= k2diff[k-1];
+    }
+3. [Operate over tableau]
+    j2y[0] := k2diff[0];
+    for(1 ≤ j < n) {
+        j2y[j] := j2y[j-1] + k2diff[1];
+        for(1 ≤ k < D-1)
+            k2diff[k] += k2diff[k+1];
+    }
+    return j2y[:n]
+
+
+
+
+
+
+=================
+* [xs :: geometric_progression]:
+  Algorithm__9_6_6
+  输入:(cs, T, T**-1)
+      [len(xs) == len(cs)]
+        # !! 使用 零填充耂周期卷积
+      [n := D] # == len(cs)
+      [xs := [T**j | [j:<-[0..<n]]]]
+  输出:j2y/[y]{len==n==D}
+  耗时:O(D*ln(D))
+
+  起始值可以不是1吗？ AAA*T**k
+    => [cs[j] --> AAA**j*cs[j]]
+
+Algorithm 9.6.6 (Evaluation of polynomial on geometric progression).
+
+e ../../python3_src/seed/math/polynomial/eval_polynomial/eval_polynomial_on_geometric_progression.py
+
+the_Bluestein_trick
+  [sum(b**(C0*j)...) == C1*sum(g1(j)*g2(C2-j)...)]
+    转化为 卷积
+
+原版:the_Bluestein_trick:
+[poly_eval_(cs, (T**k)) == (T**-1)**(k**2/2) * sum[((cj*(T**-1)**(j**2/2)) * (T**((-k-j)**2/2))) | [(j,cj):<-enumerate(cs)]]]
+  # 定义 => [poly_eval_(cs, (T**k)) == sum[(cj*(T**k)**j) | [(j,cj):<-enumerate(cs)]]]
+
+变体:the_Bluestein_trick#保证指数为整数
+[poly_eval_(cs, (T**k)) == T**triangular_number_(-k) * sum[((cj*T**triangular_number_(j)) * ((T**-1)**triangular_number_(-(k-j)))) | [(j,cj):<-enumerate(cs)]]]
+  where:
+    [triangular_number_(i) := C(1+i;2)]
+    [triangular_number_(i) == i*(i+1)///2]
+    [triangular_number_(a) == triangular_number_(-1-a)]
+    [triangular_number_(a+b) == triangular_number_(a) + triangular_number_(b) + a*b]
+
+    # [(a,b) := (-k,j)]
+    [triangular_number_(-k) == triangular_number_(-1+k)]
+    [(-k*j) == triangular_number_(-k+j) -triangular_number_(-k) -triangular_number_(j)]
+
+    ==>>:
+    [triangular_number_(-k) +triangular_number_(j) -triangular_number_(-(k-j)) == (k*j)]
+        # 右式指数求和 得 左式指数
+        # 正确性得以证实
+we can employ an efficient, cyclic convolution by carefully embedding the u signal[#us#] in a longer, zero-padded signal and reindexing, as in the following algorithm.
+[m := 1+ceil_log2(D)]
+[M := 2**m]
+[M >= 2*D]
+    # 隔离带:两倍周期 零填充 避免混淆
+[us := [(cj*T**triangular_number_(j)) | [(j,cj):<-enumerate(cs)]] ++ [0]*(M-D)]
+  # u signal
+  # O(D*ln(D))
+[len(us) == M]
+
+[vs := [((T**-1)**triangular_number_(M///2-j-1)) | [j:<-[0..<M]]]]
+  # v signal
+  # O(D*ln(D))
+[len(vs) == M]
+
+[ws := cyclic_convolution__len_eq_(M; us, vs)]
+  # [length-M cyclic convolution := 3次FFT]
+  # O(D*ln(D))
+[j2y[:D] := [(T**triangular_number_(-1+k) * ws[M///2+k-1]) | [k:<-[0..<D]]]]
+  # O(D*ln(D))
+return j2y[:D]
+
+
+[length-M cyclic convolution := 3次FFT] # [#两次作用于us,vs,一次生成ws#]
+[DFT(g;cs) == [poly_eval_(cs;g**-k) | [k:<-[0..<D]]]]
+    where g is the appropriate root of unity for the transform.
+    So Algorithm 9.6.6 is telling us that evaluations over geometric progressions are
+        , except perhaps for the minor penalty of zero-padding and so on
+        , essentially of FFT complexity given only that g is invertible.
+            # 虽然T只需可逆，但仍然需要g{==1**/M}用于FFT #{#后来发现:Nussbaumer_method/symbolic_DFT无需g或者说虚拟一个g#}
+            #   比如 分解整数时 ZZ%N 就找不到 g
+            #       变通一下:ZZ%N变作ZZ%(N*G) 由ZZ%G提供g，[gcd(N,G)==1][g%N==1]
+            #           似乎行不通！见:_ws8 == [75391]*256@view ../../python3_src/seed/math/polynomial/eval_polynomial/eval_polynomial_on_geometric_progression.py
+    It is likewise clear that any FFT can be embedded in a convolution of power-of-two length
+        , and so require at most three FFTs of that padded length (note that in some scenarios the v signal’s symmetry allows further optimization).
+
+
+
+
+=================
+* [xs :: arbitrary]:
+  Algorithm__9_6_7
+  输入:(cs, xs)
+  输出:j2y/[y]{len==n}
+  耗时:O(max{D,n}*ln(max{D,n})*ln(min{D,n}))
+      * 顶层[n > 2*D]:
+        拆分数据:n/%D
+          其实 数据拆半后多项式求余 结果也类似
+          但 顶层如此区别对待，是因为 预备构造 翻倍增长的多项式树 时 避免无用的超长 多项式模
+        [耗时，== n/D * O(D*lnD**2) == O(n*lnD**2)]
+      * 顶层[n <= 2*D]or非顶层:
+        非顶层 可令:[D:=max(D,n)]
+        数据拆半后多项式求余 # 可能导致 子调用[n>2*D]
+        [耗时 == 2*(TIME{poly_mod_{D,n}} +O(n) +O(recur..min(D,n)/2)) == O(D +ln(n)*(-D+TIME{poly_mod_{D,n}})) == O(D*ln(D)*ln(n))]
+        [耗时 == O(D*ln(D)*ln(n))]
+        [耗时 == O(max{D,n}*ln(max{D,n})*ln(min{D,n}))]
+        <<==:
+        ===
+        [TIME{多项式截尾求逆{deg}} == O(1)*TIME{多项式乘法{deg}}]
+            # !! 牛顿迭代:每步翻倍:最后一步耗时 占大头
+        ===
+        [TIME{多项式求余{degN,degD}} == [degN>=degD]*O(TIME{多项式反转{degN}} +TIME{多项式截尾求逆{degN-degD}} +TIME{多项式截尾乘法{1+degN-degD}} +TIME{多项式乘法{1+degN-degD,degD}} +TIME{多项式减法{degN}})]
+        [TIME{多项式求余{degN,degD}} == O(1)*TIME{多项式乘法{degN}}]
+        ===
+        [TIME{多项式乘法{deg}} == O(deg*ln(deg))*TIME{系数乘法}]
+            # !! acyclic_convolution__lenI_eq_ --[零填充]-> cyclic_convolution__len_eq_ --[DFT]-> O(sz*ln(sz))*op
+    下面假设:[n ~= D]即[len(xs) ~= len(cs)]
+
+The third, and most general, case of polynomial evaluation starts from the observation that polynomial remaindering can be used to decimate the evaluation procedure.
+多项式模数 相当于 简并态
+  即 ZZ[x]%g(x) 相当于 x可以取任意g(x)的根，而保持 模等价关系
+  即:
+[h(x):=f(x)%((x-a)*g(x))]:
+  [f(a) == h(a)]
+[[h(x):=f(x)%g(x)] -> @a -> [g(a) == 0] -> [f(a) == h(a)]]
+f在xs上求值:poly_evals_(cs;xs)
+  -->:
+  poly_evals_(csL;xs[:n//2])
+  poly_evals_(csR;xs[n//2:])
+  其中csL,csR就来自不同剩余:
+    [fL(x):=f(x)%II[(x-a) | [a:<-xs[:n//2]]]]
+    [fR(x):=f(x)%II[(x-a) | [a:<-xs[n//2:]]]]
+
+
+
+to preconstruct a polynomial remainder tree;
+  多项式求余 时，多项式模 必须完全展开
+  一开始 构造顶层 多项式模 需得 自底向上
+  接下来 分治递归 多项式模 拆半 是 自顶向下
+  所以 缓存这些 中间 多项式模 很有必要
+  (((X-xs[0])*(X-xs[1]))   *   ((X-xs[2])*(X-xs[3]))) ...
+      顶层n=degD 最长 不超过 顶层D=degN=len(cs)
+
+Algorithm__9_6_7
+Algorithm 9.6.7
+Algorithm 9.6.7 (Evaluation of a polynomial at arbitrary points).
+  简化假设:[n==D==2**k]
+  This algorithm, via a recursive function eval, returns all the values of f(xs[j]) for arbitrary points xs[0],...,xs[n−1].
+  For convenience, we assume D = 2**k, yet simple options will generalize to other D.
+0.  预备构造 翻倍增长的多项式树:
+    [poly_tree :: {(i,j): if i+1==j then (X-xs[i]) else poly_tree[(i,(i+j)//2)]*poly_tree[((i+j)//2,j)]}}]
+1.  [Set breakover]
+    δ = 4;// Or whatever classical evaluation threshold is best.
+
+2.  [Recursive eval function]
+    def eval(cs,i,k) {
+3.  [Check breakover threshold for recursion exit]
+        // Next, use literal evaluation at the tiin small cases.
+        if((len_xs:=k-i) ≤ δ) {
+            xs_ik = xs[i:k]
+            return [poly_eval_(cs;x) for x in xs_ik]
+        }
+4.  [Split the signal into halves]
+        j = i+(k-i)//2
+5.  [Assemble half-polynomials]
+        f_ij = poly_tree[(i,j)]
+        f_jk = poly_tree[(j,k)]
+6.  [Modular reduction]
+        csL = poly(cs) % f_ij;
+        csR = poly(cs) % f_jk;
+        return eval(csL,i,j) ++ eval(csR,j,k);
+    }
+
+
+
+=================
+]]
+[[
+acyclic_convolution__lenI_eq_:大整数乘法
+  通过零填充，转化为 cyclic_convolution__len_eq_
+  而cyclic_convolution__len_eq_:通过DFT转化为 按位乘法dyadic_product
+    # bug?也许可以使用symbolic_DFT:已证否:IDFT中[gcd(M,N) > 1]不是问题:比如:M是二幂，ZZ%N，N也是二幂，其实只要N足够大，保证 [输出*M < N]，则 M**-1 虽然不存在，但可以 直接整除!!!
+    # bug:[#原则上可行，但由于FFT算法内部大概率使用neg_()，与pow(g,sz//2,N*G)非-1/不一致#]DFT中[ZZ%N找不到g]不是问题，变通一下:ZZ%N变作ZZ%(N*G) 由ZZ%G提供g，[gcd(N,G)==1][g**M%G==1][@[p::prime] -> [M%p==0] -> [g**(M///p)%G=!=1]][g%N==1] 用CRT构造出 g%(N*G)
+
+<<==:
+page488[597/604]
+9.5.3 Convolution theory
+[M == len(us) == len(vs)]:
+  [cyclic_convolution__len_eq_(M; us, vs) := [sum[us[j]*vs[(k-j)%M] | [j:<-[0..<M]]] | [k:<-[0..<M]]]]
+      『×』
+  [negacyclic_convolution__len_eq_(M; us, vs) := [sum[(-1)**(j>k)*us[j]*vs[(k-j)%M] | [j:<-[0..<M]]] | [k:<-[0..<M]]]]
+      『×_』
+[negacyclic_convolution__len_eq_(M; us, vs) == [(sum[us[j]*vs[(k-j)] | [j:<-[0..=k]]] -sum[us[j]*vs[(M+k-j)] | [j:<-[1+k..<M]]]) | [k:<-[0..<M]]]]
+
+[M == len(us) == len(vs)]:
+  [acyclic_convolution__lenI_eq_(M; us, vs) := [sum[us[j]*vs[(k-j)] | [j:<-[0..=k]]] | [k:<-[0..=(2*M-2)]]] ++ [0]]
+      『×A』
+      # 注意: 最后一个元素 填充 0
+      # 注意: 输入长度都是M; 输出长度为2*M
+  [half_acyclic_convolution__len_eq_(M; us, vs) := acyclic_convolution__lenI_eq_(M; us, vs)[:M]]
+      『×H』
+[half_acyclic_convolution__len_eq_(M; us, vs) == [sum[us[j]*vs[(k-j)] | [j:<-[0..=k]]] | [k:<-[0..<M]]]]
+
+
+dyadic_operator:
+  (.+.)
+  (.-.)
+  (.*.)
+[M == len(ts) == len(us) == len(vs)]:
+  [weighted_cyclic_convolution__len_eq_(M, ts; us, vs) := [ts[k]**-1 * sum[(ts .*. us)[j]*(ts .*. vs)[(k-j)%M] | [j:<-[0..<M]]] | [k:<-[0..<M]]]]
+      『×a』
+[(ts .*. weighted_cyclic_convolution__len_eq_(M, ts; us, vs)) == cyclic_convolution__len_eq_(M; (ts .*. us), (ts .*. vs))]
+
+
+
+比如:大整数乘法:或:多项式乘法:
+  即:acyclic_convolution__lenI_eq_
+
+比如:ZZ%(-1+B**D)环乘法:
+  # 如:梅森数(-1+2**ez)
+  (...+ak*B**k+...)*(...+bj*B**j+...)%(-1+B**D)
+    == (...+ak*bj*B**(k+j)+...)%(-1+B**D)
+    * [k+j < D]:
+      == (...+ak*bj*B**(k+j)+...)%(-1+B**D)
+    * [k+j >= D]:
+      == (...+ak*bj*B**(k+j-D)+...)%(-1+B**D)
+    即cyclic_convolution__len_eq_
+
+比如:ZZ%(+1+B**D)环乘法:
+  # 如:费马数(+1+2**2**ezz)
+  (...+ak*B**k+...)*(...+bj*B**j+...)%(+1+B**D)
+    == (...+ak*bj*B**(k+j)+...)%(+1+B**D)
+    * [k+j < D]:
+      == (...+ak*bj*B**(k+j)+...)%(+1+B**D)
+    * [k+j >= D]:
+      == (...-ak*bj*B**(k+j-D)+...)%(+1+B**D)
+    即negacyclic_convolution__len_eq_
+
+
+
+
+[2 *. half_acyclic_convolution__len_eq_(M; us, vs) == cyclic_convolution__len_eq_(M; us, vs) .+. negacyclic_convolution__len_eq_(M; us, vs)]
+  <==>:
+[2 *. acyclic_convolution__lenI_eq_(M; us, vs)[:M] == cyclic_convolution__len_eq_(M; us, vs) .+. negacyclic_convolution__len_eq_(M; us, vs)]
+[2 *. acyclic_convolution__lenI_eq_(M; us, vs)[M:] == cyclic_convolution__len_eq_(M; us, vs) .-. negacyclic_convolution__len_eq_(M; us, vs)]
+<==>:
+[cyclic_convolution__len_eq_(M; us, vs) == acyclic_convolution__lenI_eq_(M; us, vs)[:M] .+. acyclic_convolution__lenI_eq_(M; us, vs)[M:]]
+[negacyclic_convolution__len_eq_(M; us, vs) == acyclic_convolution__lenI_eq_(M; us, vs)[:M] .-. acyclic_convolution__lenI_eq_(M; us, vs)[M:]]
+  # 对半折叠
+
+
+[acyclic_convolution__lenI_eq_(M; us, vs)[M:] == cyclic_convolution__len_eq_(2*M; us++[0]*M, vs++[0]*M) == negacyclic_convolution__len_eq_(2*M; us++[0]*M, vs++[0]*M)]
+  # 零填充统一
+  zero_padding
+
+
+acyclic_convolution__lenI_eq_:大整数乘法
+  通过零填充，转化为 cyclic_convolution__len_eq_
+  而cyclic_convolution__len_eq_:通过DFT转化为 按位乘法dyadic_product
+###其他情况:
+ZZ%(+1+B**D)环乘法:见上面^
+  negacyclic_convolution__len_eq_ 通过 weighted_cyclic_convolution__len_eq_{hs} 实现
+  right_angle_convolution__len_eq_ 通过 复数域weighted_cyclic_convolution__len_eq_{M///2;ms} 实现 #数据折半 变作 虚部
+
+
+
+convolution --> dyadic_product (.*.)
+卷积 转化为 位积
+前提条件:
+  [g**M==1][@[p::prime] -> [M%p==0] -> [g**(M///p)=!=1]]
+    or:特殊情况:[[ez:=floor_log2(M)][M == 1<<ez][g**(M///2) == -1]]
+  [M == len(us)]
+  [DFT(g;us) := [sum[us[j]*(((g**-1)**k)**j) | [j:<-[0..<M]]] | [k:<-[0..<M]]]]
+  [IDFT(g;us) := [M**-1 * sum[us[j]*(((g**+1)**k)**j) | [j:<-[0..<M]]] | [k:<-[0..<M]]]]
+    # M**-1 若不存在，可考虑 (///M)，前提是 结果精度不失
+  [IDFT(g;us) == [M**-1 * DFT(g**-1;us) | [k:<-[0..<M]]]]
+
+==>>:
+[cyclic_convolution__len_eq_(M; us, vs) == IDFT(g; DFT(g;us) .*. DFT(g;vs))]
+  <==>:
+[Zs:=(DFT(g;us) .*. DFT(g;vs))]
+[cyclic_convolution__len_eq_(M; us, vs) == M**-1 *. [sum[Zs[j]*(g**k)**j | [j:<-[0..<M]]] | [k:<-[0..<M]]]]
+  <==>:
+[cyclic_convolution__len_eq_(M; us, vs) == M**-1 *. [poly_eval_(Zs;(g**k)) | [k:<-[0..<M]]]]
+  <==>:
+[gs:=[(g**k) | [k:<-[0..<M]]]]
+[cyclic_convolution__len_eq_(M; us, vs) == M**-1 *. poly_evals_(Zs;gs)]
+  # bug?也许可以使用symbolic_DFT:已证否:IDFT中[gcd(M,N) > 1]不是问题:比如:M是二幂，ZZ%N，N也是二幂，其实只要N足够大，保证 [输出*M < N]，则 M**-1 虽然不存在，但可以 直接整除!!!
+  # bug:[#原则上可行，但由于FFT算法内部大概率使用neg_()，与pow(g,sz//2,N*G)非-1/不一致#]DFT中[ZZ%N找不到g]不是问题，变通一下:ZZ%N变作ZZ%(N*G) 由ZZ%G提供g，[gcd(N,G)==1][g**M%G==1][@[p::prime] -> [M%p==0] -> [g**(M///p)%G=!=1]][g%N==1] 用CRT构造出 g%(N*G)
+
+fail?:配置牜大整数乘法牜纯二幂:
+  #using power-of-two base
+  R-radix
+  A,B-sizes of lhs,rhs
+  [1 <= A <= B]
+  [R >= 2]
+  [MAX_SUM{R,A,B} == A*(R-1)**2]
+  [MAX_SUM{R,A,B} >= 1]
+  [M{A,B} == 1 << (1+ceil_log2(-1+A+B))]
+  [M{A,B} >= 2]
+      #M : zero_padding len
+  [BLOCK{R,A,B} == (M{A,B} << max(2, 1+floor_log2(MAX_SUM{R,A,B})))]
+      # M{A,B} <<== IDFT中(///M)
+  [BLOCK{R,A,B} >= 8]
+      # [working_Ring is ZZ%BLOCK{R,A,B}]
+  bug?也许可以使用symbolic_DFT:[g{R,A,B} := 3**floor_log2(BLOCK{R,A,B}///(4*M{A,B}))%BLOCK{R,A,B}]
+      # g : primitive M-th root of unity
+
+
+
+
+
+前提条件:
+  [g**M==1][@[p::prime] -> [M%p==0] -> [g**(M///p)=!=1]]
+  # (Discrete weighted transform (DWT))
+  [DWT(g,ts;us) := DFT(g;(ts .*. us))]
+  [IDWT(g,ts;us) := ((ts .** -1) .*. IDFT(g;us))]
+==>>:
+[weighted_cyclic_convolution__len_eq_(M, ts; us, vs) == IDWT(g,ts; DWT(g,ts;us) .*. DWT(g,ts;vs))]
+
+更多前提条件:
+  [M%2==0][h**2==g]
+    # [h**M == g**(M///2) == -1]
+  [hs := [h**j | [j:<-[0..<M]]]]
+==>>:
+[negacyclic_convolution__len_eq_(M; us, vs) == weighted_cyclic_convolution__len_eq_(M, hs; us, vs)]
+  #加权统一
+
+比如:ZZ%(+1+B**D)环乘法:见上面^
+  negacyclic_convolution__len_eq_ 通过 weighted_cyclic_convolution__len_eq_{hs} 实现
+
+
+更多前提条件:
+  [M%4==0][m**4==g]
+  [ms := [m**j | [j:<-[0..<M]]]]
+==>>:
+[right_angle_convolution__len_eq_(M; us, vs) := weighted_cyclic_convolution__len_eq_(M, ms; us, vs)]
+
+比如:ZZ%(+1+B**D)环乘法:见上面^
+  right_angle_convolution__len_eq_ 通过 复数域weighted_cyclic_convolution__len_eq_{M///2;ms} 实现 #数据折半 变作 虚部
+
+
+
+
+page498[507/604]
+9.5.5 Number-theoretical transform methods
+NTT
+acyclic_convolution__lenI_eq_{M}
+CRT:中国剩余定理
+* CRT+primes...
+  [p::prime][p%M==1]:
+    # ZZ%p
+    [M**-1%p == p-(p-1)///M]
+    [g%p == gp**((p-1)///M)%p]
+* bug:我:CRT+G+primes...
+  [phi_(G)%M==0][p::prime][G%p=!=0]:
+    # main:ZZ%(G*p)
+    # final:ZZ%p
+    [M**-1%p == ...] # final@IDFT
+        or:(///M) # final@IDFT
+    [g%p == 1]
+    [g%G == gG**(phi_(G)///M)%G]
+    [g%(G*p) == CRT_reconstruction...]
+* 我:配置牜大整数乘法牜纯二幂:见上面^
+
+
+[DGT <: NTT]
+discrete Galois transform (DGT), with relevant field FF(p**2) for [p == -1+2**q] a Mersenne prime.
+  [FF(p**2)^{*} == -1+p**2 == (-1+2**(-1+q))*2**(1+q)]
+    方便[M二幂]
+    不过类似 复数域，结构复杂
+  !! [p%4 == 3]
+  [(-1)%p 非 平方剩余]
+  [1j存在<==>复数域]
+      # Gaussian integer
+  采用right_angle_convolution__len_eq_，折后半数据为虚部，全部利用起来，不浪费
+[p,q::prime][q%2==1][p==-1+2**q][g:=2**2**(q-2) +1j*(-3)**2**(q-2)]:
+  [order_in_(FF(p**2);g) == 2**(1+q)]
+[order_mod_((-1+2**ez);2) == ez]
+  但 2**(-1+ez) 不是 -1 !!!
+      [(-2+2**ez) -2**(-1+ez) == (-2+2**(-1+ez))]
+      哪里出病蛊？
+          没毛病:『*2』而非『**2』
+
+
+
+
+Fermat number transform (FNT)
+环乘法:ZZ%(+1+2**ez)
+  采用negacyclic_convolution__len_eq_
+[order_mod_((+1+2**ez);2) == (2*ez)]
+  [2**ez == (-1)%(+1+2**ez)]
+  [2**(2*ez) == (+1)%(+1+2**ez)]
+Schonhage algorithm recursively.
+
+
+9.5.7 Nussbaumer method
+Nussbaumer_method
+[M%2 == 0][M == len(us) == len(vs)]:
+    [(usL,usR) := (us[:M///2],us[M///2:])]
+    [(vsL,vsR) := (vs[:M///2],vs[M///2:])]
+    [(usP,usN) := (usL .+. usR,usL .-. usR)]
+    [(vsP,vsN) := (vsL .+. vsR,vsL .-. vsR)]
+    [wsP := cyclic_convolution__len_eq_(M///2; usP, vsP)]
+    [wsN := negacyclic_convolution__len_eq_(M///2; usN, vsN)]
+    [ws := cyclic_convolution__len_eq_(M; us, vs)]
+    [2 *. ws == (wsP .+. wsN) ++ (wsP .-. wsN)]
+    感觉没用，还不是一样？
+      不对，虽然仍是O(M*ln(M))，但避免使用FFT，不需g，是巨大进步！
+        #xxx不对，若是negacyclic_convolution__len_eq_能够利用wsP直接求wsN，岂非O(M)???当然这是不可能的
+
+page505[514/604]
+Algorithm 9.5.25 (Nussbaumer convolution, cyclic and negacyclic)
+  symbolic_DFT
+[log2(M)%1 == 0][M == len(us) == len(vs)][M >= 4]:
+  [em:=log2(M)]
+  [em >= 2]
+  ?[en,ew::uint] => [en+ew==em][en>=ew>=1]
+  [M == 2**em] # 高层规模
+  [N == 2**en] # 低层规模
+  [W == 2**ew] # 介层规模
+  [N*W == M]
+  !! [en>=ew]
+  [N >= W]
+  [N%W == 0]
+  [eeg := en-ew]
+  [N///W == 2**eeg]
+  ?[t,z::symbol] => [t**M == -1][z == t**W]
+      # 类似 %梅森数=>圆负卷积 而非 %费马数=>圆正卷积
+      #     因为 就是 用来递归实现 圆负卷积
+  [z == t**W]
+  [t**M == -1]
+  [z**N == -1]
+    # z : 低层卷积所用多项式变量-低层用粗根
+    # t : 高层卷积所用多项式变量-高层用细根
+
+  高层信号/高层输入 [R]{len==M} <-> polynomial ring Rt:=R[t]%(1+t**M)
+  低层信号/低层输入 [R]{len==N} <-> polynomial ring Rz:=R[z]%(1+z**N)
+  # Rt : 高层多项式环
+  # Rz : 低层多项式环
+  介层信号/介层输入 [Rz]{len==W} <-> polynomial ring Rzt:=R[z,t]%{(1+z**N),(t**W-z)}
+  [Rt ~=~ Rzt]
+  [R[t]%(1+t**M) ~=~ R[z,t]%{(1+z**N),(t**W-z)}]
+  [R[t]%(1+t**M) ~=~ (R[z]%(1+z**N))[t]%(t**W-z)]
+  [R[t]%(1+t**M) ~=~ Rz[t]%(t**W-z)]
+  [Rt ~=~ Rz[t]%(t**W-z)]
+
+
+  [hg := z**(N///W)]
+  [hg <- Rz] # z生成hg => hg 是 低层多项式
+  [hg**W == z**N == -1]
+  [mul_order_(hg) == 2*W]
+      # a primitive (2*W)-th root of unity
+      # FFT butterfly operation --> 多项式移位操作{循环移位牜折返取负}
+      # ==>> 设计意图:用于 多项式乘法@acyclic_convolution__lenI_eq_{FFT.g:=hg} : 零填充，长度翻倍
+  [hg == z**(2**eeg)]
+      # <<== 必要前提:[N%W==0]
+      # ==>> 设计意图:低层卷积用z,hg,即只用gcd(z,hg)即只用粗根z，避免使用细根t
+  [ew:=em//2]:
+      # 最高效率:
+      [ew==em//2]
+      [en==(1+em)//2]
+      [0<=eeg<=1]
+      [1 <= N///W <= 2]
+      [hg <- {z,z**2}]
+
+  [mk_poly7Rz_ :: [R]{len==N} -> Rz]
+  [mk_poly7Rz_(xs) := sum[xs[i] * z**i | [i:<-[0..<N]]]]
+  [mk_poly7Rzt_ :: [R]{len==M} -> Rzt]
+  [mk_poly7Rzt_(xs) := sum[mk_poly7Rz_([xs[j] | [j:<-[0..<M]][j%W==k]]) * t**k | [k:<-[0..<W]]]]
+
+  [@[xs ::[R]{len==M}] -> [mk_poly7Rzt_(xs) == sum[mk_poly7Rz_(xs[k::W]) * t**k | [k:<-[0..<W]]]]]
+  [@[xs ::[R]{len==M}] -> @[k:<-[0..<W]] -> [mk_poly7Rzt_(xs).coeffs[k] == mk_poly7Rz_(xs[k::W])]]
+  [@[xs ::[R]{len==M}] -> @[k:<-[0..<W]] -> @[i:<-[0..<N]] -> [mk_poly7Rzt_(xs).coeffs[k].coeffs[i] == xs[k+i*W]]]
+
+
+
+
+  #.[mk_poly7Rt_ :: [R]{len==M} -> Rt]
+  #.[mk_poly7Rt_(xs) := sum[xs[j] * t**j | [j:<-[0..<M]]]]
+  #.[poly7Rt4us := mk_poly7Rt_(us)]
+  #.[poly7Rt4vs := mk_poly7Rt_(vs)]
+
+
+  #.[mk_poly7Rzt5Rt_ :: Rt -> Rzt]
+  #.[mk_poly7Rzt5Rt_(f) := sum[mk_poly7Rz_([f.coeffs[j] | [j:<-[0..<M]][j%W==k]]) * t**k | [k:<-[0..<W]]]]
+  #.[@[f::Rt] -> [mk_poly7Rzt5Rt_(f) == sum[mk_poly7Rz_(f.coeffs[k::W]) * t**k | [k:<-[0..<W]]]]]
+  #.[@[f::Rt] -> @[k:<-[0..<W]] -> [mk_poly7Rzt5Rt_(f).coeffs[k] == mk_poly7Rz_(f.coeffs[k::W])]]
+  #.[@[f::Rt] -> @[k:<-[0..<W]] -> @[i:<-[0..<N]] -> [mk_poly7Rzt5Rt_(f).coeffs[k][i] == f.coeffs[k+i*W]]]
+
+  #.[poly7Rzt4us := mk_poly7Rzt5Rt_(poly7Rt4us)]
+  #.[poly7Rzt4vs := mk_poly7Rzt5Rt_(poly7Rt4vs)]
+
+  [poly7Rzt4us := mk_poly7Rzt_(us)]
+  [poly7Rzt4vs := mk_poly7Rzt_(vs)]
+
+  [@[k:<-[0..<W]] -> [poly7Rzt4us.coeffs[k] == mk_poly7Rz_(us[k::W])]]
+  [@[k:<-[0..<W]] -> [poly7Rzt4vs.coeffs[k] == mk_poly7Rz_(vs[k::W])]]
+    # <==> 数组转置:(N,W)-transpositions of us,vs
+    #       #矩阵转置: NxW -> WxN #行紧凑型矩阵表达:起先N分散，结束时N紧凑
+  [ws_ws7Rzt_ex := acyclic_convolution__lenI_eq_{FFT.g:=hg}(W, poly7Rzt4us.coeffs, poly7Rzt4vs.coeffs)]
+      # zero_padding:2*W; [hg**W==-1][mul_order_(hg) == 2*W]
+      # ws_ws7Rzt_ex 是 symbolic_DFT:只含z，不含t
+      #
+      # 内部:两次FFT+一次dyadic_product+一次IFFT
+      #     dyadic_product:Rz:递归{Rt降Rz}...
+    [len(ws_ws7Rzt_ex) == 2*W]
+
+  !! [negacyclic_convolution__len_eq_(M; us, vs) == acyclic_convolution__lenI_eq_(M; us, vs)[:M] .-. acyclic_convolution__lenI_eq_(M; us, vs)[M:]] # 对半折叠
+  #bug:[ws7Rz := ws_ws7Rzt_ex[:W] .-. ws_ws7Rzt_ex[W:]]
+  #bug:asif:[ws7Rz == poly7Rzt4ws.coeffs]
+      # !!!![ws_ws7Rzt_ex is coeffs for variable "t" not "hg"]!!!!
+  !! [z == t**W]
+  [ws7Rzt := ws_ws7Rzt_ex[:W] .+. z*ws_ws7Rzt_ex[W:]]
+  asif:[ws7Rzt == poly7Rzt4ws.coeffs]
+
+  [ws7Rzt :: [Rz]{len==W}]
+  !! [@[xs ::[R]{len==M}] -> @[k:<-[0..<W]] -> @[i:<-[0..<N]] -> [mk_poly7Rzt_(xs).coeffs[k].coeffs[i] == xs[k+i*W]]]
+  [ws := [ws7Rzt[j%W].coeffs[j//W] | [j:<-[0..<M]]]]
+  [ws :: [R]{len==M}]
+  [ws == negacyclic_convolution__len_eq_(M; us, vs)]
+      # 递归实现negacyclic_convolution__len_eq_ 至此结束
+
+]]
+
+[[
+@20260611
+bug:我发现，多项式在几何级数上求值 似乎有及其简单的快速算法，用不着FFT
+[poly_evals_on_geometric_progression_(cs, x, sz) := poly_evals_(cs, [x**j | [j:<-[0..<sz]]])]
+
+[poly_evals_on_geometric_progression_(cs, x, sz) == [poly_eval_(cs, x**j) | [j:<-[0..<sz]]]]
+[poly_evals_on_geometric_progression_(cs, x, sz) == poly_evals_(cs, x**[0..<sz])]
+
+[poly_evals_on_geometric_progression_(cs, x, sz)
+== poly_evals_(cs, x**[0..<sz])
+== poly_evals_(cs[0::2], x**[0,2..<sz])
++  x**[0..<sz/2] .*. poly_evals_(cs[1::2], x**[0,2..<sz])
+bug:== poly_evals_on_geometric_progression_(cs[0::2], x**2, sz/2)
+.+. x**[0..<sz/2] .*. poly_evals_on_geometric_progression_(cs[1::2], x**2, sz/2)
+  不对 输出少了一半！
+  bug!
+
+应当是:
+== poly_evals_on_geometric_progression_(cs[0::2], x**2, sz)
+.+. x**[0..<sz/2] .*. poly_evals_on_geometric_progression_(cs[1::2], x**2, sz)
+  FFT其实就是每一轮后半数据刚好是前半的负值，节省后半计算:
+    首轮:[x**(sz/2 +j) == -x**j]
+    次轮:[x2**(sz/4 +j) == -x2**j]
+    ...
+    <==>:
+    [x**(sz/2) == -1]
+]
+
+bug:
+[D := len(cs)]
+[L := len(xs)]
+[TIME(this{D,L}) == L + 2*TIME(this{D/2,L/2})]
+[TIME(this{D,L}) == O(L*lnD)]
+  <<==:
+  [(K*L*lnD) >= (L +2*K*L/2*ln(D/2))]
+  <<==:
+  [(K*L*lnD) >= (L +K*L*lnD -K*L*ln2)]
+  <<==:
+  [K*L*ln2 >= L]
+  <<==:
+  [K >= log2(e)]
+  <<==:
+  [K >= 2]
+
+]]
+
