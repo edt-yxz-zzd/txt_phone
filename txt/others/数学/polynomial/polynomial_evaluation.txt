@@ -1,5 +1,6 @@
 
 e others/数学/polynomial/polynomial_evaluation.txt
+概览牜卷积:goto
 
 
 
@@ -278,6 +279,34 @@ Algorithm 9.6.7 (Evaluation of a polynomial at arbitrary points).
 =================
 ]]
 [[
+概览牜卷积:here
+[R :: ring]:
+  [cyclic_convolution{M} === __mul__{R[X]%(-1+X**M)}]
+  [negacyclic_convolution{M} === __mul__{R[X]%(+1+X**M)}]
+  [acyclic_convolution{M} === __mul__{R[X]%(0+X**M)}] # trucated
+  [zcyclic_convolution{M,z} =[def]=__mul__{R[X]%(-z+X**M)}]
+  [wcyclic_convolution{M,w} =[def]=__mul__{R[X]%(-1+(w*X)**M)}]
+
+  [w**-M==z]:
+    [zcyclic_convolution{M,z}
+    == __mul__{R[X]%(-1+z**-1*X**M)}
+    == __mul__{R[X]%(-1+w**M*X**M)}
+    == __mul__{R[X]%(-1+(w*X)**M)}
+    == wcyclic_convolution{M,w}
+    ]
+    [zcyclic_convolution{M,z} == wcyclic_convolution{M,w}]
+
+    [poly6zcyclic_convolution{M,z}(X).coeffs
+    == poly6wcyclic_convolution{M,w}(X).coeffs
+    == poly6cyclic_convolution{M}(w*X).coeffs
+    == (w **. [0..<M]) *. poly6cyclic_convolution{M}(X).coeffs
+    ]
+    [poly6zcyclic_convolution{M,z}(X).coeffs == (w **. [0..<M]) *. poly6cyclic_convolution{M}(X).coeffs]
+  ==>>:
+  [zcyclic_convolution{M,w**-M} == wcyclic_convolution{M,w}]
+  [poly6zcyclic_convolution{M,w**-M}(X).coeffs == (w **. [0..<M]) *. poly6cyclic_convolution{M}(X).coeffs]
+    => DWT/weighted_cyclic_convolution__len_eq_
+
 acyclic_convolution__lenI_eq_:大整数乘法
   通过零填充，转化为 cyclic_convolution__len_eq_
   而cyclic_convolution__len_eq_:通过DFT转化为 按位乘法dyadic_product
@@ -327,6 +356,7 @@ dyadic_operator:
     * [k+j >= D]:
       == (...+ak*bj*B**(k+j-D)+...)%(-1+B**D)
     即cyclic_convolution__len_eq_
+    圆正卷积
 
 比如:ZZ%(+1+B**D)环乘法:
   # 如:费马数(+1+2**2**ezz)
@@ -337,6 +367,7 @@ dyadic_operator:
     * [k+j >= D]:
       == (...-ak*bj*B**(k+j-D)+...)%(+1+B**D)
     即negacyclic_convolution__len_eq_
+    圆负卷积
 
 
 
@@ -345,6 +376,8 @@ dyadic_operator:
   <==>:
 [2 *. acyclic_convolution__lenI_eq_(M; us, vs)[:M] == cyclic_convolution__len_eq_(M; us, vs) .+. negacyclic_convolution__len_eq_(M; us, vs)]
 [2 *. acyclic_convolution__lenI_eq_(M; us, vs)[M:] == cyclic_convolution__len_eq_(M; us, vs) .-. negacyclic_convolution__len_eq_(M; us, vs)]
+    # eliminate__zero_padding:here
+    #   消除零填充:其中:negacyclic_convolution__len_eq_ 通过 weighted_cyclic_convolution__len_eq_{hs} 实现
 <==>:
 [cyclic_convolution__len_eq_(M; us, vs) == acyclic_convolution__lenI_eq_(M; us, vs)[:M] .+. acyclic_convolution__lenI_eq_(M; us, vs)[M:]]
 [negacyclic_convolution__len_eq_(M; us, vs) == acyclic_convolution__lenI_eq_(M; us, vs)[:M] .-. acyclic_convolution__lenI_eq_(M; us, vs)[M:]]
@@ -501,16 +534,52 @@ Nussbaumer_method
 [M%2 == 0][M == len(us) == len(vs)]:
     [(usL,usR) := (us[:M///2],us[M///2:])]
     [(vsL,vsR) := (vs[:M///2],vs[M///2:])]
+    # [g**(M///2) == -1]
+    # [gg == g**2]
+    # [gg**M == 1]
     [(usP,usN) := (usL .+. usR,usL .-. usR)]
     [(vsP,vsN) := (vsL .+. vsR,vsL .-. vsR)]
+        # 分别 关于 g,gg 折叠
+        # 分别 相应于 圆正卷积、圆负卷积 不变{只是提前折叠 g**(M///2),gg**(M///2)}
     [wsP := cyclic_convolution__len_eq_(M///2; usP, vsP)]
     [wsN := negacyclic_convolution__len_eq_(M///2; usN, vsN)]
+    [wsN == weighted_cyclic_convolution__len_eq_(M///2, (g **. [0..<M///2]); usN, vsN)]
     [ws := cyclic_convolution__len_eq_(M; us, vs)]
     [2 *. ws == (wsP .+. wsN) ++ (wsP .-. wsN)]
+        #消除零填充:这里其实也可以用于替换:acyclic_convolution__lenI_eq_++zero_padding
+        #   zero_padding => [usR==vsR==[0]*(M///2)]
+        #   zero_padding => [usP==usN==usL]
+        #   zero_padding => [vsP==vsN==vsL]
+        #   eliminate__zero_padding:goto
     感觉没用，还不是一样？
       不对，虽然仍是O(M*ln(M))，但避免使用FFT，不需g，是巨大进步！
         #xxx不对，若是negacyclic_convolution__len_eq_能够利用wsP直接求wsN，岂非O(M)???当然这是不可能的
 
+#######
+symbolic_DFT
+  O(FFT{sz:=W}*gmul{shift} + dyadic_product{sz:=W})
+  O(WlnW*N + W*recur{sz:=N})
+  [assume O(MlnM)]:
+    O(WlnW*N + W*NlnN)
+    O(MlnW + MlnN)
+    O(MlnM)
+    ok
+  fast.mul: N6H bits, blk:B6I,B6O bits
+    [TIME{fast.mul{N6H}} == (N6H/B6I)*ln(N6H/B6I)*TIME{fast.mul{B6O}}]
+    最低要求:[2**N6L == 2**B6O >= (N6H/B6I)*(2**B6I)**2]
+    [N6L == B6O >= (log2(N6H/B6I)+2*B6I)]
+    [TIME{fast.mul{N6H}} >= (N6H/B6I)*ln(N6H/B6I)*TIME{fast.mul{(log2(N6H/B6I)+2*B6I)}}]
+      [B6I:=N6H**/2] => ???
+      [B6I:=N6H/2] => 2ln2*recur{1+N2H}
+      [B6I:=N6H/4] => 4ln4*recur{2+N2H/2}
+      [B6I:=log2(N6H)/2] => O((N6H/lnN6H)*ln(N6H/lnN6H) * recur{2lnN6H})
+        O(N6H * recur{2lnN6H})
+        O(N6H * lnN6H * lnlnN6H * ...)
+      [B6I:=1] => O(N6H*lnN6H * lnN6H*lnlnN6H * ...)
+    [B6I==O(lnN6H)] => [TIME{fast.mul{N6H}} == O(N6H * lnN6H * lnlnN6H * ...)]
+#######
+<<==:
+#######
 page505[514/604]
 Algorithm 9.5.25 (Nussbaumer convolution, cyclic and negacyclic)
   symbolic_DFT
@@ -528,7 +597,7 @@ Algorithm 9.5.25 (Nussbaumer convolution, cyclic and negacyclic)
   [eeg := en-ew]
   [N///W == 2**eeg]
   ?[t,z::symbol] => [t**M == -1][z == t**W]
-      # 类似 %梅森数=>圆负卷积 而非 %费马数=>圆正卷积
+      # 类似 %费马数=>圆负卷积 而非 %梅森数=>圆正卷积
       #     因为 就是 用来递归实现 圆负卷积
   [z == t**W]
   [t**M == -1]
@@ -601,6 +670,7 @@ Algorithm 9.5.25 (Nussbaumer convolution, cyclic and negacyclic)
     # <==> 数组转置:(N,W)-transpositions of us,vs
     #       #矩阵转置: NxW -> WxN #行紧凑型矩阵表达:起先N分散，结束时N紧凑
   [ws_ws7Rzt_ex := acyclic_convolution__lenI_eq_{FFT.g:=hg}(W, poly7Rzt4us.coeffs, poly7Rzt4vs.coeffs)]
+  [ws_ws7Rzt_ex其实是变量t的多项式乘积，与变量z无关{z,hg只起过渡性辅助作用}]
       # zero_padding:2*W; [hg**W==-1][mul_order_(hg) == 2*W]
       # ws_ws7Rzt_ex 是 symbolic_DFT:只含z，不含t
       #
@@ -615,6 +685,39 @@ Algorithm 9.5.25 (Nussbaumer convolution, cyclic and negacyclic)
   !! [z == t**W]
   [ws7Rzt := ws_ws7Rzt_ex[:W] .+. z*ws_ws7Rzt_ex[W:]]
   asif:[ws7Rzt == poly7Rzt4ws.coeffs]
+
+  ###########################
+  @20260614回顾 => 变体设计:
+      变体命名解释:symFPN0 : symF-P-N-0 : symbolic_DFT-P圆正卷积-递归:N圆负卷积-(0==en-ew)
+  !! [ws_ws7Rzt_ex其实是变量t的多项式乘积，与变量z无关{z只起过渡性辅助作用}]
+  => 必要:[t**M==-1]<==>圆负卷积
+    => 原版symFNN0:[em%2==0][en==ew][t**W==z][t**M==z**N==1][z**W==-1][hg:=z]
+      => 递归调用 同于高层，仍然是 圆负卷积{N}
+      => 最佳:同态递归模式:[em == 2**ez4em]
+    => 原版symFNN1:[em%2==1][en==1+ew][t**W==z][t**M==z**N==-1][(z**2)**W==-1][hg:=z**2]
+      => 递归调用 同于高层，仍然是 圆负卷积{N}
+      => 最糟:同态递归模式:[em == 1+2**ez4em]
+      => 考虑切换成 变体symFNP1 圆正卷积:gmul即 位移操作 甚至 不需要neg_
+    => 变体symFNP1:[em%2==1][en==1+ew][t**N==z][z**N==1][t**M==z**W==-1][hg:=z]
+      => 递归调用 不同于高层，改成 圆正卷积{N}
+      => [ws7Rzt := ws_ws7Rzt_ex[:W] .+. (-z)*ws_ws7Rzt_ex[W:]]
+      即:[ws7Rzt := ws_ws7Rzt_ex[:W] .-. z*ws_ws7Rzt_ex[W:]]
+  => 必要:[t**M==+1]<==>圆正卷积
+    => 变体symFPP1:[em%2==1][en==1+ew][t**W==z][t**M==z**N==1][z**W==-1][hg:=z]
+      => 递归调用 同于高层，仍然是 圆正卷积{N}
+      => 最佳:同态递归模式:[em == 1+2**ez4em]
+    => 变体symFPP2:[em%2==0][en==2+ew][t**W==z][t**M==z**N==1][(z**2)**W==-1][hg:=z**2]
+      => 递归调用 同于高层，仍然是 圆正卷积{N}
+      => 最糟:同态递归模式:[em == 2+2**ez4em]
+      => 考虑切换成 变体symFPN0 圆负卷积:数据切分更均衡
+    => 变体symFPN0:[em%2==0][en==ew][t**(W///2)==z][z**N==z**W==-1][t**M==(z**2)**N==1][hg:=z]
+      => 递归调用 不同于高层，改成 圆负卷积{N}
+      ???[t**(M///2) == (t**(W///2))**N == z**N == -1]
+      ????感觉不太对，[t**(M///2) == -1]是不是意味着数据 可以 对半折叠？符号性强制保持？
+        或者说只有[t**M==1]而无[t**(M///2) == -1]
+        %(-1+t**M) 类似 %(-1+u**2)
+          u是{+1,-1}简并态
+  ###########################
 
   [ws7Rzt :: [Rz]{len==W}]
   !! [@[xs ::[R]{len==M}] -> @[k:<-[0..<W]] -> @[i:<-[0..<N]] -> [mk_poly7Rzt_(xs).coeffs[k].coeffs[i] == xs[k+i*W]]]
