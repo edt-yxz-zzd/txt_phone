@@ -1,7 +1,8 @@
 
 e others/数学/polynomial/polynomial_evaluation.txt
-概览牜卷积:goto
 
+概览牜卷积:goto
+变体设计牜卷积牜纯符:goto
 
 
 @20260610
@@ -280,18 +281,18 @@ Algorithm 9.6.7 (Evaluation of a polynomial at arbitrary points).
 ]]
 [[
 概览牜卷积:here
-[R :: ring]:
-  [cyclic_convolution{M} === __mul__{R[X]%(-1+X**M)}]
-  [negacyclic_convolution{M} === __mul__{R[X]%(+1+X**M)}]
-  [acyclic_convolution{M} === __mul__{R[X]%(0+X**M)}] # trucated
-  [zcyclic_convolution{M,z} =[def]=__mul__{R[X]%(-z+X**M)}]
-  [wcyclic_convolution{M,w} =[def]=__mul__{R[X]%(-1+(w*X)**M)}]
+[RR :: ring]:
+  [cyclic_convolution{M} === __mul__{RR[X]%(-1+X**M)}]
+  [negacyclic_convolution{M} === __mul__{RR[X]%(+1+X**M)}]
+  [acyclic_convolution{M} === __mul__{RR[X]%(0+X**M)}] # trucated
+  [zcyclic_convolution{M,z} =[def]=__mul__{RR[X]%(-z+X**M)}]
+  [wcyclic_convolution{M,w} =[def]=__mul__{RR[X]%(-1+(w*X)**M)}]
 
   [w**-M==z]:
     [zcyclic_convolution{M,z}
-    == __mul__{R[X]%(-1+z**-1*X**M)}
-    == __mul__{R[X]%(-1+w**M*X**M)}
-    == __mul__{R[X]%(-1+(w*X)**M)}
+    == __mul__{RR[X]%(-1+z**-1*X**M)}
+    == __mul__{RR[X]%(-1+w**M*X**M)}
+    == __mul__{RR[X]%(-1+(w*X)**M)}
     == wcyclic_convolution{M,w}
     ]
     [zcyclic_convolution{M,z} == wcyclic_convolution{M,w}]
@@ -634,6 +635,15 @@ Algorithm 9.5.25 (Nussbaumer convolution, cyclic and negacyclic)
       [0<=eeg<=1]
       [1 <= N///W <= 2]
       [hg <- {z,z**2}]
+  !! 高层能使用symbolic_DFT => Rz.mul非常费时，导致[O(WlnW*NlnN) == O(MlnMlnM) > O(MlnM)]
+  => 高层必须使用FFT{hg} # g*Rz 是 旋转位移 避免大量Rz.mul #Rz.mul只发生在FFT之后，俩列相乘
+  => [hg**W==-1]
+  !! [hg不能比z更琐碎]#否则Rz不成立，或者说 数据量变大 或者说 hg才是变量而非z
+  => [hg == (z**e4hg)]
+  => [(z**e4hg)**W==-1]
+  !! [z**N==-1] # 不能是[z**N==1]因为 低层数据 旋转位移一半 并不等同于 取负  #过半取负 是FFT所必需的
+  => [e4hg*W==N]
+  => [N%W==0][N>W>=1]
 
   [mk_poly7Rz_ :: [R]{len==N} -> Rz]
   [mk_poly7Rz_(xs) := sum[xs[i] * z**i | [i:<-[0..<N]]]]
@@ -687,36 +697,52 @@ Algorithm 9.5.25 (Nussbaumer convolution, cyclic and negacyclic)
   asif:[ws7Rzt == poly7Rzt4ws.coeffs]
 
   ###########################
-  @20260614回顾 => 变体设计:
+  @20260614回顾 => 变体设计牜卷积牜纯符:here
       变体命名解释:symFPN0 : symF-P-N-0 : symbolic_DFT-P圆正卷积-递归:N圆负卷积-(0==en-ew)
+      实际所有变体无效:只有 原版symFNN0,symFNN1有效
+        !! 高层能使用symbolic_DFT => Rz.mul非常费时，导致O(WlnW*NlnN) == O(MlnMlnM)
+        => 高层必须使用FFT{hg}，
+        => [hg**W==-1]
+        => [(z**e4hg)**W==-1]
+        !! [z**N==-1]
+        => [e4hg*W==N]
+        => [N%W==0][N>W>=1]
   !! [ws_ws7Rzt_ex其实是变量t的多项式乘积，与变量z无关{z只起过渡性辅助作用}]
   => 必要:[t**M==-1]<==>圆负卷积
-    => 原版symFNN0:[em%2==0][en==ew][t**W==z][t**M==z**N==1][z**W==-1][hg:=z]
+    => 原版symFNN0:[em%2==0][en==ew][t**W==z][t**M==z**N==z**W==-1][hg:=z]
       => 递归调用 同于高层，仍然是 圆负卷积{N}
       => 最佳:同态递归模式:[em == 2**ez4em]
     => 原版symFNN1:[em%2==1][en==1+ew][t**W==z][t**M==z**N==-1][(z**2)**W==-1][hg:=z**2]
       => 递归调用 同于高层，仍然是 圆负卷积{N}
       => 最糟:同态递归模式:[em == 1+2**ez4em]
       => 考虑切换成 变体symFNP1 圆正卷积:gmul即 位移操作 甚至 不需要neg_
-    => 变体symFNP1:[em%2==1][en==1+ew][t**N==z][z**N==1][t**M==z**W==-1][hg:=z]
+    #bug:{必须是[t**W==z]这是W的定义，也高层规模的由来}=> 变体symFNP1:[em%2==1][en==1+ew][t**N==z][t**(W///2)==z][z**N==1][t**M==z**W==-1][hg:=z]
+    #bug:{旋转位移一半 并不等同于 取负}=> 变体symFNP1:[em%2==1][en==1+ew][t**W==z][t**M==z**N==1][z**W==-1][hg:=z]
       => 递归调用 不同于高层，改成 圆正卷积{N}
+        ??? [z**W==-1] vs [z**N==1] => 低层数据 对半折叠？？？
+        bug!!!! 因为 z**W*Rz => 低层数据 旋转位移一半，并不等同于 取负:-1*Rz !!!!
       => [ws7Rzt := ws_ws7Rzt_ex[:W] .+. (-z)*ws_ws7Rzt_ex[W:]]
       即:[ws7Rzt := ws_ws7Rzt_ex[:W] .-. z*ws_ws7Rzt_ex[W:]]
   => 必要:[t**M==+1]<==>圆正卷积
-    => 变体symFPP1:[em%2==1][en==1+ew][t**W==z][t**M==z**N==1][z**W==-1][hg:=z]
+    #bug:{同上,旋转位移一半 并不等同于 取负}=> 变体symFPP1:[em%2==1][en==1+ew][t**W==z][t**M==z**N==1][z**W==-1][hg:=z]
       => 递归调用 同于高层，仍然是 圆正卷积{N}
       => 最佳:同态递归模式:[em == 1+2**ez4em]
-    => 变体symFPP2:[em%2==0][en==2+ew][t**W==z][t**M==z**N==1][(z**2)**W==-1][hg:=z**2]
+    #bug:{同上,旋转位移一半 并不等同于 取负}=> 变体symFPP2:[em%2==0][en==2+ew][t**W==z][t**M==z**N==1][(z**2)**W==-1][hg:=z**2]
       => 递归调用 同于高层，仍然是 圆正卷积{N}
       => 最糟:同态递归模式:[em == 2+2**ez4em]
       => 考虑切换成 变体symFPN0 圆负卷积:数据切分更均衡
-    => 变体symFPN0:[em%2==0][en==ew][t**(W///2)==z][z**N==z**W==-1][t**M==(z**2)**N==1][hg:=z]
+    #bug:{必须是[t**W==z]这是W的定义，也高层规模的由来}=> 变体symFPN0:[em%2==0][en==ew][t**(W///2)==z][z**N==z**W==-1][t**M==(z**2)**N==1][hg:=z]
+    #fail:{[1=!=t**M]高层非圆正卷积}=> 变体symFPN0:[em%2==0][en==ew][t**W==z][z**N==z**W==-1][1=!=t**M==z**N==-1][hg:=z]
       => 递归调用 不同于高层，改成 圆负卷积{N}
       ???[t**(M///2) == (t**(W///2))**N == z**N == -1]
       ????感觉不太对，[t**(M///2) == -1]是不是意味着数据 可以 对半折叠？符号性强制保持？
         或者说只有[t**M==1]而无[t**(M///2) == -1]
         %(-1+t**M) 类似 %(-1+u**2)
           u是{+1,-1}简并态
+    #fail:{[-1=!=z**N]低层非圆负卷积}=> 变体symFPN2:[em%2==0][en==2+ew][t**W==z][t**M==z**N==1==(z**4)**W][(z**2)**W==-1][hg:=z**2]
+      => 递归调用 不同于高层，改成 圆负卷积{N}
+    #fail:{[-1=!=z**N]低层非圆负卷积}=> 变体symFPN1:[em%2==1][en==1+ew][t**W==z][t**M==z**N==1==(z**2)**W][z**W==-1][hg:=z]
+      => 递归调用 不同于高层，改成 圆负卷积{N}
   ###########################
 
   [ws7Rzt :: [Rz]{len==W}]
@@ -773,4 +799,28 @@ bug:
   [K >= 2]
 
 ]]
+[[
+@20260614
+卷积/多项式乘法 必须用FFT
+查看 高层 [W==2]的情形:
+acyclic_convolution
+[f(x)*g(x)
+== (even_part{f} +x*odd_part{f})*(even_part{g} +x*odd_part{g})
+== (A +x*B)*(C +x*D)
+]
+[W:=2]
+[hg**2==-1]
+[N:=M/W]
+[N==M/2]
+[z**N == 1]
+[z**(N/2) == -1 == hg**2]
+[hg := z**(N/4)]
+[A,B,0,0] --> [A+B,A+B*hg,A-B,A-B*hg]
+[C,D,0,0] --> [C+D,C+D*hg,C-D,C-D*hg]
+  =>高层必须尽量大，然后用FFT
+  =>因为高层使用FFT，需要g，导致低层规模不得小于高层规模
+
+
+]]
+
 
