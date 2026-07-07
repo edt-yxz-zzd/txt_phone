@@ -1,12 +1,25 @@
 
 e others/数学/FFT-Walsh_transform.txt
+view others/数学/polynomial/polynomial_evaluation.txt
+  symbolic_DFT
 
 /sdcard/0my_files/book/math/fxtbook[Matters Computational][Algorithms for Programmers].pdf
 
 (right) Kronecker product (or tensor product)
 decimation in time (DIT)
 decimation in frequency (DIF)
+  FFT7DIT_() vs FFT7DIF_()
 Walsh_transform
+
+[[
+@20260617
+xor vs add: 是否存在同构？
+  ??? [?[f,g::uint%2**k -> uint%2**k] -> [g(f(i) + f(j)) == (i ^ j)]]
+  [k>=2]:
+    不可能！
+    因为 (i ^ i) == 0
+    而 (i + i) == 0 只有 俩解
+]]
 
 
 
@@ -84,5 +97,143 @@ Walsh_transform ==>> XOR (dyadic) convolution
   !! [IW[2] == W[2]/2]
   [IW[2**ez] == W[2**ez]/2**ez]
   [W[2**ez]**2 == 2**ez*IdentityMatrix{2**ez}]
+
+
+
+
+
+奇素模FFT:
+  [p == 1+(p-1)]
+  直流分量 直接 计算
+  剩下(p-1)，使用 本原根 进行一次 圆正卷积
+
+DIT FFT vs DIF FFT
+  奇偶拆分 vs 左右拆分
+FFT7DIT_() vs FFT7DIF_()
+  # FFT7DIT_():goto
+  # FFT7DIF_():goto
+      FFT7DIF_ 可以分成俩阶段:就地更新赋值+位置置换{逆转二进制表达纟址引}
+      22.1 Convolution :: 22.1.3 Avoiding the revbin permutations
+    revbin_permute()
+    [FFT7DIF_(...) == revbin_permute(core_DIF_(...))]
+      vs: [FFT7DIT_(...) == core_DIT_(revbin_permute(...))]
+      显然 DIF版更合理，通常情况下，用于卷积，反正输出的次序无所谓。
+
+[x :: RR][cs :: [RR]][sz:=len(cs)]:
+  [poly_eval_(cs,x) =[def]= sum[cs[j]*x**j | [j:<-[0..<sz]]]]
+
+[xs, cs :: [RR]]:
+  [poly_evals_(cs,xs) =[def]= [poly_eval_(cs,x) | [x:<-xs]]]
+
+[x :: RR][cs :: [RR]][sz:=len(cs)][sz%2==0][hsz==sz///2]:
+  [poly_eval_(cs,x)
+  == sum[cs[j]*x**j | [j:<-[0..<sz]]]
+  == sum[cs[j]*x**j | [j:<-[0,2..<sz]]]
+  +  sum[cs[j]*x**j | [j:<-[1,3..<sz]]]
+  == 1*sum[cs[0+2*j]*(x**2)**j | [j:<-[0..<hsz]]]
+  +  x*sum[cs[1+2*j]*(x**2)**j | [j:<-[0..<hsz]]]
+  == 1*poly_eval_(cs[0::2],x**2)
+  +  x*poly_eval_(cs[1::2],x**2)
+  ]
+  [poly_eval_(cs,x) == 1*poly_eval_(cs[0::2],x**2) + x*poly_eval_(cs[1::2],x**2)]
+[y,g :: RR][cs :: [RR]][sz:=len(cs)][sz%2==0][hsz==sz///2][g**sz==1][sqrt4one:=g**hsz]:
+  [(y*g**hsz)**2 == y**2]
+  !! [poly_eval_(cs,x) == 1*poly_eval_(cs[0::2],x**2) + x*poly_eval_(cs[1::2],x**2)]
+  # [x:=(y*g**hsz)]
+  # [x**2=(y**2)]
+  [poly_eval_(cs,(y*g**hsz)) == 1*poly_eval_(cs[0::2],y**2) + (y*g**hsz)*poly_eval_(cs[1::2],y**2)]
+  [poly_eval_(cs,(y*sqrt4one)) == 1*poly_eval_(cs[0::2],y**2) + sqrt4one*(y*poly_eval_(cs[1::2],y**2))]
+  # [x:=(y)]
+  [poly_eval_(cs,y) == 1*poly_eval_(cs[0::2],y**2) + y*poly_eval_(cs[1::2],y**2)]
+  [poly_evals_(cs,[y,(y*sqrt4one)]) == let [even_part := poly_eval_(cs[0::2],y**2)][odd_part := y*poly_eval_(cs[1::2],y**2)] in [even_part+odd_part, even_part+sqrt4one*odd_part]]
+[g :: RR][ys,cs :: [RR]][sz:=len(cs)][sz%2==0][hsz==sz///2][g**sz==1][sqrt4one:=g**hsz]:
+  [poly_evals_(cs,ys ++ (sqrt4one *. ys)) == let [even_parts := poly_evals_(cs[0::2],ys **. 2)][odd_parts := ys .*. poly_evals_(cs[1::2],ys **. 2)] in ((even_parts .+. odd_parts) ++ (even_parts .+. (sqrt4one *. odd_parts)))]
+  [ys:=g **. [0..<sz]]:
+    则ys可以递归拆分，得到 FFT7DIT_()
+[g :: RR][ys,cs :: [RR]][sz:=len(cs)][sz%2==0][hsz==sz///2][g**sz==1][sqrt4one:=g**hsz][gs:=g **. [0..<sz]]:
+  [DFT{cs,g}
+  == poly_evals_(cs,gs)
+  == poly_evals_(cs,gs[:hsz] ++ gs[hsz:])
+  == poly_evals_(cs,gs[:hsz] ++ (sqrt4one *. gs[:hsz]))
+  :> [even_parts := poly_evals_(cs[0::2],gs[:hsz] **. 2)]
+  :> [odd_parts := gs[:hsz] .*. poly_evals_(cs[1::2],gs[:hsz] **. 2)]
+  => [even_parts == poly_evals_(cs[0::2],gs[0::2]) == DFT{cs[0::2],g**2}]
+  => [odd_parts == gs[:hsz] .*. DFT{cs[1::2],g**2}]
+  == ((even_parts .+. odd_parts) ++ (even_parts .+. (sqrt4one *. odd_parts)))
+  ]
+
+  # FFT7DIT_():here
+  [DFT{cs,g}
+  :> [even_parts := DFT{cs[0::2],g**2}]
+  :> [odd_parts := gs[:hsz] .*. DFT{cs[1::2],g**2}]
+  == ((even_parts .+. odd_parts) ++ (even_parts .+. (sqrt4one *. odd_parts)))
+  ]
+
+[x :: RR][cs :: [RR]][sz:=len(cs)][sz%2==0][hsz==sz///2]:
+  [poly_eval_(cs,x)
+  == sum[cs[j]*x**j | [j:<-[0..<sz]]]
+  == sum[cs[j]*x**j | [j:<-[0..<hsz]]]
+  +  sum[cs[j]*x**j | [j:<-[hsz..<sz]]]
+  == 1      *sum[cs[0  +j]*x**j | [j:<-[0..<hsz]]]
+  +  x**hsz *sum[cs[hsz+j]*x**j | [j:<-[0..<hsz]]]
+  == 1      *poly_eval_(cs[:hsz],x)
+  +  x**hsz *poly_eval_(cs[hsz:],x)
+  == poly_eval_(cs[:hsz],x)
+  +  poly_eval_(x**hsz *. cs[hsz:],x)
+  == poly_eval_((cs[:hsz] +. (x**hsz *. cs[hsz:])),x)
+  ]
+  [poly_eval_(cs,x) == poly_eval_((cs[:hsz] +. (x**hsz *. cs[hsz:])),x)]
+[g :: RR][cs :: [RR]][sz:=len(cs)][sz%2==0][hsz==sz///2][g**sz==1][sqrt4one:=g**hsz][k::uint][d:<-{0,1}][x:=g**(d+2*k)]:
+  [poly_eval_(cs,g**(d+2*k))
+  == poly_eval_(cs,x)
+  == poly_eval_((cs[:hsz] +. (x**hsz *. cs[hsz:])),x)
+  == poly_eval_((cs[:hsz] +. ((g**(d+2*k))**hsz *. cs[hsz:])),g**(d+2*k))
+  == poly_eval_((cs[:hsz] +. ((sqrt4one**d) *. cs[hsz:])),g**(d+2*k))
+  == poly_eval_((cs[:hsz] +. ((sqrt4one**d) *. cs[hsz:])),(g**d) * (g**2)**k)
+  == poly_eval_(((g**d) **. [0..<hsz] .*. (cs[:hsz] +. ((sqrt4one**d) *. cs[hsz:]))), (g**2)**k)
+  :> [gdcs{g,d,cs} := ((g**d) **. [0..<hsz] .*. (cs[:hsz] .+. ((sqrt4one**d) *. cs[hsz:])))]
+  == poly_eval_(gdcs{g,d,cs}, (g**2)**k)
+  ]
+[g :: RR][cs :: [RR]][sz:=len(cs)][sz%2==0][hsz==sz///2][g**sz==1][sqrt4one:=g**hsz][d:<-{0,1}][gs:=g **. [0..<sz]]:
+  [poly_evals_(cs,gs[d::2])
+  == [poly_eval_(cs,gs[d+2*k]) | [k:<-[0..<hsz]]]
+  == [poly_eval_(gdcs{g,d,cs}, (g**2)**k) | [k:<-[0..<hsz]]]
+  == poly_evals_(gdcs{g,d,cs}, gs[0::2])
+  ]
+[g :: RR][cs :: [RR]][sz:=len(cs)][sz%2==0][hsz==sz///2][g**sz==1][sqrt4one:=g**hsz][gs:=g **. [0..<sz]]:
+  [DFT{cs,g}
+  == poly_evals_(cs,gs)
+  == chain $ transpose (
+  [poly_evals_(cs,gs[0::2])
+  ,poly_evals_(cs,gs[1::2])
+  ])
+  == chain $ transpose (
+  [poly_evals_(gdcs{g,0,cs}, gs[0::2])
+  ,poly_evals_(gdcs{g,1,cs}, gs[0::2])
+  ])
+  !! [gdcs{g,d,cs} := ((g**d) **. [0..<hsz] .*. (cs[:hsz] .+. ((sqrt4one**d) *. cs[hsz:])))]
+  => [gdcs{g,0,cs} == (cs[:hsz] .+. cs[hsz:])]
+  => [gdcs{g,1,cs} == (g **. [0..<hsz] .*. (cs[:hsz] .+. (sqrt4one *. cs[hsz:])))]
+  => [gdcs{g,1,cs} == (gs[:hsz] .*. (cs[:hsz] .+. (sqrt4one *. cs[hsz:])))]
+  == chain $ transpose (
+  [poly_evals_((cs[:hsz] .+. cs[hsz:]), gs[0::2])
+  ,poly_evals_((gs[:hsz] .*. (cs[:hsz] .+. (sqrt4one *. cs[hsz:]))), gs[0::2])
+  ])
+  == chain $ transpose (
+  [DFT{(cs[:hsz] .+. cs[hsz:]),(g**2)}
+  ,DFT{(gs[:hsz] .*. (cs[:hsz] .+. (sqrt4one *. cs[hsz:]))),(g**2)}
+  ])
+  ]
+
+  # FFT7DIF_():here
+  [DFT{cs,g}
+  == chain $ transpose (
+  [DFT{(cs[:hsz] .+. cs[hsz:]),(g**2)}
+  ,DFT{(gs[:hsz] .*. (cs[:hsz] .+. (sqrt4one *. cs[hsz:]))),(g**2)}
+  ])
+  ]
+
+
+
 
 

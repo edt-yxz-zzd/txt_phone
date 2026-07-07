@@ -3,6 +3,7 @@ e others/数学/本原根.txt
 view others/数学/prime/primitive_root.txt
 
 素模本原根的范围:goto
+二幂模无用于快速傅立叶逆变换:goto
 
 Fermat's little theorem:
 [is_prime p]:
@@ -297,5 +298,114 @@ copy from:
 # [[ep:<-[2..]] -> [is_prime_(p)] -> [p%2==1] -> [len(all_primitive_roots_modPpow_(p**ep)) == phi_(p-1)*(p-1)*p**(ep-2)]]
 # [[is_prime_(p)] -> [p%2==1] -> [len(all_primitive_roots_modPpow_(p**2)) == phi_(p-1)*(p-1)]]
 # [[is_prime_(p)] -> [p%2==1] -> [len(all_primitive_roots_modPpow_(p**1)) == phi_(p-1)]]
+]]
+
+
+
+[[
+@20260615
+二幂模无用于快速傅立叶逆变换:here
+  用于:view ../../python3_src/seed/algo/FFT/convolution__7symbolic_DFT.py
+  view others/数学/polynomial/polynomial_evaluation.txt
+  FFT+IFFT回返原值的必要条件:
+    [@[t:<-[1..<sz]] -> [sum[(g**j)**t | [j:<-[0..<sz]]] == 0]]
+        => [g{sz:=2} == -1]
+===
+[@[em,g,j::int][em>=3][g%2==1] -> [gsum7zpow_(em,g,j) := sum[(g**j)**i | [i:<-[0..<2**(em-2)]]] %2**em] -> [gsum7zpow_(em,g,j) == 2**(em-3)*(gsum7zpow_(3,g%8,j%2)) <- 2**(em-3) *. {0,2,4,6}]]
+  zpow_modulus_is_useless_in_IFFT:here
+[@[em,g,j::int][em>=3][g%2==1] -> [gsum7zpow_(em,g,j) == 2**(em-3)*(gsum7zpow_(3,g%8,j%2)) <- 2**(em-3) *. {2,(1+g)%8}]]
+    [{g%8:(1+g)%8 | [g::int][g%2==1]} == {1:2,3:4,5:6,7:0}]
+<<==:
+[[em,g,j::int][em>=3][g%2==1]]:
+    [wgsum7zpow_(em,g,j) =[def]= sum[(g**j)**i | [i:<-[0..<2**(em-2)]]]]
+    [gsum7zpow_(em,g,j) =[def]= wgsum7zpow_(em,g,j) %2**em]
+
+    [gsum7zpow_(em,g,j) == sum[(g**j)**i | [i:<-[0..<2**(em-2)]]] %2**em]
+    [wgsum7zpow_(em,1,j) == 2**(em-2)]
+    [gsum7zpow_(em,1,j) == 2**(em-2)]
+
+    #####################
+    #问题:
+    #####################
+    [gsum7zpow_(1+em,g,j) == ???]
+    [gsum7zpow_(1+em,(g+2**em),j) == ???]
+        !! [em > 0]
+        [2**em > 1]
+        [2**em %2 == 0]
+        [(g+2**em) %2 == g%2 == 1]
+    #####################
+    [wgsum7zpow_(1+em,g,j)
+    == sum[(g**j)**i | [i:<-[0..<2*2**(em-2)]]]
+    == sum[(g**j)**i | [i:<-[0..<2**(em-2)]]]
+    +  sum[(g**j)**(2**(em-2)+i) | [i:<-[0..<2**(em-2)]]]
+    == (1+(g**j)**(2**(em-2)))*sum[(g**j)**i | [i:<-[0..<2**(em-2)]]]
+    == (1+(g**j)**(2**(em-2)))*wgsum7zpow_(em,g,j)
+    ]
+
+    [wgsum7zpow_(1+em,g,j) == (1+(g**j)**(2**(em-2)))*wgsum7zpow_(em,g,j)]
+
+    [gsum7zpow_(1+em,g,j)
+    == wgsum7zpow_(1+em,g,j) %(2*2**(em-2))
+    == (1+(g**j)**(2**(em-2)))*wgsum7zpow_(em,g,j) %(2*2**(em-2))
+    !! [(g**j)**(2**(em-2)) %(2**(em-2)) == 1]
+    => [?[b:<-{0,1}] -> [(g**j)**(2**(em-2)) %(2*2**(em-2)) == 1+b*(2**(em-2))]]
+    == (2+b*(2**(em-2)))*wgsum7zpow_(em,g,j) %(2*2**(em-2))
+
+    !! [gsum7zpow_(em,g,j) =[def]= wgsum7zpow_(em,g,j) %2**em]
+    => [?[d:<-{0,1}] -> [wgsum7zpow_(em,g,j) %(2*2**(em-2)) == (d*(2**(em-2)) +gsum7zpow_(em,g,j))]]
+
+    == (2+b*(2**(em-2)))*(d*(2**(em-2)) +gsum7zpow_(em,g,j)) %(2*2**(em-2))
+
+    !! [em >= 3]
+    => [(em-2) >= 1]
+    => [2*(em-2) >= 1+(em-2)]
+
+    == (2+b*(2**(em-2)))*(gsum7zpow_(em,g,j)) %(2*2**(em-2))
+    ]
+
+    [?[b:<-{0,1}] -> [gsum7zpow_(1+em,g,j) == (2+b*(2**(em-2)))*(gsum7zpow_(em,g,j)) %(2*2**(em-2))]]
+
+
+    [em==3]:
+      [gsum7zpow_(em,1,j) == (1+1)%8 == 2]
+      [gsum7zpow_(em,3,j) == (1+(1|3))%8 == (2|4)]
+      [gsum7zpow_(em,5,j) == (1+(1|5))%8 == (2|6)]
+      [gsum7zpow_(em,7,j) == (1+(1|7))%8 == (2|0)]
+    ==>>:
+    [gsum7zpow_(3,g,j)%2 == 0]
+    !! [?[b:<-{0,1}] -> [gsum7zpow_(1+em,g,j) == (2+b*(2**(em-2)))*(gsum7zpow_(em,g,j)) %(2*2**(em-2))]]
+    [gsum7zpow_(em,g,j)%2 == 0]
+    [(2**(em-2))*gsum7zpow_(em,g,j)%(2*2**(em-2)) == 0]
+    [gsum7zpow_(1+em,g,j) == 2*(gsum7zpow_(em,g,j)) %(2*2**(em-2))]
+    [gsum7zpow_(1+em,g,j) == 2*(gsum7zpow_(em,g,j))]
+    [gsum7zpow_(em,g,j) == 2**(em-3)*(gsum7zpow_(3,g,j))]
+    [gsum7zpow_(em,g,j) == 2**(em-3)*(gsum7zpow_(3,g%8,j%2)) <- 2**(em-3) *. {0,2,4,6}]
+    [gsum7zpow_(3,g%8,0) == 2]
+    [gsum7zpow_(3,g%8,1) == (1+g)%8]
+    [gsum7zpow_(3,7,1) == 0]
+    [gsum7zpow_(em,g,j) == 2**(em-3)*(gsum7zpow_(3,g%8,j%2)) <- 2**(em-3) *. {2,(1+g)%8}][{g%8:(1+g)%8 | [g%2==1]} == {1:2,3:4,5:6,7:0}]
+      (g,j) 共八种组合，而结果只有4种:2**(em-3) *. {0,2,4,6}
+        考虑小于3:[em==2]:
+          [wgsum7zpow_(1+em,1,j) %2**em == (1+1)%4 == 2]
+          [wgsum7zpow_(1+em,3,j) %2**em == (1+(1|3))%4 == (2|0)]
+          只有{0,2}
+
+    #校验于4:
+    [em==4]:
+      [gsum7zpow_(em,1,j) == (1+1+1+1)%16 == 4]
+      [gsum7zpow_(em,3,1) == (1+3+9+11)%16 == 8 == 2*gsum7zpow_(-1+em,3,1)]
+      [gsum7zpow_(em,3,2) == (1+9+1+9)%16 == 4 == 2*gsum7zpow_(-1+em,3,2)]
+      [gsum7zpow_(em,5,1) == (1+5+9+13)%16 == 12 == 2*gsum7zpow_(-1+em,5,1)]
+      [gsum7zpow_(em,5,2) == (1+9+1+9)%16 == 4 == 2*gsum7zpow_(-1+em,5,2)]
+      [gsum7zpow_(em,7,1) == (1+7+1+7)%16 == 0 == 2*gsum7zpow_(-1+em,7,1)]
+      [gsum7zpow_(em,7,2) == (1+1+1+1)%16 == 4 == 2*gsum7zpow_(-1+em,7,2)]
+
+    [gsum7zpow_(em,g,j) == 2**(em-3)*(gsum7zpow_(3,g%8,j%2)) <- 2**(em-3) *. {0,2,4,6}]
+
+[@[em,g,j::int][em>=3][g%2==1] -> [gsum7zpow_(em,g,j) == 2**(em-3)*(gsum7zpow_(3,g%8,j%2)) <- 2**(em-3) *. {0,2,4,6}]]
+[@[em,g,j::int][em>=3][g%2==1] -> [gsum7zpow_(em,g,j) == 2**(em-3)*(gsum7zpow_(3,g%8,j%2)) <- 2**(em-3) *. {2,(1+g)%8}]]
+    [{g%8:(1+g)%8 | [g::int][g%2==1]} == {1:2,3:4,5:6,7:0}]
+
+
 ]]
 

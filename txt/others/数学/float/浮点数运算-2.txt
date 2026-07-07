@@ -1,0 +1,773 @@
+
+e others/数学/float/浮点数运算-2.txt
+view others/app/termux/help/gp-help-topics.txt
+view /sdcard/0my_files/tmp/py_lib_src/_pydecimal.py
+
+
+
+[[
+'/sdcard/0my_files/book/math/factorint/snd/Detecting perfect powers in essentially linear time(1998)(Berstein).pdf'
+view ../../python3_src/seed/math/factor_pint/perfect_power/detect_perfect_power__7lift_precision.py
+]]
+[[
+'/sdcard/0my_files/book/math/fxtbook[Matters Computational][Algorithms for Programmers].pdf'
+  [21] Jorg Arndt:FXT, a library of algorithms, (1996-2009).  URL: http://www.jjj.de/fxt/
+  [22] Jorg Arndt:hfloat, a library for high precision computations, (1995-2009).  URL: http://www.jjj.de/hfloat/
+page615[627/978]
+31.5 Computation of π
+
+]]
+[[
+'/sdcard/0my_files/book/math/fxtbook[Matters Computational][Algorithms for Programmers].pdf'
+page587[599/978]
+Chapter 30 Iterations for the inversion of a function
+
+converge towards the root
+an attracting fixed point
+  [f(r) == 0]
+  [x0 is close enough to r]
+  [x[k+1] := g(x[k])]
+  [g(r) == r] #fixed point
+  [abs(Dg(r)) < 1] #attracting
+The order of convergence (or simply order) of a given iteration can be defined as follows:
+  let x = r·(1+e) with |e| <<<<  1
+  and Φ(x) = r · (1 + α*e**n+ O(e**(n+1))),
+  then the iteration Φ is called linear (or first order) if n = 1 (and |α| < 1).
+      A linear iteration improves the result by (roughly) adding a constant amount of correct digits with every step.
+  A super-linear iteration does better than that:
+      The number of correct digits grows exponentially (to the base n) at each step.
+      Super-linear convergence of order n should really be called exponential of order n.
+  Iterations of second order (n = 2) are often called quadratic (or quadratically convergent),
+      those of third order    cubic iterations.
+      Fourth, fifth and sixth order iterations are called quartic, quintic and sextic and so on.
+    The two-point iteration relation 30.1-4 has order (√5 + 1)/2 ≈ 1.618, see [186, p.152].
+For n ≥ 2 the iteration function Φ has a super-attracting fixed point at r: DΦ(r) = 0.
+  For an iteration of order n we have DΦ(r) = 0,DDΦ(r) = 0,...,D{n-1;Φ}(r) = 0 (30.1-5)
+  There is no standard term for emphasizing the number of derivatives vanishing at the fixed point:
+    super-attracting of order n might be appropriate.
+
+
+]]
+[[
+@20260629
+自行设计:
+除法:必要:截断精度
+[非负浮点数 =[def]= (尾数, 位移指数, 截断精度)]
+[单侧浮点数 =[def]= (符号,非负浮点数)]
+[双侧浮点数 =[def]= (下界/单侧浮点数,上界/单侧浮点数)]
+[均差浮点数 =[def]= (芯值/单侧浮点数,误差/非负浮点数)]
+
+[mul_(p; a, b) := trunc_(p; a*b)]
+  能否提前截断？
+???[@[p] -> ?[q] -> @[a,b] -> [trunc_(p; a*b) === trunc_(p; trunc_(q; a*b)*trunc_(q; a*b))]]???
+  不太行...
+[2**m <= a,b < 2**(m+1)]:
+  [relative_error
+  < (a+1)*(b+1)/(a*b) -1
+  == (1/a+1/b) +1/(a*b)
+  <= (1/2**m+1/2**m) +1/(2**m*2**m)
+  == 1/2**(m-1) +1/2**(m*2)
+  < 1/2**(m-2)
+  ]
+  [absolute_error
+  < (a+1)*(b+1) -(a*b)
+  == (a+b) +1
+  <= 2*(2**(m+1) -1) +1
+  < 2**(m+2)
+  ]
+
+
+
+
+均差浮点数:乘法运算量大:四次乘法:
+[(x+-dx)+(y+-dy)
+== ((x+y)+-(dx+dy))
+]
+[x,y > 0]:
+  [(x+-dx)*(y+-dy)
+  == (x*y) +-(dx*dy) +(+-x*dy + +-y*dx)
+  * == (x*y) +(dx*dy) +-(x*dy + y*dx)
+  * == (x*y) -(dx*dy) +-(x*dy - y*dx)
+
+  ==>>:
+  !! [x,y > 0]
+  * <= (x*y) +(dx*dy) +(x*dy + y*dx)
+  * >= min:
+      (x*y) +(dx*dy) -(x*dy + y*dx)
+      (x*y) -(dx*dy) -abs(x*dy - y*dx)
+        # 后仨:一正俩负
+    == (x*y) -(dx*dy +x*dy +y*dx) +2*min(dx*dy, x*dy, y*dx)
+    == (x*y) -(dx*dy +x*dy +y*dx) +2*(if [x<dx][y<dy] then min(x*dy, y*dx) else min(x,dx)*min(y,dy))
+    == (x*y) -(dx*dy +x*dy +y*dx) +2*(if [x<dx][y<dy] then (if [x<=y][dy<=dx] then x*dy elif [x>=y][dy>=dx] then y*dx else min(x*dy, y*dx)) else min(x,dx)*min(y,dy))
+      最糟:[x<y<dx<dy]or[y<x<dy<dx]
+  ]
+
+
+双侧浮点数:乘法运算量不小:通常俩次乘法，例外仨次
+(little|big)
+[(xL|xB)+(yL|yB)
+== (xL+yL|xB+yB)
+]
+* [0<=xL,yL]:
+  [(xL|xB)*(yL|yB)
+  == (xL*yL|xB*yB)
+  ]
+* [xL < 0 <= xB,yL]:
+  [(xL|xB)*(yL|yB)
+  == (xL*yB|xB*yB)
+  ]
+* [xL,yL < 0 < xB,yB][-xL <= xB][-yL <= yB][(xB,-xL) <= (yB,-yL)]:
+  [(xL|xB)*(yL|yB)
+  == (min(xB*yL,xL*yB)|max(xB*yB,xL*yL))
+  == (min(xB*yL,xL*yB)|(xB*yB))
+  == ((if [-yL <= -xL]or[-xL==xB] then xL*yB elif [xB == yB]or[-yL==yB] then xB*yL else min(xB*yL,xL*yB))|(xB*yB))
+      # [0 < -xL < -yL,xB < yB]
+      # [A/c < A <= B < B*c][1 < c]
+      # [(B*c-B) > (A-A/c)]
+      #     <==> [B*(c-1) > (c-1)*(A/c)]
+      #     <==> [B > (A/c)]
+  ]
+[0 < -xL < -yL,xB < yB]:
+  [min(xB*yL,xL*yB) == ???]
+  [max(xB*-yL,-xL*yB) == ???]
+[0 < A < B <= C < D]:
+  [max(B*C,A*D) == ???]
+  [D-C <= B-A]:
+    [d := B-A]
+    [D-C <= d]
+    [D <= C+d]
+    [A == B-d]
+    [A*D <= (B-d)*(C+d) == B*C -d**2 -d*(C-B) < B*C]
+    [max(B*C,A*D) == B*C]
+  [A*n0 <= B <= A*n1][C*m0 <= D <= C*m1]:
+    [m0 <= D/C <= m1]
+    [1/m0 >= C/D >= 1/m1]
+    [1/m1 <= C/D <= 1/m0]
+    [n0 <= B/A <= n1]
+    [n0/m1 <= (B/A)*(C/D) <= n1/m0]
+    [n0/m1 <= (B*C)/(A*D) <= n1/m0]
+    [n0 >= m1]:
+      [1 <= n0/m1 <= (B*C)/(A*D) <= n1/m0]
+      [max(B*C,A*D) == B*C]
+    [n1 <= m0]:
+      [n0/m1 <= (B*C)/(A*D) <= n1/m0 <= 1]
+      [max(B*C,A*D) == A*D]
+
+  [(aL,aB) := floor_ceil9trunc_(30bit;A)]
+  [(bL,bB) := floor_ceil9trunc_(30bit;B)]
+  [(cL,cB) := floor_ceil9trunc_(30bit;C)]
+  [(dL,dB) := floor_ceil9trunc_(30bit;D)]
+
+  [aB*dB <= bL*cL]:
+      [max(B*C,A*D) == B*C]
+  [aL*dL >= bB*cB]:
+      [max(B*C,A*D) == A*D]
+
+
+precision
+echo_or_trunc6pre_(precision; *xs)
+echo_or_trunc6post_(precision; *xs)
+
+]]
+[[
+误差:
+[err7whole := f7ideal(x7ideal) - f7using(x7using)]
+  [ideal === exact]
+  [using === approximate]
+      # power_series{truncated}
+      # iteration{inversion;attracting fixed point}
+[err7input := f7ideal(x7ideal) - f7ideal(x7using)]
+  # estimated theoretically
+  # input_error
+  # err7theoretical
+[err7impl := f7ideal(x7using) - f7using(x7using)]
+  # err7practical
+[err7algo := f7ideal(x7using) - f7using7infinite_precision(x7using)]
+  # estimated theoretically
+  # process_error
+  # err7time,err7process
+[err7repr := f7using7infinite_precision(x7using) - f7using(x7using)]
+  # bound via error interval#双侧浮点数
+  # truncation_error
+  # err7space,err7trunc
+
+[err7impl == err7algo + err7repr]
+[err7whole == err7input + err7impl]
+[err7whole == err7input + err7algo + err7repr]
+[abs(err7whole) <= abs(err7input) + abs(err7algo) + abs(err7repr)]
+]]
+[[
+截断后表达: (mean{1+precision} + +-1)*2**ez
+  由于边界问题，只能 +-1 # 或者+(0|2)
+    => 1+precision #多一爻元
+但此表达 不能通用，否则计算误差积累过分
+]]
+[[
+相对误差:减法运算使相对误差暴增，难以控制
+加法运算+截断误差 ==>> 大小数相加 相当于 小数截断精度下降
+  迭代运算过程中，避免 大小数相加
+  求倒数:1/d:
+    ok:[x:=x+x*(1-d*x)] vs bad:[x:=x*(2-d*x)]
+    ???是不是真的啊？怎么感觉没啥区别？
+        除非d*x结果保留双倍精度，(1-d*x)再截断至单倍精度，否则与单倍精度的(2-d*x)能有啥区别？
+        见下面:fma():中间不截断
+
+DONE:gp代码:
+    对比:感觉没啥区别:
+        ok:[x:=x+x*(1-d*x)] vs bad:[x:=x*(2-d*x)]
+
+d = 7;
+x = 0.2;
+while(1,  \
+  x1 = x + x*(1-d*x);  \
+  if(x1 == x, break(););  \
+  print(x1-x);  \
+  if(abs(x1-x) < 1e-60, break(););  \
+  x = x1;  \
+);
+###7+1轮:
+-0.079999999999999999999999999999999999999
+0.019199999999999999999999999999999999999
+0.0035635199999999999999999999999999999996
+9.3561500467199999999999999999999999682 E-5
+6.1356649304651323272069119999999655795 E-8
+2.6352491533865926846186844318721267508 E-14
+4.861176670299175675 E-27
+? x
+0.14285714285714285714285714285714285714
+? default(realprecision)
+38
+
+
+d = 7;
+x = 0.2;
+while(1,  \
+  x1 = x*(2-d*x);  \
+  if(x1 == x, break(););  \
+  print(x1-x);  \
+  if(abs(x1-x) < 1e-60, break(););  \
+  x = x1;  \
+);
+###7+1轮:
+-0.080000000000000000000000000000000000000
+0.019200000000000000000000000000000000000
+0.0035635200000000000000000000000000000003
+9.3561500467199999999999999999999999682 E-5
+6.1356649304651323272069119999999655795 E-8
+2.6352491533865926846186843584037298244 E-14
+4.861176670299175675 E-27
+? x
+0.14285714285714285714285714285714285714
+
+
+
+rev(d, x0) = {
+  local(x, x1, j);
+  x = x0;
+  j = 0;
+  while(1,
+    j++;
+    x1 = x + x*(1-d*x);
+    print(j, ":", x1-x);
+    if(x1 == x, break(););
+    if(abs(x1-x) < 1e-60, break(););
+    x = x1;
+  );
+  return(x);
+}
+
+rev(7, 0.0001)
+  #18轮
+rev(7, 0.28)
+  #13轮
+rev(7, 0.29)
+  #overflow
+rev(-7, -0.0001)
+  #18轮
+rev(-7, -0.28)
+  #13轮
+rev(-7, -0.29)
+  #overflow
+
+初始值有效范围:
+[[d > 0][rev(d,x0):ok] => [0 < x0 < 2/d]]
+  !! [[d > 0][x < 0] -> [(2-d*x) > 0][x*(2-d*x) < 0]]
+  !! [[d > 0][x > 2/d] -> [(2-d*x) < 0][x*(2-d*x) < 0]]
+[[d < 0][rev(d,x0):ok] => [0 > x0 > 2/d]]
+  !! [[d < 0][x > 0] -> [(2-d*x) > 0][x*(2-d*x) > 0]]
+  !! [[d < 0][x < 2/d] -> [(2-d*x) < 0][x*(2-d*x) > 0]]
+
+e others/app/termux/help/gp-example.txt
+]]
+[[
+view /sdcard/0my_files/tmp/py_lib_src/_pydecimal.py
+precision
+看看人家是怎么处理精度的
+[[x==u*Radix**exp] -> [x.adjusted() == exp+floor_log_(Radix;u)]]
+[x.adjusted() == floor_log_(Radix;x)]
+
+"""
+This is an implementation of decimal floating point arithmetic based on
+the General Decimal Arithmetic Specification:
+
+    http://speleotrove.com/decimal/decarith.html
+
+and IEEE standard 854-1987:
+
+    http://en.wikipedia.org/wiki/IEEE_854-1987
+
+Decimal floating point has finite precision with arbitrarily large bounds.
+
+The purpose of this module is to support arithmetic using familiar
+"schoolhouse" rules and to avoid some of the tricky representation
+issues associated with binary floating point.  The package is especially
+useful for financial applications or for contexts where users have
+expectations that are at odds with binary floating point (for instance,
+in binary floating point, 1.00 % 0.1 gives 0.09999999999999995 instead
+of 0.0; Decimal('1.00') % Decimal('0.1') returns the expected
+Decimal('0.00')).
+
+Here are some examples of using the decimal module:
+
+>>> from decimal import *
+>>> setcontext(ExtendedContext)
+>>> Decimal(0)
+Decimal('0')
+>>> Decimal('1')
+Decimal('1')
+>>> Decimal('-.0123')
+Decimal('-0.0123')
+>>> Decimal(123456)
+Decimal('123456')
+>>> Decimal('123.45e12345678')
+Decimal('1.2345E+12345680')
+>>> Decimal('1.33') + Decimal('1.27')
+Decimal('2.60')
+>>> Decimal('12.34') + Decimal('3.87') - Decimal('18.41')
+Decimal('-2.20')
+>>> dig = Decimal(1)
+>>> print(dig / Decimal(3))
+0.333333333
+>>> getcontext().prec = 18
+>>> print(dig / Decimal(3))
+0.333333333333333333
+>>> print(dig.sqrt())
+1
+>>> print(Decimal(3).sqrt())
+1.73205080756887729
+>>> print(Decimal(3) ** 123)
+4.85192780976896427E+58
+>>> inf = Decimal(1) / Decimal(0)
+>>> print(inf)
+Infinity
+>>> neginf = Decimal(-1) / Decimal(0)
+>>> print(neginf)
+-Infinity
+>>> print(neginf + inf)
+NaN
+>>> print(neginf * inf)
+-Infinity
+>>> print(dig / 0)
+Infinity
+>>> getcontext().traps[DivisionByZero] = 1
+>>> print(dig / 0)
+Traceback (most recent call last):
+  ...
+  ...
+  ...
+decimal.DivisionByZero: x / 0
+>>> c = Context()
+>>> c.traps[InvalidOperation] = 0
+>>> print(c.flags[InvalidOperation])
+0
+>>> c.divide(Decimal(0), Decimal(0))
+Decimal('NaN')
+>>> c.traps[InvalidOperation] = 1
+>>> print(c.flags[InvalidOperation])
+1
+>>> c.flags[InvalidOperation] = 0
+>>> print(c.flags[InvalidOperation])
+0
+>>> print(c.divide(Decimal(0), Decimal(0)))
+Traceback (most recent call last):
+  ...
+  ...
+  ...
+decimal.InvalidOperation: 0 / 0
+>>> print(c.flags[InvalidOperation])
+1
+>>> c.flags[InvalidOperation] = 0
+>>> c.traps[InvalidOperation] = 0
+>>> print(c.divide(Decimal(0), Decimal(0)))
+NaN
+>>> print(c.flags[InvalidOperation])
+1
+>>>
+"""
+
+__all__ = [
+    # Two major classes
+    'Decimal', 'Context',
+    ... ...
+]
+class Decimal(object):
+    def __sub__(self, other, context=None):
+        return self.__add__(other.copy_negate(), context=context)
+    def __add__(self, other, context=None):
+        op1 = _WorkRep(self)
+        op2 = _WorkRep(other)
+        op1, op2 = _normalize(op1, op2, context.prec)
+          #加减法提前截断
+          #vs:乘法并未提前截断
+          #vs:除法并未提前截断
+        ... ...
+        ans = ans._fix(context)
+        return ans
+        def _normalize(op1, op2, prec = 0):
+            将整数部分调整至长度为(2+precision)，不论加减，合理吗？
+              #见下面:_round_half_up():要求:[precision < len(整数部分)]
+    def _fix(self, context):
+        exp_min = len(self._int) + self._exp - context.prec
+            #整数部分最大保留长度为precision
+            digits = len(self._int) + self._exp - exp_min
+            rounding_method = self._pick_rounding_function[context.rounding]
+            changed = rounding_method(self, digits)
+            coeff = self._int[:digits] or '0'
+    def __mul__(self, other, context=None):
+        op1 = _WorkRep(self)
+        op2 = _WorkRep(other)
+
+        ans = _dec_from_triple(resultsign, str(op1.int * op2.int), resultexp)
+          #乘法并未提前截断
+          #vs:加减法提前截断
+          #合理吗？
+        ans = ans._fix(context)
+
+        return ans
+
+    def __truediv__(self, other, context=None):
+            shift = len(other._int) - len(self._int) + context.prec + 1
+                # 使得被除数整数部分的长度比除数整数部分的长度大(1+precision)
+                #   #见下面:_round_half_up():要求:[precision < len(整数部分)]
+                #除法并未提前截断
+                #vs:加减法提前截断
+                #合理吗？
+            exp = self._exp - other._exp - shift
+            op1 = _WorkRep(self)
+            op2 = _WorkRep(other)
+            if shift >= 0:
+                coeff, remainder = divmod(op1.int * 10**shift, op2.int)
+            else:
+                coeff, remainder = divmod(op1.int, op2.int * 10**-shift)
+            if remainder:
+                # result is not exact; adjust to ensure correct rounding
+                if coeff % 5 == 0:
+                    coeff += 1
+            else:
+                # result is exact; get as close to ideal exponent as possible
+                ideal_exp = self._exp - other._exp
+                while exp < ideal_exp and coeff % 10 == 0:
+                    coeff //= 10
+                    exp += 1
+
+        ans = _dec_from_triple(sign, str(coeff), exp)
+        return ans._fix(context)
+
+
+    def __divmod__(self, other, context=None):
+        quotient, remainder = self._divide(other, context)
+        remainder = remainder._fix(context)
+        return quotient, remainder
+    def _divide(self, other, context):
+            ideal_exp = min(self._exp, other._exp)
+
+        expdiff = self.adjusted() - other.adjusted()
+        if expdiff <= context.prec:
+            op1 = _WorkRep(self)
+            op2 = _WorkRep(other)
+            if op1.exp >= op2.exp:
+                op1.int *= 10**(op1.exp - op2.exp)
+            else:
+                op2.int *= 10**(op2.exp - op1.exp)
+            q, r = divmod(op1.int, op2.int)
+            if q < 10**context.prec:
+                return (_dec_from_triple(sign, str(q), 0),
+                        _dec_from_triple(self._sign, str(r), ideal_exp))
+
+        # Here the quotient is too large to be representable
+          #并不合理！商必是整数，无需考虑精度，比如:Fraction.__divmod__-->(int, Fraction)
+        ans = context._raise_error(DivisionImpossible,
+                                   'quotient too large in //, % or divmod')
+        return ans, ans
+
+
+
+
+
+    # for each of the rounding functions below:
+    #   self is a finite, nonzero Decimal
+    #   prec is an integer satisfying 0 <= prec < len(self._int)
+    #
+    # each function returns either -1, 0, or 1, as follows:
+    #   1 indicates that self should be rounded up (away from zero)
+    #   0 indicates that self should be truncated, and that all the
+    #     digits to be truncated are zeros (so the value is unchanged)
+    #  -1 indicates that there are nonzero digits to be truncated
+
+    def _round_down(self, prec):
+        """Also known as round-towards-0, truncate."""
+        if _all_zeros(self._int, prec):
+            return 0
+        else:
+            return -1
+
+    def _round_half_up(self, prec):
+        """Rounds 5 up (away from 0)"""
+        if self._int[prec] in '56789':
+            return 1
+        elif _all_zeros(self._int, prec):
+            return 0
+        else:
+            return -1
+
+
+    def fma(self, other, third, context=None):
+        """Fused multiply-add.
+
+        Returns self*other+third with no rounding of the intermediate
+        product self*other.
+
+        self and other are multiplied together, with no rounding of
+        the result.  The third operand is then added to the result,
+        and a single final rounding is performed.
+        """
+
+
+    def sqrt(self, context=None):
+        ... ...
+        # At this point self represents a positive number.  Let p be
+        # the desired precision and express self in the form c*100**e
+        # with c a positive real number and e an integer, c and e
+        # being chosen so that 100**(p-1) <= c < 100**p.  Then the
+        # (exact) square root of self is sqrt(c)*10**e, and 10**(p-1)
+        # <= sqrt(c) < 10**p, so the closest representable Decimal at
+        # precision p is n*10**e where n = round_half_even(sqrt(c)),
+        # the closest integer to sqrt(c) with the even integer chosen
+        # in the case of a tie.
+        #
+        # To ensure correct rounding in all cases, we use the
+        # following trick: we compute the square root to an extra
+        # place (precision p+1 instead of precision p), rounding down.
+        # Then, if the result is inexact and its last digit is 0 or 5,
+        # we increase the last digit to 1 or 6 respectively; if it's
+        # exact we leave the last digit alone.  Now the final round to
+        # p places (or fewer in the case of underflow) will round
+        # correctly and raise the appropriate flags.
+
+        # use an extra digit of precision
+        prec = context.prec+1
+
+        # write argument in the form c*100**e where e = self._exp//2
+        # is the 'ideal' exponent, to be used if the square root is
+        # exactly representable.  l is the number of 'digits' of c in
+        # base 100, so that 100**(l-1) <= c < 100**l.
+        op = _WorkRep(self)
+        e = op.exp >> 1
+        if op.exp & 1:
+            c = op.int * 10
+            l = (len(self._int) >> 1) + 1
+        else:
+            c = op.int
+            l = len(self._int)+1 >> 1
+
+        # rescale so that c has exactly prec base 100 'digits'
+        shift = prec-l
+        if shift >= 0:
+            c *= 100**shift
+            exact = True
+        else:
+            c, remainder = divmod(c, 100**-shift)
+            exact = not remainder
+        e -= shift
+
+        # find n = floor(sqrt(c)) using Newton's method
+        n = 10**prec
+        while True:
+            q = c//n
+            if n <= q:
+                break
+            else:
+                n = n + q >> 1
+        exact = exact and n*n == c
+
+        if exact:
+            # result is exact; rescale to use ideal exponent e
+            if shift >= 0:
+                # assert n % 10**shift == 0
+                n //= 10**shift
+            else:
+                n *= 10**-shift
+            e += shift
+        else:
+            # result is not exact; fix last digit as described above
+            if n % 5 == 0:
+                n += 1
+
+        ans = _dec_from_triple(0, str(n), e)
+
+        # round, and fit to current context
+        context = context._shallow_copy()
+        rounding = context._set_rounding(ROUND_HALF_EVEN)
+        ans = ans._fix(context)
+        context.rounding = rounding
+
+        return ans
+
+
+    def exp(self, context=None):
+        ... ...
+        # exp(0) = 1
+        if not self:
+            return _One
+
+        ... ...
+        # the result is now guaranteed to be inexact (the true
+        # mathematical result is transcendental). There's no need to
+        # raise Rounded and Inexact here---they'll always be raised as
+        # a result of the call to _fix.
+        p = context.prec
+        adj = self.adjusted()
+
+        # we only need to do any computation for quite a small range
+        # of adjusted exponents---for example, -29 <= adj <= 10 for
+        # the default context.  For smaller exponent the result is
+        # indistinguishable from 1 at the given precision, while for
+        # larger exponent the result either overflows or underflows.
+        if self._sign == 0 and adj > len(str((context.Emax+1)*3)):
+            # overflow
+            ans = _dec_from_triple(0, '1', context.Emax+1)
+        elif self._sign == 1 and adj > len(str((-context.Etiny()+1)*3)):
+            # underflow to 0
+            ans = _dec_from_triple(0, '1', context.Etiny()-1)
+        elif self._sign == 0 and adj < -p:
+            # p+1 digits; final round will raise correct flags
+            ans = _dec_from_triple(0, '1' + '0'*(p-1) + '1', -p)
+        elif self._sign == 1 and adj < -p-1:
+            # p+1 digits; final round will raise correct flags
+            ans = _dec_from_triple(0, '9'*(p+1), -p-1)
+        # general case
+        else:
+            op = _WorkRep(self)
+            c, e = op.int, op.exp
+            if op.sign == 1:
+                c = -c
+
+            # compute correctly rounded result: increase precision by
+            # 3 digits at a time until we get an unambiguously
+            # roundable result
+            extra = 3
+            while True:
+                coeff, exp = _dexp(c, e, p+extra)
+                if coeff % (5*10**(len(str(coeff))-p-1)):
+                    break
+                extra += 3
+
+            ans = _dec_from_triple(0, str(coeff), exp)
+
+        # at this stage, ans should round correctly with *any*
+        # rounding mode, not just with ROUND_HALF_EVEN
+        context = context._shallow_copy()
+        rounding = context._set_rounding(ROUND_HALF_EVEN)
+        ans = ans._fix(context)
+        context.rounding = rounding
+
+        return ans
+
+def _dexp(c, e, p):
+    """Compute an approximation to exp(c*10**e), with p decimal places of
+    precision.
+
+    Returns integers d, f such that:
+
+      10**(p-1) <= d <= 10**p, and
+      (d-1)*10**f < exp(c*10**e) < (d+1)*10**f
+
+    In other words, d*10**f is an approximation to exp(c*10**e) with p
+    digits of precision, and with an error in d of at most 1.  This is
+    almost, but not quite, the same as the error being < 1ulp: when d
+    = 10**(p-1) the error could be up to 10 ulp."""
+
+    # we'll call iexp with M = 10**(p+2), giving p+3 digits of precision
+    p += 2
+
+    # compute log(10) with extra precision = adjusted exponent of c*10**e
+    extra = max(0, e + len(str(c)) - 1)
+    q = p + extra
+
+    # compute quotient c*10**e/(log(10)) = c*10**(e+q)/(log(10)*10**q),
+    # rounding down
+    shift = e+q
+    if shift >= 0:
+        cshift = c*10**shift
+    else:
+        cshift = c//10**-shift
+    quot, rem = divmod(cshift, _log10_digits(q))
+
+    # reduce remainder back to original precision
+    rem = _div_nearest(rem, 10**extra)
+
+    # error in result of _iexp < 120;  error after division < 0.62
+    return _div_nearest(_iexp(rem, 10**p), 1000), quot - p + 3
+
+_log10_digits = _Log10Memoize().getdigits
+
+def _iexp(x, M, L=8):
+    """Given integers x and M, M > 0, such that x/M is small in absolute
+    value, compute an integer approximation to M*exp(x/M).  For 0 <=
+    x/M <= 2.4, the absolute error in the result is bounded by 60 (and
+    is usually much smaller)."""
+    # [ln_(10) ~= 2.302585092994046 < 2.4]
+
+    # Algorithm: to compute exp(z) for a real number z, first divide z
+    # by a suitable power R of 2 so that |z/2**R| < 2**-L.  Then
+    # compute expm1(z/2**R) = exp(z/2**R) - 1 using the usual Taylor
+    # series
+    #
+    #     expm1(x) = x + x**2/2! + x**3/3! + ...
+    #
+    # Now use the identity
+    #
+    #     expm1(2x) = expm1(x)*(expm1(x)+2)
+    #
+    # R times to compute the sequence expm1(z/2**R),
+    # expm1(z/2**(R-1)), ... , exp(z/2), exp(z).
+
+    # Find R such that x/2**R/M <= 2**-L
+    R = _nbits((x<<L)//M)
+
+    # Taylor series.  (2**L)**T > M
+    T = -int(-10*len(str(M))//(3*L))
+    y = _div_nearest(x, T)
+    Mshift = M<<R
+    for i in range(T-1, 0, -1):
+        y = _div_nearest(x*(Mshift + y), Mshift * i)
+
+    # Expansion
+    for k in range(R-1, -1, -1):
+        Mshift = M<<(k+2)
+        y = _div_nearest(y*(y+Mshift), Mshift)
+
+    return M+y
+
+
+
+
+class Context(object):
+]]
+
+
+
+
+
+
+

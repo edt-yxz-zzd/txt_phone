@@ -3,6 +3,30 @@ e others/数学/polynomial/polynomial_evaluation.txt
 
 概览牜卷积:goto
 变体设计牜卷积牜纯符:goto
+  原版:symFNN0,symFNN1
+  #fail:{高层IFFT无法灭零}变体:symFPP1,symFPP2
+  证明不可交替递归:goto
+  using_sqrt4one_instead_neg4one_in_FFT:goto
+  见下面:FFT+IFFT回返原值的必要条件:
+    [@[t:<-[1..<sz]] -> [sum[(g**j)**t | [j:<-[0..<sz]]] == 0]]
+      快速傅立叶逆变换回返原值的必要条件牜甲型:goto
+    <==>:
+    [@[p::prime] -> [sz%p == 0] -> [t:=sz///p] -> [t*sum[(g**t)**j | [j:<-[0..<p]]] == 0]]
+      快速傅立叶逆变换回返原值的必要条件牜乙型:goto
+        => [g{sz:=2} == -1]
+        => 泛化版:[g{sz:=p} == 1**/p]
+  <==>:
+  [@[p::prime] -> [sz%p == 0] -> @[t:=sz///p] -> [t*sum[(g**t)**j | [j:<-[0..<p]]] == 0]]
+
+@20260617
+考虑拆成三层:goto
+圆正卷积牜泛化版:goto
+圆负卷积牜泛化版:goto
+
+
+
+
+
 
 
 @20260610
@@ -185,6 +209,7 @@ return j2y[:D]
             #   比如 分解整数时 ZZ%N 就找不到 g
             #       变通一下:ZZ%N变作ZZ%(N*G) 由ZZ%G提供g，[gcd(N,G)==1][g%N==1]
             #           似乎行不通！见:_ws8 == [75391]*256@view ../../python3_src/seed/math/polynomial/eval_polynomial/eval_polynomial_on_geometric_progression.py
+            #           见下面:FFT+IFFT回返原值的必要条件:zpow情形:[g**(sz///2)==-1]: 上面[g%N==1]导致[not$[g**j =[%(N*G)]= -1]]，所以不通
     It is likewise clear that any FFT can be embedded in a convolution of power-of-two length
         , and so require at most three FFTs of that padded length (note that in some scenarios the v signal’s symmetry allows further optimization).
 
@@ -285,27 +310,30 @@ Algorithm 9.6.7 (Evaluation of a polynomial at arbitrary points).
   [cyclic_convolution{M} === __mul__{RR[X]%(-1+X**M)}]
   [negacyclic_convolution{M} === __mul__{RR[X]%(+1+X**M)}]
   [acyclic_convolution{M} === __mul__{RR[X]%(0+X**M)}] # trucated
-  [zcyclic_convolution{M,z} =[def]=__mul__{RR[X]%(-z+X**M)}]
-  [wcyclic_convolution{M,w} =[def]=__mul__{RR[X]%(-1+(w*X)**M)}]
+  [icyclic_convolution{M,I} =[def]=__mul__{RR[X]%(-I+X**M)}]
+  #[wcyclic_convolution{M,w} =[def]=__mul__{RR[X]%(-1+(w*X)**M)}]
+  [wcyclic_convolution{M,w} =[def]=__mul__{RR[X]%(-1+(w**-1*X)**M)}]
 
-  [w**-M==z]:
-    [zcyclic_convolution{M,z}
-    == __mul__{RR[X]%(-1+z**-1*X**M)}
-    == __mul__{RR[X]%(-1+w**M*X**M)}
-    == __mul__{RR[X]%(-1+(w*X)**M)}
-    == wcyclic_convolution{M,w}
-    ]
-    [zcyclic_convolution{M,z} == wcyclic_convolution{M,w}]
+  [wcyclic_convolution{M,w}
+  ==__mul__{RR[X]%(-1+(w**-1*X)**M)}
+  ==__mul__{RR[X]%(-w**M+X**M)}
+  == icyclic_convolution{M,w**M}
+  ]
+  [wcyclic_convolution{M,w} == icyclic_convolution{M,w**M}]
 
-    [poly6zcyclic_convolution{M,z}(X).coeffs
+  [I:=w**M]:
+    [icyclic_convolution{M,I} == wcyclic_convolution{M,w}]
+
+    [poly6icyclic_convolution{M,I}(X).coeffs
     == poly6wcyclic_convolution{M,w}(X).coeffs
-    == poly6cyclic_convolution{M}(w*X).coeffs
-    == (w **. [0..<M]) *. poly6cyclic_convolution{M}(X).coeffs
+    == poly6cyclic_convolution{M}(w**-1*X).coeffs
+    == ((w**-1) **. [0..<M]) *. poly6cyclic_convolution{M}(X).coeffs
     ]
-    [poly6zcyclic_convolution{M,z}(X).coeffs == (w **. [0..<M]) *. poly6cyclic_convolution{M}(X).coeffs]
+    [poly6icyclic_convolution{M,I}(X).coeffs == ((w**-1) **. [0..<M]) *. poly6cyclic_convolution{M}(X).coeffs]
+    [poly6cyclic_convolution{M,I}(X).coeffs == (w **. [0..<M]) *. poly6icyclic_convolution{M}(X).coeffs]
   ==>>:
-  [zcyclic_convolution{M,w**-M} == wcyclic_convolution{M,w}]
-  [poly6zcyclic_convolution{M,w**-M}(X).coeffs == (w **. [0..<M]) *. poly6cyclic_convolution{M}(X).coeffs]
+  [icyclic_convolution{M,w**M} == wcyclic_convolution{M,w}]
+  [poly6cyclic_convolution{M,w**M}(X).coeffs == (w **. [0..<M]) *. poly6icyclic_convolution{M}(X).coeffs]
     => DWT/weighted_cyclic_convolution__len_eq_
 
 acyclic_convolution__lenI_eq_:大整数乘法
@@ -557,14 +585,86 @@ Nussbaumer_method
         #xxx不对，若是negacyclic_convolution__len_eq_能够利用wsP直接求wsN，岂非O(M)???当然这是不可能的
 
 #######
-symbolic_DFT
-  O(FFT{sz:=W}*gmul{shift} + dyadic_product{sz:=W})
-  O(WlnW*N + W*recur{sz:=N})
-  [assume O(MlnM)]:
-    O(WlnW*N + W*NlnN)
-    O(MlnW + MlnN)
-    O(MlnM)
+symbolic_DFT:前提:
+  ！！！依然需要 幺元根！！！
+  FFT+IFFT回返原值的必要条件:泛化版:[g{sz:=p} == 1**/p]
+    高层使用FFT,也必然使用IFFT，要求 符号化 高层幺元根z:[z**N * 低层数据 == 1**/p *. 低层数据]
+      这不能仅靠 旋转位移 实现
+  所以 即使符号化 也需 [z**N == 1**/p]
+    这既是折叠的依据，也是IFFT能返回原值的依据
+  这个 幺元根 其实已然大大降低了需求
+  若有 一批幺元根{1**/p | [p:<-ps]}
+    则 所有长度 型如 [sz==II[p**e | [p:<-ps][e::uint]]] 的 信号 都可以卷积
+symbolic_DFT:耗时:
+  O(MlnMlnlnM)
+
+  疑惑乊考虑:???规模至少十六乊圆负卷积牜符号型快速算法:here
+    ???再小 就是 (8|4),[W:=2] 递归调用 圆负卷积 数量为 (2*W)
+      !! 等等，数据规模居然翻倍？？
+
+  !! 低层数据数量翻倍
+  !! 共O(lblbM)层
+  => 最低层数据数量共倍增:O(2**lblbM) == O(lbM)
+  => 最低层数据数量:O(MlbM)
+    光最底层FFT耗时便达到:O(MlbM*lb(MlbM)) == O(MlbMlbM)
+      不对，应当是 O(MlbM*lb(2))
+  ===try_2:
+  O(2*FFT{sz:=2*W}*gmul{shift{N}} + dyadic_product{sz:=2*W})
+  O(4Wln(2W)*N + 2*W*recur{sz:=N})
+  [assume O(K*lnlnM*MlnM)]:
+    O(4Wln(2W)*N + 2*W*K*lnlnN*NlnN)
+    O(4Mln(2W) + 2K*lnlnN*MlnN)
+    [lnlnM > 2*lnlnN]:
+      <==> [lnM > lnN**2]
+      _L
+    [(4Mln(2W) + 2K*lnlnN*MlnN) < (K*lnlnM*MlnM)]:
+      <==> [(4*lb(2W)/ln2/K + 2*lblnN*lbN) < (lblnM*lbM)]
+      !! [lbM >= 2*lbW]
+      !! [1+lbM >= 2*lbN]
+      <<== [((4+2*lbM)/ln2/K + lblnN*(1+lbM)) < (lblnM*lbM)]
+      <<== [((4+2*lbM)/ln2/K + lblnN) < ((lblnM-lblnN)*lbM)]
+      !! [1+lbM >= 2*lbN]
+      => [(lbM/lbN) == log2(2+(0|[lbN%2==1]:-1)/lbN)]
+      !! [N>=W>=2][M>=4]
+      => [(5/3) <= (lbM/lbN) <= 2]
+      !! [(lblnM-lblnN) == log2(lnM/lnN) == log2(lbM/lbN)]
+      => [log2(5/3) <= (lblnM-lblnN) <= 1]
+      <<== [((4+2*lbM)/ln2/K + lblnN) < (log2(5/3)*lbM)]
+      <<== [((4+2*lbM)/ln2/K + lblbM) < (log2(5/3)*lbM)]
+      <<== [((4+2*lbM)/ln2)/(log2(5/3)*lbM -lblbM) < K]
+      <<== [K > (4+2*lbM)/(ln(5/3)*lbM -lnlbM)]
+      !! [lbM >= 4]
+      <<== [K > (4+2*4)/(ln(5/3)*4 -ln4) == 12/ln(625/324) == 12/ln2/(log2(625) -log2(324)) == 32*12/ln2/(log2(625**32) -log2(324**32))]
+      <<== [K > 32*12/ln2/(floor_log2(625**32) -ceil_log2(324**32)) == 32*12/ln2/(297-267) == 32*12*log2(e)/30]
+      <<== [K >= 32*12*log2(4)/30 == 32*12*2/30 == 32*8/10 == 25.6]
+        # vs: [12/ln(625/324) ~= 18.264614058829142]
+    ==>>:
+    O(25.6*MlnMlnlnM)
     ok
+  ===try_1:
+  O(2*FFT{sz:=2*W}*gmul{shift{N}} + dyadic_product{sz:=2*W})
+  O(4Wln(2W)*N + 2*W*recur{sz:=N})
+  [assume O(K*MlnM)]:
+    O(4Wln(2W)*N + 2*W*K*NlnN)
+    O(4Mln(2W) + 2K*MlnN)
+      # !!! 『2K』表明 低层数据数量翻倍 !!!
+    [4Mln(2W) < K*MlnW]:
+      <==> [ln(2W) < K/4*lnW]
+      <==> [ln2 < (K/4-1)*lnW]
+      <==> [1 < (K/4-1)*log2(W)]
+      <==> [K > 4+4/log2(W)]
+      !! [W>=2]
+      <<== [K > 8]
+    [K>8]:
+      O(K*MlnW + 2K*MlnN)
+      O(2K*MlnM)
+        > O(K*MlnM)
+      !!!not-ok!!!
+    [(4Mln(2W) + 2K*MlnN) < (K*MlnM)]:
+      <==> [(4Mln(2W) + K*MlnN) < (K*MlnW)]
+      !! [N >= W]
+      _L
+    _L
   fast.mul: N6H bits, blk:B6I,B6O bits
     [TIME{fast.mul{N6H}} == (N6H/B6I)*ln(N6H/B6I)*TIME{fast.mul{B6O}}]
     最低要求:[2**N6L == 2**B6O >= (N6H/B6I)*(2**B6I)**2]
@@ -578,6 +678,7 @@ symbolic_DFT
         O(N6H * lnN6H * lnlnN6H * ...)
       [B6I:=1] => O(N6H*lnN6H * lnN6H*lnlnN6H * ...)
     [B6I==O(lnN6H)] => [TIME{fast.mul{N6H}} == O(N6H * lnN6H * lnlnN6H * ...)]
+
 #######
 <<==:
 #######
@@ -641,7 +742,12 @@ Algorithm 9.5.25 (Nussbaumer convolution, cyclic and negacyclic)
   !! [hg不能比z更琐碎]#否则Rz不成立，或者说 数据量变大 或者说 hg才是变量而非z
   => [hg == (z**e4hg)]
   => [(z**e4hg)**W==-1]
-  !! [z**N==-1] # 不能是[z**N==1]因为 低层数据 旋转位移一半 并不等同于 取负  #过半取负 是FFT所必需的
+  !! [z**N==-1] # [#不对#]不能是[z**N==1]因为 低层数据 旋转位移一半 并不等同于 取负  #过半取负 是FFT所必需的
+        # !!! 发现可以是 [z**N==1][FFT只需[g**sz == 1]未必需要[g**(sz///2)==-1]] !!!
+        #   只不过FFT算法必须取消neg_/sub_
+        #       原版:(xsL .+. (g *. xsR)) ++ (xsL .+. (-1) *. (g *. xsR))
+        #       新版:(xsL .+. (g *. xsR)) ++ (xsL .+. (g**(sz///2)) *. (g *. xsR))
+        #       即:取负 改为 旋转位移一半
   => [e4hg*W==N]
   => [N%W==0][N>W>=1]
 
@@ -699,14 +805,11 @@ Algorithm 9.5.25 (Nussbaumer convolution, cyclic and negacyclic)
   ###########################
   @20260614回顾 => 变体设计牜卷积牜纯符:here
       变体命名解释:symFPN0 : symF-P-N-0 : symbolic_DFT-P圆正卷积-递归:N圆负卷积-(0==en-ew)
-      实际所有变体无效:只有 原版symFNN0,symFNN1有效
-        !! 高层能使用symbolic_DFT => Rz.mul非常费时，导致O(WlnW*NlnN) == O(MlnMlnM)
-        => 高层必须使用FFT{hg}，
-        => [hg**W==-1]
-        => [(z**e4hg)**W==-1]
-        !! [z**N==-1]
-        => [e4hg*W==N]
-        => [N%W==0][N>W>=1]
+      xxx实际所有变体无效:只有 原版symFNN0,symFNN1有效
+        证明不可交替递归:goto
+        实际上有两个变体有效:symFPP1,symFPP2
+          但由于[hg**W=!=-1]，这俩变体仅限于高层FFT有效,见下面:FFT+IFFT回返原值的必要条件 => [g{sz:=2} == -1]
+          由于必要用到高层IFFT，无法灭零，即意味着无用
   !! [ws_ws7Rzt_ex其实是变量t的多项式乘积，与变量z无关{z只起过渡性辅助作用}]
   => 必要:[t**M==-1]<==>圆负卷积
     => 原版symFNN0:[em%2==0][en==ew][t**W==z][t**M==z**N==z**W==-1][hg:=z]
@@ -718,16 +821,24 @@ Algorithm 9.5.25 (Nussbaumer convolution, cyclic and negacyclic)
       => 考虑切换成 变体symFNP1 圆正卷积:gmul即 位移操作 甚至 不需要neg_
     #bug:{必须是[t**W==z]这是W的定义，也高层规模的由来}=> 变体symFNP1:[em%2==1][en==1+ew][t**N==z][t**(W///2)==z][z**N==1][t**M==z**W==-1][hg:=z]
     #bug:{旋转位移一半 并不等同于 取负}=> 变体symFNP1:[em%2==1][en==1+ew][t**W==z][t**M==z**N==1][z**W==-1][hg:=z]
-      => 递归调用 不同于高层，改成 圆正卷积{N}
         ??? [z**W==-1] vs [z**N==1] => 低层数据 对半折叠？？？
-        bug!!!! 因为 z**W*Rz => 低层数据 旋转位移一半，并不等同于 取负:-1*Rz !!!!
+        #bug!!!! 因为 z**W*Rz => 低层数据 旋转位移一半，并不等同于 取负:-1*Rz !!!!
+    #fail:{[-1=!=t**M]高层非圆负卷积}=> 变体symFNP1:[em%2==1][en==1+ew][t**W==z][t**M==z**N==1][z**W=!=-1][z**(2*W) == 1][hg:=z]
+      => 递归调用 不同于高层，改成 圆正卷积{N}
+        因为 [z**W=!=-1] 所以 低层数据不能对折
+        虽然 [z**W=!=-1] 但有[z**(2*W) == 1]所以 高层FFT使用 『[hg:=z]』没毛病
+        using_sqrt4one_instead_neg4one_in_FFT:goto
+          由于高层要求-1所以低层也得有-1 => 不能递归到 圆正卷积
       => [ws7Rzt := ws_ws7Rzt_ex[:W] .+. (-z)*ws_ws7Rzt_ex[W:]]
-      即:[ws7Rzt := ws_ws7Rzt_ex[:W] .-. z*ws_ws7Rzt_ex[W:]]
+      #bug:即:[ws7Rzt := ws_ws7Rzt_ex[:W] .-. z*ws_ws7Rzt_ex[W:]]
+      即:[ws7Rzt := ws_ws7Rzt_ex[:W] .+. (z**W)*z*ws_ws7Rzt_ex[W:]]
   => 必要:[t**M==+1]<==>圆正卷积
     #bug:{同上,旋转位移一半 并不等同于 取负}=> 变体symFPP1:[em%2==1][en==1+ew][t**W==z][t**M==z**N==1][z**W==-1][hg:=z]
+    #fail:{高层IFFT无法灭零}=> 变体symFPP1:[em%2==1][en==1+ew][t**W==z][t**M==z**N==1][z**W=!=-1][z**(2*W) == 1][hg:=z]
       => 递归调用 同于高层，仍然是 圆正卷积{N}
       => 最佳:同态递归模式:[em == 1+2**ez4em]
     #bug:{同上,旋转位移一半 并不等同于 取负}=> 变体symFPP2:[em%2==0][en==2+ew][t**W==z][t**M==z**N==1][(z**2)**W==-1][hg:=z**2]
+    #fail:{高层IFFT无法灭零}=> 变体symFPP2:[em%2==0][en==2+ew][t**W==z][t**M==z**N==1][(z**2)**W=!=-1][(z**2)**(2*W) == 1][hg:=z**2]
       => 递归调用 同于高层，仍然是 圆正卷积{N}
       => 最糟:同态递归模式:[em == 2+2**ez4em]
       => 考虑切换成 变体symFPN0 圆负卷积:数据切分更均衡
@@ -744,6 +855,18 @@ Algorithm 9.5.25 (Nussbaumer convolution, cyclic and negacyclic)
     #fail:{[-1=!=z**N]低层非圆负卷积}=> 变体symFPN1:[em%2==1][en==1+ew][t**W==z][t**M==z**N==1==(z**2)**W][z**W==-1][hg:=z]
       => 递归调用 不同于高层，改成 圆负卷积{N}
   ###########################
+  证明不可交替递归:here
+  [定义或必要前提:[M==N*W][t**W==z]]:
+      [z**N==(t**W)**N==t**M]
+      即要求 高层低层同型递归
+  [M==N*W][t**W==z][低层是圆负卷积[z**N==-1]][高层是圆正卷积[t**M==1]]:
+      [-1==z**N==(t**W)**N==t**M==1]
+      _L
+  [M==N*W][t**W==z][低层是圆正卷积[z**N==1]][高层是圆负卷积[t**M==-1]]:
+      [1==z**N==(t**W)**N==t**M==-1]
+      _L
+
+  ###########################
 
   [ws7Rzt :: [Rz]{len==W}]
   !! [@[xs ::[R]{len==M}] -> @[k:<-[0..<W]] -> @[i:<-[0..<N]] -> [mk_poly7Rzt_(xs).coeffs[k].coeffs[i] == xs[k+i*W]]]
@@ -751,6 +874,48 @@ Algorithm 9.5.25 (Nussbaumer convolution, cyclic and negacyclic)
   [ws :: [R]{len==M}]
   [ws == negacyclic_convolution__len_eq_(M; us, vs)]
       # 递归实现negacyclic_convolution__len_eq_ 至此结束
+
+
+[M>=4][W:=2][N==M///2]:
+  [negacyclic_convolution__len_eq_(M;us,vs)
+  == (poly{us,T} * poly{vs,T} %(+1+T**M)).coeffs
+  == ((poly{us[0::2],T**2} + T*poly{us[1::2],T**2}) * poly{vs,T} %(+1+T**M)).coeffs
+  :> [Z:=T**2]
+  == ((poly{usE,Z} + T*poly{usO,Z}) * poly{vs,T} %(+1+T**M)).coeffs
+  == (poly{[poly{usE,Z},poly{usO,Z}],T} * poly{vs,T} %(+1+T**M)).coeffs
+  == (poly{acyclic_convolution__lenI_eq_(2;[poly{usE,Z},poly{usO,Z}], [poly{vsE,Z},poly{vsO,Z}]) %(+1+Z**(M/2)),T} %(+1+T**M)).coeffs
+  ]
+  [hg:=Z**(N///2)]
+    即 低层数据 旋转右移一半
+    即 usE --> (-. usE[N/2:])++usE[:N/2]
+  [hg==Z**(M/4)==T**(M/2)]
+  [hg**2==Z**N==-1]
+  [hg**4==1]
+  [DFT{[poly{usE,Z},poly{usO,Z},0,0],hg} == ???]
+  [DFT{[A,B,0,0],hg} == ???]
+  [DFT{[A,B,0,0],hg}
+  == [A+B,A+B*hg,A-B,A-B*hg]
+  !! [B*hg == (-BH)++BL]
+  => [A+B*hg == (AL .-. BH)++(AH .+. BL)]
+  => [A-B*hg == (AL .+. BH)++(AH .-. BL)]
+  !! [A-B == (AL .-. BL)++(AH .-. BH)]
+  !! [A+B == (AL .+. BL)++(AH .+. BH)]
+  => 无可简化
+  ]
+  [acyclic_convolution__lenI_eq_(2;[poly{usE,Z},poly{usO,Z}], [poly{vsE,Z},poly{vsO,Z}]) %(+1+Z**(M/2)) == ???]
+  [acyclic_convolution__lenI_eq_(2;[A,B], [C,D]) %(+1+Z**H) == ???]
+  [acyclic_convolution__lenI_eq_(2;[A,B], [C,D])
+  == DFT{(DFT{[A,B,0,0],hg} .*. DFT{[C,D,0,0],hg},-hg} %(+1+Z**H)
+  == DFT{([A+B,A+B*hg,A-B,A-B*hg] .*. [C+D,C+D*hg,C-D,C-D*hg],-hg} %(+1+Z**H)
+  == DFT{([(A+B)*(C+D) %(+1+Z**H),...],-hg}
+  # (*) %(+1+Z**H) --> negacyclic_convolution__len_eq_
+  == DFT{([negacyclic_convolution__len_eq_(H;(A+B).coeffs, (C+D).coeffs),...],-hg}
+    # 递归 子规模为原规模一半 但是 需要四次...
+    # 可见[W:=2]极不划算 => [en>=ew>=2][em>=4][M>=16] 规模至少十六乊圆负卷积牜符号型快速算法:goto
+    #   如何 避免 高层acyclic_convolution__lenI_eq_？
+    #       bug:使用:weighted_cyclic_convolution__len_eq_{hhg}实现 圆负卷积{高层}
+    #           因为高层是关于T的线性卷积{输出长度4}，与 圆负卷积 无关，若非得用 加权卷积 实现，折返值
+  ]
 
 ]]
 
@@ -822,5 +987,1374 @@ acyclic_convolution
 
 
 ]]
+[[
+# using_sqrt4one_instead_neg4one_in_FFT:here
+FFT避免使用neg_/sub_
+  虽然FFT本身并不要求[g**(sz///2) == 1]
+  但是再做一次IFFT，确未必能返回原值...
+  见下面:FFT+IFFT回返原值的必要条件:
+    [@[t:<-[1..<sz]] -> [sum[(g**j)**t | [j:<-[0..<sz]]] == 0]]
+        => [g{sz:=2} == -1]
+        => 泛化版:[g{sz:=p} == 1**/p]
+===
+sqrt4one 无需是 neg4one
+[sz==len(cs)][sz%2==0][g**sz==1][g**(sz///2) <?> -1][hsz:=sz///2][sqrt4one:=(g**hsz)]:
+  !! [(g**hsz)**2 == g**sz == 1]
+  [sqrt4one**2 == 1]
+    #sqrt4one 不必是 -1
+    #symbolic_DFT:旋转位移一半 而非 取负
+  [poly_eval_(cs, x)
+  == 1*poly_eval_(cs[0::2], x**2)
+  +  x*poly_eval_(cs[1::2], x**2)
+  ]
+  [poly_eval_(cs, y*x**hsz)
+  == 1         *poly_eval_(cs[0::2], (y*x**hsz)**2)
+  +  (y*x**hsz)*poly_eval_(cs[1::2], (y*x**hsz)**2)
+  ]
+  # [x:=g]
+  [poly_eval_(cs, y*sqrt4one)
+  == poly_eval_(cs, y*g**hsz)
+  == 1         *poly_eval_(cs[0::2], (y*g**hsz)**2)
+  +  (y*g**hsz)*poly_eval_(cs[1::2], (y*g**hsz)**2)
+  # 只在此处要求:[g**sz == 1]
+  == 1         *poly_eval_(cs[0::2], y**2)
+  +  (y*sqrt4one)*poly_eval_(cs[1::2], y**2)
+  ]
+  # [x:=1]
+  [poly_eval_(cs, y*1**hsz)
+  == 1         *poly_eval_(cs[0::2], (y*1**hsz)**2)
+  +  (y*1**hsz)*poly_eval_(cs[1::2], (y*1**hsz)**2)
+  == 1         *poly_eval_(cs[0::2], y**2)
+  +  (y*1**hsz)*poly_eval_(cs[1::2], y**2)
+  ]
+
+  [poly_evals_(cs, [y,y*sqrt4one])
+  == let [even_part:=1*poly_eval_(cs[0::2], y**2)]
+         [odd_part :=y*poly_eval_(cs[1::2], y**2)]
+     in  [even_part+odd_part,even_part+(sqrt4one)*odd_part]
+  ]
+  [gs7sz  := [g**j | [j:<-[0..<sz]]]]
+  [gs7hsz := [g**j | [j:<-[0..<hsz]]]]
+  [poly_evals_(cs, gs7sz)
+  == poly_evals_(cs, gs7hsz ++ (sqrt4one *. gs7hsz))
+  == let [even_part:=           poly_evals_(cs[0::2], gs7hsz .** 2)]
+         [odd_part :=gs7hsz .*. poly_evals_(cs[1::2], gs7hsz .** 2)]
+     in  (even_part .+. odd_part) ++ (even_part .+. (sqrt4one *. odd_part))
+      # 整个流程并不要求[sqrt4one==-1]
+  ]
+
+
+===
+FFT+IFFT回返原值的必要条件:
+  [@[t:<-[1..<sz]] -> [sum[(g**j)**t | [j:<-[0..<sz]]] == 0]]
+    => [g{sz:=2} == -1]
+    => 泛化版:[g{sz:=p} == 1**/p]
+<<==:
+[DFT{g,cs}[j] == poly_eval_(cs, g**j) == sum[cs[i]*(g**j)**i | [i:<-[0..<sz]]]]
+[IFFT{g**-1,DFT{g,cs}}[k]
+== poly_eval_(DFT{g,cs}, g**-k)
+== sum[DFT{g,cs}[j]*(g**-k)**j | [j:<-[0..<sz]]]
+== sum[sum[cs[i]*(g**j)**i | [i:<-[0..<sz]]]*(g**-k)**j | [j:<-[0..<sz]]]
+== sum[cs[i]*sum[(g**j)**(i-k) | [j:<-[0..<sz]]] | [i:<-[0..<sz]]]
+== sum[cs[ik+k]*sum[(g**j)**ik | [j:<-[0..<sz]]] | [ik:<-[-k..<sz-k]]]
+!! [g**sz == 1]
+== sum[cs[ik+k]*sum[(g**j)**ik | [j:<-[0..<sz]]] | [ik:<-[0..<sz]]]
+== sum[cs[k+t]*sum[(g**j)**t | [j:<-[0..<sz]]] | [t:<-[0..<sz]]]
+]
+要求:
+  [@[t:<-[1..<sz]] -> [sum[(g**j)**t | [j:<-[0..<sz]]] == 0]]
+  <==>:
+  [@[t:<-[1..<sz]] -> [sum[(g**t)**j | [j:<-[0..<sz]]] == 0]]
+      快速傅立叶逆变换回返原值的必要条件牜甲型:here
+  <==>:
+  [@[p::prime] -> [sz%p == 0] -> @[t:=sz///p] -> [sum[(g**t)**j | [j:<-[0..<sz]]] == 0]]
+  <==>:
+  [@[p::prime] -> [sz%p == 0] -> @[t:=sz///p] -> [t*sum[(g**t)**j | [j:<-[0..<p]]] == 0]]
+      快速傅立叶逆变换回返原值的必要条件牜乙型:here
+
+  * [p::prime][sz==p]:
+    <==> [t:=1][t*sum[(g**t)**j | [j:<-[0..<p]]] == 0]
+    <==> [sum[g**j | [j:<-[0..<p]]] == 0]
+    * [sz==2]:
+      <==> [p==2][sum[(g**j) | [j:<-[0..<p]]] == 0]
+      <==> [(g**0 + g**1) == 0]
+      <==> [1 + g == 0]
+      <==> [g == -1]
+      <==> [g{sz:=2} == -1]
+
+===
+view others/数学/本原根.txt
+  二幂模无用于快速傅立叶逆变换
+  [@[em,g,j::int][em>=3][g%2==1] -> [gsum7zpow_(em,g,j) := sum[(g**j)**i | [i:<-[0..<2**(em-2)]]] %2**em] -> [gsum7zpow_(em,g,j) == 2**(em-3)*(gsum7zpow_(3,g%8,j%2)) <- 2**(em-3) *. {0,2,4,6}]]
+  [@[em,g,j::int][em>=3][g%2==1] -> [gsum7zpow_(em,g,j) == 2**(em-3)*(gsum7zpow_(3,g%8,j%2)) <- 2**(em-3) *. {2,(1+g)%8}]]
+      [{g%8:(1+g)%8 | [g::int][g%2==1]} == {1:2,3:4,5:6,7:0}]
+注意:
+  [gsum7zpow_(em,8g+7,2j+1) == 0]
+  [gsum7zpow_(em,7,2j+1) == 0]
+  似乎可以利用
+[DZT{cs}[j] := sum[cs[i]*(7**f0(j))**g0(i) | [i:<-[0..<sz]]]]
+[IDZT{cs}[j] := sum[cs[i]*(7**f1(j))**g1(i) | [i:<-[0..<sz]]]]
+[IDZT{DZT{cs}}[k]
+== sum[DZT{cs}[j]*(7**f1(k))**g1(j) | [j:<-[0..<sz]]]
+== sum[sum[cs[i]*(7**f0(j))**g0(i) | [i:<-[0..<sz]]]*(7**f1(k))**g1(j) | [j:<-[0..<sz]]]
+== sum[cs[i]*sum[(7**f0(j))**g0(i) * (7**f1(k))**g1(j) | [j:<-[0..<sz]]] | [i:<-[0..<sz]]]
+== sum[cs[i]*sum[7**(f0(j)*g0(i)+f1(k)*g1(j)) | [j:<-[0..<sz]]] | [i:<-[0..<sz]]]
+
+]
+[(f0(j)*g0(i)+f1(k)*g1(j)) == (even if i==k else odd)*j]:
+  [f0==g1==echo]:
+    [(g0(i)+f1(k)) == (even if i==k else odd)]
+      1+2**abs(i-k)
+    [sz==2]:
+      ok 但无实用价值:{+1,-1}
+    [sz>=3]:
+      不可能！左式 %2 只有 四种组合
+      [g0(0)+f1(0) =[%2]= 0]
+      [g0(1)+f1(1) =[%2]= 0]
+      [g0(2)+f1(2) =[%2]= 0]
+
+      [g0(0)+f1(1) =[%2]= 1]
+      [g0(0)+f1(2) =[%2]= 1]
+      [g1(1)+f1(2) =[%2]= 1]
+      #三式相加:
+      [g1(1)+f1(2) =[%2]= 1]
+      !! [g0(1)+f1(1) =[%2]= 0]
+      _L
+
+===
+[DZT{cs}[j] := sum[cs[i]*(a**f0(j))**g0(i) | [i:<-[0..<sz]]]]
+[IDZT{cs}[j] := sum[cs[i]*(b**f1(j))**g1(i) | [i:<-[0..<sz]]]]
+[IDZT{DZT{cs}}[k]
+== sum[DZT{cs}[j]*(b**f1(k))**g1(j) | [j:<-[0..<sz]]]
+== sum[sum[cs[i]*(a**f0(j))**g0(i) | [i:<-[0..<sz]]]*(b**f1(k))**g1(j) | [j:<-[0..<sz]]]
+== sum[cs[i]*sum[(a**f0(j))**g0(i) * (b**f1(k))**g1(j) | [j:<-[0..<sz]]] | [i:<-[0..<sz]]]
+== sum[cs[i]*sum[a**(f0(j)*g0(i)+f1(k)*g1(j)) * ((b/a)**f1(k))**g1(j) | [j:<-[0..<sz]]] | [i:<-[0..<sz]]]
+??????????????????
+]
+
+===
+]]
+[[
+@20260617
+考虑泛化:[t**M==z**N==b]
+   特别是 复数域:1j 看看可否 消除 低层数据 翻倍增长
+    不能!
+]]
+[[
+@20260617
+考虑拆成三层:
+[em == eu+ev+en][en>=ev>=eu]
+[t**U==s][s**V==z][z**N==-1]
+[hg4u:=z**2**(en-eu)]
+[hg4v:=z**2**(en-ev)]
+[hg4u可用于 poly{t}的乘积]
+[hg4v可用于 poly{s}的乘积]
+[三层折返值分别是s,z,-1]
+假设poly{N;z}乘法 耗时 Tz(2N)
+假设poly{V;s}乘法 耗时 Ts(2V,N)
+    似乎可以简省为初始FFT + 终末IFFT
+    反正 加法 点对点，旋转位移 直传低层
+假设poly{U;t}乘法 耗时 Tt(2U,V,N)
+未简省FFT:
+    [Ts(2V,N) == [FFT/IFFT]3*2Vln2V*N + [dyadic_mul_]2V*Tz(2N)]
+    [Tt(2U,V,N) == [FFT/IFFT]3*2Uln2U*N*V + [dyadic_mul_]2U*Ts(2V,N)]
+简省FFT:没用？
+    [Ts(2V,N) == [dyadic_mul_]2V*Tz(2N)]
+    [Tt(2U,V,N) == [FFT/IFFT]3*2Uln2U*N*V + [FFT/IFFT]3*2U*2Vln2V*N + [dyadic_mul_]2U*Ts(2V,N)]
+
+[Tt(2U,V,N)
+== [FFT/IFFT]3*2Uln2U*N*V + [dyadic_mul_]2U*Ts(2V,N)
+== [FFT/IFFT]3*2Uln2U*N*V + [dyadic_mul_]2U*([FFT/IFFT]3*2Vln2V*N + [dyadic_mul_]2V*Tz(2N))
+== 3*2Uln2U*N*V + 2U*(3*2Vln2V*N + 2V*Tz(2N))
+== 6Mln2U + 12Mln2V + 4UV*Tz(2N)
+~= 9Mln(4M/N) + (4M/N)*Tz(2N)
+~= 9Mln(4M/N) + (4M/N)*Tt(2N,...)
+    #低层数量:8M==2**3*M
+]
+虽然 无法阻止 低层数据翻倍，
+    但递归层数减少...
+    若是 拆成更多层？感觉无用
+        关键在于 多项式乘法 折返值 并非1，必须 使用 线性卷积，导致 低层数据 翻倍
+            考虑利用冫零填充部分:goto
+]]
+[[
+@20260617
+cyclic_convolution泛化版:
+    #########
+    #圆正卷积牜泛化版:here
+    #########
+    (polynomial{us,X} * polynomial{vs,X} %(-I+X**sz)).coeffs
+    若已知w inv4w:[w**sz==I]则:
+        (polynomial{us,X} * polynomial{vs,X} %(-(w**+sz)+X**sz)).coeffs
+            其实就是weighted_cyclic_convolution_7native_
+    #########
+    #圆负卷积牜泛化版:here
+    #########
+    但是未知w，但已知:[I**half_order4I == -1]
+        # 达到『-1』是 IFFT有效回返的必要条件
+        #   所以[I==1]反而不行！
+        则可通过negacyclic_convolution_7zpow_{symbolic}泛化版来实现！
+
+圆负卷积牜强化版:
+    已知:[I**half_order4I == -1][half_order4I==2**ei]
+    可以 更快求 圆负卷积
+    [M==W*N][z**N==I][(z**N)**2**ei==-1==z**2**(en+ei)][(en+ei)>=ew][hg:=z**2**((en+ei)-ew)][hg**2**ew==-1]
+        允许更大的W，更小的N，不断降低耗时，逼近FFT
+
+]]
+[[
+@20260617
+fail:考虑利用冫零填充部分:here
+考虑直接实现 圆正卷积:
+  但是:[t**(2*H) == z**2 =!= 1]
+[M==2*H*N][t**H==z][z**N==-1][N%H==0]:
+  [t**(M///2)==z**N==-1]
+  [t**M == 1]
+  [en:=log2(N)]
+  [eh:=log2(H)]
+  [en>=eh]
+  [hg:=(z**2**(en-eh))]
+  [hg**H == (z**2**(en-eh))**2**eh==z**2**en==-1]
+  [hg**H == -1]
+  但是:[t**(2*H) == z**2 =!= 1]
+  [poly(cs,t)
+  == sum[cs[j]*t**j | [j:<-[0..<M]]]
+  == sum[cs[(2*H*k+i)]*t**(2*H*k+i) | [j:<-[0..<M]][(k,i):=j/%(2*H)]]
+  == sum[cs[(2*H*k+i)]*t**(2*H*k+i) | [i:<-[0..<2*H]][k:<-[0..<N]]]
+  == sum[sum[cs[(2*H*k+i)]*t**(2*H*k+i) |[k:<-[0..<N]]] | [i:<-[0..<2*H]]]
+  == sum[t**i * poly{cs[i::2*H],t**(2*H)} | [i:<-[0..<2*H]]]
+  ]
+  [N 最多支持 长度 (2*H)<=(2*N)]
+  [N 支持 长度 M]:
+    [M == 2*N]
+    ???
+
+  [a**j * b**(k-j)) == c * d**(k%W) *z**(k//W)]
+  失败...
+]]
+[[
+@20260619
+失败
+考虑:构造更复杂的低层数据:CRT:
+    意图:[增大dlog_(z;-1)]
+    [are_pairwise_coprime(Ns)]
+    [f(z):=II[((1-(z**N**eN)**N)///(1-(z**N**eN))) | [N:<-Ns]]]
+        RR[z]%((1-z**N)///(1-z)) => z是N阶本原根，有效于IFFT
+        RR[z]%((1-(z**N**eN)**N)///(1-(z**N**eN))) => z是N**(1+eN)阶本原根，有效于IFFT
+        这就是 (1+z**2**en)的本质
+    [f(z)==II[(1-(z**N**(1+eN)))///(1-(z**N**eN)) | [N:<-Ns]]]
+    [deg(f(z))==sum[N**(1+eN) -N**eN | [N:<-Ns]]]
+    [deg(f(z))==sum[(N-1)*N**eN | [N:<-Ns]]]
+    边际效益:
+        * lnN / ((N-1)*(N**(1+eN)-N**eN))
+            == lnN / ((N-1)**2 *N**(eN))
+        * lnN / (N-1)
+    [Ns:=[2,3]]:
+        [f(z)==(1+z)*(1+z+z**2)==((1+z+z**2)+(z+z**2+z**3))==(1+2*z+2*z**2+z**3)]
+        [f(z)==(1+2*z+2*z**2+z**3)]
+        [z**3 =[%f(z)]= [-1,-2,-2]]
+        [z**4 =[%f(z)]= [0,-1,-2]+-2*[-1,-2,-2] == [2,3,2]]
+        [z**5 =[%f(z)]= [0,2,3]+2*[-1,-2,-2] == [-2,-2,-1]]
+        [z**6 =[%f(z)]= [0,-2,-2]+-1*[-1,-2,-2] == [1,0,0]]
+        [mul_order_of(z) == 6]
+        但是 [z**3 =!= -1]
+        组合而来的，还是不行？
+
+考虑:构造更复杂的低层数据:CRT:
+    意图:[增大dlog_(z;-1)]
+    [are_pairwise_coprime(Ns)]
+    [f(z):=II[(1+z**N) | [N:<-Ns]]]
+    RR[z]%f(z)
+    [sumNs := sum(Ns)]
+    [II_Ns := II(Ns)]
+    [(z**N)**j %(1+z**N) == (-1)**j]
+    [[(z**N)**j %(1+z**N) == (-1)] <-> [j%2==1]]
+    [[(z**N)**(II_Ns///N) %(1+z**N) == (-1)] <-> [(II_Ns///N)%2==1]]
+    [[z**II_Ns %f(z) == (-1)] <-> [II_Ns%2==1]]
+    [[II_Ns == dlog_(RR[z]%f(z);z;-1)] <-> [II_Ns%2==1]]
+    不能使用偶数N！
+    毛病在于:radices只有一个2，其余都是奇数，偏偏只有2保证了 IFFT有效性{1**/2==-1}，奇数 都没保证
+    /sdcard/0my_files/book/math/fxtbook[Matters Computational][Algorithms for Programmers].pdf
+    page457[469/978]
+    22.7 Prime length FFTs
+    奇素模FFT:
+      [p == 1+(p-1)]
+      直流分量 直接 计算
+      剩下(p-1)，使用 本原根 进行一次 圆正卷积
+考虑:构造更复杂的低层数据:CRT:
+    [t**W1==z1][z1**N1==-1]
+    [t**W2==z2][z2**N2==-1]
+    [t**W3==z3][z3**N3==-1]
+    %((1+z1**N1)*(1+z2**N2)*(1+z3**N3))
+    ??? vs %(1+(((t**N1)**N2)**N3))
+    [gcd(N1,N2)==1]
+    [gcd(N1,N3)==1]
+    [gcd(N2,N3)==1]
+    [N1==2**k]
+    [N2%2==1]
+    [N3%2==1]
+    [(z1*z2*z3)**(N1*N2*N3) == -1]
+    [a1:=(f2*f3)*((f2*f3)**-1%f1)]
+    不过[gcd((1+z2**N2),(1+z3**N3)) %(1+z) == 0]???
+        影响不大
+    支持:[2*W <= 2*N1*N2*N3]巨大进步！
+    [Ns:=PRIMES[:k]]
+    [2*W <= 2*II(Ns)]
+    [log2(W) ~<= PRIMES[k-1]]
+    [s*U-t*V == g]
+        [1*5-2*3 == -1]
+    [s,t>=0]
+    [g <?> 0]
+    [gcd((1+X**U), (1+X**V)) == ???]
+    [s%2==1]:
+        # [1*5-2*3 == -1]
+        [((1+X**(s*U))%(1+X**U)) == 0]
+        [gcd((1+X**U)*((1+X**(s*U))///(1+X**U)), (1+X**V)) %gcd((1+X**U), (1+X**V)) == 0]
+        [gcd((1+X**(s*U)), (1+X**V)) %gcd((1+X**U), (1+X**V)) == 0]
+        [gcd((1+X**(s*U-t*V)*X**(t*V)), (1+X**V)) %gcd((1+X**U), (1+X**V)) == 0]
+        [gcd((1+X**g*X**(t*V)), (1+X**V)) %gcd((1+X**U), (1+X**V)) == 0]
+        !! [((X**V)**t -(-1)**t)%((X**V) -(-1)) == 0]
+        [gcd((1+X**g*X**(t*V)) -X**g*((1+X**V)*(((X**V)**t -(-1)**t)///((X**V) -(-1)))), (1+X**V)) %gcd((1+X**U), (1+X**V)) == 0]
+        [gcd((1+X**g*(-1)**t), (1+X**V)) %gcd((1+X**U), (1+X**V)) == 0]
+        [(1+X**g*(-1)**t) %gcd((1+X**U), (1+X**V)) == 0]
+    [t%2==1]:
+        !! [s*U-t*V == g]
+        [-s*U+t*V == -g]
+        [(1+X**-g*(-1)**s) %gcd((1+X**U), (1+X**V)) == 0]
+        [(1+X**-g*(-1)**s)*X**g*(-1)**s %gcd((1+X**U), (1+X**V)) == 0]
+        [(1+X**g*(-1)**s) %gcd((1+X**U), (1+X**V)) == 0]
+    [[s%2==1][t%2==1]]:
+        [(1-X**g) %gcd((1+X**U), (1+X**V)) == 0]
+    [s%2=!=t%2]:
+        [(1+X**g) %gcd((1+X**U), (1+X**V)) == 0]
+    [[s%2==1]or[t%2==1]]:
+        [(1+X**g*(-1)**(1+s+t)) %gcd((1+X**U), (1+X**V)) == 0]
+    [g0 := gcd(s,t)]
+    [g1 := g///gcd(s,t)]
+    [s1 := s///gcd(s,t)]
+    [t1 := t///gcd(s,t)]
+    !! [s*U-t*V == g]
+    [s1*U-t1*V == g1]
+    [gcd(s1,t1) == 1]
+    [[s1%2==1]or[t1%2==1]]
+    [(1-X**g1) %gcd((1+X**U), (1+X**V)) == 0]
+    [(1+X**g1*(-1)**(1+s1+t1)) %gcd((1+X**U), (1+X**V)) == 0]
+    [(1-X**(g///gcd(s,t))*(-1)**((s+t)///gcd(s,t))) %gcd((1+X**U), (1+X**V)) == 0]
+        #上界纟最大公因子
+    [g == 1]:
+        [gcd(s*U,t*V) == 1]
+        [gcd(U,V) == 1]
+        [gcd(s,t) == 1]
+        [(1+X*(-1)**(1+s+t)) %gcd((1+X**U), (1+X**V)) == 0]
+            #上界纟最大公因子牜极简
+
+    [gcd((1+X**U), (1+X**V)) == ???]
+    -->:
+    [gcd((1-X**U), (1-X**V)) == ???]
+    [gcd((1-X**(s*U)), (1-X**(t*V))) %gcd((1-X**U), (1-X**V)) == 0]
+    [gcd((-X**(s*U) +X**(t*V)), (1-X**(t*V))) %gcd((1-X**U), (1-X**V)) == 0]
+    [gcd((1 -X**(s*U-t*V))*X**(t*V), (1-X**(t*V))) %gcd((1-X**U), (1-X**V)) == 0]
+    [gcd((1 -X**g), (1-X**(t*V))) %gcd((1-X**U), (1-X**V)) == 0]
+    [(1 -X**g) %gcd((1-X**U), (1-X**V)) == 0]
+    [(1 -X**g)**X**(t*V) == (1-X**U)*((1-X**(s*U))///(1-X**U)) -(1-X**V)*((1-X**(s*V))///(1-X**V))]
+    [(1 -X**g) =[%(1-X**V)]= (1-X**U)*((1-X**(s*U))///(1-X**U))]
+    [1 =[%((1-X**V)///(1 -X**g))]= ((1-X**U)///(1 -X**g))*((1-X**(s*U))///(1-X**U))]
+    [((1-X**U)///(1 -X**g))**-1 =[%((1-X**V)///(1 -X**g))]= ((1-X**(s*U))///(1-X**U))]
+
+    [U%2==1][V%2==1][g%2==1]:
+        !! [(1 -X**g) %gcd((1-X**U), (1-X**V)) == 0]
+        [(1 +(-X)**g) %gcd((1+(-X)**U), (1+(-X)**V)) == 0]
+        [(1 +X**g) %gcd((1+X**U), (1+X**V)) == 0]
+    [U%2==1][V%2==1][g==1]:
+        [(1 +X) %gcd((1+X**U), (1+X**V)) == 0]
+        [gcd((1+X**U), (1+X**V)) == (1 +X)]
+考虑:线性卷积/截断卷积:%(0+t**M):CRT:
+    xxx %(t**(M///N1))**N1 == %z1**N1
+    xxx [II(Ns)%M == 0]
+    %(t**p1)**N1
+    [p1*N1 >= M]
+    [sum(Ns) >= M]
+e ../../python3_src/seed/algo/FFT/convolution__7CRT.py
+
+]]
+[[
+@20260619
+可以:拆成三部分:一大两小
+
+考虑:CRT:拆成两半
+    [gcd(-1+X**k, +1+X**k) == ???]
+    [h:=2**-1]
+    [h*(+1+X**k) -h*(-1+X**k) == 1]
+
+    [+h*(+1+X**k) %(-1+X**k) == 1]
+    [-h*(-1+X**k) %(+1+X**k) == 1]
+
+    [(+1+X**k)**-1 %(-1+X**k) == +h]
+    [(-1+X**k)**-1 %(+1+X**k) == -h]
+
+    考虑:CRT:拆成四部分
+    [gcd(a+X**k, b+X**(1+k)) == ???]
+    [gcd(a+X**k, b+X**(1+k))
+    == gcd(a+X**k, b+X**(1+k) -X*(a+X**k))
+    == gcd(a+X**k, b-a*X)
+    ]
+    [(b-a*X)%gcd(a+X**k, b+X**(1+k)) == 0]
+    [a==0][b**-1 exist]:
+        [gcd(0+X**k, b+X**(1+k)) == 1]
+
+    考虑:CRT:拆成三部分:一大两小
+    [gcd(a+X**k, b+X**(2*k)) == ???]
+    [gcd(a+X**k, b+X**(2*k))
+    == gcd(a+X**k, b+X**(2*k) -X**k*(a+X**k))
+    == gcd(a+X**k, b-a*X**k)
+    == gcd(a+X**k, b-a*X**k +a*(a+X**k))
+    == gcd(a+X**k, b+a**2)
+    ]
+    [(b+a**2)%gcd(a+X**k, b+X**(2*k)) == 0]
+    [b=!=-a**2][(b+a**2)**-1 exist]:
+        [gcd(a+X**k, b+X**(2*k)) == 1]
+    [b==0][a==+/-1]:
+        [gcd(I+X**k, 0+X**(2*k)) == 1]
+        [1*(0+X**(2*k)) -(+1+X**k)*(-1+X**k) == 1]
+        [(+1+X**k)**-1 %(0+X**(2*k)) == -(-1+X**k)]
+        [(-1+X**k)**-1 %(0+X**(2*k)) == -(+1+X**k)]
+
+        [1*(0+X**(2*k)) -1*(-1+X**(2*k)) == 1]
+        [(-1+X**(2*k))**-1 %(0+X**(2*k)) == -1]
+        [(0+X**(2*k))**-1 %(-1+X**(2*k)) == 1]
+    考虑:CRT:拆成三部分:一大两小
+    %(0+X**(2*k))
+    %(-1+X**(2*k))
+        %(-1+X**k)
+        %(+1+X**k)
+    bug:[O(f(4*k)) == O(10*k + f(2*k)+2*f(k))]
+    bug:感觉可以！！
+      [O(f(2k-->4k)) == O(10*k + f(2*k-->4k)+2*f(k-->2k))]
+    [1*(0+X**(2*k)) -1*(-1+X**(2*k)) == 1]
+    [(-1+X**(2*k))**-1 %(0+X**(2*k)) == -1]
+    [(0+X**(2*k))**-1 %(-1+X**(2*k)) == 1]
+
+    [h:=2**-1]
+    [h*(+1+X**k) -h*(-1+X**k) == 1]
+    [(+1+X**k)**-1 %(-1+X**k) == +h]
+    [(-1+X**k)**-1 %(+1+X**k) == -h]
+    ==>>:
+    [ff(X)%(0+X**(2*k)) == ff0]
+    [ff(X)%(-1+X**(2*k)) == ff1]
+    [ff(X)%(+1+X**k) == ff1p]
+    [ff(X)%(-1+X**k) == ff1n]
+    [ff == ff0*-(-1+X**(2*k)) + ff1*(0+X**(2*k))]
+    [ff1 == ff1p*-h*(-1+X**k) + ff1n*+h*(+1+X**k)]
+    ==>>:
+    [ff1 == h*((-ff1p+ff1n)*X**k +(+ff1p+ff1n))]
+    [ff == ((-ff0+ff1)*X**(2*k) +ff0)]
+    [ff0 == ff[:2*k]]
+    [ff1 == ff[:2*k] .+. ff[2*k:]]
+    [ff1n == ff1[:k] .+. ff1[k:]]
+    [ff1p == ff1[:k] .-. ff1[k:]]
+    mx==mx2*mx1
+    mx1 = [
+    [I; O]
+    [I; I]
+    ]
+    mx2 = [
+    [I; O]
+    [O; mx3]
+    ]
+    mx3 = [
+    [I; I]
+    [I; -I]
+    ]
+    mx = [
+    [I; O]
+    [mx3; mx3]
+    ]
+    mx = [
+    [I;O; O;O]
+    [O;I; O;O]
+    [I;I; I;I]
+    [I;-I; I;-I]
+    ]
+
+
+e ../../python3_src/seed/algo/FFT/convolution__7CRT.py
+]]
+[[
+@20260619
+其实FFT就是CRT，而且成功拆分到(X-g**j)
+如何找到一批容易拆分重建的多项式？
+[(1-X**2**ez) == (1-X)*II[(1+X**2**j) | [j:<-[0..<ez]]]]
+拆分后:
+    [sum degI >= deg wholeO]
+    [sum degO ~= 2 * sum degI]
+    这意味着每一层数据翻倍，最好一次拆分到底
+    FFT就是成功典范，symbolic版则是半途
+
+[p::prime][p%2==1]:
+  [fp(p;X) := (1+X**p)///(1+X)]
+  [fn(p;X) := (1-X**p)///(1-X)]
+  [(1-X**(2*p))的因子...那其他 合数型指数怎样???]
+使用足够多的 低阶分圆多项式 作为CRT的模基
+  但分解重建比较麻烦
+[cyclotomic_polynomial{p;X} == (1-X**p)/(1-X)]
+  分解时:
+    %(1-X**p)
+    再去掉最高位
+[若只使用 素阶分圆多项式fn(p;X)则大约需要用到的最大素数约为O(sqrt(degO*ln(degO)))]
+  => 只需 lnln(degO)层，数据最终倍增ln(degO)
+    这就雷同于symbolic版
+分解容易，如何重建？
+  f(X)% (f1*f2...)
+  [f(X)**-1% (f1*f2...) == ???]
+  [(1-X**A)%f(X)==0][[(1-X**B)%II[fj(X)|j]==0] -> [gcd(A,B)==1]]:
+    [f(X)**-1% (f1*f2...)
+    == f(X)**-1 %(1-X**B) % (f1*f2...)
+    ]
+    [f(X)**-1% (1-X**B)
+    == ... 牛顿迭代...
+    ]
+
+
+===
+分圆多项式
+cyclotomic polynomial
+割圆方程
+cyclotomic equation
+
+
+===
+grep cyclotomic others/数学/ -I -l -r
+view others/数学/编程/LFSR/LFSR_peroid-primitive-irreducible.txt
+  cyclotomic_polynomial
+view others/数学/整数分解/素数/safe_prime.txt
+
+===
+grep cyclotomic others/ -I -l -r
+view others/杂/词语解释/术语库.txt
+view others/list_my_files/[20200712]e_software_content.txt
+  ???Haskell竟然有这样的库:E:\software\programming\Haskell\library\_calc\cyclotomic
+view others/我的叶子/待办事项牜短期.txt
+  DONE:列表冫分圆多项式扌
+  <<==:
+  @20260620
+  view ../../python3_src/seed/math/polynomial/eval_polynomial/divmod7polynomial.py
+  view ../../python3_src/seed/math/polynomial/eval_polynomial/cyclotomic_polynomial.py
+
+===
+]]
+[[
+@20260620
+TODO
+考虑:直接实现half_acyclic_convolution__len_eq_以规避 低层数据倍增
+  即 RR[X]%(0+X**M)
+[H < M <= 2*H]:
+  [(a+b*X**H)**k =[%(0+X**M)]= (a**k+k*a**(k-1)*b*X**H)]
+  [(1+X**H)**k =[%(0+X**M)]= (1+k*X**H)]
+  [(1+X**H)*(1-X**H) =[%(0+X**M)]= 1]
+
+[(a+b*H)*(c+d*H) %H**2
+== (a*c + (a*d+b*c)%H *H) %H**2
+]
+[(a+b)*(c+d) %H**2
+== (a*c +b*c+a*d +b*d) %H**2
+]
+[(a-b)*(c-d) %H**2
+== (a*c -b*c-a*d +b*d) %H**2
+]
+
+[(a*1 +b*H +c*H**2 +d*H**3)*(w*1 +x*H +y*H**2 +z*H**3) %H**4
+== (a*w*1 +(a*x+b*w)*H +(a*y+b*x+c*w)*H**2 +(a*z+b*y+c*x+d*w) %H *H**3) %H**4
+]
+
+]]
+[[
+快速乘法:
+[f(x) * ((1-X**k)///(1-X)) == (f(x) * (1-X**k)) ///(1-X)]
+  #只需O(4*(deg(f)+k))
+[f(x) % ((1-X**k)///(1-X))
+== (f(x) % (1-X**k)) % ((1-X**k)///(1-X))
+]
+  第一步:折叠:O(deg(f))
+  第二步:微调:最高位折返:O(k)
+  只需O(deg(f)+k)
+CRT:前提: [deg4OUT <= -1+sum(p-1 for p in ps)]
+]]
+[[
+CRT重建 自: %(1-X**U), %(1-X**V)
+CRT重建 自: %((1-X**U)///(1-X)), %((1-X**V)///(1-X))
+CRT重建 自: %Mu, %Mv
+    # 倒数公式定义牜对称:goto
+    # 倒数公式牜对称:goto
+    # 倒数公式牜偏心牜有时无效:goto
+    # 倒数公式牜基本牜有时无效:goto
+    # 倒数公式牜内交牜有时无效:goto
+    #       [X:=X**U] => 证明其实只有[p::prime]((1-X**p)///(1-X))可用，其余cyclotomic_polynomial与之gcd总要含分数，因而在某些FF(q)上无效
+    # 重建公式牜偏重:goto
+    #   无论(fv-fu)*Cu*Mu有多简单多快，单步至少也得O(deg(Cu*Mu)+deg(fv-fu))，只要保留这种形态，总体最低也得O(degO**2)
+    #       即使Cu*Mu 非零系数极少，但deg(fv-fu)源自数据，少不了
+    # 重建公式牜对称:goto
+    #   若是 对半拆分，而且所有 (Cv*Mv),(Cu*Mu) 非零系数极少，倒是有点希望
+    #       可以 尝试将素数 拆半:[p%4==1][p%4==3]，再拆半:[p%8==1][p%8==5][p%8==3][p%8==7]，查看相应(Cu*Mu)是否 非零系数极少
+    #           view ../../python3_src/seed/math/polynomial/eval_polynomial/divmod7polynomial.py
+    #               _iter_count_nonzero_terms6II_cyclotomic_polynomial_mod4_eq_1or3_
+    #           view ../../python3_src/seed/algo/FFT/convolution__7CRT.py
+[s*U-t*V == 1][U,V,s,t>=0][s <= V][t <= U]:
+  [gcd(U,V) == 1]
+  [(1-X**(s*U)) == (1-X**U)*((1-X**(s*U))///(1-X**U))]
+  [(1-X**(s*U)) -X*(1-X**(t*V)) == (1-X)]
+  [(1-X**U)*((1-X**(s*U))///(1-X**U)) -X*(1-X**V)*((1-X**(t*V))///(1-X**V)) == (1-X)]
+  [((1-X**U)///(1-X))*((1-X**(s*U))///(1-X**U)) -X*((1-X**V)///(1-X))*((1-X**(t*V))///(1-X**V)) == 1]
+  [Mu := ((1-X**U)///(1-X))]
+  [Mv := ((1-X**V)///(1-X))]
+  [Mu*((1-X**(s*U))///(1-X**U)) -Mv*X*((1-X**(t*V))///(1-X**V)) == 1]
+  [Mu*(((1-X**(s*U))///(1-X**U)) %Mv) +Mv*(-X*((1-X**(t*V))///(1-X**V)) %Mu) =[%(Mu*Mv)]= 1]
+  [Cu := (((1-X**(s*U))///(1-X**U)) %Mv)]
+  [Cv := (-X*((1-X**(t*V))///(1-X**V)) %Mu)]
+  [Mu*Cu +Mv*Cv =[%(Mu*Mv)]= 1]
+    # 倒数公式定义牜对称:here
+  [Cv*Mv =[%Mu]= 1]
+  @ff.[fu := ff%Mu][fv := ff%Mv]:
+    [fu*Cv*Mv =[%Mu]= fu]
+    [fu*Cv*Mv + fv*Cu*Mu =[%(Mu*Mv)]= ff]
+    [(fu*Cv %Mu)*Mv + (fv*Cu %Mv)*Mu =[%(Mu*Mv)]= ff]
+      # 重建公式牜对称:here
+    [fu + (fv-fu)*Cu*Mu =[%(Mu*Mv)]= ff]
+    [fu + ((fv-fu)*Cu %Mv)*Mu =[%(Mu*Mv)]= ff]
+      # 重建公式牜偏重:here
+  [Cu
+  == (((1-X**(s*U))///(1-X**U)) %Mv)
+  == sum[(X**U)**j | [j:<-[0..<s]]] %Mv
+  == sum[(X**U)**j | [j:<-[0..<s]]] %(1-X**V) %Mv
+  == sum[X**(U*j %V) | [j:<-[0..<s]]] %(1-X**V) %Mv
+  !! [s <= V]
+  => (j %V) 没有重复
+  !! [gcd(U,V) == 1]
+  => (U*j %V) 没有重复
+  !! [s*U %V == 1]
+  => ?????????辗转相除...
+  ]
+  [Cv
+  == (-X*((1-X**(t*V))///(1-X**V)) %Mu)
+  == (-X*sum[(X**V)**j | [j:<-[0..<t]]] %Mu)
+  == (-X*sum[(X**V)**j | [j:<-[0..<t]]] %(1-X**U) %Mu)
+  == (-sum[X**((1+V*j) %U) | [j:<-[0..<t]]] %(1-X**U) %Mu)
+  ]
+
+  [Cu == sum[X**(U*j %V) | [j:<-[0..<s]]] %(1-X**V) %Mv]
+  [Cv == (-sum[X**((1+V*j) %U) | [j:<-[0..<t]]] %(1-X**U) %Mu)]
+    # 倒数公式牜对称:here
+
+重建: %(1-X**U) , %((1-X**V)///(1-X))
+[abs(s*U -t*V) == 1][U,V>=2][0<=s<=V][0<=t<=U]:
+  [gcd(U,V) == 1]
+  [d:=(s*U -t*V)]
+  [d <- {-1,+1}]
+  [s*U == d+t*V]
+  [(1-X**d)/(1-X) == if d==1 then 1 else (-X)**-1]
+  [Y := (-X)**((1-d)///2)]
+  [(1-X**d)/(1-X) == 1/Y]
+  [(1-X**d) == 1/Y*(1-X)]
+  [Y1 := (-1)**((1-d)///2)]
+
+  [(1-X**(s*U)) == (1-X**U)*((1-X**(s*U))///(1-X**U))]
+  [(1-X**(s*U)) -X**d*(1-X**(t*V)) == (1-X**d)]
+  [(1-X**U)*((1-X**(s*U))///(1-X**U)) -X**d*(1-X**V)*((1-X**(t*V))///(1-X**V)) == (1-X**d) == 1/Y*(1-X)]
+  ==>>:1:
+  [-X**d*(1-X**V)*((1-X**(t*V))///(1-X**V)) =[%(1-X**U)]= 1/Y*(1-X)]
+  [(1-X**V)///(1-X) * ((-X**d)*Y) * ((1-X**(t*V))///(1-X**V)) =[%(1-X**U)///(1-X)]= 1]
+  [((1-X**V)///(1-X))**-1 =[%(1-X**U)///(1-X)]= ((-X**d)*Y) * ((1-X**(t*V))///(1-X**V))]
+  !! [((1-X**k)///(1-X))**-1 %(1-X) == k**-1] # 倒数公式牜基本牜有时无效:goto
+  [((1-X**V)///(1-X))**-1 %(1-X) == V**-1]
+  [((1-X**U)///(1-X))**-1 %(1-X) == U**-1]
+  [((1-X**V)///(1-X))**-1 =[%(1-X**U)]= ((-X**d)*Y) * ((1-X**(t*V))///(1-X**V)) + (V**-1 - ((-X**d)*Y) * ((1-X**(t*V))///(1-X**V))) * U**-1 * ((1-X**U)///(1-X))]
+
+  ==>>:2:
+  [(1-X**U)*((1-X**(s*U))///(1-X**U)) =[%(1-X**V)]= 1/Y*(1-X)]
+  [(1-X**U)///(1-X) * Y * ((1-X**(s*U))///(1-X**U)) =[%(1-X**V)///(1-X)]= 1]
+  [((1-X**U)///(1-X))**-1 =[%(1-X**V)///(1-X)]= (Y * ((1-X**(s*U))///(1-X**U)))]
+
+  !! [(1-X)**-1 %((1-X**k)///(1-X)) == k**-1 * sum[(k-1-j)*X**j | [j:<-[0..<k]]]] # 倒数公式牜基本牜有时无效:goto
+  [(1-X)**-1 %((1-X**V)///(1-X)) == V**-1 * sum[(V-1-j)*X**j | [j:<-[0..<V]]]]
+  [((1-X**U)///(1-X))**-1 * (1-X)**-1 =[%(1-X**V)///(1-X)]= (Y * ((1-X**(s*U))///(1-X**U))) * V**-1 * sum[(V-1-j)*X**j | [j:<-[0..<V]]]]
+  [(1-X**U)**-1 =[%(1-X**V)///(1-X)]= (V**-1 * Y * ((1-X**(s*U))///(1-X**U)) * sum[(V-1-j)*X**j | [j:<-[0..<V]]])]
+
+  ==>>:汇总:
+  [(1-X**U)**-1 =[%(1-X**V)///(1-X)]= (V**-1 * Y * ((1-X**(s*U))///(1-X**U)) * sum[(V-1-j)*X**j | [j:<-[0..<V]]])]
+  [((1-X**V)///(1-X))**-1 =[%(1-X**U)]= ((-X**d)*Y) * ((1-X**(t*V))///(1-X**V)) + (V**-1 - ((-X**d)*Y) * ((1-X**(t*V))///(1-X**V))) * U**-1 * ((1-X**U)///(1-X))]
+    # 倒数公式牜偏心牜有时无效:here
+    # 先重建为 %(1-X**U)，再微调为 %((1-X**U)///(1-X))
+    # 但是 竟然出现 分数...不太好，某些有限域上无效
+
+重建: %(1-X) , %((1-X**k)///(1-X))
+[k>=2]:
+  [(1-X) * sum[(1+j-k)*X**j | [j:<-[0..<k]]]
+  == 1*sum[(1+j-k)*X**j | [j:<-[0..<k]]]
+  + -X*sum[(1+j-k)*X**j | [j:<-[0..<k]]]
+  == 1*sum[(1+j-k)*X**j | [j:<-[0..<k]]]
+  + -1*sum[(1+j-k)*X**(1+j) | [j:<-[0..<k]]]
+  == 1*sum[(1+j-k)*X**j | [j:<-[0..<k]]]
+  + -1*sum[(j-k)*X**j | [j:<-[1..=k]]]
+  == (1-k) +sum[(1+j-k)*X**j | [j:<-[1..<k]]]
+    # [j==0] => (1-k)
+  + 0 -sum[(j-k)*X**j | [j:<-[1..<k]]]
+    # [j==k] => 0
+  == (1-k) +sum[X**j | [j:<-[1..<k]]]
+  == -k +sum[X**j | [j:<-[0..<k]]]
+  == -k +((1-X**k)///(1-X))
+  ]
+  [(1-X)*sum[(1+j-k)*X**j | [j:<-[0..<k]]] == -k +((1-X**k)///(1-X))]
+  [sum[(1+j-k)*X**j | [j:<-[0..<k]]] == -k*(1-X) +(1-X**k)]
+      #某求和公式:here
+
+  [((1-X**k)///(1-X)) +(1-X)*sum[(k-1-j)*X**j | [j:<-[0..<k]]] == +k]
+    # 倒数公式牜基本牜预备:here
+
+  [k**-1*((1-X**k)///(1-X)) +(1-X)*k**-1*sum[(k-1-j)*X**j | [j:<-[0..<k]]] == +1]
+  ==>>:
+  [((1-X**k)///(1-X))**-1 %(1-X) == k**-1]
+  [(1-X)**-1 %((1-X**k)///(1-X)) == k**-1 * sum[(k-1-j)*X**j | [j:<-[0..<k]]]]
+    # 倒数公式牜基本牜有时无效:here
+    #   vs:倒数公式牜内交牜有时无效:goto
+    # ((1-X**k)///(1-X)) 在 [X:=1] 的 极限值 是 k
+    # 由于 k 不是1，可能有 [k==0]，故此无用
+    # bug:[X:=X**U] => 证明其实只有[p::prime]((1-X**p)///(1-X))可用，其余cyclotomic_polynomial与之gcd总要含分数，因而在某些FF(q)上无效
+    # xxx:恰好相反，这似乎证明[gcd(((1-X**U)///(1-X)), ((1-X**(U*V))///(1-X**U)))==1]
+
+[U,V>=1]:
+  ???[gcd(((1-X**U)///(1-X)), ((1-X**(U*V))///(1-X**U)))==1]
+  [U:=3][V:=2]:
+    [gcd(((1-X**U)///(1-X)), ((1-X**(U*V))///(1-X**U)))
+    == gcd(((1-X**3)///(1-X)), ((1-X**(3*2))///(1-X**3)))
+    == gcd((1+X+X**2), (1+X**3))
+    == gcd((1+X+X**2), (1+X**3) -X*(1+X+X**2))
+    == gcd((1+X+X**2), (1) -X*(1+X))
+    == gcd((1+X+X**2), 2)
+    =!= 1
+    ]
+  [gcd(((1-X**U)///(1-X)), ((1-X**(U*V))///(1-X**U))) == gcd(((1-X**U)///(1-X)), V) == 无法继续计算gcd =?= 1]
+    # 倒数公式牜内交牜有时无效:here
+    # [((1-X**U)///(1-X))==0] => [X**U==1]
+    #   ((1-X**(U*V))///(1-X**U)) 在 [X**U==1] 的 极限值 是 V
+    # 由于 V 不是1，可能有 [V==0]，故此无用
+    # 证明其实只有[p::prime]((1-X**p)///(1-X))可用，其余cyclotomic_polynomial与之gcd总要含分数，因而在某些FF(q)上无效
+
+
+
+
+麻烦！干脆 令[A:=II(ps)]，直接重建到 %(1-X**A)，虽然多了许多没用到的模，但形式更简单
+重建: %((1-X**p0)///(1-X)) --> %((1-X**p0)///(1-X)*(1-X**p1)///(1-X)*(1-X**p2)///(1-X)*...)
+  放大输出端模数:
+重建: %((1-X**p0)///(1-X)) --> %((1-X**p0)*(1-X**p1)*(1-X**p2)*...)
+  再放大输出端模数:
+重建: %((1-X**p)///(1-X)) --> %(1-X**(p*Q))
+  放大输入端模数:
+重建: %(1-X**p) --> %(1-X**(p*Q))
+  [gcd((1-X**p), (1-X**(p*Q))///(1-X**p)) == ???]
+  [gp := gcd((1-X**p), (1-X**(p*Q))///(1-X**p))]
+  [gcd((1-X**p), ((1-X**(p*Q))///(1-X**p)) * (1-X**p)) %gp == 0]
+  [gcd((1-X**p), (1-X**(p*Q))) %gp == 0]
+  [gcd((1-X**p), X**p-X**(p*Q)) %gp == 0]
+  [gcd((1-X**p), 1-X**(p*Q-p)) %gp == 0]
+
+  [fp := (1-X**p)]
+  [fA:=fQp := (1-X**(p*Q))]
+  [hQ := sum[(X**p)**j | [j:<-[0..<Q]]]]
+  [fQp == hQ*fp]
+  [hQ
+  =[%fp]= hQ + fp*h(Q-1)
+  =[%fp]= hQ + (1-X**(p*(Q-1)))
+  =[%fp]= h(Q-1) + 1
+  ...
+  =[%fp]= h(0) + Q
+  =[%fp]= Q
+  ]
+  [Q**-1 * hQ =[%fp]= 1]
+  [hQ**-1 =[%fp]= Q**-1]
+  [ff%fp == ffp]
+  [rfp := p*ffp*hQ]
+  [ff =[%fQp]= Q**-1*rfp/p + ...]
+  [ff =[%fQp]= (p*Q)**-1*(rfp) + ...]
+  [ff =[%fQp]= A**-1*(rfp + ...)]
+  [A*ff =[%fQp]= (rfp + ...)]
+  [A*ff =[%fQp]= (p*ffp*hQ + ...)]
+  [A*ff =[%fA]= (p*(ffp*fA///fp) + ...)]
+  [A*ff =[%fm]= (p*(ffp*(1-(X**A%(fm*fp)))///fp) + ...)]
+  [A*ff =[%fm]= (p*(ffp*(1-(X**A%(fm**2) %(fm*fp)))///fp) + ...)]
+
+
+
+]]
+===
+[[
+bug:只能保证[0=!=1]，而可能有[-1==1]
+===
+考虑使用: %((1-X**p)///(1-X)), %((1+X**p)///(1+X)) [即: %(((1-X**(2*p))///(1-X))///(((1-X**2)///(1-X)) * ((1-X**p)///(1-X))))]
+view ../../python3_src/seed/math/polynomial/eval_polynomial/cyclotomic_polynomial.py
+3:(1, 1, 1)
+6:(1, -1, 1)
+
+5:(1, 1, 1, 1, 1)
+10:(1, -1, 1, -1, 1)
+
+]]
+[[
+CRT仅用%((1-X**p)///(1-X))分解M阶多项式所需素数的上界:here
+[[M::uint{>=2}] -> [max1_p := floor_sqrt(2*M*M.bit_length())] -> 数值证明:[M <= sum(iter_primes__lt_(max1_p))]]
+    定理一:goto
+    不太对，比率不断下降，『2*』未必够用！
+[[M::uint{>=32}] -> [max1_ez := floor_log2_sqrt(6*M*M.bit_length())] -> 数值证明:[M <= sum(iter_primes__ge_lt_(2**(-1+max1_ez),2**max1_ez))]]
+    定理二:goto
+    只使用相同爻元数的素数
+
+===
+CRT:前提: [deg4OUT <= -1+sum(p-1 for p in ps)]
+from seed.math.prime_sieve.sieve_ge_le import iter_primes_, iter_sieve4primes_ge_lt_, iter_sieve4prime_factorizations_ge_lt_
+def show_degs4out_(max_j, /):
+    deg4out = -1
+    for j, p in enumerate(iter_primes_()):
+      deg4out += p-1
+      print((j, p, deg4out, deg4out*p.bit_length()/p**2))
+      if j == max_j:break
+
+show_degs4out_(100)
+  (0, 2, 0, 0.0)
+  (1, 3, 2, 0.4444444444444444)
+  (2, 5, 6, 0.72)
+  (3, 7, 12, 0.7346938775510204)
+  (4, 11, 22, 0.7272727272727273)
+  (5, 13, 34, 0.8047337278106509)
+  (6, 17, 50, 0.8650519031141869)
+  (7, 19, 68, 0.9418282548476454)
+  (8, 23, 90, 0.8506616257088847)
+  (9, 29, 118, 0.7015457788347206)
+  (10, 31, 148, 0.7700312174817898)
+  (11, 37, 184, 0.8064280496712929)
+  (12, 41, 224, 0.7995240928019036)
+  (13, 43, 266, 0.8631692806922661)
+  (14, 47, 312, 0.8474422815753735)
+  (15, 53, 364, 0.77750088999644)
+  (16, 59, 422, 0.7273771904625108)
+  (17, 61, 482, 0.7772104273044881)
+  (18, 67, 548, 0.8545333036310983)
+  (19, 71, 618, 0.8581630628843483)
+  (20, 73, 690, 0.9063614186526553)
+  (21, 79, 768, 0.8614004165999039)
+  (22, 83, 850, 0.8636957468427928)
+  (23, 89, 938, 0.8289357404368135)
+  (24, 97, 1034, 0.7692634711446488)
+  (25, 101, 1134, 0.7781590040192138)
+  (26, 103, 1236, 0.8155339805825242)
+  (27, 107, 1342, 0.8205083413398551)
+  (28, 109, 1450, 0.8543051931655584)
+  (29, 113, 1562, 0.8562925836009084)
+  (30, 127, 1688, 0.7325934651869304)
+  (31, 131, 1818, 0.8475030592622808)
+  (32, 137, 1954, 0.8328626991315466)
+  (33, 139, 2092, 0.8662077532218829)
+  (34, 149, 2240, 0.8071708481599927)
+  (35, 151, 2390, 0.8385597122933205)
+  (36, 157, 2546, 0.8263215546269626)
+  (37, 163, 2708, 0.8153863525160902)
+  (38, 167, 2874, 0.8244110581232744)
+  (39, 173, 3046, 0.814193591499883)
+  (40, 179, 3224, 0.8049686339377672)
+  (41, 181, 3404, 0.8312322578675865)
+  (42, 191, 3594, 0.788136290123626)
+  (43, 193, 3786, 0.8131224999328841)
+  (44, 197, 3982, 0.8208405266819552)
+  (45, 199, 4180, 0.844423120628267)
+  (46, 211, 4390, 0.788841220996833)
+  (47, 223, 4612, 0.7419413219650506)
+  (48, 227, 4838, 0.7511110248597876)
+  (49, 229, 5066, 0.7728304189470071)
+  (50, 233, 5298, 0.7807106411980328)
+  (51, 239, 5536, 0.7753365662365855)
+  (52, 241, 5776, 0.7955785885229248)
+  (53, 251, 6026, 0.7651942032666148)
+  (54, 257, 6282, 0.8560008478553801)
+  (55, 263, 6544, 0.8514797091182467)
+  (56, 269, 6812, 0.8472519727477509)
+  (57, 271, 7082, 0.8678803393199984)
+  (58, 277, 7358, 0.8630635092337968)
+  (59, 281, 7638, 0.8705816795633288)
+  (60, 283, 7920, 0.8900098640262708)
+  (61, 293, 8212, 0.8609069412573239)
+  (62, 307, 8518, 0.8133985506477522)
+  (63, 311, 8828, 0.8214555267211877)
+  (64, 313, 9140, 0.8396533597362431)
+  (65, 317, 9456, 0.8468986655255799)
+  (66, 331, 9786, 0.8038809430362994)
+  (67, 337, 10122, 0.8021379073514779)
+  (68, 347, 10468, 0.7824332068200882)
+  (69, 349, 10816, 0.7992052610405498)
+  (70, 353, 11168, 0.8066191045590607)
+  (71, 359, 11526, 0.8048820229514048)
+  (72, 367, 11892, 0.7946305934411867)
+  (73, 373, 12264, 0.7933356812742132)
+  (74, 379, 12642, 0.7920997486789983)
+  (75, 383, 13024, 0.7990783221645795)
+  (76, 389, 13412, 0.797694966329855)
+  (77, 397, 13808, 0.7884828912054515)
+  (78, 401, 14208, 0.7952189352056268)
+  (79, 409, 14616, 0.7863654569257716)
+  (80, 419, 15034, 0.7707064780902364)
+  (81, 421, 15454, 0.7847281385232536)
+  (82, 431, 15884, 0.7695695005948504)
+  (83, 433, 16316, 0.7832139485516484)
+  (84, 439, 16754, 0.7824056537689198)
+  (85, 443, 17196, 0.7886103878236322)
+  (86, 449, 17644, 0.787674664312181)
+  (87, 457, 18100, 0.7799893703106072)
+  (88, 461, 18560, 0.7859929136414754)
+  (89, 463, 19022, 0.798613605511991)
+  (90, 467, 19488, 0.8042221294975904)
+  (91, 479, 19966, 0.7831817329945389)
+  (92, 487, 20452, 0.7761048029042581)
+  (93, 491, 20942, 0.7818036261671388)
+  (94, 499, 21440, 0.7749366468407758)
+  (95, 503, 21942, 0.7805176890940638)
+  (96, 509, 22450, 0.7798719319440638)
+  (97, 521, 22970, 0.8462244097243968)
+  (98, 523, 23492, 0.8588486047183297)
+  (99, 541, 24032, 0.821098738900031)
+  (100, 547, 24578, 0.821432510385717)
+
+===
+只使用相同爻元数的素数
+[[M::uint{>=32}] -> [max1_ez := floor_log2_sqrt(6*M*M.bit_length())] -> 数值证明:[M <= sum(iter_primes__ge_lt_(2**(-1+max1_ez),2**max1_ez))]]
+    定理二:here
+<<==:
+from seed.math.prime_sieve.sieve_ge_le import iter_primes_, iter_sieve4primes_ge_lt_, iter_sieve4prime_factorizations_ge_lt_
+def test_(k, M, /):
+    u = (k*M*M.bit_length())
+    half_max1_p = 1<<(-1 +(-1+u.bit_length())//2)
+    max1_p = half_max1_p<<1
+    assert max1_p**2 <= u
+    s = sum(iter_sieve4primes_ge_lt_(half_max1_p, max1_p))
+    return ((M <= s), M, max1_p, s, s/M)
+
+test_(2, -1+2**8)
+
+[k:=8]
+for M in range(1,33):(M, test_(8, M))
+  ...
+  (20, (True, 20, 16, 24, 1.2))
+  (21, (True, 21, 16, 24, 1.1428571428571428))
+  (22, (True, 22, 16, 24, 1.0909090909090908))
+  (23, (True, 23, 16, 24, 1.0434782608695652))
+  (24, (True, 24, 16, 24, 1.0))
+  (25, (False, 25, 16, 24, 0.96))
+  ...
+
+[k:=7]
+for M in range(1,33):(M, test_(7, M))
+  (1, (False, 1, 2, 0, 0.0))
+  (2, (True, 2, 4, 5, 2.5))
+  (3, (True, 3, 4, 5, 1.6666666666666667))
+  (4, (True, 4, 8, 12, 3.0))
+  (5, (True, 5, 8, 12, 2.4))
+  (6, (True, 6, 8, 12, 2.0))
+  (7, (True, 7, 8, 12, 1.7142857142857142))
+  (8, (True, 8, 8, 12, 1.5))
+  (9, (True, 9, 8, 12, 1.3333333333333333))
+  (10, (True, 10, 16, 24, 2.4))
+  (11, (True, 11, 16, 24, 2.1818181818181817))
+  (12, (True, 12, 16, 24, 2.0))
+  (13, (True, 13, 16, 24, 1.8461538461538463))
+  (14, (True, 14, 16, 24, 1.7142857142857142))
+  (15, (True, 15, 16, 24, 1.6))
+  (16, (True, 16, 16, 24, 1.5))
+  (17, (True, 17, 16, 24, 1.411764705882353))
+  (18, (True, 18, 16, 24, 1.3333333333333333))
+  (19, (True, 19, 16, 24, 1.263157894736842))
+  (20, (True, 20, 16, 24, 1.2))
+  (21, (True, 21, 16, 24, 1.1428571428571428))
+  (22, (True, 22, 16, 24, 1.0909090909090908))
+  (23, (True, 23, 16, 24, 1.0434782608695652))
+  (24, (True, 24, 16, 24, 1.0))
+  (25, (False, 25, 16, 24, 0.96))
+  (26, (False, 26, 16, 24, 0.9230769230769231))
+  (27, (False, 27, 16, 24, 0.8888888888888888))
+  (28, (False, 28, 16, 24, 0.8571428571428571))
+  (29, (False, 29, 16, 24, 0.8275862068965517))
+  (30, (True, 30, 32, 119, 3.966666666666667))
+  (31, (True, 31, 32, 119, 3.838709677419355))
+  (32, (True, 32, 32, 119, 3.71875))
+for ez in range(1,33):(ez, test_(7, -1+2**ez))
+  (1, (False, 1, 2, 0, 0.0))
+  (2, (True, 3, 4, 5, 1.6666666666666667))
+  (3, (True, 7, 8, 12, 1.7142857142857142))
+  (4, (True, 15, 16, 24, 1.6))
+  (5, (True, 31, 32, 119, 3.838709677419355))
+  (6, (True, 63, 32, 119, 1.8888888888888888))
+  (7, (True, 127, 64, 341, 2.6850393700787403))
+  (8, (True, 255, 64, 341, 1.3372549019607842))
+  (9, (True, 511, 128, 1219, 2.385518590998043))
+  (10, (True, 1023, 256, 4361, 4.262952101661779))
+  (11, (True, 2047, 256, 4361, 2.130434782608696))
+  (12, (True, 4095, 512, 16467, 4.021245421245421))
+  (13, (True, 8191, 512, 16467, 2.0103772433158347))
+  (14, (True, 16383, 1024, 57641, 3.5183421839711895))
+  (15, (True, 32767, 1024, 57641, 1.7591174047059541))
+  (16, (True, 65535, 2048, 208987, 3.1889372091248953))
+  (17, (True, 131071, 2048, 208987, 1.5944564396395846))
+  (18, (True, 262143, 4096, 780915, 2.978965679037777))
+  (19, (True, 524287, 8192, 2838550, 5.414114788274361))
+  (20, (True, 1048575, 8192, 2838550, 2.7070548124836087))
+  (21, (True, 2097151, 16384, 10676000, 5.090715928419079))
+  (22, (True, 4194303, 16384, 10676000, 2.545357357348766))
+  (23, (True, 8388607, 32768, 39472122, 4.70544418161442))
+  (24, (True, 16777215, 32768, 39472122, 2.3527219505740375))
+  (25, (True, 33554431, 65536, 148231324, 4.417637837458784))
+  (26, (True, 67108863, 65536, 148231324, 2.208818885815425))
+  (27, (True, 134217727, 131072, 559305605, 4.1671515194114415))
+  (28, (True, 268435455, 131072, 559305605, 2.083575751943796))
+  (29, (True, 536870911, 262144, 2106222351, 3.923144852599399))
+  (30, (True, 1073741823, 262144, 2106222351, 1.9615724244728427))
+  (31, (True, 2147483647, 524288, 7995067942, 3.7229936317182117))
+  (32, (True, 4294967295, 524288, 7995067942, 1.8614968154256923))
+
+[k:=6]
+for ez in [1,5]:(ez, test_(6, -1+2**ez))
+  (1, (False, 1, 2, 0, 0.0))
+  (5, (False, 31, 16, 24, 0.7741935483870968))
+for ez in range(1,33):(ez, test_(6, -1+2**ez))
+  (1, (False, 1, 2, 0, 0.0))
+  (2, (True, 3, 4, 5, 1.6666666666666667))
+  (3, (True, 7, 8, 12, 1.7142857142857142))
+  (4, (True, 15, 16, 24, 1.6))
+  (5, (False, 31, 16, 24, 0.7741935483870968))
+  (6, (True, 63, 32, 119, 1.8888888888888888))
+  (7, (True, 127, 64, 341, 2.6850393700787403))
+  (8, (True, 255, 64, 341, 1.3372549019607842))
+  (9, (True, 511, 128, 1219, 2.385518590998043))
+  (10, (True, 1023, 128, 1219, 1.1915933528836755))
+  (11, (True, 2047, 256, 4361, 2.130434782608696))
+  (12, (True, 4095, 512, 16467, 4.021245421245421))
+  (13, (True, 8191, 512, 16467, 2.0103772433158347))
+  (14, (True, 16383, 1024, 57641, 3.5183421839711895))
+  (15, (True, 32767, 1024, 57641, 1.7591174047059541))
+  (16, (True, 65535, 2048, 208987, 3.1889372091248953))
+  (17, (True, 131071, 2048, 208987, 1.5944564396395846))
+  (18, (True, 262143, 4096, 780915, 2.978965679037777))
+  (19, (True, 524287, 4096, 780915, 1.4894799985504124))
+  (20, (True, 1048575, 8192, 2838550, 2.7070548124836087))
+  (21, (True, 2097151, 8192, 2838550, 1.3535267608293347))
+  (22, (True, 4194303, 16384, 10676000, 2.545357357348766))
+  (23, (True, 8388607, 32768, 39472122, 4.70544418161442))
+  (24, (True, 16777215, 32768, 39472122, 2.3527219505740375))
+  (25, (True, 33554431, 65536, 148231324, 4.417637837458784))
+  (26, (True, 67108863, 65536, 148231324, 2.208818885815425))
+  (27, (True, 134217727, 131072, 559305605, 4.1671515194114415))
+  (28, (True, 268435455, 131072, 559305605, 2.083575751943796))
+  (29, (True, 536870911, 262144, 2106222351, 3.923144852599399))
+  (30, (True, 1073741823, 262144, 2106222351, 1.9615724244728427))
+  (31, (True, 2147483647, 524288, 7995067942, 3.7229936317182117))
+  (32, (True, 4294967295, 524288, 7995067942, 1.8614968154256923))
+
+[k:=5]
+for ez in [1,5]:(ez, test_(5, -1+2**ez))
+  (1, (False, 1, 2, 0, 0.0))
+  (5, (False, 31, 16, 24, 0.7741935483870968))
+for ez in range(1,33):(ez, test_(5, -1+2**ez))
+  (1, (False, 1, 2, 0, 0.0))
+  (2, (True, 3, 4, 5, 1.6666666666666667))
+  (3, (True, 7, 8, 12, 1.7142857142857142))
+  (4, (True, 15, 16, 24, 1.6))
+  (5, (False, 31, 16, 24, 0.7741935483870968))
+  (6, (True, 63, 32, 119, 1.8888888888888888))
+  (7, (True, 127, 64, 341, 2.6850393700787403))
+  (8, (True, 255, 64, 341, 1.3372549019607842))
+  (9, (True, 511, 128, 1219, 2.385518590998043))
+  (10, (True, 1023, 128, 1219, 1.1915933528836755))
+  (11, (True, 2047, 256, 4361, 2.130434782608696))
+  (12, (True, 4095, 256, 4361, 1.064957264957265))
+  (13, (True, 8191, 512, 16467, 2.0103772433158347))
+  (14, (True, 16383, 1024, 57641, 3.5183421839711895))
+  (15, (True, 32767, 1024, 57641, 1.7591174047059541))
+  (16, (True, 65535, 2048, 208987, 3.1889372091248953))
+  (17, (True, 131071, 2048, 208987, 1.5944564396395846))
+  (18, (True, 262143, 4096, 780915, 2.978965679037777))
+  (19, (True, 524287, 4096, 780915, 1.4894799985504124))
+  (20, (True, 1048575, 8192, 2838550, 2.7070548124836087))
+  (21, (True, 2097151, 8192, 2838550, 1.3535267608293347))
+  (22, (True, 4194303, 16384, 10676000, 2.545357357348766))
+  (23, (True, 8388607, 16384, 10676000, 1.2726785269592436))
+  (24, (True, 16777215, 32768, 39472122, 2.3527219505740375))
+  (25, (True, 33554431, 32768, 39472122, 1.1763609402287287))
+  (26, (True, 67108863, 65536, 148231324, 2.208818885815425))
+  (27, (True, 134217727, 131072, 559305605, 4.1671515194114415))
+  (28, (True, 268435455, 131072, 559305605, 2.083575751943796))
+  (29, (True, 536870911, 262144, 2106222351, 3.923144852599399))
+  (30, (True, 1073741823, 262144, 2106222351, 1.9615724244728427))
+  (31, (True, 2147483647, 524288, 7995067942, 3.7229936317182117))
+  (32, (True, 4294967295, 524288, 7995067942, 1.8614968154256923))
+
+[k:=4]
+for ez in [1,4,5,7,16,31]:test_(4, -1+2**ez)
+  (False, 1, 2, 0, 0.0)
+  (False, 15, 8, 12, 0.8)
+  (False, 31, 16, 24, 0.7741935483870968)
+  (False, 127, 32, 119, 0.937007874015748)
+  (False, 65535, 1024, 57641, 0.8795452811474784)
+  (False, 2147483647, 262144, 2106222351, 0.9807862117797073)
+for ez in range(1,33):test_(4, -1+2**ez)
+  (False, 1, 2, 0, 0.0)
+  (True, 3, 4, 5, 1.6666666666666667)
+  (True, 7, 8, 12, 1.7142857142857142)
+  (False, 15, 8, 12, 0.8)
+  (False, 31, 16, 24, 0.7741935483870968)
+  (True, 63, 32, 119, 1.8888888888888888)
+  (False, 127, 32, 119, 0.937007874015748)
+  (True, 255, 64, 341, 1.3372549019607842)
+  (True, 511, 128, 1219, 2.385518590998043)
+  (True, 1023, 128, 1219, 1.1915933528836755)
+  (True, 2047, 256, 4361, 2.130434782608696)
+  (True, 4095, 256, 4361, 1.064957264957265)
+  (True, 8191, 512, 16467, 2.0103772433158347)
+  (True, 16383, 512, 16467, 1.0051272660684856)
+  (True, 32767, 1024, 57641, 1.7591174047059541)
+  (False, 65535, 1024, 57641, 0.8795452811474784)
+  (True, 131071, 2048, 208987, 1.5944564396395846)
+  (True, 262143, 4096, 780915, 2.978965679037777)
+  (True, 524287, 4096, 780915, 1.4894799985504124)
+  (True, 1048575, 8192, 2838550, 2.7070548124836087)
+  (True, 2097151, 8192, 2838550, 1.3535267608293347)
+  (True, 4194303, 16384, 10676000, 2.545357357348766)
+  (True, 8388607, 16384, 10676000, 1.2726785269592436)
+  (True, 16777215, 32768, 39472122, 2.3527219505740375)
+  (True, 33554431, 32768, 39472122, 1.1763609402287287)
+  (True, 67108863, 65536, 148231324, 2.208818885815425)
+  (True, 134217727, 65536, 148231324, 1.1044094346792208)
+  (True, 268435455, 131072, 559305605, 2.083575751943796)
+  (True, 536870911, 131072, 559305605, 1.0417878740314168)
+  (True, 1073741823, 262144, 2106222351, 1.9615724244728427)
+  (False, 2147483647, 262144, 2106222351, 0.9807862117797073)
+  (True, 4294967295, 524288, 7995067942, 1.8614968154256923)
+
+===
+[[M::uint{>=2}] -> [max1_p := floor_sqrt(2*M*M.bit_length())] -> 数值证明:[M <= sum(iter_primes__lt_(max1_p))]]
+    定理一:here
+    不太对，比率不断下降，『2*』未必够用！
+<<==:
+from seed.math.prime_sieve.sieve_ge_le import iter_primes_
+def show_ratio_(max1_p, /, *, max_only=True, ver=1):
+    max_M = 0
+    p = 0
+    for j, _p in enumerate(iter_primes_()):
+        max_M += p
+        if not (max_only and _p < max1_p):
+            print((j, p, max_M, max_M*(p if ver==1 else max_M//2).bit_length() / (p*p)))
+        if not _p < max1_p:break
+        p = _p
+
+def show_ratio__ver2_(*args, **kwds):
+    return show_ratio_(*args, ver=2, **kwds)
+
+
+>>> show_ratio__ver2_(2**8)
+(54, 251, 6081, 1.1582673290900145)
+>>> show_ratio__ver2_(2**9)
+(97, 509, 22548, 1.2184297574889706)
+>>> show_ratio__ver2_(2**10)
+(172, 1021, 80189, 1.230788121342119)
+>>> show_ratio__ver2_(2**11)
+(309, 2039, 289176, 1.2519883844242758)
+>>> show_ratio__ver2_(2**12)
+(564, 4093, 1070091, 1.277518558408285)
+>>> show_ratio__ver2_(2**13)
+(1028, 8191, 3908641, 1.2234077466892304)
+>>> show_ratio__ver2_(2**14)
+(1900, 16381, 14584641, 1.2500942536244541)
+>>> show_ratio__ver2_(2**15)
+(3512, 32749, 54056763, 1.260067929085053)
+>>> show_ratio__ver2_(2**16)
+(6542, 65521, 202288087, 1.2722516924494087)
+>>> show_ratio__ver2_(2**17)
+(12251, 131071, 761593692, 1.2856066506812482)
+>>> show_ratio__ver2_(2**18)
+(23000, 262139, 2867816043, 1.2937480464975715)
+>>> show_ratio__ver2_(2**18)
+(23000, 262139, 2867816043, 1.2937480464975715)
+>>> show_ratio__ver2_(2**19)
+(43390, 524287, 10862883985, 1.304130051660355)
+>>> show_ratio__ver2_(2**20)
+(82025, 1048573, 41162256126, 1.3102973826576427)
+>>> show_ratio__ver2_(2**21)
+(155611, 2097143, 156592635694, 1.3173979029208875)
+>>> show_ratio__ver2_(2**22)
+(295947, 4194301, 596946687124, 1.3233690254705874)
+>>> show_ratio__ver2_(2**23)
+(564163, 8388593, 2280311678414, 1.328617048160695)
+>>> show_ratio__ver2_(2**24)
+(1077871, 16777213, 8729068693022, 1.302499499263394)
+>>>
+
+
+>>> show_ratio_(2**8)
+(54, 251, 6081, 0.772178219393343)
+>>> show_ratio_(2**9)
+(97, 509, 22548, 0.7832762726714811)
+>>> show_ratio_(2**10)
+(172, 1021, 80189, 0.7692425758388245)
+>>> show_ratio_(2**11)
+(309, 2039, 289176, 0.7651040127037242)
+>>> show_ratio_(2**12)
+(564, 4093, 1070091, 0.7665111350449711)
+>>> show_ratio_(2**13)
+(1028, 8191, 3908641, 0.7573476527123807)
+>>> show_ratio_(2**14)
+(1900, 16381, 14584641, 0.7609269369887982)
+>>> show_ratio_(2**15)
+(3512, 32749, 54056763, 0.7560407574510318)
+>>> show_ratio_(2**16)
+(6542, 65521, 202288087, 0.7539269288589088)
+>>> show_ratio_(2**17)
+(12251, 131071, 761593692, 0.7536314848821111)
+>>> show_ratio_(2**18)
+(23000, 262139, 2867816043, 0.7512085431276222)
+>>> show_ratio_(2**19)
+(43390, 524287, 10862883985, 0.7508627570165679)
+>>> show_ratio_(2**20)
+(82025, 1048573, 41162256126, 0.748741361518653)
+>>> show_ratio_(2**21)
+(155611, 2097143, 156592635694, 0.7477123232794226)
+>>> show_ratio_(2**22)
+(295947, 4194301, 596946687124, 0.7465158605218699)
+>>> show_ratio_(2**23)
+(564163, 8388593, 2280311678414, 0.7453217587242923)
+>>> show_ratio_(2**24)
+(1077871, 16777213, 8729068693022, 0.7442854281505108)
+>>>
+
+
+
+
+]]
+[[
+考虑构造两两互素的一批多项式:
+  只能保证[0=!=1]，而可能有[-1==1]
+  排除(-N+X)
+    其实symbolic版还是有点小病蛊:[-1==1]时无效
+*A:
+  [f(1;X) := (-1+x)]
+  [f(1+n;X) := -1+(-1+x)*f(n;X)]
+    感觉不太行:将 (-1+X)替换成(X)...
+
+*B:
+  [g(n,k;X) := -1+g(j,?;X)*g(k-j,?;X)]
+
+*C:
+  [gcd(g0,g1) == 1]:
+    [f(0;X) := g1]
+    [f(1+n;X) := g0+IIf(1+n;X)]
+    [IIf(0;X) := 1]
+    [IIf(1+n;X) := f(n;X)*IIf(n;X)]
+    [gcd(g0,f(n;X)) == 1]
+    [gcd(g0,IIf(n;X)) == 1]
+    [[j:<-[0..<n]] -> [f(n;X) =[%f(j;X)]= g0]]
+    [[j:<-[0..<n]] -> [gcd(f(n;X),f(j;X)) == 1]]
+    [g0:=1][g1:=x]:
+      [f(0;X) := (0+x)]
+      #[f(1;X) := (1+x)]
+      #[f(2+n;X) := 1+IIf(2+n;X)]
+      [f(1+n;X) := 1+IIf(1+n;X)]
+      [IIf(0;X) := 1]
+      [IIf(1+n;X) := f(n;X)*IIf(n;X)]
+      [deg(f(2+n;X)) == deg(IIf(2+n;X))]
+      [deg(IIf(3+n;X)) == deg(f(2+n;X)) + deg(IIf(2+n;X)) == 2*deg(IIf(2+n;X))]
+      [deg(IIf(n;X)) == if n > 0 then 2**(n-1) else 0]
+        0,1,2,2**2,...,2**(n-1),...
+      [deg(f(n;X)) == if n > 0 then 2**(n-1) else 1]
+        1,1,2,2**2,...,2**(n-1),...
+      [[j:<-[0..<n]] -> [f(n;X) % f(j;X) == 1]]
+
+
+*D:
+  (IIf[:i] + IIf[i:])
+  [are_pairwise_coprime(f,g,h)]:
+    [gcd(f*g+h,f+g*h) == ???]
+    [gcd(h*(f*g+h),f*(f+g*h)) % gcd(f*g+h,f+g*h) == 0]
+    [gcd(h*(f*g+h),f*(f+g*h) -h*(f*g+h)) % gcd(f*g+h,f+g*h) == 0]
+    [gcd(h*(f*g+h),f**2 -h**2) % gcd(f*g+h,f+g*h) == 0]
+    ==>>:1:
+    [gcd((f*g+h),f**2 -h**2) % gcd(f*g+h,f+g*h) == 0]
+    [gcd((f*g+h),g*(f**2 -h**2) -f*(f*g+h)) % gcd(f*g+h,f+g*h) == 0]
+    [gcd((f*g+h),g*(-h**2) -f*h) % gcd(f*g+h,f+g*h) == 0]
+    [gcd((f*g+h),g*h+f) % gcd(f*g+h,f+g*h) == 0]
+    ==>>:2:
+    [gcd((f*g+h),f-h)*gcd((f*g+h),f+h) % gcd(f*g+h,f+g*h) == 0]
+    [gcd((f*g+h)-g*(f-h),f-h)*gcd((f*g+h),f+h) % gcd(f*g+h,f+g*h) == 0]
+    [gcd(h+g*h,f-h)*gcd((f*g+h),f+h) % gcd(f*g+h,f+g*h) == 0]
+    [gcd(1+g,f-h)*gcd((f*g+h),f+h) % gcd(f*g+h,f+g*h) == 0]
+    [gcd(1+g,f-h)*gcd(1-g,f+h) % gcd(f*g+h,f+g*h) == 0]
+
+    ==>>:3:
+    [gcd((f*g+h),f**2 -h**2) % gcd(f*g+h,f+g*h) == 0]
+    [gcd((f*g+h)*(f*g-h),f**2 -h**2) % gcd(f*g+h,f+g*h) == 0]
+    [gcd((f*g)**2-h**2,f**2 -h**2) % gcd(f*g+h,f+g*h) == 0]
+    [gcd((f*g)**2-f**2,f**2 -h**2) % gcd(f*g+h,f+g*h) == 0]
+    [gcd(g**2-1,f**2 -h**2) % gcd(f*g+h,f+g*h) == 0]
+
+
+也许可以像 素数 一样，逐个校验:
+  [cs :: [(0|1)]]
+    保证 %M后 各式仍旧保持不同
+  [cs :: [int]]
+    只要:[s*f+t*g==1]，没理由相同
+    ???但还是得要求 LC==1 确认 不降阶
+  [f(cs0,0;X) == poly(cs,X)]
+  [f(cs0,1+n;X) == next_f_(n, f(cs0,n;X).coeffs)]
+  [next_f_(n, cs7last) := let [csO:=next_cs_(n, cs7last)][g(X):=poly(csO,X)] in if all[(gcd(g(X), f(cs0,j;X)) == 1) | [j:<-[0..<=n]]] then g(X) else next_f_(n, csO)]
+    gcd:找出(s,t) :=> [s*f+t*g==1]
+      但毛病在于:RR未知,poly.LC无法确认0与否，非零也不能取反、取负
+      计算过程 要求所有多项式 保持 LC==1
+      其实只要在RR==ZZ上面有[s*f+t*g==1]就行
+          反例:[1+X+X**2 =[%(1-X)]= 3] 就不行 不能得到 1
+  [next_cs_(n, cs) := ???]
+      简化:
+        [poly(next_cs_(n, cs);X:=2) == PRIMES[1+n]]
+        [cs :: [(0|1)]]
+        [cs :: [(-1|0|1)]]
+        [cs :: [(-2|0|2)]]
+        ...
+  [s*IIfs+t*g==1]:
+    [t*g == 1-s*IIfs]
+    如何找到一个 s，使得deg(g)最小？
+      先在FF(2),FF(3)...搜索，再组合到ZZ
+    (ZZ[X]%f)上:[t*g =[%f]= 1] 是否有限？
+      [x%%y =[def]= if y==0 then x else x%y]
+      表达成:
+      [vpoly{cs;X} =[def]= sum[cs[j]*II[(X-i) | [i:<-[0..<j]]] | [j:<-[0..<len(cs)]]]]
+      [X:=0]:
+        [[f(0)=!=0] -> [t(0)*g(0) %f(0) == 1]]
+        [[f(0)==0] -> [t(0)*g(0) == 1]]
+        [t(0)*g(0) %%f(0) == 1]
+        [t.cs[0]*g.cs[0] %%f.cs[0] == 1]
+      [fix:t(0),g(0)][X:=1]:
+        [(t.cs[0]*0!+t.cs[1]*1!)*(g.cs[0]*0!+g.cs[1]*1!) %%(f.cs[0]*0!+f.cs[1]*1!) == 1]
+      证明有限???不太对... 同位系数一一对应乊不同模数，统一模数II(f(j))则组合有限
+      证明无限???不太对... [1 %(2+X) == 1]
+      RR==FF(p)时数量有限
+      RR==ZZ%N时数量有限
+      ？？？RR==ZZ时系数绝对值是否有上界？？？
+      ?????????
+
+  [f(X:=2) :: prime][f.cs::[(-1|0|+1)]][are_pairwise_coprime(f...)#ie:gcd(...)==1]:
+    # 1*X**k --> -1*X**k + 1*X**(1+k)
+    X # 2
+    1+X # 3
+    -1+X+X**2 # 5
+      !! [gcd(1+X,1+X**2) --> 2] => bad
+      !! [gcd(1+X,-1+X+X**2) == 1] => ok
+    1-X+X**3 # 7
+      !! [gcd(-1+X+X**2,1+X+X**2) --> 2] => bad
+      !! [gcd(-1+X+X**2,1-X+X**3) == 1] => ok
+    ...
+]]
+
+
+
+
 
 

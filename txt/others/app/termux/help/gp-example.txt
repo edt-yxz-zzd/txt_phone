@@ -1,0 +1,343 @@
+
+e others/app/termux/help/gp-example.txt
+注意:『mx~』矩阵转置、向量转置
+  ? ?mattranspose
+  mattranspose(x): x~ = transpose of x.
+  矩阵取第一行:
+  ? (factorint(12)~)[1,]
+  %20 = [2, 3]
+注意:『%1』匿名值？历史值？
+  ? ?%
+  last history item.
+注意:『{}』可跨行
+    注意:『()』不可跨行，得使用续行符:行末『\』
+    while(bool, stmts...)
+    while(bool, {
+      stmts...
+    })
+    不可嵌套:***   sorry, embedded braces (in parser) is not yet implemented.
+    也无需嵌套:
+    {while(bool,
+      stmts...
+    )}
+注意:『'xxx』代表 变量名，而『xxx』未赋值时也代表 变量名，但赋值后代表 变量值
+    ? default('realprecision)
+    38
+
+[[
+? f=(a)->{a+1}
+(a)->a+1
+? f(3)
+4
+? ?0
+f   rev
+  #列出所有自定义函数
+? ?for
+=>『for(X=a,b,seq): the sequence is evaluated, X going from a up to b. If b is set to +oo, the loop will not stop.』
+
+for(j=1,8, {
+  print1(j, ",");
+})
+=> 『1,2,3,4,5,6,7,8,』
+
+? factorint(-1+2^67)
+[   193707721 1]
+[761838257287 1]
+? factorint(-1+2^1207)
+^C
+***   at top-level: factorint(-1+2^1207)
+***                 ^--------------------
+*** factorint: user interrupt after 14,028 ms
+***   Break loop: <Return> to continue; 'break' to
+***   go back to GP prompt
+break> break
+
+异常处理:
+error(999)
+iferr(error(999), exc, print(exc))
+=>『error("user error: 999")』
+iferr(error(999), exc, e=exc)
+
+分圆多项式:
+? ?polcyclo
+polcyclo(n,{a = 'x}): n-th cyclotomic polynomial evaluated at a.
+
+? polcyclo(2^4*3^3*5^2*7)
+%1 = x^17280 - x^16920 + x^16560 + x^15480 - x^15120 + 2*x^14760 - x^14400 + x^14040 + x^12960 - x^12600 + x^12240 - x^11880 + x^11520 - x^11160 - x^10080 - x^9360 - x^8640 - x^7920 - x^7200 - x^6120 + x^5760 - x^5400 + x^5040 - x^4680 + x^4320 + x^3240 - x^2880 + 2*x^2520 - x^2160 + x^1800 + x^720 - x^360 + 1
+? %1
+%2 = x^17280 - ...
+
+view ../../python3_src/seed/math/polynomial/eval_polynomial/cyclotomic_polynomial.py
+
+
+
+注意:『mx~』矩阵转置、向量转置
+? ?mattranspose
+mattranspose(x): x~ = transpose of x.
+
+? factorint(1)
+%7 = matrix(0,2)
+? factorint(1)~
+%8 = [;]
+? factorint(2)~
+%9 =
+[2]
+[1]
+? factorint(4)~
+%10 =
+[2]
+[2]
+? factorint(6)~
+%11 =
+[2 3]
+[1 1]
+? factorint(12)~
+%12 =
+[2 3]
+[2 1]
+? default('output)
+%14 = 1
+
+矩阵取第一行:
+? (factorint(12)~)[1,]
+%20 = [2, 3]
+
+矩阵取第二行:
+? (factorint(12)~)[2,]
+%21 = [2, 1]
+
+$ gp -q -f
+? default('output,0)
+? (factorint(1)~)
+[;]
+? (factorint(4)~)
+[2;2]
+? (factorint(12)~)
+[2,3;2,1]
+? (factorint(30)~)
+[2,3,5;1,1,1]
+
+
+素性证书:只生成于prime{>2^64}
+  递归门槛阈值:2^64
+  无本原根，合理吗？
+? ?primecert
+primecert(N,{flag=0},{partial=0}):
+    If N is a prime, return a Primality Certificate. Return 0 otherwise.
+    If flag = 0 return an ECPP certificate (Atkin-Morain); if flag = 1 return an N-1 certificate (Pocklington-Lehmer)
+? x=primecert(nextprime(2^64),1)
+%16 = [18446744073709551629, [2, 7, 658812288346769701]]
+? x=primecert(precprime(2^64),1)
+%17 = 18446744073709551557
+? nextprime(2^64)
+%18 = 18446744073709551629
+? x=primecert(nextprime(2^131),1)
+%21 = [2722258935367507707706996859454145691687, [2, 7, 139, 419, [3338662914647152972386900808039189, 2, [3338662914647152972386900808039189, [2, 3, 137409927152683]]]]]
+  =>确实递归
+
+]]
+
+[[
+copy from:
+view others/数学/float/浮点数运算-2.txt
+===
+
+? default('realprecision)
+38
+
+[1/d ~= 0.14285714285714285714285714285714285714]
+  #38位十进制数字
+
+reciprocal
+rev(d, x0) = {
+  local(x, x1, j);
+  x = x0;
+  j = 0;
+  while(1,
+    j++;
+    x1 = x + x*(1-d*x);
+    print(j, ":", x1-x);
+    if(x1 == x, break(););
+    \\ if(abs(x1-x) < 1e-60, break(););
+    x = x1;
+  );
+  return(x);
+}
+
+初始值有效范围:
+[[d > 0][rev(d,x0):ok] => [0 < x0 < 2/d]]
+  !! [[d > 0][x < 0] -> [(2-d*x) > 0][x*(2-d*x) < 0]]
+  !! [[d > 0][x > 2/d] -> [(2-d*x) < 0][x*(2-d*x) < 0]]
+[[d < 0][rev(d,x0):ok] => [0 > x0 > 2/d]]
+  !! [[d < 0][x > 0] -> [(2-d*x) > 0][x*(2-d*x) > 0]]
+  !! [[d < 0][x < 2/d] -> [(2-d*x) < 0][x*(2-d*x) > 0]]
+
+rev(7, 0.0001)
+  #18轮
+rev(7, 0.28)
+  #13轮
+rev(7, 0.29)
+  #overflow
+rev(-7, -0.0001)
+  #18轮
+rev(-7, -0.28)
+  #13轮
+rev(-7, -0.29)
+  #overflow
+
+]]
+[[
+[dx0 == x1-x0 == x0*dy0 == x0*(1-d*x0)]
+[dx1 == x2-x1 == x1*dy1 == x1*(1-d*x1)]
+[dy1-dy0 == (1-d*x1) -(1-d*x0) == -d*(x1-x0) == -d*dx0]
+
+(x0,dx0,dy0) -> (x1,dx1,dy1)
+[x1 == x0+dx0]
+[dy1 == dy0-d*dx0]
+[dx1 == x1*dy1]
+
+rev_v2_(d, x0) = {
+  local(j, x0=x0, dy0, dx0, x1, dy1, dx1);
+  dy0 = (1-d*x0);
+  dx0 = x0*dy0;
+  j = 0;
+  while(1,
+    j++;
+    x1 = x0+dx0;
+    dy1 = dy0-d*dx0;
+    dx1 = x1*dy1;
+    printsep(":", j, dx0, x1-x0);
+    if(x1 == x0, break(););
+    \\ if(abs(x1-x0) < 1e-60, break(););
+    x0 = x1;
+    dy0 = dy1;
+    dx0 = dx1;
+  );
+  return(x1);
+}
+
+精度=38
+rev_v2_(7, 0.0001)
+  #18轮
+rev_v2_(7, 0.28)
+  #13轮
+没啥改进...
+
+
+? default('realprecision, 600)
+? default('realprecision)
+616
+  why???虽然输出确实是600位十进制
+
+精度=600
+rev_v2_(7, 0.0001)
+  #22轮
+rev_v2_(7, 0.28)
+  #17轮
+rev(7, 0.0001)
+  #22轮
+rev(7, 0.28)
+  #17轮
+0.142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857142857
+
+? 10^6%7
+1
+
+e ../../python3_src/seed/math/factor_pint/database4factors4cyclotomic_numbers.py
+
+]]
+[[
+每次增加64bit:
+
+? default('realprecision,38)
+? default('realprecision)
+38
+? default('realprecision,39)
+? default('realprecision)
+57
+? default('realprecision,57)
+? default('realprecision)
+57
+? default('realprecision,58)
+? default('realprecision)
+77
+? default('realprecision,77)
+? default('realprecision)
+77
+? default('realprecision,78)
+? default('realprecision)
+96
+? default('realprecision,97)
+? default('realprecision)
+115
+? default('realprecision,116)
+? default('realprecision)
+134
+? default('realprecision,135)
+? default('realprecision)
+154
+? default('realprecision,155)
+? default('realprecision)
+173
+
+? default('realprecision,1)
+? default('realprecision)
+19
+? default('realprecision,20)
+? default('realprecision)
+38
+
+show7realprecision_(n) = {
+  prec0 = default('realprecision);
+  default('realprecision, 1);
+  for(j=1,n,
+    prec = default('realprecision);
+    print1(prec, ",");
+    default('realprecision, 1+prec);
+  );
+  default('realprecision, prec0);
+}
+
+show7realprecision_(11)
+  19,38,57,77,96,115,134,154,173,192,211,
+
+
+? default('realprecision)
+57
+? default()
+  ... ...
+  realbitprecision = 192 significant bits (57 decimal digits displayed)
+  realprecision = 57 significant digits
+  ... ...
+? 192/64
+3
+
+? log(10^19)/log(2)
+63.1166338028598846095360691602984133414317964674670316290
+? logint(2^64,10)
+19
+
+show7zpow64_(n) = {
+  for(j=1,n,
+    ez = j*64;
+    num_digits = logint(2^ez,10);
+    num_digits_m1 = logint(2^(-1+ez),10);
+    printsep(":", j, num_digits, num_digits_m1);
+  );
+}
+show7zpow64_(11)
+1:19:18
+2:38:38
+3:57:57
+4:77:76
+5:96:96
+6:115:115
+7:134:134
+8:154:153
+9:173:173
+10:192:192
+11:211:211
+
+]]
+
+
