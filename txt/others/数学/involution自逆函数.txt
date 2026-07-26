@@ -748,3 +748,314 @@ Coming from theory of coding (LDPC codes decoding), you have another involution:
   <==> [(y*d1+dx*y*x) = (n1-d1*x)]
   <==> [(+d1*x+y*d1+dx*y*x) = n1] #对称方程
 ]]
+[[
+@20260708
+come_from:
+view ../../python3_src/seed/math/Gray_code.py
+===
+FXT:
+fxtbook:page49[61/978]
+1.19 Invertible transforms on words
+Note the names ‘blue code’ etc.  are ad hoc terminology and not standard.
+  blue code
+  yellow code
+  red code
+  green code
+
+===
+[parity_of(u) := u.bit_count()%2]
+[revbin(u) := 二进制水平反转扌(字长;u)]
+  #===bit_scramble_===bit-reversal
+[k::int]:
+  [lrotate1(u) := 循环左移扌(字长;1;u)]
+  [lrotate(k;u) := 循环左移扌(字长;k;u)]
+  #S[k] be the operator that rotates a word by k bits (bit 0 is moved to position k)
+  #Shift in the sequency domain is bit-wise derivative in time domain.
+[lrotate(-k;u) == 循环右移扌(字长;k;u)]
+[rev_gray_code(u) := revbin(Gray_code(revbin(u)))]
+  #reversed Gray code
+  #rev_gray_code:隐含『字长』@revbin
+
+[parity_of(blue_code(u)) == u%2]
+
+[yellow_code(u) == revbin(blue_code(revbin(u)))]
+  #yellow_code == reversed blue code
+  #yellow_code:隐含『字长』:最低阳爻不变
+  #blue_code:不含『字长』:最高阳爻不变
+[Gray_code . blue_code . Gray_code . blue_code === id]
+[yellow . lrotate1**k . yellow === Gray_code**k]
+  #lrotate1:隐含『字长』
+  #??Gray_code:不含『字长』:最高阳爻只增
+[rev_gray_code === revbin*Gray_code*revbin]
+[blue_code . lrotate1**k . blue_code === rev_gray_code**-k]
+  [[proof:
+  !! [yellow . lrotate1**k . yellow === Gray_code**k]
+  !! [yellow_code**2 === id]
+  [lrotate1**k === yellow * Gray_code**k * yellow]
+  [blue_code . lrotate1**k . blue_code
+  === blue_code . yellow * Gray_code**k * yellow . blue_code
+  === red_code * Gray_code**k * green_code
+  !! [Gray_code . blue_code . Gray_code . blue_code === id]
+  !! [blue_code**2 === id]
+  === red_code * (blue_code . Gray_code**-1 . blue_code)**k * green_code
+  === red_code * blue_code . Gray_code**-k . blue_code * green_code
+  === revbin . Gray_code**-k . revbin
+  !! [revbin**2 === id]
+  === (revbin . Gray_code . revbin)**-k
+  !! [rev_gray_code === revbin*Gray_code*revbin]
+  === rev_gray_code**-k
+  ]
+  DONE
+  ]]
+[rev_gray_code**k === (green_code . lrotate1**k . red_code)]
+  [[proof:
+  !! [rev_gray_code === revbin*Gray_code*revbin]
+  !! [revbin**2 === id]
+  [rev_gray_code**k === revbin*Gray_code**k*revbin]
+  !! [yellow . lrotate1**k . yellow === Gray_code**k]
+  [rev_gray_code**k === revbin*(yellow . lrotate1**k . yellow)*revbin]
+  [rev_gray_code**k === (green_code . lrotate1**k . red_code)]
+  DONE
+  ]]
+
+
+
+
+
+[revbin**2 === id]
+[blue_code**2 === id]
+[yellow_code**2 === id]
+[red_code**2 === green_code]
+[green_code**2 === red_code]
+    [red_code**3 === id]
+    [green_code**3 === id]
+
+乘法表ex:
+  新增:生成子:lrotate1
+  [lrotate1**字长 === id]
+  [lrotate1 . revbin === revbin . lrotate1**-1]
+      #排序
+  [lrotate1 . red_code === ???]
+    !! [yellow . lrotate1 . yellow === Gray_code]
+    => [lrotate1 === yellow . Gray_code . yellow]
+    => [lrotate1 . red_code === yellow . Gray_code . revbin]
+    => [lrotate1 * red_code === (revbin*red_code**2) * Gray_code * revbin] #非凡
+<<==:
+乘法表:
+  生成子:2:
+    revbin,red_code
+  基础关系:3:
+    [revbin**2 === id]
+    [red_code**3 === id]
+      #指数上限
+    [red_code*revbin === revbin*red_code**2]
+      #排序
+      # => [总数==2*3==6]
+  元素总数:6:
+      {(revbin**i)*(red_code**j) | [i:<-[0..<2]][j:<-[0..<3]]}
+      [(0,0) ~ id]
+      [(0,1) ~ red_code]
+      [(0,2) ~ green_code]
+      [(1,0) ~ revbin]
+      [(1,1) ~ blue_code]
+      [(1,2) ~ yellow_code]
+
+
+  <<==:
+  [revbin**2 === id]
+  [red_code**2 === green_code]
+  [red_code**3 === red_code*green_code === id]
+  [red_code*revbin === yellow_code === revbin*(revbin*yellow_code) === revbin*green_code === revbin*red_code**2]
+  view others/数学/finite_group/有限群表达.txt
+
+<<==:
+乘法表:
+  #排除:[id*f === f]
+  #排除:[f*id === f]
+  [revbin*revbin === id]
+  [revbin*blue_code === red_code]
+  [revbin*yellow_code === green_code]
+  [revbin*red_code === blue_code]
+  [revbin*green_code === yellow_code]
+
+  [blue_code*revbin === green_code]
+  [blue_code*blue_code === id]
+  [blue_code*yellow_code === red_code]
+  [blue_code*red_code === yellow_code]
+  [blue_code*green_code === revbin]
+
+  [yellow_code*revbin === red_code]
+  [yellow_code*blue_code === green_code]
+  [yellow_code*yellow_code === id]
+  [yellow_code*red_code === revbin]
+  [yellow_code*green_code === blue_code]
+
+  [red_code*revbin === yellow_code]
+  [red_code*blue_code === revbin]
+  [red_code*yellow_code === blue_code]
+  [red_code*red_code === green_code]
+  [red_code*green_code === id]
+
+  [green_code*revbin === blue_code]
+  [green_code*blue_code === yellow_code]
+  [green_code*yellow_code === revbin]
+  [green_code*red_code === id]
+  [green_code*green_code === red_code]
+
+
+
+Both the blue code and the yellow code are involutions (self-inverse).
+[blue_code(blue_code(u)) == u]
+  #自逆
+[yellow_code(yellow_code(u)) == u]
+  #自逆
+[red_code(u) == revbin(blue_code(u))]
+[green_code(u) == blue_code(revbin(u))]
+
+[blue_code === yellow_code . revbin . yellow_code === revbin . yellow_code . revbin]
+[yellow_code === blue_code . revbin . blue_code === revbin . blue_code . revbin]
+
+blue_code:
+  The blue_code can be used as a fast implementation for the composition of a binary polynomial with (x+1)
+  [poly5coeffs_(uint2bits_(blue_code(u));X) =[%2]= poly5coeffs_(uint2bits_(u);(X+1))]
+yellow_code:
+  see the closely related Reed-Muller transform.
+
+矩阵表达:matrix{字长,字长}
+[字长:=2]:
+  # [a,b] --> [u==a+b*2]
+  [mx{id} == [1,0;0,1]]
+    [a,b] --> [a,b]
+  [mx{revbin} == [0,1;1,0]]
+    [a,b] --> [b,a]
+  [mx{blue_code} == [1,1;0,1]]
+    [a,b] --> [a+b,b]
+  [mx{yellow_code} == [1,0;1,1]]
+    [a,b] --> [a,a+b]
+  [mx{red_code} == [0,1;1,1]]
+    [a,b] --> [b,a+b]
+  [mx{green_code} == [1,1;1,0]]
+    [a,b] --> [a+b,a]
+  In fact the ‘color-transforms’, bit-reversal, and identity are the transforms obtained as repeated Kronecker-products of the matrices (see section 23.3 on page 462).
+    view ../../python3_src/seed/algo/FFT/Walsh_transform.py
+    from seed.algo.FFT.Walsh_transform import matrix_right_Kronecker_product_#matrix_tensor_product_
+
+
+]]
+[[
+#code6FXT:here
+===
+copy from:
+view ../../fxt/_ignore__unzip/fxt/src/bits/bittransforms.h
+===
+#if !defined  HAVE_BITTRANSFORMS_H__
+#define       HAVE_BITTRANSFORMS_H__
+// This file is part of the FXT library.
+// Copyright (C) 2010 Joerg Arndt
+// License: GNU General Public License version 3 or later,
+// see the file COPYING.txt in the main directory.
+
+#include "fxttypes.h"
+#include "bits/bitsperlong.h"
+
+
+static inline ulong blue_code(ulong a)
+// Self-inverse.
+// range [0..2^k-1] is mapped onto itself
+// work \prop log_2(BITS_PER_LONG)
+//.
+// With  B:=blue,  G:=gray,  I:=inverse_gray
+//   G(B(G(B(a)))) == a
+//   G(B(G(a)))    == B(a)
+//   I(B(I(a)))    == B(a)
+//   G(B(a))       == B(I(a))
+// With  P:=parity
+//   P(B(a)) == a % 2
+{
+    ulong s = BITS_PER_LONG >> 1;
+    ulong m = ~0UL << s;
+    do
+    {
+        a ^= ( (a&m) >> s );
+        s >>= 1;
+        m ^= (m>>s);
+    }
+    while ( s );
+    return  a;
+}
+// -------------------------
+
+
+
+static inline ulong yellow_code(ulong a)
+// Self-inverse.
+// work \prop log_2(BITS_PER_LONG)
+//.
+// With  Y:=yellow,  B:=blue,  r:=revbin
+//   B(a) == Y(r(Y(a)))
+//   Y(a) == r(B(r(a)))
+//   r(a) == Y(B(Y(a))) == B(Y(B(a)))
+// With  P:=parity
+//   P(Y(a)) == highest_one(a) == "sign(a)"
+{
+    ulong s = BITS_PER_LONG >> 1;
+    ulong m = ~0UL >> s;
+    do
+    {
+        a ^= ( (a&m) << s );
+        s >>= 1;
+        m ^= (m<<s);
+    }
+    while ( s );
+    return  a;
+}
+// -------------------------
+
+
+static inline ulong red_code(ulong a)
+// work \prop log_2(BITS_PER_LONG)
+// =^=  revbin( blue_code(a) );
+{
+    ulong s = BITS_PER_LONG >> 1;
+    ulong m = ~0UL >> s;
+    do
+    {
+        ulong u = a & m;
+        ulong v = a ^ u;
+        a = v ^ (u<<s);
+        a ^= (v>>s);
+        s >>= 1;
+        m ^= (m<<s);
+    }
+    while ( s );
+    return  a;
+}
+// -------------------------
+
+
+static inline ulong green_code(ulong a)
+// work \prop log_2(BITS_PER_LONG)
+// =^=  revbin( yellow_code(a) );
+{
+    ulong s = BITS_PER_LONG >> 1;
+    ulong m = ~0UL << s;
+    do
+    {
+        ulong u = a & m;
+        ulong v = a ^ u;
+        a = v ^ (u>>s);
+        a ^= (v<<s);
+        s >>= 1;
+        m ^= (m>>s);
+    }
+    while ( s );
+    return  a;
+}
+// -------------------------
+
+
+#endif  // !defined HAVE_BITTRANSFORMS_H__
+===
+]]
+
+

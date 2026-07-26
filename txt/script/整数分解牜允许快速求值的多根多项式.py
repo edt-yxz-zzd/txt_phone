@@ -1,4 +1,5 @@
 #__all__:goto
+#TODO:goto
 r'''[[[
 e script/整数分解牜允许快速求值的多根多项式.py
 平方累聚型多根多项式:甲型、乙型
@@ -822,30 +823,38 @@ py_adhoc_call   script.整数分解牜允许快速求值的多根多项式   @�
     [det([a,b;-b,a]) == (a**2+b**2)]
     [[a,b;-b,a]*[c,d;-d,c] == [(a*c-b*d),(a*d+b*c);(a*d+b*c),(a*c-b*d)]]
     [(a**2+b**2)*(c**2+d**2) == ((a*c-b*d)**2+(a*d+b*c)**2)]
+矩乘冫平方和乊剩余环扌
+矩乘平方冫平方和乊剩余环扌
+    [(a**2+b**2)**2 == ((a**2-b**2)**2+(2*a*b)**2)]
 ===
 见下面:[碰撞规模纟非零 ~ (p/8)]
 求得 一些 平方碰撞:
+===
 from seed.math.GaussInteger import find_Gauss_integer_factor_coeffs_of_4k1_prime, find_sqrt_neg1_of_4k1_prime
 [p::prime][p%4==1][n%p=!=0][?k -> [is_prime_(4*k*n+p)]]:
     [(odd1, even1):=find_Gauss_integer_factor_coeffs_of_4k1_prime(p)]
     [(odd2, even2):=find_Gauss_integer_factor_coeffs_of_4k1_prime(4*k*n+p)]
     [(odd1**2 + even1**2) =[%n]= p =[%n]= (odd2**2 + even2**2)]
     [(odd1**2 + even1**2) =[%n]= (odd2**2 + even2**2)]
+===
 [d:=((1+2*a)**2+(2*b)**2)][gcd(n,d) == 1][?k -> [is_prime_(4*k*n+d)]]:
     [d%4==1]
     [(4*k*n+d)%4==1]
     [(odd, even):=find_Gauss_integer_factor_coeffs_of_4k1_prime(4*k*n+d)]
     [((1+2*a)**2+(2*b)**2) =[%n]= (odd**2 + even**2)]
+===
 [a*b=[%n]=c*d]:
     [4*a*b == ((a+b)**2-(a-b)**2)]
     [4*c*d == ((c+d)**2-(c-d)**2)]
     [((a+b)**2-(a-b)**2) =[%n]= ((c+d)**2-(c-d)**2)]
     [((a+b)**2+(c-d)**2) =[%n]= ((c+d)**2+(a-b)**2)]
+===
 [gcd(n,a*b*c) == 1]:
     [d := a*b*c**-1 %n]
     [a*b=[%n]=c*d]
     [((a+b)**2+(c-d)**2) =[%n]= ((c+d)**2+(a-b)**2)]
     [((a+b)**2+(c-d)**2) =[%n]= ((c+d)**2+(a-b)**2) =[%n]= (a**2+b**2+c**2+d**2)]
+===
 定点求平方碰撞:
     上面p版就已经是特化版定点求平方碰撞
     考虑是否可以凑巧出现[d==a**2+b**2==a**2+c**2]
@@ -870,6 +879,7 @@ from seed.math.GaussInteger import find_Gauss_integer_factor_coeffs_of_4k1_prime
     # 根据上面算法，容易找到[p =[%(4*n)]= (-1+2*n)]，从而得到(a,b)
     #   但感觉不合理？其实搞错了:不是[a**2==-1]而是[a**2+b**2==-1]
 
+===
 [w == u**2 + v**2][u == a**2 + b**2][v == c**2 + d**2]:
     [2*w == (a**2+b**2+c**2+d**2) =?= ((a+b)**2+(c-d)**2)]
     [a*b=[%n]=c*d]
@@ -883,7 +893,276 @@ from seed.math.GaussInteger import find_Gauss_integer_factor_coeffs_of_4k1_prime
         [w == ((a+b)**2+(c-d)**2)]
         [w == (a**2+b**2+c**2+d**2)]
 
-<<==:
+===
+幂增组合:概念性生成:
+    [w[j] == u[j,k]**2 + v[j,k]**2]
+        # 甚至可以 直接使用(p*q)两者都是(1+4k)型素数
+    [IIws == II[w[j] | j]]
+    则IIws的可能候选分解数量达到:II[len(ks[j]) | j]
+简化:
+    [ps := [p | [p::prime][p%4==1]]]
+    [IIws:=II(ps[:L])]
+    则IIws的可能候选分解数量达到:2**(L-1)
+        而[IIws%n分解规模只有(p/8)]
+    bug:
+        除非gcd，否则即使 ZZ%p上发生碰撞，ZZ%n也未必，除非ZZ%p ZZ%q... 同时有 达到+/-sqrt 才能发现 碰撞
+    xxx:随机碰撞发生规模为O(p**/2)
+        也就是说分解合数耗时O(n**/4)
+        #类似 尸方法，不过 确定性更强+可控性更强
+        #   可是对比 随机平方碰撞(random-squares method)又能好到哪去？仅仅x**2%n 是难以有效利用的，得尝试smooth分解，最后再类似QS平方筛 解线性方程组
+    此处碰撞指:[u0**2=[%n]=u1**2][(v0+v1)%n=!=0][(v0-v1)%n=!=0][(u0**2+v0**2)=[%n]=IIws=[%n]=(u1**2+v1**2)]
+        => [v0**2=[%n]=v1**2]
+        => [1 < gcd(n, v0+v1) < n]
+格雷码
+view ../../python3_src/seed/math/Gray_code.py
+===
+TODO:
+!! 平方和的乘积依然是平方和
+[u**2 + v**2 =[%n]= 1] 构成一个 (幺正？)矩阵乘法群
+    规模O(p/8)
+  [u,v;-v,u]的阶的规模是？
+构造通过:(IIps)**2 /(IIps)**2
+  [U**2+V**2 =[%n]= (IIps)**2]
+  [(U/IIps)**2+(V/IIps)**2 =[%n]= 1]
+[(3/5)**2 + (4/5)**2 =[%n]= 1]
+考察冫二维幺正矩阵乊剩余环扌:goto
+    结论:可以作为 减一分解法 的 补充，只要 合数的小素数 是(3+4k)型 [#1/2可能性#]
+
+===
+进一步:
+    高斯整数 --> ZZ[X]%{n,f(X)}
+    幺正 --> [norm(g(X)) == 1]
+[f(X) == X**2+1]:
+    高斯整数
+[f(X) == (X**2+A*X+B)]:
+    [b=!=0]:
+        [norm(a+b*X)
+        == (a+b*x0)*(a+b*x1)
+        == b**2*(-a/b-x0)*(-a/b-x1)
+        == b**2*f(-a/b)
+        == b**2*(-a/b)**2+b**2*A*(-a/b)+b**2*B
+        == (a**2-A*a*b+B*b**2)
+        ]
+    [norm(a+b*X) == if b==0 then a**2 else b**2*f(-a/b)]
+    [norm(a+b*X) == (a**2-A*a*b+B*b**2)]
+    [b=!=0][norm(a+b*X) == 1]:
+        [f(-a/b) == (1/b)**2]
+        # 找出(x,y) :=> [f(x) == y**2]
+        # 或者 反过来 待定系数B
+        #   ??怎么感觉有点像 ECC椭圆曲线？
+    [g(X) == (a+b*X)][h(X) == (c+d*X)]:
+        [g(X)*h(X)
+        == (a+b*X)*(c+d*X)
+        == (a*c+(b*c+a*d)*X+b*d*X**2)
+        == (a*c+(b*c+a*d)*X-b*d*(A*X+B))
+        == ((a*c-b*d*B)+(b*c+a*d-b*d*A)*X)
+        ]
+    [(a+b*X)*(c+d*X) == ((a*c-b*d*B)+(b*c+a*d-b*d*A)*X)]
+
+? ?gcdext
+    gcdext(x,y): returns [u,v,d] such that d=gcd(x,y) and u*x+v*y=d.
+? ?polresultantext
+    polresultantext(A,B,{v}): return [U,V,R] such that R=polresultant(A,B,v) and U*A+V*B = R, where A and B are polynomials.
+      [resultant(f,g):=(LC(g)**deg(f)*LC(f)**deg(g))**II[(r4g-r4f) | [r4g:<-roots_of(g(X))][r4f:<-roots_of(f(X))]]]
+        #注意:f,g次序:针对g，求norm(g)%f
+polresultantext(A*X+B, a+b*X, 'X)
+    [-b, A, a*A - b*B]
+polresultantext(a+b*X, A*X+B, 'X)
+    [-A, b, -a*A + b*B]
+polresultantext(X^2+A*X+B, a+b*X, 'X)
+    [b^2, -b*X + (-b*A + a), -b*a*A + (b^2*B + a^2)]
+polresultantext(a+b*X, X^2+A*X+B, 'X)
+    [-b*X + (-b*A + a), b^2, -b*a*A + (b^2*B + a^2)]
+
+polresultantext(X^3+A*X+B, a+b*X+c*X^2, 'X)
+    [(-c^3*A + (a*c^2 - b^2*c))*X + (-b*c^2*A + (c^3*B + (2*b*a*c - b^3)))
+    , (c^2*A + (-a*c + b^2))*X^2 + (-c^2*B - b*a)*X + (c^2*A^2 + (-2*a*c + b^2)*A + (b*c*B + a^2))
+    , a*c^2*A^2 + (-b*c^2*B + (-2*a^2*c + b^2*a))*A + (c^3*B^2 + (3*b*a*c - b^3)*B + a^3)
+    ]
+polresultantext(A+B*X+C*X^2+X^3, a+b*X+c*X^2, 'X)
+    [(-c^3*B + ((a + C*b)*c^2 - b^2*c))*X + (c^3*A + (-b*c^2*B + (-C*a*c^2 + (2*b*a + C*b^2)*c - b^3)))
+    , (c^2*B + ((-a - C*b)*c + b^2))*X^2 + (-c^2*A + (C*c^2*B + (-C^2*b*c + (-b*a + C*b^2))))*X + ((-C*c^2 + b*c)*A + (c^2*B^2 + ((-2*a - C*b)*c + b^2)*B + (C^2*a*c + (a^2 - C*b*a))))
+    , c^3*A^2 + (-b*c^2*B + (-2*C*a*c^2 + (3*b*a + C*b^2)*c - b^3))*A + (a*c^2*B^2 + ((-2*a^2 - C*b*a)*c + b^2*a)*B + (C^2*a^2*c + (a^3 - C*b*a^2)))
+    ]
+TODO:阶规模是？
+    二维:估计是 O(p**(2-1))
+    三维:估计是 O(p**(3-1))
+        3:(a,b,c)
+        1:[norm==1]
+        (数量纟自由变量-数量纟约束)
+        椭圆曲线: O(p**(2-1))
+考察冫环乘阶纟幺正点乊随机二维剩余环扌:goto
+    二维:阶规模是[2*p,(p+1),(p-1)]
+        相应于Jacobi_symbol(M;D)
+        ???vs:Lucas-seq???
+异阶本原根组合:goto
+
+
+==>>:
+猜想:[[p::prime][p%2==1] -> [规模纟幺正点集乊二维剩余环{ZZ[X]%{p,(X**2+A*X+B)}} == let [D:=(A**2-4*B)%p][J:=Jacobi_symbol(p;D)] in (1+[0==J])*(p-J)]]
+    ???vs:Lucas-seq???
+    似乎没太大区别
+    其实就是 FF(p;1)[X]%(X**2+A*X+B) 的[norm==1]乘法子群
+    [RR:=FF(p;1)[X]%(X**2+A*X+B)]
+    [UU:=乘法子群{RR;[norm==1]}]
+    [1 =[%p]= norm(a+b*X) =[%p]= (a**2-A*a*b+B*b**2)]
+    [1=[%p]= norm(+/-1+0*X)]
+    [[c:<-ZZ%p][c=!=+/-1] -> [norm(c+0*X)%p == c**2 %p =!= 1]]
+    [(ZZ%p)/-\UU =[%p]= {+1,-1}]
+    [-1 == Jacobi_symbol(p;D)]:
+        [RR ~=~ FF(p;2)]
+        [len(RR) == p**2]
+        [len(ZZ%p) == p]
+        [(-1+len(RR))%len(UU) == 0]
+        [gcd((-1+len(ZZ%p)),len(UU)) == 2]
+        [gcd(-1+p,len(UU)) == 2]
+        [(-1+p**2)%len(UU) == 0]
+        [gcd(-1+p**2,len(UU)) == len(UU)]
+        [gcd(2*(1+p),len(UU)) == len(UU)]
+        ?g :=> [g<-RR][mul_order_(g) == (-1+len(RR))]
+        [h:=g**((p-1)///2)]
+        [mul_order_(h) == 2*(1+p)]
+            #此路不通，改道:
+        [good_bs := {b | [b:<-ZZ%p][-1 =!= Jacobi_symbol(p;(4+D*b**2))]}]
+            # {0,+1}
+        [@a,b -> [1 =[%p]= norm(a+b*X)]]:
+            [1 =[%p]= (a**2-A*a*b+B*b**2)]
+            [1 =[%p]= norm((A*b-a)+b*X)]
+            [A*b-a==a]:
+                [a==A*b/2]
+                [4 =[%p]= ((A*b)**2-2*A*(A*b)*b+4*B*b**2)]
+                [4 =[%p]= (-A**2+4*B)*b**2]
+                [D =[%p]= -4/b**2]
+                [-1 == Jacobi_symbol(p;D) == Jacobi_symbol(p;-1)]
+                [p%4 == 3]
+                [b**2 =[%p]= -4/D]
+                [+/-b =[%p]= 2/sqrt(-D)]
+            [p%4 == 1]:
+                [A*b-a=!=a]
+                one b --> two {a,A*b-a}
+                [len(UU) == 2*len(good_bs)]
+            [p%4 == 3]:
+                if [+/-b =[%p]= 2/sqrt(-D)]:
+                    one b --> one {a}
+                else:
+                    one b --> two {a,A*b-a}
+                [len(UU) == -2+2*len(good_bs)]
+            [len(UU) == [p%4 == 3]*-2+2*len(good_bs)]
+
+        [?b -> @a -> [1 =!= norm(a+b*X)]]:
+            [b=!=0]
+            [1 =!= (a**2-A*a*b+B*b**2)]
+            [0 =!= (a**2-A*a*b+(B-1/b**2)*b**2)]
+            [_D := A**2-4*(B-1/b**2)]
+            [_D == (D+4/b**2)]
+            [-1 == Jacobi_symbol(p;_D)]
+            [-1 == Jacobi_symbol(p;(D+4/b**2))]
+            [-1 == Jacobi_symbol(p;(4+D*b**2))]
+        [?b -> @a -> [1 =!= norm(a+b*X)]]:
+            <==> [b=!=0][-1 == Jacobi_symbol(p;(D+4/b**2))]
+            <==> [-1 == Jacobi_symbol(p;(4+D*b**2))]
+        [bad_bs := {b | [b:<-ZZ%p][-1 == Jacobi_symbol(p;(4+D*b**2))]}]
+        猜想:均匀分布:[len(bad_bs) == (p-1)///2 -[p%4==3] == p//4*2]
+            [p:=3][D:=2]:
+                [bad_bs=={}]
+            [p:=5][D:=2]:
+                [bad_bs=={2,3}]
+            [len(good_bs) == p-len(bad_bs) == (p+1)///2 +[p%4==3]]
+            [len(UU) == [p%4 == 3]*-2+2*len(good_bs) == (p+1)]
+            [len(UU) == (p+1)]
+    [[-1 == Jacobi_symbol(p;D)]&&猜想 => [len(UU) == (p+1)]]
+
+
+e ../../python3_src/seed/math/factor_pint/factor_pint__smooth_group_order_method.py
+
+===
+可以继续推广:
+    但意义不大，见下面: polcyclo(k>2,p)几乎没有smooth_number
+
+推广一:单变量+素数维度:FF(p;q)
+    ...
+
+推广二:合数维度:FF(p;k0*k1):
+推广二.甲:双变量+合数维度:FF(p;k0*k1):
+
+    以前一个prevRR为系数，构造更大的RR
+    #无需:[gcd(k1,k2)==1]
+    [(RR:=(prevRR:=FF(p;1)[X]%(X^k0+...))[Y]%(Y^k1+...)) ~=~ FF(p;k0*k1)]
+    重点在于:
+        1:[pt0 <- RR\-\prevRR] #初始 幺正点pt0 不在prevRR 中 <==> 高维系数非全零
+        2:[norm :: RR -> prevRR]
+            #其实，每个变量X都可以有norm{X}，也就是最多可有num_prime_factors_of(k0*k1)个约束，但是 [最小自由度==(k0*k1)-num_prime_factors_of(k0*k1)]还是增长太快，不实用
+            [norm(x) := resultant(Y;(Y^k1+...);x)] #消Y，但保留X
+            [UU := {x | [x:<-RR][norm(x) == 1]}]
+            [(x \\\ y) =[def]= [y%x == 0]]
+            [g:=len(UU/-\prevRR)]
+            [g == gcd(k1,(-1+len(prevRR)))]
+                # [LC(x)**deg((Y^k1+...)) == 1]
+            [(-1+len(RR)) == len(UU)*(-1+len(prevRR))///g]
+            [len(UU) == g*(-1+len(RR))///(-1+len(prevRR))]
+            [len(UU) == gcd(k1,(-1+len(prevRR)))*(-1+len(RR))///(-1+len(prevRR))]
+            [len(UU) == gcd(k1,(-1+p**k0))*((-1+p**(k0*k1))///(-1+p**k0))]
+            [len(UU) == gcd(k1,(-1+p**k0))*???]
+                ??不是polcyclo(k1,p**k0)
+                ??不是polcyclo(k0*k1,p)
+                双变量X,Y表现相当糟糕:((-1+p**(k0*k1))///(-1+p**k0)) 几乎 包含了 polcyclo(k1,p)*polcyclo(k1*k0,p)，肯定不如 单变量 素数维度
+                #k0*k1相当小，分解整数时必是smooth_number可忽略不计
+推广二.乙:单变量+合数维度:FF(p;k0*k1):
+    如何 构造初始 幺正点？
+    如何 定义 norm()使得只有polcyclo(k0*k1,p)起作用
+    ???[len(UU) \\\ 2*k0*k1*polcyclo(k0*k1,p)]
+所用 乘法群规模len(UU)一直在改变！
+    缺点是 随着phi_(k0*k1)增长，维度越来越高，效率越来越低，而且随着p增大,polcyclo(k0*k1,p)是smooth_number的概率也变得低，事实上，从一开始就很低:
+factor(polcyclo(3,127))~
+    [3,5419;1,1]
+factor(polcyclo(5,127))~
+    [262209281;1]
+factor(polcyclo(7,127))~
+    [7,43,86353,162709;1,1,1,1]
+polcyclo(k>2,p)几乎没有smooth_number
+    view ../../python3_src/seed/math/factor_pint/database4factors4cyclotomic_numbers.py.default.db
+===
+PARI-GP:
+? polcyclo(4,'p)
+p^2 + 1
+? polcyclo(3,'p)
+p^2 + p + 1
+? polcyclo(6,'p)
+p^2 - p + 1
+? polcyclo(5,'p)
+p^4 + p^3 + p^2 + p + 1
+? polcyclo(12,'p)
+p^4 - p^2 + 1
+? polcyclo(9,'p)
+p^6 + p^3 + 1
+? polcyclo(8,'p)
+p^4 + 1
+? polcyclo(10,'p)
+p^4 - p^3 + p^2 - p + 1
+===
+view ../../python3_src/seed/math/polynomial/eval_polynomial/cyclotomic_polynomial.py
+py_adhoc_call { +lineno }  seed.math.polynomial.eval_polynomial.cyclotomic_polynomial   ,stable_repr.20:iter_cyclotomic_polynomials__sorted_by_ ='{}' -degree_vs_order +with_degree +with_order +with_factorization4order -squarefree_order_only
+1:(1, 1, {}, (-1, 1))
+2:(1, 2, {2: 1}, (1, 1))
+3:(2, 3, {3: 1}, (1, 1, 1))
+4:(2, 4, {2: 2}, (1, 0, 1))
+5:(2, 6, {2: 1, 3: 1}, (1, -1, 1))
+6:(4, 5, {5: 1}, (1, 1, 1, 1, 1))
+7:(4, 8, {2: 3}, (1, 0, 0, 0, 1))
+8:(4, 10, {2: 1, 5: 1}, (1, -1, 1, -1, 1))
+9:(4, 12, {2: 2, 3: 1}, (1, 0, -1, 0, 1))
+10:(6, 7, {7: 1}, (1, 1, 1, 1, 1, 1, 1))
+11:(6, 9, {3: 2}, (1, 0, 0, 1, 0, 0, 1))
+12:(6, 14, {2: 1, 7: 1}, (1, -1, 1, -1, 1, -1, 1))
+13:(6, 18, {2: 1, 3: 2}, (1, 0, 0, -1, 0, 0, 1))
+14:(8, 15, {3: 1, 5: 1}, (1, -1, 0, 1, -1, 1, 0, -1, 1))
+15:(8, 16, {2: 4}, (1, 0, 0, 0, 0, 0, 0, 0, 1))
+16:(8, 20, {2: 2, 5: 1}, (1, 0, -1, 0, 1, 0, -1, 0, 1))
+17:(8, 24, {2: 3, 3: 1}, (1, 0, 0, 0, -1, 0, 0, 0, 1))
+18:(8, 30, {2: 1, 3: 1, 5: 1}, (1, 1, 0, -1, -1, -1, 0, 1, 1))
+19:(10, 11, {11: 1}, (1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1))
+20:(10, 22, {2: 1, 11: 1}, (1, -1, 1, -1, 1, -1, 1, -1, 1, -1, 1))
+===
 ]]
 [[
 尝试二:构造:甲型平方累聚型多根多项式@(ZZ%p)
@@ -1184,6 +1463,731 @@ py_adhoc_call   script.整数分解牜允许快速求值的多根多项式   @�
             是，但是原理性错误，见上面
 
 ]]
+[[
+@20260709
+考察冫二维幺正矩阵乊剩余环扌
+e others/数学/我的猜想.txt
+    其实就是 高斯整数
+    !! (a,b) ~ (+/-a,+/-b),(b,a)
+    # [a==0] => (0,+/-1),(+/-1,0)
+    # [a==b] => (+/-a,+/-a)
+    [二维幺正群规模%4==0]
+    [p%4==1]:
+        [1j <- ZZ%p]
+        猜想:[二维幺正群规模==(p-1)]
+    [p%4==3]:
+        [1j <- (ZZ%p)[I]%(1+I**2)]
+        猜想:[二维幺正群规模==(p+1)]
+猜想:[二维幺正群规模%p==(p+(-1)**[p%4==1])]
+    !! 猜想:[碰撞规模纟非零{p%2==1} == (p+4+1*(-1)**[p%4==1]+[p%8<-{1,7}]*-4*(-1)**欤平方剩余)///8]
+    => [[p%8==1] -> [p-1==二维幺正群规模==(p+7)///8*8-4*2][#ie:1=[%p]=(2*X**2)#]] #另一是(0,+/-1) 必然包含
+        # [+2是 平方剩余%p]
+    => [[p%8==5] -> [p-1==二维幺正群规模==(p+3)///8*8-4*1]]
+        qfbsolve(Qbf(2,0,-1),p,3)无解
+        # [+2非 平方剩余%p]
+    => [[p%8==3] -> [p+1==二维幺正群规模==(p+5)///8*8-4*1]]
+        qfbsolve(Qbf(2,0,-1),p,3)无解
+        # [+2非 平方剩余%p]
+    => [[p%8==7] -> [p+1==二维幺正群规模==(p+9)///8*8-4*2]]
+        # [+2是 平方剩余%p]
+
+还行，可以作为 减一分解法 的 补充，只要 合数的小素数 是(3+4k)型 [#1/2可能性#]
+
+===
+deprecate:++kw:to_std
+===
+? 257%8
+1
+? 263%8
+7
+? 269%8
+5
+? 271%8
+7
+? 277%8
+5
+? 271%8
+7
+? 281%8
+1
+? 283%8
+3
+
+%8:1,5
+%4:1
+257-->(p-1)
+269-->(p-1)
+281-->(p-1)
+
+%8:3,7
+%4:3
+263-->(p+1)
+283-->(p+1)
+===
+py_adhoc_call { +lineno }  script.整数分解牜允许快速求值的多根多项式   ,考察冫二维幺正矩阵乊剩余环扌   =257
+    1:((1, 0), 1)
+    2:((30, 30), 8)
+    3:((52, 102), 256)
+    4:((69, 61), 32)
+    5:((81, 76), 256)
+    6:((44, 11), 256)
+    7:((59, 115), 128)
+    8:((107, 84), 256)
+    9:((12, 63), 16)
+    10:((71, 10), 128)
+    11:((38, 108), 256)
+    12:((13, 54), 256)
+    13:((106, 79), 256)
+    14:((31, 117), 128)
+    15:((14, 24), 128)
+    16:((35, 33), 128)
+    17:((55, 46), 256)
+    18:((126, 109), 256)
+    19:((86, 40), 256)
+    20:((112, 43), 128)
+    21:((42, 6), 256)
+    22:((123, 99), 64)
+    23:((45, 17), 32)
+    24:((22, 51), 64)
+    25:((75, 95), 256)
+    26:((80, 119), 128)
+    27:((122, 58), 64)
+    28:((39, 104), 256)
+    29:((92, 77), 256)
+    30:((64, 70), 256)
+    31:((111, 4), 256)
+    32:((121, 3), 64)
+    33:((16, 60), 128)
+
+===
+py_adhoc_call { +lineno }  script.整数分解牜允许快速求值的多根多项式   ,考察冫二维幺正矩阵乊剩余环扌   =263
+    1:((1, 0), 1)
+    2:((55, 55), 8)
+    3:((98, 91), 66)
+    4:((107, 85), 132)
+    5:((77, 11), 66)
+    6:((102, 88), 44)
+    7:((68, 30), 44)
+    8:((122, 125), 264)
+    9:((62, 75), 264)
+    10:((70, 19), 88)
+    11:((13, 44), 264)
+    12:((31, 108), 44)
+    13:((121, 80), 44)
+    14:((21, 127), 132)
+    15:((60, 95), 132)
+    16:((112, 9), 88)
+    17:((42, 128), 22)
+    18:((106, 52), 264)
+    19:((79, 129), 24)
+    20:((14, 130), 88)
+    21:((120, 131), 12)
+    22:((48, 8), 132)
+    23:((27, 18), 88)
+    24:((90, 37), 264)
+    25:((74, 92), 132)
+    26:((84, 109), 264)
+    27:((22, 116), 33)
+    28:((15, 61), 66)
+    29:((93, 89), 264)
+    30:((105, 40), 264)
+    31:((118, 4), 88)
+    32:((76, 96), 264)
+    33:((16, 43), 66)
+    34:((28, 100), 264)
+===
+py_adhoc_call { +lineno }  script.整数分解牜允许快速求值的多根多项式   ,考察冫二维幺正矩阵乊剩余环扌   =269
+    1:((1, 0), 1)
+    2:((120, 76), 268)
+    3:((12, 113), 268)
+    4:((35, 11), 268)
+    5:((42, 89), 268)
+    6:((107, 53), 134)
+    7:((48, 103), 268)
+    8:((112, 10), 67)
+    9:((119, 108), 268)
+    10:((56, 30), 268)
+    11:((98, 9), 268)
+    12:((65, 34), 268)
+    13:((27, 50), 134)
+    14:((63, 41), 268)
+    15:((133, 55), 67)
+    16:((118, 123), 268)
+    17:((132, 84), 268)
+    18:((88, 70), 268)
+    19:((80, 47), 268)
+    20:((131, 104), 134)
+    21:((22, 18), 268)
+    22:((111, 79), 134)
+    23:((32, 44), 67)
+    24:((73, 66), 67)
+    25:((15, 109), 268)
+    26:((54, 115), 268)
+    27:((129, 24), 67)
+    28:((46, 87), 268)
+    29:((75, 5), 134)
+    30:((28, 37), 134)
+    31:((49, 57), 134)
+    32:((16, 52), 134)
+    33:((110, 116), 134)
+    34:((105, 126), 134)
+===
+py_adhoc_call { +lineno }  script.整数分解牜允许快速求值的多根多项式   ,考察冫二维幺正矩阵乊剩余环扌   =283
+    1:((1, 0), 1)
+    2:((133, 78), 284)
+    3:((85, 64), 284)
+    4:((116, 107), 284)
+    5:((52, 134), 71)
+    6:((27, 11), 284)
+    7:((122, 76), 71)
+    8:((80, 26), 284)
+    9:((99, 117), 284)
+    10:((131, 88), 71)
+    11:((40, 74), 284)
+    12:((55, 70), 142)
+    13:((106, 59), 71)
+    14:((22, 138), 284)
+    15:((130, 9), 142)
+    16:((115, 139), 284)
+    17:((87, 140), 71)
+    18:((110, 97), 284)
+    19:((28, 42), 284)
+    20:((15, 25), 284)
+    21:((129, 118), 284)
+    22:((71, 51), 142)
+    23:((69, 30), 284)
+    24:((73, 7), 284)
+    25:((33, 45), 284)
+    26:((67, 48), 71)
+    27:((23, 86), 284)
+    28:((75, 6), 71)
+    29:((120, 113), 284)
+    30:((16, 126), 142)
+    31:((114, 56), 71)
+    32:((77, 79), 284)
+    33:((105, 101), 284)
+    34:((29, 3), 71)
+    35:((109, 17), 284)
+    36:((89, 2), 284)
+===
+py_adhoc_call { +lineno }  script.整数分解牜允许快速求值的多根多项式   ,考察冫二维幺正矩阵乊剩余环扌   =281
+    1:((1, 0), 1)
+    2:((66, 66), 8)
+    3:((12, 104), 280)
+    4:((83, 74), 280)
+    5:((76, 72), 280)
+    6:((88, 94), 280)
+    7:((57, 113), 140)
+    8:((43, 20), 280)
+    9:((125, 127), 140)
+    10:((32, 35), 140)
+    11:((14, 128), 280)
+    12:((117, 9), 14)
+    13:((124, 19), 20)
+    14:((22, 109), 40)
+    15:((103, 114), 56)
+    16:((139, 120), 28)
+    17:((80, 8), 70)
+    18:((93, 25), 280)
+    19:((137, 79), 7)
+    20:((96, 45), 280)
+    21:((15, 30), 35)
+    22:((90, 98), 280)
+    23:((47, 130), 56)
+    24:((33, 6), 70)
+    25:((99, 63), 140)
+    26:((23, 92), 280)
+    27:((116, 95), 40)
+    28:((44, 34), 140)
+    29:((134, 121), 280)
+    30:((71, 115), 70)
+    31:((69, 110), 35)
+    32:((122, 65), 10)
+    33:((58, 3), 70)
+    34:((67, 17), 140)
+    35:((106, 75), 56)
+    36:((53, 132), 280)
+===
+py_adhoc_call   script.整数分解牜允许快速求值的多根多项式   @矩乘幂冫平方和乊剩余环扌 =281 ='(66,66)' =8
+    (1, 0)
+py_adhoc_call   script.整数分解牜允许快速求值的多根多项式   @矩乘幂冫平方和乊剩余环扌 =281 ='(66,66)' =4
+    (280, 0)
+
+===
+]]
+[[
+===
+考察冫环乘阶纟幺正点乊随机二维剩余环扌
+    [2*p,(p+1),(p-1)]
+    相应于Jacobi_symbol(M;D)
+    ???vs:Lucas-seq???
+===
+py_adhoc_call   script.整数分解牜允许快速求值的多根多项式   ,stable_repr.考察冫环乘阶纟幺正点乊随机二维剩余环扌 ='257'  ='[(a,b,A) for a in range(10) for b in range(1,11) for A in range(10)]' +only_exps +to_show_Jacobi_symbol
+    [514, 258, 256]
+    {frozenset({-1}): {3, 6, 43, 86, 129, 258}, frozenset({0}): {257, 514}, frozenset({1}): {4, 8, 16, 32, 64, 128, 256}}
+===
+py_adhoc_call   script.整数分解牜允许快速求值的多根多项式   ,stable_repr.考察冫环乘阶纟幺正点乊随机二维剩余环扌 ='281'  ='[(a,b,A) for a in range(10) for b in range(1,11) for A in range(10)]' +only_exps +to_show_Jacobi_symbol
+    [562, 282, 280]
+    {frozenset({-1}): {3, 6, 47, 94, 141, 282}, frozenset({0}): {281, 562}, frozenset({1}): {4, 5, 7, 10, 14, 20, 28, 35, 40, 56, 70, 140, 280}}
+===
+py_adhoc_call   script.整数分解牜允许快速求值的多根多项式   ,stable_repr.考察冫环乘阶纟幺正点乊随机二维剩余环扌 ='283'  ='[(a,b,A) for a in range(10) for b in range(1,11) for A in range(10)]' +only_exps +to_show_Jacobi_symbol
+    [566, 284, 282]
+    {frozenset({-1}): {4, 71, 142, 284}, frozenset({0}): {283, 566}, frozenset({1}): {3, 6, 47, 94, 141, 282}}
+===
+py_adhoc_call   script.整数分解牜允许快速求值的多根多项式   ,stable_repr.考察冫环乘阶纟幺正点乊随机二维剩余环扌 ='269'  ='[(a,b,A) for a in range(10) for b in range(1,11) for A in range(10)]' +only_exps +to_show_Jacobi_symbol
+    [538, 270, 268]
+    {frozenset({-1}): {3, 5, 6, 10, 15, 18, 27, 30, 45, 90, 135, 270}, frozenset({0}): {269, 538}, frozenset({1}): {4, 67, 134, 268}}
+===
+py_adhoc_call   script.整数分解牜允许快速求值的多根多项式   ,stable_repr.考察冫环乘阶纟幺正点乊随机二维剩余环扌 ='263'  ='[(a,b,A) for a in range(10) for b in range(1,11) for A in range(10)]' +only_exps +to_show_Jacobi_symbol
+    [526, 264, 262]
+    {frozenset({-1}): {3, 4, 6, 11, 12, 24, 33, 44, 66, 88, 132, 264}, frozenset({0}): {263, 526}, frozenset({1}): {131, 262}}
+===
+===
+===
+===
+]]
+[[
+异阶本原根组合:here
+    失败@20260712
+    原本是打算 构造2个 幂方模板:
+        [g0(x)**(p+d0) =[%f(x)]= h0(x)]
+        [g1(x)**(p+d1) =[%f(x)]= h1(x)]
+    嵌套:
+        # [x:=inv4g0(x)]
+        [g0(inv4g0(x))**(p+d0) =[%f(inv4g0(x))]= h0(inv4g0(x))]
+        [x**(p+d0) =[%f(inv4g0(x))]= h0(inv4g0(x))]
+        !! 假设:[f(inv4g0(x)) == f(+/-x**(+/-1))]
+        [x**(p+d0) =[%f(+/-x**(+/-1))]= h0(inv4g0(x))]
+        # [x:=(+/-x**(+/-1))]
+        [(+/-x**(+/-1))**(p+d0) =[%f(x)]= h0(inv4g0((+/-x**(+/-1))))]
+        [x**(p+d0) =[%f(x)]= +/-h0(inv4g0((+/-x**(+/-1))))**(+/-1)]
+            模板1
+    再嵌套:
+        # [x:=h1(x)]
+        [h1(x)**(p+d0) =[%f(h1(x))]= +/-h0(inv4g0((+/-h1(x)**(+/-1))))**(+/-1)]
+        !! 假设:[f(h1(x)) == f(x)]
+        [h1(x)**(p+d0) =[%f(x)]= +/-h0(inv4g0((+/-h1(x)**(+/-1))))**(+/-1)]
+        !! [g1(x)**(p+d1) =[%f(x)]= h1(x)]
+        [g1(x)**((p+d0)*(p+d1)) =[%f(x)]= +/-h0(inv4g0((+/-h1(x)**(+/-1))))**(+/-1)]
+            模板2
+    但是发现没用:
+        [[deg(f(X)) == 2][p-1 == mul_order_{ZZ%(p,f(X));g(X)}] -> [deg(g(x)) == 0]]
+
+二维:阶规模是[2*p,(p+1),(p-1)]
+    考察冫环乘阶纟幺正点乊随机二维剩余环扌:goto
+
+观察到:
+    [4 == mul_order_{ZZ%(p,X**2+1);X}] #即虚数1j的环乘阶必然是4
+    [3 == mul_order_{ZZ%(p,X**2+X+1);X}]
+    这是因为:
+    [polcyclo(4) == X**2+1]
+    [polcyclo(3) == X**2+X+1]
+    [(-1+X**4)%polcyclo(4) == 0]
+    [(-1+X**3)%polcyclo(3) == 0]
+    [D{polcyclo(4)} == -4]
+    [D{polcyclo(3)} == -3]
+    !! 猜想
+    [(1+[p==2])*(p-Jacobi_symbol(p;-4))%4 == 0]
+    [(1+[p==3])*(p-Jacobi_symbol(p;-3))%3 == 0]
+    ==>>:
+    [(1+3*[p==2])*(p-Jacobi_symbol(p;-1))%4 == 0]
+    [(p-Jacobi_symbol(p;-3))%3 == 0]
+    ==>>:
+    [[p%4==1] -> [Jacobi_symbol(p;-1) == +1]]
+    [[p%4==3] -> [Jacobi_symbol(p;-1) == -1]]
+    [[p%6==1] -> [Jacobi_symbol(p;-3) == +1]]
+    [[p%6==5] -> [Jacobi_symbol(p;-3) == -1]]
+假设:
+    [order_mod_({p,f(X)};X) == (p-1)]
+    [order_mod_({q,f(X)};X) == (q-1)]
+    [order_mod_({p,g(X)};X) == (p+1)]
+    [order_mod_({q,g(X)};X) == (q+1)]
+    ==>>:
+    [order_mod_({p*q,f(X)*g(X)};X) == lcm(-1+p**2,-1+q**2)///2]
+    [(-1+p**2)*(-1+q**2)
+    == (1 -(p**2+q**2) +(p*q)**2)
+    == (1 -(p+q)**2 +2*p*q +(p*q)**2)
+    :> [n:=p*q]
+    == (1 -(p+q)**2 +2*n +n**2)
+    == (n+1)**2 -(p+q)**2
+    ]
+    [X**n =[%[p,f(X)]]= X**q]
+    [X**n =[%[p,g(X)]]= X**-q]
+    [X**n =[%[q,f(X)]]= X**p]
+    [X**n =[%[q,g(X)]]= X**-p]
+
+    [X**n =[%[n,f(X)]]= X**q]
+
+
+假设:
+    [order_mod_({p,f(X)};X+c0) == (p-1)]
+    [order_mod_({p,f(X)};X+c1) == (p+1)]
+    [order_mod_({p,f(X)};X+c2) == (p-1)]
+    [order_mod_({p,f(X)};X+c3) == (p+1)]
+    [order_mod_({q,f(X)};X+c0) == (q-1)]
+    [order_mod_({q,f(X)};X+c1) == (q-1)]
+    [order_mod_({q,f(X)};X+c2) == (q+1)]
+    [order_mod_({q,f(X)};X+c3) == (q+1)]
+    组合数:4:(p+/-1,q+/-1)
+
+假设:
+    [f(X)==(C+B*X+X**2)]
+    [k0==+/-1]
+    [k1==+/-1]
+    [f(u+v*X) == f(k0*X**k1)*X**(1-k1)]
+    [f(u+v*X)
+    == C+B*(u+v*X)+(u+v*X)**2
+    == C+(B*u+B*v*X)+(u**2+2*u*v*X+v**2*X**2)
+    == (C+B*u+u**2)+(2*u+B)*v*X+(v**2*X**2)
+    ]
+    [f(k0*X**k1)*X**(1-k1)
+    == (C+B*(k0*X**k1)+(k0*X**k1)**2)*X**(1-k1)
+    == (C+(k0*B*X**k1)+X**(2*k1))*X**(1-k1)
+    == (C*X**(1-k1)+(k0*B)*X+X**(1+k1))
+    ]
+    [(2*u+B)*v == (k0*B)]
+    [k1==+1][v**2 == 1][(C+B*u+u**2) == C]
+    [k1==-1][v**2 == C][(C+B*u+u**2) == 1]
+    [k1==+1]:
+        !! [(C+B*u+u**2) == C]
+        [(B+u)*u == 0]
+        [[u == 0]or[u == -B]]
+        [(2*u+B) == +/-B]
+        [u == 0]:
+            !! [(2*u+B)*v == (k0*B)]
+            [B*(k0-v) == 0]
+            [[B==0]or[k0==+v]]
+        [u == -B]:
+            !! [(2*u+B)*v == (k0*B)]
+            [B*(k0+v) == 0]
+            [[B==0]or[k0==-v]]
+        [[u==B==0]or[k0==+v][u==0]or[k0==-v][u==-B]]
+    [k1==-1]:
+        !! [(2*u+B)*v == (k0*B)]
+        [(2*u*v+B*v) == (k0*B)]
+        [(2*u*v) == (k0-v)*B]
+        [k0==v]:
+            [u*v==0]
+        [k0=!=v]:
+            [B == (2*u*v)/(k0-v)]
+
+        !! [v**2 == C]
+        [C == v**2]
+        !! [(C+B*u+u**2) == 1]
+        [(v**2+B*u+u**2) == 1]
+        [B*u == (1-u**2-v**2)]
+        [u==0]:
+            [0 == (1-v**2)]
+            [C == v**2 == 1]
+            !! [(2*u*v) == (k0-v)*B]
+            [B*(k0-v) == 0]
+            [[B==0]or[k0==+v]]
+        [u=!=0]:
+            [B == (1-u**2-v**2)/u]
+            !! [(2*u*v) == (k0-v)*B]
+            [[k0=!=+v]or[k0==+v==0]]
+            [k0=!=+v]:
+                !! [B == (2*u*v)/(k0-v)]
+                [(1-u**2-v**2)/u == (2*u*v)/(k0-v)]
+                [(1-u**2-v**2)*(k0-v) == (2*u*v)*u]
+                [(1-uu-vv)*(k0-v) == 2*uuv]
+                [(1-uu-vv)*k0 == (1+uu-vv)*v]
+[x=%=(a+b*x)**2]
+[x=%=(aa+2abx+bb*xx)]
+[x=%=(aa+2abx-bb*(Bx+C))]
+[x=%=(aa-bbC)+(2a-bB)*bx]
+[0=%=(aa-bbC)+(-1+2ab-bbB)*x]
+[0=%=(cc-C)+(-1/bb+2c-B)*x]
+[cc==C][2c-1==B]
+[xx+(2c-1)x+cc == (x+c)**2-x]
+[f(x) == (x+c)**2-x == xx+(2c-1)x+cc]
+[1==norm(c+x) == cc-(2c-1)c+cc == +c]
+[f(x) == xx+x+1]
+[(x+1)*x%f(x) == -1]
+[(x+1)**2%f(x) == x]
+[(x+1)**6%f(x) == x**3%f(x) == 1]
+
+[(x+w)**2 -(-B-x) == xx+(2w+1)x+(ww+B)]
+[B==1+2w]
+[(x+w)**2 -(-B-x) == xx+(2w+1)x+(ww+B) == xx+Bx+(w+1)**2 == (x+(1+w))**2 -x]
+[1==norm(-B-x) == BB-BB+(1+w)**2 == (1+w)**2]
+[w==0|-2]
+[B==1|-3]
+[fff==xx+(1|-3)x+1]
+[g==xx+x+1]
+    D=-3
+    %5,11,17,23,29...
+    [znorder(Mod(-3,7)) == 3]
+    [znorder(Mod(-3,13)) == 6]
+[f==xx-3x+1]
+    D=5
+    %3,7,13,17,23... (5k+/-2)
+    [znorder(Mod(5,7)) == 6]
+    [znorder(Mod(5,11)) == 5]
+    [znorder(Mod(5,13)) == 4]
+    19,31 both +1
+    17,23 both -1
+g = 'x^2 + 'x + 1
+r4g = -1 - 'x
+g17=Mod(g,17)
+r4g17=Mod(r4g,g17)
+r4g17^3
+    x^3=%=1
+    (-1-x)=%=x^2
+    (-1-x)^3=%=x^6=%=1
+    useless
+
+f= 'x^2 - 3*'x + 1
+r4f= 3 - 'x
+f7=Mod(f,7)
+r4f7=Mod(r4f,f7)
+r4f7^8
+    Mod(Mod(1, 7), Mod(1, 7)*x^2 + Mod(4, 7)*x + Mod(1, 7))
+r4f7^4
+    Mod(Mod(6, 7), Mod(1, 7)*x^2 + Mod(4, 7)*x + Mod(1, 7))
+    有用！
+f17=Mod(f,17)
+r4f17=Mod(r4f,f17)
+r4f17^18
+Mod(Mod(1, 17), Mod(1, 17)*x^2 + Mod(14, 17)*x + Mod(1, 17))
+r4f17^9
+    Mod(Mod(16, 17), Mod(1, 17)*x^2 + Mod(14, 17)*x + Mod(1, 17))
+    有用！
+
+[r4f(X)^(p+1) %{p,f(X)} == 1]
+[c^(p-1) %p == 1]
+[(c/r4f(X))^(p+1) =[%{p,f(X)}]= c**2]
+[(c/r4f(X))^(p-1) =[%{p,f(X)}]= r4f(X)**2]
+[X*r4f(X) =[%{p,f(X)}]= 1]
+[1/r4f(X) =[%{p,f(X)}]= X]
+[X^(p+1) %{p,f(X)} == 1]
+[r4f(X)^p %{p,f(X)} == X]
+[(c*X)^(p+1) =[%{p,f(X)}]= c**2]
+[(c*X)^(p-1) =[%{p,f(X)}]= r4f(X)**2]
+[(c*X)^((p-1)///2) =[%{p,f(X)}]= +/-r4f(X)]
+[(c*X)^((p+1)///2) =[%{p,f(X)}]= +/-r4f(X)*(c*X) =%= +/-c]
+[(c*X)^(p+1) =[%{p,f(X)}]= c**2]
+[(c*+/-r4f(X))^(p+1) =[%{p,f(r4f(X))}]= c**2]
+[(c*(c*X)^((p-1)///2))^(p+1) =[%{p,f(3-X)}]= c**2]
+[(c^(p+1)*(c*X)^((p**2-1)///2)) =[%{p,f(3-X)}]= c**2]
+[((c*X)^((p**2-1)///2)) =[%{p,f(3-X)}]= 1]
+
+
+
+尝试冫直接构造异阶本原根:here
+    h**(p-1)
+    g**(p+1)
+[f(x):=xx+Bx+1]
+[g(x):=(-B-x)]
+[x*g(x) =[%f(x)]= 1]
+[g(x)**-1 =[%f(x)]= x]
+[norm(g(x)) %f(x) == 1/norm(x) == 1/(0-0+1) == 1]
+[norm(g(x)) %f(x) == ((-B)**2-B*(-B)*(-1)+1*(-1)**2) == 1]
+[g(x)**(p+1) =[%f(x)]= 1]
+[x**(p+1) =[%f(x)]= 1]
+
+[h(x):=(2*x+B)]
+[4*f(x)==(2*x+B)**2+(4-BB) == h(x)**2-D]
+[h(x)**2 =[%f(x)]= D]
+[h(x)**(2*(p-1)) =[%f(x)]= D**(p-1) =[%p]= 1]
+[h(x)**(2*(p-1)) =[%{p,f(x)}]= 1]
+[h(x)**-1 =[%f(x)]= h(x)/D]
+
+[(g(x)*h(x))**(2*(p+1)) =[%{p,f(x)}]= h(x)**(2p-2+4) =[%{p,f(x)}]= h(x)**4 =[%{p,f(x)}]= D**2]
+[(g(x)*h(x))**(2*(p-1)) =[%{p,f(x)}]= g(x)**(2p+2-4) =[%{p,f(x)}]= g(x)**-4 =[%{p,f(x)}]= x**4]
+==>>:
+[(g(x)*h(x))**(p+1) =[%{p,f(x)}]= +/-D]
+[(g(x)*h(x))**(p-1) =[%{p,f(x)}]= +/-x**2 =%= +/-(Bx+1)]
+==>>:
+[(g(x)*h(x))**(p+1) =[%{p,f(x)}]= (h(x)**2)**((p+1)///2) =[%{p,f(x)}]= D**(1+(p-1)///2) =[%{p,f(x)}]= D*Jacobi_symbol(p;D)]
+[(g(x)*h(x))**(p-1) =[%{p,f(x)}]= g(x)**-2 * Jacobi_symbol(p;D) =%= x**2 * Jacobi_symbol(p;D) =%= -(Bx+1)*Jacobi_symbol(p;D)]
+==>>:
+[(g(x)*h(x))**(p+1) =[%{p,f(x)}]= D*Jacobi_symbol(p;D)]
+[(g(x)*h(x))**(p-1) =[%{p,f(x)}]= -(Bx+1)*Jacobi_symbol(p;D)]
+[h(x)**(p-1) =[%{p,f(x)}]= Jacobi_symbol(p;D)]
+[h(x)**(p*q) =[%{p,f(x)}]= Jacobi_symbol(p;D)**q * h(x)**q =%= J * D**(q-1)///2) * h(x)]
+[h(x)**(p*q-1) =[%{p,f(x)}]= Jacobi_symbol(p;D) * D**(q-1)///2)]
+[D**(p*q-1) =[%{p,f(x)}]= D**(q-1)]
+
+
+[(g(x)*h(x)) == (-B-x)*(2*x+B) == -(2xx+3Bx+BB) =[%{p,f(x)}]= -(Bx+BB-2)]
+[(g(x)*h(x))**-1 =[%{p,f(x)}]= x*(2*x+B)/D == (2xx+2Bx-Bx)/D =%= -(Bx+2)/D]
+[D*Jacobi_symbol(p;D) =%= (g(x)*h(x))**(p+1) == (g(x)*h(x))**(p-1) * (g(x)*h(x))**2 =[%{p,f(x)}]= -(Bx+1)*Jacobi_symbol(p;D) * (x+B)**2 * D =%= -(Bx+1)*(x+B)**2*D*Jacobi_symbol(p;D)]
+[-1 =[%f(x)]= (Bx+1)*(x+B)**2]
+
+[n:=p*q][n-1==s*t][B:=s-t]:
+    [f(t) == tt+(s-t)*t+1 == s*t+1 == n]
+    [f(-s) == ss+(s-t)*-s+1 == s*t+1 == n]
+    [f(t)%n == 0]
+    [f(-s)%n == 0]
+    [f(x) =[%n]= (x-t)*(x+s)]
+    [D==B**2-4 == (s-t)**2-4 == (s+t)**2 -4*(s*t+1) == (s+t)**2 -4*n]
+    [D%n == (s+t)**2]
+    [Jacobi_symbol(n;D) == +1]
+[n:=p*q][(s*t+1)%p == 0][B:=s-t]:
+    [f(t) == tt+(s-t)*t+1 == s*t+1 =[%p]= 0]
+
+
+假设:
+    [f(X)==C+B*X+X**2]
+    [order_mod_({p,f(X)};(b0*X+c0)) == (p-1)]
+    [order_mod_({p,f(X)};(b1*X+c1)) == (p+1)]
+    [Y:=((c0+b0*X)/(c1+b1*X))]
+    [Y**(p-1) =[%f(X)]= (b1*X+c1)**-(p-1) =[%f(X)]= (b1*X+c1)**+2]
+    [Y**(p+1) =[%f(X)]= (b0*X+c0)**+(p+1) =[%f(X)]= (b0*X+c0)**+2]
+假设:
+    [order_mod_({p,f(X)};(b0*X+c0)) == (p-1)]
+        # [order_mod_({p,f(X)};-C) == (p-1)]
+    [order_mod_({p,f(X)};(b1*X+c1)) == (p+1)]
+        # [order_mod_({p,f(X)};X) == (p+1)]
+        # [f(X)==C+B*X+X**2]
+        # !! [norm(a+b*X) == (a**2-B*a*b+C*b**2)]
+        # [norm(0+1*X) == C]
+        # !! [order_mod_({p,f(X)};X) == (p+1)]
+        # [C == 1][Jacobi_symbol(B**2-4*C) == -1]
+        # [order_mod_({p,f(X)};-C) == <= 2 <= (p-1)]
+        # _L
+    [Y:=((c0+b0*X)/(c1+b1*X))]
+        # -C/X
+    [Y =[%f(X)]= (e+d*X)]
+        # B+X
+    [X == (c0-c1*Y)/(-b0+b1*Y)]
+        # -C/Y
+    [X =[%f(X)]= (Y-e)/d]
+        # -B+Y
+    [Y**(p-1) =[%f(X)]= (b1*X+c1)**-(p-1) =[%f(X)]= (b1*X+c1)**+2]
+        # X**2
+    [Y**(p+1) =[%f(X)]= (b0*X+c0)**+(p+1) =[%f(X)]= (b0*X+c0)**+2]
+        # C**2
+    [order_mod_({p,f(X)};Y) == (-1+p**2)///2]
+        # [order_mod_({p,f(X)};X+B) == (-1+p**2)///2]
+    let [(b1*X+c1) == (d1*Y+e1)]
+        # [1*X+0 == 1*Y+-B]
+    let [(b0*X+c0) == (d0*Y+e0)]
+        # [0*X+-C == 0*Y+-C]
+    [Y**(p-1) =[%f(X)]= (d1*Y+e1)**+2]
+        # [Y**(p-1) =%= (Y-B)**2]
+    [Y**(p+1) =[%f(X)]= (d0*Y+e0)**+2]
+        # [Y**(p+1) =%= (-C)**2]
+
+    [Y**(p-1) =[%f((Y-e)/d)]= (d1*Y+e1)**+2]
+        # [Y**(p-1) =[%f(Y-B)]= (Y-B)**2]
+    [f((Y-e)/d) == f(-k0*Y)][k0==+/-1]:
+        [Y**(p-1) =[%f(-k0*Y)]= (d1*Y+e1)**+2]
+            # [Y**(p-1) =[%f(-Y)]= (Y-B)**2]
+        [(-k0*Y)**(p-1) =[%f(-k0*(-k0*Y))]= (d1*(-k0*Y)+e1)**+2]
+        [Y**(p-1) =[%f(Y)]= (-k0*d1*Y+e1)**+2]
+        [X**(p-1) =[%f(X)]= (-k0*d1*X+e1)**+2]
+            # [X**(p-1) =[%f(X)]= (-X-B)**2]
+        [X**(p+1) =[%f(X)]= ((-k0*d1*X+e1)*X)**+2]
+            # [X**(p+1) =[%f(X)]= ((-X-B)*X)**2 =%= C**2]
+        [(-k0*d1*X+e1)**(p+1) =[%f((-k0*d1*X+e1))]= ((-k0*d1*(-k0*d1*X+e1)+e1)*(-k0*d1*X+e1))**+2]
+            # [(-X-B)**(p+1) =[%f((-X-B))]= ((-(-X-B)-B)*(-X-B))**2 =?= C**2]
+        [f(-k0*d1*X+e1) == f(X)]:
+            [(-k0*d1*X+e1)**(p+1) =[%f(X)]= ((-k0*d1*(-k0*d1*X+e1)+e1)*(-k0*d1*X+e1))**+2]
+                # [(-X-B)**(p+1) =[%f(X)]= ((-(-X-B)-B)*(-X-B))**2 =?= C**2]
+                # [(-X-B)**(p+1) =[%f(X)]= C**2]
+            !! [X**(p-1) =[%f(X)]= (-k0*d1*X+e1)**+2]
+                # [X**(p-1) =[%f(X)]= (-X-B)**2]
+            [(X**(p-1))**((p+1)///2) =[%f(X)]= ((-k0*d1*(-k0*d1*X+e1)+e1)*(-k0*d1*X+e1))**2]
+                # [X**((-1+p**2)///2) =[%f(X)]= C**2]
+            [+/-1 =[%f(X)]= ((-k0*d1*(-k0*d1*X+e1)+e1)*(-k0*d1*X+e1))**2]
+                # [+/-1 =[%f(X)]= C**2]
+    [f((X-e)/d) == f(-k0*X)][f(-k0*d1*X+e1) == f(X)]:
+        [+/-1 =[%f(X)]= ((-k0*d1*(-k0*d1*X+e1)+e1)*(-k0*d1*X+e1))**2]
+        [f(X)==C+B*X+X**2]:
+            [f(u+v*X)
+            == C+B*(u+v*X)+(u+v*X)**2
+            == C+(B*u+B*v*X)+(u**2+2*u*v*X+v**2*X**2)
+            == (C+B*u+u**2)+(2*u+B)*v*X+(v**2*X**2)
+            == f(+/-X)
+            == C+(+/-1)*B*X+X**2
+            == C+k*B*X+X**2
+            == f(k*X)
+            ]
+            [v==+/-1]
+            [k==+/-1]
+            [k*B == (2*u+B)*v]
+            [v==k]:
+                [B == (2*u+B)]
+                [u == 0]
+                [(C+B*u+u**2) == C]
+            [v==-k]:
+                [-B == (2*u+B)]
+                [u == -B]
+                [(C+B*u+u**2) == C]
+            [u==(0|-B)]
+            [f(0+X) == f(+X)]
+            [f(0-X) == f(-X)]
+            [f(-B-X) == f(+X)]
+            [f(-B+X) == f(-X)]
+            !! [f((X-e)/d) == f(-k0*X)][f(-k0*d1*X+e1) == f(X)]
+            [e1==-B][k0*d1==1]:or:[e1==0][k0*d1==-1]
+            [d==k0][e==k0*B]:or:[d==-k0][e==0]
+            !! [X =[%f(X)]= (Y-e)/d]
+            [X =[%f(X)]= (k0*Y-B)|(-k0*Y)]
+            [Y==k0*(X+B)|(-k0*X)]
+            !! [(b1*X+c1) == (k0*d1*Y+e1)]
+            [(b1*X+c1) == (k0*d1*(X+B)+e1)]
+            [(b1*X+c1) == (1*(X+B)-B)]
+            [b1 == 1]
+            [c1 == 0]
+            !! [Y:=((c0+b0*X)/(c1+b1*X))]
+            [(X+B)=[%f(X)]=((c0+b0*X)/(0+1*X))]
+            [(X**2+B*X)=[%f(X)]=((c0+b0*X))]
+            [-C=[%f(X)]=((c0+b0*X))]
+            !! [(b0*X+c0) == (d0*Y+e0)]
+            [(b0*X+c0) == (d0*(X+B)+e0)]
+            [-C == (d0*(X+B)+e0)]
+            [d0==0]
+            [e0==-C]
+            [(b0*X+c0) == -C]
+            [(b1*X+c1) == X]
+            !! [+/-1 =[%f(X)]= ((-k0*d1*(-k0*d1*X+e1)+e1)*(-k0*d1*X+e1))]
+            [+/-1 =[%f(X)]= ((-1*(-1*X-B)-B)*(-1*X-B))**2]
+            [+/-1 =[%f(X)]= (((X+B)-B)*(-1*X-B))**2]
+            [+/-1 =[%f(X)]= (X**2+B*X)**2]
+            [+/-1 =[%f(X)]= C**2]
+            [4%order_mod_({p,f(X)};-C) == 0]
+            [order_mod_({p,f(X)};-C) <- {1,2,4}]
+            !! [order_mod_({p,f(X)};-C) == (p+1)]
+            _L
+
+]]
+[[
+@20260713:
+    结论:无用
+见上面:尝试冫直接构造异阶本原根:goto
+    [f(x):=xx+Bx+1]
+    [h(x):=(2*x+B)]
+    [D:=B**2-4]
+    [h(x)**2 =[%f(x)]= D]
+    [h(x)**(p-1) =[%{p,f(x)}]= Jacobi_symbol(p;D)]
+    [D**(p*q-1) =[%p]= D**(q-1)]
+        # [D**(p*q-1) =[%(p*q)]= CRT(D**(q-1)%p; D**(p-1)%q)]
+    [h(x)**(p*q-1) =[%{p,f(x)}]= Jacobi_symbol(p;D) * D**(q-1)///2)]
+==>>:
+how:D --> -D
+    [B**2-4==-(E**2-4)]
+    [B**2+E**2 == 8]
+    定点求平方碰撞:goto
+D --> -D:
+    [rhs:=Jacobi_symbol(p;D) * D**(q-1)///2)]
+    rhs --> rhs*(-1)**[p%4==q%4]
+    #无用:%p %q 同时变号
+[p*q == 1+(1+2*k)*2**ez]:
+    [h(x)**((p*q-1)///2**ez) == h(x)**(1+2*k) =[%{p,f(x)}]= h(x)*D**k]
+        也无用
+
+[(kp,rp):=divmod(e,p-1)][(ep,bp):=rp/%2]:
+    [e == bp +2*ep +kp*(p-1)]
+    [h(x)**e == h(x)**(rp+kp*(p-1)) =[%{p,f(x)}]= h(x)**bp * D**ep * Jacobi_symbol(p;D)**kr]
+    D --> -D
+    本质上就没用:[h**(2c) =%= D**c =%= D**(c%((p-1)///2)) * Jacobi_symbol(p;D)**(c//((p-1)///2))]
+
+]]
+
+
 
 
 
@@ -1207,9 +2211,226 @@ from seed.helper.lazy_import__func7context import mk_ctx4lazy_import4funcs_ #NOT
 with mk_ctx4lazy_import4funcs_(__name__):
     from seed.tiny_.check import check_type_is, check_int_ge, check_callable
     from math import gcd
+    from seed.math.Jacobi_symbol import Jacobi_symbol
+    from seed.tiny_.dict__add_fmap_filter import fmap4dict_value
+    from seed.mapping_tools.dict_op import inv__k2v_to_v2ks
 #.    from itertools import islice
 #.#################################
 ___end_mark_of_excluded_global_names__0___ = ...
+def 待定系数冫幺正点乊二维剩余环扌(MA, ab, /):
+    # [1 == norm(a+b*X) == (a**2-A*a*b+B*b**2)]
+    # [1+A*a*b-a**2 == B*b**2]
+    # [1+(A*b-a)*a == B*b**2]
+    # [(1+(A*b-a)*a)/b**2 == B]
+    (M,A) = MA
+    (a,b) = ab
+    B = ((A*b-a)%M *a + 1) %M * pow(b, -2, M) %M
+    return B
+def 环范冫二维剩余环扌(MAB, ab, /):
+    # [norm(a+b*X) == (a**2-A*a*b+B*b**2)]
+    # [norm(a+b*X) == (a**2+b*(-A*a+B*b))]
+    (M,A,B) = MAB
+    (a,b) = ab
+    aA_bB = (-A*a+B*b)%M
+    return (a**2+b*aA_bB)%M
+
+def 环乘冫二维剩余环扌(MAB, ab, cd, /):
+    # ZZ[X]%(X**2+A*X+B)
+    # [(a+b*X)*(c+d*X) == ((a*c-b*d*B)+(b*c+a*d-b*d*A)*X)]
+    (M,A,B) = MAB
+    (a,b) = ab
+    (c,d) = cd
+    bd = b*d%M
+    ac_bdB = (a*c-bd*B)%M
+    ad_bc_bdA = (a*d+b*c-bd*A)%M
+    return (ac_bdB, ad_bc_bdA)
+def 环幂冫二维剩余环扌(MAB, ab, e, /):
+    def mul_(ab, cd, /, *, MAB=MAB):
+        return 环乘冫二维剩余环扌(MAB, ab, cd)
+    def sq_(ab, /):
+        return mul_(ab, ab)
+    pw = I = (1,0)
+    for b in map(int, f'{e:b}'):
+        pw = sq_(pw)
+        if b:
+            pw = mul_(ab, pw)
+    return pw
+
+def 环乘阶纟幺正点乊二维剩余环扌(MAx, ab, /, *, 欤待定系数):
+    if 欤待定系数:
+        MA = MAx
+        B = 待定系数冫幺正点乊二维剩余环扌(MA, ab)
+        MAB = (*MA,B)
+    else:
+        MAB = MAx
+    MAB
+    def mul_(ab, cd, /, *, MAB=MAB):
+        return 环乘冫二维剩余环扌(MAB, ab, cd)
+    I = (1,0)
+    pw = I
+    e = 0
+    while 1:
+        e += 1
+        pw = mul_(ab, pw)
+        #print(e, ab, pw)
+        #if e > 1000:raise 000
+        if pw == I:break
+    return e if not 欤待定系数 else (e, B)
+
+def Jacobi_symbol4discriminant5MAB_(MAB, /):
+    (M,A,B) = MAB
+    D = discriminant5MAB_(MAB)
+    return Jacobi_symbol(M, D)
+def discriminant5MAB_(MAB, /):
+    # ZZ[X]%(X**2+A*X+B)
+    (M,A,B) = MAB
+    D = (A**2-4*B)%M
+    return D
+    ##bug:
+    assert M&1
+    D = (A**2-4*B)%M
+    if D&1:
+        D += M
+    assert D&1 == 0
+    D //= 2
+    return D
+def 考察冫环乘阶纟幺正点乊随机二维剩余环扌(M, abA_ls, /, *, only_exps=False, to_show_Jacobi_symbol=False):
+    es = {1}
+    if to_show_Jacobi_symbol:
+        #e2Js = {1:{0}}
+        e2Js = {}
+    for (a,b,A) in abA_ls:
+        a %= M
+        b %= M
+        A %= M
+        MA = (M,A)
+        ab = (a,b)
+        (e,B) = 环乘阶纟幺正点乊二维剩余环扌(MA, ab, 欤待定系数=True)
+        MAB = (M,A,B)
+        if not only_exps:
+            yield (e, MAB, ab)
+        es.add(e)
+        if to_show_Jacobi_symbol:
+            J = Jacobi_symbol4discriminant5MAB_(MAB)
+            Js = e2Js.setdefault(e, set())
+            Js.add(J)
+    _es = sorted(es)
+    ls = []
+    while _es:
+        _e = _es.pop()
+        if not any(e%_e == 0 for e in ls):
+            ls.append(_e)
+    es = ls
+    yield es
+    if to_show_Jacobi_symbol:
+        #yield e2Js
+        e2Js = fmap4dict_value(frozenset, e2Js)
+        js2es = inv__k2v_to_v2ks(e2Js)
+        yield js2es
+    return
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+def 矩乘冫平方和乊剩余环扌(M, ab, cd, /, *, to_std=False):
+    # [(a**2+b**2)*(c**2+d**2) == ((a*c-b*d)**2+(a*d+b*c)**2)]
+    (a,b) = ab
+    (c,d) = cd
+    ac_bd = a*c-b*d
+    ad_bc = a*d+b*c
+    (ac_bd, ad_bc) = _std(to_std, M, ac_bd, ad_bc)
+    return (ac_bd, ad_bc)
+def 矩乘平方冫平方和乊剩余环扌(M, ab, /, *, to_std=False):
+    # [(a**2+b**2)**2 == ((a**2-b**2)**2+(2*a*b)**2)]
+    return 矩乘冫平方和乊剩余环扌(M, ab, ab)
+    (a,b) = ab
+    P = (a+b)**2
+    N = (a-b)**2
+    a2_b2 = (P+N)//2 #bug!! == (a**2+b**2) =!= (a**2-b**2)
+    ab2 = (P-N)//2
+    (a2_b2, ab2) = _std(to_std, M, a2_b2, ab2)
+    return (a2_b2, ab2)
+def _std(to_std, M, ac_bd, ad_bc, /):
+    if M:
+        ac_bd %= M
+        ad_bc %= M
+    if to_std:
+        M = abs(M)
+        if M:
+            ac_bd = min(ac_bd, M-ac_bd)
+            ad_bc = min(ad_bc, M-ad_bc)
+        else:
+            ac_bd = abs(ac_bd)
+            ad_bc = abs(ad_bc)
+        (ac_bd, ad_bc) = sorted((ac_bd, ad_bc))
+
+    return (ac_bd, ad_bc)
+def 矩乘幂冫平方和乊剩余环扌(M, ab, e, /):
+    def mul_(ab, cd, /, *, M=M):
+        return 矩乘冫平方和乊剩余环扌(M, ab, cd)
+    def sq_(ab, /, *, M=M):
+        return 矩乘平方冫平方和乊剩余环扌(M, ab)
+    pw = I = (1,0)
+    for b in map(int, f'{e:b}'):
+        pw = sq_(pw)
+        if b:
+            pw = mul_(ab, pw)
+    return pw
+def 矩乘阶纟平方和乊剩余环扌(M, ab, /, *, with_sqrt1=False, to_std=False):
+    def mul_(ab, cd, /, *, M=M):
+        return 矩乘冫平方和乊剩余环扌(M, ab, cd, to_std=to_std)
+    I = (1,0)
+    if 1:
+        (a,b) = ab
+        inv4ab = (a,-b)
+        assert (uv:=mul_(ab, inv4ab)) == I, (ab, inv4ab, I, uv)
+    pw = I
+    e = 0
+    while 1:
+        e += 1
+        pw = mul_(ab, pw)
+        #print(e, ab, pw)
+        #if e > 1000:raise 000
+        if pw == I:break
+    if with_sqrt1:
+        if e&1:raise Exception('order not even:', e)
+        eh = e//2
+        sqrt1 = 矩乘幂冫平方和乊剩余环扌(M, ab, eh)
+        assert ab == mul_(sqrt1, sqrt1)
+    return e if not with_sqrt1 else (e, sqrt1)
+
+
+
+
+def 考察冫二维幺正矩阵乊剩余环扌(M, /, *, to_std=False):
+    if to_std:raise Exception('无效@分解合数')
+    u2sqrts = 制表冫平方根乊剩余环扌(M)
+    (u2num_pts, u2pts) = 制表冫平方和碰撞分布乊剩余环扌(M)
+    ab_e_pairs = []
+    for (aa, bb) in u2pts[1]:
+        a = u2sqrts[aa][0]
+        b = u2sqrts[bb][0]
+        ab = (a,b)
+        order4ab = 矩乘阶纟平方和乊剩余环扌(M, ab, to_std=to_std)
+        ab_e_pairs.append((ab, order4ab))
+    return ab_e_pairs
 
 def 制表冫平方和碰撞分布乊剩余环扌(M, /, *, to_zip=False):
     u2sqrts = 制表冫平方根乊剩余环扌(M)
