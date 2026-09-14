@@ -3931,6 +3931,168 @@ private vs public
 specialized
 ]]
 [[
+group axioms:
+    Closure
+    Associativity
+    Identity existence
+    Inverse existence
+[G :: set][mul_ :: a -> b -> c]:
+    [is_group_(G, mul_) =[def]= [[@[a,b:<-G] -> [mul_(a,b) <- G]][@[a,b,c:<-G] -> [mul_(mul_(a,b),c) == mul_(a,mul_(b,c))]][?[one:<-G] -> @[a:<-G] -> [[mul_(one,a) == a == mul_(a,one)][?[inv4a:<-G] -> [mul_(a,inv4a) == one == mul_(inv4a,a)]]]]]]
+    # [mul_ :: G -> G -> G]
+    # [[?[invL4a:<-G] -> [one == mul_(invL4a,a)]][?[invR4a:<-G] -> [one == mul_(a,invR4a)]] -> [invL4a == invL4a*a*invR4a == invR4a]]
+commutative
+generator
+cyclic
+]]
+[[
+grep -I -r others/数学/ -l -e 'NP'
+
+copy to:
+    view others/数学/NP_complete.txt
+===
+'/sdcard/0my_files/book/cryptography/Cryptography. Theory and practice by Paterson, Maura B. Stinson, Douglas Robert (z-lib.org).pdf'
+===
+#buggy:
+The NP-complete problems comprise a large class of decision problems (i.e., problems that have a yes/no answer) that are believed to be impossible to solve in polynomial time.
+    The NP-hard problems are a class of problems, which may or may not be decision problems, that are at least as difficult to solve as the NP-complete problems.
+bug:上面与下面完全不同！
+    某个NP问题 的 输出取值范围 如果 固定，则该问题必然是P
+    "decision problems"显然不行！
+
+
+===
+'/sdcard/0my_files/book/cryptography/Serious Cryptography A Practical Introduction to Modern Encryption by Jean-Philippe Aumasson (z-lib.org)(2).pdf'
+===
+
+complexity classes
+
+space complexity
+time complexity
+[TIME(f(n)) =[def]= {problem | [problem can be solved in time O(f(n))]}]
+    the class of problems solvable in time O(f(n))
+[SPACE(f(n)) =[def]= {problem | [problem can be solved using O(f(n)) bits of memory]}]
+    the class of problems solvable using of order of f(n) bits of memory
+
+[P =[def]= union{TIME(n**k) | [k:<-[1..]]}]
+    P - polynomial time
+[PSPACE =[def]= union{SPACE(n**k) | [k:<-[1..]]}]
+[[k:<-[1..]] -> [TIME(n**k) |<=| SPACE(n**k)]]
+[P |<=| PSPACE]
+
+[verifier_set{problem} =[def]= {verify | [verify :: problem -> solution{problem} -> bool][@[setting4instance :: problem] -> @[potential_solution :: solution{problem}] -> [verify(setting4instance;potential_solution) == is_actual_solution_(setting4instance;potential_solution)]]}]
+[NP =[def]= {problem | [?[verify :<- verifier_set{problem}] -> [verify <- P]]}]
+    NP - nondeterministic polynomial time
+    NP is the class of problems for which a solution can be verified in polynomial time -- that is, efficiently -- even though the solution may be hard to find.
+        By "verified", I mean that given a potential solution, you can run some polynomial-time algorithm that will verify whether you’ve found an actual solution.
+example of a problem not in NP is that of verifying the "absence" of a solution to a problem.
+    Verifying that a solution is correct boils down to computing some algorithm with the candidate solution as an input and then checking the return value.
+        However, to verify that "no" solution exists, you may need to go through all possible inputs.
+        And if there’s an exponential number of inputs, you won’t be able to efficiently prove that no solution exists.
+    The absence of a solution is hard to show for the hardest problems in the class NP -- the so-called NP-complete problems, which we’ll discuss next.
+
+NP-Complete Problems
+    The hardest problems in the class NP are called NP-complete;
+        we don’t know how to solve these problems in polynomial time.
+    And as complexity theorists discovered in the 1970s when they developed the theory of NP-completeness, NP’s hardest problems are all equally hard.
+        This was proven by showing that any efficient solution to any of the NP-complete problems can be turned into an efficient solution for any of the other NP-complete problems.
+        In other words, if you can solve any NP-complete problem efficiently, you can solve all of them, as well as all problems in NP.
+    NP-complete problems come in different disguises, but they’re fundamentally similar from a mathematical perspective.
+        In fact, you can reduce any NP-complete problem to any other NP-complete problem such that solving the first one depends on solving the second.
+==>>:
+[solver_set{problem} =[def]= {solve | [solve :: problem -> solution{problem}][@[setting4instance :: problem] -> [is_actual_solution_(setting4instance;solve(setting4instance))]]}]
+[NP_complete =[def]= {problem | [problem :<- NP][@[solve :: solver_set{problem}] -> [solve <- P] -> @[_problem :<- NP] -> ?[_solve :: solver_set{_problem}] -> [_solve <- P]]}]
+
+examples of NP-complete problems:
+    The traveling salesman problem
+        Given a set of points on a map (cities, addresses, or other geographic locations) and the distances between each point from each other point, find a path that visits every point such that the total distance is smaller than a given distance of x.
+
+    The clique problem
+        Given a number, x, and a graph, determine if there’s a set of x points or less such that all points are connected to each other.
+
+    The knapsack problem
+        Given two numbers, x and y, and a set of items, each of a known value and weight, can we pick a group of items such that the total value is at least x and the total weight at most y?
+
+    Such NP-complete problems are found everywhere,
+        from scheduling problems (given jobs of some priority and duration, and one or more proces- sors, assign jobs to the processors by respecting the priority while minimizing total execution time)
+        to constraint-satisfaction problems (determine values that satisfy a set of mathematical constraints, such as logical equations).
+        Even the task of winning in certain video games can sometimes be proven to be NP-complete (for famous games including Tetris, Super Mario Bros., Pokémon, and Candy Crush Saga).
+            For example, the article “Classic Nintendo Games Are (Computationally) Hard” (https://arxiv.org/abs/1203.1895) considers “the decision problem of reachability” to determine the possibility of reaching the goal point from a particular starting point.
+
+NP-hard
+    Some of these video game problems are actually even harder than NP-complete and are called NP-hard.
+        We say that a problem is NP-hard when it’s at least as hard as NP-complete problems.
+        More formally, a problem is NP-hard if what it takes to solve it can be proven to also solve NP-complete problems.
+            # ??? NP_complete已是NP中最难，而NP_hard可能更难，所以NP_hard其实不是NP ???
+==>>:
+[NP_hard =[def]= {problem | [@[solve :: solver_set{problem}] -> [solve <- P] -> @[_problem :<- NP] -> ?[_solve :: solver_set{_problem}] -> [_solve <- P]]}]
+[NP_complete == NP /-\ NP_hard]
+[MAYBE:[not$[NP_hard |<=| NP]]]
+    # !! [P =?= NP]
+
+I have to mention an important caveat. Not all instances of NP-complete problems are actually hard to solve.
+    Some specific instances, because they’re small or because they have a specific structure, may be solved efficiently.
+NP-complete problems have proved difficult to use for crypto purposes
+    because the very structure that makes them hard in general can make them easy in specific cases -- cases that sometimes occur in crypto.
+    Instead, cryptography often relies on problems that are "probably not" NP-hard.
+
+DLP - discrete logarithm problem
+[problem7factoring_int <- NP]
+[problem7factoring_int <-?- P]
+[problem7factoring_int <-?- NP_complete]
+[problem7discrete_logarithm <- NP]
+[problem7discrete_logarithm <-?- P]
+[problem7discrete_logarithm <-?- NP_complete]
+上面两者十分相似:算法相似，耗时相似
+    大概率不是NP_complete，因为 结果唯一，而NP_complete的结果数量不定，从零到许多
+
+[P =?= NP]
+
+[P =!= NP]:
+    <==> [P |<| NP]
+    <==> [{} == P /-\ NP_complete]
+
+public-key encryption == asymmetric encryption
+RSA - Rivest–Shamir–Adleman (RSA) cryptosystem
+trapdoor permutation
+Euler’s totient function,
+
+
+totient
+<<名词>>
+亦作 Euler's phi-function
+‘数’欧拉中函数
+
+trap door
+[建]天窗；陷阱门；[建]地板或屋顶上的活门
+trapdoor
+<<可数名词>>
+(屋顶、天花板、地板、舞台等) 活板门,上启板门,下启板门
+天窗,通气门,活板门
+
+trap-door spider
+‘动物’土蜘蛛,闭户蛭蟷蜘蛛
+((学名Ctenizidae))
+
+trapdoor (also trap)
+n door in a floor, ceiling or roof （地板、 天花板或房顶上的）活板门, 地板门, 活动天窗.
+trap-shooting
+n [U] sport of shooting at objects released into the air from a trap(5b) 飞靶射击; 多向飞碟射击.
+
+
+#disguises
+disguise:vt. 假装；掩饰；隐瞒 n. 伪装；假装；用作伪装的东西
+  make no ~ of one's feelings
+  不掩饰情感,流露真情
+  without ~
+  不隐瞒地,摆明地
+  in[under]the disguise of﹍
+  假装为…,以…为藉口,托辞…
+  a threat in the ~ of a greeting
+  以问候为掩饰的威胁
+  throw off one's disguise
+  扔掉假面具; 现出真面目
+]]
+[[
 NP - nondeterministic polynomial time
 NP-hard
 NP-hard problem
@@ -10565,6 +10727,1164 @@ clip
         她用快刀削苹果.
     ===
 
+]]
+
+
+
+
+
+
+
+
+
+
+
+[[
+esoteric
+===
+fxtbook:page172[184/978]
+We give algorithms for the generation of all combinatorial objects of certain types such as combinations, compositions, subsets, permutations, integer partitions, set partitions, restricted growth strings and necklaces.
+  Finally, we give some constructions for Hadamard and conference matrices.
+  Several (more esoteric) combinatorial objects that are found via searching in directed graphs are presented in chapter 20.
+===
+esoteric
+英 /ˌesə'terɪk/
+美 /ˌɛsə'tɛrɪk/
+21世纪英汉汉英双向词典
+es.o.ter.ic
+(9ZsE`tZrIk; 9esE5terik)`14`《源自希腊文“内部的”的意思》
+<<形容词>>
+1 (只传给少数被挑选者的) 秘传的; 奥秘的
+~ Buddhism
+密教,密宗
+2 秘教的,秘密的; 深奥的,难解的
+<<副词>>
+es.o.ter.i.cal.ly[-k; -kli]
+在线英汉－汉英词典
+adj. 秘传的；限于圈内人的；难懂的
+===
+esoterica
+英 /ˌesə'terɪkə/
+美 /ˌesə'terɪkə/
+21世纪英汉汉英双向词典
+es.o.ter.i.ca
+(9Zso`tZrIkE; 9esou5terikE)
+<<名词>>
+1 秘传的事物; 奥秘; 秘笈
+2 (贩书或收藏之) 色情文学; 黄色书刊
+在线英汉－汉英词典
+n. 秘籍
+===
+]]
+[[
+===
+delta set === bit string
+For example the subset {1,4,6} of the set {0,1,2,3,4,5,6} can also be written as a delta set [0100101].
+  Some sources use the term bit string.
+  We often write dots instead of zeros for readability: [.1..1.1].
+  Note that in the delta set we put the first element to the left side (array notation), this is in contrast to the usual way of printing binary numbers, where the least significant bit (bit number zero) is shown on the right side.
+lexicographic order
+co-lexicographic order
+  key=lambda s:s[::-1]
+
+===
+[ranking :: obj -> idx]
+[unranking :: idx -> obj]
+5.2 Ranking, unranking, and counting
+For a particular ordering of combinatorial objects (say, lexicographic order for permutations) we can ask which position in the list a given object has.
+  An algorithm for finding the position is called a ranking algorithm.
+  A method to determine the object, given its position, is called an unranking algorithm.
+  Given both ranking and unranking methods, one can compute the successor of a given object by computing its rank r and unranking r + 1.
+  While this method is usually slow the idea can be used to find more efficient algorithms for computing the successor.
+  In addition the idea often suggests interesting orderings for combinatorial objects.
+
+===
+ordinary generating function (OGF)
+exponential generating function (EGF)
+[OGF{E}(X) == sum[E(n)*X**n | [n:<-[0..]]]]
+[EGF{E}(X) == sum[E(n)/n!*X**n | [n:<-[0..]]]]
+[EGF{E}(X) == OGF{\n->E(n)/n!}(X)]
+
+The ordinary generating function (OGF) for a combinatorial object has a power series whose coefficients count the objects:
+  for the Catalan numbers we have the OGF:
+    [OGF{Catalan_number}(X) == sum[Catalan_number(n)*X**n | [n:<-[0..]]]  == (1-sqrt(1-4*X))/(2*X)]
+    [Catalan_number(n) == (C(2*n;n)///(n+1))]
+    [X*OGF{Catalan_number}(X)**2 -OGF{Catalan_number}(X) +1 == 0]
+    [OGF{Catalan_number}(X) == 1+ X*OGF{Catalan_number}(X)**2]
+      # 含义:基础情形:1:"()",递降情形:'(' recur(j) ')' recur(n-1-j)
+    [Catalan_number(n) == [n==0] + [n>0]*sum[Catalan_number(j)*Catalan_number(n-1-j) | [j:<-[0..=n-1]]]]
+Generating functions can often be given even though no explicit expression for the number of the objects is known.
+  The generating functions sometimes can be used to observe nontrivial identities,
+    for example, that the number of partitions into distinct parts equals the number of partitions into odd parts, given as relation 16.4-23 on page 348.
+An exponential generating function (EGF) for a type of object where there are E[n] objects of size n has the power series of the form:
+    [EGF{E}(X) == sum[E(n)/n!*X**n | [n:<-[0..]]]]
+]]
+[[
+O(1)
+  loopless
+  constant amortized time (or CAT)
+===
+A loopless algorithm can only exist if the amount of change between successive objects is bounded by a constant that does not depend on the object size.
+  Natural candidates for loopless algorithms are Gray codes.
+
+In many cases the cost of computing all objects is also c*B while the computation of the successor does involve a loop.
+  As an example consider incrementing in binary using arrays:
+    in half of the cases just the lowest bit changes, for half of the remaining cases just two bits change, and so on.
+    The total cost is B · (1 + 1 2(1 + 1 2(···))) = 2 · B, independent of the number of bits used.
+  So the total cost is as in the loopless case while the successor computation can be expensive in some cases.
+  Algorithms with this characteristic are said to be constant amortized time (or CAT).
+  Often CAT algorithms are faster than loopless algorithms, typically if their structure is simpler.
+===
+]]
+
+
+[[
+名义/虚设/虚拟/虚幻/虚构/假想vs真实/自然/物理/现实
+
+actual:事实上的#真实的，实际的；现行的，目前的
+nominal:名义上的
+apparent:表观的
+rated:标称的
+ostensible:表面上的
+honorary:名誉上的
+titular:挂名的
+dummy:仿造的,哑的,摆样子的#不起作用的样子货
+mock:模拟的
+bogus:伪造的#假币
+bubble:泡沫/欺诈
+fictitious:虚构的/假定的
+artificial:人工的/人造的/非自然的
+  vs:natural
+imputed:估算的
+airy:幻想的；通风的；空气的；空中的；轻快的
+visionary:幻想的、梦想的
+illusory:错觉的/幻觉的/幻影的
+unreal:非现实的
+vain:空虚的,空洞的,无谓的,徒劳的；虚荣的；空虚的
+phantom:幻觉的；幽灵的；有名无实的
+suppositional:想象的,假定的,推想的
+supposed:假定的；被信以为真的；想象上的
+hypothetical:假设的,假定的;有待证实的
+subjunctive:虚拟语气的
+pseudo-:冒充的，假的
+virtual:实质上的，事实上的；虚拟的；[物]有效的
+imaginary:想像的,假想的,虚构的
+imaginative:富于想像力的
+non-physical:无形的/假想的/非实体的
+
+===
+idealistic:理想主义的；空想的
+realistic:现实的, 实际可行的
+down-to-earth:务实的; 实际的; 现实的
+realized:实现的；已实现
+practical:明智的；实际的；实用的；事实上的
+applied:实用的；实地应用的
+present: 现在的,今日的; 当前的,目前的
+current:现在的；最近的；草写的；流通的，通用的
+physical:实体的
+substantive:实在的#独立的；真实的；持久的；本质的；名词性的；大量的；规定义务与责任的；实质的
+solid: 实心的,坚固的#固体的；结实的；可靠的；一致的；立体的
+实物:life, material, physical, natural, in kind
+]]
+[[
+#函数的参数数目:arity()@PARI-GP
+? ?arity
+  arity(C): return the arity of the closure C.
+
+? arity(arity)
+  1
+? arity(divrem)
+  3
+
+? ?divrem
+  divrem(x,y,{v}): euclidean division of x by y giving  as a 2-dimensional column vector the quotient and the remainder, with respect to v (to main variable if v is omitted).
+]]
+[[
+descending:递降，降序
+ascending:递升
+monotone increasing:单调递增
+monotone decreasing:单调递减
+strictly monotone:严格单调
+strictly monotone decreasing:严格单调递减
+strictly decreasing:严格递减
+strictly increasing:严格递增
+loose constraint:非严格约束
+non-strictly competitive two-person game:不严格竞争二人对策
+]]
+[[
+遍历:traverse,traversal
+遍历树的双重次序:double order for traversing tree
+traversable:adj. 可以横过的,可以穿过的,可否定的#能横越 [越过] 的
+traversability:可遍历性
+===
+ergodic
+英 /ə:'ɡɔdik/
+美 /ə:'ɡɔdik/
+新世纪英汉科技大词典
+遍历各态历经
+21世纪英汉汉英双向词典
+er.god.ic
+(V`gBdIk; E:5gCdik)
+<<形容词>>
+‘数、统’各态历经的
+<<名词>>
+er'go.dic'i.ty
+在线英汉－汉英词典
+adj. 遍历性的；各态历经的n. 遍历性
+]]
+[[
+object-oriented:OO:面向对象
+OOP:面向对象编程
+OOD:面向对象设计
+===
+objectionable:违禁的，有害的，讨人厌的
+objectionable
+不许可的
+<<形容词>>
+1 令人讨厌的,使人讨厌的
+an ~ manner
+令人讨厌的态度
+2 可能遭到反对 [异议] 的
+<<副词>>
+-a.bly
+计算机词汇
+讨厌的
+===
+unobjectionable
+<<形容词>>
+无可反对的; 无异议的; 无阻碍的
+adj. 不会招致反对的,不惹人讨厌的,难反对的,婉转的
+
+===
+objectionable literature
+违禁文献
+
+objectionable impurities
+有害杂质
+
+objectionable flicker
+有害闪烁
+
+objectionable constituent
+有害成分
+===
+]]
+[[
+flag
+toggle
+~/../usr/share/pari/doc/users.dvi
+/sdcard/0my_files/book/lang/pari-gp/doc/users.pdf
+Chapter 3: Functions and Operations Available in PARI and GP
+page68[68/693]
+• binary: use customary binary notation as a compact way to represent many toggles with just one integer.
+
+===
+toggle
+英 /'tɒg(ə)l/
+美 /'tɑɡl/
+新世纪英汉科技大词典
+拉钳
+曲柄杠杆机构
+曲肘
+乒乓开关
+紧线鬼爪
+紧线套环
+触发器
+反复电路
+肘节
+拨动
+21世纪英汉汉英双向词典
+tog.gle
+(`tBgl; 5tC^l)
+<<可数名词>>
+1 挂索桩,插栓
+((穿索眼而连系两物用的短木栓,如用以代替外衣的钮扣或装在表链一端的细棒等))
+2‘机械’肘节
+计算机词汇
+开关
+===
+toggle-switch
+在线英汉－汉英词典
+n. 拨动开关
+===
+flags
+在线英汉－汉英词典
+n. 标记；旗帜（flag的复数）
+
+flag
+4【同义字】
+banner 写有主义、主张等的旗子
+pennant 船舶作为标识、信号的,前端尖细长旗
+ensign 船只的国籍旗
+standard 仪式用旗、军旗、队旗
+===
+]]
+[[
+probable
+adj. 很可能的；可信的n. 很可能的事；大有希望的候选者
+
+4【同义字】
+probable 虽无法完全确定,但极有可能发生
+possible 发生的可能性较小
+likely 介于 probable 与 possible 之间
+===
+probable distribution
+可能分配
+===
+probable error
+或然误差
+几率误差
+概差
+概率误差
+概然误差
+大概误差
+近真误差
+===
+probable error of mean
+平均值的概差
+===
+probable error of standard deviation
+标准变差概差
+标准差的概差
+===
+probable maximum loss (PML)
+可能发生的最大损失额
+===
+probable maximum precipitation
+可能最大降水量
+===
+probable reserve
+probable reserves
+可能储藏量
+===
+probable value
+概然值
+概值
+可能值
+===
+===
+]]
+[[
+立方根:cube root
+平方根:square root
+方根:root
+  现代汉语词典
+  fānggēn
+  一个数的n次幂（n为大于1的整数）等于a，这个数就是a的n次方根。如16的4次方根是＋2和－2。简称根。
+===
+subtriplicate:立方根;开立方
+subduplicate:‘数’平方根的
+开方:radication
+  radicand:被开方数
+biquadratic:四乘幂
+cardinal power:‘数’基数幂
+cube:2‘数学’立方,三次幂[of]
+  The ~ of 4 is 64.
+  四的立方是六十四
+===
+开方
+现代汉语词典
+kāi fāng
+开方1（～儿）开药方。也说开方子。
+开方2
+[kāi∥fāng]求一个数的方根的运算，如81开4次方得±3。
+
+开四次方
+
+
+===
+view /sdcard/0my_files/tmp/out4py/去除冗余-欧路词典囗.二十一世纪英汉汉英双向词典.out.词典.txt
+view /sdcard/0my_files/tmp/out4py/script.欧路词典囗.试读囗囗假设简介字节数地址固定囗.新世纪英汉科技大词典.out.词典.txt
+===
+the radical sign:根号(√)
+radical sign‘数’根号((√或√))
+radicand:被开方数
+dividend:被除数
+divisor:除数
+base: b. (对数的) 底,基数
+radix:对数基数/对数根植
+index:5‘数学’(pl. in.di.ces) 指数; (对数的) 指标
+power:乘方/乘幂
+power series:‘数’幂级数
+exponential:指数 (函数)
+exponent:‘数学’指数,幂
+exponentiation:‘数’取幂
+idempotent:幂等
+nilpotent:‘数’幂零
+imaginary unit:虚数单位
+root of unity:‘数’单位根
+root mean square:‘缩’rms.‘数’均方根
+root-mean-square deviation:‘数’均方根偏差
+common logarithm:‘数’常用对数
+logarithm:‘数学’对数
+  logarithmic:adj.对数的
+  对数函数:1.logarithmic function
+  反对数/逆对数:1.[Mathematics] antilog; antilogarithm
+  antilogarithm:真数
+    [底数**对数 == 真数]
+    [log_(底数;真数) == 对数]
+  底数:base/radix
+  base of a logarithm:对数的底
+  base of logarithmic function:对数函数的底
+  characteristic of a logarithm:对数的首数
+  mantissa of logarithm:对数的尾数#假数
+mantissa:‘数’假数 ((对数之小数部份))
+首数:1.[Mathematics] (of a logarithm) characteristic
+ln:Napierian logarithm:亦作Naperian logarithm.‘数’自然对数
+reciprocal square root:反平方根
+expansion in powers:按幂展开
+expansion in series:展开成级数
+expansion into continued fraction:连分式展开式
+expansion into powerseries:幂级数展开
+===
+nonillion
+nonillionth
+octillion
+octillionth
+===
+,natural logarithm
+:自然对数
+,napierian base
+:自然对数底
+,Napierian base (自然对数的底)
+:纳氏底
+,Napierian logarithm
+:纳氏对数<br />自然对数
+,Napierian logarithms (自然对数)
+:纳皮尔对数
+,exponent number
+:阶数
+,exponent overflow
+:阶码溢出<br />阶上溢<br />阶溢出
+,exponent overflow exception
+:阶上溢异常
+,exponent part
+:阶部分<br />指数部分
+,exponent part format
+:指数部分格式<br />阶部分格式
+,exponent part of number
+:数的阶部分
+,exponent picture character
+:指数图像字符
+,exponent sign
+:指数符号<br />幂指数
+,exponent specifier
+:指数区分符
+,exponent uncorrelation
+:不相关指数
+===
+对数
+现代汉语词典
+duìshù
+如果a^k＝b（a＞o，a≠1），k就叫做以a为底的b的对数，记作log_(a;b)＝k。其中a叫做底数，简称底；b叫做真数。
+===
+nth
+(ZnW; enW)
+<<形容词>>
+‘数学’第 n 号的,n 次的,n 倍的
+to the nth degree [power]
+(1) 至 n 次 [乘幂] (2) 无限地; 到极点,极度地
+===
+power
+9(C)‘数学’乘方,乘幂
+raise to the second [third] ~
+二[三]次乘方
+===
+radix
+英 /'rædɪks/
+美 /'redɪks/
+21世纪英汉汉英双向词典
+ra.dix
+(`redIks; 5reidiks)
+<<可数名词>>
+(pl. ~.es,-di.ces[`redsiz; `reidisi:z])
+1‘植物’根 (root)
+2‘数学’ (对数的) 根值; (统计的) 基数
+计算机词汇
+基数
+在线英汉－汉英词典
+n. 基数；根
+===
+radicand
+英 /'rædɪkænd/
+美 /'rædə,kænd/
+新世纪英汉科技大词典
+被开方数
+21世纪英汉汉英双向词典
+rad.i.cand
+(`rAdE9kAnd; 5rAdikAnd)
+<<名词>>
+‘数’被开方数
+3 is the ~ of √3
+3的被开方数以√3表示
+  #bug:应当是:3是√3的被开方数
+===
+radical
+英 /'rædɪk(ə)l/
+美 /'rædɪkl/
+21世纪英汉汉英双向词典
+rad.i.cal
+(`rAdIkl; 5rAdikl)`14`《源自拉丁文“根的”的意思》
+<<形容词>>
+(more ~; most ~)
+1 a. <人、思想等> 激进的,极端的,革命性的
+(
+→ progressive 2 b【同义字】)
+a ~ party
+激进党
+b. (无比较级、最高级) [常R~] 激进党的
+2 a. 根本的,基本的
+a ~ principle
+基本原理
+b. <改革、治疗等> 根治的; 根本的,彻底的
+a ~ cure
+彻底的治疗,根治
+a ~ reform
+彻底的改革
+3 (无比较级、最高级)‘数学’根的
+the ~ sign
+根号((√))
+a ~ expression
+无理式
+4 (无比较级、最高级)‘化学’基的
+5(无比较级、最高级)‘语言’语根的
+a ~ word
+语根字
+<<可数名词>>
+1 a. 偏激论者,激进分子
+b. [常 R~]激进党员
+the ~s [Radicals]
+激进派
+2‘数学’根数; 根号; 根式
+3‘化学’基
+4‘语言’
+a. 语根
+b. (中国字的) 偏旁; 部首
+<<副词>>
+~.ly[-kl; -kli]
+===
+===
+===
+===
+]]
+[[
+nibble vs gobble
+===
+indirect
+direct:直接/直行的/直进
+straight:直
+straightforward:直接了当:adj. (人或其态度)正直的, 坦率的; 老实的简单的; 易懂的
+roundabout:拐弯抹角:n. 绕行路线, 绕道, 环状交叉路 adj. 绕道的, 不直截了当的
+oblique:斜/倾斜/歪斜:间接的,迂回的,拐弯抹角的
+progressive:渐进
+nibble:蚕食
+gobble:鲸吞:狼吞虎咽
+casual:马虎/随便、临时/偶发
+brief:简要
+easy:容易
+simple:单纯
+simplified:简化
+unadorned:adj. 朴素的;未经装饰的不加装饰的
+plain:简易/朴素/无饰
+native:本地/土著/土产、天然
+fancy:奇想、精饰、花式/花哨、精心特制
+brute force:蛮力
+pragmatic: adj. 务实的;实事求是的;注重实效的 实用主义的,实用主义观点的
+]]
+[[
+
+snapshot: n. 瞬像/快照/快摄照片 vi,vt. 抽点打印,快镜拍摄
+
+<<名词>>
+快照
+take a ~ of
+﹍ 拍…的快照
+<<动词>>
+(snapshotted,-shotting,-shots)
+<<及物动词>>
+为...拍快照
+<<不及物动词>>
+拍快照
+]]
+[[
+syllogism:n. 推论；三段论
+英 /'sɪlə,dʒɪz(ə)m/
+美 /'sɪlədʒɪzəm/
+21世纪英汉汉英双向词典
+syl.lo.gism
+(`sIlE9dVIzEm; 5silEdVizEm)
+<<可数名词>>
+1‘逻辑’三段论法
+((由大前题 (major premise) ,小前提 (minor premise) 及结论 (conclusion) 所构成的推论))
+2 诡辩
+]]
+[[
+#pl:data
+datum:n. 资料；数据；[数]已知数
+英 /'deɪtəm/
+美 /'detəm/
+新世纪英汉科技大词典
+论据
+资料
+已知数
+基准
+基准线
+测站零点
+]]
+[[
+假定的:assumed/hypothetical
+暂行的:tentative
+===
+假设语气:[Grammar] the subjunctive mood
+假设标准:tentative standard
+假设数据:tentation data
+假设三段论:hypothetical syllogism
+假设参考电路:hypothetical reference circuit
+假设测算法:hypothesis test approach (to audit)
+假定成本:assumed cost; hypothetical cost
+假定利息:assumed interest; hypothetical interest
+假设点:postulated point
+假设检验:verification of assumptions
+假设条件: assumed condition,postulated condition
+假定位置:assumed position,chosen position
+假设符号:conventional letter
+假设零位面:datum plane #基准...
+假设施:dummy # 假的设施
+假设载荷法:method of fictitious loads
+假定负债:assumed liability,nominal liability#名义...
+假定继承人:a heir presumptive #??? a presumptive heir
+假定平行线:phantom horizon
+
+===
+假定:
+  assumption
+  postulation
+  presumption
+  supposition
+  fiction
+
+===
+===
+phantom:n. 幽灵；幻影；虚位adj. 幻觉的；幽灵的；有名无实的
+===
+presumptive
+英 /prɪ'zʌm(p)tɪv/
+美 /pri'zʌmptɪv/
+21世纪英汉汉英双向词典
+pre.sump.tive
+(prI`zQmptIv; pri5zQmptiv)`14`《presume 1 的形容词》
+<<形容词>>
+假定的,根据推断的; 可据以推定的
+~ evidence [proof]
+‘法律’推定证据
+在线英汉－汉英词典
+adj. 假定的
+===
+hypothesize:vi,vt:假设,假定,猜测
+===
+hypothesis:n. 假说, 假设, 前提
+英 /haɪˈpɒθəsɪs/
+美 /haɪ'pɑθəsɪs/
+hy.poth.e.sis
+(haI`pBWEsIs; hai5pCWisis)
+<<可数名词>>
+(pl. -e.ses[-siz; -si:z])
+假说,假定; 前提
+===
+hypothetical:adj. 假设的,假定的;有待证实的
+英 /ˌhaɪpə'θetɪk(ə)l/
+美 /ˌhaɪpə'θɛtɪkl/
+hy.po.thet.i.cal
+<<形容词>>
+1 假设 [假想] 的
+2‘逻辑’假定的; 假说的
+<<副词>>
+~.ly[-k; -kli]
+===
+tentative:adj. 试探性的; 试验的; 尝试性的
+英 /'tentətɪv/
+美 /'tɛntətɪv/
+新世纪英汉科技大词典
+假定的
+初步
+暂定
+暂定的
+暂行的
+21世纪英汉汉英双向词典
+ten.ta.tive
+(`tZntEtIv; 5tentEtiv)`14`《源自拉丁文“试”的意思》
+<<形容词>>
+1 试验性质的,暂时的
+a ~ method
+试验性的方法
+a ~ plan
+试验性的 [暂时的] 计画
+a ~ theory
+假说,假定的理论
+2 犹豫的; 无把握的
+a ~ smile
+犹豫 (似) 的微笑
+<<副词>>
+~.ly
+<<名词>>
+~.ness
+===
+#postulated
+postulate
+英 /'pɒstjʊleɪt/
+美 /'pɑstʃəlet/
+新世纪英汉科技大词典
+公设
+21世纪英汉汉英双向词典
+pos.tu.late
+(`pBstFE9let; 5pCstjuleit)`14`《源自拉丁文“要求”的意思》
+<<及物动词>>
+1 a. (认为自明之理而) 假定…; (作为必要条件而) 要求
+~ the in herent goodness of man
+假定人性本善
+b. 假定<…事>
+The author ~s that the sun will die after 100 million years.
+那位作者假定一亿年后太阳会消失 [能量会用尽]
+2 要求
+the claims ~d
+要求事项
+(-lIt, -9let; -lEt, -leit)
+<<可数名词>>
+1 假定
+2 先决 [必要] 条件
+3‘逻辑.数学’公理,基本原理
+===
+
+conventional:adj. 依照惯例的，遵循习俗的；老一套的，习惯的；（武器等）常规的，非核的
+英 /kənˈvenʃən(ə)l/
+美 /kənˈvenʃənl/
+新世纪英汉科技大词典
+常规的
+传统的
+惯用的
+21世纪英汉汉英双向词典
+con.ven.tion.al
+(kEn`vZnFEnl; kEn5venFEnl)`14`《convention 的形容词》
+<<形容词>>
+(more ~; most ~)
+1 依照 [符合] 社会习惯的,传统的; 因袭的
+~ morality
+传统的道德
+2 老套的,千篇一律的,
+缺乏独创性 [个性] 的; 陈腐的
+a ~ melodrama
+老套的通俗剧
+~ phrases
+常套语
+exchange ~ greetings
+互相客套地打招呼
+3 约定的,协定 (上) 的
+a ~ tariff
+协定税率[费用]
+4 (无比较级、最高级)
+a. <战争等>不用核子武器的;
+普通的,习用的,传统的
+~ weapons
+传统性武器
+a ~ warhead (
+对核子弹头而言的) 一般弹头
+b. 不使用原子能的
+a ~ power plant
+传统型发电厂
+5‘艺术’形式化了的,传统的
+<<副词>>
+~.ly
+(-FEnlI; -FEnEli
+===
+#assumptions
+assumption
+英 /ə'sʌm(p)ʃ(ə)n/
+美 /ə'sʌmpʃən/
+新世纪英汉科技大词典
+假定
+假设
+假说
+21世纪英汉汉英双向词典
+as.sump.tion
+(E`sQmpFEn; E5sQmpFn)`14`《assume 的名词》
+<<名词>>
+1 (C)
+a. (无确实根据之) 认定,断定; 假定,假想,臆说
+a mere ~
+仅属臆说
+b. <…云之> 假说,假定
+His ~ that he would win proved wrong.
+他假定自己会赢,结果错了
+on the ~ that
+﹍ 在…的假定之下,假想…
+2 (任务、责任等之) 承担,担负,担任,就任
+the ~ of office
+就任
+3 僭取 [权利、权力] ,霸占,篡夺[of]
+his ~ of power
+他的僭权 [揽权]
+4 (U)僭越,傲慢,越分
+5[the A~]‘天主教’圣母升天; 圣母升天日
+((八月十五日))
+===
+fictitious:adj. 假的, 虚构的, 编造的, 假设的, 假装的
+英 /fɪk'tɪʃəs/
+美 /fɪk'tɪʃəs/
+21世纪英汉汉英双向词典
+fic.ti.tious
+(fIk`tIFEs; fik5tiFEs)
+<<形容词>>
+1 虚构的,想像的; 创作的,小说的
+a ~ character
+虚构的人物
+a ~ narrative
+虚构的故事
+2 假的; 虚伪的
+under a ~ name
+用假名
+3‘法律’拟制的,假定的
+a ~ person
+‘法律’法人
+~ transactions
+买空卖空
+<<副词>>
+~.ly
+<<名词>>
+~.ness
+===
+===
+]]
+[[
+疏化/稀释/疏散:
+thin
+disperse
+dilute
+===
+disperse:vt. 使散开；分散；传播vi. 分散
+英 /dɪ'spɜːs/
+美 /dɪ'spɝs/
+新世纪英汉科技大词典
+分散
+弥散的
+散
+切碎
+喷粉
+粉碎
+21世纪英汉汉英双向词典
+dis.perse
+(dI`spVs; di5spE:s)
+<<及物动词>>
+1 a. 把<人们>驱散,使…散开
+The police ~d the demonstrators with tear gas.
+警方用催泪瓦斯驱散示威者
+b. <风>吹散 <云、雾等>
+c. 散播,散布 <种子、疾病、知识等>
+2 把 <军队、警力等> 分散配置
+3‘光学’使<光>分散
+<<不及物动词>>
+1 <群众等>散开,分散
+The rebels ~d at the sight of the troops.
+反叛者一看到军队就四散了
+2 <云、雾等> 消散
+
+
+===
+thinner
+英 /'θɪnə/
+美 /ˈθɪnɚ/
+新世纪英汉科技大词典
+冲淡剂
+剂化
+21世纪英汉汉英双向词典
+thin.ner
+<<名词>>
+1 (U) (油漆等的) 溶剂,稀释剂
+2 (C)使薄 [细,稀疏] 的人,间苗 [疏开树苗] 的人,除草人
+计算机词汇
+较细的
+在线英汉－汉英词典
+n. 稀释剂，冲淡剂adj. 薄的；细的；瘦的
+===
+thinning
+英 /'θɪnɪŋ/
+美 /θɪn/
+新世纪英汉科技大词典
+稀释
+细化
+疏伐木
+疏枝法
+在线英汉－汉英词典
+n. 稀释（thin的现在分词）
+===
+thin:adj. 薄的；瘦的；稀薄的；微弱的vt. 使淡；使瘦；使稀疏
+<<及物动词>>
+(thinned; thin.ning)
+1 a. 使…薄 [细] ; 稀释,使…稀疏 [稀薄] <down>
+~ down sauce [paint]
+使调味汁 [油漆] 稀薄
+b. 稀释…,使…稀薄[with]
+This wine has been thinned with water.
+这酒加水稀释过
+2 使…稀疏<out>
+~ out seedlings
+间苗,疏开树苗
+3 使…细; 使…瘦; 使…微弱
+<<不及物动词>>
+变薄 [细] ; 变稀疏 [稀薄] ; 变瘦 <down,off,out>
+His hair is thinning.
+他的头发渐渐稀少
+The fog is beginning to ~.
+雾开始消散了
+The crowd gradually thinned off.
+人群逐渐散开了
+===
+【同义字】
+thin 瘦,有时表示瘦得不健康的意思
+slim 修长,苗条
+slender 修长,苗条
+lean 肌肉结实而没有脂肪
+slight 瘦弱
+
+===
+dilute:vt. 稀释, 冲淡adj. 稀释的, 冲淡的
+英 /daɪ'l(j)uːt/
+美 /dɪ'ljʊt/
+21世纪英汉汉英双向词典
+di.lute
+(dI`lut, daI-; dai5lju:t, di-)
+<<及物动词>>
+1 a. (加水等) 稀释,冲淡<液体>
+b. 稀释<液体>[with]
+~ whiskey with water
+以水稀释威士忌酒
+2 减低 <效力>
+<<形容词>>
+稀释的,冲淡的
+===
+===
+===
+]]
+[[
+===
+累积:accumulate
+stored
+integrate:合并;并入#积分
+integrated: adj. 综合的；整合的；融合的
+aggregate: n.〈正〉数, 总计vt. 总计达…vt. & vi. (使)聚集
+===
+累计:
+in total
+总共,一共,合计
+total:adj. 全部的；整个的；完全的vt. 总数达
+<<及物动词>>
+(to.taled,((英))-talled; to.tal.ing,((英))-tal.ling)
+1 将…总计 [合计] 起来,将…加起来<up>
+He ~ed that column of figures.
+他合计了那一栏的数字
+2 总计,共计
+The casualties ~ed 150.
+死伤者共计一百五十人
+<<不及物动词>>
+总计 [合计] [为…]<up>[to]
+The figures ~ up to 388.
+这些数字总计为三百八十八
+
+<<可数名词>>
+总计,合计,总额
+(→ sum【同义字】)
+a ~ of $10, 000
+总额一万美元
+
+<<形容词>>
+(无比较级、最高级)
+1 全体的,总计的
+(←→ partial)
+(→ whole【同义字】)
+the ~ cost
+全部费用
+the ~ output
+总生产额
+the sum ~
+总计,合计
+2 完全的,绝对的
+a ~ abstainer
+完全戒酒者
+~ darkness
+一片漆黑 [黑暗]
+a ~ eclipse(
+日、月蚀的) 全蚀
+l'm in ~ ignorance of the affair
+这件事我一无所知
+The project was a ~ failure.
+那计画完全失败
+3 拿出国家整体力量的,总体的
+~ war [warfare]
+总体战
+
+===
+融 汇 合 并 积 累 聚 集 堆 叠 联 结
+accumulate:积聚,储蓄
+amass:积聚
+mass:聚集[军队]
+bank:堆积#银行
+pile:堆积，堆叠
+fold:折叠
+aggregate: 聚集#成群
+congregate:群集
+merge:合并
+integrate:合并#集成
+incorporate:合并/并入/编入
+unite:合并
+amalgamate:合并,联合<公司等>#混合,融和 <不同种族、思想等>
+consolidate:巩固强化合并
+absorb:吸收/采纳/吸收吞并
+mix:混合
+blend:混合
+fuse:融合
+connect:连接;连结
+join:加入,结合
+conjugate:‘生物’ <单细胞生物等> 接合,结合；‘植物’<叶>成对的,对生的#共轭#‘文法’同字源的,同字根的
+cohere:vi.黏合:紧密地结合; 黏著,附著#相干# <文体、逻辑等> 有条理,前后连贯
+  coherent:adj.
+  cohesion:n.
+combine:联合，结合；化合#组合
+companion:同伴
+coupling:耦合
+couple:结合，结婚
+associative: adj. 联合的,联想的,结合的
+associate:联系
+tie:捆绑
+bind:捆绑
+bond:束缚，黏合，担保
+converge:辐合#收敛
+assemble:汇编
+collect:搜集/采集
+gather:聚集/收拾/收集 #vs:scatter:散布/散播
+compile:编撰/编制
+confluence:合流/汇流
+concourse:合流/汇流
+efflux:流出
+influx:流入
+flock:群集
+lump:总括/拢集
+mesh:相啮合
+compose:组成/合成
+compound:混成/混合/合成
+synthesize:‘化学’合成
+polymerize:‘化学’聚合
+concentrate:vt. & vi. 专心于; 注意集中, 聚集vt. 浓缩
+ally:结盟/联盟
+league:结盟/联盟
+federate:adj. 同盟的；联邦制度下的；联合的 vt. 使结成同盟；使结成联邦
+===
+【同义字】
+collect 有目的地选择收集
+gather 把分散的东西集中在一起
+===
+【同义字】
+unite 结合两个以上,使成为一个新东西
+join 使两个以上的东西直接结合或连结起来
+connect 各自保持独立,用手段或工具使之结合
+===
+【同义字】
+mix 强调混成一团或形成混合物
+mingle 使两个以上可分离或区别的要素混合
+merge 各要素混合在整体中,将某物吸收并入它物
+blend 混合二种以上不同物质以制成成品
+===
+【同义字】
+bend 用力使厚纸、板、金属、手臂等较硬之物弯曲
+fold 摺叠或弯曲纸、布之类的软物
+curve 使成曲线状
+twist 将很难弯曲的东西用力扭歪
+]]
+[[
+转折点/突变/脉冲/瞬变
+transition
+pulse
+turning point
+turn
+change,alter
+saltation
+mutate,mutation
+discontinuity
+accident,incident,event
+pivotal point
+]]
+[[
+方式/方法
+mode:款式#n. 方式；模式；风格；时尚
+fashion:式样/风格#n. 样式；时尚；时装；时髦人物vt. 做成…的形状；使用；改变
+method:方法/手段#n. 方法；条理；[计]类函数adj. 使用体验派表演方法的
+manner:做法#n. 方式；习惯；种类；规矩；风俗
+system:a. (有系统的) 方式,方法;b. 分类 (法)#n. 系统；制度，体制；方法
+way
+===
+【同义字】
+manner 习惯性或特别的态度或说话方式
+bearing 姿态、习惯、癖、姿势、步行等的特徵
+demeanor 表示人的态度或特性的身体动作
+===
+【同义字】
+method (教授法、研究等的有条理、有系统的) 方法
+way 做法、方法
+manner 个人的或独特的做法、方法
+===
+]]
+[[
+后续
+subsequent
+  sequential
+follow-up
+follow-on
+succeeding
+successive
+trailer
+
+后继者/继任者:successor
+  先驱/先辈/前身/前任:predecessor
+]]
+[[
+回顾/重审/复习/复核/复验
+retrace:vt. 追溯；折回；重描
+review:n. 评论；回顾；复习；检讨；检阅vt. 回顾；复审；检查
+retrospect:n. 回顾，追溯 v. 回顾，追溯；回想，追忆
+  <--->prospect:n. 希望；前景；景色v. 勘探；寻找
+  retrospective:adj. 回顾的；追溯的；向后看的 n. 作品回顾展出
+  prospective:adj. 预期的; 未来的; 可能的,有希望的
+look back
+turn back
+
+recheck:复验
+
+revise: vt. 校订；修正；复习vi. 修订；校订；复习功课
+]]
+[[
+危险标志
+danger sign
+hazard marker
+
+危险标记
+danger sign
+risk markings
+
+危险标灯
+hazard marking light
+
+危险标示牌
+warning board
+
+警告标志
+warning sign
+caution sign
+
+警戒标志
+caution notice
+
+警戒灯
+alarm light
+
+陷阱:trap
 ]]
 
 

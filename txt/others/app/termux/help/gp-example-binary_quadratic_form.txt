@@ -1,0 +1,330 @@
+
+e others/app/termux/help/gp-example-binary_quadratic_form.txt
+[[
+@20260727
+===
+usage:Qfb():
+  A=111
+  B=222
+  C=333
+  D=B^2-4*A*C
+  bqf=Qfb(A,B,C)
+  D==bqf.disc
+  A==component(bqf,1)
+  B==component(bqf,2)
+  C==component(bqf,3)
+  D==component(bqf,4)
+
+===
+usage:Mod():
+  u=5555
+  M=99999
+  u6M=Mod(u,M)
+  M==u6M.mod
+  u==lift(u6M)
+  M==component(u6M,1)
+  u==component(u6M,2)
+
+  0==issquare(u6M)
+
+
+  1==issquare(Mod(7,9))
+    err{non-prime}:sqrt(Mod(7,9))
+  1==issquare(Mod(3,13))
+  4==sqrt(Mod(3,13))
+  Mod(4,13)==sqrt(Mod(3,13))
+
+===
+  #no:Jacobi_symbol
+  Jacobi_symbol(M,u)={
+    if(1==gcd(M,u),if(issquare(Mod(u,M)),+1,-1),0)
+  }
+  -1==Jacobi_symbol(7,6)
+  +1==Jacobi_symbol(7,2)
+
+===
+]]
+
+
+[[
+整数分解:群规模小因子:类似 减一法
+===
+@20260727
+copy to:
+    e others/app/termux/help/gp-example-binary_quadratic_form.txt
+copy from:
+    view ../../python3_src/seed/math/BinaryQuadraticForm.py
+===
+Qfb__x__smooth_group_order_method:here
+
+view ../../python3_src/nn_ns/math_nn/numbers/b000003-class_number_of_the_quadratic_order_of_discriminant_(-4n)__fst_20000.txt
+view ../../python3_src/nn_ns/math_nn/numbers/b000924-class_number_of_QQ(sqrt(n_th_neg_squarefree))__fst_10000.txt
+
+===
+[n%2==0][n>0]:
+    [D := [n%4==3]*-n + [n%4==1]*-4*n]
+    [B**2-4*A*C == D]
+    [-B**2+4*A*C == -D]
+    [p::prime][p%2==1][A%p==0]:
+        [D%p == (B**2-4*A*C)%p == B**2%p]
+        [Jacobi_symbol(p;D)==+1]
+        [B%p <- sqrts_mod_(p;D)]
+        [B%2 == B**2%2 == (D+4*A*C)%2 == D%2]
+        [B%2 == D%2]
+    [p::prime][p%2==1][Jacobi_symbol(p;D)==+1][A:=p]:
+        [xB6p := sqrts_mod_(p;D)[0]]
+        [B := B6p if B6p%2 == D%2 else (p-B6p)]
+        [C:=(B**2-D)///(4*A)]
+    [n%4==3]:
+        [-B**2+4*A*C == -D == n]
+        [4*A*C == n+B**2]
+        [B%2 == 1]
+        [B:=1][A:=1][C:=(1+n)///4] => trivial_factorization#class_group{D}.one
+        [B:=3][A:=1][C:=(9+n)///4] => ???
+    [n%4==1]:
+        [-B**2+4*A*C == -D == 4*n]
+        [4*A*C == 4*n+B**2]
+        [B%2 == 0]
+        [A*C == n+(B///2)**2]
+        [B:=0][A:=1][C:=n] => trivial_factorization#class_group{D}.one
+        [B:=2][A:=2][C:=(n+1)///2] => trivial_factorization
+        [B:=2][A:=1][C:=n+1] => ???
+
+    factor n:
+        [qfb :<- class_group{D}][h(D) == (1+2*k)*2**ez][gcd(e,h(D)) == (1+2*k)][g:=(qfb**e)][[g==class_group{D}.1]or[?[j:<-[0..<ez]] -> [is_ambiguous_form_(g**2**j)]]]
+<<==:
+binary quadratic form
+[D<0][D%4 <= 1]:
+  [h(D) =[def]= len(class_group{D})]
+  [h(D) < sqrt(-D)*ln(-D)]
+
+
+===
+page248[259/604]
+5.6.4 Ambiguous forms and factorization
+[D<0][D%4 <= 1]:
+  [class_group{D}.1 == [D%4==0](1,0,-D/4) + [D%4==1](1,1,(1-D)/4)]
+  [is_ambiguous_form_(D;qfb) =[def]= [is_reduced_form_(D;qfb)][qfb**2 == 1]]
+    #sqrt4one
+        #证明冫二二型歧型平方必为幺元:goto
+  [class_group{D}.ambiguous_form <- (a,0,c)|(a,a,c)|(a,b,a)]
+#Lemma 5.6.8.Suppose D is a negative discriminant....
+    # 注意下面:[u*v==-D///4] | [u*v==-D] 即 整数分解
+    # [n%2==1] => [D == -n if n%4==3 else -4*n]
+    [[D<0][D%4 <= 1] -> [D%4==0] -> [class_group{D}.ambiguous_form_set == ({(u,0,v) | [[u,v::uint][0 < u <= v][u*v==-D///4][gcd(u,v)==1]]} \-/ {((u+v)///2,v-u,(u+v)///2) | [[u,v::uint][u < v <= 3*u][u*v==-D///4][gcd(u,v)<=2][(u+v)%4 == 2]]} \-/ {(2*u,2*u,(u+v)///2) | [[u,v::uint][0 < 3*u < v][u*v==-D///4][gcd(u,v)<=2][(u+v)%4 == 2]]})]]
+        # [(u+v)%4 == 2]
+        # [{u,v}%4 == {1}|{3}|{0,2}]
+        # [(u*v)%4 == 1|0]
+    [[D<0][D%4 <= 1] -> [D%4==1] -> [class_group{D}.ambiguous_form_set == ({((u+v)///4,(v-u)///2,(u+v)///4) | [[u,v::uint][u <= v <= 3*u][u*v==-D][gcd(u,v)==1]]} \-/ {(u,u,(u+v)///4) | [[u,v::uint][0 < 3*u <= v][u*v==-D][gcd(u,v)==1]]})]]
+        # [(u+v)%4 == 0]
+        # [(u*v)%4 == 3]
+        # [{u,v}%4 == {1,3}]
+
+
+
+===
+TODO:
+binary quadratic form
+  [D == [n%4==3]*-n + [n%4==1]*-4*n]
+  [h(D) < sqrt(-D)*ln(-D)]
+  [bqf**odd then **2 to found ambiguous forms maybe yield nontrivial factorizations]
+  [[bqf**2 == 1] <-> [bqf is ambiguous form]]
+
+
+
+===
+? qfbclassno(1-2^67)
+5788240250
+? default('output,0)
+? factorint(5788240250)~
+[2,5,13,149,11953;1,3,1,1,1]
+
+===fail:1:
+B=1
+A=2^5
+C=2^60
+D=B^2-4*A*C
+D==1-2^67
+    1
+bqf=Qfb(A,B,C)
+    Qfb(32,1,1152921504606846976)
+bqf==qfbred(bqf)
+    1
+x=qfbpow(bqf,5788240250/2)
+    Qfb(1,1,36893488147419103232)
+        #one
+x==qfbpow(x,2)
+    1
+
+===ok:2:
+B=3
+AC=(B^2-D)/4
+    36893488147419103234
+D==B^2-4*AC
+    1
+factorint(36893488147419103234)~
+    [2,274177,67280421310721;1,1,1]
+A=274177
+C=AC/A
+    134560842621442
+D==B^2-4*A*C
+    1
+x=qfbpow(Qfb(A,B,C),5788240250/2)
+    Qfb(193707721,193707721,190507991252)
+        (u,u,(u+v)///4)
+        [u*v==-D]
+x==qfbred(x)
+    1
+qfbpow(x,2)
+    Qfb(1,1,36893488147419103232)
+        #one
+
+
+
+
+===fail:3:
+A=2
+C=AC/A
+    18446744073709551617
+D==B^2-4*A*C
+    1
+x=qfbpow(Qfb(A,B,C),5788240250/2)
+    Qfb(1,1,36893488147419103232)
+        #one
+
+
+===::4
+issquare(Mod(2,7))
+    1
+issquare(Mod(D,7))
+    0
+issquare(Mod(D,11))
+    1
+sqrt(Mod(D,11))
+    Mod(4,11)
+D%11
+    5
+4^2%11
+    5
+
+
+A=11
+B=11-4
+    7
+AC=(B^2-D)/4
+    36893488147419103244
+C=AC/A
+    3353953467947191204
+D==B^2-4*A*C
+    1
+x=qfbpow(Qfb(A,B,C),5788240250/2)
+    Qfb(1,1,36893488147419103232)
+        #one
+
+===
+D2A_ge_(D,min4A)={
+    forprime(A=min4A
+    ,
+    , if(issquare(Mod(D,A)),return(A),)
+    )
+}
+
+A=D2A_ge_(D,563889)
+    563947
+issquare(Mod(D,A))
+    1
+rt=sqrt(Mod(D,A))
+    Mod(253301,563947)
+A==rt.mod
+    1
+B=lift(rt)
+    253301
+if(B%2,,B=A-B)
+if(B%2,,error("000"))
+AC=(B^2-D)/4
+    36893488163459452382
+C=AC/A
+    65420133742106
+D==B^2-4*A*C
+    1
+x=qfbpow(Qfb(A,B,C),5788240250/2)
+    Qfb(193707721,193707721,190507991252)
+
+
+===
+local() --> my()
+===
+assert(b, msg="000")={
+    if(b,,error(msg))
+}
+n2D_(n)={
+    ;my(D)
+    ;assert(n>0)
+    ;assert(n%2==1)
+    ;D=if(n%4==3,-n,-n*4)
+    ;return(D)
+}
+
+D2Qfb7A_ge_(D,min4A)={
+    ;my(A,rt,B,AC,C,bqf)
+    ;A=D2A_ge_(D,min4A)
+    ;assert(issquare(Mod(D,A)))
+    ;rt=sqrt(Mod(D,A))
+    ;B=lift(rt)
+    ;\\ bug:if(B%2,,B=A-B)
+    ;\\     fixed@20260729
+    ;if(B%2==D%2,,B=A-B)
+    ;assert(B%2==D%2,"000")
+    ;AC=(B^2-D)/4
+    ;C=AC/A
+    ;assert(D==B^2-4*A*C)
+    ;bqf=Qfb(A,B,C)
+    ;return(bqf)
+}
+D2QfbPow7A_ge_(D,exp,min4A)={
+    ;my(bqf)
+    ;bqf=D2Qfb7A_ge_(D,min4A)
+    ;return(qfbpow(bqf,exp))
+}
+
+n2QfbPow7A_ge_(n,exp,min4A)={
+    ;my(D,bqf)
+    ;D=n2D_(n)
+    ;bqf=D2Qfb7A_ge_(D,min4A)
+    ;return(qfbpow(bqf,exp))
+}
+
+
+D2QfbPow7A_ge_(D,5788240250/2,563889)
+    Qfb(193707721,193707721,190507991252)
+
+D2QfbPow7A_ge_(D,5788240250/2,77777)
+    Qfb(193707721,193707721,190507991252)
+
+n2QfbPow7A_ge_(-1+2^67,5788240250/2,77777)
+    Qfb(193707721,193707721,190507991252)
+
+n2QfbPow7A_ge_(-1+2^67,5788240250/2,88888)
+    Qfb(1,1,36893488147419103232)
+        #one
+n2QfbPow7A_ge_(-1+2^67,5788240250/2,66666)
+    Qfb(193707721,193707721,190507991252)
+? x=%
+    Qfb(193707721,193707721,190507991252)
+? component(x,1)
+193707721
+? component(x,2)
+193707721
+? component(x,3)
+190507991252
+? component(x,4)
+-147573952589676412927
+? x.disc
+-147573952589676412927
+? x
+Qfb(193707721,193707721,190507991252)
+
+
+===
+]]
+

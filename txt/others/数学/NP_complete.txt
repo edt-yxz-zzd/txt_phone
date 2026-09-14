@@ -1,0 +1,153 @@
+
+e others/数学/NP_complete.txt
+[[
+copy from:
+    view ../lots/NOTE/abbr/software.txt
+===
+'/sdcard/0my_files/book/cryptography/Cryptography. Theory and practice by Paterson, Maura B. Stinson, Douglas Robert (z-lib.org).pdf'
+===
+#buggy:
+The NP-complete problems comprise a large class of decision problems (i.e., problems that have a yes/no answer) that are believed to be impossible to solve in polynomial time.
+    The NP-hard problems are a class of problems, which may or may not be decision problems, that are at least as difficult to solve as the NP-complete problems.
+bug:上面与下面完全不同！
+    某个NP问题 的 输出取值范围 如果 固定，则该问题必然是P
+    "decision problems"显然不行！
+
+
+===
+'/sdcard/0my_files/book/cryptography/Serious Cryptography A Practical Introduction to Modern Encryption by Jean-Philippe Aumasson (z-lib.org)(2).pdf'
+===
+
+complexity classes
+
+space complexity
+time complexity
+[TIME(f(n)) =[def]= {problem | [problem can be solved in time O(f(n))]}]
+    the class of problems solvable in time O(f(n))
+[SPACE(f(n)) =[def]= {problem | [problem can be solved using O(f(n)) bits of memory]}]
+    the class of problems solvable using of order of f(n) bits of memory
+
+[P =[def]= union{TIME(n**k) | [k:<-[1..]]}]
+    P - polynomial time
+[PSPACE =[def]= union{SPACE(n**k) | [k:<-[1..]]}]
+[[k:<-[1..]] -> [TIME(n**k) |<=| SPACE(n**k)]]
+[P |<=| PSPACE]
+
+[verifier_set{problem} =[def]= {verify | [verify :: problem -> solution{problem} -> bool][@[setting4instance :: problem] -> @[potential_solution :: solution{problem}] -> [verify(setting4instance;potential_solution) == is_actual_solution_(setting4instance;potential_solution)]]}]
+[NP =[def]= {problem | [?[verify :<- verifier_set{problem}] -> [verify <- P]]}]
+    NP - nondeterministic polynomial time
+    NP is the class of problems for which a solution can be verified in polynomial time -- that is, efficiently -- even though the solution may be hard to find.
+        By "verified", I mean that given a potential solution, you can run some polynomial-time algorithm that will verify whether you’ve found an actual solution.
+example of a problem not in NP is that of verifying the "absence" of a solution to a problem.
+    Verifying that a solution is correct boils down to computing some algorithm with the candidate solution as an input and then checking the return value.
+        However, to verify that "no" solution exists, you may need to go through all possible inputs.
+        And if there’s an exponential number of inputs, you won’t be able to efficiently prove that no solution exists.
+    The absence of a solution is hard to show for the hardest problems in the class NP -- the so-called NP-complete problems, which we’ll discuss next.
+
+NP-Complete Problems
+    The hardest problems in the class NP are called NP-complete;
+        we don’t know how to solve these problems in polynomial time.
+    And as complexity theorists discovered in the 1970s when they developed the theory of NP-completeness, NP’s hardest problems are all equally hard.
+        This was proven by showing that any efficient solution to any of the NP-complete problems can be turned into an efficient solution for any of the other NP-complete problems.
+        In other words, if you can solve any NP-complete problem efficiently, you can solve all of them, as well as all problems in NP.
+    NP-complete problems come in different disguises, but they’re fundamentally similar from a mathematical perspective.
+        In fact, you can reduce any NP-complete problem to any other NP-complete problem such that solving the first one depends on solving the second.
+==>>:
+[solver_set{problem} =[def]= {solve | [solve :: problem -> solution{problem}][@[setting4instance :: problem] -> [is_actual_solution_(setting4instance;solve(setting4instance))]]}]
+[NP_complete =[def]= {problem | [problem :<- NP][@[solve :: solver_set{problem}] -> [solve <- P] -> @[_problem :<- NP] -> ?[_solve :: solver_set{_problem}] -> [_solve <- P]]}]
+
+examples of NP-complete problems:
+    The traveling salesman problem
+        Given a set of points on a map (cities, addresses, or other geographic locations) and the distances between each point from each other point, find a path that visits every point such that the total distance is smaller than a given distance of x.
+
+    The clique problem
+        Given a number, x, and a graph, determine if there’s a set of x points or less such that all points are connected to each other.
+
+    The knapsack problem
+        Given two numbers, x and y, and a set of items, each of a known value and weight, can we pick a group of items such that the total value is at least x and the total weight at most y?
+
+    Such NP-complete problems are found everywhere,
+        from scheduling problems (given jobs of some priority and duration, and one or more proces- sors, assign jobs to the processors by respecting the priority while minimizing total execution time)
+        to constraint-satisfaction problems (determine values that satisfy a set of mathematical constraints, such as logical equations).
+        Even the task of winning in certain video games can sometimes be proven to be NP-complete (for famous games including Tetris, Super Mario Bros., Pokémon, and Candy Crush Saga).
+            For example, the article “Classic Nintendo Games Are (Computationally) Hard” (https://arxiv.org/abs/1203.1895) considers “the decision problem of reachability” to determine the possibility of reaching the goal point from a particular starting point.
+
+NP-hard
+    Some of these video game problems are actually even harder than NP-complete and are called NP-hard.
+        We say that a problem is NP-hard when it’s at least as hard as NP-complete problems.
+        More formally, a problem is NP-hard if what it takes to solve it can be proven to also solve NP-complete problems.
+            # ??? NP_complete已是NP中最难，而NP_hard可能更难，所以NP_hard其实不是NP ???
+==>>:
+[NP_hard =[def]= {problem | [@[solve :: solver_set{problem}] -> [solve <- P] -> @[_problem :<- NP] -> ?[_solve :: solver_set{_problem}] -> [_solve <- P]]}]
+[NP_complete == NP /-\ NP_hard]
+[MAYBE:[not$[NP_hard |<=| NP]]]
+    # !! [P =?= NP]
+
+I have to mention an important caveat. Not all instances of NP-complete problems are actually hard to solve.
+    Some specific instances, because they’re small or because they have a specific structure, may be solved efficiently.
+NP-complete problems have proved difficult to use for crypto purposes
+    because the very structure that makes them hard in general can make them easy in specific cases -- cases that sometimes occur in crypto.
+    Instead, cryptography often relies on problems that are "probably not" NP-hard.
+
+DLP - discrete logarithm problem
+[problem7factoring_int <- NP]
+[problem7factoring_int <-?- P]
+[problem7factoring_int <-?- NP_complete]
+[problem7discrete_logarithm <- NP]
+[problem7discrete_logarithm <-?- P]
+[problem7discrete_logarithm <-?- NP_complete]
+上面两者十分相似:算法相似，耗时相似
+    大概率不是NP_complete，因为 结果唯一，而NP_complete的结果数量不定，从零到许多
+
+[P =?= NP]
+
+[P =!= NP]:
+    <==> [P |<| NP]
+    <==> [{} == P /-\ NP_complete]
+
+public-key encryption == asymmetric encryption
+RSA - Rivest–Shamir–Adleman (RSA) cryptosystem
+trapdoor permutation
+Euler’s totient function,
+
+
+totient
+<<名词>>
+亦作 Euler's phi-function
+‘数’欧拉中函数
+
+trap door
+[建]天窗；陷阱门；[建]地板或屋顶上的活门
+trapdoor
+<<可数名词>>
+(屋顶、天花板、地板、舞台等) 活板门,上启板门,下启板门
+天窗,通气门,活板门
+
+trap-door spider
+‘动物’土蜘蛛,闭户蛭蟷蜘蛛
+((学名Ctenizidae))
+
+trapdoor (also trap)
+n door in a floor, ceiling or roof （地板、 天花板或房顶上的）活板门, 地板门, 活动天窗.
+trap-shooting
+n [U] sport of shooting at objects released into the air from a trap(5b) 飞靶射击; 多向飞碟射击.
+
+
+#disguises
+disguise:vt. 假装；掩饰；隐瞒 n. 伪装；假装；用作伪装的东西
+  make no ~ of one's feelings
+  不掩饰情感,流露真情
+  without ~
+  不隐瞒地,摆明地
+  in[under]the disguise of﹍
+  假装为…,以…为藉口,托辞…
+  a threat in the ~ of a greeting
+  以问候为掩饰的威胁
+  throw off one's disguise
+  扔掉假面具; 现出真面目
+]]
+[[
+NP - nondeterministic polynomial time
+NP-hard problem
+computational complexity计算性复杂度
+]]
